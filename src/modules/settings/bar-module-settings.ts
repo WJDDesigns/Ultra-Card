@@ -8,6 +8,7 @@ import '../../components/uc-gradient-editor';
 import '../../components/bar-side-actions';
 import { localize } from '../../localize/localize';
 import { createDefaultGradientStops } from '../../components/uc-gradient-editor';
+import { resolveThemedModuleStyle } from '../../services/uc-theme-service';
 
 /**
  * Bar module settings UI. Lives in the `core-settings` chunk (see
@@ -24,6 +25,15 @@ export class UltraBarModuleSettings extends UltraBarModule {
   ): TemplateResult {
     const barModule = module as BarModule;
     const lang = hass?.locale?.language || 'en';
+    // Style-conditional fields (glass blur, minimal dot) follow what the bar
+    // actually renders with, so "inherit" still exposes the right options.
+    const effectiveBarStyle = resolveThemedModuleStyle(
+      config,
+      'bar',
+      'bar_style',
+      barModule.bar_style,
+      'flat'
+    );
     const showPercentageText = this.normalizeBoolean(barModule.show_percentage, true);
     const showValueInstead = this.normalizeBoolean(barModule.show_value, false);
     const hasUnavailableDifferenceFallbackEntity =
@@ -688,9 +698,9 @@ export class UltraBarModuleSettings extends UltraBarModule {
             </div>
             ${this.renderUcForm(
               hass,
-              { bar_style: barModule.bar_style || 'flat' },
+              { bar_style: barModule.bar_style || 'theme' },
               [
-                this.selectField('bar_style', [
+                this.selectField('bar_style', this.withThemeInheritOption(lang, config, 'bar', 'bar_style', 'flat', [
                   {
                     value: 'flat',
                     label: localize('editor.bar.appearance.style_flat', lang, 'Flat (Default)'),
@@ -747,11 +757,11 @@ export class UltraBarModuleSettings extends UltraBarModule {
                     value: 'minimal',
                     label: localize('editor.bar.appearance.style_minimal', lang, 'Minimal'),
                   },
-                ]),
+                ])),
               ],
               (e: CustomEvent) => {
                 const next = e.detail.value.bar_style;
-                const prev = barModule.bar_style || 'flat';
+                const prev = barModule.bar_style || 'theme';
                 if (next === prev) return;
                 updateModule({ bar_style: next });
                 // Trigger re-render to update dropdown UI
@@ -1058,7 +1068,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
 
           <!-- Glass Blur Amount (only show when glass style is selected) -->
           ${
-            barModule.bar_style === 'glass'
+            effectiveBarStyle === 'glass'
               ? html`
                   <div class="field-container" style="margin-bottom: 24px;">
                     ${this.renderSliderField(
@@ -1515,7 +1525,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
 
         <!-- Minimal Style Icon Configuration Section -->
         ${
-          barModule.bar_style === 'minimal'
+          effectiveBarStyle === 'minimal'
             ? html`
                 <div
                   class="settings-section"
@@ -2337,7 +2347,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
 
 
               ${
-                barModule.bar_style === 'minimal'
+                effectiveBarStyle === 'minimal'
                   ? html`
                       <div class="color-item">
                         <div
@@ -2363,7 +2373,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
 
           <!-- Minimal Style Icon Configuration -->
           ${
-            barModule.bar_style === 'minimal'
+            effectiveBarStyle === 'minimal'
               ? html`
                   ${this.renderFieldSection(
                     localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon'),

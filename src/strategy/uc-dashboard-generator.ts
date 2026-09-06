@@ -161,7 +161,12 @@ interface CardOptions {
   columns?: number | 'full' | undefined;
 }
 
-/** Wrap module rows in an Ultra Card carrying the style chrome. */
+/**
+ * Wrap module rows in an Ultra Card that follows the style's theme. Chrome is
+ * not baked in: `uc_theme` resolves it live, so re-theming after "take
+ * control" is one change per card (or one global default) rather than a
+ * rewrite of every `card_*` key.
+ */
 function card(
   ctx: Ctx,
   rows: CardModule[] | CardModule[][],
@@ -173,7 +178,8 @@ function card(
     type: 'custom:ultra-card',
     _config_version: 2,
     card_name: opts.name,
-    ...(opts.transparent ? { card_transparent: true, card_padding: 0 } : ctx.style.card),
+    uc_theme: ctx.style.themeId,
+    ...(opts.transparent ? { card_transparent: true, card_padding: 0 } : {}),
     layout: {
       rows: rowsOfModules.map(modules => {
         const rowId = ctx.ids.next('row');
@@ -455,7 +461,7 @@ function lightSliders(ctx: Ctx, lights: string[], accent: string | undefined): S
     ),
     orientation: 'horizontal',
     layout_mode: 'overlay',
-    slider_style: ctx.style.sliderStyle,
+    slider_style: 'theme',
     slider_height: 48,
     bar_spacing: 10,
     slider_radius: 'pill',
@@ -695,7 +701,7 @@ function sensorGauges(ctx: Ctx, ids: string[], accent: string | undefined): Vert
         percentage_max: range.max,
         bar_size: 'thin',
         bar_radius: 'pill',
-        bar_style: ctx.style.barStyle,
+        bar_style: 'theme',
         bar_width: 100,
         show_percentage: false,
         show_value: false,
@@ -806,7 +812,7 @@ function areaTile(ctx: Ctx, area: AreaInfo, opts: TileOptions = {}): LovelaceCar
   const tile = mod<AreaSummaryModule>(ctx, 'area_summary', {
     area_id: area.area_id,
     title: area.name,
-    style_preset: ctx.style.areaSummaryPreset,
+    style_preset: 'theme',
     ...(temperature ? { temperature_entity: temperature } : {}),
     ...(humidity ? { humidity_entity: humidity } : {}),
     ...(area.icon ? { room_icon: area.icon } : {}),
@@ -835,7 +841,7 @@ function entityList(
   const noise = ctx.registry.noiseByArea.get(area.area_id) ?? [];
   return mod<AutoEntityListModule>(ctx, 'auto_entity_list', {
     include_areas: [area.area_id],
-    row_style: ctx.style.listRowStyle,
+    row_style: 'theme',
     show_title: false,
     show_unavailable: true,
     max_items: 20,

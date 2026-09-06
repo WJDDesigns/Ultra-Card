@@ -6,6 +6,7 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { EntityIconService } from '../services/entity-icon-service';
 import { formatEntityState } from '../utils/number-format';
+import { resolveThemedModuleStyle, withThemedStyles } from '../services/uc-theme-service';
 
 export class UltraSliderControlModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -101,7 +102,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
               max_value: 100,
               step: 1,
               // Initialize with some default style settings
-              slider_style: 'flat',
+              slider_style: 'theme',
               show_icon: true,
               show_name: true,
               show_value: true,
@@ -128,7 +129,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 max_value: 100,
                 step: 1,
                 // RGB bars often look better with gradient style
-                slider_style: 'flat',
+                slider_style: 'theme',
                 show_icon: true,
                 show_name: true,
                 show_value: true,
@@ -156,7 +157,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 max_value: 100,
                 step: 1,
                 // Color temp bars also benefit from gradient style
-                slider_style: 'flat',
+                slider_style: 'theme',
                 show_icon: true,
                 show_name: true,
                 show_value: true,
@@ -266,7 +267,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
       split_bar_length: 60,
 
       // Slider Visual Style
-      slider_style: 'flat',
+      slider_style: 'theme',
       slider_height: 55,
       bar_spacing: 8,
       slider_radius: 'round',
@@ -532,7 +533,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
       overlay_icon_position: 'bottom',
       content_position: 'left',
       // Default style settings for new bars
-      slider_style: 'flat',
+      slider_style: 'theme',
       dynamic_icon: true,
       icon_as_toggle: true,
       name_bold: true,
@@ -1517,9 +1518,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       'Slider Style',
                       'Visual appearance of the slider',
                       homeAssistant,
-                      { slider_style: bar.slider_style || sliderControl.slider_style || 'flat' },
+                      { slider_style: bar.slider_style || 'theme' },
                       [
-                        this.selectField('slider_style', [
+                        this.selectField('slider_style', this.withThemeInheritOption(lang, config, 'slider_control', 'slider_style', sliderControl.slider_style && sliderControl.slider_style !== 'theme' ? sliderControl.slider_style : 'flat', [
                           { value: 'flat', label: 'Flat' },
                           { value: 'glossy', label: 'Glossy' },
                           { value: 'embossed', label: 'Embossed' },
@@ -1530,7 +1531,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           { value: 'metallic', label: 'Metallic' },
                           { value: 'neumorphic', label: 'Neumorphic' },
                           { value: 'minimal', label: 'Minimal' },
-                        ]),
+                        ])),
                       ],
                       (e: CustomEvent) => {
                         const updatedBars = [...(sliderControl.bars || [])];
@@ -2197,7 +2198,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     // Render loop fix - removed excessive logging
-    const sliderControl = module as SliderControlModule;
+    const sliderControl = withThemedStyles(module as SliderControlModule, config, 'slider_control', {
+      slider_style: 'flat',
+      glass_blur_amount: 8,
+    });
     const homeAssistant = hass;
     const lang = hass?.locale?.language || 'en';
 
@@ -2488,7 +2492,13 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
       // Get bar-specific settings with fallback to global
       const barSliderHeight = bar.slider_height || sliderControl.slider_height || 55;
-      const barSliderStyle = bar.slider_style || sliderControl.slider_style || 'flat';
+      const barSliderStyle = resolveThemedModuleStyle(
+        config,
+        'slider_control',
+        'slider_style',
+        bar.slider_style || sliderControl.slider_style,
+        'flat'
+      );
       const barSliderRadius = bar.slider_radius || sliderControl.slider_radius || 'round';
       const barGlassBlurAmount = bar.glass_blur_amount || sliderControl.glass_blur_amount || 8;
       const animateOnChange = bar.animate_on_change ?? sliderControl.animate_on_change ?? true;
@@ -4189,7 +4199,14 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
     // Check if any bar uses neon-glow so we can ensure overflow isn't clipped
     const hasNeonGlow = bars.some(
-      b => (b.slider_style || sliderControl.slider_style || 'flat') === 'neon-glow'
+      b =>
+        resolveThemedModuleStyle(
+          config,
+          'slider_control',
+          'slider_style',
+          b.slider_style || sliderControl.slider_style,
+          'flat'
+        ) === 'neon-glow'
     );
     const overflowStyle = hasNeonGlow
       ? 'overflow: visible;'

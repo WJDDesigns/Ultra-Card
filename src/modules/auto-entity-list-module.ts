@@ -17,6 +17,7 @@ import { ucActionService } from '../services/uc-action-service';
 import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
 import '../components/navigation-picker';
+import { resolveThemedModuleStyle, ucThemeService, withThemedStyles } from '../services/uc-theme-service';
 
 interface EntityRow {
   entityId: string;
@@ -78,7 +79,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
       pinned_entities: [],
       hidden_entities: [],
 
-      row_style: 'compact',
+      row_style: 'theme',
 
       title: 'Auto Entities List',
       show_title: true,
@@ -409,8 +410,8 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
       </style>
 
       <div class="module-settings">
-        ${this._renderStyleSection(m, hass, updateModule, lang)}
-        ${m.row_style === 'card'
+        ${this._renderStyleSection(m, hass, updateModule, lang, config)}
+        ${resolveThemedModuleStyle(config, 'auto_entity_list', 'row_style', m.row_style, 'compact') === 'card'
           ? this._renderCardSizeSection(m, hass, updateModule, lang)
           : nothing}
         ${this._renderDisplaySection(m, hass, updateModule, lang)}
@@ -476,8 +477,12 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     m: AutoEntityListModule,
     _hass: HomeAssistant,
     updateModule: (u: Partial<CardModule>) => void,
-    lang: string
+    lang: string,
+    config?: UltraCardConfig
   ): TemplateResult {
+    const themeName = ucThemeService.resolveTheme(config)?.name;
+    const themedRow = resolveThemedModuleStyle(config, 'auto_entity_list', 'row_style', 'theme', 'compact');
+    const currentRow = m.row_style || 'theme';
     return html`
       <div class="settings-section">
         <div class="section-title">
@@ -486,6 +491,12 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
         <div class="style-switcher">
           ${(
             [
+              {
+                k: 'theme' as const,
+                icon: 'mdi:palette-swatch-outline',
+                title: localize('editor.theme.inherit', lang, 'Inherit from theme'),
+                desc: themeName ? `${themeName}: ${themedRow}` : themedRow,
+              },
               {
                 k: 'compact' as const,
                 icon: 'mdi:format-list-bulleted',
@@ -530,7 +541,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           ).map(
             s => html`
               <div
-                class="style-btn ${m.row_style === s.k ? 'active' : ''}"
+                class="style-btn ${currentRow === s.k ? 'active' : ''}"
                 @click=${() => {
                   updateModule({ row_style: s.k } as Partial<CardModule>);
                   this.triggerPreviewUpdate();
@@ -1451,7 +1462,9 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     config?: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
-    const m = module as AutoEntityListModule;
+    const m = withThemedStyles(module as AutoEntityListModule, config, 'auto_entity_list', {
+      row_style: 'compact',
+    });
     const lang = hass?.locale?.language || 'en';
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const hoverClass = this.getHoverEffectClass(module);

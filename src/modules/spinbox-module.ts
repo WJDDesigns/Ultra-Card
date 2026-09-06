@@ -15,6 +15,8 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
+import { getButtonSurfaceStyleString } from '../utils/uc-surface-styles';
+import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 
 /** Unified-template output keys the spinbox module reads. */
 const SPINBOX_TEMPLATE_KEYS = [
@@ -67,7 +69,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
       value_position: 'center',
       show_unit: false,
       unit: '',
-      button_style: 'flat',
+      button_style: 'theme',
       button_shape: 'rounded',
       button_size: 40,
       button_spacing: 12,
@@ -104,6 +106,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
       { value: 'outline', label: localize('editor.spinbox.styles.outline', lang, 'Outline') },
       { value: 'glass', label: localize('editor.spinbox.styles.glass', lang, 'Glass') },
       { value: 'metallic', label: localize('editor.spinbox.styles.metallic', lang, 'Metallic') },
+      { value: 'neumorphic', label: localize('editor.spinbox.styles.neumorphic', lang, 'Neumorphic') },
     ];
   }
 
@@ -372,11 +375,16 @@ export class UltraSpinboxModule extends BaseUltraModule {
               localize('editor.spinbox.button_style', lang, 'Button Style'),
               localize('editor.spinbox.button_style_desc', lang, 'Visual style for buttons'),
               hass,
-              { button_style: spinboxModule.button_style || 'flat' },
-              [this.selectField('button_style', this.getButtonStyles(lang))],
+              { button_style: spinboxModule.button_style || 'theme' },
+              [
+                this.selectField(
+                  'button_style',
+                  this.withThemeInheritOption(lang, config, 'spinbox', 'button_style', 'flat', this.getButtonStyles(lang))
+                ),
+              ],
               (e: CustomEvent) => {
                 const next = e.detail.value.button_style;
-                const prev = spinboxModule.button_style || 'flat';
+                const prev = spinboxModule.button_style || 'theme';
                 if (next === prev) return;
                 updateModule(e.detail.value);
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
@@ -807,7 +815,13 @@ export class UltraSpinboxModule extends BaseUltraModule {
       spinboxModule.button_text_color ||
       'white';
 
-    const styleClass = spinboxModule.button_style || 'flat';
+    const styleClass = resolveThemedModuleStyle(
+      config,
+      'spinbox',
+      'button_style',
+      spinboxModule.button_style,
+      'flat'
+    );
     const buttonSize = spinboxModule.button_size ?? 40;
     const buttonShape = spinboxModule.button_shape || 'rounded';
     const buttonSpacing = spinboxModule.button_spacing ?? 12;
@@ -838,19 +852,11 @@ export class UltraSpinboxModule extends BaseUltraModule {
       border: none;
     `;
 
-    const styleOverrides: Record<string, string> = {
-      flat: `box-shadow: none;`,
-      glossy: `background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), ${buttonBackground}; border: none;`,
-      embossed: `border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15);`,
-      inset: `box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);`,
-      'gradient-overlay': `background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${buttonBackground};`,
-      'neon-glow': `box-shadow: 0 0 10px ${buttonBackground}, 0 0 20px ${buttonBackground};`,
-      outline: `background: transparent; border: 2px solid ${buttonBackground}; color: ${buttonBackground};`,
-      glass: `backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25);`,
-      metallic: `background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); color: #333; border: 1px solid #bbb;`,
-    };
-
-    const buttonStyle = `${buttonBaseStyle} ${styleOverrides[styleClass] || styleOverrides.flat}`;
+    // Spinbox always recolours outline/metallic labels (hasCustomTextColor: false).
+    const buttonStyle = `${buttonBaseStyle} ${getButtonSurfaceStyleString(styleClass, {
+      background: buttonBackground,
+      hasCustomTextColor: false,
+    })}`;
 
     // Value display styling - apply template color if provided
     const valueColor =

@@ -27,6 +27,7 @@ export class UltraButtonModuleSettings extends UltraButtonModule {
       { value: 'outline', label: localize('editor.button.styles.outline', lang, 'Outline') },
       { value: 'glass', label: localize('editor.button.styles.glass', lang, 'Glass') },
       { value: 'metallic', label: localize('editor.button.styles.metallic', lang, 'Metallic') },
+      { value: 'neumorphic', label: localize('editor.button.styles.neumorphic', lang, 'Neumorphic') },
     ];
   }
 
@@ -89,11 +90,23 @@ export class UltraButtonModuleSettings extends UltraButtonModule {
               title: localize('editor.button.style.title', lang, 'Button Style'),
               description: localize('editor.button.style.desc', lang, 'Visual style of the button'),
               hass,
-              data: { style: buttonModule.style || 'flat' },
-              schema: [this.selectField('style', this.getButtonStyles(lang))],
+              data: { style: buttonModule.style || 'theme' },
+              schema: [
+                this.selectField(
+                  'style',
+                  this.withThemeInheritOption(
+                    lang,
+                    config,
+                    'button',
+                    'style',
+                    'flat',
+                    this.getButtonStyles(lang)
+                  )
+                ),
+              ],
               onChange: (e: CustomEvent) => {
                 const next = e.detail.value.style;
-                const prev = buttonModule.style || 'flat';
+                const prev = buttonModule.style || 'theme';
                 if (next === prev) return;
                 updateModule(e.detail.value);
                 // Trigger re-render to update dropdown UI

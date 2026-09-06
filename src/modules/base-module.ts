@@ -14,6 +14,9 @@ import { requestPreviewUpdate } from '../utils/uc-preview-update';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
 import type { UltraSegmentedOption } from '../components/ultra-segmented';
+import { localize } from '../localize/localize';
+import { ucThemeService } from '../services/uc-theme-service';
+import { UC_THEME_INHERIT } from '../themes/uc-theme-types';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -686,6 +689,44 @@ export abstract class BaseUltraModule implements UltraModule {
   protected colorField = UcFormUtils.color;
   protected gridField = UcFormUtils.grid;
   protected expandableField = UcFormUtils.expandable;
+
+  /**
+   * "Inherit from theme" option for a module style select. Shows what the
+   * active theme resolves it to (e.g. "Inherit from theme (Glass)") so the
+   * user sees the outcome without leaving the module editor.
+   *
+   * @param options the module's own style options; used to label the resolved value
+   */
+  protected themeInheritOption(
+    lang: string,
+    config: UltraCardConfig | undefined,
+    moduleType: string,
+    key: string,
+    fallback: string,
+    options: ReadonlyArray<{ value: string; label: string }>
+  ): { value: string; label: string } {
+    const resolved = ucThemeService.resolveModuleStyle<string>(config, moduleType, key, 'theme', fallback);
+    const resolvedLabel = options.find(o => o.value === resolved)?.label ?? resolved;
+    const themeName = ucThemeService.resolveTheme(config)?.name;
+    const base = localize('editor.theme.inherit', lang, 'Inherit from theme');
+    const suffix = themeName ? `${themeName}: ${resolvedLabel}` : resolvedLabel;
+    return { value: UC_THEME_INHERIT, label: `${base} (${suffix})` };
+  }
+
+  /**
+   * Prepend the inherit option to a style option list. Modules call this from
+   * their settings tab so every style select gets the same first entry.
+   */
+  protected withThemeInheritOption(
+    lang: string,
+    config: UltraCardConfig | undefined,
+    moduleType: string,
+    key: string,
+    fallback: string,
+    options: ReadonlyArray<{ value: string; label: string }>
+  ): Array<{ value: string; label: string }> {
+    return [this.themeInheritOption(lang, config, moduleType, key, fallback, options), ...options];
+  }
 
   /**
    * Render a consistent slider control with HA-native slider + number input + reset button.
@@ -1671,6 +1712,14 @@ export abstract class BaseUltraModule implements UltraModule {
       if (bgResult.styles.backgroundColor && bgResult.styles.backgroundColor !== 'transparent') {
         styles.backgroundColor = bgResult.styles.backgroundColor;
       }
+    }
+
+    // A module that paints its own background is a "surface". Flag it so the
+    // active Ultra Card theme's stylesheet can hand it the theme radius when the
+    // Design tab left border-radius empty. The flag is a no-op custom property
+    // under HA Native (no theme stylesheet is injected), so nothing changes there.
+    if (effective.background_color || (bgImage && bgImage !== 'none')) {
+      styles['--uc-design-surface'] = '1';
     }
 
     // Padding

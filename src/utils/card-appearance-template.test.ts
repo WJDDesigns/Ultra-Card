@@ -156,3 +156,32 @@ describe('buildCardContainerStyleFromAppearance', () => {
     expect(style).not.toContain('#3d4570');
   });
 });
+
+describe('resolveStaticCardAppearance with an Ultra Card theme', () => {
+  it('fills unset chrome from the theme but never overrides explicit values', async () => {
+    const { resolveStaticCardAppearance } = await import('./card-appearance-template');
+    const { GLASS_THEME } = await import('../themes/builtin-themes');
+    const themed = resolveStaticCardAppearance({
+      type: 'custom:ultra-card',
+      layout: { rows: [] },
+      uc_theme: 'glass',
+      card_border_radius: 4,
+    } as UltraCardConfig);
+    expect(themed.card_border_radius).toBe(4);
+    expect(themed.card_background).toBe(GLASS_THEME.card!.card_background);
+    expect(themed.card_shadow_enabled).toBe(true);
+
+    const plain = resolveStaticCardAppearance({
+      type: 'custom:ultra-card',
+      layout: { rows: [] },
+    } as UltraCardConfig);
+    expect(plain.card_background).toBeUndefined();
+
+    const optedOut = resolveStaticCardAppearance({
+      type: 'custom:ultra-card',
+      layout: { rows: [] },
+      uc_theme: 'none',
+    } as UltraCardConfig);
+    expect(optedOut.card_background).toBeUndefined();
+  });
+});

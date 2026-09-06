@@ -7,6 +7,8 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
+import { getButtonSurfaceStyles } from '../utils/uc-surface-styles';
+import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 
 const buttonSettings = createLazySettings(
   () => import(/* webpackChunkName: "core-settings" */ './settings/button-module-settings'),
@@ -30,7 +32,8 @@ export class UltraButtonModule extends BaseUltraModule {
       id: id || this.generateId('button'),
       type: 'button',
       label: '',
-      style: 'flat',
+      // New buttons follow the active Ultra Card theme; resolves to 'flat' without one.
+      style: 'theme',
       // alignment: undefined, // No default alignment to allow Global Design tab control
       icon: '',
       icon_position: 'before',
@@ -174,7 +177,13 @@ export class UltraButtonModule extends BaseUltraModule {
 
     const textShadow = this.resolveTextShadow(designProperties, moduleWithDesign);
 
-    const styleClass = buttonModule.style || 'flat';
+    const styleClass = resolveThemedModuleStyle(
+      config,
+      'button',
+      'style',
+      buttonModule.style,
+      'flat'
+    );
 
     const baseButtonStyle: Record<string, string> = {
       color: textColor,
@@ -205,58 +214,12 @@ export class UltraButtonModule extends BaseUltraModule {
       baseButtonStyle.lineHeight = lineHeight;
     }
 
-    const styleOverrides: Record<string, Record<string, string>> = {
-      flat: {
-        background: backgroundColor,
-        border: 'none',
-        boxShadow: 'none',
-      },
-      glossy: {
-        background: `linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), ${backgroundColor}`,
-        border: 'none',
-      },
-      embossed: {
-        background: backgroundColor,
-        border: '1px solid rgba(0,0,0,0.15)',
-        boxShadow: 'inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)',
-      },
-      inset: {
-        background: backgroundColor,
-        border: 'none',
-        boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)',
-      },
-      'gradient-overlay': {
-        background: `linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${backgroundColor}`,
-        border: 'none',
-      },
-      'neon-glow': {
-        background: backgroundColor,
-        border: 'none',
-        boxShadow: `0 0 10px ${backgroundColor}, 0 0 20px ${backgroundColor}`,
-      },
-      outline: {
-        background: 'transparent',
-        border: `2px solid ${backgroundColor}`,
-      },
-      glass: {
-        background: backgroundColor,
-        backdropFilter: 'blur(6px)',
-        border: '1px solid rgba(255,255,255,0.25)',
-      },
-      metallic: {
-        background: 'linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)',
-        border: '1px solid #bbb',
-      },
-    };
-
-    if (!hasCustomTextColor) {
-      styleOverrides.outline.color = backgroundColor;
-      styleOverrides.metallic.color = '#333';
-    }
-
     const mergedButtonStyle: Record<string, string> = {
       ...baseButtonStyle,
-      ...(styleOverrides[styleClass] || styleOverrides.flat),
+      ...getButtonSurfaceStyles(styleClass, {
+        background: backgroundColor,
+        hasCustomTextColor,
+      }),
     };
 
     const dimensions = [

@@ -9,6 +9,7 @@ import type { TapActionConfig } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
 import { ucToastService } from '../services/uc-toast-service';
 import '../components/ultra-color-picker';
+import { resolveThemedModuleStyle, withThemedStyles } from '../services/uc-theme-service';
 
 /**
  * Area / Room Summary — smart room tiles scoped to a Home Assistant area.
@@ -58,11 +59,10 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       title: '',
       temperature_entity: '',
       humidity_entity: '',
-      tile_border_radius: 20,
       room_icon: '',
       accent_color: '',
       show_quick_entity_names: false,
-      style_preset: 'iconic_soft',
+      style_preset: 'theme',
       max_quick_actions: 6,
       discovery: {},
       hidden_entities: [],
@@ -433,7 +433,13 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
   ): TemplateResult {
     const m = module as AreaSummaryModule;
     const lang = hass?.locale?.language || 'en';
-    const stylePreset = m.style_preset || 'iconic_soft';
+    const stylePreset = resolveThemedModuleStyle<AreaSummaryStylePreset>(
+      config,
+      'area_summary',
+      'style_preset',
+      m.style_preset,
+      'iconic_soft'
+    );
     const isPhotoStyle = stylePreset === 'photo_overlay';
     this.ensureAreaOptions(hass);
 
@@ -628,10 +634,15 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
               title: localize('editor.area_summary.preset_label', lang, 'Style preset'),
               description: localize('editor.area_summary.preset_desc', lang, 'Layout and decoration style for the tile.'),
               hass,
-              data: { style_preset: stylePreset },
-              schema: [this.selectField('style_preset', this.presetOptions(lang))],
+              data: { style_preset: m.style_preset || 'theme' },
+              schema: [
+                this.selectField(
+                  'style_preset',
+                  this.withThemeInheritOption(lang, config, 'area_summary', 'style_preset', 'iconic_soft', this.presetOptions(lang))
+                ),
+              ],
               onChange: (e: CustomEvent) => {
-                updateModule({ style_preset: e.detail.value?.style_preset || 'iconic_soft' });
+                updateModule({ style_preset: e.detail.value?.style_preset || 'theme' });
                 this.triggerPreviewUpdate();
               },
             },
@@ -1008,7 +1019,11 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     config?: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
-    const m = module as AreaSummaryModule;
+    const m = withThemedStyles(module as AreaSummaryModule, config, 'area_summary', {
+      style_preset: 'iconic_soft',
+      accent_color: '',
+      tile_border_radius: 20,
+    });
     const lang = hass?.locale?.language || 'en';
     const preset: AreaSummaryStylePreset = m.style_preset || 'iconic_soft';
     const context = previewContext || 'dashboard';

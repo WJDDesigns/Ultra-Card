@@ -8,6 +8,7 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
+import { withThemedStyles } from '../services/uc-theme-service';
 
 export class UltraTabsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -40,7 +41,7 @@ export class UltraTabsModule extends BaseUltraModule {
         { id: section2Id, title: 'Section 2', modules: [] },
       ],
       orientation: 'horizontal',
-      style: 'switch_1',
+      style: 'theme',
       alignment: 'left',
       switch_on_hover: false,
       default_tab: section1Id,
@@ -276,9 +277,9 @@ export class UltraTabsModule extends BaseUltraModule {
               title: localize('editor.tabs_module.style.type', lang, 'Style'),
               description: '',
               hass,
-              data: { style: tabsModule.style || 'switch_1' },
+              data: { style: tabsModule.style || 'theme' },
               schema: [
-                this.selectField('style', [
+                this.selectField('style', this.withThemeInheritOption(lang, config, 'tabs', 'style', 'switch_1', [
                   { value: 'default', label: 'Default' },
                   { value: 'simple', label: 'Simple' },
                   { value: 'simple_2', label: 'Simple 2' },
@@ -288,11 +289,11 @@ export class UltraTabsModule extends BaseUltraModule {
                   { value: 'switch_3', label: 'Switch 3' },
                   { value: 'modern', label: 'Modern' },
                   { value: 'trendy', label: 'Trendy' },
-                ]),
+                ])),
               ],
               onChange: (e: CustomEvent) => {
                 const next = e.detail.value.style;
-                if (next === tabsModule.style) return;
+                if (next === (tabsModule.style || 'theme')) return;
                 updateModule(e.detail.value);
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
@@ -1437,7 +1438,7 @@ export class UltraTabsModule extends BaseUltraModule {
     config?: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
-    const tabsModule = module as TabsModule;
+    const tabsModule = withThemedStyles(module as TabsModule, config, 'tabs', { style: 'switch_1' });
     const lang = hass?.locale?.language || 'en';
     const sections = tabsModule.sections || [];
 

@@ -15,6 +15,8 @@ import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-
 import '../components/ultra-color-picker';
 import { ucToastService } from '../services/uc-toast-service';
 import { autoMigrateCardModule } from '../utils/template-migration';
+import { getButtonSurfaceStyles } from '../utils/uc-surface-styles';
+import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 
 // Global store to persist popup state across module re-instantiation/reloads
 // This survives HA preview/dash re-renders because it's kept on window
@@ -186,7 +188,7 @@ export class UltraPopupModule extends BaseUltraModule {
       trigger_icon_color: '',
 
       // Trigger button styling
-      trigger_button_style: 'flat',
+      trigger_button_style: 'theme',
       trigger_button_background_color: 'var(--primary-color)',
       trigger_button_text_color: 'white',
       trigger_button_icon_position: 'before',
@@ -707,9 +709,9 @@ export class UltraPopupModule extends BaseUltraModule {
                             localize('editor.button.style.title', lang, 'Button Style'),
                             localize('editor.button.style.desc', lang, 'Visual style of the button'),
                             hass,
-                            { trigger_button_style: popupModule.trigger_button_style || 'flat' },
+                            { trigger_button_style: popupModule.trigger_button_style || 'theme' },
                             [
-                              this.selectField('trigger_button_style', [
+                              this.selectField('trigger_button_style', this.withThemeInheritOption(lang, config, 'popup', 'trigger_button_style', 'flat', [
                                 { value: 'flat', label: localize('editor.button.styles.flat', lang, 'Flat (Default)') },
                                 { value: 'glossy', label: localize('editor.button.styles.glossy', lang, 'Glossy') },
                                 { value: 'embossed', label: localize('editor.button.styles.embossed', lang, 'Embossed') },
@@ -719,11 +721,12 @@ export class UltraPopupModule extends BaseUltraModule {
                                 { value: 'outline', label: localize('editor.button.styles.outline', lang, 'Outline') },
                                 { value: 'glass', label: localize('editor.button.styles.glass', lang, 'Glass') },
                                 { value: 'metallic', label: localize('editor.button.styles.metallic', lang, 'Metallic') },
-                              ]),
+                                { value: 'neumorphic', label: localize('editor.button.styles.neumorphic', lang, 'Neumorphic') },
+                              ])),
                             ],
                             (e: CustomEvent) => {
                               const next = e.detail.value.trigger_button_style;
-                              const prev = popupModule.trigger_button_style || 'flat';
+                              const prev = popupModule.trigger_button_style || 'theme';
                               if (next === prev) return;
                               updateModule(e.detail.value);
                               setTimeout(() => this.triggerPreviewUpdate(), 50);
@@ -3209,7 +3212,13 @@ export class UltraPopupModule extends BaseUltraModule {
         const buttonText = popupModule.trigger_button_text || 'Open Popup';
         const buttonIcon = popupModule.trigger_button_icon || '';
         const isFullWidth = popupModule.trigger_button_full_width || false;
-        const styleClass = popupModule.trigger_button_style || 'flat';
+        const styleClass = resolveThemedModuleStyle(
+          config,
+          'popup',
+          'trigger_button_style',
+          popupModule.trigger_button_style,
+          'flat'
+        );
         const iconPosition = popupModule.trigger_button_icon_position || 'before';
         const iconSize = popupModule.trigger_button_icon_size || '24px';
         const hasCustomTextColor = !!popupModule.trigger_button_text_color;
@@ -3220,39 +3229,11 @@ export class UltraPopupModule extends BaseUltraModule {
 
         const textColor = popupModule.trigger_button_text_color || 'white';
 
-        const styleOverrides: Record<string, Record<string, string>> = {
-          flat: { background: bgColor, border: 'none', boxShadow: 'none' },
-          glossy: {
-            background: `linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), ${bgColor}`,
-            border: 'none',
-          },
-          embossed: {
-            background: bgColor,
-            border: '1px solid rgba(0,0,0,0.15)',
-            boxShadow: 'inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)',
-          },
-          inset: { background: bgColor, border: 'none', boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' },
-          'gradient-overlay': {
-            background: `linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${bgColor}`,
-            border: 'none',
-          },
-          'neon-glow': {
-            background: bgColor,
-            border: 'none',
-            boxShadow: `0 0 10px ${bgColor}, 0 0 20px ${bgColor}`,
-          },
-          outline: { background: 'transparent', border: `2px solid ${bgColor}` },
-          glass: { background: bgColor, backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.25)' },
-          metallic: { background: 'linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)', border: '1px solid #bbb' },
-        };
-
-        const overrides = styleOverrides[styleClass] || styleOverrides.flat;
-
-        let resolvedTextColor = textColor;
-        if (!hasCustomTextColor) {
-          if (styleClass === 'outline') resolvedTextColor = bgColor;
-          else if (styleClass === 'metallic') resolvedTextColor = '#333';
-        }
+        const overrides = getButtonSurfaceStyles(styleClass, {
+          background: bgColor,
+          hasCustomTextColor,
+        });
+        const resolvedTextColor = overrides.color || textColor;
 
         const btnStyle = [
           'display: flex',

@@ -1076,6 +1076,53 @@ export class GlobalDesignTab extends LitElement {
     }
   }
 
+  /**
+   * Clear only the surface chrome (background, border, radius, shadow, blur) so
+   * the active Ultra Card theme's `--uc-*` fallbacks take over again. Text,
+   * spacing, sizing, position and animations are left alone.
+   */
+  private _resetToTheme(): void {
+    const resetProperties: Record<string, undefined> = {
+      background_color: undefined,
+      background_image: undefined,
+      background_image_type: undefined,
+      background_image_entity: undefined,
+      background_size: undefined,
+      background_repeat: undefined,
+      background_position: undefined,
+      background_filter: undefined,
+      backdrop_filter: undefined,
+      border_radius: undefined,
+      border_style: undefined,
+      border_width: undefined,
+      border_color: undefined,
+      box_shadow_h: undefined,
+      box_shadow_v: undefined,
+      box_shadow_blur: undefined,
+      box_shadow_spread: undefined,
+      box_shadow_color: undefined,
+    };
+
+    const next = { ...(this.designProperties || {}) } as Record<string, unknown>;
+    for (const key of Object.keys(resetProperties)) delete next[key];
+    this.designProperties = next as any;
+    this.requestUpdate();
+
+    if (this.onUpdate) {
+      try {
+        this.onUpdate(resetProperties);
+      } catch (error) {
+        console.error('🔄 GlobalDesignTab: Reset to theme callback error:', error);
+      }
+    } else {
+      this.dispatchEvent(
+        new CustomEvent('design-changed', { detail: resetProperties, bubbles: true, composed: true })
+      );
+    }
+
+    setTimeout(() => this.requestUpdate(), 50);
+  }
+
   private _resetAllDesign(): void {
     // Reset all design properties to undefined values
 
@@ -1776,6 +1823,19 @@ export class GlobalDesignTab extends LitElement {
           >
             <ha-icon icon="mdi:content-paste"></ha-icon>
             <span>${localize('editor.design.paste', lang, 'Paste')}</span>
+          </button>
+
+          <button
+            class="toolbar-button reset-theme-button"
+            @click=${this._resetToTheme}
+            title="${localize(
+              'editor.design.reset_to_theme_tooltip',
+              lang,
+              'Clear background, border, radius and shadow so this element follows the active Ultra Card theme'
+            )}"
+          >
+            <ha-icon icon="mdi:palette-swatch-outline"></ha-icon>
+            <span>${localize('editor.design.reset_to_theme', lang, 'Reset to Theme')}</span>
           </button>
 
           <button
@@ -4292,6 +4352,12 @@ export class GlobalDesignTab extends LitElement {
         border-color: var(--success-color, #4caf50);
         background: var(--success-color, #4caf50);
         color: white;
+      }
+
+      .reset-theme-button:hover:not(:disabled) {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: var(--text-primary-color, white);
       }
 
       .reset-all-button:hover:not(:disabled) {

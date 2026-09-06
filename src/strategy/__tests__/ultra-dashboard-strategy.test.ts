@@ -90,13 +90,15 @@ describe('ultra-dashboard-strategy-editor', () => {
     el.remove();
   });
 
-  it('shows the four styles with the configured one selected', () => {
+  it('shows the built-in theme styles with the configured one selected', () => {
     const buttons = Array.from(el.shadowRoot.querySelectorAll<HTMLButtonElement>('.style'));
     expect(buttons.map(b => b.querySelector('.name')?.textContent?.trim())).toEqual([
       'Classic',
       'Soft',
       'Glass',
       'Bold',
+      'Monochrome',
+      'Material',
     ]);
     expect(buttons.find(b => b.classList.contains('selected'))?.textContent).toContain('Glass');
   });

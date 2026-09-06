@@ -1,18 +1,32 @@
 import type { AreaSummaryStylePreset, AutoEntityListRowStyle, UltraCardConfig } from '../types';
 import type { UltraDashboardStyleId } from './types';
+import type { UcThemeDefinition } from '../themes/uc-theme-types';
+import {
+  BOLD_THEME,
+  CLASSIC_THEME,
+  GLASS_THEME,
+  MATERIAL_THEME,
+  MONOCHROME_THEME,
+  SOFT_THEME,
+} from '../themes/builtin-themes';
 
 /**
- * A dashboard style is the card chrome every generated card starts from plus
- * the per-module presets that read best with it. Users pick one in the
- * strategy editor; after "take control" each card keeps these values and can
- * be restyled individually in the Ultra Card editor.
+ * A dashboard style is a built-in Ultra Card theme plus the generation-time
+ * choices (room palette) that live outside a theme. Generated cards carry
+ * `uc_theme: <id>` rather than baked chrome, so after "take control" the
+ * whole dashboard still follows the theme and can be re-themed in one place.
+ *
+ * The flattened `card` / preset fields are kept for callers that want to know
+ * what the theme will resolve to (tests, previews).
  */
 export interface UltraDashboardStyle {
   id: UltraDashboardStyleId;
   name: string;
   description: string;
   icon: string;
-  /** Chrome for content cards. */
+  /** Built-in theme id written to every generated card as `uc_theme`. */
+  themeId: string;
+  /** Chrome the theme resolves to for content cards. */
   card: Partial<UltraCardConfig>;
   /** Room tile look for `area_summary`. */
   areaSummaryPreset: AreaSummaryStylePreset;
@@ -27,7 +41,7 @@ export interface UltraDashboardStyle {
    */
   roomPalette?: readonly string[] | undefined;
   /** Slider look for `slider_control`. */
-  sliderStyle: 'flat' | 'glass' | 'neumorphic' | 'minimal' | 'glossy';
+  sliderStyle: 'flat' | 'glass' | 'neumorphic' | 'minimal' | 'glossy' | 'outline';
   /** Level-bar look for environment readings. */
   barStyle:
     | 'flat'
@@ -36,7 +50,8 @@ export interface UltraDashboardStyle {
     | 'neumorphic'
     | 'minimal'
     | 'neon-glow'
-    | 'gradient-overlay';
+    | 'gradient-overlay'
+    | 'outline';
 }
 
 /**
@@ -54,99 +69,35 @@ export const ROOM_PALETTE: readonly string[] = [
   '#06B6D4', // cyan
 ];
 
-const CLASSIC_CHROME: Partial<UltraCardConfig> = {
-  card_background: 'var(--card-background-color, var(--ha-card-background, white))',
-  card_border_radius: 12,
-  card_border_color: 'var(--divider-color)',
-  card_border_width: 1,
-  card_padding: 16,
-};
+function fromTheme(
+  id: UltraDashboardStyleId,
+  theme: UcThemeDefinition,
+  opts: { roomPalette?: readonly string[] | undefined; accent?: string | undefined }
+): UltraDashboardStyle {
+  const m = theme.modules ?? {};
+  return {
+    id,
+    name: theme.name,
+    description: theme.description ?? '',
+    icon: theme.icon ?? 'mdi:palette',
+    themeId: theme.id,
+    card: { ...(theme.card ?? {}) },
+    areaSummaryPreset: (m.area_summary?.style_preset as AreaSummaryStylePreset) ?? 'compact_controls',
+    listRowStyle: (m.auto_entity_list?.row_style as AutoEntityListRowStyle) ?? 'compact',
+    sliderStyle: (m.slider_control?.slider_style as UltraDashboardStyle['sliderStyle']) ?? 'flat',
+    barStyle: (m.bar?.bar_style as UltraDashboardStyle['barStyle']) ?? 'flat',
+    accent: opts.accent ?? theme.tokens.accent,
+    roomPalette: opts.roomPalette,
+  };
+}
 
 export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
-  {
-    id: 'classic',
-    name: 'Classic',
-    description: 'Matches the standard Home Assistant card look of your theme.',
-    icon: 'mdi:view-dashboard-outline',
-    card: CLASSIC_CHROME,
-    areaSummaryPreset: 'compact_controls',
-    listRowStyle: 'compact',
-    roomPalette: ROOM_PALETTE,
-    sliderStyle: 'flat',
-    barStyle: 'flat',
-  },
-  {
-    id: 'soft',
-    name: 'Soft',
-    description: 'Rounded corners, no borders, a light shadow. Calm and modern.',
-    icon: 'mdi:rounded-corner',
-    card: {
-      card_background: 'var(--card-background-color, var(--ha-card-background, white))',
-      card_border_radius: 20,
-      card_border_width: 0,
-      card_padding: 16,
-      card_shadow_enabled: true,
-      card_shadow_color: 'rgba(0, 0, 0, 0.08)',
-      card_shadow_horizontal: 0,
-      card_shadow_vertical: 4,
-      card_shadow_blur: 16,
-      card_shadow_spread: 0,
-    },
-    areaSummaryPreset: 'iconic_soft',
-    listRowStyle: 'compact',
-    roomPalette: ROOM_PALETTE,
-    sliderStyle: 'neumorphic',
-    barStyle: 'glossy',
-  },
-  {
-    id: 'glass',
-    name: 'Glass',
-    description: 'Translucent panels with a fine border. Made for wallpaper backgrounds.',
-    icon: 'mdi:blur',
-    card: {
-      // `--rgb-primary-text-color` flips with the theme, so the tint reads on
-      // light and dark backgrounds alike.
-      card_background: 'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)',
-      card_border_radius: 18,
-      card_border_color: 'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.12)',
-      card_border_width: 1,
-      card_padding: 16,
-      card_shadow_enabled: true,
-      card_shadow_color: 'rgba(0, 0, 0, 0.18)',
-      card_shadow_horizontal: 0,
-      card_shadow_vertical: 8,
-      card_shadow_blur: 24,
-      card_shadow_spread: 0,
-    },
-    areaSummaryPreset: 'graph_glow',
-    listRowStyle: 'slim',
-    roomPalette: ROOM_PALETTE,
-    sliderStyle: 'glass',
-    barStyle: 'neon-glow',
-  },
-  {
-    id: 'bold',
-    name: 'Bold',
-    description: 'Large radius, deep shadow and your theme accent on every room.',
-    icon: 'mdi:palette',
-    card: {
-      card_background: 'var(--card-background-color, var(--ha-card-background, white))',
-      card_border_radius: 24,
-      card_border_width: 0,
-      card_padding: 20,
-      card_shadow_enabled: true,
-      card_shadow_color: 'rgba(0, 0, 0, 0.16)',
-      card_shadow_horizontal: 0,
-      card_shadow_vertical: 10,
-      card_shadow_blur: 30,
-      card_shadow_spread: 0,
-    },
-    areaSummaryPreset: 'graph_glow',
-    listRowStyle: 'card',
-    accent: 'var(--primary-color)',
-    sliderStyle: 'glossy',
-    barStyle: 'gradient-overlay',
-  },
+  fromTheme('classic', CLASSIC_THEME, { roomPalette: ROOM_PALETTE }),
+  fromTheme('soft', SOFT_THEME, { roomPalette: ROOM_PALETTE }),
+  fromTheme('glass', GLASS_THEME, { roomPalette: ROOM_PALETTE }),
+  fromTheme('bold', BOLD_THEME, {}),
+  fromTheme('monochrome', MONOCHROME_THEME, {}),
+  fromTheme('material', MATERIAL_THEME, { roomPalette: ROOM_PALETTE }),
 ];
 
 export const DEFAULT_DASHBOARD_STYLE: UltraDashboardStyleId = 'soft';

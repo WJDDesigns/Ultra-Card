@@ -473,28 +473,30 @@ describe('generateUltraDashboard', () => {
     expect(noHome.views[0].title).toBe('Garage');
   });
 
-  it('applies the chosen style chrome to every content card', async () => {
+  it('points every content card at the chosen theme instead of baking chrome', async () => {
     const dash = await generateUltraDashboard(
       { type: 'custom:ultra-dashboard', style: 'glass' },
       hass
     );
     const glass = getDashboardStyle('glass');
+    expect(glass.themeId).toBe('glass');
     for (const view of dash.views) {
       for (const c of ultraCards(view)) {
-        if (c.card_transparent) continue;
-        expect(c.card_border_radius).toBe(glass.card.card_border_radius);
-        expect(c.card_background).toBe(glass.card.card_background);
+        expect(c.uc_theme).toBe('glass');
+        // Chrome comes from the theme at render time so a later re-theme sticks.
+        expect(c.card_border_radius).toBeUndefined();
+        expect(c.card_background).toBeUndefined();
       }
     }
     const tile = modulesOf(ultraCards(dash.views[1])[0])[0];
-    expect(tile.style_preset).toBe(glass.areaSummaryPreset);
+    expect(tile.style_preset).toBe('theme');
     // Unknown style falls back to the default rather than failing.
     const fallback = await generateUltraDashboard(
       { type: 'custom:ultra-dashboard', style: 'neon' as never },
       hass
     );
-    expect(fallback.views[1].sections![0].cards[0].card_border_radius).toBe(
-      getDashboardStyle(undefined).card.card_border_radius
+    expect(fallback.views[1].sections![0].cards[0].uc_theme).toBe(
+      getDashboardStyle(undefined).themeId
     );
   });
 

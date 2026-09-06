@@ -23,6 +23,7 @@ import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
+import { resolveThemedModuleStyle, withThemedStyles } from '../services/uc-theme-service';
 
 // Grid style preset configurations
 interface GridStyleConfig {
@@ -407,7 +408,7 @@ export class UltraGridModule extends BaseUltraModule {
       exclude_keywords: [],
 
       // Layout Configuration
-      grid_style: 'style_1',
+      grid_style: 'theme',
       grid_display_mode: 'grid',
       columns: 4,
       rows: 0, // auto
@@ -993,16 +994,32 @@ export class UltraGridModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
     this._hass = hass;
 
-    // Get current style config for styling sections
-    const styleConfig = getStyleConfig(gridModule.grid_style || 'style_1');
+    // Style-dependent sections read the resolved style so "inherit" shows the
+    // options of whatever the theme picked.
+    const effectiveGridStyle = resolveThemedModuleStyle<GridStylePreset>(
+      config,
+      'grid',
+      'grid_style',
+      gridModule.grid_style,
+      'style_1'
+    );
+    const styleConfig = getStyleConfig(effectiveGridStyle);
 
-    const styleOptions = GRID_STYLE_PRESETS.map(style => ({
+    const baseStyleOptions = GRID_STYLE_PRESETS.map(style => ({
       value: style.id,
       label: `${style.name} - ${style.description}`,
     }));
+    const styleOptions = this.withThemeInheritOption(
+      lang,
+      config,
+      'grid',
+      'grid_style',
+      'style_1',
+      baseStyleOptions
+    );
 
     // Check if current style supports variable heights (masonry/metro)
-    const currentStyleConfig = getStyleConfig(gridModule.grid_style || 'style_1');
+    const currentStyleConfig = getStyleConfig(effectiveGridStyle);
     const supportsVariableHeight = currentStyleConfig.supportsVariableHeight;
 
     // Only show masonry/metro options if the style supports it
@@ -1166,10 +1183,14 @@ export class UltraGridModule extends BaseUltraModule {
             'Style Preset',
             'Choose a visual style for your grid items.',
             hass,
-            { grid_style: gridModule.grid_style || 'style_1' },
+            { grid_style: gridModule.grid_style || 'theme' },
             [UcFormUtils.select('grid_style', styleOptions)],
             (e: CustomEvent) => {
               const newStyle = e.detail.value.grid_style as GridStylePreset;
+              if (newStyle === 'theme') {
+                updateModule({ grid_style: 'theme' });
+                return;
+              }
               const styleConfig = getStyleConfig(newStyle);
               // Reset display mode to 'grid' if the new style doesn't support variable heights
               const displayModeUpdate = !styleConfig.supportsVariableHeight && gridModule.grid_display_mode !== 'grid'
@@ -2589,7 +2610,9 @@ export class UltraGridModule extends BaseUltraModule {
     config?: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
-    const gridModule = module as GridModule;
+    const gridModule = withThemedStyles(module as GridModule, config, 'grid', {
+      grid_style: 'style_1',
+    });
     this._hass = hass;
 
     // Get and process entities

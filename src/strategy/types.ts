@@ -7,7 +7,13 @@
  * whole `strategy` object to its static `generate(config, hass)`.
  */
 
-export type UltraDashboardStyleId = 'classic' | 'soft' | 'glass' | 'bold';
+export type UltraDashboardStyleId =
+  | 'classic'
+  | 'soft'
+  | 'glass'
+  | 'bold'
+  | 'monochrome'
+  | 'material';
 
 export type UltraDashboardGroupBy = 'area' | 'floor';
 

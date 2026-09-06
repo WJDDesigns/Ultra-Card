@@ -13,6 +13,7 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
+import { withThemedStyles } from '../services/uc-theme-service';
 
 interface FeedEvent {
   entityId: string;
@@ -71,7 +72,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
       timeline_dot_color: 'var(--primary-color)',
       timeline_dot_size: 12,
 
-      feed_card_style: 'elevated',
+      feed_card_style: 'theme',
       show_avatar: true,
       avatar_style: 'circle',
 
@@ -436,7 +437,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
         <!-- View-specific settings -->
         ${feedModule.view_mode === 'timeline'
           ? this._renderTimelineSettings(feedModule, hass, updateModule)
-          : this._renderFeedSettings(feedModule, hass, updateModule)}
+          : this._renderFeedSettings(feedModule, hass, config, updateModule)}
 
         <!-- Entity Source -->
         <div class="settings-section">
@@ -578,8 +579,10 @@ export class UltraActivityFeedModule extends BaseUltraModule {
   private _renderFeedSettings(
     feedModule: ActivityFeedModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
+    const lang = hass?.locale?.language || 'en';
     return html`
       <div class="settings-section">
         <div class="section-title">FEED SETTINGS</div>
@@ -587,13 +590,13 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           'Card Style',
           'Visual style for each feed card.',
           hass,
-          { feed_card_style: feedModule.feed_card_style || 'elevated' },
+          { feed_card_style: feedModule.feed_card_style || 'theme' },
           [
-            this.selectField('feed_card_style', [
+            this.selectField('feed_card_style', this.withThemeInheritOption(lang, config, 'activity_feed', 'feed_card_style', 'elevated', [
               { value: 'flat', label: 'Flat' },
               { value: 'elevated', label: 'Elevated (Shadow)' },
               { value: 'outlined', label: 'Outlined (Border)' },
-            ]),
+            ])),
           ],
           (e: CustomEvent) =>
             updateModule({ feed_card_style: e.detail.value.feed_card_style } as any)
@@ -859,7 +862,9 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): TemplateResult {
-    const feedModule = module as ActivityFeedModule;
+    const feedModule = withThemedStyles(module as ActivityFeedModule, config, 'activity_feed', {
+      feed_card_style: 'elevated',
+    });
     const lang = hass?.locale?.language || 'en';
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const hoverClass = this.getHoverEffectClass(module);

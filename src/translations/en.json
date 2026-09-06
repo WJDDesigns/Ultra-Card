@@ -20,7 +20,10 @@
       "title": "Appearance",
       "description": "Control the visual appearance of your card",
       "transparent_card": "Transparent Card",
-      "transparent_card_desc": "Remove the card background, border, and shadow so only your content is visible."
+      "transparent_card_desc": "Remove the card background, border, and shadow so only your content is visible.",
+      "ha_theme": "Home Assistant Theme",
+      "ha_theme_default": "Follow dashboard theme",
+      "ha_theme_desc": "Apply one of your installed Home Assistant themes to this card only. Works with any theme from HACS."
     },
     "behavior": {
       "title": "Behavior",
@@ -2116,6 +2119,8 @@
       "paste_tooltip_has": "Paste copied design settings (from cross-card clipboard)",
       "paste_tooltip_none": "No design settings in cross-card clipboard",
       "reset_all_tooltip": "Reset all design settings to default",
+      "reset_to_theme": "Reset to Theme",
+      "reset_to_theme_tooltip": "Clear background, border, radius and shadow so this element follows the active Ultra Card theme",
       "responsive_overrides": "Responsive Overrides",
       "responsive_hint": "Enable to set different styles for laptop, tablet, and mobile devices.",
       "clear_device_overrides": "Clear {device} overrides",

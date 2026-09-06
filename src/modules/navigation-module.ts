@@ -18,6 +18,7 @@ import { ucNavigationService } from '../services/uc-navigation-service';
 import '../components/ultra-color-picker';
 import '../components/navigation-picker';
 import '../entity-picker';
+import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 
 // Navbar style presets (matching UC visual design)
 export type NavbarStylePreset =
@@ -30,7 +31,8 @@ export type NavbarStylePreset =
   | 'uc_neumorphic'
   | 'uc_gradient'
   | 'uc_sidebar'
-  | 'uc_compact';
+  | 'uc_compact'
+  | 'theme';
 
 interface NavbarStyleConfig {
   id: NavbarStylePreset;
@@ -118,7 +120,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         },
       ],
       nav_scope: 'all_views',
-      nav_style: 'uc_modern',
+      nav_style: 'theme',
       nav_desktop: {
         mode: 'floating',
         show_labels: true,
@@ -243,10 +245,18 @@ export class UltraNavigationModule extends BaseUltraModule {
     const routes = navModule.nav_routes || [];
     const lang = hass?.locale?.language || 'en';
 
-    const styleOptions = NAVBAR_STYLE_PRESETS.map(style => ({
-      value: style.id,
-      label: `${style.name} - ${style.description}`,
-    }));
+    const rawNavStyle = (module as NavigationModule).nav_style;
+    const styleOptions = this.withThemeInheritOption(
+      lang,
+      config,
+      'navigation',
+      'nav_style',
+      'uc_modern',
+      NAVBAR_STYLE_PRESETS.map(style => ({
+        value: style.id,
+        label: `${style.name} - ${style.description}`,
+      }))
+    );
 
     // Build unified item list for display
     const unifiedItems = this.buildUnifiedNavItems(navModule);
@@ -427,7 +437,7 @@ export class UltraNavigationModule extends BaseUltraModule {
               'Choose a visual style preset for your navbar.'
             ),
             hass,
-            { nav_style: navModule.nav_style || 'uc_modern' },
+            { nav_style: rawNavStyle || 'theme' },
             [UcFormUtils.select('nav_style', styleOptions)],
             (e: CustomEvent) => {
               updateModule({ nav_style: e.detail.value.nav_style });
@@ -1658,7 +1668,15 @@ export class UltraNavigationModule extends BaseUltraModule {
     module: NavigationModule,
     config?: UltraCardConfig
   ): NavigationModule {
-    if (!config) return module;
+    // 'theme' / unset resolves to the active Ultra Card theme's navbar preset.
+    const navStyle = resolveThemedModuleStyle<NavbarStylePreset>(
+      config,
+      'navigation',
+      'nav_style',
+      module.nav_style,
+      'uc_modern'
+    );
+    if (!config) return navStyle === module.nav_style ? module : { ...module, nav_style: navStyle };
 
     const templateName = module.nav_template?.trim();
     const templateConfig =
@@ -1671,6 +1689,7 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     return {
       ...module,
+      nav_style: navStyle,
       nav_routes: mergedRoutes,
       nav_desktop: {
         ...(templateConfig?.nav_desktop || {}),

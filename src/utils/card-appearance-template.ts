@@ -10,6 +10,7 @@ import {
   UnifiedTemplateResult,
 } from './template-parser';
 import { parseTemplateColorResult } from './uc-template-color-result';
+import { ucThemeService } from '../services/uc-theme-service';
 
 /** Card-level fields that may contain inline Jinja when unified template mode is off. */
 export const CARD_INLINE_TEMPLATE_FIELDS = [
@@ -210,6 +211,34 @@ export function registerCardAppearanceTemplateSubscriptions(
 }
 
 /**
+ * Static card chrome: explicit config values, with the active Ultra Card theme
+ * filling in any key the config leaves undefined. Explicit values always win,
+ * so an existing card keeps looking exactly as it did when a theme is set.
+ */
+export function resolveStaticCardAppearance(
+  config: UltraCardConfig | undefined
+): ResolvedCardAppearance {
+  if (!config) return {};
+  const themed = ucThemeService.getCardChrome(config);
+  const pick = <K extends keyof ResolvedCardAppearance>(key: K): ResolvedCardAppearance[K] =>
+    (config[key] !== undefined ? config[key] : themed[key]) as ResolvedCardAppearance[K];
+  return {
+    card_transparent: pick('card_transparent'),
+    card_background: pick('card_background'),
+    card_border_radius: pick('card_border_radius'),
+    card_border_color: pick('card_border_color'),
+    card_border_width: pick('card_border_width'),
+    card_padding: pick('card_padding'),
+    card_shadow_enabled: pick('card_shadow_enabled'),
+    card_shadow_color: pick('card_shadow_color'),
+    card_shadow_horizontal: pick('card_shadow_horizontal'),
+    card_shadow_vertical: pick('card_shadow_vertical'),
+    card_shadow_blur: pick('card_shadow_blur'),
+    card_shadow_spread: pick('card_shadow_spread'),
+  };
+}
+
+/**
  * Resolve effective card appearance values from static config plus template results.
  * Unified template (when enabled) takes precedence over static values for keys it returns.
  * Inline field templates apply when unified mode is off.
@@ -220,20 +249,7 @@ export function resolveCardAppearance(
 ): ResolvedCardAppearance {
   if (!config) return {};
 
-  const resolved: ResolvedCardAppearance = {
-    card_transparent: config.card_transparent,
-    card_background: config.card_background,
-    card_border_radius: config.card_border_radius,
-    card_border_color: config.card_border_color,
-    card_border_width: config.card_border_width,
-    card_padding: config.card_padding,
-    card_shadow_enabled: config.card_shadow_enabled,
-    card_shadow_color: config.card_shadow_color,
-    card_shadow_horizontal: config.card_shadow_horizontal,
-    card_shadow_vertical: config.card_shadow_vertical,
-    card_shadow_blur: config.card_shadow_blur,
-    card_shadow_spread: config.card_shadow_spread,
-  };
+  const resolved = resolveStaticCardAppearance(config);
 
   if (!hass) return resolved;
 

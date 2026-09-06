@@ -828,6 +828,7 @@ export interface BarModule extends BaseModule {
     | 'dashed'
     | 'dots'
     | 'minimal'
+    | 'theme'
     | undefined;
   bar_width?: number | undefined; // Now a percentage number instead of string
   bar_alignment?: 'left' | 'center' | 'right' | undefined;
@@ -1971,6 +1972,7 @@ export interface TabsModule extends BaseModule {
     | 'switch_3'
     | 'modern'
     | 'trendy'
+    | 'theme'
     | undefined;
   alignment?: 'left' | 'center' | 'right' | 'stretch' | undefined;
   tab_position?: 'top' | 'bottom' | 'left' | 'right' | undefined;
@@ -2119,6 +2121,7 @@ export interface PopupModule extends BaseModule {
     | 'outline'
     | 'glass'
     | 'metallic'
+    | 'theme'
     | undefined;
   trigger_button_background_color?: string | undefined;
   trigger_button_text_color?: string | undefined;
@@ -2473,6 +2476,7 @@ export interface SliderBar {
     | 'metallic'
     | 'neumorphic'
     | 'minimal'
+    | 'theme'
     | undefined;
   glass_blur_amount?: number | undefined;
   slider_radius?: 'square' | 'round' | 'pill' | undefined;
@@ -2571,6 +2575,7 @@ export interface SliderControlModule extends BaseModule {
     | 'metallic'
     | 'neumorphic'
     | 'minimal'
+    | 'theme'
     | undefined;
 
   // Slider Appearance
@@ -2727,6 +2732,7 @@ export interface ButtonModule extends BaseModule {
     | 'neumorphic'
     | 'dashed'
     | 'dots'
+    | 'theme'
     | undefined;
   alignment?: 'left' | 'center' | 'right' | 'justify' | undefined;
   show_icon?: boolean | undefined;
@@ -2826,6 +2832,7 @@ export interface SpinboxModule extends BaseModule {
     | 'outline'
     | 'glass'
     | 'metallic'
+    | 'theme'
     | undefined;
   button_shape?: 'rounded' | 'square' | 'circle' | undefined;
   button_size?: number | undefined;
@@ -4620,6 +4627,7 @@ export interface NavigationModule extends BaseModule {
     | 'uc_gradient'
     | 'uc_sidebar'
     | 'uc_compact'
+    | 'theme'
     | undefined;
   nav_desktop?: NavDesktopConfig | undefined;
   nav_mobile?: NavMobileConfig | undefined;
@@ -5909,7 +5917,7 @@ export interface BatteryMonitorModule extends BaseModule {
 }
 
 // Auto Entities List — dynamic entity discovery via UI-driven filters
-export type AutoEntityListRowStyle = 'compact' | 'detailed' | 'slim' | 'card';
+export type AutoEntityListRowStyle = 'compact' | 'detailed' | 'slim' | 'card' | 'theme';
 export type AutoEntityListSortBy = 'name' | 'last_changed' | 'state' | 'domain';
 export type AutoEntityListStateOperator =
   | 'equals'
@@ -6013,7 +6021,7 @@ export interface ActivityFeedModule extends BaseModule {
   timeline_dot_size?: number | undefined;
 
   // Feed-specific
-  feed_card_style?: 'flat' | 'elevated' | 'outlined' | undefined;
+  feed_card_style?: 'flat' | 'elevated' | 'outlined' | 'theme' | undefined;
   show_avatar?: boolean | undefined;
   avatar_style?: 'circle' | 'rounded' | 'square' | undefined;
 
@@ -6073,7 +6081,9 @@ export type AreaSummaryStylePreset =
   | 'iconic_soft'
   | 'graph_glow'
   | 'compact_controls'
-  | 'photo_overlay';
+  | 'photo_overlay'
+  /** Defer to the active Ultra Card theme. */
+  | 'theme';
 
 export type AreaSummaryDiscoveryKey =
   | 'lights'
@@ -6896,6 +6906,17 @@ export interface UltraCardConfig {
    */
   allow_navigation_js_from_untrusted?: boolean | undefined;
   global_css?: string | undefined;
+  /**
+   * Home Assistant theme applied to this card only (same as the `theme:` option
+   * on HA core cards). Omitted / `default` follows the dashboard theme.
+   */
+  theme?: string | undefined;
+  /**
+   * Ultra Card theme id (built-in, downloaded or local). Sets card chrome and
+   * per-module style defaults; explicit values on the card / module still win.
+   * Omitted follows the global default theme; `none` opts out entirely.
+   */
+  uc_theme?: string | undefined;
   /** When true, `card_unified_template` controls card appearance via unified template JSON or color string. */
   card_unified_template_mode?: boolean | undefined;
   /** Unified template for card-level appearance (background, border, shadow, padding). */
@@ -7785,7 +7806,8 @@ export type GridStylePreset =
   | 'style_17' // Advanced: Gradient background
   | 'style_18' // Advanced: Split-color design
   | 'style_19' // Advanced: Neumorphic
-  | 'style_20'; // Advanced: Flat with accent border
+  | 'style_20' // Advanced: Flat with accent border
+  | 'theme'; // Defer to the active Ultra Card theme
 
 // Grid display modes
 export type GridDisplayMode = 'grid' | 'masonry' | 'metro';
@@ -8683,7 +8705,7 @@ export interface VampirePowerModule extends BaseModule {
 
 export type UnifiViewMode = 'rack' | 'ports' | 'devices' | 'topology' | 'clients' | 'wan';
 
-export type UnifiRackStyle = 'dark' | 'light' | 'glass' | 'blueprint' | 'blank';
+export type UnifiRackStyle = 'dark' | 'light' | 'glass' | 'blueprint' | 'blank' | 'theme';
 
 export type UnifiAnimationIntensity = 'off' | 'subtle' | 'full';
 

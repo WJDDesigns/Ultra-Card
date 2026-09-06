@@ -63,6 +63,8 @@ import {
   buildCardContainerStyleFromAppearance,
 } from '../utils/card-appearance-template';
 import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
+import { applyHaThemeToElement } from '../utils/uc-apply-ha-theme';
+import { UC_THEME_BASE_CSS, ucThemeService } from '../services/uc-theme-service';
 import { loadUltraCardEditor } from '../editor/load-ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
@@ -132,6 +134,13 @@ export class UltraCard extends LitElement {
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _bannerDismissed = false;
   private _lastHassChangeTime = 0;
+  private _lastHaThemesRef: unknown = undefined;
+  private _lastHaThemeName: string | undefined = undefined;
+  /** Set when the global theme default changes so the next update re-resolves. */
+  private _ucThemeDirty = false;
+  private _ucThemeUnsubscribe: (() => void) | undefined;
+  private _ucThemeStyleElement: HTMLStyleElement | null = null;
+  private _ucThemeCssKey = '';
   private static readonly CONNECTOR_BANNER_STORAGE_KEY = 'ultra-card-connector-banner-dismissed';
   private static readonly HACS_CONNECTOR_URL =
     'https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration';
@@ -392,6 +401,13 @@ export class UltraCard extends LitElement {
 
     // Apply global transparency if already set
     this._applyGlobalTransparency();
+
+    // Re-resolve when the global theme default or the local library changes.
+    this._ucThemeUnsubscribe = ucThemeService.subscribe(() => {
+      this._ucThemeDirty = true;
+      this.requestUpdate();
+    });
+    this._ucThemeDirty = true;
 
     // Refresh preview detection once we're in the DOM
     const previewContext = this._detectEditorPreviewContext();
@@ -687,6 +703,11 @@ export class UltraCard extends LitElement {
       ucCloudAuthService.removeListener(this._authListener);
     }
 
+    if (this._ucThemeUnsubscribe) {
+      this._ucThemeUnsubscribe();
+      this._ucThemeUnsubscribe = undefined;
+    }
+
     // Clean up variables backup listener
     if (this._variablesBackupUnsub) {
       this._variablesBackupUnsub();
@@ -946,7 +967,27 @@ export class UltraCard extends LitElement {
     // Check for integration auth when hass updates
     if (changedProps.has('hass') && this.hass) {
       ucFavoriteColorsService.setHass(this.hass);
+      ucThemeService.setHass(this.hass);
       this._loadCloudUser();
+    }
+
+    // Per-card HA theme (`theme:`), same contract as HA core cards. `hass.themes`
+    // is a new object only when a theme or dark mode flips, so this is cheap on
+    // ordinary state ticks.
+    if (changedProps.has('hass') || changedProps.has('config')) {
+      const themes = this.hass?.themes as any;
+      const themeName = this.config?.theme;
+      if (themeName !== this._lastHaThemeName || themes !== this._lastHaThemesRef) {
+        this._lastHaThemesRef = themes;
+        this._lastHaThemeName = themeName;
+        applyHaThemeToElement(this, themes, themeName);
+      }
+    }
+
+    // Ultra Card theme (`uc_theme` / global default): host tokens + optional CSS.
+    if (changedProps.has('config') || this._ucThemeDirty) {
+      this._ucThemeDirty = false;
+      this._applyUcTheme();
     }
 
     if (changedProps.has('config')) {
@@ -1616,6 +1657,11 @@ export class UltraCard extends LitElement {
 
   override updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    if (this._ucThemeDirty) {
+      this._ucThemeDirty = false;
+      this._applyUcTheme();
+    }
 
     // Handle parent element visibility side-effects (moved from render to avoid rAF in render)
     if (this._lastInvisibleState !== null) {
@@ -3895,6 +3941,43 @@ export class UltraCard extends LitElement {
     }, UltraCard.MODULE_STYLES_REFRESH_DEBOUNCE_MS);
   }
 
+  /**
+   * Resolve the Ultra Card theme for this card and reflect it on the host:
+   * `--uc-*` tokens (+ optional palette) as inline custom properties, and the
+   * theme's scoped CSS as a <style> in the shadow root. Cheap when unchanged.
+   */
+  private _applyUcTheme(): void {
+    const theme = ucThemeService.resolveTheme(this.config);
+    ucThemeService.applyThemeToHost(this, theme);
+
+    const cssKey = theme ? `${theme.id}@${theme.version}` : '';
+    if (cssKey === this._ucThemeCssKey && (!cssKey || this._ucThemeStyleElement?.isConnected)) {
+      return;
+    }
+    this._ucThemeCssKey = cssKey;
+    if (!cssKey) {
+      this._ucThemeStyleElement?.remove();
+      this._ucThemeStyleElement = null;
+      return;
+    }
+    // Shadow root exists once Lit has rendered; on the first pass it may not,
+    // so retry from updated() via the dirty flag.
+    if (!this.shadowRoot) {
+      this._ucThemeCssKey = '';
+      this._ucThemeDirty = true;
+      return;
+    }
+    if (!this._ucThemeStyleElement || !this._ucThemeStyleElement.isConnected) {
+      const el = document.createElement('style');
+      el.setAttribute('data-uc-theme-css', '');
+      this.shadowRoot.appendChild(el);
+      this._ucThemeStyleElement = el;
+    }
+    this._ucThemeStyleElement.textContent = theme!.css
+      ? `${UC_THEME_BASE_CSS}\n${theme!.css}`
+      : UC_THEME_BASE_CSS;
+  }
+
   private _injectModuleStyles(): void {
     if (!this.shadowRoot) return;
 
@@ -3943,6 +4026,8 @@ export class UltraCard extends LitElement {
         width: 100%;
         box-sizing: border-box;
         overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
+        /* Ultra Card theme tokens (set on :host by the theme engine; inherit when absent) */
+        font-family: var(--uc-font-family, inherit);
       }
 
       /* Card picker showcase (see _renderPickerShowcase) */

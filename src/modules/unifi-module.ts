@@ -40,6 +40,7 @@ import {
   invalidateCapabilityReport,
   renderSetupWizard,
 } from './unifi/wizard';
+import { withThemedStyles } from '../services/uc-theme-service';
 
 export class UltraUnifiModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -83,7 +84,7 @@ export class UltraUnifiModule extends BaseUltraModule {
       show_camera_previews: true,
       show_title: true,
       title: 'UniFi Network',
-      rack_style: 'dark',
+      rack_style: 'theme',
       blank_background: false,
       show_port_labels: true,
       show_advanced: true,
@@ -1134,8 +1135,13 @@ export class UltraUnifiModule extends BaseUltraModule {
           ? this.renderSegmentedField(
               localize('editor.unifi.rack_style', lang, 'Rack style'),
               localize('editor.unifi.rack_style_desc', lang, 'Visual theme for the virtual rack and faceplates.'),
-              m.rack_style || 'dark',
+              m.rack_style || 'theme',
               [
+                {
+                  value: 'theme',
+                  label: localize('editor.theme.inherit_short', lang, 'Theme'),
+                  icon: 'mdi:palette-swatch-outline',
+                },
                 { value: 'dark', label: localize('editor.unifi.style_dark', lang, 'Dark'), icon: 'mdi:weather-night' },
                 { value: 'light', label: localize('editor.unifi.style_light', lang, 'Light'), icon: 'mdi:white-balance-sunny' },
                 { value: 'glass', label: localize('editor.unifi.style_glass', lang, 'Glass'), icon: 'mdi:blur' },
@@ -1154,7 +1160,7 @@ export class UltraUnifiModule extends BaseUltraModule {
                 updateModule({ rack_style: next as UnifiRackStyle } as Partial<CardModule>);
                 this.triggerPreviewUpdate();
               },
-              5
+              6
             )
           : nothing}
 
@@ -1256,7 +1262,7 @@ export class UltraUnifiModule extends BaseUltraModule {
     config?: UltraCardConfig,
     _previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
-    const m = module as UnifiModule;
+    const m = withThemedStyles(module as UnifiModule, config, 'unifi', { rack_style: 'dark' });
     const lang = hass?.locale?.language || 'en';
 
     if (!hasProAccess(hass)) {

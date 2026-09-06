@@ -17,6 +17,7 @@ import { parseLocaleNumber, parseCustomTickValues } from '../utils/parse-locale-
 import { createDefaultGradientStops } from '../utils/uc-gradient-stops';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
 import { setVisibleInterval, UcVisibilityTimer } from '../utils/uc-visibility-timer';
+import { withThemedStyles } from '../services/uc-theme-service';
 
 /** Unified-template output keys the bar module reads (position/label/color also appear inside `ticks` entries). */
 export const BAR_TEMPLATE_KEYS = [
@@ -446,7 +447,7 @@ export class UltraBarModule extends BaseUltraModule {
       bar_direction: 'left-to-right', // Default fill direction
       bar_size: 'medium',
       bar_radius: 'round',
-      bar_style: 'flat',
+      bar_style: 'theme',
       bar_width: 100,
       bar_alignment: 'center',
       border_radius: 10,
@@ -729,7 +730,10 @@ export class UltraBarModule extends BaseUltraModule {
     config?: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
-    const barModule = module as BarModule;
+    const barModule = withThemedStyles(module as BarModule, config, 'bar', {
+      bar_style: 'flat',
+      glass_blur_amount: 8,
+    });
     const lang = hass?.locale?.language || 'en';
 
     // Clean up time progress interval if mode has changed

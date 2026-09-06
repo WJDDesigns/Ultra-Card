@@ -26,6 +26,7 @@ import { uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
+import { listHaThemeNames } from '../utils/uc-apply-ha-theme';
 import './tabs/layout-tab';
 import './uc-settings-components';
 // Settings-only custom elements used by module tabs. Defined here (editor
@@ -1128,6 +1129,46 @@ export class UltraCardEditor extends LitElement {
     this.requestUpdate();
   }
 
+  /**
+   * Per-card Home Assistant theme, the same `theme:` option HA core cards expose.
+   * Lets a user pull any installed (HACS) theme onto one Ultra Card without
+   * changing the dashboard theme.
+   */
+  private _renderHaThemePicker(lang: string) {
+    if (!this.config) return '';
+    const names = listHaThemeNames(this.hass?.themes as any);
+    const current = this.config.theme || '';
+    // Keep a theme that is configured but not installed on this HA visible so
+    // the user can see and clear it.
+    const options = current && !names.includes(current) ? [current, ...names] : names;
+    return html`
+      <div class="setting-item" style="grid-column: 1 / -1;">
+        <label>${localize('editor.appearance.ha_theme', lang, 'Home Assistant Theme')}</label>
+        <select
+          class="property-select"
+          style="width: 100%;"
+          .value=${current}
+          @change=${(e: Event) => {
+            const value = (e.target as HTMLSelectElement).value;
+            this._updateConfig({ theme: value || undefined });
+          }}
+        >
+          <option value="">
+            ${localize('editor.appearance.ha_theme_default', lang, 'Follow dashboard theme')}
+          </option>
+          ${options.map(name => html`<option value=${name} ?selected=${name === current}>${name}</option>`)}
+        </select>
+        <div class="setting-description">
+          ${localize(
+            'editor.appearance.ha_theme_desc',
+            lang,
+            'Apply one of your installed Home Assistant themes to this card only. Works with any theme from HACS.'
+          )}
+        </div>
+      </div>
+    `;
+  }
+
   protected override render() {
     if (!this.hass || !this.config) {
       return html`
@@ -1286,6 +1327,8 @@ export class UltraCardEditor extends LitElement {
                       )}
                     </div>
                   </div>
+
+                  ${this._renderHaThemePicker(lang)}
 
                   <div class="setting-item" style="grid-column: 1 / -1;">
                     <div class="template-section" style="margin-bottom: 8px;">
@@ -1759,7 +1802,7 @@ export class UltraCardEditor extends LitElement {
                       <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
                       <button
                         class="reset-btn"
-                        @click=${() => this._updateConfig({ card_border_radius: 12 })}
+                        @click=${() => this._updateConfig({ card_border_radius: undefined })}
                         title=${localize(
                           'editor.fields.reset_default_value',
                           lang,
@@ -1807,7 +1850,7 @@ export class UltraCardEditor extends LitElement {
                       <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
                       <button
                         class="reset-btn"
-                        @click=${() => this._updateConfig({ card_border_width: 1 })}
+                        @click=${() => this._updateConfig({ card_border_width: undefined })}
                         title=${localize(
                           'editor.fields.reset_default_value',
                           lang,
@@ -2048,14 +2091,14 @@ export class UltraCardEditor extends LitElement {
                           const target = e.target as HTMLInputElement;
                           const value = target.value.trim();
                           this._updateConfig({
-                            card_padding: value === '' ? 16 : Number(value),
+                            card_padding: value === '' ? undefined : Number(value),
                           });
                         }}
                       />
                       <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
                       <button
                         class="reset-btn"
-                        @click=${() => this._updateConfig({ card_padding: 16 })}
+                        @click=${() => this._updateConfig({ card_padding: undefined })}
                         title=${localize(
                           'editor.fields.reset_default_value',
                           lang,
