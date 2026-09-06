@@ -1,5 +1,25 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta4
+
+The fourth 3.10.0 beta turns Ultra Card into a dashboard builder. **Ultra Dashboard** creates a complete, good-looking dashboard from your areas and floors in one click — and unlike every other generated dashboard, you can take control of it and edit every single card in the visual editor. It is free, it needs Home Assistant 2026.5 or newer, and it uses only free modules. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added Ultra Dashboard, a complete dashboard in one click** - Go to Settings → Dashboards → Add dashboard and pick **Ultra Dashboard** under Community dashboards. You get a Home page with a clock and weather header, a tile for every room grouped by floor, and People, Alerts, Batteries and Updates blocks, plus a page for each room with its lights, climate, media, covers, fans, locks, cameras, security sensors and switches — each block only appears when the room has something for it. Rooms with no devices are skipped, and diagnostic entities like signal strength stay out of the way
+- **Pick a style, then take control and edit anything** - Open the dashboard's Edit menu to choose between four styles (Classic, Soft, Glass and Bold), pages per area or per floor, which areas to include, and which Home blocks to show. When you are happy, choose **Take control**: every card becomes a regular Ultra Card that opens in the visual editor with its rows, columns and modules, so you can restyle a room, add a module, or rearrange a page like any other card. No other community dashboard can do this
+- **Use just one room anywhere** - The room page is also available as a view you can drop into any existing dashboard with `strategy: { type: custom:ultra-dashboard-area, area: kitchen }`. See [docs/ultra-dashboard.md](https://github.com/WJDDesigns/Ultra-Card/blob/main/docs/ultra-dashboard.md)
+
+### 🔧 Improvements
+
+- **Room tiles pick the right thermometer** - When a room has several temperature or humidity sensors, the room tile now prefers one that is reporting a number and is not attached to an appliance, so a kitchen shows the room temperature rather than the oven or the fridge
+- **The download stays small** - Ultra Dashboard adds about 1 KB to the file every dashboard loads; the generator and its settings panel are fetched only when you create or edit an Ultra Dashboard
+- **Templates that return a CSS variable with a fallback now work** - A template producing `var(--my-color, #000000)` was being replaced with the default color. It is now used as written, matching the color picker fix in beta3. Thanks for the report in [#129](https://github.com/WJDDesigns/Ultra-Card/issues/129)
+
+---
+
 ## Version 3.10.0-beta3
 
 The third 3.10.0 beta cuts the download nearly in half again and works through the open GitHub reports: icon layout options, popup customization, the editor hanging on deeply nested layouts, drag and drop into empty columns, CSS variables with fallbacks, and Dynamic Lists stuck on placeholders after a page reload. The "Loading..." flash on phones from [#124](https://github.com/WJDDesigns/Ultra-Card/issues/124) should be much shorter now that the first download is 93% smaller than 3.9.0. This is a pre-release for testing — please report anything odd on GitHub or Discord.
