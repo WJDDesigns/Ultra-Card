@@ -33,6 +33,19 @@ describe('Ultra Dashboard strategy registration', () => {
     });
   });
 
+  it('ships a self-contained 160x160 preview per theme mode', () => {
+    registerUltraDashboardStrategy();
+    const { images } = window.customStrategies![0];
+    for (const uri of [images!.light, images!.dark]) {
+      expect(uri.startsWith('data:image/svg+xml,')).toBe(true);
+      const svg = decodeURIComponent(uri.slice('data:image/svg+xml,'.length));
+      const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+      expect(doc.querySelector('parsererror')).toBeNull();
+      expect(doc.documentElement.getAttribute('viewBox')).toBe('0 0 160 160');
+    }
+    expect(images!.light).not.toBe(images!.dark);
+  });
+
   it('works with no configuration and suggests a title and icon for the create dialog', () => {
     expect(UltraDashboardStrategy.configRequired).toBe(false);
     expect(UltraDashboardStrategy.getCreateSuggestions()).toEqual({

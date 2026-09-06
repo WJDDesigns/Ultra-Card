@@ -88,6 +88,11 @@ views:
   and pushes the `window.customStrategies` entry. Generation and the config
   editor live in the lazy `uc-strategy.*` chunk (`uc-dashboard-generator.ts`,
   `ultra-dashboard-strategy-editor.ts`).
+- The registry entry carries `images: { light, dark }` (inline SVG data URIs
+  from `uc-dashboard-preview-images.ts`, 160x160 like the built-in previews).
+  Home Assistant's New Dashboard dialog only shows images for its built-in
+  strategies today; the field matches the built-in shape and is proposed
+  upstream, so the tile gets its picture once that lands.
 - Cards are built from each module's `createDefault()` so a generated module is
   byte-for-byte what the editor would add, with the strategy's overrides on top.
 - Registries come from `hass.areas` / `hass.floors` / `hass.devices` /

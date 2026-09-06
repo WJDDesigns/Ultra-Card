@@ -81,6 +81,11 @@ export interface CustomStrategyEntry {
   name?: string | undefined;
   description?: string | undefined;
   documentationURL?: string | undefined;
+  /**
+   * 160x160 preview per theme mode, like the built-in strategy tiles. Not read
+   * by Home Assistant yet (proposed upstream); harmless until it is.
+   */
+  images?: { light: string; dark: string } | undefined;
 }
 
 declare global {

@@ -1,5 +1,9 @@
 import type { HomeAssistant } from 'custom-card-helpers';
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
+import {
+  ULTRA_DASHBOARD_PREVIEW_DARK,
+  ULTRA_DASHBOARD_PREVIEW_LIGHT,
+} from './uc-dashboard-preview-images';
 import type {
   LovelaceDashboardRawConfig,
   LovelaceViewRawConfig,
@@ -91,6 +95,9 @@ export function registerUltraDashboardStrategy(): void {
       description:
         'A complete dashboard built from your areas and floors with Ultra Card. Pick a style, take control, and edit every card visually.',
       documentationURL: ULTRA_DASHBOARD_DOCS_URL,
+      // Not read by Home Assistant's dialog yet (proposed upstream, mirrors
+      // the built-in strategies' `images` shape); lights up when it is.
+      images: { light: ULTRA_DASHBOARD_PREVIEW_LIGHT, dark: ULTRA_DASHBOARD_PREVIEW_DARK },
     });
   }
 }
