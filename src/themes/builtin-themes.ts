@@ -272,6 +272,7 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: PHOSPHOR_LINE,
     shadow: `0 0 14px rgba(51, 255, 102, 0.18)`,
+    page_background: '#020503',
     accent: PHOSPHOR,
     density: 'compact',
     font_family: "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, Consolas, 'Courier New', monospace",
@@ -345,6 +346,9 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: 'rgba(255, 255, 255, 0.28)',
     shadow: '0 12px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.08)',
+    // A soft wallpaper for the glass to refract; flat pages make glass read as paper.
+    page_background:
+      'radial-gradient(at 18% 12%, rgba(125, 211, 252, 0.75) 0, transparent 50%), radial-gradient(at 82% 28%, rgba(196, 181, 253, 0.7) 0, transparent 55%), radial-gradient(at 55% 92%, rgba(251, 207, 232, 0.7) 0, transparent 50%), #e9eef9',
     density: 'comfortable',
     font_family:
       "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Inter, system-ui, sans-serif",
@@ -461,6 +465,7 @@ export const HILLARY_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: HILLARY_HAIRLINE,
     shadow: `0 8px 24px ${HILLARY_SHADOW}, 0 1px 2px rgba(30, 47, 75, 0.06)`,
+    page_background: '#f5f0e8',
     pane_background: '#e1d8c9',
     pane_border: `1px solid ${HILLARY_HAIRLINE}`,
     pane_shadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.5)',
@@ -565,6 +570,7 @@ export const MOOSE_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: MOOSE_HAIRLINE,
     shadow: `0 10px 28px ${MOOSE_SHADOW}, 0 1px 2px rgba(12, 7, 3, 0.3)`,
+    page_background: '#1a110b',
     density: 'regular',
     accent: MOOSE_VELVET,
     font_family: "'Bitter', 'Merriweather', 'Source Serif 4', 'Roboto Slab', Georgia, serif",
@@ -658,6 +664,7 @@ export const METALLIC_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: METAL_EDGE,
     shadow: METAL_BEZEL_SHADOW,
+    page_background: 'radial-gradient(ellipse at 50% 0%, #3a4047 0%, #191c20 65%, #111316 100%)',
     pane_background: 'linear-gradient(180deg, #14171a, #1c2024)',
     pane_border: 'none',
     pane_shadow: 'inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08)',
@@ -838,6 +845,7 @@ export const BEACH_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: 'rgba(107, 93, 74, 0.28)',
     shadow: '0 10px 26px rgba(31, 58, 77, 0.14), 0 1px 2px rgba(31, 58, 77, 0.08)',
+    page_background: 'linear-gradient(180deg, #c8e1ee 0%, #eaf2f4 55%, #e6dbc3 100%)',
     pane_background: 'rgba(255, 255, 255, 0.42)',
     pane_border: '1px solid rgba(107, 93, 74, 0.22)',
     pane_shadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
@@ -984,6 +992,7 @@ export const VAPOR_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: 'rgba(255, 79, 216, 0.55)',
     shadow: VAPOR_GLOW,
+    page_background: 'linear-gradient(180deg, #08041a 0%, #180b3a 55%, #2d1058 100%)',
     pane_background: 'rgba(255, 79, 216, 0.08)',
     pane_border: '1px solid rgba(255, 79, 216, 0.35)',
     pane_shadow: '0 0 10px rgba(255, 79, 216, 0.15), inset 0 0 12px rgba(79, 240, 255, 0.06)',
@@ -1108,6 +1117,7 @@ export const GUMMY_THEME: UcThemeDefinition = {
     border_width: 0,
     border_color: 'transparent',
     shadow: GUMMY_BODY_SHADOW,
+    page_background: '#f7f3ec',
     pane_background: `linear-gradient(180deg, ${gummy(90, 88)}, ${gummy(92, 78)})`,
     pane_border: 'none',
     pane_shadow: `inset 0 -1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 2px ${gummy(90, 66, 0.3)}, inset 0 0 12px ${gummy(95, 55, 0.45)}, inset 0 -6px 10px ${gummy(95, 50, 0.4)}, 0 3px 8px ${gummy(80, 40, 0.25)}`,
@@ -1272,6 +1282,7 @@ export const WOOD_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: WOOD_EDGE,
     shadow: 'inset 0 1px 0 rgba(255, 200, 140, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 10px 24px rgba(20, 8, 2, 0.55)',
+    page_background: '#1f120a',
     pane_background: 'linear-gradient(180deg, #24120a 0%, #3b2010 100%)',
     pane_border: `1px solid ${WOOD_EDGE}`,
     pane_shadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.75), inset 0 -1px 0 rgba(255, 200, 140, 0.12), 0 1px 0 rgba(255, 200, 140, 0.16)',
@@ -1382,7 +1393,15 @@ const NEU_DARK: NeuPalette = {
 };
 
 function neumorphicTheme(id: string, name: string, icon: string, mode: 'light' | 'dark', c: NeuPalette): UcThemeDefinition {
-  const raised = `10px 10px 22px ${c.dark}, -10px -10px 22px ${c.light}`;
+  // Neumorphism is one material: the theme paints the page in the card
+  // colour (page_background) so the card's shadows fall on the same surface
+  // they are cut from. A faint 1px rim keeps the edge legible if someone
+  // sets a different view background on purpose.
+  const rim =
+    mode === 'light'
+      ? 'inset 1px 1px 0 rgba(255, 255, 255, 0.9), inset -1px -1px 0 rgba(0, 0, 0, 0.08)'
+      : 'inset 1px 1px 0 rgba(255, 255, 255, 0.06), inset -1px -1px 0 rgba(0, 0, 0, 0.3)';
+  const raised = `${rim}, 10px 10px 22px ${c.dark}, -10px -10px 22px ${c.light}`;
   const raisedSm = `5px 5px 12px ${c.dark}, -5px -5px 12px ${c.light}`;
   const recessed = `inset 5px 5px 10px ${c.dark}, inset -5px -5px 10px ${c.light}`;
   return {
@@ -1403,6 +1422,7 @@ function neumorphicTheme(id: string, name: string, icon: string, mode: 'light' |
       border_width: 0,
       border_color: 'transparent',
       shadow: raised,
+      page_background: c.surface,
       pane_background: c.surface,
       pane_border: 'none',
       pane_shadow: recessed,

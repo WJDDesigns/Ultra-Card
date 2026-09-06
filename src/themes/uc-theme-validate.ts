@@ -148,6 +148,8 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
   if (paneBorder) tokens.pane_border = paneBorder;
   const paneShadow = cssValue(r.pane_shadow, 600);
   if (paneShadow) tokens.pane_shadow = paneShadow;
+  const pageBackground = cssValue(r.page_background, 600);
+  if (pageBackground) tokens.page_background = pageBackground;
   if (DENSITIES.includes(r.density as UcThemeDensity)) tokens.density = r.density as UcThemeDensity;
   const accent = cssValue(r.accent);
   if (accent) tokens.accent = accent;

@@ -26,6 +26,8 @@ export interface UcThemeRiskFindings {
   paletteOverrides: string[];
   /** Third-party hosts contacted when the preview image is shown. */
   remoteHosts: string[];
+  /** The theme paints the Lovelace view behind its cards. */
+  pageBackground: string | null;
   hasAny: boolean;
 }
 
@@ -107,7 +109,13 @@ export function scanThemeCss(css: string | undefined): UcThemeRiskFindings['css'
 }
 
 export function scanThemeForRisks(theme: UcThemeDefinition | null | undefined): UcThemeRiskFindings {
-  const empty: UcThemeRiskFindings = { css: null, paletteOverrides: [], remoteHosts: [], hasAny: false };
+  const empty: UcThemeRiskFindings = {
+    css: null,
+    paletteOverrides: [],
+    remoteHosts: [],
+    pageBackground: null,
+    hasAny: false,
+  };
   if (!theme) return empty;
 
   const css = scanThemeCss(theme.css);
@@ -126,8 +134,9 @@ export function scanThemeForRisks(theme: UcThemeDefinition | null | undefined): 
     }
   }
 
-  const findings: UcThemeRiskFindings = { css, paletteOverrides, remoteHosts, hasAny: false };
-  findings.hasAny = !!css || paletteOverrides.length > 0 || remoteHosts.length > 0;
+  const pageBackground = theme.tokens?.page_background?.trim() || null;
+  const findings: UcThemeRiskFindings = { css, paletteOverrides, remoteHosts, pageBackground, hasAny: false };
+  findings.hasAny = !!css || paletteOverrides.length > 0 || remoteHosts.length > 0 || !!pageBackground;
   return findings;
 }
 
@@ -139,6 +148,9 @@ export function describeThemeRisks(findings: UcThemeRiskFindings): string[] {
     for (const f of findings.css.findings) {
       lines.push(`  - ${f.reason}: ${f.selectors.join(', ')}`);
     }
+  }
+  if (findings.pageBackground) {
+    lines.push(`Paints the dashboard background behind its cards (${findings.pageBackground.slice(0, 60)}).`);
   }
   if (findings.paletteOverrides.length) {
     lines.push(`Overrides Home Assistant colours on the card: ${findings.paletteOverrides.join(', ')}.`);

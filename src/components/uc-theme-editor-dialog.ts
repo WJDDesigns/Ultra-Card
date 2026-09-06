@@ -41,6 +41,10 @@ type Draft = {
   font_family: string;
   grayscale: string;
   color_filter: string;
+  page_background: string;
+  pane_background: string;
+  pane_border: string;
+  pane_shadow: string;
   card_background: string;
   card_padding: string;
   card_shadow_enabled: '' | 'true' | 'false';
@@ -84,6 +88,10 @@ function draftFromTheme(theme: UcThemeDefinition | null): Draft {
     font_family: t?.font_family ?? '',
     grayscale: t?.grayscale !== undefined ? String(t.grayscale) : '',
     color_filter: t?.color_filter ?? '',
+    page_background: t?.page_background ?? '',
+    pane_background: t?.pane_background ?? '',
+    pane_border: t?.pane_border ?? '',
+    pane_shadow: t?.pane_shadow ?? '',
     card_background: theme?.card?.card_background ?? '',
     card_padding: theme?.card?.card_padding !== undefined ? String(theme.card.card_padding) : '',
     card_shadow_enabled:
@@ -116,6 +124,10 @@ function themeFromDraft(d: Draft, version: number): Record<string, unknown> {
   const gray = numOrUndef(d.grayscale);
   if (gray !== undefined && gray > 0) tokens.grayscale = Math.min(1, gray);
   if (d.color_filter.trim()) tokens.color_filter = d.color_filter.trim();
+  if (d.page_background.trim()) tokens.page_background = d.page_background.trim();
+  if (d.pane_background.trim()) tokens.pane_background = d.pane_background.trim();
+  if (d.pane_border.trim()) tokens.pane_border = d.pane_border.trim();
+  if (d.pane_shadow.trim()) tokens.pane_shadow = d.pane_shadow.trim();
   const palette: Record<string, string> = {};
   for (const f of PALETTE_FIELDS) {
     const v = d.palette[f.key]?.trim();
@@ -307,6 +319,22 @@ export class UcThemeEditorDialog extends LitElement {
               ${this._text('font_family', t('editor_font', 'Font family'), d.font_family, v => this._set('font_family', v), 'inherit')}
               ${this._text('grayscale', t('editor_grayscale', 'Desaturate whole card (0 = colour, 1 = monochrome)'), d.grayscale, v => this._set('grayscale', v), '0', 'number')}
               ${this._text('color_filter', t('editor_color_filter', 'Colour filter (CSS filter chain, overrides desaturate)'), d.color_filter, v => this._set('color_filter', v), 'grayscale(1) sepia(1) hue-rotate(80deg) saturate(2.5)')}
+            </section>
+
+            <section>
+              <h3>${t('editor_layers', 'Layers')}</h3>
+              <p class="hint">
+                ${t(
+                  'editor_layers_hint',
+                  'The page behind the card and the panes modules draw inside it (rows, tiles, chips, tracks). Leave empty to derive panes from the surface and leave the page to Home Assistant.'
+                )}
+              </p>
+              ${this._text('page_background', t('editor_page_background', 'Page background (view behind the card)'), d.page_background, v => this._set('page_background', v), '#e4e8ef')}
+              ${this._text('pane_background', t('editor_pane_background', 'Pane background'), d.pane_background, v => this._set('pane_background', v), 'var(--secondary-background-color)')}
+              <div class="grid-2">
+                ${this._text('pane_border', t('editor_pane_border', 'Pane border'), d.pane_border, v => this._set('pane_border', v), '1px solid var(--divider-color)')}
+                ${this._text('pane_shadow', t('editor_pane_shadow', 'Pane shadow'), d.pane_shadow, v => this._set('pane_shadow', v), 'inset 0 1px 3px rgba(0,0,0,0.2)')}
+              </div>
             </section>
 
             <section>

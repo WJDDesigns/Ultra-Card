@@ -91,6 +91,7 @@ ${MODULE_RADIUS_VARS}
 
 const STORAGE_LIBRARY = 'ultra-card-theme-library';
 const STORAGE_GLOBAL = 'ultra-card-global-theme';
+const STORAGE_PAINT_PAGE = 'ultra-card-theme-paint-page';
 const HOST_VARS_APPLIED = new WeakMap<HTMLElement, { key: string; props: string[] }>();
 
 export interface UcCardSeed {
@@ -270,6 +271,7 @@ function deriveCompanionVars(
 class UcThemeService {
   private _library = new Map<string, UcThemeDefinition>();
   private _globalDefaultId: string | null = null;
+  private _paintPage = true;
   private _listeners = new Set<() => void>();
   private _hass: any = null;
   private _connectLoaded = false;
@@ -280,12 +282,33 @@ class UcThemeService {
     this._loadFromStorage();
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', e => {
-        if (e.key === STORAGE_LIBRARY || e.key === STORAGE_GLOBAL) {
+        if (e.key === STORAGE_LIBRARY || e.key === STORAGE_GLOBAL || e.key === STORAGE_PAINT_PAGE) {
           this._loadFromStorage();
           this._notify();
         }
       });
     }
+  }
+
+  // ----------------------------------------------------- page background
+
+  /** Whether themes may paint the Lovelace view behind their cards (default on). */
+  getPaintPage(): boolean {
+    return this._paintPage;
+  }
+
+  setPaintPage(on: boolean): void {
+    if (on === this._paintPage) return;
+    this._paintPage = on;
+    if (on) safeRemoveItem(STORAGE_PAINT_PAGE);
+    else safeSetItem(STORAGE_PAINT_PAGE, '0');
+    this._notify();
+  }
+
+  /** The page background a resolved theme asks for, honouring the global switch. */
+  pageBackgroundFor(theme: UcThemeDefinition | null): string | undefined {
+    if (!this._paintPage) return undefined;
+    return theme?.tokens.page_background || undefined;
   }
 
   // ---------------------------------------------------------------- registry
@@ -498,8 +521,8 @@ class UcThemeService {
    * Returns true when something changed.
    */
   applyThemeToHost(el: HTMLElement, theme: UcThemeDefinition | null, seed?: UcCardSeed): boolean {
-    const key = theme ? `${theme.id}@${theme.version}#${seed ? `${seed.hue}/${seed.seeds.join(',')}` : ''}` : '';
     const prev = HOST_VARS_APPLIED.get(el);
+    const key = theme ? `${theme.id}@${theme.version}#${seed ? `${seed.hue}/${seed.seeds.join(',')}` : ''}` : '';
     if (prev?.key === key) return false;
     if (prev) for (const p of prev.props) el.style.removeProperty(p);
     if (!theme) {
@@ -560,6 +583,7 @@ class UcThemeService {
     }
     const global = safeGetItem(STORAGE_GLOBAL);
     this._globalDefaultId = global && this.getTheme(global) ? global : null;
+    this._paintPage = safeGetItem(STORAGE_PAINT_PAGE) !== '0';
   }
 
   private _saveLibrary(): void {

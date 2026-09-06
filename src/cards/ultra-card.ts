@@ -65,6 +65,7 @@ import {
 import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
 import { applyHaThemeToElement } from '../utils/uc-apply-ha-theme';
 import { UC_THEME_BASE_CSS, ucThemeService } from '../services/uc-theme-service';
+import { ucThemePageService } from '../services/uc-theme-page-service';
 import { loadUltraCardEditor } from '../editor/load-ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
@@ -619,6 +620,7 @@ export class UltraCard extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     ucCardInstanceRegistry.unregister(this);
+    ucThemePageService.release(this);
 
     // Tear down Time Machine subscription and any active scrub contexts
     this._timeMachineUnsub?.();
@@ -3949,6 +3951,9 @@ export class UltraCard extends LitElement {
   private _applyUcTheme(): void {
     const theme = ucThemeService.resolveTheme(this.config);
     ucThemeService.applyThemeToHost(this, theme, theme ? ucThemeService.cardSeed(this) : undefined);
+    // Preview cards in the editor are not in a view; the service finds no
+    // hui-root above them and leaves the page alone.
+    ucThemePageService.claim(this, ucThemeService.pageBackgroundFor(theme));
 
     const cssKey = theme ? `${theme.id}@${theme.version}` : '';
     if (cssKey === this._ucThemeCssKey && (!cssKey || this._ucThemeStyleElement?.isConnected)) {

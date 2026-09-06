@@ -464,6 +464,21 @@ export class HubThemesTab extends LitElement {
           compact
           @theme-picked=${(e: CustomEvent<{ value: string }>) => this._setGlobal(e.detail.value)}
         ></uc-theme-picker>
+        <label class="paint-page">
+          <ha-switch
+            .checked=${ucThemeService.getPaintPage()}
+            @change=${(e: Event) => ucThemeService.setPaintPage((e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+          <span>
+            <strong>${this._t('paint_page', 'Let themes paint the dashboard background')}</strong>
+            <small
+              >${this._t(
+                'paint_page_desc',
+                'Themes such as Neumorphic and Wood set the view behind their cards so shadows and materials read correctly. A background set on the view in the dashboard config still wins.'
+              )}</small
+            >
+          </span>
+        </label>
       </div>
 
       ${this._renderLibrary(globalId)}
@@ -1003,6 +1018,30 @@ export class HubThemesTab extends LitElement {
         gap: 8px;
         flex-wrap: wrap;
         justify-content: flex-end;
+      }
+      .paint-page {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+        cursor: pointer;
+      }
+      .paint-page span {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .paint-page strong {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .paint-page small {
+        font-size: 12px;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
       }
       .btn {
         display: inline-flex;

@@ -19,6 +19,13 @@ describe('scanThemeForRisks', () => {
     expect(findings.remoteHosts).toEqual([]);
   });
 
+  it('reports a theme that paints the dashboard background', () => {
+    const findings = scanThemeForRisks(base({ tokens: { surface: 'neumorphic', radius: 22, page_background: '#e4e8ef' } }));
+    expect(findings.hasAny).toBe(true);
+    expect(findings.pageBackground).toBe('#e4e8ef');
+    expect(describeThemeRisks(findings).join('\n')).toMatch(/dashboard background/);
+  });
+
   it('counts custom CSS rules and lines', () => {
     const css = `.card-container { padding: 4px; }\n.button-module { border: 0; }`;
     const findings = scanThemeForRisks(base({ css }));

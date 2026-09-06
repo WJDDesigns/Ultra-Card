@@ -199,6 +199,31 @@ describe('built-ins', () => {
     expect(vars['--uc-shadow']).toContain('inset 0 1px 0');
     expect(LIQUID_GLASS_THEME.css).toContain('backdrop-filter');
   });
+
+  it('material themes paint the page in their own colour; adaptive ones leave it to HA', () => {
+    const paints = new Map(BUILTIN_THEMES.map(t => [t.id, t.tokens.page_background]));
+    expect(paints.get('neumorphic-light')).toBe('#e4e8ef');
+    expect(paints.get('neumorphic-dark')).toBe('#2a2e35');
+    for (const id of ['ha-native', 'glass', 'bold', 'monochrome', 'material']) {
+      expect(paints.get(id), id).toBeUndefined();
+    }
+  });
+});
+
+describe('page painting switch', () => {
+  it('is on by default, persists when turned off, and gates pageBackgroundFor', () => {
+    const neu = BUILTIN_THEMES.find(t => t.id === 'neumorphic-dark')!;
+    expect(ucThemeService.getPaintPage()).toBe(true);
+    expect(ucThemeService.pageBackgroundFor(neu)).toBe('#2a2e35');
+    expect(ucThemeService.pageBackgroundFor(null)).toBeUndefined();
+
+    ucThemeService.setPaintPage(false);
+    expect(localStorage.getItem('ultra-card-theme-paint-page')).toBe('0');
+    expect(ucThemeService.pageBackgroundFor(neu)).toBeUndefined();
+
+    ucThemeService.setPaintPage(true);
+    expect(localStorage.getItem('ultra-card-theme-paint-page')).toBeNull();
+  });
 });
 
 describe('host vars', () => {

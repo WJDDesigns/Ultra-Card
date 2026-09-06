@@ -5409,7 +5409,15 @@
       "ha_import_nothing": "\"{name}\" sets no card variables; starting from defaults",
       "editor_grayscale": "Desaturate whole card (0 = colour, 1 = monochrome)",
       "editor_color_filter": "Colour filter (CSS filter chain, overrides desaturate)",
-      "editor_palette_on_primary": "Text on primary"
+      "editor_palette_on_primary": "Text on primary",
+      "paint_page": "Let themes paint the dashboard background",
+      "paint_page_desc": "Themes such as Neumorphic and Wood set the view behind their cards so shadows and materials read correctly. A background set on the view in the dashboard config still wins.",
+      "editor_layers": "Layers",
+      "editor_layers_hint": "The page behind the card and the panes modules draw inside it (rows, tiles, chips, tracks). Leave empty to derive panes from the surface and leave the page to Home Assistant.",
+      "editor_page_background": "Page background (view behind the card)",
+      "editor_pane_background": "Pane background",
+      "editor_pane_border": "Pane border",
+      "editor_pane_shadow": "Pane shadow"
     },
     "submit_theme": {
       "create_title": "Share your theme",

@@ -73,6 +73,15 @@ export interface UcThemeTokens {
   pane_background?: string | undefined;
   pane_border?: string | undefined;
   pane_shadow?: string | undefined;
+  /**
+   * The Lovelace view behind the card. Materials that only read against a
+   * matching page (neumorphism, wood, metal) set this; it is written as
+   * `--lovelace-background` on the view root while a themed card is on
+   * screen and removed when the last one leaves. A view `background:` in
+   * the dashboard config still wins, and the Hub has a switch to turn page
+   * painting off. A colour or gradient list.
+   */
+  page_background?: string | undefined;
 }
 
 /** Card chrome keys a theme may set. Same shape as `UltraCardConfig.card_*`. */

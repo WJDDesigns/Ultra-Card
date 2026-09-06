@@ -50,8 +50,12 @@ export class UcThemeSwatch extends LitElement {
     };
     if (font) cardStyle.fontFamily = font;
 
+    // The stage shows the page the theme asks for, so materials that depend
+    // on a matching page (neumorphism, wood) preview the way they render.
+    const stageStyle = theme?.tokens.page_background ? { background: theme.tokens.page_background } : {};
+
     return html`
-      <div class="swatch ${this.large ? 'large' : ''}">
+      <div class="swatch ${this.large ? 'large' : ''}" style=${styleMap(stageStyle)}>
         <div class="mini-card" style=${styleMap(cardStyle)}>
           <div class="mini-title">${this.large ? theme?.name ?? 'HA Native' : ''}</div>
           <div class="mini-row">
