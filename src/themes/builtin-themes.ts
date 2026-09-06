@@ -876,6 +876,109 @@ export const VAPOR_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+// Gummy: every card is a different flavour. The hue comes from --uc-card-hue,
+// which the card sets per instance; the ink is one dark plum that clears AA
+// on every hue at this lightness (worst case 5.6:1 on blue).
+const GUMMY_H = 'var(--uc-card-hue, 340)';
+const GUMMY_INK = '#2a1838';
+const GUMMY_INK_SOFT = '#35243f'; // 4.9:1 worst case
+const GUMMY_PRIMARY = '#3a2350'; // liquorice: white on it 13.7:1
+const gummy = (s: number, l: number, a?: number) =>
+  a === undefined ? `hsl(${GUMMY_H} ${s}% ${l}%)` : `hsl(${GUMMY_H} ${s}% ${l}% / ${a})`;
+
+/**
+ * "Gummy": gummy-bear cards. Each card gets its own candy hue (from
+ * `--uc-card-hue`, stable per card) rendered as translucent jelly: a bright
+ * body, a soft white highlight at the top, a deeper saturated glow pooling at
+ * the bottom, a sugar-glass rim and a coloured drop shadow. Dark-plum ink and
+ * liquorice controls read on every flavour. Big soft radii, rounded type.
+ */
+export const GUMMY_THEME: UcThemeDefinition = {
+  id: 'gummy',
+  name: 'Gummy',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'Gummy-bear cards: every card its own candy colour, rendered as glossy translucent jelly with a sugar rim. Dark-plum ink, liquorice controls.',
+  icon: 'mdi:candy',
+  source: 'builtin',
+  tokens: {
+    surface: 'glossy',
+    radius: 26,
+    radius_sm: 18,
+    border_width: 2,
+    border_color: 'rgba(255, 255, 255, 0.55)',
+    shadow: `inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -10px 18px ${gummy(80, 50, 0.45)}, 0 10px 24px ${gummy(70, 40, 0.35)}`,
+    density: 'comfortable',
+    accent: `hsl(calc(${GUMMY_H} + 40) 90% 52%)`,
+    font_family: "'Baloo 2', 'Fredoka', 'Nunito', 'Varela Round', 'Quicksand', system-ui, sans-serif",
+    palette: {
+      primary: GUMMY_PRIMARY,
+      on_primary: '#ffffff',
+      accent: `hsl(calc(${GUMMY_H} + 40) 90% 52%)`,
+      card_bg: gummy(90, 76),
+      text: GUMMY_INK,
+      text_secondary: GUMMY_INK_SOFT,
+      divider: 'rgba(42, 24, 56, 0.18)',
+    },
+  },
+  card: {
+    card_background: gummy(90, 76),
+    card_border_radius: 26,
+    card_border_color: 'rgba(255, 255, 255, 0.55)',
+    card_border_width: 2,
+    card_padding: 20,
+    card_shadow_enabled: true,
+    card_shadow_color: gummy(70, 40, 0.35),
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 10,
+    card_shadow_blur: 24,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'glossy' },
+    bar: { bar_style: 'glossy' },
+    slider_control: { slider_style: 'glossy' },
+    spinbox: { button_style: 'glossy', button_shape: 'circle' },
+    popup: { trigger_button_style: 'glossy' },
+    grid: { grid_style: 'style_14' },
+    navigation: { nav_style: 'uc_ios_glass' },
+    area_summary: { style_preset: 'iconic_soft', tile_border_radius: 20 },
+    auto_entity_list: { row_style: 'card' },
+    unifi: { rack_style: 'light' },
+    activity_feed: { feed_card_style: 'elevated' },
+    tabs: { style: 'switch_2' },
+  },
+  css: `
+.card-container {
+  /* Companions that must follow the per-card hue rather than a fixed palette. */
+  --secondary-background-color: ${gummy(90, 86)};
+  --primary-background-color: ${gummy(90, 82)};
+  --input-fill-color: ${gummy(90, 86)};
+  --mdc-select-fill-color: ${gummy(90, 86)};
+  --mdc-text-field-fill-color: ${gummy(90, 86)};
+  --mdc-theme-surface: ${gummy(90, 76)};
+  background-color: ${gummy(90, 76)} !important;
+  /* Highlight at the top, saturated pool at the bottom, jelly body between. */
+  background-image:
+    radial-gradient(ellipse 65% 38% at 30% 6%, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(ellipse 90% 55% at 50% 112%, ${gummy(88, 58, 0.85)} 0%, ${gummy(88, 58, 0)} 70%),
+    linear-gradient(180deg, ${gummy(95, 84)} 0%, ${gummy(90, 70)} 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.55) !important;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.7),
+    inset 0 -10px 18px ${gummy(80, 50, 0.45)},
+    inset 0 0 0 1px ${gummy(80, 60, 0.35)},
+    0 10px 24px ${gummy(70, 40, 0.35)} !important;
+}
+/* Nested surfaces are smaller gummies: lighter body, same highlight. */
+[style*="--uc-design-surface"] {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 55%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -3px 6px ${gummy(80, 50, 0.3)};
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   GLASS_THEME,
@@ -888,5 +991,6 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   METALLIC_THEME,
   BEACH_THEME,
   VAPOR_THEME,
+  GUMMY_THEME,
   GREEN_TERMINAL_THEME,
 ];

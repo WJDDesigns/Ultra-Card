@@ -52,6 +52,33 @@ describe('resolution order', () => {
     expect(ids).not.toContain('soft');
   });
 
+  it('gives each card a stable hue and gummy paints with it', () => {
+    const a = cfg('gummy');
+    (a.layout as any) = { rows: [{ id: 'row-a', columns: [] }] };
+    const b = cfg('gummy');
+    (b.layout as any) = { rows: [{ id: 'row-b', columns: [] }] };
+    const hueA = ucThemeService.cardHue(a);
+    expect(hueA).toBe(ucThemeService.cardHue(a));
+    expect(hueA).toBeGreaterThanOrEqual(0);
+    expect(hueA).toBeLessThan(360);
+    expect(hueA).not.toBe(ucThemeService.cardHue(b));
+    // Editing modules inside the card keeps its colour (seeded by the first row id).
+    const edited = { ...a, layout: { rows: [{ id: 'row-a', columns: [{ id: 'c', modules: [{ type: 'text' }] }] }] } } as any;
+    expect(ucThemeService.cardHue(edited)).toBe(hueA);
+
+    const gummy = BUILTIN_THEMES.find(t => t.id === 'gummy')!;
+    const el = document.createElement('div');
+    ucThemeService.applyThemeToHost(el, gummy, hueA);
+    expect(el.style.getPropertyValue('--uc-card-hue')).toBe(String(hueA));
+    expect(el.style.getPropertyValue('--card-background-color')).toContain('var(--uc-card-hue');
+    expect(gummy.css).toContain('--uc-card-hue');
+    // Changing only the hue re-applies.
+    expect(ucThemeService.applyThemeToHost(el, gummy, (hueA + 1) % 360)).toBe(true);
+    expect(el.style.getPropertyValue('--uc-card-hue')).toBe(String((hueA + 1) % 360));
+    ucThemeService.applyThemeToHost(el, null);
+    expect(el.style.getPropertyValue('--uc-card-hue')).toBe('');
+  });
+
   it('material follows MD3: 12dp corners, pill controls, level-1 elevation, tonal tint', () => {
     const material = BUILTIN_THEMES.find(t => t.id === 'material')!;
     expect(material.tokens.radius).toBe(12);

@@ -322,6 +322,25 @@ class UcThemeService {
 
   // ----------------------------------------------------------- host styling
 
+  /**
+   * A stable 0–359 hue for one card, exposed as `--uc-card-hue` so a theme
+   * can give every card on a dashboard its own colour (Gummy does). Seeded
+   * from the first row id when there is one, so editing modules inside the
+   * card does not reshuffle its colour; otherwise from the layout itself.
+   */
+  cardHue(config: UltraCardConfig | undefined | null): number {
+    const seed =
+      (config?.layout as { rows?: Array<{ id?: string }> } | undefined)?.rows?.[0]?.id ??
+      JSON.stringify(config?.layout ?? config ?? '');
+    // FNV-1a
+    let h = 0x811c9dc5;
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return (h >>> 0) % 360;
+  }
+
   /** Pure: the CSS custom properties a theme sets on the card host. */
   getHostVars(theme: UcThemeDefinition | null): Record<string, string> {
     if (!theme) return {};
@@ -370,8 +389,8 @@ class UcThemeService {
    * Apply (or clear) a theme's host variables and `data-uc-theme` attribute.
    * Returns true when something changed.
    */
-  applyThemeToHost(el: HTMLElement, theme: UcThemeDefinition | null): boolean {
-    const key = theme ? `${theme.id}@${theme.version}` : '';
+  applyThemeToHost(el: HTMLElement, theme: UcThemeDefinition | null, cardHue?: number): boolean {
+    const key = theme ? `${theme.id}@${theme.version}#${cardHue ?? ''}` : '';
     const prev = HOST_VARS_APPLIED.get(el);
     if (prev?.key === key) return false;
     if (prev) for (const p of prev.props) el.style.removeProperty(p);
@@ -381,6 +400,7 @@ class UcThemeService {
       return !!prev;
     }
     const vars = this.getHostVars(theme);
+    if (cardHue !== undefined) vars['--uc-card-hue'] = String(cardHue);
     for (const [p, v] of Object.entries(vars)) el.style.setProperty(p, v);
     el.setAttribute('data-uc-theme', theme.id);
     HOST_VARS_APPLIED.set(el, { key, props: Object.keys(vars) });
