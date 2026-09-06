@@ -30,7 +30,8 @@ export const GLASS_THEME: UcThemeDefinition = {
   name: 'Glass',
   version: 1,
   author: 'Ultra Card',
-  description: 'Translucent panels with a fine border and backdrop blur. Made for wallpaper backgrounds.',
+  description:
+    'Translucent panels with a fine border and backdrop blur. Made for wallpaper backgrounds.',
   icon: 'mdi:blur',
   source: 'builtin',
   tokens: {
@@ -171,26 +172,61 @@ export const MONOCHROME_THEME: UcThemeDefinition = {
 
 // Material Design 3 elevation level 1 (elevated card): key + ambient shadow.
 const MD3_ELEVATION_1 = '0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)';
-// Surface tint at level 1 is the primary colour at 5% over the surface.
-const MD3_SURFACE_TINT = 'rgba(var(--rgb-primary-color, 103, 80, 164), 0.05)';
-const MD3_SURFACE_TINT_HIGH = 'rgba(var(--rgb-primary-color, 103, 80, 164), 0.11)';
+// Material 3 baseline scheme (light), as on m3.material.io.
+const M3_PRIMARY = '#6750a4'; // white on it 6.4:1
+const M3_ON_PRIMARY = '#ffffff';
+const M3_PRIMARY_CONTAINER = '#eaddff';
+const M3_SECONDARY_CONTAINER = '#e8def8';
+const M3_TERTIARY_CONTAINER = '#ffd8e4';
+const M3_SURFACE = '#fef7ff';
+const M3_SURFACE_CONTAINER_LOW = '#f7f2fa'; // elevated cards
+const M3_SURFACE_CONTAINER = '#f3edf7';
+const M3_SURFACE_CONTAINER_HIGH = '#ece6f0'; // nested panes
+const M3_ON_SURFACE = '#1d1b20'; // 15.6:1 on container-low
+const M3_ON_SURFACE_VARIANT = '#49454f'; // 8.3:1 on container-low
+const M3_OUTLINE_VARIANT = '#cac4d0';
+/** M3 key colours at tone 40: room accents that sit in the baseline scheme. */
+export const M3_ROOM_PALETTE: readonly string[] = [
+  M3_PRIMARY,
+  '#7d5260', // tertiary
+  '#0061a4', // blue
+  '#006a6a', // teal
+  '#386a20', // green
+  '#7c5800', // amber
+  '#b3261e', // error red
+  '#625b71', // secondary
+];
+// The get-started hero, loosely: expressive shapes in container tones on the
+// surface. A primary-container circle, a tertiary pill, a secondary clover,
+// and one bold primary cookie. Cards are opaque, so these live between them.
+const M3_COOKIE =
+  'M 108.5 0.0 L 107.7 6.0 L 105.3 11.9 L 101.8 17.3 L 97.5 22.3 L 93.0 26.8 L 88.7 31.0 L 85.1 35.3 L 82.4 39.7 L 80.6 44.6 L 79.6 50.0 L 78.9 56.0 L 78.2 62.3 L 77.0 68.8 L 75.0 75.0 L 71.9 80.4 L 67.6 84.8 L 62.4 88.0 L 56.4 89.8 L 49.9 90.4 L 43.4 90.1 L 37.0 89.4 L 31.0 88.7 L 25.5 88.5 L 20.4 89.2 L 15.4 90.8 L 10.5 93.4 L 5.4 96.6 L 0.0 100.0 L -5.8 103.1 L -11.9 105.3 L -18.1 106.3 L -24.1 105.8 L -29.9 103.6 L -35.0 100.1 L -39.5 95.4 L -43.4 90.1 L -46.8 84.7 L -50.0 79.6 L -53.3 75.2 L -57.0 71.5 L -61.4 68.7 L -66.5 66.5 L -72.1 64.5 L -78.2 62.3 L -84.2 59.7 L -89.8 56.4 L -94.4 52.2 L -97.8 47.1 L -99.6 41.3 L -100.1 35.0 L -99.2 28.6 L -97.5 22.3 L -95.4 16.2 L -93.4 10.5 L -92.0 5.2 L -91.5 0.0 L -92.0 -5.2 L -93.4 -10.5 L -95.4 -16.2 L -97.5 -22.3 L -99.2 -28.6 L -100.1 -35.0 L -99.6 -41.3 L -97.8 -47.1 L -94.4 -52.2 L -89.8 -56.4 L -84.2 -59.7 L -78.2 -62.3 L -72.1 -64.5 L -66.5 -66.5 L -61.4 -68.7 L -57.0 -71.5 L -53.3 -75.2 L -50.0 -79.6 L -46.8 -84.7 L -43.4 -90.1 L -39.5 -95.4 L -35.0 -100.1 L -29.9 -103.6 L -24.1 -105.8 L -18.1 -106.3 L -11.9 -105.3 L -5.8 -103.1 L -0.0 -100.0 L 5.4 -96.6 L 10.5 -93.4 L 15.4 -90.8 L 20.4 -89.2 L 25.5 -88.5 L 31.0 -88.7 L 37.0 -89.4 L 43.4 -90.1 L 49.9 -90.4 L 56.4 -89.8 L 62.4 -88.0 L 67.6 -84.8 L 71.9 -80.4 L 75.0 -75.0 L 77.0 -68.8 L 78.2 -62.3 L 78.9 -56.0 L 79.6 -50.0 L 80.6 -44.6 L 82.4 -39.7 L 85.1 -35.3 L 88.7 -31.0 L 93.0 -26.8 L 97.5 -22.3 L 101.8 -17.3 L 105.3 -11.9 L 107.7 -6.0 Z';
+const M3_SHAPES = svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice">
+  <circle cx="840" cy="130" r="250" fill="${M3_PRIMARY_CONTAINER}"/>
+  <rect x="-80" y="720" width="540" height="210" rx="105" fill="${M3_TERTIARY_CONTAINER}" transform="rotate(-18 190 825)"/>
+  <g fill="${M3_SECONDARY_CONTAINER}" transform="translate(170 400)">
+    <circle cx="-58" cy="-58" r="88"/><circle cx="58" cy="-58" r="88"/><circle cx="-58" cy="58" r="88"/><circle cx="58" cy="58" r="88"/>
+  </g>
+  <path d="${M3_COOKIE}" fill="${M3_PRIMARY}" transform="translate(760 790) scale(1.15)"/>
+  <circle cx="560" cy="560" r="60" fill="${M3_TERTIARY_CONTAINER}"/>
+</svg>`);
 
 /**
- * "Material": Material Design 3 as specified, not a vibe. The card is an MD3
- * elevated card: the HA surface colour with a 5% primary surface tint (tonal
- * elevation level 1) and the level-1 key + ambient shadow, no outline, 12dp
- * medium corner. Controls are full pills (40dp / radius 20), icon buttons are
- * circles, dividers use the outline-variant, type is Roboto with the MD3
- * body tracking. Because everything is expressed in HA variables it follows
- * the active HA theme's colour scheme in both light and dark.
+ * Material Design 3 as on m3.material.io: the baseline light scheme pinned
+ * (lavender-white surfaces, #6750A4 primary), elevated cards on
+ * surface-container-low with a level-1 shadow and 12dp corners, pill
+ * controls and circular icon buttons, Google Sans / Roboto, no outlines
+ * (content is grouped by tonal surfaces). The page is the M3 surface with
+ * the Expressive shapes from the site's hero in container tones.
  */
 export const MATERIAL_THEME: UcThemeDefinition = {
   id: 'material',
   name: 'Material',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'Material Design 3: elevated cards with a tonal surface tint and level-1 shadow, 12dp corners, pill controls, circular icon buttons, Roboto.',
+    'Material Design 3 baseline: lavender-white tonal surfaces, the M3 purple, elevated 12dp cards, pill controls, Google Sans, and expressive shapes on the page.',
   icon: 'mdi:material-design',
   source: 'builtin',
   tokens: {
@@ -198,16 +234,29 @@ export const MATERIAL_THEME: UcThemeDefinition = {
     radius: 12,
     radius_sm: 20,
     border_width: 0,
+    border_color: 'transparent',
     shadow: MD3_ELEVATION_1,
+    page_background: `${M3_SHAPES} center / cover no-repeat fixed, ${M3_SURFACE}`,
     // MD3 groups content with tonal surfaces, not outlines.
+    pane_background: M3_SURFACE_CONTAINER_HIGH,
     pane_border: 'none',
     pane_shadow: 'none',
     density: 'regular',
-    font_family: 'Roboto, "Roboto Flex", "Google Sans", system-ui, sans-serif',
+    font_family: '"Google Sans Text", "Google Sans", Roboto, "Roboto Flex", system-ui, sans-serif',
+    palette: {
+      primary: M3_PRIMARY,
+      on_primary: M3_ON_PRIMARY,
+      accent: M3_PRIMARY,
+      card_bg: M3_SURFACE_CONTAINER_LOW,
+      text: M3_ON_SURFACE,
+      text_secondary: M3_ON_SURFACE_VARIANT,
+      divider: M3_OUTLINE_VARIANT,
+    },
   },
   card: {
-    card_background: HA_CARD_BG,
+    card_background: M3_SURFACE_CONTAINER_LOW,
     card_border_radius: 12,
+    card_border_color: 'transparent',
     card_border_width: 0,
     card_padding: 16,
     card_shadow_enabled: true,
@@ -233,15 +282,25 @@ export const MATERIAL_THEME: UcThemeDefinition = {
   },
   css: `
 .card-container {
-  /* Tonal elevation: surface colour under a 5% primary tint. */
-  background-image: linear-gradient(${MD3_SURFACE_TINT}, ${MD3_SURFACE_TINT}) !important;
+  --secondary-background-color: ${M3_SURFACE_CONTAINER_HIGH};
+  --primary-background-color: ${M3_SURFACE_CONTAINER};
+  --input-fill-color: ${M3_SURFACE_CONTAINER_HIGH};
+  --mdc-select-fill-color: ${M3_SURFACE_CONTAINER_HIGH};
+  --mdc-text-field-fill-color: ${M3_SURFACE_CONTAINER_HIGH};
+  --mdc-theme-surface: ${M3_SURFACE_CONTAINER_LOW};
+  background-color: ${M3_SURFACE_CONTAINER_LOW} !important;
+  background-image: none !important;
+  border: none !important;
   box-shadow: ${MD3_ELEVATION_1} !important;
   /* MD3 body-medium tracking. */
   letter-spacing: 0.25px;
 }
-/* Nested surfaces read as surface-container-high: the tint at level 3 (11%). */
+/* Nested surfaces read as surface-container-high. */
 [style*="--uc-design-surface"] {
-  background-image: linear-gradient(${MD3_SURFACE_TINT_HIGH}, ${MD3_SURFACE_TINT_HIGH});
+  background-color: ${M3_SURFACE_CONTAINER_HIGH};
+  background-image: none;
+  border: none;
+  box-shadow: none;
 }
 `.trim(),
 };
@@ -275,7 +334,8 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
     page_background: '#020503',
     accent: PHOSPHOR,
     density: 'compact',
-    font_family: "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, Consolas, 'Courier New', monospace",
+    font_family:
+      "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, Consolas, 'Courier New', monospace",
     palette: {
       primary: PHOSPHOR,
       accent: PHOSPHOR,
@@ -308,7 +368,11 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'outline' },
     grid: { grid_style: 'style_8' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'compact_controls', accent_color: PHOSPHOR, tile_border_radius: 0 },
+    area_summary: {
+      style_preset: 'compact_controls',
+      accent_color: PHOSPHOR,
+      tile_border_radius: 0,
+    },
     auto_entity_list: { row_style: 'slim' },
     unifi: { rack_style: 'blueprint' },
     activity_feed: { feed_card_style: 'outlined' },
@@ -384,9 +448,9 @@ const LG_RIM =
   'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.4) 84%, rgba(255, 255, 255, 0.85) 100%)';
 const LG_RIM_MASK = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
 const LG_SHADOW = `0 14px 36px rgba(${LG_SHADOW_TINT}, 0.22), 0 2px 6px rgba(${LG_SHADOW_TINT}, 0.12)`;
-const LG_INNER = 'inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.14), inset 0 0 18px rgba(255, 255, 255, 0.05)';
-const LG_PANE_SHADOW =
-  `inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(${LG_SHADOW_TINT}, 0.12)`;
+const LG_INNER =
+  'inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.14), inset 0 0 18px rgba(255, 255, 255, 0.05)';
+const LG_PANE_SHADOW = `inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(${LG_SHADOW_TINT}, 0.12)`;
 
 /**
  * Refraction as a backdrop filter (after kube.io, "Liquid Glass in the
@@ -605,9 +669,23 @@ const HILLARY_SHADOW = 'rgba(30, 47, 75, 0.14)'; // navy-tinted shadow
 // cluster reads as one bloom, with a darker shade toward the shadow side.
 type HydrangeaShades = { light: string; mid: string; deep: string; eye: string };
 const HYDRANGEA_FLORETS: ReadonlyArray<readonly [number, number, number, 0 | 1 | 2]> = [
-  [60, 34, 9, 0], [44, 40, 9, 0], [76, 40, 9, 1], [30, 52, 9, 1], [58, 50, 10, 0], [88, 54, 9, 1],
-  [40, 64, 10, 1], [70, 64, 10, 0], [26, 74, 8, 2], [52, 76, 9, 1], [82, 76, 9, 2], [38, 86, 8, 2],
-  [64, 88, 9, 2], [92, 66, 7, 2], [48, 28, 6, 0], [74, 28, 6, 0], [20, 62, 6, 2],
+  [60, 34, 9, 0],
+  [44, 40, 9, 0],
+  [76, 40, 9, 1],
+  [30, 52, 9, 1],
+  [58, 50, 10, 0],
+  [88, 54, 9, 1],
+  [40, 64, 10, 1],
+  [70, 64, 10, 0],
+  [26, 74, 8, 2],
+  [52, 76, 9, 1],
+  [82, 76, 9, 2],
+  [38, 86, 8, 2],
+  [64, 88, 9, 2],
+  [92, 66, 7, 2],
+  [48, 28, 6, 0],
+  [74, 28, 6, 0],
+  [20, 62, 6, 2],
 ];
 function hydrangeaSvg(c: HydrangeaShades): string {
   const shade = [c.light, c.mid, c.deep];
@@ -627,8 +705,18 @@ function hydrangeaSvg(c: HydrangeaShades): string {
   ${florets}
 </svg>`);
 }
-const HILLARY_HYDRANGEA_BLUE = hydrangeaSvg({ light: '#a7bad6', mid: '#8fa5c4', deep: '#7489a8', eye: '#e4ebf5' });
-const HILLARY_HYDRANGEA_BLUSH = hydrangeaSvg({ light: '#e6c9cc', mid: '#d9b3b8', deep: '#c497a0', eye: '#f7ecec' });
+const HILLARY_HYDRANGEA_BLUE = hydrangeaSvg({
+  light: '#a7bad6',
+  mid: '#8fa5c4',
+  deep: '#7489a8',
+  eye: '#e4ebf5',
+});
+const HILLARY_HYDRANGEA_BLUSH = hydrangeaSvg({
+  light: '#e6c9cc',
+  mid: '#d9b3b8',
+  deep: '#c497a0',
+  eye: '#f7ecec',
+});
 
 /**
  * "Hillary": a Nancy Meyers kitchen in Ralph Lauren tailoring. Linen
@@ -693,7 +781,11 @@ export const HILLARY_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'outline' },
     grid: { grid_style: 'style_20' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'iconic_soft', accent_color: HILLARY_GOLD, tile_border_radius: 12 },
+    area_summary: {
+      style_preset: 'iconic_soft',
+      accent_color: HILLARY_GOLD,
+      tile_border_radius: 12,
+    },
     auto_entity_list: { row_style: 'card' },
     unifi: { rack_style: 'light' },
     activity_feed: { feed_card_style: 'elevated' },
@@ -794,7 +886,11 @@ export const MOOSE_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'flat' },
     grid: { grid_style: 'style_20' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'iconic_soft', accent_color: MOOSE_VELVET, tile_border_radius: 14 },
+    area_summary: {
+      style_preset: 'iconic_soft',
+      accent_color: MOOSE_VELVET,
+      tile_border_radius: 14,
+    },
     auto_entity_list: { row_style: 'card' },
     unifi: { rack_style: 'dark' },
     activity_feed: { feed_card_style: 'elevated' },
@@ -857,10 +953,12 @@ export const METALLIC_THEME: UcThemeDefinition = {
     page_background: 'radial-gradient(ellipse at 50% 0%, #3a4047 0%, #191c20 65%, #111316 100%)',
     pane_background: 'linear-gradient(180deg, #14171a, #1c2024)',
     pane_border: 'none',
-    pane_shadow: 'inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08)',
+    pane_shadow:
+      'inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08)',
     density: 'regular',
     accent: METAL_STEEL_BLUE,
-    font_family: "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
+    font_family:
+      "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
     palette: {
       primary: METAL_CHROME,
       on_primary: METAL_ON_CHROME,
@@ -892,7 +990,11 @@ export const METALLIC_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'metallic' },
     grid: { grid_style: 'style_12' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'compact_controls', accent_color: METAL_STEEL_BLUE, tile_border_radius: 14 },
+    area_summary: {
+      style_preset: 'compact_controls',
+      accent_color: METAL_STEEL_BLUE,
+      tile_border_radius: 14,
+    },
     auto_entity_list: { row_style: 'detailed' },
     unifi: { rack_style: 'dark' },
     activity_feed: { feed_card_style: 'outlined' },
@@ -1041,7 +1143,8 @@ export const BEACH_THEME: UcThemeDefinition = {
     pane_shadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
     density: 'comfortable',
     accent: BEACH_CORAL,
-    font_family: "'Nunito', 'Quicksand', 'Varela Round', 'Avenir Next Rounded', system-ui, sans-serif",
+    font_family:
+      "'Nunito', 'Quicksand', 'Varela Round', 'Avenir Next Rounded', system-ui, sans-serif",
     palette: {
       primary: BEACH_OCEAN,
       accent: BEACH_CORAL,
@@ -1072,7 +1175,11 @@ export const BEACH_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'flat' },
     grid: { grid_style: 'style_14' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'iconic_soft', accent_color: BEACH_CORAL, tile_border_radius: 16 },
+    area_summary: {
+      style_preset: 'iconic_soft',
+      accent_color: BEACH_CORAL,
+      tile_border_radius: 16,
+    },
     auto_entity_list: { row_style: 'card' },
     unifi: { rack_style: 'light' },
     activity_feed: { feed_card_style: 'elevated' },
@@ -1188,7 +1295,8 @@ export const VAPOR_THEME: UcThemeDefinition = {
     pane_shadow: '0 0 10px rgba(255, 79, 216, 0.15), inset 0 0 12px rgba(79, 240, 255, 0.06)',
     density: 'regular',
     accent: VAPOR_CYAN,
-    font_family: "'Orbitron', 'Exo 2', 'Michroma', 'Audiowide', 'Trebuchet MS', system-ui, sans-serif",
+    font_family:
+      "'Orbitron', 'Exo 2', 'Michroma', 'Audiowide', 'Trebuchet MS', system-ui, sans-serif",
     palette: {
       primary: VAPOR_PINK,
       accent: VAPOR_CYAN,
@@ -1313,7 +1421,8 @@ export const GUMMY_THEME: UcThemeDefinition = {
     pane_shadow: `inset 0 -1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 2px ${gummy(90, 66, 0.3)}, inset 0 0 12px ${gummy(95, 55, 0.45)}, inset 0 -6px 10px ${gummy(95, 50, 0.4)}, 0 3px 8px ${gummy(80, 40, 0.25)}`,
     density: 'comfortable',
     accent: `hsl(calc(${GUMMY_H} + 40) 90% 52%)`,
-    font_family: "'Baloo 2', 'Fredoka', 'Nunito', 'Varela Round', 'Quicksand', system-ui, sans-serif",
+    font_family:
+      "'Baloo 2', 'Fredoka', 'Nunito', 'Varela Round', 'Quicksand', system-ui, sans-serif",
     palette: {
       primary: GUMMY_PRIMARY,
       on_primary: '#ffffff',
@@ -1471,11 +1580,13 @@ export const WOOD_THEME: UcThemeDefinition = {
     radius_sm: 10,
     border_width: 1,
     border_color: WOOD_EDGE,
-    shadow: 'inset 0 1px 0 rgba(255, 200, 140, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 10px 24px rgba(20, 8, 2, 0.55)',
+    shadow:
+      'inset 0 1px 0 rgba(255, 200, 140, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 10px 24px rgba(20, 8, 2, 0.55)',
     page_background: '#1f120a',
     pane_background: 'linear-gradient(180deg, #24120a 0%, #3b2010 100%)',
     pane_border: `1px solid ${WOOD_EDGE}`,
-    pane_shadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.75), inset 0 -1px 0 rgba(255, 200, 140, 0.12), 0 1px 0 rgba(255, 200, 140, 0.16)',
+    pane_shadow:
+      'inset 0 2px 6px rgba(0, 0, 0, 0.75), inset 0 -1px 0 rgba(255, 200, 140, 0.12), 0 1px 0 rgba(255, 200, 140, 0.16)',
     density: 'regular',
     accent: WOOD_AMBER,
     font_family: "'Lora', 'Merriweather', 'Source Serif 4', Georgia, 'Times New Roman', serif",
@@ -1582,7 +1693,13 @@ const NEU_DARK: NeuPalette = {
   accent: '#8b9cff',
 };
 
-function neumorphicTheme(id: string, name: string, icon: string, mode: 'light' | 'dark', c: NeuPalette): UcThemeDefinition {
+function neumorphicTheme(
+  id: string,
+  name: string,
+  icon: string,
+  mode: 'light' | 'dark',
+  c: NeuPalette
+): UcThemeDefinition {
   // Neumorphism is one material: the theme paints the page in the card
   // colour (page_background) so the card's shadows fall on the same surface
   // they are cut from. A faint 1px rim keeps the edge legible if someone
@@ -1688,8 +1805,20 @@ function neumorphicTheme(id: string, name: string, icon: string, mode: 'light' |
   };
 }
 
-export const NEUMORPHIC_LIGHT_THEME = neumorphicTheme('neumorphic-light', 'Neumorphic Light', 'mdi:white-balance-sunny', 'light', NEU_LIGHT);
-export const NEUMORPHIC_DARK_THEME = neumorphicTheme('neumorphic-dark', 'Neumorphic Dark', 'mdi:weather-night', 'dark', NEU_DARK);
+export const NEUMORPHIC_LIGHT_THEME = neumorphicTheme(
+  'neumorphic-light',
+  'Neumorphic Light',
+  'mdi:white-balance-sunny',
+  'light',
+  NEU_LIGHT
+);
+export const NEUMORPHIC_DARK_THEME = neumorphicTheme(
+  'neumorphic-dark',
+  'Neumorphic Dark',
+  'mdi:weather-night',
+  'dark',
+  NEU_DARK
+);
 
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,

@@ -69,11 +69,11 @@ describe('resolution order', () => {
       const d = Math.abs(hues[i] - hues[i - 1]);
       expect(Math.min(d, 360 - d)).toBeGreaterThan(60);
     }
-    for (const h of hues) expect(h).toBeGreaterThanOrEqual(0), expect(h).toBeLessThan(360);
+    for (const h of hues) (expect(h).toBeGreaterThanOrEqual(0), expect(h).toBeLessThan(360));
     // Seeds are in [0, 1), deterministic per slot/salt, and differ between slots.
     const s0 = seedForSlot(0, 1234);
     expect(s0).toEqual(seedForSlot(0, 1234));
-    for (const v of s0.seeds) expect(v).toBeGreaterThanOrEqual(0), expect(v).toBeLessThan(1);
+    for (const v of s0.seeds) (expect(v).toBeGreaterThanOrEqual(0), expect(v).toBeLessThan(1));
     expect(s0.seeds).not.toEqual(seedForSlot(1, 1234).seeds);
     // A different salt (page load) deals a different hand.
     expect(seedForSlot(0, 1).hue).not.toBe(seedForSlot(0, 181).hue);
@@ -126,7 +126,9 @@ describe('resolution order', () => {
     const neu = BUILTIN_THEMES.find(t => t.id === 'neumorphic-dark')!;
     expect(ucThemeService.getHostVars(neu)['--uc-pane-shadow']).toContain('inset');
     expect(paneVars({ surface: 'outline', radius: 8 } as any)['--uc-pane-bg']).toBe('transparent');
-    expect(paneVars({ surface: 'flat', radius: 8, pane_background: '#abc' } as any)['--uc-pane-bg']).toBe('#abc');
+    expect(
+      paneVars({ surface: 'flat', radius: 8, pane_background: '#abc' } as any)['--uc-pane-bg']
+    ).toBe('#abc');
     // HA Native resolves to no theme, so nothing is set and module fallbacks apply untouched.
     expect(ucThemeService.resolveTheme(cfg(UC_THEME_HA_NATIVE))).toBeNull();
     expect(ucThemeService.getHostVars(null)).toEqual({});
@@ -155,26 +157,40 @@ describe('resolution order', () => {
     }
   });
 
-  it('material follows MD3: 12dp corners, pill controls, level-1 elevation, tonal tint', () => {
+  it('material follows MD3: baseline scheme, 12dp corners, pill controls, level-1 elevation', () => {
     const material = BUILTIN_THEMES.find(t => t.id === 'material')!;
     expect(material.tokens.radius).toBe(12);
     expect(material.tokens.radius_sm).toBe(20);
     expect(material.tokens.border_width).toBe(0);
-    expect(material.tokens.shadow).toBe('0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)');
+    expect(material.tokens.shadow).toBe(
+      '0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)'
+    );
     expect(material.modules?.spinbox?.button_shape).toBe('circle');
-    expect(material.css).toContain('rgb-primary-color');
-    expect(material.tokens.font_family).toMatch(/^Roboto/);
+    expect(material.tokens.palette?.primary).toBe('#6750a4');
+    expect(material.tokens.palette?.card_bg).toBe('#f7f2fa');
+    expect(material.tokens.pane_background).toBe('#ece6f0');
+    expect(material.tokens.pane_border).toBe('none');
+    expect(material.tokens.page_background).toMatch(/data:image\/svg\+xml.*#fef7ff$/);
+    expect(material.tokens.font_family).toMatch(/Google Sans/);
   });
 
   it('module style: explicit wins, inherit uses theme, then fallback', () => {
     const glass = cfg('glass');
-    expect(ucThemeService.resolveModuleStyle(glass, 'button', 'style', 'outline', 'flat')).toBe('outline');
-    expect(ucThemeService.resolveModuleStyle(glass, 'button', 'style', undefined, 'flat')).toBe('glass');
-    expect(ucThemeService.resolveModuleStyle(glass, 'button', 'style', 'theme', 'flat')).toBe('glass');
+    expect(ucThemeService.resolveModuleStyle(glass, 'button', 'style', 'outline', 'flat')).toBe(
+      'outline'
+    );
+    expect(ucThemeService.resolveModuleStyle(glass, 'button', 'style', undefined, 'flat')).toBe(
+      'glass'
+    );
+    expect(ucThemeService.resolveModuleStyle(glass, 'button', 'style', 'theme', 'flat')).toBe(
+      'glass'
+    );
     // key not allow-listed for the module → fallback
     expect(ucThemeService.resolveModuleStyle(glass, 'button', 'entity', undefined, 'x')).toBe('x');
     // no theme → fallback
-    expect(ucThemeService.resolveModuleStyle(cfg(), 'button', 'style', undefined, 'flat')).toBe('flat');
+    expect(ucThemeService.resolveModuleStyle(cfg(), 'button', 'style', undefined, 'flat')).toBe(
+      'flat'
+    );
   });
 });
 
@@ -200,16 +216,22 @@ describe('built-ins', () => {
     expect(vars['--primary-text-color']).toBe('#10224d');
     expect(vars['--card-background-color']).toBe('rgba(255, 255, 255, 0.08)');
     // Inline lens artwork sized to cover, over the sky gradient.
-    expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/^url\("data:image\/svg\+xml,[^"]+"\) center \/ 100% 100% no-repeat fixed, /);
+    expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(
+      /^url\("data:image\/svg\+xml,[^"]+"\) center \/ 100% 100% no-repeat fixed, /
+    );
     expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/linear-gradient\(180deg/);
     expect(LIQUID_GLASS_THEME.css).toContain('backdrop-filter');
-    expect(LIQUID_GLASS_THEME.css).toMatch(/\.card-container::before[\s\S]*mask-composite: exclude/);
+    expect(LIQUID_GLASS_THEME.css).toMatch(
+      /\.card-container::before[\s\S]*mask-composite: exclude/
+    );
     // Chromium-only refraction: an inline SVG displacement filter as backdrop-filter,
     // gated so other engines keep the plain blur.
     expect(LIQUID_GLASS_THEME.css).toMatch(
       /@supports \(-webkit-app-region: no-drag\)[\s\S]*backdrop-filter: saturate\(150%\) url\("data:image\/svg\+xml,[^"]*#card"\)/
     );
-    const decoded = decodeURIComponent(/url\("data:image\/svg\+xml,([^"#]*)#card"\)/.exec(LIQUID_GLASS_THEME.css!)![1]);
+    const decoded = decodeURIComponent(
+      /url\("data:image\/svg\+xml,([^"#]*)#card"\)/.exec(LIQUID_GLASS_THEME.css!)![1]
+    );
     expect(decoded).toContain('<feDisplacementMap');
     expect(decoded).toMatch(/<filter id="card" x="0" y="0" width="1" height="1"/);
     expect(decoded).toMatch(/<filter id="pane"/);
@@ -219,7 +241,8 @@ describe('built-ins', () => {
     const paints = new Map(BUILTIN_THEMES.map(t => [t.id, t.tokens.page_background]));
     expect(paints.get('neumorphic-light')).toBe('#e4e8ef');
     expect(paints.get('neumorphic-dark')).toBe('#2a2e35');
-    for (const id of ['ha-native', 'glass', 'bold', 'monochrome', 'material']) {
+    expect(paints.get('material')).toContain('#fef7ff');
+    for (const id of ['ha-native', 'glass', 'bold', 'monochrome']) {
       expect(paints.get(id), id).toBeUndefined();
     }
   });
@@ -227,24 +250,36 @@ describe('built-ins', () => {
 
 describe('background tokens with artwork', () => {
   const mk = (page_background: string) =>
-    sanitizeThemeDefinition({ id: 'a', name: 'A', tokens: { surface: 'flat', radius: 8, page_background } });
+    sanitizeThemeDefinition({
+      id: 'a',
+      name: 'A',
+      tokens: { surface: 'flat', radius: 8, page_background },
+    });
 
   it('accepts inline image data URIs in page/pane backgrounds and keeps them intact', () => {
-    const art = svgDataUrl('<svg xmlns="http://www.w3.org/2000/svg"><circle r="4" fill="url(#g)"/></svg>');
+    const art = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><circle r="4" fill="url(#g)"/></svg>'
+    );
     const value = `${art} center / cover no-repeat, #e4e8ef`;
     expect(mk(value).theme?.tokens.page_background).toBe(value);
   });
 
   it('rejects external url() and scripted artwork in backgrounds', () => {
-    expect(mk('url(https://evil.example/x.png), #fff').theme?.tokens.page_background).toBeUndefined();
+    expect(
+      mk('url(https://evil.example/x.png), #fff').theme?.tokens.page_background
+    ).toBeUndefined();
     const bad = svgDataUrl('<svg xmlns="http://www.w3.org/2000/svg"><script>1</script></svg>');
     expect(mk(`${bad}, #fff`).theme?.tokens.page_background).toBeUndefined();
-    const ext = svgDataUrl('<svg xmlns="http://www.w3.org/2000/svg"><image href="https://evil.example/a.png"/></svg>');
+    const ext = svgDataUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://evil.example/a.png"/></svg>'
+    );
     expect(mk(`${ext}, #fff`).theme?.tokens.page_background).toBeUndefined();
   });
 
   it('drops an oversize background rather than truncating it', () => {
-    const huge = svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg">${'<circle r="1"/>'.repeat(1200)}</svg>`);
+    const huge = svgDataUrl(
+      `<svg xmlns="http://www.w3.org/2000/svg">${'<circle r="1"/>'.repeat(1200)}</svg>`
+    );
     expect(mk(`${huge}, #fff`).theme?.tokens.page_background).toBeUndefined();
   });
 });
@@ -308,9 +343,9 @@ describe('host vars', () => {
     const mono = ucThemeService.getHostVars(MONOCHROME_THEME);
     expect(mono['--text-primary-color']).toMatch(/^var\(--card-background-color/);
     expect(mono['--secondary-background-color']).toBeUndefined();
-    // Translucent card backgrounds (Material) are not a readable surface to derive from.
-    const material = BUILTIN_THEMES.find(t => t.id === 'material')!;
-    expect(ucThemeService.getHostVars(material)['--secondary-background-color']).toBeUndefined();
+    // Translucent card backgrounds (Glass) are not a readable surface to derive from.
+    const glass = BUILTIN_THEMES.find(t => t.id === 'glass')!;
+    expect(ucThemeService.getHostVars(glass)['--secondary-background-color']).toBeUndefined();
   });
 
   it('pins readable text when only card_bg is pinned', () => {
@@ -333,7 +368,9 @@ describe('host vars', () => {
       const secondary = parseColor(p?.text_secondary);
       if (text) expect(contrastRatio(bg, text), `${theme.id} text`).toBeGreaterThanOrEqual(4.5);
       if (secondary && secondary.a >= 1) {
-        expect(contrastRatio(bg, secondary), `${theme.id} text_secondary`).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(bg, secondary), `${theme.id} text_secondary`).toBeGreaterThanOrEqual(
+          4.5
+        );
       }
       const primary = parseColor(p?.primary);
       if (primary) {
@@ -347,24 +384,46 @@ describe('host vars', () => {
     expect(ucThemeService.getHostVars(MONOCHROME_THEME)['--uc-color-filter']).toBe('grayscale(1)');
     expect(ucThemeService.getHostVars(GLASS_THEME)['--uc-color-filter']).toBeUndefined();
     // The base sheet routes the variable onto the card container and falls back to none.
-    expect(UC_THEME_BASE_CSS).toMatch(/\.card-container\s*\{\s*filter:\s*var\(--uc-color-filter,\s*none\)/);
+    expect(UC_THEME_BASE_CSS).toMatch(
+      /\.card-container\s*\{\s*filter:\s*var\(--uc-color-filter,\s*none\)/
+    );
   });
 
   it('grayscale token is clamped and dropped when zero', () => {
-    const half = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: 0.5 } }).theme!;
+    const half = sanitizeThemeDefinition({
+      id: 'g',
+      name: 'G',
+      tokens: { surface: 'flat', radius: 8, grayscale: 0.5 },
+    }).theme!;
     expect(half.tokens.grayscale).toBe(0.5);
     expect(ucThemeService.getHostVars(half)['--uc-color-filter']).toBe('grayscale(0.5)');
-    const over = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: 3 } }).theme!;
+    const over = sanitizeThemeDefinition({
+      id: 'g',
+      name: 'G',
+      tokens: { surface: 'flat', radius: 8, grayscale: 3 },
+    }).theme!;
     expect(over.tokens.grayscale).toBe(1);
-    const zero = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: 0 } }).theme!;
+    const zero = sanitizeThemeDefinition({
+      id: 'g',
+      name: 'G',
+      tokens: { surface: 'flat', radius: 8, grayscale: 0 },
+    }).theme!;
     expect(zero.tokens.grayscale).toBeUndefined();
-    const bool = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: true } }).theme!;
+    const bool = sanitizeThemeDefinition({
+      id: 'g',
+      name: 'G',
+      tokens: { surface: 'flat', radius: 8, grayscale: true },
+    }).theme!;
     expect(bool.tokens.grayscale).toBe(1);
   });
 
   it('color_filter accepts only colour functions and wins over grayscale', () => {
     const tok = (color_filter: unknown) =>
-      sanitizeThemeDefinition({ id: 'f', name: 'F', tokens: { surface: 'flat', radius: 8, grayscale: 1, color_filter } }).theme!.tokens;
+      sanitizeThemeDefinition({
+        id: 'f',
+        name: 'F',
+        tokens: { surface: 'flat', radius: 8, grayscale: 1, color_filter },
+      }).theme!.tokens;
     expect(tok('grayscale(1) sepia(1)  hue-rotate(80deg) saturate(2.5)').color_filter).toBe(
       'grayscale(1) sepia(1) hue-rotate(80deg) saturate(2.5)'
     );
@@ -375,11 +434,17 @@ describe('host vars', () => {
     expect(tok('none').color_filter).toBeUndefined();
 
     const green = tok('sepia(1) hue-rotate(80deg)');
-    expect(ucThemeService.getHostVars({ id: 'f', name: 'F', version: 1, tokens: green })['--uc-color-filter']).toBe(
-      'sepia(1) hue-rotate(80deg)'
+    expect(
+      ucThemeService.getHostVars({ id: 'f', name: 'F', version: 1, tokens: green })[
+        '--uc-color-filter'
+      ]
+    ).toBe('sepia(1) hue-rotate(80deg)');
+    expect(ucThemeService.getHostVars(GREEN_TERMINAL_THEME)['--uc-color-filter']).toContain(
+      'hue-rotate(80deg)'
     );
-    expect(ucThemeService.getHostVars(GREEN_TERMINAL_THEME)['--uc-color-filter']).toContain('hue-rotate(80deg)');
-    expect(ucThemeService.getHostVars(GREEN_TERMINAL_THEME)['--uc-font-family']).toContain('monospace');
+    expect(ucThemeService.getHostVars(GREEN_TERMINAL_THEME)['--uc-font-family']).toContain(
+      'monospace'
+    );
   });
 
   it('applies and clears on an element without leaking', () => {
@@ -408,7 +473,11 @@ describe('library', () => {
     expect(saved?.modules?.button).toEqual({ style: 'glass' });
     expect(ucThemeService.getTheme('my-theme-')).toBeDefined();
 
-    const shadow = ucThemeService.saveToLibrary({ id: 'glass', name: 'Fake glass', tokens: { surface: 'flat', radius: 1 } });
+    const shadow = ucThemeService.saveToLibrary({
+      id: 'glass',
+      name: 'Fake glass',
+      tokens: { surface: 'flat', radius: 1 },
+    });
     expect(shadow?.id).toBe('local-glass');
     expect(ucThemeService.getTheme('glass')).toBe(GLASS_THEME);
 
@@ -421,7 +490,11 @@ describe('library', () => {
   });
 
   it('clears the global default when its theme is removed', () => {
-    ucThemeService.saveToLibrary({ id: 'tmp', name: 'Tmp', tokens: { surface: 'flat', radius: 1 } });
+    ucThemeService.saveToLibrary({
+      id: 'tmp',
+      name: 'Tmp',
+      tokens: { surface: 'flat', radius: 1 },
+    });
     ucThemeService.setGlobalDefault('tmp');
     expect(ucThemeService.getGlobalDefaultId()).toBe('tmp');
     ucThemeService.removeFromLibrary('tmp');
@@ -465,25 +538,42 @@ describe('sanitizeThemeDefinition', () => {
   });
 
   it('allows inline image artwork but no other url()', () => {
-    const art = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><circle cx='5' cy='5' r='4' fill='#186a7a'/></svg>`);
+    const art = svgDataUrl(
+      `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><circle cx='5' cy='5' r='4' fill='#186a7a'/></svg>`
+    );
     expect(art.startsWith('url("data:image/svg+xml,')).toBe(true);
     expect(art.slice('url("data:image/svg+xml,'.length, -2)).not.toMatch(/[<>#'()]/);
     expect(scanThemeCss(`.card-container { background-image: ${art}; }`).ok).toBe(true);
-    expect(scanThemeCss(`.card-container { background-image: url(data:image/png;base64,iVBORw0KGgo=); }`).ok).toBe(true);
+    expect(
+      scanThemeCss(`.card-container { background-image: url(data:image/png;base64,iVBORw0KGgo=); }`)
+        .ok
+    ).toBe(true);
 
-    expect(scanThemeCss(`.card-container { background-image: url(https://evil.example/x.png); }`).ok).toBe(false);
-    expect(scanThemeCss(`.card-container { background-image: url(data:text/html,hi); }`).ok).toBe(false);
+    expect(
+      scanThemeCss(`.card-container { background-image: url(https://evil.example/x.png); }`).ok
+    ).toBe(false);
+    expect(scanThemeCss(`.card-container { background-image: url(data:text/html,hi); }`).ok).toBe(
+      false
+    );
     // Script or external references inside the SVG payload are refused even though SVG-as-image would ignore them.
-    const scripted = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>`);
+    const scripted = svgDataUrl(
+      `<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>`
+    );
     expect(scanThemeCss(`.a { background: ${scripted} }`).ok).toBe(false);
-    const external = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><image href='https://evil.example/t.png'/></svg>`);
+    const external = svgDataUrl(
+      `<svg xmlns='http://www.w3.org/2000/svg'><image href='https://evil.example/t.png'/></svg>`
+    );
     expect(scanThemeCss(`.a { background: ${external} }`).ok).toBe(false);
     const b64 = `url(data:image/svg+xml;base64,${btoa('<svg onload="x()"></svg>')})`;
     expect(scanThemeCss(`.a { background: ${b64} }`).ok).toBe(false);
     // Paint servers inside the same SVG are fine; url() to anything else inside the SVG is not.
-    const gradient = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><defs><linearGradient id='g'/></defs><rect fill='url(#g)'/></svg>`);
+    const gradient = svgDataUrl(
+      `<svg xmlns='http://www.w3.org/2000/svg'><defs><linearGradient id='g'/></defs><rect fill='url(#g)'/></svg>`
+    );
     expect(scanThemeCss(`.a { background: ${gradient} }`).ok).toBe(true);
-    const leak = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><rect fill='url(https://evil.example/p.svg#g)'/></svg>`);
+    const leak = svgDataUrl(
+      `<svg xmlns='http://www.w3.org/2000/svg'><rect fill='url(https://evil.example/p.svg#g)'/></svg>`
+    );
     expect(scanThemeCss(`.a { background: ${leak} }`).ok).toBe(false);
   });
 

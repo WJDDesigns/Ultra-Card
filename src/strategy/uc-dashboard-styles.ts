@@ -1,7 +1,13 @@
 import type { AreaSummaryStylePreset, AutoEntityListRowStyle, UltraCardConfig } from '../types';
 import type { UltraDashboardStyleId } from './types';
 import type { UcThemeDefinition } from '../themes/uc-theme-types';
-import { BOLD_THEME, GLASS_THEME, MATERIAL_THEME, MONOCHROME_THEME } from '../themes/builtin-themes';
+import {
+  BOLD_THEME,
+  GLASS_THEME,
+  M3_ROOM_PALETTE,
+  MATERIAL_THEME,
+  MONOCHROME_THEME,
+} from '../themes/builtin-themes';
 
 /**
  * A dashboard style is a built-in Ultra Card theme plus the generation-time
@@ -75,7 +81,8 @@ function fromTheme(
     icon: theme.icon ?? 'mdi:palette',
     themeId: theme.id,
     card: { ...(theme.card ?? {}) },
-    areaSummaryPreset: (m.area_summary?.style_preset as AreaSummaryStylePreset) ?? 'compact_controls',
+    areaSummaryPreset:
+      (m.area_summary?.style_preset as AreaSummaryStylePreset) ?? 'compact_controls',
     listRowStyle: (m.auto_entity_list?.row_style as AutoEntityListRowStyle) ?? 'compact',
     sliderStyle: (m.slider_control?.slider_style as UltraDashboardStyle['sliderStyle']) ?? 'flat',
     barStyle: (m.bar?.bar_style as UltraDashboardStyle['barStyle']) ?? 'flat',
@@ -88,7 +95,7 @@ export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
   fromTheme('glass', GLASS_THEME, { roomPalette: ROOM_PALETTE }),
   fromTheme('bold', BOLD_THEME, {}),
   fromTheme('monochrome', MONOCHROME_THEME, {}),
-  fromTheme('material', MATERIAL_THEME, { roomPalette: ROOM_PALETTE }),
+  fromTheme('material', MATERIAL_THEME, { roomPalette: M3_ROOM_PALETTE }),
 ];
 
 export const DEFAULT_DASHBOARD_STYLE: UltraDashboardStyleId = 'material';
