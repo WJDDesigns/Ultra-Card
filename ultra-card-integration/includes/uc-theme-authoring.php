@@ -91,7 +91,7 @@ function uc_theme_css_problems($css) {
             '/javascript:/i'                                  => 'javascript:',
             '/<\s*foreignObject/i'                            => 'foreignObject',
             '/(?:xlink:)?href\s*=\s*["\']?\s*(?:https?:|\/\/)/i' => 'external href',
-            '/url\s*\(/i'                                     => 'url()',
+            '/url\s*\(\s*["\']?\s*(?!#)/i'                    => 'external url()', // url(#id) paint servers are fine
         );
         foreach ($bad as $re => $label) {
             if (preg_match($re, $payload)) {

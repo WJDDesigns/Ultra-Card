@@ -814,6 +814,120 @@ export const BEACH_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+// Vapor: a e s t h e t i c. Midnight purple, hot pink, cyan, a striped sun and a perspective grid.
+const VAPOR_NIGHT = '#160b2b';
+const VAPOR_TEXT = '#f3e8ff'; // 15.9:1 on night
+const VAPOR_TEXT_SOFT = '#b8a3dc'; // 8.3:1 on night
+const VAPOR_PINK = '#ff4fd8'; // primary (dark text on it 5.6:1)
+const VAPOR_CYAN = '#4ff0ff'; // accent
+const VAPOR_GLOW =
+  '0 0 0 1px rgba(255, 79, 216, 0.55), 0 0 22px rgba(255, 79, 216, 0.28), 0 0 44px rgba(79, 240, 255, 0.14), 0 12px 30px rgba(0, 0, 0, 0.5)';
+const VAPOR_SUN = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>
+  <defs>
+    <linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0' stop-color='${VAPOR_PINK}'/><stop offset='.55' stop-color='#ff7ac8'/><stop offset='1' stop-color='#ffb347'/>
+    </linearGradient>
+    <clipPath id='c'>
+      <rect x='0' y='0' width='120' height='62'/><rect x='0' y='66' width='120' height='10'/><rect x='0' y='80' width='120' height='8'/>
+      <rect x='0' y='92' width='120' height='6'/><rect x='0' y='102' width='120' height='4'/><rect x='0' y='110' width='120' height='3'/>
+    </clipPath>
+  </defs>
+  <circle cx='60' cy='60' r='54' fill='url(#g)' clip-path='url(#c)' opacity='.6'/>
+</svg>`);
+const VAPOR_GRID = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 90' preserveAspectRatio='none'>
+  <defs>
+    <linearGradient id='f' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0' stop-color='${VAPOR_CYAN}' stop-opacity='0'/><stop offset='1' stop-color='${VAPOR_CYAN}' stop-opacity='.5'/>
+    </linearGradient>
+  </defs>
+  <path fill='none' stroke='url(#f)' stroke-width='1'
+    d='M-160 90 L200 -70 M-80 90 L200 -70 M0 90 L200 -70 M60 90 L200 -70 M120 90 L200 -70 M160 90 L200 -70 M200 90 L200 -70 M240 90 L200 -70 M280 90 L200 -70 M340 90 L200 -70 M400 90 L200 -70 M480 90 L200 -70 M560 90 L200 -70 M0 6 H400 M0 14 H400 M0 24 H400 M0 36 H400 M0 50 H400 M0 67 H400 M0 88 H400'/>
+</svg>`);
+
+/**
+ * "Vapor": vaporwave. A midnight-purple card with a striped sunset sun in the
+ * top-right corner, a cyan perspective grid running off the bottom edge, a
+ * faint VHS scanline and a pink neon rim. Hot-pink primary with dark text on
+ * it, cyan accent, neon-glow controls, a wide techno sans.
+ */
+export const VAPOR_THEME: UcThemeDefinition = {
+  id: 'vapor',
+  name: 'Vapor',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'Vaporwave: midnight purple, a striped sunset sun, a cyan perspective grid, VHS scanlines and a hot-pink neon rim.',
+  icon: 'mdi:weather-sunset',
+  source: 'builtin',
+  tokens: {
+    surface: 'glass',
+    radius: 14,
+    radius_sm: 10,
+    blur: 10,
+    border_width: 1,
+    border_color: 'rgba(255, 79, 216, 0.55)',
+    shadow: VAPOR_GLOW,
+    density: 'regular',
+    accent: VAPOR_CYAN,
+    font_family: "'Orbitron', 'Exo 2', 'Michroma', 'Audiowide', 'Trebuchet MS', system-ui, sans-serif",
+    palette: {
+      primary: VAPOR_PINK,
+      accent: VAPOR_CYAN,
+      card_bg: VAPOR_NIGHT,
+      text: VAPOR_TEXT,
+      text_secondary: VAPOR_TEXT_SOFT,
+      divider: 'rgba(255, 79, 216, 0.3)',
+    },
+  },
+  card: {
+    card_background: VAPOR_NIGHT,
+    card_border_radius: 14,
+    card_border_color: 'rgba(255, 79, 216, 0.55)',
+    card_border_width: 1,
+    card_padding: 18,
+    card_shadow_enabled: true,
+    card_shadow_color: 'rgba(255, 79, 216, 0.28)',
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 0,
+    card_shadow_blur: 22,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'neon-glow' },
+    bar: { bar_style: 'neon-glow' },
+    slider_control: { slider_style: 'neon-glow' },
+    spinbox: { button_style: 'neon-glow', button_shape: 'rounded' },
+    popup: { trigger_button_style: 'neon-glow' },
+    grid: { grid_style: 'style_17' },
+    navigation: { nav_style: 'uc_minimal' },
+    area_summary: { style_preset: 'graph_glow', accent_color: VAPOR_CYAN, tile_border_radius: 12 },
+    auto_entity_list: { row_style: 'slim' },
+    unifi: { rack_style: 'blueprint' },
+    activity_feed: { feed_card_style: 'flat' },
+    tabs: { style: 'modern' },
+  },
+  css: `
+.card-container {
+  background-color: ${VAPOR_NIGHT} !important;
+  /* Layers, top to bottom: grid at the foot, sun in the corner, pink haze, scanlines, night gradient. */
+  background-image:
+    ${VAPOR_GRID},
+    ${VAPOR_SUN},
+    radial-gradient(ellipse at 15% 110%, rgba(255, 79, 216, 0.28) 0%, rgba(255, 79, 216, 0) 55%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
+    linear-gradient(180deg, #1d0d3d 0%, ${VAPOR_NIGHT} 55%, #0e0821 100%) !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
+  background-size: 100% 70px, 120px 120px, auto, auto, auto !important;
+  background-position: bottom center, right -14px top -18px, 0 0, 0 0, 0 0 !important;
+  box-shadow: ${VAPOR_GLOW} !important;
+  text-shadow: 0 0 8px rgba(255, 79, 216, 0.25);
+  letter-spacing: 0.03em;
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   CLASSIC_THEME,
@@ -827,5 +941,6 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   MOOSE_THEME,
   METALLIC_THEME,
   BEACH_THEME,
+  VAPOR_THEME,
   GREEN_TERMINAL_THEME,
 ];

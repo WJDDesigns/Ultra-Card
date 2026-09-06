@@ -45,7 +45,15 @@ const CSS_FORBIDDEN = [
  */
 const INLINE_IMAGE_URL =
   /url\(\s*(["']?)data:image\/(?:svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"']*)\1\s*\)/gi;
-const SVG_PAYLOAD_FORBIDDEN = [/<\s*script/i, /\bon[a-z]+\s*=/i, /javascript:/i, /<\s*foreignObject/i, /(?:xlink:)?href\s*=\s*["']?\s*(?:https?:|\/\/)/i, /url\s*\(/i];
+const SVG_PAYLOAD_FORBIDDEN = [
+  /<\s*script/i,
+  /\bon[a-z]+\s*=/i,
+  /javascript:/i,
+  /<\s*foreignObject/i,
+  /(?:xlink:)?href\s*=\s*["']?\s*(?:https?:|\/\/)/i,
+  // url(#gradient) refers to a paint server inside the same SVG; anything else is external.
+  /url\s*\(\s*["']?\s*(?!#)/i,
+];
 
 export interface UcThemeCssScan {
   ok: boolean;

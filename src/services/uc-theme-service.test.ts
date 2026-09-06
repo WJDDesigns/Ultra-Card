@@ -296,6 +296,11 @@ describe('sanitizeThemeDefinition', () => {
     expect(scanThemeCss(`.a { background: ${external} }`).ok).toBe(false);
     const b64 = `url(data:image/svg+xml;base64,${btoa('<svg onload="x()"></svg>')})`;
     expect(scanThemeCss(`.a { background: ${b64} }`).ok).toBe(false);
+    // Paint servers inside the same SVG are fine; url() to anything else inside the SVG is not.
+    const gradient = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><defs><linearGradient id='g'/></defs><rect fill='url(#g)'/></svg>`);
+    expect(scanThemeCss(`.a { background: ${gradient} }`).ok).toBe(true);
+    const leak = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><rect fill='url(https://evil.example/p.svg#g)'/></svg>`);
+    expect(scanThemeCss(`.a { background: ${leak} }`).ok).toBe(false);
   });
 
   it('beach and metallic ship artwork that survives the sanitiser', () => {
