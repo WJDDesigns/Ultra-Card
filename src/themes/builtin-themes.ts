@@ -1176,82 +1176,108 @@ export const GUMMY_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-// Wood: a walnut plank. The grain is procedural: an SVG fractal-noise filter
-// stretched along the plank, mapped to dark and pale streaks over the base.
-const WOOD_BASE = '#6f4423'; // walnut
-const WOOD_INK = '#f7ecd9'; // cream (7.1:1 on walnut)
-const WOOD_INK_SOFT = '#ead8bd'; // sand (6:1 on walnut)
-const WOOD_DARK = '#3e2412'; // primary: dark walnut (cream on it 12:1)
-const WOOD_BRASS = '#c9a25a'; // accent: brass hardware
-const WOOD_EDGE = '#3a2210'; // routed edge
-const WOOD_GRAIN = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' width='600' height='240'>
+// Wood: a wall of varnished mahogany planks with pale maple controls.
+const WOOD_BASE = '#5a3218'; // mahogany (palette base)
+const WOOD_INK = '#f3e4c8'; // cream (8.4:1 on mahogany)
+const WOOD_INK_SOFT = '#d9bd97'; // sand (5.8:1 on mahogany)
+const WOOD_MAPLE = '#e6c08f'; // primary: pale maple controls
+const WOOD_ON_MAPLE = '#3a2210'; // 8.7:1 on maple
+const WOOD_AMBER = '#e0953f'; // accent: amber indicator (5.2:1 on mahogany)
+const WOOD_EDGE = '#2a160a'; // routed edge
+const WOOD_PLANK_W = 52;
+/**
+ * Four planks, tiling both ways. Vertical grain is fractal noise stretched
+ * along Y (high X frequency, very low Y frequency): dark figure, paler
+ * streaks and a fine pore. Each seam is a dark gap with a lit edge; two
+ * knots sit in the field so a sweep of cards shows them in different places.
+ */
+const WOOD_PLANKS = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' width='${WOOD_PLANK_W * 4}' height='600'>
   <defs>
     <filter id='d' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.003 0.11' numOctaves='4' seed='11'/>
-      <feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.08  0 0 0 0 0.03  1.6 0 0 0 -0.75'/>
+      <feTurbulence type='fractalNoise' baseFrequency='0.16 0.0035' numOctaves='4' seed='5' stitchTiles='stitch'/>
+      <feColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.05  0 0 0 0 0.01  1.7 0 0 0 -0.7'/>
     </filter>
     <filter id='l' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.004 0.07' numOctaves='3' seed='4'/>
-      <feColorMatrix values='0 0 0 0 0.85  0 0 0 0 0.62  0 0 0 0 0.38  1.3 0 0 0 -0.85'/>
+      <feTurbulence type='fractalNoise' baseFrequency='0.09 0.005' numOctaves='3' seed='13' stitchTiles='stitch'/>
+      <feColorMatrix values='0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0 0.3  1.4 0 0 0 -0.9'/>
     </filter>
-    <filter id='f' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.9 0.9' numOctaves='1' seed='2'/>
-      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.35 0 0 0 -0.1'/>
+    <filter id='p' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.9 0.9' numOctaves='1' seed='2' stitchTiles='stitch'/>
+      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.3 0 0 0 -0.08'/>
     </filter>
   </defs>
-  <rect width='600' height='240' fill='${WOOD_BASE}'/>
-  <rect width='600' height='240' filter='url(#l)'/>
-  <rect width='600' height='240' filter='url(#d)'/>
-  <rect width='600' height='240' filter='url(#f)'/>
+  <rect width='100%' height='100%' fill='${WOOD_BASE}'/>
+  <rect width='100%' height='100%' filter='url(#l)'/>
+  <rect width='100%' height='100%' filter='url(#d)'/>
+  <rect width='100%' height='100%' filter='url(#p)'/>
+  <g fill='none' stroke-width='1'>
+    <ellipse cx='78' cy='140' rx='5' ry='11' stroke='#2a160a' stroke-opacity='.7'/>
+    <ellipse cx='78' cy='140' rx='9' ry='19' stroke='#2a160a' stroke-opacity='.35'/>
+    <ellipse cx='78' cy='140' rx='2' ry='5' fill='#2a160a' fill-opacity='.6'/>
+    <ellipse cx='182' cy='420' rx='4' ry='9' stroke='#2a160a' stroke-opacity='.7'/>
+    <ellipse cx='182' cy='420' rx='8' ry='16' stroke='#2a160a' stroke-opacity='.35'/>
+    <ellipse cx='182' cy='420' rx='1.6' ry='4' fill='#2a160a' fill-opacity='.6'/>
+  </g>
+  <g>
+    <rect x='0' y='0' width='2' height='100%' fill='#1a0d05' fill-opacity='.85'/><rect x='2' y='0' width='1' height='100%' fill='#c48a55' fill-opacity='.3'/>
+    <rect x='52' y='0' width='2' height='100%' fill='#1a0d05' fill-opacity='.85'/><rect x='54' y='0' width='1' height='100%' fill='#c48a55' fill-opacity='.3'/>
+    <rect x='104' y='0' width='2' height='100%' fill='#1a0d05' fill-opacity='.85'/><rect x='106' y='0' width='1' height='100%' fill='#c48a55' fill-opacity='.3'/>
+    <rect x='156' y='0' width='2' height='100%' fill='#1a0d05' fill-opacity='.85'/><rect x='158' y='0' width='1' height='100%' fill='#c48a55' fill-opacity='.3'/>
+    <rect x='51' y='0' width='1' height='100%' fill='#1a0d05' fill-opacity='.35'/><rect x='103' y='0' width='1' height='100%' fill='#1a0d05' fill-opacity='.35'/>
+    <rect x='155' y='0' width='1' height='100%' fill='#1a0d05' fill-opacity='.35'/><rect x='207' y='0' width='1' height='100%' fill='#1a0d05' fill-opacity='.35'/>
+  </g>
 </svg>`);
 
 /**
- * "Wood": a walnut plank. The grain is real procedural grain (SVG fractal
- * noise stretched along the board: long dark figure, paler early-wood
- * streaks, a fine pore texture) over a walnut base, with a routed edge,
- * a soft top-light and a warm shadow. Cream ink, dark-walnut controls and
- * brass hardware for the accent. Controls are embossed like carved wood.
+ * "Wood": a wall of varnished mahogany planks. Real procedural grain runs
+ * down each board, seams are dark gaps with a lit edge, knots sit in the
+ * field, and a varnish sheen and vignette sit over the whole card. The
+ * planks are offset per card from its seeds, so a column of cards reads as
+ * different stretches of the same wall. Controls are pale maple with dark
+ * type, the accent an amber indicator, nested surfaces are dark routed
+ * recesses. Cream ink, an editorial serif.
  */
 export const WOOD_THEME: UcThemeDefinition = {
   id: 'wood',
   name: 'Wood',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'A walnut plank with real procedural grain, routed edges and brass hardware. Cream ink, carved controls.',
+    'Varnished mahogany planks with real grain, seams and knots, offset per card. Pale maple controls, amber indicators, routed recesses.',
   icon: 'mdi:tree',
   source: 'builtin',
   tokens: {
     surface: 'neumorphic',
-    radius: 10,
-    radius_sm: 8,
+    radius: 12,
+    radius_sm: 10,
     border_width: 1,
     border_color: WOOD_EDGE,
-    shadow: 'inset 0 1px 0 rgba(255, 220, 180, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.35), 0 8px 20px rgba(30, 15, 5, 0.45)',
+    shadow: 'inset 0 1px 0 rgba(255, 200, 140, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 10px 24px rgba(20, 8, 2, 0.55)',
     density: 'regular',
-    accent: WOOD_BRASS,
+    accent: WOOD_AMBER,
     font_family: "'Lora', 'Merriweather', 'Source Serif 4', Georgia, 'Times New Roman', serif",
     palette: {
-      primary: WOOD_DARK,
-      accent: WOOD_BRASS,
+      primary: WOOD_MAPLE,
+      on_primary: WOOD_ON_MAPLE,
+      accent: WOOD_AMBER,
       card_bg: WOOD_BASE,
       text: WOOD_INK,
       text_secondary: WOOD_INK_SOFT,
-      divider: 'rgba(247, 236, 217, 0.18)',
+      divider: 'rgba(243, 228, 200, 0.16)',
     },
   },
   card: {
     card_background: WOOD_BASE,
-    card_border_radius: 10,
+    card_border_radius: 12,
     card_border_color: WOOD_EDGE,
     card_border_width: 1,
     card_padding: 18,
     card_shadow_enabled: true,
-    card_shadow_color: 'rgba(30, 15, 5, 0.45)',
+    card_shadow_color: 'rgba(20, 8, 2, 0.55)',
     card_shadow_horizontal: 0,
-    card_shadow_vertical: 8,
-    card_shadow_blur: 20,
+    card_shadow_vertical: 10,
+    card_shadow_blur: 24,
     card_shadow_spread: 0,
   },
   modules: {
@@ -1262,7 +1288,7 @@ export const WOOD_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'embossed' },
     grid: { grid_style: 'style_12' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'iconic_soft', accent_color: WOOD_BRASS, tile_border_radius: 8 },
+    area_summary: { style_preset: 'iconic_soft', accent_color: WOOD_AMBER, tile_border_radius: 10 },
     auto_entity_list: { row_style: 'card' },
     unifi: { rack_style: 'dark' },
     activity_feed: { feed_card_style: 'elevated' },
@@ -1270,25 +1296,31 @@ export const WOOD_THEME: UcThemeDefinition = {
   },
   css: `
 .card-container {
+  /* Which stretch of the wall this card shows. */
+  --w-s1: var(--uc-card-seed-1, 0.5);
+  --w-s2: var(--uc-card-seed-2, 0.5);
   background-color: ${WOOD_BASE} !important;
-  /* Top light over the grain plank; the plank stretches with the card so the figure runs its length. */
+  /* Layers, top to bottom: vignette, varnish sheen, planks. */
   background-image:
-    linear-gradient(180deg, rgba(255, 225, 190, 0.10) 0%, rgba(255, 225, 190, 0) 35%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.14) 100%),
-    ${WOOD_GRAIN} !important;
-  background-repeat: no-repeat, no-repeat !important;
-  background-size: auto, 100% 100% !important;
+    radial-gradient(ellipse 120% 95% at 50% 40%, rgba(0, 0, 0, 0) 55%, rgba(20, 8, 2, 0.5) 100%),
+    linear-gradient(180deg, rgba(255, 210, 150, 0.14) 0%, rgba(255, 210, 150, 0) 40%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.16) 100%),
+    ${WOOD_PLANKS} !important;
+  background-repeat: no-repeat, no-repeat, repeat !important;
+  background-size: auto, auto, ${WOOD_PLANK_W * 4}px 600px !important;
+  background-position: 0 0, 0 0, calc(var(--w-s1) * ${WOOD_PLANK_W * 4}px) calc(var(--w-s2) * 600px) !important;
   border: 1px solid ${WOOD_EDGE} !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 220, 180, 0.25),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    inset 1px 0 0 rgba(255, 220, 180, 0.08),
-    inset -1px 0 0 rgba(0, 0, 0, 0.2),
-    0 8px 20px rgba(30, 15, 5, 0.45) !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+    inset 0 1px 0 rgba(255, 200, 140, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    inset 1px 0 0 rgba(255, 200, 140, 0.06),
+    inset -1px 0 0 rgba(0, 0, 0, 0.3),
+    0 10px 24px rgba(20, 8, 2, 0.55) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 }
-/* Nested surfaces are recesses carved into the board. */
+/* Nested surfaces are routed recesses: dark, with a lit lower lip like the slider tracks. */
 [style*="--uc-design-surface"] {
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45), inset 0 -1px 0 rgba(255, 220, 180, 0.12);
+  background-image: linear-gradient(180deg, #24120a 0%, #3b2010 100%);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.75), inset 0 -1px 0 rgba(255, 200, 140, 0.12), 0 1px 0 rgba(255, 200, 140, 0.16);
 }
 `.trim(),
 };
