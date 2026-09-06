@@ -1001,7 +1001,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         <!-- Collapse & Auto-Hide Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -1569,7 +1569,7 @@ export class UltraNavigationModule extends BaseUltraModule {
             text-align: center;
             background: rgba(var(--rgb-primary-color), 0.1);
             border: 2px dashed var(--primary-color);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
           "
         >
           <ha-icon
@@ -1619,7 +1619,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                     color: var(--primary-color);
                     background: rgba(var(--rgb-primary-color), 0.15);
                     border: 1px solid var(--primary-color);
-                    border-radius: calc(18px * var(--uc-radius-scale, 1));
+                    border-radius: var(--uc-r-18, 18px);
                     cursor: pointer;
                     display: inline-flex;
                     align-items: center;
@@ -2192,7 +2192,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         ? html`
             <div
               class="info-box"
-              style="background: var(--warning-color, orange); color: var(--text-primary-color); padding: 12px; border-radius: calc(8px * var(--uc-radius-scale, 1)); margin-bottom: 16px;"
+              style="background: var(--warning-color, orange); color: var(--text-primary-color); padding: 12px; border-radius: var(--uc-r-8, 8px); margin-bottom: 16px;"
             >
               ⚠️ <strong>Entity Required:</strong> Select a media player entity below for the icon
               to appear in the navbar.
@@ -2344,7 +2344,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                 const popups = this.getPopupModules(config);
                 if (popups.length === 0) {
                   return html`
-                    <div class="info-box" style="padding: 12px; border-radius: calc(8px * var(--uc-radius-scale, 1));">
+                    <div class="info-box" style="padding: 12px; border-radius: var(--uc-r-8, 8px);">
                       No popup modules found. Add a Popup module to this card first.
                     </div>
                   `;
@@ -2592,7 +2592,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         @dragleave=${onDragLeave}
         @drop=${onDrop}
         style="${isStackChild
-          ? 'margin-left: 24px; border-left: 2px solid var(--accent-color); border-radius: 0 calc(12px * var(--uc-radius-scale, 1)) calc(12px * var(--uc-radius-scale, 1)) 0;'
+          ? 'margin-left: 24px; border-left: 2px solid var(--accent-color); border-radius: 0 var(--uc-r-12, 12px) var(--uc-r-12, 12px) 0;'
           : ''}"
       >
         <div class="entity-header" @click=${toggleExpand}>
@@ -2856,7 +2856,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         @dragover=${onReorderDragOver}
         @dragleave=${onReorderDragLeave}
         @drop=${onReorderDrop}
-        style="border: 2px solid var(--accent-color); border-radius: calc(12px * var(--uc-radius-scale, 1));"
+        style="border: 2px solid var(--accent-color); border-radius: var(--uc-r-12, 12px);"
       >
         <div class="entity-header" @click=${toggleExpand}>
           <div class="drag-handle" @click=${(e: Event) => e.stopPropagation()}>
@@ -3250,7 +3250,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                   return html`
                     <div
                       class="info-box"
-                      style="background: var(--warning-color, orange); color: var(--text-primary-color); padding: 12px; border-radius: calc(8px * var(--uc-radius-scale, 1));"
+                      style="background: var(--warning-color, orange); color: var(--text-primary-color); padding: 12px; border-radius: var(--uc-r-8, 8px);"
                     >
                       No popup modules found. Add a Popup module to this card first.
                     </div>
@@ -3584,7 +3584,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       }
       .settings-section {
         background: var(--secondary-background-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         padding: 20px;
         margin-bottom: 24px;
       }
@@ -3608,7 +3608,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         gap: 10px;
         padding: 12px;
         background: rgba(var(--rgb-info-color), 0.1);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         border-left: 4px solid var(--info-color);
         font-size: 13px;
         color: var(--primary-text-color);
@@ -3625,7 +3625,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         width: 100%;
         padding: 12px;
         border: 1px dashed var(--primary-color);
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         background: none;
         color: var(--primary-color);
         cursor: pointer;
@@ -3644,7 +3644,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       }
       .entity-row {
         border: 1px solid var(--divider-color);
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         background: var(--card-background-color);
         overflow: hidden;
         transition: all 0.2s;
@@ -3684,7 +3684,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         padding: 2px 8px;
         background: rgba(var(--rgb-primary-color), 0.15);
         color: var(--primary-color);
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.3px;
@@ -3745,7 +3745,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         background: none;
         padding: 6px;
         cursor: pointer;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         color: var(--secondary-text-color);
         transition: all 0.2s;
       }
@@ -3824,7 +3824,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         gap: 8px;
         padding: 8px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         background: var(--card-background-color);
       }

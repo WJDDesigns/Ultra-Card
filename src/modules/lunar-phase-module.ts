@@ -1858,7 +1858,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
           padding: 32px;
           text-align: center;
           background: var(--secondary-background-color);
-          border-radius: calc(12px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-12, 12px);
           margin: 16px;
         "
       >
@@ -1888,7 +1888,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
             padding: 12px 24px;
             background: var(--primary-color);
             color: var(--text-primary-color, white);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             text-decoration: none;
             font-weight: 600;
           "
@@ -1912,7 +1912,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         margin-bottom: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: uc-lunar-slide-in 0.3s ease-out;
@@ -1939,7 +1939,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         box-sizing: border-box;
         position: relative;
         overflow: hidden;
-        border-radius: calc(20px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-20, 20px);
         color: var(--uc-lunar-text);
         isolation: isolate;
       }
@@ -2020,7 +2020,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         height: 32px;
         padding: 0;
         border: 1px solid var(--uc-lunar-line);
-        border-radius: calc(9px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-9, 9px);
         background: var(--uc-lunar-chip);
         color: var(--uc-lunar-dim);
         cursor: pointer;
@@ -2048,7 +2048,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         padding: 0 10px;
         font-size: 0.7rem;
         font-weight: 600;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
       }
       .uc-lunar-btn--pill ha-icon { --mdc-icon-size: 13px; }
 
@@ -2168,7 +2168,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         height: 7px;
         padding: 0;
         border: none;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         background: var(--uc-lunar-line);
         cursor: pointer;
         transition: all 0.25s ease;
@@ -2239,7 +2239,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         gap: 2px;
         aspect-ratio: 1 / 1;
         border: 1px solid transparent;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--uc-lunar-chip);
         color: var(--uc-lunar-dim);
         cursor: pointer;
@@ -2336,7 +2336,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
       .uc-lunar--moononly:focus-visible {
         outline: 2px solid var(--uc-lunar-accent);
         outline-offset: -2px;
-        border-radius: calc(16px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-16, 16px);
       }
       .uc-lunar-compact-body {
         flex: 1;
@@ -2364,7 +2364,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         align-items: center;
         gap: 2px;
         padding: 6px 4px;
-        border-radius: calc(9px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-9, 9px);
         background: var(--uc-lunar-chip);
         font-size: 0.74rem;
         font-weight: 600;

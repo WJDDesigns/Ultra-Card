@@ -400,7 +400,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 ? 'Use the YAML tab to paste any valid Lovelace card configuration.' 
                 : 'Switch to the YAML tab to configure the card type.'}
             </p>
-            <div style="background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; text-align: left; font-family: monospace; font-size: 13px; max-width: 320px; margin: 0 auto;">
+            <div style="background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); padding: 16px; text-align: left; font-family: monospace; font-size: 13px; max-width: 320px; margin: 0 auto;">
               <div style="color: var(--secondary-text-color); margin-bottom: 8px; font-family: inherit; font-size: 12px;">Example configuration:</div>
               <div style="color: var(--primary-text-color);">type: custom:webrtc-camera</div>
               <div style="color: var(--primary-text-color);">url: rtsp://user:pass@ip:554/stream</div>
@@ -831,7 +831,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
             ></ultra-template-editor>
             <div
               class="uc-yaml-parse-error"
-              style="display: none; margin-top: 8px; padding: 8px 10px; color: var(--error-color, #db4437); font-size: 13px; font-family: monospace; white-space: pre-wrap; border: 1px solid var(--error-color, #db4437); border-radius: calc(6px * var(--uc-radius-scale, 1)); background: rgba(219, 68, 55, 0.08);"
+              style="display: none; margin-top: 8px; padding: 8px 10px; color: var(--error-color, #db4437); font-size: 13px; font-family: monospace; white-space: pre-wrap; border: 1px solid var(--error-color, #db4437); border-radius: var(--uc-r-6, 6px); background: rgba(219, 68, 55, 0.08);"
             ></div>
           </div>
         </div>
@@ -980,7 +980,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
               ? 'Go to the YAML tab and paste any valid Lovelace card configuration' 
               : 'Click edit to choose and configure a custom card'}</p>
             ${isCustomYamlCard ? html`
-              <div style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(8px * var(--uc-radius-scale, 1)); font-size: 12px; font-family: monospace; text-align: left; max-width: 280px;">
+              <div style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); font-size: 12px; font-family: monospace; text-align: left; max-width: 280px;">
                 <div style="color: var(--secondary-text-color); margin-bottom: 4px;">Example:</div>
                 <div style="color: var(--primary-text-color);">type: custom:webrtc-camera</div>
                 <div style="color: var(--primary-text-color);">url: rtsp://...</div>
@@ -1353,7 +1353,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border-radius: calc(12px * var(--uc-radius-scale, 1));
+                border-radius: var(--uc-r-12, 12px);
                 z-index: 10001;
                 pointer-events: all;
                 cursor: default;
@@ -1576,7 +1576,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
         width: 64px;
         height: 64px;
         background: rgba(var(--rgb-primary-color), 0.1);
-        border-radius: calc(16px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-16, 16px);
         margin-bottom: 8px;
       }
 

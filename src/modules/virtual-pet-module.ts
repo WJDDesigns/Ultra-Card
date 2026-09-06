@@ -1495,7 +1495,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
     return `
       .settings-section {
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         margin-bottom: 24px;
       }
@@ -1522,7 +1522,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         gap: 6px;
         padding: 14px 8px;
         border: 2px solid var(--divider-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         background: var(--card-background-color);
         cursor: pointer;
         text-align: center;
@@ -1550,7 +1550,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         border: 1px solid var(--divider-color);
         transition: all 0.2s ease;
@@ -1589,7 +1589,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         padding: 16px;
         background: rgba(var(--rgb-primary-color), 0.05);
         border-left: 3px solid var(--primary-color);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         margin-bottom: 8px;
       }
       .binding-settings.collapsed {
@@ -1598,7 +1598,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
       .temp-zone-bar {
         display: flex;
         height: 28px;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         overflow: hidden;
         margin: 8px 0 12px;
         font-size: 10px;
@@ -1635,7 +1635,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         background: var(--primary-color);
         color: var(--text-primary-color);
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         cursor: pointer;
         font-weight: 600;
         display: flex;

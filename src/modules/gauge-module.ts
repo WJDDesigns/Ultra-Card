@@ -700,7 +700,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         ${unifiedTemplateEnabled
           ? html`
-              <div style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(8px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--primary-color); margin-bottom: 16px;">
+              <div style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); border-left: 4px solid var(--primary-color); margin-bottom: 16px;">
                 <div style="font-size: 12px; color: var(--primary-color); font-weight: 600; margin-bottom: 4px;">
                   Template Mode Active
                 </div>
@@ -857,7 +857,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                                 };
                                 updateModule({ segments });
                               }}
-                              style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color); color: var(--primary-text-color);"
+                              style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: var(--uc-r-4, 4px); background: var(--secondary-background-color); color: var(--primary-text-color);"
                             />
                           </div>
                           <div>
@@ -878,7 +878,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                                 };
                                 updateModule({ segments });
                               }}
-                              style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color); color: var(--primary-text-color);"
+                              style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: var(--uc-r-4, 4px); background: var(--secondary-background-color); color: var(--primary-text-color);"
                             />
                           </div>
                         </div>
@@ -897,7 +897,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                               segments[index] = { ...segments[index], label: target.value };
                               updateModule({ segments });
                             }}
-                            style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color); color: var(--primary-text-color);"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: var(--uc-r-4, 4px); background: var(--secondary-background-color); color: var(--primary-text-color);"
                           />
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center;">
@@ -1061,7 +1061,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                     <button
                       class="format-btn ${gaugeModule.value_bold ? 'active' : ''}"
                       @click=${() => updateModule({ value_bold: !gaugeModule.value_bold })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.value_bold
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.value_bold
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_bold
                         ? 'white'
@@ -1073,7 +1073,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                     <button
                       class="format-btn ${gaugeModule.value_italic ? 'active' : ''}"
                       @click=${() => updateModule({ value_italic: !gaugeModule.value_italic })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.value_italic
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.value_italic
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_italic
                         ? 'white'
@@ -1086,7 +1086,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                       class="format-btn ${gaugeModule.value_underline ? 'active' : ''}"
                       @click=${() =>
                         updateModule({ value_underline: !gaugeModule.value_underline })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.value_underline
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.value_underline
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_underline
                         ? 'white'
@@ -1099,7 +1099,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                       class="format-btn ${gaugeModule.value_uppercase ? 'active' : ''}"
                       @click=${() =>
                         updateModule({ value_uppercase: !gaugeModule.value_uppercase })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.value_uppercase
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.value_uppercase
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_uppercase
                         ? 'white'
@@ -1114,7 +1114,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                         updateModule({
                           value_strikethrough: !gaugeModule.value_strikethrough,
                         })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.value_strikethrough
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.value_strikethrough
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_strikethrough
                         ? 'white'
@@ -1245,7 +1245,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                     <button
                       class="format-btn ${gaugeModule.name_bold ? 'active' : ''}"
                       @click=${() => updateModule({ name_bold: !gaugeModule.name_bold })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.name_bold
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.name_bold
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_bold
                         ? 'white'
@@ -1257,7 +1257,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                     <button
                       class="format-btn ${gaugeModule.name_italic ? 'active' : ''}"
                       @click=${() => updateModule({ name_italic: !gaugeModule.name_italic })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.name_italic
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.name_italic
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_italic
                         ? 'white'
@@ -1269,7 +1269,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                     <button
                       class="format-btn ${gaugeModule.name_underline ? 'active' : ''}"
                       @click=${() => updateModule({ name_underline: !gaugeModule.name_underline })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.name_underline
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.name_underline
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_underline
                         ? 'white'
@@ -1281,7 +1281,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                     <button
                       class="format-btn ${gaugeModule.name_uppercase ? 'active' : ''}"
                       @click=${() => updateModule({ name_uppercase: !gaugeModule.name_uppercase })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.name_uppercase
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.name_uppercase
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_uppercase
                         ? 'white'
@@ -1296,7 +1296,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                         updateModule({
                           name_strikethrough: !gaugeModule.name_strikethrough,
                         })}
-                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: ${gaugeModule.name_strikethrough
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: var(--uc-r-4, 4px); background: ${gaugeModule.name_strikethrough
                         ? 'var(--primary-color)'
                         : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_strikethrough
                         ? 'white'
@@ -4806,14 +4806,14 @@ export class UltraGaugeModule extends BaseUltraModule {
         align-items: center;
         padding: 12px;
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         border: 1px solid var(--divider-color);
       }
 
       .add-stop-btn,
       .remove-stop-btn {
         padding: 8px 16px;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         border: 1px solid var(--divider-color);
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
@@ -4850,7 +4850,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       .segment-item {
         padding: 12px;
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         border: 1px solid var(--divider-color);
       }
 
@@ -4863,7 +4863,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
       .template-section {
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         border: 1px solid var(--divider-color);
         margin-bottom: 32px;
@@ -4881,7 +4881,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         margin-top: 12px;
         padding: 12px;
         background: rgba(var(--rgb-primary-color), 0.05);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
       }
 
       .template-help p { margin: 8px 0; }
@@ -4889,7 +4889,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       .template-help code {
         background: var(--code-editor-background-color, #1e1e1e);
         padding: 2px 6px;
-        border-radius: calc(3px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-3, 3px);
         font-family: monospace;
         font-size: 11px;
       }

@@ -3031,7 +3031,7 @@ export class UltraBarModule extends BaseUltraModule {
                         width: 4px;
                         background: ${(barModule as any).range_current_color ||
                       'var(--accent-color)'};
-                        border-radius: calc(2px * var(--uc-radius-scale, 1));
+                        border-radius: var(--uc-r-2, 2px);
                         z-index: 6;
                         transform: translateX(-50%);
                         box-shadow: 0 0 4px rgba(0,0,0,0.3);
@@ -3637,7 +3637,7 @@ export class UltraBarModule extends BaseUltraModule {
         max-width: 100%;
         padding: 8px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         background: var(--card-background-color);
         color: var(--primary-text-color);
         font-size: 14px;
@@ -3704,7 +3704,7 @@ export class UltraBarModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;
@@ -3827,7 +3827,7 @@ export class UltraBarModule extends BaseUltraModule {
       .bar-module-preview .settings-section ha-select {
         background: var(--card-background-color) !important;
         border: 1px solid var(--divider-color) !important;
-        border-radius: calc(6px * var(--uc-radius-scale, 1)) !important;
+        border-radius: var(--uc-r-6, 6px) !important;
         padding: 4px 0 !important;
         /* MWC menu and text field surfaces */
         --mdc-theme-surface: var(--card-background-color);
@@ -3859,14 +3859,14 @@ export class UltraBarModule extends BaseUltraModule {
       .animation-select-group ha-select {
         background: var(--card-background-color) !important;
         border: 1px solid var(--divider-color) !important;
-        border-radius: calc(6px * var(--uc-radius-scale, 1)) !important;
+        border-radius: var(--uc-r-6, 6px) !important;
         padding: 4px 0 !important;
       }
       /* Ensure percentage type dropdown has standard background container */
       .percentage-type-group ha-select {
         background: var(--card-background-color) !important;
         border: 1px solid var(--divider-color) !important;
-        border-radius: calc(6px * var(--uc-radius-scale, 1)) !important;
+        border-radius: var(--uc-r-6, 6px) !important;
         padding: 4px 0 !important;
       }
 
@@ -4003,7 +4003,7 @@ export class UltraBarModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         overflow: hidden;
         transition: all 0.2s ease;
       }

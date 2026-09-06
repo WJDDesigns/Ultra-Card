@@ -139,7 +139,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
           align-items: flex-start;
           padding: 12px 14px;
           border: 2px solid var(--divider-color);
-          border-radius: calc(10px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-10, 10px);
           cursor: pointer;
           transition: border-color 0.15s ease, background 0.15s ease;
         }
@@ -993,7 +993,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
       .uc-time-machine {
         box-sizing: border-box;
         padding: 12px 16px;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
         transition: border-color 0.2s ease;
@@ -1054,7 +1054,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         position: relative;
         height: 120px;
         margin-bottom: 10px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
         overflow: hidden;
@@ -1137,7 +1137,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         position: relative;
         flex: 1;
         height: 12px;
-        border-radius: calc(3px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-3, 3px);
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
         overflow: hidden;
@@ -1168,7 +1168,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
       .uc-tm-detail-note {
         font-size: 10px;
         padding: 1px 6px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--secondary-background-color);
         color: var(--secondary-text-color);
         white-space: nowrap;
@@ -1237,7 +1237,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         gap: 6px;
         padding: 6px 14px;
         border: none;
-        border-radius: calc(16px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-16, 16px);
         background: var(--primary-color);
         color: var(--text-primary-color, #fff);
         font-size: 12px;
@@ -1253,7 +1253,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
       .uc-tm-track {
         position: relative;
         height: 40px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
         cursor: ew-resize;
@@ -1274,7 +1274,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         top: 7px;
         bottom: 7px;
         width: 2px;
-        border-radius: calc(1px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-1, 1px);
         background: var(--accent-color, var(--warning-color, #ff9800));
         opacity: 0.8;
         pointer-events: none;
@@ -1286,7 +1286,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         right: 0;
         background: var(--primary-color);
         opacity: 0.08;
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         pointer-events: none;
       }
       .uc-tm-playhead {
@@ -1333,7 +1333,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
       .uc-tm-span-btn {
         padding: 4px 10px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         background: transparent;
         color: var(--secondary-text-color);
         font-size: 11px;
@@ -1358,7 +1358,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         height: 26px;
         padding: 0 8px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         background: transparent;
         color: var(--primary-text-color);
         font-size: 11px;

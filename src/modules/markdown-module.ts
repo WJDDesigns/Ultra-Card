@@ -141,7 +141,7 @@ All standard markdown features are automatically enabled!`,
         <!-- Content Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -191,7 +191,7 @@ All standard markdown features are automatically enabled!`,
                 `
               : html`
                   <div
-                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: var(--divider-color); border-radius: calc(8px * var(--uc-radius-scale, 1));"
+                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: var(--divider-color); border-radius: var(--uc-r-8, 8px);"
                   >
                     ${localize(
                       'editor.markdown.unified_replaces_editor',
@@ -954,7 +954,7 @@ All standard markdown features are automatically enabled!`,
       .markdown-content code,
       .markdown-content pre {
         background-color: var(--markdown-code-background-color, none);
-        border-radius: calc(3px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-3, 3px);
       }
 
       /* Strikethrough - exact HA styling */
@@ -1066,7 +1066,7 @@ All standard markdown features are automatically enabled!`,
         bottom: 0;
         background-color: var(--disabled-color);
         transition: 0.3s;
-        border-radius: calc(24px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-24, 24px);
       }
       .template-header .slider:before {
         position: absolute;

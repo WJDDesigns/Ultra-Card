@@ -1668,7 +1668,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         position: absolute;
         width: calc(3px * var(--clock-scale));
         height: calc(8px * var(--clock-scale));
-        border-radius: calc(1.5px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-1_5, 1.5px);
         pointer-events: none;
         z-index: 2;
         opacity: 1;
@@ -1679,7 +1679,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         position: absolute;
         width: calc(1.5px * var(--clock-scale));
         height: calc(5px * var(--clock-scale));
-        border-radius: calc(1px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-1, 1px);
         pointer-events: none;
         z-index: 2;
         opacity: 1;
@@ -1692,7 +1692,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         bottom: 50%;
         transform-origin: 50% 100%;
         transform: translate(-50%, 0) rotate(0deg);
-        border-radius: calc(2px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-2, 2px);
         will-change: transform;
         animation-name: ha-clock-rotate;
         animation-timing-function: linear;

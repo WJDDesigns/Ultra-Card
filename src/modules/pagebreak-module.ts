@@ -39,7 +39,7 @@ export class UltraPageBreakModule extends BaseUltraModule {
         <!-- Info Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 24px;"
         >
           <div style="display: flex; align-items: flex-start; gap: 12px;">
             <ha-icon

@@ -134,7 +134,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         justify-content: space-between;
         padding: 10px 12px;
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         cursor: pointer;
         border: 1px solid var(--divider-color);
@@ -149,7 +149,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         cursor: move;
         border: 1px solid var(--divider-color);
@@ -165,7 +165,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         padding: 16px;
         background: rgba(var(--rgb-primary-color), 0.05);
         border-left: 3px solid var(--primary-color);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         margin-bottom: 8px;
       }
 
@@ -175,7 +175,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         background: var(--primary-color);
         color: var(--text-primary-color);
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         cursor: pointer;
         font-size: 14px;
         font-weight: 600;
@@ -260,7 +260,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
           padding: 32px;
           text-align: center;
           background: var(--secondary-background-color);
-          border-radius: calc(12px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-12, 12px);
           margin: 16px;
         "
       >
@@ -290,7 +290,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
             padding: 12px 24px;
             background: var(--primary-color);
             color: var(--text-primary-color, white);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             text-decoration: none;
             font-weight: 600;
           "
@@ -472,7 +472,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
       )}
 
       <!-- Section 2: Core Energy Nodes -->
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;">
         <div class="section-title">${localize('editor.energy_display.core_nodes_title', lang, 'Core Energy Nodes')}</div>
         <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;">
           ${localize('editor.energy_display.core_nodes_desc', lang, 'Configure Solar, Grid, Battery, and Home. Use power sensor entities (W).')}
@@ -545,7 +545,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
       </div>
 
       <!-- Section 3: Custom Device Nodes -->
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;">
         <div class="section-title">${localize('editor.energy_display.devices_title', lang, 'Custom Device Nodes')}</div>
         <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;">
           ${localize('editor.energy_display.devices_desc', lang, 'Add devices to show individual power consumption. Drag to reorder.')}
@@ -634,7 +634,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         : ''}
 
       <!-- Section 5: Style-specific options -->
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;">
         <div class="section-title">${localize('editor.energy_display.style_options_title', lang, 'Style Options')}</div>
         ${style === 'circle_flow'
           ? html`

@@ -306,7 +306,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -458,7 +458,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -617,7 +617,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
   ): TemplateResult {
     return html`
       <div
-        style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 1px solid ${active
+        style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--uc-r-8, 8px); border: 1px solid ${active
           ? 'var(--primary-color)'
           : 'var(--divider-color)'}; background: ${active
           ? 'color-mix(in srgb, var(--primary-color) 8%, transparent)'
@@ -660,7 +660,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -784,7 +784,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1114,7 +1114,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       return html`
         <div
           class="settings-section dog-duty-wizard dog-duty-wizard-collapsed"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 12px 16px; margin-bottom: 24px; border: 1px solid color-mix(in srgb, var(--success-color, #4caf50) 35%, transparent);"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 12px 16px; margin-bottom: 24px; border: 1px solid color-mix(in srgb, var(--success-color, #4caf50) 35%, transparent);"
         >
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <ha-icon icon="mdi:check-circle" style="color: var(--success-color, #4caf50);"></ha-icon>
@@ -1142,7 +1142,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section dog-duty-wizard"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px; border: 1px solid color-mix(in srgb, var(--primary-color) 35%, transparent);"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px; border: 1px solid color-mix(in srgb, var(--primary-color) 35%, transparent);"
       >
         <div
           class="section-title"
@@ -2499,7 +2499,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
           padding: 32px;
           text-align: center;
           background: var(--secondary-background-color);
-          border-radius: calc(12px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-12, 12px);
           margin: 16px;
         "
       >
@@ -2529,7 +2529,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
             padding: 12px 24px;
             background: var(--primary-color);
             color: var(--text-primary-color, white);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             text-decoration: none;
             font-weight: 600;
           "
@@ -2588,7 +2588,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         flex-direction: column;
         gap: 8px;
         padding: 10px 12px;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
         max-height: 280px;
@@ -2641,7 +2641,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         text-align: left;
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         padding: 8px 10px;
         cursor: pointer;
         font: inherit;
@@ -2751,7 +2751,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         position: relative;
         width: 100%;
         aspect-ratio: 16 / 10;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         overflow: hidden;
         background: var(--disabled-text-color, #333);
         isolation: isolate;
@@ -2762,7 +2762,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         z-index: 1;
         pointer-events: none;
         border: 2px solid rgba(64, 180, 255, 0.85);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
       }
       .dog-duty-roi-mask.editing {
@@ -2780,7 +2780,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         position: relative;
         width: 100%;
         aspect-ratio: 16 / 10;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         overflow: hidden;
         background: var(--disabled-text-color, #333);
         touch-action: none;
@@ -2794,7 +2794,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         z-index: 3;
         font-size: 11px;
         padding: 4px 8px;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         background: rgba(0, 0, 0, 0.55);
         color: #fff;
         pointer-events: none;
@@ -2807,7 +2807,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         border: 1px solid color-mix(in srgb, var(--primary-color) 45%, transparent);
         background: color-mix(in srgb, var(--primary-color) 12%, transparent);
         color: var(--primary-text-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 6px 10px;
         font: inherit;
         font-size: 12px;
@@ -2943,7 +2943,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         transform: translateX(-50%);
         z-index: 3;
         padding: 5px 12px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: rgba(0, 0, 0, 0.55);
         color: #fff;
         font-size: 11px;
@@ -2968,7 +2968,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         background: var(--card-background-color, #1c1c1c);
         color: var(--primary-text-color);
         border: 1px solid var(--divider-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
         padding: 12px;
         display: flex;
@@ -2984,7 +2984,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       }
       .dog-duty-popup-snap {
         width: 100%;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         max-height: 140px;
         object-fit: cover;
       }
@@ -3026,7 +3026,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         border: 1px solid var(--divider-color);
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 8px 12px;
         font-size: 13px;
         font-weight: 600;
@@ -3052,7 +3052,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         flex-direction: column;
         gap: 0;
         padding: 10px 12px;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
         transition: border-color 0.2s ease;
@@ -3125,7 +3125,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         gap: 6px;
         padding: 6px 14px;
         border: none;
-        border-radius: calc(16px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-16, 16px);
         background: var(--primary-color);
         color: var(--text-primary-color, #fff);
         font-size: 12px;
@@ -3141,7 +3141,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       .dog-duty-scrub-track {
         position: relative;
         height: 40px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
         cursor: ew-resize;
@@ -3166,7 +3166,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         top: 7px;
         bottom: 7px;
         width: 2px;
-        border-radius: calc(1px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-1, 1px);
         background: #ff5252;
         opacity: 0.85;
         pointer-events: none;
@@ -3183,7 +3183,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         right: 0;
         background: var(--primary-color);
         opacity: 0.08;
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         pointer-events: none;
       }
       .dog-duty-scrub-playhead {
@@ -3262,7 +3262,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         margin-top: 10px;
         font-size: 13px;
         padding: 8px 10px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
       }
       .dog-duty-ok {
         background: color-mix(in srgb, var(--success-color, #4caf50) 15%, transparent);
@@ -3291,7 +3291,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       .dog-duty-setup-guide {
         margin: 0 0 14px;
         padding: 12px 14px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: color-mix(in srgb, var(--primary-color) 10%, transparent);
         border: 1px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
         font-size: 13px;

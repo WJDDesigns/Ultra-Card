@@ -1582,7 +1582,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
       </style>
       <div
         class="uc-cz-wrapper ${hoverClass}"
-        style="padding:14px;border-radius:calc(12px * var(--uc-radius-scale, 1));background:${palette.cardBg};${designStyles}"
+        style="padding:14px;border-radius:var(--uc-r-12, 12px);background:${palette.cardBg};${designStyles}"
       >
         ${this.wrapWithAnimation(body, module, hass)}
       </div>
@@ -2256,7 +2256,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         font-size: 12px;
         line-height: 1.5;
         padding: 10px 12px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 12px;
         color: var(--secondary-text-color);
         background: var(--primary-background-color);
@@ -2281,7 +2281,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         gap: 8px;
         font-size: 12px;
         padding: 8px 10px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 10px;
       }
       .uc-cz-banner.error {
@@ -2296,14 +2296,14 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         color: var(--secondary-text-color);
         padding: 12px;
         border: 1px dashed var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 12px;
         text-align: center;
       }
 
       .uc-cz-row {
         border: 1px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         background: var(--card-background-color);
         overflow: hidden;
@@ -2320,7 +2320,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         flex-shrink: 0;
         width: 32px;
         height: 32px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2350,7 +2350,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         width: 30px;
         height: 30px;
         border: none;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         background: transparent;
         color: var(--secondary-text-color);
         cursor: pointer;
@@ -2379,7 +2379,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         width: 100%;
         padding: 10px;
         border: 1px dashed var(--primary-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: transparent;
         color: var(--primary-color);
         font-size: 13px;
@@ -2436,7 +2436,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
       .uc-cz-canvas {
         position: relative;
         width: 100%;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         overflow: hidden;
         touch-action: none;
         cursor: crosshair;
@@ -2449,7 +2449,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         position: absolute;
         border: 2px solid var(--primary-color);
         background: color-mix(in srgb, var(--primary-color) 18%, transparent);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         cursor: move;
         box-sizing: border-box;
       }
@@ -2553,7 +2553,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         font-size: 11px;
       }
       .uc-cz-legend-item { display: flex; align-items: center; gap: 5px; }
-      .uc-cz-swatch { width: 10px; height: 10px; border-radius: calc(3px * var(--uc-radius-scale, 1)); display: inline-block; }
+      .uc-cz-swatch { width: 10px; height: 10px; border-radius: var(--uc-r-3, 3px); display: inline-block; }
 
       .uc-cz-undo {
         display: flex;
@@ -2562,7 +2562,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         gap: 10px;
         font-size: 12px;
         padding: 7px 10px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 10px;
         background: var(--secondary-background-color);
       }
@@ -2593,7 +2593,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
       .uc-cz-skeleton { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
       .uc-cz-skel-row {
         height: 34px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: linear-gradient(
           90deg,
           var(--secondary-background-color) 25%,
@@ -2613,7 +2613,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
       .uc-cz-map {
         position: relative;
         width: 100%;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         overflow: hidden;
         background: var(--secondary-background-color);
       }
@@ -2622,7 +2622,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
       .uc-cz-zone {
         position: absolute;
         border: 2px solid transparent;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         cursor: pointer;
         padding: 0;
         box-sizing: border-box;
@@ -2656,7 +2656,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         min-width: 18px;
         height: 18px;
         padding: 0 4px;
-        border-radius: calc(9px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-9, 9px);
         font-size: 10px;
         font-weight: 700;
         color: var(--text-primary-color, #fff);
@@ -2701,11 +2701,11 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
       .uc-cz-track {
         display: block;
         height: 4px;
-        border-radius: calc(2px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-2, 2px);
         background: var(--divider-color);
         overflow: hidden;
       }
-      .uc-cz-fill { display: block; height: 100%; border-radius: calc(2px * var(--uc-radius-scale, 1)); }
+      .uc-cz-fill { display: block; height: 100%; border-radius: var(--uc-r-2, 2px); }
 
       .uc-cz-clean-btn {
         flex-shrink: 0;
@@ -2713,7 +2713,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         height: 30px;
         padding: 0 8px;
         border: 1px solid;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -2737,7 +2737,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         align-items: center;
         gap: 3px;
         padding: 1px 7px;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         background: var(--secondary-background-color);
         font-size: 10px;
       }

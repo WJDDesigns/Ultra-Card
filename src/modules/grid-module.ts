@@ -2150,7 +2150,7 @@ export class UltraGridModule extends BaseUltraModule {
                                 updateModule({ entities });
                               }
                             }}
-                            style="display:flex; align-items:center; gap:6px; padding:4px 8px; border:1px dashed var(--primary-color); background:none; color:var(--primary-color); border-radius:calc(4px * var(--uc-radius-scale, 1)); cursor:pointer; font-size: 12px;"
+                            style="display:flex; align-items:center; gap:6px; padding:4px 8px; border:1px dashed var(--primary-color); background:none; color:var(--primary-color); border-radius:var(--uc-r-4, 4px); cursor:pointer; font-size: 12px;"
                           >
                             <ha-icon icon="mdi:plus" style="--mdc-icon-size: 14px;"></ha-icon>
                             Add
@@ -3159,7 +3159,7 @@ export class UltraGridModule extends BaseUltraModule {
     return `
       .settings-section {
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         margin-bottom: 24px;
       }
@@ -3194,7 +3194,7 @@ export class UltraGridModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         padding: 16px;
       }
       .entity-rows-container {
@@ -3206,7 +3206,7 @@ export class UltraGridModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         cursor: move;
         border: 1px solid var(--divider-color);
@@ -3253,7 +3253,7 @@ export class UltraGridModule extends BaseUltraModule {
         padding: 16px;
         background: rgba(var(--rgb-primary-color), 0.05);
         border-left: 3px solid var(--primary-color);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         margin-bottom: 8px;
         animation: slideDown 0.3s ease;
       }
@@ -3267,7 +3267,7 @@ export class UltraGridModule extends BaseUltraModule {
         background: var(--primary-color);
         color: var(--text-primary-color);
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         cursor: pointer;
         font-size: 14px;
         font-weight: 600;
@@ -3293,7 +3293,7 @@ export class UltraGridModule extends BaseUltraModule {
         padding: 6px 12px;
         background: var(--primary-color);
         color: var(--text-primary-color);
-        border-radius: calc(16px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-16, 16px);
         font-size: 13px;
         transition: all 0.2s ease;
         position: relative;
@@ -3320,7 +3320,7 @@ export class UltraGridModule extends BaseUltraModule {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--card-background-color);
         color: var(--primary-text-color);
         font-size: 14px;
@@ -3333,7 +3333,7 @@ export class UltraGridModule extends BaseUltraModule {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--card-background-color);
         color: var(--primary-text-color);
         font-size: 14px;
@@ -3353,7 +3353,7 @@ export class UltraGridModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: rgba(var(--rgb-primary-color), 0.1);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-top: 16px;
         font-size: 13px;
         color: var(--primary-color);
@@ -3364,7 +3364,7 @@ export class UltraGridModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 16px;
         font-size: 13px;
         color: var(--secondary-text-color);
@@ -3386,7 +3386,7 @@ export class UltraGridModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         font-size: 13px;
         color: var(--info-color, #03a9f4);
         margin-top: 12px;
@@ -3396,7 +3396,7 @@ export class UltraGridModule extends BaseUltraModule {
         margin-top: 16px;
         padding: 16px;
         background: rgba(var(--rgb-primary-color), 0.05);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         border-left: 3px solid var(--primary-color);
       }
       .entity-action-info {
@@ -3405,7 +3405,7 @@ export class UltraGridModule extends BaseUltraModule {
         gap: 8px;
         padding: 10px 12px;
         background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         font-size: 12px;
         color: var(--info-color, #03a9f4);
         margin-bottom: 16px;
@@ -3455,7 +3455,7 @@ export class UltraGridModule extends BaseUltraModule {
       }
       .entity-condition-item {
         border: 1px solid var(--divider-color);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         padding: 12px;
         margin-bottom: 8px;
         background: var(--card-background-color);
@@ -3763,7 +3763,7 @@ export class UltraGridModule extends BaseUltraModule {
         background: var(--primary-color);
         color: var(--text-primary-color, white);
         padding: 2px 6px;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         font-weight: 600;
         text-transform: capitalize;
       }
@@ -3776,7 +3776,7 @@ export class UltraGridModule extends BaseUltraModule {
         background: rgba(0, 0, 0, 0.5);
         color: white;
         padding: 2px 4px;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         text-transform: capitalize;
       }
 
@@ -3825,7 +3825,7 @@ export class UltraGridModule extends BaseUltraModule {
         width: 36px;
         height: 36px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--card-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
@@ -3852,7 +3852,7 @@ export class UltraGridModule extends BaseUltraModule {
         width: 32px;
         height: 32px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         background: var(--card-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
@@ -3916,7 +3916,7 @@ export class UltraGridModule extends BaseUltraModule {
         background: var(--tooltip-background-color, rgba(0, 0, 0, 0.9));
         color: var(--tooltip-text-color, white);
         padding: 4px 8px;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         font-size: 12px;
         white-space: nowrap;
         pointer-events: none;

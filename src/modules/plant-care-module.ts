@@ -1549,7 +1549,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
       </style>
       <div
         class="uc-pc-wrapper ${hoverClass}"
-        style="padding:14px;border-radius:calc(12px * var(--uc-radius-scale, 1));background:${palette.cardBg};${designStyles}"
+        style="padding:14px;border-radius:var(--uc-r-12, 12px);background:${palette.cardBg};${designStyles}"
       >
         ${this.wrapWithAnimation(body, module, hass)}
       </div>
@@ -2397,7 +2397,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         align-items: flex-start;
         gap: 8px;
         padding: 8px 10px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         font-size: 12px;
         margin-bottom: 10px;
       }
@@ -2416,7 +2416,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         font-size: 12px;
         padding: 6px 10px;
         margin-bottom: 10px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--secondary-background-color);
       }
       .uc-pc-undo ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
@@ -2435,7 +2435,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         font-size: 12px;
         cursor: pointer;
         padding: 2px 6px;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
       }
       .uc-pc-undo-btn:hover { background: rgba(var(--rgb-primary-color), 0.12); }
 
@@ -2447,7 +2447,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         gap: 6px;
         padding: 22px 12px;
         border: 1px dashed var(--divider-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
       }
       .uc-pc-blank ha-icon { --mdc-icon-size: 34px; }
       .uc-pc-blank-title { font-weight: 700; font-size: 15px; }
@@ -2461,7 +2461,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         flex-direction: column;
         border: 1px solid var(--divider-color);
         border-left-width: 3px;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         overflow: hidden;
         background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.02);
         min-width: 0;
@@ -2521,7 +2521,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
 
       .uc-pc-photo {
         position: relative;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         overflow: hidden;
         display: flex;
         align-items: center;
@@ -2547,7 +2547,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         cursor: pointer;
         width: 34px;
         height: 30px;
@@ -2607,7 +2607,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
       .uc-pc-map {
         position: relative;
         width: 100%;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         overflow: hidden;
         background: var(--secondary-background-color);
         min-height: 120px;
@@ -2646,7 +2646,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         font-size: 12px;
         line-height: 1.5;
         padding: 10px 12px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 14px;
       }
       .uc-pc-note {
@@ -2670,14 +2670,14 @@ export class UltraPlantCareModule extends BaseUltraModule {
         color: var(--secondary-text-color);
         padding: 14px;
         border: 1px dashed var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 12px;
         line-height: 1.5;
       }
 
       .uc-pc-row {
         border: 1px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         background: var(--card-background-color);
         overflow: hidden;
@@ -2694,7 +2694,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         position: relative;
         width: 34px;
         height: 34px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         overflow: hidden;
         flex-shrink: 0;
         display: flex;
@@ -2733,7 +2733,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         width: 30px;
         height: 30px;
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: transparent;
         color: var(--secondary-text-color);
         cursor: pointer;
@@ -2761,7 +2761,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         gap: 6px;
         width: 100%;
         padding: 11px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         cursor: pointer;
         font-weight: 600;
         font-size: 14px;
@@ -2782,7 +2782,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
       .uc-pc-import {
         margin-top: 10px;
         padding: 12px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: rgba(var(--rgb-primary-color), 0.06);
       }
       .uc-pc-import-row {
@@ -2819,7 +2819,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
         font-weight: 600;
         cursor: pointer;
         padding: 4px 6px;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         margin: -4px 0 14px;
       }
       .uc-pc-linkbtn.strong { margin: 0; flex-shrink: 0; }
@@ -2848,7 +2848,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
 
       .uc-pc-map-pick {
         position: relative;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         overflow: hidden;
         cursor: crosshair;
         margin-bottom: 14px;

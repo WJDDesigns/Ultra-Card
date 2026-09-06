@@ -642,7 +642,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
           <div style="
             position:relative; z-index:1;
             padding:18px 28px;
-            border-radius:calc(16px * var(--uc-radius-scale, 1));
+            border-radius:var(--uc-r-16, 16px);
             background:rgba(255,255,255,0.07);
             backdrop-filter:blur(20px) saturate(1.5);
             -webkit-backdrop-filter:blur(20px) saturate(1.5);
@@ -1075,7 +1075,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
         display: flex;
         flex-direction: column;
         gap: 0;
-        border-radius: calc(14px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-14, 14px);
         overflow: hidden;
         box-sizing: border-box;
         border: 1px solid color-mix(in srgb, var(--divider-color) 35%, transparent);
@@ -1211,7 +1211,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
 
       /* ── Active footer bar ─────────────────────────────────────────── */
       .uc-ss-card-footer--standalone {
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         border-top: none;
       }
       .uc-ss-card-footer {

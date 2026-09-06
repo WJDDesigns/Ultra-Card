@@ -470,7 +470,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
           padding: 6px 12px;
           background: var(--primary-color);
           color: var(--text-primary-color, #fff);
-          border-radius: calc(16px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-16, 16px);
           font-size: 13px;
           max-width: 100%;
           position: relative;
@@ -593,7 +593,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         )}
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -694,7 +694,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
           ? html`
               <div
                 class="settings-section uc-ar-photo-bg-editor"
-                style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+                style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
               >
                 ${this.renderFieldSection(
                   localize('editor.area_summary.room_bg_type', lang, 'Photo background source'),
@@ -869,7 +869,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
 
         <div
           class="settings-section uc-ar-pin-hide-box"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -1361,7 +1361,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       .uc-ar-retry {
         margin-top: 12px;
         padding: 8px 14px;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         border: 1px solid var(--divider-color);
         background: var(--secondary-background-color);
         cursor: pointer;
@@ -1373,7 +1373,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       }
       .uc-ar-skel-line {
         height: 14px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: linear-gradient(90deg, rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06), rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.12), rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06));
         background-size: 200% 100%;
         animation: ucArShimmer 1.2s ease-in-out infinite;
@@ -1614,7 +1614,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       .uc-ar-graph-icon {
         width: 52px;
         height: 52px;
-        border-radius: calc(16px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-16, 16px);
         display: grid;
         place-items: center;
         color: #fff;
@@ -1635,7 +1635,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       .uc-ar-compact-icon {
         width: 48px;
         height: 48px;
-        border-radius: calc(14px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-14, 14px);
         background: color-mix(in srgb, var(--uc-ar-accent) 16%, var(--secondary-background-color));
         color: var(--uc-ar-accent);
         display: grid;
@@ -1673,7 +1673,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       .uc-ar-photo-hero {
         width: 56px;
         height: 56px;
-        border-radius: calc(18px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-18, 18px);
         display: grid;
         place-items: center;
         background: color-mix(in srgb, var(--uc-ar-accent) 55%, transparent);

@@ -260,7 +260,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -326,7 +326,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -543,7 +543,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -885,7 +885,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -969,7 +969,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1055,7 +1055,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section data-items-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1575,7 +1575,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1618,7 +1618,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -2722,7 +2722,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         gap: 4px;
         padding: 12px 8px;
         border: 2px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         cursor: pointer;
         transition: all 0.2s ease;
       }
@@ -2755,7 +2755,7 @@ export class UltraPeopleModule extends BaseUltraModule {
       .option-btn {
         padding: 8px 12px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
@@ -2790,7 +2790,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         padding: 8px;
         text-align: center;
         border: 1px solid var(--divider-color);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         cursor: pointer;
         font-size: 12px;
         text-transform: capitalize;
@@ -2839,7 +2839,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         padding: 2px 8px;
         background: rgba(var(--rgb-primary-color), 0.15);
         color: var(--primary-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         font-size: 10px;
         font-weight: 600;
         text-transform: uppercase;
@@ -2875,7 +2875,7 @@ export class UltraPeopleModule extends BaseUltraModule {
       }
 
       ha-expansion-panel.data-item-panel {
-        --ha-card-border-radius: calc(8px * var(--uc-radius-scale, 1));
+        --ha-card-border-radius: var(--uc-r-8, 8px);
         --expansion-panel-summary-padding: 0;
         /* Horizontal-only padding on the variable so the collapsed .container
            (height: 0) does not still leak vertical padding below the row. */
@@ -2931,7 +2931,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         background: rgba(var(--rgb-primary-color), 0.1);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         color: var(--primary-color);
         flex-shrink: 0;
       }
@@ -2965,7 +2965,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         padding: 0;
         border: none;
         background: transparent;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         cursor: pointer;
         color: var(--secondary-text-color);
         display: flex;
@@ -3006,7 +3006,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         padding: 0;
         border: 1px solid var(--divider-color);
         background: transparent;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         cursor: pointer;
         color: var(--secondary-text-color);
         display: flex;
@@ -3036,7 +3036,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
       }
 
       .corner-control {
@@ -3062,7 +3062,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         width: 60px;
         padding: 6px 8px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         background: var(--card-background-color, var(--ha-card-background));
         color: var(--primary-text-color);
         font-size: 13px;
@@ -3097,7 +3097,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         width: 100%;
         padding: 10px 12px;
         border: 2px dashed var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: transparent;
         color: var(--primary-text-color);
         font-size: 14px;
@@ -3475,7 +3475,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         gap: 8px;
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.3);
-        border-radius: calc(20px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-20, 20px);
         margin-top: 8px;
       }
 

@@ -257,7 +257,7 @@ export class UltraPopupModule extends BaseUltraModule {
           border-left: 3px solid var(--primary-color);
           padding: 16px;
           margin-bottom: 24px;
-          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+          border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         }
         .subsection-title {
           font-size: 16px;
@@ -543,7 +543,7 @@ export class UltraPopupModule extends BaseUltraModule {
           ? html`
               <div
                 class="settings-section"
-                style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+                style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
               >
                 <div
                   class="section-title"
@@ -552,7 +552,7 @@ export class UltraPopupModule extends BaseUltraModule {
                   ${localize('editor.popup.trigger.section_title', lang, 'Trigger Configuration')}
                 </div>
                 <div
-                  style="display: flex; align-items: center; gap: 12px; background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.1); border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.3); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-top: 8px;"
+                  style="display: flex; align-items: center; gap: 12px; background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.1); border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.3); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-top: 8px;"
                 >
                   <ha-icon
                     icon="mdi:navigation-variant"
@@ -1814,7 +1814,7 @@ export class UltraPopupModule extends BaseUltraModule {
                 type="text"
                 placeholder="State (e.g., on, off)"
                 .value=${state}
-                style="flex: 0 0 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: calc(4px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color); color: var(--primary-text-color); flex-shrink: 0;"
+                style="flex: 0 0 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: var(--uc-r-4, 4px); background: var(--secondary-background-color); color: var(--primary-text-color); flex-shrink: 0;"
                 @input=${(e: Event) => {
                   const newState = (e.target as HTMLInputElement).value;
                   const updated = { ...stateColors };
@@ -1851,7 +1851,7 @@ export class UltraPopupModule extends BaseUltraModule {
           `
         )}
         <button
-          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); border: none; border-radius: calc(4px * var(--uc-radius-scale, 1)); cursor: pointer; font-size: 14px;"
+          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); border: none; border-radius: var(--uc-r-4, 4px); cursor: pointer; font-size: 14px;"
           @click=${() => {
             const updated = { ...stateColors, new_state: 'gray' };
             onUpdate(updated);
@@ -2201,7 +2201,7 @@ export class UltraPopupModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
       >
         <div
           class="section-title"
@@ -2256,7 +2256,7 @@ export class UltraPopupModule extends BaseUltraModule {
               ${selectedModule
                 ? html`
                     <div
-                      style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-success-color, 76, 175, 80), 0.1); border-left: 3px solid var(--success-color, #4caf50); border-radius: calc(4px * var(--uc-radius-scale, 1)); font-size: 13px; line-height: 1.5;"
+                      style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-success-color, 76, 175, 80), 0.1); border-left: 3px solid var(--success-color, #4caf50); border-radius: var(--uc-r-4, 4px); font-size: 13px; line-height: 1.5;"
                     >
                       <div
                         style="font-weight: 600; margin-bottom: 4px; color: var(--success-color, #4caf50);"
@@ -2280,7 +2280,7 @@ export class UltraPopupModule extends BaseUltraModule {
             `
           : html`
               <div
-                style="padding: 16px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-left: 3px solid var(--warning-color, #ff9800); border-radius: calc(4px * var(--uc-radius-scale, 1)); font-size: 13px; line-height: 1.5;"
+                style="padding: 16px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-left: 3px solid var(--warning-color, #ff9800); border-radius: var(--uc-r-4, 4px); font-size: 13px; line-height: 1.5;"
               >
                 <div
                   style="font-weight: 600; margin-bottom: 4px; color: var(--warning-color, #ff9800);"
@@ -2320,7 +2320,7 @@ export class UltraPopupModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
       >
         <div
           class="section-title"
@@ -2338,7 +2338,7 @@ export class UltraPopupModule extends BaseUltraModule {
           )}
         </div>
         <div
-          style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1); border-left: 3px solid var(--info-color, #03a9f4); border-radius: calc(4px * var(--uc-radius-scale, 1)); font-size: 13px; line-height: 1.5;"
+          style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1); border-left: 3px solid var(--info-color, #03a9f4); border-radius: var(--uc-r-4, 4px); font-size: 13px; line-height: 1.5;"
         >
           <div style="font-weight: 600; margin-bottom: 4px; color: var(--info-color, #03a9f4);">
             <ha-icon
@@ -2446,7 +2446,7 @@ export class UltraPopupModule extends BaseUltraModule {
                       const next = [...conditions, newCond];
                       updateModule({ trigger_conditions: next } as any);
                     }}
-                    style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px dashed var(--primary-color); background:none; color:var(--primary-color); border-radius:calc(6px * var(--uc-radius-scale, 1)); cursor:pointer;"
+                    style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px dashed var(--primary-color); background:none; color:var(--primary-color); border-radius:var(--uc-r-6, 6px); cursor:pointer;"
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                     ${localize('editor.popup.trigger_logic.add_condition', lang, 'Add Condition')}
@@ -2457,7 +2457,7 @@ export class UltraPopupModule extends BaseUltraModule {
                   ${conditions.length === 0
                     ? html`
                         <div
-                          style="padding: 20px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border: 1px dashed var(--warning-color, #ff9800); border-radius: calc(8px * var(--uc-radius-scale, 1));"
+                          style="padding: 20px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border: 1px dashed var(--warning-color, #ff9800); border-radius: var(--uc-r-8, 8px);"
                         >
                           <div
                             style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"
@@ -2484,7 +2484,7 @@ export class UltraPopupModule extends BaseUltraModule {
                             )}
                           </div>
                           <div
-                            style="font-size: 12px; color: var(--secondary-text-color); font-style: italic; padding: 8px; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); border-radius: calc(4px * var(--uc-radius-scale, 1));"
+                            style="font-size: 12px; color: var(--secondary-text-color); font-style: italic; padding: 8px; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); border-radius: var(--uc-r-4, 4px);"
                           >
                             <strong>Tip:</strong> ${unsafeHTML(
                               localize(
@@ -2505,7 +2505,7 @@ export class UltraPopupModule extends BaseUltraModule {
             `
           : html`
               <div
-                style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: calc(8px * var(--uc-radius-scale, 1)); color: var(--secondary-text-color);"
+                style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: var(--uc-r-8, 8px); color: var(--secondary-text-color);"
               >
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                   <ha-icon icon="mdi:hand-pointing-right" style="--mdc-icon-size: 20px;"></ha-icon>
@@ -2552,7 +2552,7 @@ export class UltraPopupModule extends BaseUltraModule {
     return html`
       <div
         class="uc-condition-item"
-        style="border:1px solid var(--divider-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); background: var(--card-background-color); overflow: hidden;"
+        style="border:1px solid var(--divider-color); border-radius: var(--uc-r-8, 8px); background: var(--card-background-color); overflow: hidden;"
       >
         <div
           class="uc-condition-header"
@@ -3242,7 +3242,7 @@ export class UltraPopupModule extends BaseUltraModule {
           `gap: ${buttonIcon ? '8px' : '0'}`,
           'padding: 12px 24px',
           `color: ${resolvedTextColor}`,
-          'border-radius: calc(8px * var(--uc-radius-scale, 1))',
+          'border-radius: var(--uc-r-8, 8px)',
           'cursor: pointer',
           'font-size: 16px',
           'font-weight: 500',
@@ -3322,7 +3322,7 @@ export class UltraPopupModule extends BaseUltraModule {
         if (!imageUrl) {
           triggerElement = html`
             <div
-              style="padding: 24px; text-align: center; color: var(--secondary-text-color); border: 1px dashed var(--divider-color); border-radius: calc(8px * var(--uc-radius-scale, 1));"
+              style="padding: 24px; text-align: center; color: var(--secondary-text-color); border: 1px dashed var(--divider-color); border-radius: var(--uc-r-8, 8px);"
             >
               ${localize('editor.popup.trigger.no_image', lang, 'No image configured')}
             </div>
@@ -3337,7 +3337,7 @@ export class UltraPopupModule extends BaseUltraModule {
               @touchend=${guardedTouchEnd(handleTriggerClick)}
               style="${isFullWidth
                 ? 'width: 100%;'
-                : 'max-width: 200px;'} cursor: pointer; border-radius: calc(8px * var(--uc-radius-scale, 1)); transition: transform 0.2s ease; display: block; touch-action: manipulation; pointer-events: auto;"
+                : 'max-width: 200px;'} cursor: pointer; border-radius: var(--uc-r-8, 8px); transition: transform 0.2s ease; display: block; touch-action: manipulation; pointer-events: auto;"
               @mouseover=${(e: Event) => {
                 const target = e.target as HTMLElement;
                 target.style.transform = 'scale(1.05)';
@@ -3374,7 +3374,7 @@ export class UltraPopupModule extends BaseUltraModule {
           iconBackground === 'circle'
             ? 'border-radius: 50%'
             : iconBackground === 'rounded-square'
-              ? 'border-radius: calc(8px * var(--uc-radius-scale, 1))'
+              ? 'border-radius: var(--uc-r-8, 8px)'
               : '',
         ]
           .filter(Boolean)
@@ -4002,7 +4002,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     if (isProModule && !hasProAccess) {
                       return html`
                         <div
-                          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); margin: 8px 0;"
+                          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: var(--uc-r-8, 8px); margin: 8px 0;"
                         >
                           🔒 ${childModuleHandler.metadata.title} - Pro Feature
                         </div>

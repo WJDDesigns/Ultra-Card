@@ -143,7 +143,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
       <style>
         .settings-section {
           background: var(--secondary-background-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           padding: 16px;
           margin-bottom: 24px;
         }
@@ -166,7 +166,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           flex: 1;
           padding: 16px 12px;
           border: 2px solid var(--divider-color);
-          border-radius: calc(12px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-12, 12px);
           background: var(--card-background-color);
           cursor: pointer;
           text-align: center;
@@ -210,7 +210,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           padding: 6px 12px;
           background: var(--primary-color);
           color: var(--text-primary-color);
-          border-radius: calc(16px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-16, 16px);
           font-size: 13px;
           transition: all 0.2s ease;
           position: relative;
@@ -242,7 +242,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           flex: 1;
           padding: 8px;
           border: 1px solid var(--divider-color);
-          border-radius: calc(4px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-4, 4px);
           background: var(--secondary-background-color);
           color: var(--primary-text-color);
           font-size: 14px;
@@ -252,7 +252,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           background: var(--primary-color);
           color: var(--text-primary-color);
           border: none;
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           cursor: pointer;
           font-weight: 600;
           display: flex;
@@ -275,7 +275,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           gap: 8px;
           padding: 12px;
           background: var(--card-background-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           margin-bottom: 8px;
           border: 1px solid var(--divider-color);
           transition: all 0.2s ease;
@@ -314,7 +314,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           padding: 16px;
           background: rgba(var(--rgb-primary-color), 0.05);
           border-left: 3px solid var(--primary-color);
-          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+          border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
           margin-bottom: 8px;
           animation: slideDown 0.3s ease;
         }
@@ -1339,7 +1339,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
         width: 2px;
         background: var(--tl-line);
         opacity: 0.3;
-        border-radius: calc(1px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-1, 1px);
       }
 
       .af-tl-group-label {
@@ -1447,11 +1447,11 @@ export class UltraActivityFeedModule extends BaseUltraModule {
         font-weight: 600;
         background: rgba(var(--rgb-primary-color), 0.15);
         padding: 2px 8px;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
       }
 
       .af-feed-card {
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         transition: transform 0.15s ease, box-shadow 0.15s ease;
         overflow: hidden;
       }
@@ -1531,7 +1531,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
         font-size: 11px;
         font-weight: 600;
         padding: 2px 8px;
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         flex-shrink: 0;
       }
     `;

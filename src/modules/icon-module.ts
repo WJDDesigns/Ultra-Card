@@ -1335,7 +1335,7 @@ export class UltraIconModule extends BaseUltraModule {
                display: grid; 
                grid-template-columns: 1fr 1fr; 
                border: 1px solid var(--divider-color); 
-               border-radius: calc(8px * var(--uc-radius-scale, 1)); 
+               border-radius: var(--uc-r-8, 8px); 
                overflow: hidden;
                min-height: 120px;
              "
@@ -3095,7 +3095,7 @@ export class UltraIconModule extends BaseUltraModule {
       /* Preview state indicators */
       .icon-module-split-preview .preview-header div {
         padding: 8px 12px;
-        border-radius: calc(20px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-20, 20px);
         font-size: 12px;
         font-weight: 700;
         text-transform: uppercase;
@@ -3221,7 +3221,7 @@ export class UltraIconModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;
@@ -3689,7 +3689,7 @@ export class UltraIconModule extends BaseUltraModule {
         gap: 8px;
         padding: 8px 16px;
         border: 2px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
@@ -3762,7 +3762,7 @@ export class UltraIconModule extends BaseUltraModule {
 
       /* Collapsible per-icon panel (mirrors people-module data-item panels) */
       ha-expansion-panel.icon-item-panel {
-        --ha-card-border-radius: calc(8px * var(--uc-radius-scale, 1));
+        --ha-card-border-radius: var(--uc-r-8, 8px);
         --expansion-panel-summary-padding: 0;
         /* Horizontal-only padding on the variable so the collapsed .container
            (height: 0) does not still leak vertical padding below the row. */
@@ -3817,7 +3817,7 @@ export class UltraIconModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         background: rgba(var(--rgb-primary-color), 0.1);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         color: var(--primary-color);
         flex-shrink: 0;
       }
@@ -3857,7 +3857,7 @@ export class UltraIconModule extends BaseUltraModule {
       /* Icon settings container */
       .icon-settings-container {
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         margin-bottom: 24px;
         border: 1px solid var(--divider-color);
@@ -3895,7 +3895,7 @@ export class UltraIconModule extends BaseUltraModule {
         background: var(--error-color);
         color: white;
         border: none;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         padding: 6px;
         cursor: pointer;
         display: flex;
@@ -3922,7 +3922,7 @@ export class UltraIconModule extends BaseUltraModule {
       .size-lock-container {
         padding: 12px;
         background: rgba(var(--rgb-primary-color), 0.05);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         border: 1px solid rgba(var(--rgb-primary-color), 0.2);
       }
 
@@ -3931,7 +3931,7 @@ export class UltraIconModule extends BaseUltraModule {
       /* Template Section Styles */
       .template-section {
         background: var(--card-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         border: 1px solid var(--divider-color);
         margin-bottom: 32px;
@@ -4032,7 +4032,7 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       .slider.round {
-        border-radius: calc(24px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-24, 24px);
     max-width: 50px;
 }
       }
@@ -4063,7 +4063,7 @@ export class UltraIconModule extends BaseUltraModule {
         width: 100%;
         padding: 12px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--card-background-color);
         color: var(--primary-text-color);
         outline: none;
@@ -4099,7 +4099,7 @@ export class UltraIconModule extends BaseUltraModule {
       .template-help code {
         background: rgba(var(--rgb-primary-color), 0.1);
         padding: 2px 4px;
-        border-radius: calc(3px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-3, 3px);
         font-family: 'Courier New', monospace;
         font-size: 11px;
       }

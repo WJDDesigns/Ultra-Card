@@ -283,7 +283,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         padding: 32px;
         text-align: center;
         background: var(--secondary-background-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         margin: 16px;
       ">
         <ha-icon
@@ -306,7 +306,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
             padding: 12px 24px;
             background: var(--primary-color);
             color: var(--text-primary-color, white);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             text-decoration: none;
             font-weight: 600;
           "
@@ -327,7 +327,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const leagues = sportsDataService.getSupportedLeagues();
 
     return html`
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
         <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
           ${localize('editor.sports.data_source', lang, 'DATA SOURCE')}
         </div>
@@ -374,7 +374,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
                     ${module.sensor_entity && hass.states[module.sensor_entity]
                       ? html`
-                          <div style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1));">
+                          <div style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-6, 6px);">
                             <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
                               ${localize('editor.sports.sensor_status', lang, 'Sensor Status')}:
                             </div>
@@ -480,7 +480,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
         ${module.team_id && module.team_name
           ? html`
-              <div style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); display: flex; align-items: center; gap: 12px;">
+              <div style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-6, 6px); display: flex; align-items: center; gap: 12px;">
                 ${teams.find(t => t.id === module.team_id)?.logo
                   ? html`<img src="${teams.find(t => t.id === module.team_id)?.logo}" style="width: 32px; height: 32px; object-fit: contain;" />`
                   : ''}
@@ -525,7 +525,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     ];
 
     return html`
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
         <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
           ${localize('editor.sports.display_settings', lang, 'DISPLAY SETTINGS')}
         </div>
@@ -608,7 +608,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const relevantToggles = toggleConfigs.filter((t) => features.includes(t.key));
 
     return html`
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
         <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
           ${localize('editor.sports.element_visibility', lang, 'ELEMENT VISIBILITY')}
         </div>
@@ -620,7 +620,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         </div>
         
         <!-- Data availability note -->
-        <div style="background: rgba(var(--rgb-primary-color), 0.1); border-left: 3px solid var(--primary-color); padding: 8px 12px; margin-bottom: 16px; border-radius: 0 calc(4px * var(--uc-radius-scale, 1)) calc(4px * var(--uc-radius-scale, 1)) 0; font-size: 12px; color: var(--secondary-text-color);">
+        <div style="background: rgba(var(--rgb-primary-color), 0.1); border-left: 3px solid var(--primary-color); padding: 8px 12px; margin-bottom: 16px; border-radius: 0 var(--uc-r-4, 4px) var(--uc-r-4, 4px) 0; font-size: 12px; color: var(--secondary-text-color);">
           <ha-icon icon="mdi:information-outline" style="--mdi-icon-size: 14px; margin-right: 4px; vertical-align: middle;"></ha-icon>
           <span style="vertical-align: middle;">Some data (records, broadcast, odds) may not be available for all leagues or games depending on the data source.</span>
         </div>
@@ -674,7 +674,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const hasDetail = sizeFeatures.includes('detail');
 
     return html`
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
         <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
           ${localize('editor.sports.styling', lang, 'STYLING')}
         </div>
@@ -937,7 +937,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         padding: 16px;
       }
       /* Slider control styles */
@@ -950,7 +950,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         flex: 1;
         height: 6px;
         background: var(--divider-color);
-        border-radius: calc(3px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-3, 3px);
         outline: none;
         appearance: none;
         -webkit-appearance: none;
@@ -993,7 +993,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         min-width: 56px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         font-size: 13px;
@@ -1012,7 +1012,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         height: 36px;
         padding: 0;
         border: 1px solid var(--divider-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
@@ -1331,7 +1331,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         justify-content: center;
         padding: 24px;
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         text-align: center;
       ">
         <ha-icon icon="mdi:lock" style="color: var(--primary-color); --mdi-icon-size: 32px; margin-bottom: 8px;"></ha-icon>
@@ -1768,7 +1768,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         }
         .sports-detailed .status-badge {
           padding: 6px 12px;
-          border-radius: calc(6px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-6, 6px);
           font-size: ${detailFontSize};
           font-weight: 600;
         }
@@ -1833,7 +1833,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           justify-content: center;
           padding: 12px 16px;
           background: var(--secondary-background-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           font-size: ${detailFontSize};
         }
         .sports-detailed .info-item {
@@ -2230,7 +2230,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         padding: 24px;
         text-align: center;
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
       ">
         <ha-icon icon="mdi:scoreboard-outline" style="--mdi-icon-size: 32px; color: var(--secondary-text-color); margin-bottom: 8px;"></ha-icon>
         <div style="font-size: 14px; color: var(--secondary-text-color);">${message}</div>

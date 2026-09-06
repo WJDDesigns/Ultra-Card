@@ -432,10 +432,10 @@ export class UltraDrawerModule extends BaseUltraModule {
     const children = drawerModule.modules || [];
 
     const panelPositionCss: Record<string, string> = {
-      left: `top: 0; left: 0; bottom: 0; width: ${size}; max-width: 90vw; transform: translateX(-100%); border-radius: 0 calc(16px * var(--uc-radius-scale, 1)) calc(16px * var(--uc-radius-scale, 1)) 0;`,
-      right: `top: 0; right: 0; bottom: 0; width: ${size}; max-width: 90vw; transform: translateX(100%); border-radius: calc(16px * var(--uc-radius-scale, 1)) 0 0 calc(16px * var(--uc-radius-scale, 1));`,
-      top: `top: 0; left: 0; right: 0; height: ${size}; max-height: 90vh; transform: translateY(-100%); border-radius: 0 0 calc(16px * var(--uc-radius-scale, 1)) calc(16px * var(--uc-radius-scale, 1));`,
-      bottom: `bottom: 0; left: 0; right: 0; height: ${size}; max-height: 90vh; transform: translateY(100%); border-radius: calc(16px * var(--uc-radius-scale, 1)) calc(16px * var(--uc-radius-scale, 1)) 0 0;`,
+      left: `top: 0; left: 0; bottom: 0; width: ${size}; max-width: 90vw; transform: translateX(-100%); border-radius: 0 var(--uc-r-16, 16px) var(--uc-r-16, 16px) 0;`,
+      right: `top: 0; right: 0; bottom: 0; width: ${size}; max-width: 90vw; transform: translateX(100%); border-radius: var(--uc-r-16, 16px) 0 0 var(--uc-r-16, 16px);`,
+      top: `top: 0; left: 0; right: 0; height: ${size}; max-height: 90vh; transform: translateY(-100%); border-radius: 0 0 var(--uc-r-16, 16px) var(--uc-r-16, 16px);`,
+      bottom: `bottom: 0; left: 0; right: 0; height: ${size}; max-height: 90vh; transform: translateY(100%); border-radius: var(--uc-r-16, 16px) var(--uc-r-16, 16px) 0 0;`,
     };
 
     const content = html`
@@ -596,7 +596,7 @@ export class UltraDrawerModule extends BaseUltraModule {
         gap: 8px;
         padding: 10px 18px;
         border: none;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         font-size: 14px;
         font-weight: 600;
         font-family: inherit;

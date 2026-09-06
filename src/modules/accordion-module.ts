@@ -117,7 +117,7 @@ export class UltraAccordionModule extends BaseUltraModule {
           border-left: 3px solid var(--primary-color);
           padding: 16px;
           margin-bottom: 24px;
-          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+          border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
           overflow: visible;
         }
         .design-subsection ultra-color-picker {
@@ -302,7 +302,7 @@ export class UltraAccordionModule extends BaseUltraModule {
         <!-- Header Alignment Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -370,7 +370,7 @@ export class UltraAccordionModule extends BaseUltraModule {
         <!-- Expand Behavior Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -923,7 +923,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-top: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-top: 32px;"
       >
         <div
           class="section-title"
@@ -1010,7 +1010,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                       const next = [...conditions, newCond];
                       updateModule({ open_conditions: next } as any);
                     }}
-                    style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px dashed var(--primary-color); background:none; color:var(--primary-color); border-radius:calc(6px * var(--uc-radius-scale, 1)); cursor:pointer;"
+                    style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px dashed var(--primary-color); background:none; color:var(--primary-color); border-radius:var(--uc-r-6, 6px); cursor:pointer;"
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                     ${localize('editor.accordion.open_logic.add_condition', lang, 'Add Condition')}
@@ -1040,7 +1040,7 @@ export class UltraAccordionModule extends BaseUltraModule {
           : openMode === 'always'
             ? html`
                 <div
-                  style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(8px * var(--uc-radius-scale, 1)); text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                  style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); text-align: center; color: var(--secondary-text-color); font-style: italic;"
                 >
                   ${localize(
                     'editor.accordion.open_logic.always_note',
@@ -1051,7 +1051,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               `
             : html`
                 <div
-                  style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: calc(8px * var(--uc-radius-scale, 1)); text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                  style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: var(--uc-r-8, 8px); text-align: center; color: var(--secondary-text-color); font-style: italic;"
                 >
                   ${localize(
                     'editor.accordion.open_logic.manual_note',
@@ -1088,7 +1088,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     return html`
       <div
         class="uc-condition-item"
-        style="border:1px solid var(--divider-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); background: var(--card-background-color); overflow: hidden;"
+        style="border:1px solid var(--divider-color); border-radius: var(--uc-r-8, 8px); background: var(--card-background-color); overflow: hidden;"
       >
         <div
           class="uc-condition-header"
@@ -1818,7 +1818,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     if (isProModule && !hasProAccess) {
       return html`
         <div
-          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); margin: 8px 0;"
+          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: var(--uc-r-8, 8px); margin: 8px 0;"
         >
           🔒 ${childModuleHandler.metadata.title} - Pro Feature
         </div>

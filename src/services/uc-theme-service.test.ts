@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { UC_RADIUS_SCALE_MAX, UC_THEME_BASE_CSS, radiusScale, ucThemeService } from './uc-theme-service';
+import {
+  UC_MODULE_RADII,
+  UC_RADIUS_SCALE_MAX,
+  UC_THEME_BASE_CSS,
+  radiusInner,
+  radiusScale,
+  ucThemeService,
+} from './uc-theme-service';
 import {
   BEACH_THEME,
   BUILTIN_THEMES,
@@ -88,6 +95,27 @@ describe('resolution order', () => {
     for (const t of BUILTIN_THEMES) {
       if (t.id === UC_THEME_HA_NATIVE) continue;
       expect(ucThemeService.getHostVars(t)['--uc-radius-scale']).toBe(radiusScale(t.tokens.radius));
+    }
+  });
+
+  it('caps nested radii so they step down concentrically from the card radius', () => {
+    expect(radiusInner(0, 16)).toBe(0); // square stays square
+    expect(radiusInner(26, 20)).toBe(13); // radius - padding is 6, held at half radius
+    expect(radiusInner(28, 18)).toBe(14);
+    expect(radiusInner(12, 4)).toBe(8); // true concentric value used when it fits the band
+    expect(radiusInner(8, 16)).toBe(4);
+    for (const t of BUILTIN_THEMES) {
+      if (t.id === UC_THEME_HA_NATIVE) continue;
+      const inner = parseFloat(ucThemeService.getHostVars(t)['--uc-radius-inner']);
+      expect(inner).toBeLessThan(Math.max(t.tokens.radius, 1));
+      expect(inner).toBeGreaterThanOrEqual(0);
+    }
+    // Every module-side --uc-r-N variable is defined by the base CSS, scaled and capped.
+    for (const n of UC_MODULE_RADII) {
+      const name = `--uc-r-${String(n).replace('.', '_')}`;
+      expect(UC_THEME_BASE_CSS).toContain(
+        `${name}: min(calc(${n}px * var(--uc-radius-scale, 1)), var(--uc-radius-inner, 999px));`
+      );
     }
   });
 

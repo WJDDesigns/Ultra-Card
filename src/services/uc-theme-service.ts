@@ -62,12 +62,26 @@ export const UC_THEME_CHANGED_EVENT = 'ultra-card-theme-changed';
  * containing block, so themes without the token change nothing. Popups and
  * drawers portal to `document.body` and are deliberately left in colour.
  */
+/**
+ * Radii modules were authored with (px). Each becomes a `--uc-r-N` variable
+ * inside a themed card: scaled by `--uc-radius-scale` and capped at
+ * `--uc-radius-inner` so nested corners always step down from the card's.
+ * Outside a themed card the variables are unset and modules use their own
+ * `Npx` fallback, so HA Native renders exactly as before.
+ */
+export const UC_MODULE_RADII = [1, 1.5, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 18, 20, 22, 24] as const;
+
+const MODULE_RADIUS_VARS = UC_MODULE_RADII.map(
+  n => `  --uc-r-${String(n).replace('.', '_')}: min(calc(${n}px * var(--uc-radius-scale, 1)), var(--uc-radius-inner, 999px));`
+).join('\n');
+
 export const UC_THEME_BASE_CSS = `
 [style*="--uc-design-surface"]:not([style*="border-radius"]) {
-  border-radius: var(--uc-radius-sm);
+  border-radius: var(--uc-radius-inner, var(--uc-radius-sm));
 }
 .card-container {
   filter: var(--uc-color-filter, none);
+${MODULE_RADIUS_VARS}
 }
 `.trim();
 
@@ -88,6 +102,20 @@ export const UC_RADIUS_SCALE_MAX = 1.75;
 export function radiusScale(cardRadius: number): string {
   const s = Math.min(UC_RADIUS_SCALE_MAX, Math.max(0, cardRadius / BASE_CARD_RADIUS));
   return String(Math.round(s * 100) / 100);
+}
+
+/**
+ * Largest radius a first-level nested surface may have so its corner reads
+ * concentric with the card's. Ideally `radius - padding`; that collapses to
+ * zero on most themes (padding is usually larger than the radius), so it is
+ * held between half the card radius and four px inside it. Square stays square.
+ */
+export function radiusInner(cardRadius: number, cardPadding: number | undefined): number {
+  if (cardRadius <= 0) return 0;
+  const concentric = cardRadius - (cardPadding ?? 16);
+  const lo = cardRadius * 0.5;
+  const hi = Math.max(lo, cardRadius - 4);
+  return Math.round(Math.min(hi, Math.max(lo, concentric)) * 10) / 10;
 }
 
 const PALETTE_TO_VARS: Record<string, string[]> = {
@@ -374,6 +402,7 @@ class UcThemeService {
       // the 12px default card and scale with the theme's card radius, so a
       // square theme squares everything and a round one rounds everything.
       '--uc-radius-scale': radiusScale(t.radius),
+      '--uc-radius-inner': `${radiusInner(t.radius, theme.card?.card_padding)}px`,
     };
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;

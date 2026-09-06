@@ -411,7 +411,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                       ${dropdownModule.source_entity
                         ? html`
                             <div
-                              style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(4px * var(--uc-radius-scale, 1)); border-left: 3px solid var(--primary-color);"
+                              style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.05); border-radius: var(--uc-r-4, 4px); border-left: 3px solid var(--primary-color);"
                             >
                               <div
                                 style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px;"
@@ -597,7 +597,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                 ? html`
                     <div
                       class="settings-section"
-                      style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
+                      style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 24px;"
                     >
                       <div
                         class="section-title"
@@ -669,7 +669,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                               <div class="template-help">
                                 <p><strong>Template must return a JSON array of options:</strong></p>
                                 <code
-                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: calc(4px * var(--uc-radius-scale, 1)); font-size: 11px; margin-top: 8px;"
+                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: var(--uc-r-4, 4px); font-size: 11px; margin-top: 8px;"
                                 >
                                   [<br />
                                   &nbsp;&nbsp;{"label": "Option 1", "icon": "mdi:home", "icon_color": "blue"},<br />
@@ -679,7 +679,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                                 </code>
                                 <p style="margin-top: 12px;"><strong>Example - Ecobee Climate Modes (with actions):</strong></p>
                                 <code
-                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: calc(4px * var(--uc-radius-scale, 1)); font-size: 11px; margin-top: 8px;"
+                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: var(--uc-r-4, 4px); font-size: 11px; margin-top: 8px;"
                                 >
                                   {% set modes = state_attr('climate.ecobee', 'hvac_modes') | default(['off', 'heat', 'cool', 'auto', 'heat_cool']) %}<br />
                                   [<br />
@@ -709,7 +709,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                                 </p>
                                 <p style="margin-top: 12px;"><strong>Example with display key:</strong></p>
                                 <code
-                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: calc(4px * var(--uc-radius-scale, 1)); font-size: 11px; margin-top: 8px;"
+                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: var(--uc-r-4, 4px); font-size: 11px; margin-top: 8px;"
                                 >
                                   {% set mode = states("climate.ecobee") %}<br />
                                   {% set modes = state_attr('climate.ecobee', 'hvac_modes') | default(['off', 'heat', 'cool', 'auto', 'heat_cool']) %}<br />
@@ -748,7 +748,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                     (option, index) => html`
                       <div
                         class="option-item"
-                        style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 1px solid var(--divider-color); overflow: hidden;"
+                        style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); border: 1px solid var(--divider-color); overflow: hidden;"
                         data-option-id="${option.id}"
                         data-option-index="${index}"
                         @dragover=${(e: DragEvent) => this.handleDragOver(e)}
@@ -764,7 +764,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                           <div style="display: flex; align-items: center; gap: 12px;">
                             <div
                               class="drag-handle"
-                              style="padding: 8px; margin: -8px; cursor: grab; border-radius: calc(4px * var(--uc-radius-scale, 1)); transition: background-color 0.2s ease;"
+                              style="padding: 8px; margin: -8px; cursor: grab; border-radius: var(--uc-r-4, 4px); transition: background-color 0.2s ease;"
                               draggable="true"
                               @dragstart=${(e: DragEvent) => this.handleDragStart(e, index)}
                               @dragend=${(e: DragEvent) => this.handleDragEnd(e)}
@@ -902,7 +902,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                   ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
                 </div>
                 <div
-                  style="text-align: center; padding: 32px; color: var(--secondary-text-color); background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(8px * var(--uc-radius-scale, 1));"
+                  style="text-align: center; padding: 32px; color: var(--secondary-text-color); background: rgba(var(--rgb-primary-color), 0.05); border-radius: var(--uc-r-8, 8px);"
                 >
                   <ha-icon
                     icon="mdi:link-variant"
@@ -1117,7 +1117,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             padding: 8px 12px;
             background: var(--primary-color);
             color: var(--text-primary-color, #fff);
-            border-radius: calc(6px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-6, 6px);
             font-size: 14px;
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -1344,7 +1344,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                   `
                 : html`
                     <div
-                      style="text-align: center; padding: 16px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(4px * var(--uc-radius-scale, 1));"
+                      style="text-align: center; padding: 16px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: var(--uc-r-4, 4px);"
                     >
                       ${localize(
                         'editor.dropdown.option.state_color_enabled',
@@ -2123,7 +2123,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div
                 class="dropdown-options"
                 role="listbox"
-                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: calc(4px * var(--uc-radius-scale, 1)); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${Z_INDEX.DROPDOWN_MENU} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: var(--uc-r-4, 4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${Z_INDEX.DROPDOWN_MENU} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
                 @scroll=${(e: Event) => {
@@ -3785,12 +3785,12 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       .dropdown-options::-webkit-scrollbar-track {
         background: var(--secondary-background-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
       }
 
       .dropdown-options::-webkit-scrollbar-thumb {
         background: var(--divider-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         cursor: pointer;
         -webkit-user-select: none;
         user-select: none;
@@ -3936,7 +3936,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;
@@ -3979,7 +3979,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       /* Settings section styling */
       .settings-section {
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         margin-bottom: 32px;
         position: relative;

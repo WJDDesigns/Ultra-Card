@@ -211,7 +211,7 @@ export class UltraColorInputModule extends BaseUltraModule {
         .clr-row-${mid} { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
         .clr-swatch-${mid} {
           position:relative; width:${previewSize}px; height:${previewSize}px; flex-shrink:0;
-          border-radius:calc(10px * var(--uc-radius-scale, 1)); cursor:pointer; overflow:hidden;
+          border-radius:var(--uc-r-10, 10px); cursor:pointer; overflow:hidden;
           border:2px solid var(--divider-color); transition:border-color .2s, box-shadow .2s;
           background:${currentHex};
         }
@@ -221,7 +221,7 @@ export class UltraColorInputModule extends BaseUltraModule {
           border:none; padding:0; -webkit-appearance:none;
         }
         .clr-hex-input-${mid} { flex:1; min-width:80px; padding:10px 12px; border:1px solid var(--divider-color);
-          border-radius:calc(8px * var(--uc-radius-scale, 1)); background:transparent; font-size:${fontSize}px; color:${textColor};
+          border-radius:var(--uc-r-8, 8px); background:transparent; font-size:${fontSize}px; color:${textColor};
           font-family:monospace; outline:none; transition:border-color .2s; }
         .clr-hex-input-${mid}:focus { border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
         .clr-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }

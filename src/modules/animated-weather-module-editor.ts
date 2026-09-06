@@ -301,7 +301,7 @@ export function renderAnimatedWeatherModuleEditor(
 
       .wm-section {
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
       }
 
@@ -332,7 +332,7 @@ export function renderAnimatedWeatherModuleEditor(
 
       .wm-column {
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         min-height: 180px;
       }
@@ -350,7 +350,7 @@ export function renderAnimatedWeatherModuleEditor(
 
       .wm-item {
         background: var(--primary-background-color);
-        border-radius: calc(6px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-6, 6px);
         border: 1px solid transparent;
         transition: opacity 0.15s, transform 0.15s, border-color 0.15s;
         cursor: grab;
@@ -449,7 +449,7 @@ export function renderAnimatedWeatherModuleEditor(
       .wm-drop-zone {
         height: 10px;
         position: relative;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         /* A slightly expanded hit area makes it easier to target */
         margin: -1px 0;
         z-index: 1;
@@ -464,7 +464,7 @@ export function renderAnimatedWeatherModuleEditor(
         right: 8px;
         height: 2px;
         transform: translateY(-50%);
-        border-radius: calc(2px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-2, 2px);
         background: transparent;
         transition: background 0.1s, box-shadow 0.1s, height 0.1s;
       }
@@ -501,7 +501,7 @@ export function renderAnimatedWeatherModuleEditor(
       .wm-drop-zone-empty {
         height: 72px !important;
         border: 2px dashed var(--divider-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         display: flex;
         align-items: center;
         justify-content: center;

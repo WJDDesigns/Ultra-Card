@@ -484,7 +484,7 @@ export class UltraTextInputModule extends BaseUltraModule {
           align-items: ${isMultiline ? 'flex-start' : 'center'};
           background: ${appearanceBg};
           border: ${appearanceBorder};
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           ${appearanceExtra}
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
           overflow: hidden;

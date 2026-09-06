@@ -370,7 +370,7 @@ export class ModuleRegistry {
         width: 100%;
         padding: 8px 12px;
         border: 1px solid var(--divider-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         font-size: 14px;
@@ -383,7 +383,7 @@ export class ModuleRegistry {
         height: 36px;
         padding: 0;
         border: 1px solid var(--divider-color);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         cursor: pointer;
         background: none;
       }

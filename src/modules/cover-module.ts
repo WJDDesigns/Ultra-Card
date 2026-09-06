@@ -307,7 +307,7 @@ export class UltraCoverModule extends BaseUltraModule {
 
     if (!entityId || !hass?.states[entityId]) {
       return html`
-        <div class="uc-cover-wrapper" style="border-radius: calc(12px * var(--uc-radius-scale, 1)); overflow: hidden;">
+        <div class="uc-cover-wrapper" style="border-radius: var(--uc-r-12, 12px); overflow: hidden;">
           ${this.renderGradientErrorState(
             localize('editor.cover.config_needed', lang, 'Select a cover'),
             localize('editor.cover.config_needed_desc', lang, 'Choose a cover entity in the General tab'),
@@ -513,9 +513,9 @@ export class UltraCoverModule extends BaseUltraModule {
           ${showPosition && (hasPosition || currentPosition !== undefined)
             ? html`
                 <div style="margin-bottom: 12px;">
-                  <div style="height: 8px; background: var(--divider-color); border-radius: calc(4px * var(--uc-radius-scale, 1)); overflow: hidden;">
+                  <div style="height: 8px; background: var(--divider-color); border-radius: var(--uc-r-4, 4px); overflow: hidden;">
                     <div
-                      style="height: 100%; width: ${positionPercent}%; background: var(--primary-color); border-radius: calc(4px * var(--uc-radius-scale, 1)); transition: width 0.2s;"
+                      style="height: 100%; width: ${positionPercent}%; background: var(--primary-color); border-radius: var(--uc-r-4, 4px); transition: width 0.2s;"
                     ></div>
                   </div>
                   ${showPositionControl ? html`<div style="font-size: 12px; text-align: center; margin-top: 4px;">${positionPercent}%</div>` : ''}
@@ -590,7 +590,7 @@ export class UltraCoverModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
 
     return html`
-      <div class="uc-cover-wrapper ${hoverClass}" style="background: var(--card-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1)); overflow: hidden; ${styleStr}">
+      <div class="uc-cover-wrapper ${hoverClass}" style="background: var(--card-background-color); border-radius: var(--uc-r-12, 12px); overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
     `;
@@ -608,7 +608,7 @@ export class UltraCoverModule extends BaseUltraModule {
         appearance: none;
         height: 6px;
         background: var(--divider-color);
-        border-radius: calc(3px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-3, 3px);
       }
       .uc-cover input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;

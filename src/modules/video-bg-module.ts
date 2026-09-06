@@ -91,7 +91,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <!-- Module Info -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
         >
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <ha-icon
@@ -107,7 +107,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
           </div>
 
           <div
-            style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--info-color);"
+            style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: var(--uc-r-6, 6px); border-left: 4px solid var(--info-color);"
           >
             <div style="font-size: 13px; line-height: 1.5;">
               <strong>Note:</strong> This module controls the video background for the entire view.
@@ -120,7 +120,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <!-- Core Settings -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -187,7 +187,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <!-- Default Video Source -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -265,7 +265,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <!-- Visual Filters -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -323,7 +323,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <!-- Performance Settings -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -412,7 +412,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
     if (default_source === 'youtube' || default_source === 'vimeo') {
       return html`
         <div
-          style="position: relative; width: 100%; height: 300px; background: #000; border-radius: calc(8px * var(--uc-radius-scale, 1)); overflow: hidden; ${filterCss} ${opacityCss}"
+          style="position: relative; width: 100%; height: 300px; background: #000; border-radius: var(--uc-r-8, 8px); overflow: hidden; ${filterCss} ${opacityCss}"
         >
           <iframe
             src="${embedUrl}"
@@ -441,7 +441,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
       // Local or URL video
       return html`
         <div
-          style="position: relative; width: 100%; height: 300px; background: #000; border-radius: calc(8px * var(--uc-radius-scale, 1)); overflow: hidden; ${filterCss} ${opacityCss}"
+          style="position: relative; width: 100%; height: 300px; background: #000; border-radius: var(--uc-r-8, 8px); overflow: hidden; ${filterCss} ${opacityCss}"
         >
           <video
             src="${default_video_url}"
@@ -468,7 +468,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
       >
         <div
           class="section-title"
@@ -478,7 +478,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         </div>
 
         <div
-          style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--info-color); margin-bottom: 16px;"
+          style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: var(--uc-r-6, 6px); border-left: 4px solid var(--info-color); margin-bottom: 16px;"
         >
           <div style="font-size: 13px; line-height: 1.5;">
             Applies a consistent transparency overlay to all Ultra Cards in this view for improved
@@ -596,7 +596,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
   private renderProLockUI(lang: string): TemplateResult {
     return html`
       <div
-        style="padding: 32px; text-align: center; background: var(--secondary-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1));"
+        style="padding: 32px; text-align: center; background: var(--secondary-background-color); border-radius: var(--uc-r-12, 12px);"
       >
         <ha-icon
           icon="mdi:lock"
@@ -614,7 +614,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <a
           href="https://github.com/WJDDesigns/ultra-card-connect"
           target="_blank"
-          style="display: inline-block; padding: 12px 24px; background: var(--primary-color); color: var(--text-primary-color, #fff); text-decoration: none; border-radius: calc(8px * var(--uc-radius-scale, 1)); font-weight: 600;"
+          style="display: inline-block; padding: 12px 24px; background: var(--primary-color); color: var(--text-primary-color, #fff); text-decoration: none; border-radius: var(--uc-r-8, 8px); font-weight: 600;"
         >
           Get Ultra Card Connect
         </a>
@@ -675,7 +675,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
       if (!videoBgModule.enabled || !videoBgModule.default_video_url) {
         return this.wrapWithAnimation(html`
           <div
-            style="padding: 24px; text-align: center; background: rgba(var(--rgb-primary-color), 0.1); border: 2px dashed var(--primary-color); border-radius: calc(8px * var(--uc-radius-scale, 1));"
+            style="padding: 24px; text-align: center; background: rgba(var(--rgb-primary-color), 0.1); border: 2px dashed var(--primary-color); border-radius: var(--uc-r-8, 8px);"
           >
             <ha-icon
               icon="mdi:video-box"
@@ -706,7 +706,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
             text-align: center;
             background: rgba(var(--rgb-primary-color), 0.1);
             border: 2px dashed var(--primary-color);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             cursor: pointer;
             transition: all 0.2s ease;
           "
@@ -755,7 +755,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+        border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         overflow: hidden;
         transition: all 0.2s ease;
       }

@@ -555,7 +555,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
       .format-btn {
         padding: 8px;
         border: 1px solid var(--divider-color, #cccccc);
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         cursor: pointer;
         transition: all 0.2s ease;
         display: flex;
@@ -577,7 +577,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
       /* Settings section styling */
       .settings-section {
         background: var(--secondary-background-color);
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         margin-bottom: 32px;
       }

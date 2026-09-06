@@ -21,7 +21,7 @@ export function unifiModuleStyles(): string {
   color: var(--secondary-text-color);
   margin: -4px 0 12px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--uc-r-8, 8px);
   background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
   border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
 }
@@ -30,7 +30,7 @@ export function unifiModuleStyles(): string {
 .uc-unifi-wizard {
   background: var(--secondary-background-color);
   border: 1px solid var(--divider-color);
-  border-radius: 12px;
+  border-radius: var(--uc-r-12, 12px);
   padding: 14px 16px;
   margin-bottom: 14px;
 }
@@ -58,7 +58,7 @@ export function unifiModuleStyles(): string {
 .uc-unifi-btn {
   appearance: none;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--uc-r-8, 8px);
   padding: 8px 14px;
   font-weight: 600;
   font-size: 13px;
@@ -79,7 +79,7 @@ export function unifiModuleStyles(): string {
 }
 .uc-unifi-progress {
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--uc-r-2, 2px);
   background: rgba(127,127,127,0.2);
   overflow: hidden;
   margin-top: 10px;
@@ -121,7 +121,7 @@ export function unifiModuleStyles(): string {
 .uc-unifi-rack {
   --rack-bg: #0b0e14;
   position: relative;
-  border-radius: 12px;
+  border-radius: var(--uc-r-12, 12px);
   padding: 16px 14px;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(40,80,140,0.18), transparent 55%),
@@ -236,7 +236,7 @@ export function unifiModuleStyles(): string {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--uc-r-8, 8px);
   background: var(--card-background-color, rgba(0,0,0,0.06));
   border: 1px solid var(--divider-color, rgba(120,130,150,0.2));
   cursor: grab;
@@ -261,7 +261,7 @@ export function unifiModuleStyles(): string {
    .card-column img height:auto rule cannot override the sizing. */
 .uc-unifi-photo-unit {
   position: relative;
-  border-radius: 6px;
+  border-radius: var(--uc-r-6, 6px);
   background: rgba(10, 14, 22, 0.55);
   padding: 8px 18px 4px;
 }
@@ -302,7 +302,7 @@ export function unifiModuleStyles(): string {
 .uc-unifi-port-cell .etherlight {
   position: absolute;
   inset: 0;
-  border-radius: 1.5px;
+  border-radius: var(--uc-r-1_5, 1.5px);
   background: #0a0d12;
   /* Dark rim inside the opening keeps the jack looking recessed rather than
      like a flat painted tile. */
@@ -310,7 +310,7 @@ export function unifiModuleStyles(): string {
     inset 0 0 0 1px rgba(0, 0, 0, 0.6),
     inset 0 1px 2px rgba(0, 0, 0, 0.85);
 }
-.uc-unifi-port-cell.kind-sfp .etherlight { border-radius: 1px; }
+.uc-unifi-port-cell.kind-sfp .etherlight { border-radius: var(--uc-r-1, 1px); }
 .uc-unifi-port-cell.is-down .etherlight {
   background: linear-gradient(180deg, #10141b 0%, #05070a 100%);
 }
@@ -380,7 +380,7 @@ export function unifiModuleStyles(): string {
   left: 15%;
   width: 70%;
   height: 1.5px;
-  border-radius: 1px;
+  border-radius: var(--uc-r-1, 1px);
   background: #ffb300;
   box-shadow: 0 0 3px #ffb300;
 }
@@ -510,7 +510,7 @@ export function unifiModuleStyles(): string {
 .uc-unifi-port-card {
   background: var(--secondary-background-color);
   border: 1px solid var(--divider-color);
-  border-radius: 10px;
+  border-radius: var(--uc-r-10, 10px);
   padding: 10px;
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease;
@@ -525,14 +525,14 @@ export function unifiModuleStyles(): string {
 }
 .uc-unifi-port-card .meta { font-size: 10px; opacity: 0.65; margin-top: 4px; }
 .uc-unifi-bar {
-  height: 4px; border-radius: 2px; background: rgba(127,127,127,0.2); margin-top: 6px; overflow: hidden;
+  height: 4px; border-radius: var(--uc-r-2, 2px); background: rgba(127,127,127,0.2); margin-top: 6px; overflow: hidden;
 }
-.uc-unifi-bar > i { display: block; height: 100%; border-radius: 2px; }
+.uc-unifi-bar > i { display: block; height: 100%; border-radius: var(--uc-r-2, 2px); }
 
 .uc-unifi-port-detail {
   margin-top: 12px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: var(--uc-r-12, 12px);
   background: var(--secondary-background-color);
   border: 1px solid var(--divider-color);
 }
@@ -555,7 +555,7 @@ export function unifiModuleStyles(): string {
 .uc-unifi-device-tile {
   background: var(--secondary-background-color);
   border: 1px solid var(--divider-color);
-  border-radius: 14px;
+  border-radius: var(--uc-r-14, 14px);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -589,7 +589,7 @@ export function unifiModuleStyles(): string {
 .uc-unifi-device-tile .uc-unifi-tile-snapbox {
   position: relative;
   height: 96px;
-  border-radius: 8px;
+  border-radius: var(--uc-r-8, 8px);
   overflow: hidden;
   flex-shrink: 0;
   background: rgba(0,0,0,0.25);
@@ -649,7 +649,7 @@ export function unifiModuleStyles(): string {
   position: relative;
   width: 100%;
   min-height: 280px;
-  border-radius: 12px;
+  border-radius: var(--uc-r-12, 12px);
   background:
     radial-gradient(circle at 50% 20%, rgba(0,180,255,0.08), transparent 50%),
     #0a0e16;
@@ -717,7 +717,7 @@ export function unifiModuleStyles(): string {
 }
 .uc-unifi-wan-card {
   background: var(--secondary-background-color);
-  border-radius: 12px;
+  border-radius: var(--uc-r-12, 12px);
   padding: 14px;
   border: 1px solid var(--divider-color);
 }

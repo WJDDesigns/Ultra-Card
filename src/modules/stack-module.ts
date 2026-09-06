@@ -738,7 +738,7 @@ export class UltraStackModule extends BaseUltraModule {
       <style>
         .uc-stack-section {
           background: var(--secondary-background-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           padding: 16px;
           margin-bottom: 24px;
         }
@@ -781,7 +781,7 @@ export class UltraStackModule extends BaseUltraModule {
           background: var(--card-background-color);
           color: var(--primary-text-color);
           border: 2px solid var(--divider-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           cursor: pointer;
           font-size: 13px;
           font-weight: 500;
@@ -817,7 +817,7 @@ export class UltraStackModule extends BaseUltraModule {
           padding: 14px;
           background: var(--card-background-color);
           border: 1px solid var(--divider-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           cursor: pointer;
           text-align: left;
           transition: all 0.15s ease;
@@ -855,7 +855,7 @@ export class UltraStackModule extends BaseUltraModule {
           padding: 10px 12px;
           background: var(--card-background-color);
           border: 2px solid var(--divider-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           cursor: pointer;
           transition: all 0.15s ease;
         }
@@ -875,7 +875,7 @@ export class UltraStackModule extends BaseUltraModule {
           justify-content: center;
           width: 32px;
           height: 32px;
-          border-radius: calc(6px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-6, 6px);
           background: rgba(var(--rgb-primary-color), 0.12);
           color: var(--primary-color);
           flex-shrink: 0;
@@ -933,7 +933,7 @@ export class UltraStackModule extends BaseUltraModule {
           justify-content: center;
           background: var(--card-background-color);
           border: 2px solid var(--divider-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           cursor: pointer;
           color: var(--secondary-text-color);
           transition: all 0.15s ease;
@@ -960,7 +960,7 @@ export class UltraStackModule extends BaseUltraModule {
           padding: 32px 16px;
           background: var(--card-background-color);
           border: 1px dashed var(--divider-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           margin-bottom: 16px;
           text-align: center;
         }
@@ -1300,7 +1300,7 @@ export class UltraStackModule extends BaseUltraModule {
         width: 10px;
         height: 10px;
         background: var(--primary-color);
-        border-radius: calc(2px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-2, 2px);
         opacity: 0.8;
       }
       /* The inner module rendered inside a stack layer should fully fill the
@@ -1788,7 +1788,7 @@ export class UltraStackModule extends BaseUltraModule {
               display: flex;
               align-items: center;
               justify-content: center;
-              border-radius: calc(12px * var(--uc-radius-scale, 1));
+              border-radius: var(--uc-r-12, 12px);
               z-index: 10;
             "
           >

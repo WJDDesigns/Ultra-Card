@@ -227,7 +227,7 @@ export class UltraUnifiModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background:var(--secondary-background-color);border-radius:calc(8px * var(--uc-radius-scale, 1));padding:16px;margin-bottom:24px;"
+        style="background:var(--secondary-background-color);border-radius:var(--uc-r-8, 8px);padding:16px;margin-bottom:24px;"
       >
         <div
           class="section-title"
@@ -456,7 +456,7 @@ export class UltraUnifiModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background:var(--secondary-background-color);border-radius:calc(8px * var(--uc-radius-scale, 1));padding:16px;margin-bottom:24px;"
+        style="background:var(--secondary-background-color);border-radius:var(--uc-r-8, 8px);padding:16px;margin-bottom:24px;"
       >
         <div
           class="section-title"
@@ -590,7 +590,7 @@ export class UltraUnifiModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background:var(--secondary-background-color);border-radius:calc(8px * var(--uc-radius-scale, 1));padding:16px;margin-bottom:24px;"
+        style="background:var(--secondary-background-color);border-radius:var(--uc-r-8, 8px);padding:16px;margin-bottom:24px;"
       >
         <div
           class="section-title"
@@ -684,7 +684,7 @@ export class UltraUnifiModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background:var(--secondary-background-color);border-radius:calc(8px * var(--uc-radius-scale, 1));padding:16px;margin-bottom:24px;"
+        style="background:var(--secondary-background-color);border-radius:var(--uc-r-8, 8px);padding:16px;margin-bottom:24px;"
       >
         <div
           class="section-title"
@@ -874,7 +874,7 @@ export class UltraUnifiModule extends BaseUltraModule {
         )}
 
         <div
-          style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:calc(8px * var(--uc-radius-scale, 1));background:rgba(var(--rgb-primary-color),0.08);margin:8px 0 24px;"
+          style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--uc-r-8, 8px);background:rgba(var(--rgb-primary-color),0.08);margin:8px 0 24px;"
         >
           <ha-icon
             icon=${topo.hasUnifiIntegration || topo.devices.length

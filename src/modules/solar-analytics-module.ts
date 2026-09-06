@@ -323,7 +323,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-solar-wrapper ${hoverClass}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: calc(16px * var(--uc-radius-scale, 1)); overflow: hidden; ${styleStr}">
+          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-solar uc-solar--compact">
               <div class="uc-solar-compact__kpi">
@@ -359,7 +359,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
     return html`
       <style>${this.getStyles()}</style>
       <div class="uc-solar-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: calc(20px * var(--uc-radius-scale, 1)); overflow: hidden; ${styleStr}">
+        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(html`
           <div class="uc-solar uc-solar--full">
 
@@ -585,7 +585,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
         align-items: center;
         gap: 6px;
         padding: 8px 12px;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         background: color-mix(in srgb, var(--grid-color) 8%, var(--card-background-color, var(--ha-card-background)));
         border: 1px solid color-mix(in srgb, var(--grid-color) 25%, transparent);
       }
@@ -628,7 +628,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
         align-items: center;
         gap: 3px;
         padding: 10px 6px;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
         border: 1px solid color-mix(in srgb, var(--divider-color) 30%, transparent);
         font-size: 0.875rem;

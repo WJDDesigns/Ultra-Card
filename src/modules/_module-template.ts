@@ -256,7 +256,7 @@ export class UltraTemplateModule extends BaseUltraModule {
     return html`
       <div
         class="uc-template-wrapper ${hoverClass}"
-        style="padding: 16px; border-radius: calc(12px * var(--uc-radius-scale, 1)); background: var(--card-background-color); ${designStyles}"
+        style="padding: 16px; border-radius: var(--uc-r-12, 12px); background: var(--card-background-color); ${designStyles}"
       >
         ${this.wrapWithAnimation(
           html`

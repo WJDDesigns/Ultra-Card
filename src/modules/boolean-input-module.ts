@@ -238,7 +238,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
       return this.wrapWithAnimation(html`
         <style>
           .bool-cb-row-${mid} { display:flex; align-items:center; gap:12px; cursor:pointer; }
-          .bool-cb-box-${mid} { width:22px; height:22px; border-radius:calc(4px * var(--uc-radius-scale, 1)); border:2px solid ${currentColor};
+          .bool-cb-box-${mid} { width:22px; height:22px; border-radius:var(--uc-r-4, 4px); border:2px solid ${currentColor};
             display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0;
             background:${isOn ? currentColor : 'transparent'}; }
           .bool-cb-box-${mid} ha-icon { --mdc-icon-size:16px; color:#fff; opacity:${isOn ? '1' : '0'}; transition:opacity .2s; }
@@ -261,7 +261,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
       return this.wrapWithAnimation(html`
         <style>
           .bool-pill-row-${mid} { display:flex; align-items:center; gap:12px; }
-          .bool-pill-${mid} { display:flex; border-radius:calc(20px * var(--uc-radius-scale, 1)); overflow:hidden; border:1px solid var(--divider-color); }
+          .bool-pill-${mid} { display:flex; border-radius:var(--uc-r-20, 20px); overflow:hidden; border:1px solid var(--divider-color); }
           .bool-pill-btn-${mid} { padding:8px 20px; border:none; cursor:pointer; font-size:${fontSize}px;
             font-family:inherit; transition:all .2s; background:transparent; color:${textColor}; }
           .bool-pill-btn-${mid}.active { background:${currentColor}; color:#fff; font-weight:500; }
@@ -285,7 +285,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
     return this.wrapWithAnimation(html`
       <style>
         .bool-sw-row-${mid} { display:flex; align-items:center; gap:12px; cursor:pointer; }
-        .bool-sw-track-${mid} { width:48px; height:26px; border-radius:calc(13px * var(--uc-radius-scale, 1)); position:relative;
+        .bool-sw-track-${mid} { width:48px; height:26px; border-radius:var(--uc-r-13, 13px); position:relative;
           background:${currentColor}; transition:background .3s; flex-shrink:0; }
         .bool-sw-thumb-${mid} { width:22px; height:22px; border-radius:50%; background:#fff;
           position:absolute; top:2px; left:${isOn ? '24px' : '2px'}; transition:left .3s;

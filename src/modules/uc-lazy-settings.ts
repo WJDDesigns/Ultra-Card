@@ -92,7 +92,7 @@ function renderPlaceholder(): TemplateResult {
       ${[70, 100, 55].map(
         w => html`
           <div
-            style="height: 14px; width: ${w}%; margin: 12px 0; border-radius: calc(6px * var(--uc-radius-scale, 1)); background: var(--divider-color, rgba(127,127,127,0.25)); opacity: 0.6;"
+            style="height: 14px; width: ${w}%; margin: 12px 0; border-radius: var(--uc-r-6, 6px); background: var(--divider-color, rgba(127,127,127,0.25)); opacity: 0.6;"
           ></div>
         `
       )}
@@ -104,7 +104,7 @@ function renderFailed(): TemplateResult {
   return html`
     <div
       class="uc-settings-failed"
-      style="padding: 12px; border-radius: calc(8px * var(--uc-radius-scale, 1)); background: var(--error-color, #db4437); color: #fff; font-size: 13px;"
+      style="padding: 12px; border-radius: var(--uc-r-8, 8px); background: var(--error-color, #db4437); color: #fff; font-size: 13px;"
     >
       Settings could not be loaded. Reload the page and try again.
     </div>

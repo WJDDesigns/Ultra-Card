@@ -103,7 +103,7 @@ export class UltraClimateModule extends BaseUltraModule {
       <!-- Entity Configuration (title + entity picker in a single settings-section box) -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1619,7 +1619,7 @@ export class UltraClimateModule extends BaseUltraModule {
         letter-spacing: 0.5px;
         cursor: pointer;
         padding: 4px 8px;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         transition: all 0.2s ease;
         pointer-events: auto;
       }
@@ -1837,7 +1837,7 @@ export class UltraClimateModule extends BaseUltraModule {
 
       .climate-mode-popup-content {
         background: var(--card-background-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         padding: 8px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         border: 2px solid var(--divider-color);
@@ -1849,7 +1849,7 @@ export class UltraClimateModule extends BaseUltraModule {
 
       .climate-mode-popup-btn {
         padding: 12px 16px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         border: none;
         background: var(--card-background-color);
         color: var(--primary-text-color);
@@ -1903,7 +1903,7 @@ export class UltraClimateModule extends BaseUltraModule {
 
       .climate-info-popup-content {
         background: var(--card-background-color);
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         padding: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         border: 2px solid var(--divider-color);
@@ -1961,7 +1961,7 @@ export class UltraClimateModule extends BaseUltraModule {
 
       .climate-chip {
         padding: 6px 12px;
-        border-radius: calc(16px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-16, 16px);
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);

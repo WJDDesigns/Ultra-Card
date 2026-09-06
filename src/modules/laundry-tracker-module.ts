@@ -213,7 +213,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -711,7 +711,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -927,7 +927,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1009,7 +1009,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1111,7 +1111,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -2220,7 +2220,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       }
 
       .uc-lt-card {
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
         padding: 12px 14px;
         min-width: 0;
         box-sizing: border-box;
@@ -2305,7 +2305,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         margin-left: 6px;
         padding: 1px 6px;
         border: 1px solid;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 0.4px;
@@ -2314,13 +2314,13 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
 
       .uc-lt-progress {
         height: 6px;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         overflow: hidden;
         margin-top: 8px;
       }
       .uc-lt-progress-fill {
         height: 100%;
-        border-radius: calc(4px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-4, 4px);
         transition: width 0.4s ease;
       }
 
@@ -2361,7 +2361,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         margin-top: 10px;
         padding: 10px 12px;
         border: 1px solid;
-        border-radius: calc(12px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-12, 12px);
       }
       .uc-lt-handoff ha-icon {
         --mdc-icon-size: 22px;
@@ -2419,7 +2419,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         flex: 1 1 auto;
         min-width: 0;
         height: 16px;
-        border-radius: calc(5px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-5, 5px);
         background: rgba(127, 127, 127, 0.16);
         overflow: hidden;
       }
@@ -2435,7 +2435,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         top: 2px;
         bottom: 2px;
         min-width: 3px;
-        border-radius: calc(3px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-3, 3px);
       }
       .uc-lt-axis {
         display: flex;
@@ -2471,7 +2471,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         flex: 1 1 84px;
         min-width: 0;
         padding: 8px 10px;
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         text-align: center;
       }
       .uc-lt-stat-value {
@@ -2511,7 +2511,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         gap: 10px;
         padding: 14px;
         border: 1px dashed var(--divider-color);
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         font-size: 13px;
         color: var(--secondary-text-color);
         margin-bottom: 12px;
@@ -2523,7 +2523,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
 
       .uc-lt-row {
         border: 1px solid var(--divider-color);
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         background: var(--card-background-color);
         margin-bottom: 10px;
         overflow: hidden;
@@ -2558,7 +2558,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       .uc-lt-row-kind {
         margin-left: 6px;
         padding: 1px 6px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: rgba(127, 127, 127, 0.18);
         font-size: 10px;
         font-weight: 700;
@@ -2584,7 +2584,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         width: 30px;
         height: 30px;
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: transparent;
         color: var(--secondary-text-color);
         cursor: pointer;
@@ -2614,7 +2614,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
 
       .uc-lt-helper {
         border: 1px solid var(--divider-color);
-        border-radius: calc(10px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-10, 10px);
         padding: 12px;
         margin-bottom: 16px;
         background: rgba(127, 127, 127, 0.06);
@@ -2647,7 +2647,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         flex: 1 1 62px;
         min-width: 0;
         padding: 6px 8px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--card-background-color);
         text-align: center;
       }
@@ -2672,7 +2672,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         margin-top: 10px;
         padding: 7px 14px;
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--primary-color);
         color: var(--text-primary-color, #fff);
         font-size: 13px;
@@ -2705,7 +2705,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         gap: 8px;
         padding: 11px 14px;
         border: none;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: var(--primary-color);
         color: var(--text-primary-color, #fff);
         font-size: 14px;
@@ -2729,7 +2729,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         align-items: flex-start;
         gap: 8px;
         padding: 10px 12px;
-        border-radius: calc(8px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-8, 8px);
         background: rgba(127, 127, 127, 0.1);
         font-size: 12px;
         color: var(--secondary-text-color);

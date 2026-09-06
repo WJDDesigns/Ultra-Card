@@ -98,7 +98,7 @@ export class UltraTabsModule extends BaseUltraModule {
           gap: 8px;
           padding: 12px;
           border: 1px solid var(--divider-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           background: var(--card-background-color);
           margin-bottom: 8px;
           transition: all 0.2s ease;
@@ -135,7 +135,7 @@ export class UltraTabsModule extends BaseUltraModule {
         .section-title-input:focus {
           outline: none;
           background: var(--secondary-background-color);
-          border-radius: calc(4px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-4, 4px);
         }
         .section-actions {
           display: flex;
@@ -147,7 +147,7 @@ export class UltraTabsModule extends BaseUltraModule {
           padding: 4px;
           cursor: pointer;
           color: var(--secondary-text-color);
-          border-radius: calc(4px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-4, 4px);
           transition: all 0.2s;
         }
         .section-action-btn:hover {
@@ -192,7 +192,7 @@ export class UltraTabsModule extends BaseUltraModule {
           width: 100%;
           padding: 12px;
           border: 1px dashed var(--primary-color);
-          border-radius: calc(8px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-8, 8px);
           background: none;
           color: var(--primary-color);
           cursor: pointer;
@@ -207,7 +207,7 @@ export class UltraTabsModule extends BaseUltraModule {
           flex: 1;
           padding: 12px;
           border: 1px solid var(--divider-color);
-          border-radius: calc(4px * var(--uc-radius-scale, 1));
+          border-radius: var(--uc-r-4, 4px);
           background: var(--card-background-color);
           color: var(--primary-text-color);
           cursor: pointer;
@@ -381,7 +381,7 @@ export class UltraTabsModule extends BaseUltraModule {
         <!-- Colors Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -554,7 +554,7 @@ export class UltraTabsModule extends BaseUltraModule {
         <!-- Responsive Options Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -631,7 +631,7 @@ export class UltraTabsModule extends BaseUltraModule {
         <!-- Sections Manager -->
         <div
           class="settings-section sections-manager-container"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px; overflow: visible;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px; overflow: visible;"
         >
           <div
             class="section-title"
@@ -986,7 +986,7 @@ export class UltraTabsModule extends BaseUltraModule {
           border-left: 3px solid var(--primary-color);
           padding: 16px;
           margin-bottom: 24px;
-          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+          border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
         }
         .subsection-title {
           font-size: 16px;
@@ -1786,7 +1786,7 @@ export class UltraTabsModule extends BaseUltraModule {
         if (isProModule && !hasProAccess) {
           return html`
             <div
-              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); margin: 8px 0;"
+              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: var(--uc-r-8, 8px); margin: 8px 0;"
             >
               🔒 ${childModuleHandler.metadata.title} - Pro Feature
             </div>
@@ -2079,7 +2079,7 @@ export class UltraTabsModule extends BaseUltraModule {
         textColor = isActive ? activeBg : inactiveColor;
         radius = '0';
         extraStyles = isActive
-          ? `position: relative; &::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 3px; background: ${activeBg}; border-radius: calc(3px * var(--uc-radius-scale, 1)); }`
+          ? `position: relative; &::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 3px; background: ${activeBg}; border-radius: var(--uc-r-3, 3px); }`
           : '';
         // Fallback for modern without pseudo-elements
         if (isActive) {

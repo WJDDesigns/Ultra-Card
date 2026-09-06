@@ -622,7 +622,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-alarm-wrapper ${hoverClass} ${isTriggered ? 'uc-alarm-wrapper--triggered' : ''}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: calc(20px * var(--uc-radius-scale, 1)); overflow: hidden; ${styleStr}">
+          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-alarm uc-alarm--hero">
 
@@ -665,7 +665,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-alarm-wrapper ${hoverClass}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: calc(16px * var(--uc-radius-scale, 1)); overflow: hidden; ${styleStr}">
+          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-alarm uc-alarm--standard">
               <div class="uc-alarm-std__row">
@@ -901,7 +901,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         font-size: 0.8125rem;
         font-weight: 700;
         padding: 10px 14px;
-        border-radius: calc(14px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-14, 14px);
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
         background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
@@ -927,7 +927,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         font-size: 0.875rem;
         font-weight: 700;
         padding: 12px 20px;
-        border-radius: calc(14px * var(--uc-radius-scale, 1));
+        border-radius: var(--uc-r-14, 14px);
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--success-color, #43a047) 45%, transparent);
         background: color-mix(in srgb, var(--success-color, #43a047) 10%, var(--card-background-color, var(--ha-card-background)));

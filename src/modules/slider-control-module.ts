@@ -666,7 +666,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           }
           .settings-section {
             background: var(--secondary-background-color);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             padding: 16px;
           }
           .settings-section.layout-settings {
@@ -706,12 +706,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
             margin-top: 16px;
             border-left: 4px solid var(--primary-color);
             background: rgba(var(--rgb-primary-color), 0.08);
-            border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
+            border-radius: 0 var(--uc-r-8, 8px) var(--uc-r-8, 8px) 0;
             padding: 16px;
           }
           .bar-item {
             background: var(--card-background-color);
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             border: 1px solid var(--divider-color);
             margin-bottom: 12px;
             overflow: hidden;
@@ -813,7 +813,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           }
           .bar-type-badge {
             padding: 4px 10px;
-            border-radius: calc(12px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-12, 12px);
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
@@ -882,7 +882,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             color: var(--secondary-text-color);
             cursor: pointer;
             padding: 4px;
-            border-radius: calc(4px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-4, 4px);
             transition: all 0.2s;
           }
           .bar-action-button:hover {
@@ -918,7 +918,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             background: var(--primary-color);
             color: var(--text-primary-color, #fff);
             border: none;
-            border-radius: calc(8px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-8, 8px);
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s;
@@ -2127,7 +2127,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 24px;"
         >
           ${UltraLinkComponent.render(
             homeAssistant,
@@ -2253,7 +2253,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
       if (!entityState) {
         return html`
           <div
-            style="padding: 12px; text-align: center; color: var(--error-color); background: var(--error-color); color: white; border-radius: calc(8px * var(--uc-radius-scale, 1));"
+            style="padding: 12px; text-align: center; color: var(--error-color); background: var(--error-color); color: white; border-radius: var(--uc-r-8, 8px);"
           >
             <ha-icon icon="mdi:alert-circle" style="margin-right: 8px;"></ha-icon>
             Entity not found: ${bar.entity}
@@ -2550,7 +2550,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
         case 'minimal':
           containerStyles = `
             background: ${trackColor};
-            border-radius: calc(10px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-10, 10px);
           `;
           overlayContent = overlayFillSnippet;
           break;
@@ -4327,7 +4327,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             position: absolute;
             background: rgba(0, 0, 0, 0.3);
             border: 2px solid #ffffff;
-            border-radius: calc(4px * var(--uc-radius-scale, 1));
+            border-radius: var(--uc-r-4, 4px);
             box-shadow:
               0 0 8px rgba(0, 0, 0, 0.5),
               inset 0 0 3px rgba(255, 255, 255, 0.2);
