@@ -81,6 +81,12 @@ const DENSITY_SCALE: Record<string, string> = {
   comfortable: '1.125',
 };
 
+/** Built-in ids from earlier releases → their closest current built-in. */
+const LEGACY_THEME_IDS: Record<string, string> = {
+  classic: UC_THEME_HA_NATIVE,
+  soft: 'material',
+};
+
 const PALETTE_TO_VARS: Record<string, string[]> = {
   primary: ['--primary-color'],
   accent: ['--accent-color'],
@@ -253,7 +259,8 @@ class UcThemeService {
   }
 
   setGlobalDefault(id: string | null): void {
-    const next = id && this.getTheme(id) ? id : null;
+    const wanted = this._alias(id);
+    const next = wanted && this.getTheme(wanted) ? wanted : null;
     if (next === this._globalDefaultId) return;
     this._globalDefaultId = next;
     if (next) safeSetItem(STORAGE_GLOBAL, next);
@@ -266,11 +273,22 @@ class UcThemeService {
 
   /** Effective theme id for a card: `none`, or a theme id (unknown ids fall back to HA Native). */
   resolveThemeId(config: UltraCardConfig | undefined | null): string {
-    const explicit = config?.uc_theme;
+    const explicit = this._alias(config?.uc_theme);
     if (explicit === UC_THEME_NONE) return UC_THEME_NONE;
     if (explicit && this.getTheme(explicit)) return explicit;
-    if (this._globalDefaultId && this.getTheme(this._globalDefaultId)) return this._globalDefaultId;
+    const global = this._alias(this._globalDefaultId);
+    if (global && this.getTheme(global)) return global;
     return UC_THEME_HA_NATIVE;
+  }
+
+  /**
+   * Built-ins removed in later releases. Configs saved with them keep a
+   * sensible look instead of silently dropping to HA Native. A user theme
+   * installed under the same id wins.
+   */
+  private _alias(id: string | null | undefined): string | null | undefined {
+    if (!id || this.getTheme(id)) return id;
+    return LEGACY_THEME_IDS[id] ?? id;
   }
 
   /**

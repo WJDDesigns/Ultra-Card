@@ -23,7 +23,7 @@ const CONFIG = {
   views: [
     {
       cards: [
-        { type: 'custom:ultra-card', layout: {}, uc_theme: 'soft' },
+        { type: 'custom:ultra-card', layout: {}, uc_theme: 'glass' },
         { type: 'vertical-stack', cards: [{ type: 'custom:ultra-card', layout: {} }, { type: 'entities' }] },
       ],
     },
@@ -85,7 +85,7 @@ describe('ucThemeDashboardService', () => {
   it('refuses yaml dashboards', async () => {
     const { hass } = fakeHass(CONFIG);
     await expect(
-      ucThemeDashboardService.applyTheme(hass, { urlPath: 'y', title: 'y', mode: 'yaml' }, 'soft')
+      ucThemeDashboardService.applyTheme(hass, { urlPath: 'y', title: 'y', mode: 'yaml' }, 'glass')
     ).rejects.toThrow(/YAML/);
   });
 
@@ -96,7 +96,7 @@ describe('ucThemeDashboardService', () => {
     expect(ucThemeDashboardService.canUndo()?.urlPath).toBe('wall');
     await ucThemeDashboardService.undo(hass);
     expect(saved).toHaveLength(2);
-    expect(saved[1].config.views[0].cards[0].uc_theme).toBe('soft');
+    expect(saved[1].config.views[0].cards[0].uc_theme).toBe('glass');
     expect(ucThemeDashboardService.canUndo()).toBeNull();
   });
 });

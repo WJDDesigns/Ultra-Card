@@ -93,8 +93,6 @@ describe('ultra-dashboard-strategy-editor', () => {
   it('shows the built-in theme styles with the configured one selected', () => {
     const buttons = Array.from(el.shadowRoot.querySelectorAll<HTMLButtonElement>('.style'));
     expect(buttons.map(b => b.querySelector('.name')?.textContent?.trim())).toEqual([
-      'Classic',
-      'Soft',
       'Glass',
       'Bold',
       'Monochrome',
@@ -106,7 +104,7 @@ describe('ultra-dashboard-strategy-editor', () => {
   it('emits config-changed with the new style and keeps the rest of the config', async () => {
     const onChange = vi.fn();
     el.addEventListener('config-changed', onChange);
-    el.shadowRoot.querySelectorAll<HTMLButtonElement>('.style')[3].click();
+    el.shadowRoot.querySelectorAll<HTMLButtonElement>('.style')[1].click();
     await el.updateComplete;
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0][0].detail.config).toEqual({
@@ -115,7 +113,7 @@ describe('ultra-dashboard-strategy-editor', () => {
       areas: ['kitchen'],
     });
     // Picking the already-selected style is a no-op.
-    el.shadowRoot.querySelectorAll<HTMLButtonElement>('.style')[3].click();
+    el.shadowRoot.querySelectorAll<HTMLButtonElement>('.style')[1].click();
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 

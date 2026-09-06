@@ -3,11 +3,9 @@ import { UC_THEME_HA_NATIVE } from './uc-theme-types';
 import { svgDataUrl } from './uc-theme-artwork';
 
 /**
- * Built-in themes. These are the Ultra Dashboard styles (Classic / Soft /
- * Glass / Bold) made live, plus two "full" themes that also pin a palette.
- *
- * Colours reference HA variables wherever possible so a built-in theme layers
- * on any HACS theme instead of fighting it.
+ * Built-in themes. The first group (Glass / Bold / Monochrome / Material)
+ * layers on the active HA theme by referencing its variables; the rest pin a
+ * full palette and are "the room" regardless of HA light or dark mode.
  */
 
 const HA_CARD_BG = 'var(--card-background-color, var(--ha-card-background, white))';
@@ -25,87 +23,6 @@ export const HA_NATIVE_THEME: UcThemeDefinition = {
   icon: 'mdi:home-assistant',
   source: 'builtin',
   tokens: { surface: 'flat', radius: 12, border_width: 1, border_color: 'var(--divider-color)' },
-};
-
-export const CLASSIC_THEME: UcThemeDefinition = {
-  id: 'classic',
-  name: 'Classic',
-  version: 1,
-  author: 'Ultra Card',
-  description: 'The standard Home Assistant card look of your theme, with matching flat controls.',
-  icon: 'mdi:view-dashboard-outline',
-  source: 'builtin',
-  tokens: {
-    surface: 'flat',
-    radius: 12,
-    radius_sm: 8,
-    border_width: 1,
-    border_color: 'var(--divider-color)',
-    density: 'regular',
-  },
-  card: {
-    card_background: HA_CARD_BG,
-    card_border_radius: 12,
-    card_border_color: 'var(--divider-color)',
-    card_border_width: 1,
-    card_padding: 16,
-  },
-  modules: {
-    button: { style: 'flat' },
-    bar: { bar_style: 'flat' },
-    slider_control: { slider_style: 'flat' },
-    spinbox: { button_style: 'flat' },
-    popup: { trigger_button_style: 'flat' },
-    grid: { grid_style: 'style_12' },
-    navigation: { nav_style: 'uc_docked' },
-    area_summary: { style_preset: 'compact_controls' },
-    auto_entity_list: { row_style: 'compact' },
-    unifi: { rack_style: 'dark' },
-    activity_feed: { feed_card_style: 'outlined' },
-  },
-};
-
-export const SOFT_THEME: UcThemeDefinition = {
-  id: 'soft',
-  name: 'Soft',
-  version: 1,
-  author: 'Ultra Card',
-  description: 'Rounded corners, no borders, a light shadow. Calm and modern.',
-  icon: 'mdi:rounded-corner',
-  source: 'builtin',
-  tokens: {
-    surface: 'neumorphic',
-    radius: 20,
-    radius_sm: 12,
-    border_width: 0,
-    shadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-    density: 'comfortable',
-  },
-  card: {
-    card_background: HA_CARD_BG,
-    card_border_radius: 20,
-    card_border_width: 0,
-    card_padding: 16,
-    card_shadow_enabled: true,
-    card_shadow_color: 'rgba(0, 0, 0, 0.08)',
-    card_shadow_horizontal: 0,
-    card_shadow_vertical: 4,
-    card_shadow_blur: 16,
-    card_shadow_spread: 0,
-  },
-  modules: {
-    button: { style: 'neumorphic' },
-    bar: { bar_style: 'glossy' },
-    slider_control: { slider_style: 'neumorphic' },
-    spinbox: { button_style: 'neumorphic', button_shape: 'circle' },
-    popup: { trigger_button_style: 'neumorphic' },
-    grid: { grid_style: 'style_19' },
-    navigation: { nav_style: 'uc_neumorphic' },
-    area_summary: { style_preset: 'iconic_soft' },
-    auto_entity_list: { row_style: 'compact' },
-    unifi: { rack_style: 'light' },
-    activity_feed: { feed_card_style: 'elevated' },
-  },
 };
 
 export const GLASS_THEME: UcThemeDefinition = {
@@ -252,32 +169,50 @@ export const MONOCHROME_THEME: UcThemeDefinition = {
   },
 };
 
+// Material Design 3 elevation level 1 (elevated card): key + ambient shadow.
+const MD3_ELEVATION_1 = '0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)';
+// Surface tint at level 1 is the primary colour at 5% over the surface.
+const MD3_SURFACE_TINT = 'rgba(var(--rgb-primary-color, 103, 80, 164), 0.05)';
+const MD3_SURFACE_TINT_HIGH = 'rgba(var(--rgb-primary-color, 103, 80, 164), 0.11)';
+
+/**
+ * "Material": Material Design 3 as specified, not a vibe. The card is an MD3
+ * elevated card: the HA surface colour with a 5% primary surface tint (tonal
+ * elevation level 1) and the level-1 key + ambient shadow, no outline, 12dp
+ * medium corner. Controls are full pills (40dp / radius 20), icon buttons are
+ * circles, dividers use the outline-variant, type is Roboto with the MD3
+ * body tracking. Because everything is expressed in HA variables it follows
+ * the active HA theme's colour scheme in both light and dark.
+ */
 export const MATERIAL_THEME: UcThemeDefinition = {
   id: 'material',
   name: 'Material',
   version: 1,
   author: 'Ultra Card',
-  description: 'Tonal surfaces, pill controls and generous radii in the Material You spirit.',
+  description:
+    'Material Design 3: elevated cards with a tonal surface tint and level-1 shadow, 12dp corners, pill controls, circular icon buttons, Roboto.',
   icon: 'mdi:material-design',
   source: 'builtin',
   tokens: {
     surface: 'flat',
-    radius: 28,
+    radius: 12,
     radius_sm: 20,
     border_width: 0,
-    shadow: 'none',
-    density: 'comfortable',
-    font_family: 'Roboto, "Google Sans", system-ui, sans-serif',
-    palette: {
-      card_bg: 'rgba(var(--rgb-primary-color, 3, 169, 244), 0.08)',
-    },
+    shadow: MD3_ELEVATION_1,
+    density: 'regular',
+    font_family: 'Roboto, "Roboto Flex", "Google Sans", system-ui, sans-serif',
   },
   card: {
-    card_background: 'rgba(var(--rgb-primary-color, 3, 169, 244), 0.08)',
-    card_border_radius: 28,
+    card_background: HA_CARD_BG,
+    card_border_radius: 12,
     card_border_width: 0,
-    card_padding: 20,
-    card_shadow_enabled: false,
+    card_padding: 16,
+    card_shadow_enabled: true,
+    card_shadow_color: 'rgba(0, 0, 0, 0.3)',
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 1,
+    card_shadow_blur: 2,
+    card_shadow_spread: 0,
   },
   modules: {
     button: { style: 'flat' },
@@ -287,12 +222,25 @@ export const MATERIAL_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'flat' },
     grid: { grid_style: 'style_14' },
     navigation: { nav_style: 'uc_material' },
-    area_summary: { style_preset: 'iconic_soft', tile_border_radius: 20 },
+    area_summary: { style_preset: 'iconic_soft', tile_border_radius: 12 },
     auto_entity_list: { row_style: 'detailed' },
     unifi: { rack_style: 'light' },
-    activity_feed: { feed_card_style: 'flat' },
-    tabs: { style: 'modern' },
+    activity_feed: { feed_card_style: 'elevated' },
+    tabs: { style: 'simple' },
   },
+  css: `
+.card-container {
+  /* Tonal elevation: surface colour under a 5% primary tint. */
+  background-image: linear-gradient(${MD3_SURFACE_TINT}, ${MD3_SURFACE_TINT}) !important;
+  box-shadow: ${MD3_ELEVATION_1} !important;
+  /* MD3 body-medium tracking. */
+  letter-spacing: 0.25px;
+}
+/* Nested surfaces read as surface-container-high: the tint at level 3 (11%). */
+[style*="--uc-design-surface"] {
+  background-image: linear-gradient(${MD3_SURFACE_TINT_HIGH}, ${MD3_SURFACE_TINT_HIGH});
+}
+`.trim(),
 };
 
 const PHOSPHOR = '#33ff66';
@@ -930,8 +878,6 @@ export const VAPOR_THEME: UcThemeDefinition = {
 
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
-  CLASSIC_THEME,
-  SOFT_THEME,
   GLASS_THEME,
   BOLD_THEME,
   MONOCHROME_THEME,

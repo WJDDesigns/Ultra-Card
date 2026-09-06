@@ -33,9 +33,9 @@ describe('resolution order', () => {
   });
 
   it('card uc_theme beats global default, none opts out', () => {
-    ucThemeService.setGlobalDefault('soft');
-    expect(ucThemeService.resolveThemeId(cfg())).toBe('soft');
-    expect(ucThemeService.resolveThemeId(cfg('glass'))).toBe('glass');
+    ucThemeService.setGlobalDefault('glass');
+    expect(ucThemeService.resolveThemeId(cfg())).toBe('glass');
+    expect(ucThemeService.resolveThemeId(cfg('bold'))).toBe('bold');
     expect(ucThemeService.resolveThemeId(cfg(UC_THEME_NONE))).toBe(UC_THEME_NONE);
     expect(ucThemeService.resolveTheme(cfg(UC_THEME_NONE))).toBeNull();
   });
@@ -44,6 +44,30 @@ describe('resolution order', () => {
     expect(ucThemeService.resolveThemeId(cfg('does-not-exist'))).toBe(UC_THEME_HA_NATIVE);
     ucThemeService.setGlobalDefault('bold');
     expect(ucThemeService.resolveThemeId(cfg('does-not-exist'))).toBe('bold');
+  });
+
+  it('removed built-ins (classic, soft) alias to their closest current theme', () => {
+    expect(BUILTIN_THEMES.map(t => t.id)).not.toContain('classic');
+    expect(BUILTIN_THEMES.map(t => t.id)).not.toContain('soft');
+    expect(ucThemeService.resolveThemeId(cfg('soft'))).toBe('material');
+    expect(ucThemeService.resolveThemeId(cfg('classic'))).toBe(UC_THEME_HA_NATIVE);
+    ucThemeService.setGlobalDefault('soft');
+    expect(ucThemeService.resolveThemeId(cfg())).toBe('material');
+    // A user theme installed under a legacy id is not aliased away.
+    const mine = ucThemeService.saveToLibrary({ id: 'soft', name: 'Mine', version: 1, tokens: { surface: 'flat', radius: 4 } });
+    expect(mine?.id).toBe('soft');
+    expect(ucThemeService.resolveThemeId(cfg('soft'))).toBe('soft');
+  });
+
+  it('material follows MD3: 12dp corners, pill controls, level-1 elevation, tonal tint', () => {
+    const material = BUILTIN_THEMES.find(t => t.id === 'material')!;
+    expect(material.tokens.radius).toBe(12);
+    expect(material.tokens.radius_sm).toBe(20);
+    expect(material.tokens.border_width).toBe(0);
+    expect(material.tokens.shadow).toBe('0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)');
+    expect(material.modules?.spinbox?.button_shape).toBe('circle');
+    expect(material.css).toContain('rgb-primary-color');
+    expect(material.tokens.font_family).toMatch(/^Roboto/);
   });
 
   it('module style: explicit wins, inherit uses theme, then fallback', () => {
@@ -247,8 +271,8 @@ describe('library', () => {
   it('notifies subscribers', () => {
     let calls = 0;
     const off = ucThemeService.subscribe(() => calls++);
-    ucThemeService.setGlobalDefault('soft');
-    ucThemeService.setGlobalDefault('soft');
+    ucThemeService.setGlobalDefault('glass');
+    ucThemeService.setGlobalDefault('glass');
     off();
     ucThemeService.setGlobalDefault(null);
     expect(calls).toBe(1);

@@ -8,8 +8,6 @@
  */
 
 export type UltraDashboardStyleId =
-  | 'classic'
-  | 'soft'
   | 'glass'
   | 'bold'
   | 'monochrome'
@@ -22,7 +20,7 @@ export interface UltraDashboardStrategyConfig {
   type: string;
   /** Dashboard title; the create dialog sets this from its title field. */
   title?: string | undefined;
-  /** Visual style applied to every generated card. Default `soft`. */
+  /** Visual style applied to every generated card. Default `material`. Legacy `classic` / `soft` resolve to `material`. */
   style?: UltraDashboardStyleId | undefined;
   /** One view per area (default) or one view per floor with a section group per area. */
   group_by?: UltraDashboardGroupBy | undefined;

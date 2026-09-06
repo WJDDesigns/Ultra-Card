@@ -51,7 +51,7 @@ stored under `strategy:` in the dashboard config.
 ```yaml
 strategy:
   type: custom:ultra-dashboard
-  style: soft # classic | soft | glass | bold
+  style: material # glass | bold | monochrome | material
   group_by: area # area (a page per area) | floor (a page per floor)
   areas: [] # only these area ids; empty means every area with devices
   exclude_areas: [] # areas to leave out
@@ -63,12 +63,16 @@ strategy:
   weather_entity: weather.home # default: your first weather entity
 ```
 
-| Style   | Look                                                           |
-| ------- | -------------------------------------------------------------- |
-| Classic | The standard card look of your theme.                          |
-| Soft    | Rounded corners, no borders, a light shadow. The default.      |
-| Glass   | Translucent panels with a fine border; made for wallpapers.    |
-| Bold    | Large radius, deep shadow and your theme accent on every room. |
+| Style      | Look                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------- |
+| Glass      | Translucent panels with a fine border; made for wallpapers.                            |
+| Bold       | Large radius, deep shadow and your theme accent on every room.                         |
+| Monochrome | Outlined controls and a desaturated card: one ink, no colour.                          |
+| Material   | Material Design 3: tonal elevated cards, 12dp corners, pill controls. The default.     |
+
+Each style is an Ultra Card theme; generated cards carry `uc_theme: <style>` so
+the whole dashboard can be re-themed from the Hub's Themes tab. Dashboards saved
+with the retired `classic` or `soft` styles resolve to `material`.
 
 Areas with no entities get no page. Config and diagnostic entities (signal
 strength, restart buttons) never appear on a room page.

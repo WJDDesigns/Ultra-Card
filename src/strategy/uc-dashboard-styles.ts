@@ -1,14 +1,7 @@
 import type { AreaSummaryStylePreset, AutoEntityListRowStyle, UltraCardConfig } from '../types';
 import type { UltraDashboardStyleId } from './types';
 import type { UcThemeDefinition } from '../themes/uc-theme-types';
-import {
-  BOLD_THEME,
-  CLASSIC_THEME,
-  GLASS_THEME,
-  MATERIAL_THEME,
-  MONOCHROME_THEME,
-  SOFT_THEME,
-} from '../themes/builtin-themes';
+import { BOLD_THEME, GLASS_THEME, MATERIAL_THEME, MONOCHROME_THEME } from '../themes/builtin-themes';
 
 /**
  * A dashboard style is a built-in Ultra Card theme plus the generation-time
@@ -92,19 +85,24 @@ function fromTheme(
 }
 
 export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
-  fromTheme('classic', CLASSIC_THEME, { roomPalette: ROOM_PALETTE }),
-  fromTheme('soft', SOFT_THEME, { roomPalette: ROOM_PALETTE }),
   fromTheme('glass', GLASS_THEME, { roomPalette: ROOM_PALETTE }),
   fromTheme('bold', BOLD_THEME, {}),
   fromTheme('monochrome', MONOCHROME_THEME, {}),
   fromTheme('material', MATERIAL_THEME, { roomPalette: ROOM_PALETTE }),
 ];
 
-export const DEFAULT_DASHBOARD_STYLE: UltraDashboardStyleId = 'soft';
+export const DEFAULT_DASHBOARD_STYLE: UltraDashboardStyleId = 'material';
+
+/** Styles that existed in earlier releases; dashboards saved with them keep working. */
+const LEGACY_STYLE_IDS: Record<string, UltraDashboardStyleId> = {
+  classic: 'material',
+  soft: 'material',
+};
 
 export function getDashboardStyle(id: string | undefined | null): UltraDashboardStyle {
+  const resolved = (id && LEGACY_STYLE_IDS[id]) || id;
   return (
-    ULTRA_DASHBOARD_STYLES.find(s => s.id === id) ??
+    ULTRA_DASHBOARD_STYLES.find(s => s.id === resolved) ??
     ULTRA_DASHBOARD_STYLES.find(s => s.id === DEFAULT_DASHBOARD_STYLE)!
   );
 }
