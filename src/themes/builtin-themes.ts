@@ -706,20 +706,70 @@ const BEACH_ROPE = svgDataUrl(`
   <path d='M0 3 Q3 0 6 3 T12 3' fill='none' stroke='${BEACH_DRIFTWOOD}' stroke-opacity='.45' stroke-width='1.4'/>
 </svg>`);
 
+// Beach props. Each card scatters a few of these along the sand from its seeds:
+// a prop shows only when its seed clears a threshold (size collapses to 0
+// otherwise), so every card gets a different handful in different places.
+const BEACH_CRAB = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 28'>
+  <g stroke='${BEACH_CORAL}' stroke-width='2' stroke-linecap='round' fill='none'>
+    <path d='M11 20 L5 25 M14 22 L10 27 M26 22 L30 27 M29 20 L35 25 M14 11 L12 4 M26 11 L28 4'/>
+  </g>
+  <g fill='${BEACH_CORAL}'>
+    <ellipse cx='20' cy='16' rx='11' ry='7'/>
+    <circle cx='8' cy='9' r='4.5'/><circle cx='32' cy='9' r='4.5'/>
+  </g>
+  <g fill='${BEACH_SAND}'>
+    <path d='M8 4.5 L10.5 9 L5.5 9 Z'/><path d='M32 4.5 L34.5 9 L29.5 9 Z'/>
+  </g>
+  <circle cx='12' cy='4' r='1.8' fill='${BEACH_SEA}'/><circle cx='28' cy='4' r='1.8' fill='${BEACH_SEA}'/>
+  <circle cx='12.5' cy='3.5' r='.6' fill='#fff'/><circle cx='28.5' cy='3.5' r='.6' fill='#fff'/>
+  <path d='M16 18 Q20 21 24 18' stroke='${BEACH_SEA}' stroke-width='1.2' fill='none' stroke-linecap='round'/>
+</svg>`);
+const BEACH_SHELL = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 32'>
+  <path d='M18 30 L3 13 A15 15 0 0 1 33 13 Z' fill='#ead1b8' stroke='#b98c72' stroke-width='1.2' stroke-linejoin='round'/>
+  <path d='M18 30 L7 8.5 M18 30 L12.5 3.5 M18 30 L18 2.5 M18 30 L23.5 3.5 M18 30 L29 8.5' stroke='#b98c72' stroke-width='1' stroke-linecap='round'/>
+  <path d='M3 13 Q7 9 9 12 Q13 5 15 10 Q18 3 21 10 Q23 5 27 12 Q29 9 33 13' fill='none' stroke='#b98c72' stroke-width='1'/>
+  <path d='M13 30 L23 30 L21 26.5 L15 26.5 Z' fill='#b98c72'/>
+</svg>`);
+const BEACH_STARFISH = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>
+  <path d='M16 2 L19.6 12 L30 12.5 L21.8 19 L24.7 29.5 L16 23.6 L7.3 29.5 L10.2 19 L2 12.5 L12.4 12 Z' fill='#e9a25b' stroke='#c77f3a' stroke-width='1.2' stroke-linejoin='round'/>
+  <g fill='#c77f3a'>
+    <circle cx='16' cy='8' r='1'/><circle cx='16' cy='13' r='1'/><circle cx='24' cy='14.5' r='1'/><circle cx='8' cy='14.5' r='1'/>
+    <circle cx='20.5' cy='22.5' r='1'/><circle cx='11.5' cy='22.5' r='1'/><circle cx='16' cy='17.5' r='1.2'/>
+  </g>
+</svg>`);
+const BEACH_SAND_DOLLAR = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>
+  <circle cx='12' cy='12' r='11' fill='#efe3cc' stroke='#c8b797' stroke-width='1'/>
+  <g fill='none' stroke='#c8b797' stroke-width='1'>
+    <ellipse cx='12' cy='7' rx='2' ry='4.5'/>
+    <ellipse cx='12' cy='7' rx='2' ry='4.5' transform='rotate(72 12 12)'/>
+    <ellipse cx='12' cy='7' rx='2' ry='4.5' transform='rotate(144 12 12)'/>
+    <ellipse cx='12' cy='7' rx='2' ry='4.5' transform='rotate(216 12 12)'/>
+    <ellipse cx='12' cy='7' rx='2' ry='4.5' transform='rotate(288 12 12)'/>
+  </g>
+  <circle cx='12' cy='12' r='1.2' fill='#c8b797'/>
+</svg>`);
+
 /**
  * "Beach": a sand card with water lapping along the bottom edge, a sun glow
- * in the top-right corner, fine sand grain across the surface and a rope
- * hairline under the top edge. All artwork is inline SVG, so nothing is
- * fetched. Deep-water text on sand, an ocean primary, a coral accent, and a
+ * near the top-right, fine sand grain across the surface and a rope hairline
+ * under the top edge. Each card scatters its own handful of beach finds along
+ * the sand from its random seeds (a crab, a scallop shell, a starfish, a sand
+ * dollar, each present or not and placed differently per card), and the tide
+ * line and sun sit at different heights. All artwork is inline SVG, so nothing
+ * is fetched. Deep-water text on sand, an ocean primary, a coral accent, and a
  * soft rounded sans.
  */
 export const BEACH_THEME: UcThemeDefinition = {
   id: 'beach',
   name: 'Beach',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'Sand cards with waves lapping the bottom edge, a sun glow, sand grain and a rope hairline. Deep-water text, ocean controls, coral accents.',
+    'Sand cards with waves lapping the bottom edge, a sun glow, sand grain and a rope hairline. Every card scatters its own shells, crabs and starfish. Deep-water text, ocean controls, coral accents.',
   icon: 'mdi:beach',
   source: 'builtin',
   tokens: {
@@ -770,17 +820,43 @@ export const BEACH_THEME: UcThemeDefinition = {
   },
   css: `
 .card-container {
+  /* This card's stretch of beach, from its seeds. */
+  --b-s1: var(--uc-card-seed-1, 0.5);
+  --b-s2: var(--uc-card-seed-2, 0.5);
+  --b-s3: var(--uc-card-seed-3, 0.5);
+  --b-tide: calc(16px + var(--b-s3) * 12px);
+  --b-sun-x: calc(60% + var(--b-s1) * 40%);
+  /* Each find is on the sand only when its seed clears the bar; otherwise its size collapses to 0. */
+  --b-crab: calc(clamp(0, (var(--b-s1) - 0.45) * 20, 1) * 44px);
+  --b-shell: calc(clamp(0, (var(--b-s2) - 0.4) * 20, 1) * 34px);
+  --b-star: calc(clamp(0, (var(--b-s3) - 0.5) * 20, 1) * 32px);
+  --b-dollar: calc(clamp(0, (0.5 - (var(--b-s1) + var(--b-s2)) / 2) * 20, 1) * 22px);
+  --b-sand-line: calc(100% - var(--b-tide) - 4px);
   background-color: ${BEACH_SAND} !important;
-  /* Layers, top to bottom: waves at the foot, rope under the top edge, sun glow, sand grain, sky wash. */
+  /* Layers, top to bottom: the finds on the sand, waves at the foot, rope under the top edge, sun glow, sand grain, sky wash. */
   background-image:
+    ${BEACH_CRAB},
+    ${BEACH_SHELL},
+    ${BEACH_STARFISH},
+    ${BEACH_SAND_DOLLAR},
     ${BEACH_WAVES},
     ${BEACH_ROPE},
-    radial-gradient(circle at 92% -8%, rgba(255, 196, 110, 0.55) 0%, rgba(255, 196, 110, 0.18) 18%, rgba(255, 196, 110, 0) 42%),
+    radial-gradient(circle at var(--b-sun-x) -8%, rgba(255, 196, 110, 0.55) 0%, rgba(255, 196, 110, 0.18) 18%, rgba(255, 196, 110, 0) 42%),
     ${BEACH_GRAIN},
     linear-gradient(180deg, rgba(24, 106, 122, 0.06) 0%, rgba(24, 106, 122, 0) 45%) !important;
-  background-repeat: no-repeat, repeat-x, no-repeat, repeat, no-repeat !important;
-  background-size: 100% 20px, 12px 6px, auto, 56px 56px, auto !important;
-  background-position: bottom center, left 9px, 0 0, 0 0, 0 0 !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat-x, no-repeat, repeat, no-repeat !important;
+  background-size:
+    var(--b-crab) calc(var(--b-crab) * 0.7),
+    var(--b-shell) calc(var(--b-shell) * 0.9),
+    var(--b-star) var(--b-star),
+    var(--b-dollar) var(--b-dollar),
+    100% var(--b-tide), 12px 6px, auto, 56px 56px, auto !important;
+  background-position:
+    calc(64% + var(--b-s2) * 34%) var(--b-sand-line),
+    calc(3% + var(--b-s3) * 24%) var(--b-sand-line),
+    calc(30% + var(--b-s1) * 22%) calc(var(--b-sand-line) - 4px),
+    calc(50% + var(--b-s3) * 18%) var(--b-sand-line),
+    bottom center, left 9px, 0 0, 0 0, 0 0 !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 10px 26px rgba(31, 58, 77, 0.14),
