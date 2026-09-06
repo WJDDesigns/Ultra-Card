@@ -560,34 +560,79 @@ export const MOOSE_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-// Metallic: brushed steel plate with a machined bevel.
-const METAL_PLATE = '#c4c9d0'; // mid steel (palette base; the gradient runs #a9b0b9..#eef0f3)
-const METAL_INK = '#161a20'; // etched graphite text (8:1 on the darkest stop)
-const METAL_INK_SOFT = '#3d444d'; // secondary (4.5:1 on the darkest stop)
+// Metallic: a brushed steel plate, screwed to the wall.
+const METAL_PLATE = '#c0c6cd'; // mid steel (palette base; the sheen runs #8f98a2..#f4f6f8)
+const METAL_INK = '#161a20'; // etched graphite text (7.3:1 on the darkest stop)
+const METAL_INK_SOFT = '#3a414a'; // secondary (4.6:1 on the darkest stop)
 const METAL_GUNMETAL = '#3a434f'; // primary (white on it 10:1)
 const METAL_BLUED = '#35516f'; // blued-steel accent
-const METAL_EDGE = '#7d858f'; // machined edge
+const METAL_EDGE = '#5f6870'; // machined edge
+/**
+ * Anisotropic brushing: three layers of fractal noise stretched hard along
+ * X (very low X frequency, high Y frequency) give long fine streaks: bright
+ * scratches, dark scratches, and a few broad soft score marks. Tiles seamlessly.
+ */
+const METAL_BRUSH = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' width='480' height='160'>
+  <defs>
+    <filter id='hi' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.004 0.9' numOctaves='3' seed='3' stitchTiles='stitch'/>
+      <feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.6 0 0 0 -0.7'/>
+    </filter>
+    <filter id='lo' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.006 0.8' numOctaves='3' seed='9' stitchTiles='stitch'/>
+      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0.02  1.5 0 0 0 -0.76'/>
+    </filter>
+    <filter id='scr' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.002 0.35' numOctaves='2' seed='21' stitchTiles='stitch'/>
+      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.2 0 0 0 -0.72'/>
+    </filter>
+  </defs>
+  <rect width='480' height='160' filter='url(#hi)'/>
+  <rect width='480' height='160' filter='url(#lo)'/>
+  <rect width='480' height='160' filter='url(#scr)'/>
+</svg>`);
+/** A countersunk slotted screw head: domed radial shading, dark well, slot with a light catch. */
+const METAL_SCREW = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'>
+  <defs>
+    <radialGradient id='h' cx='38%' cy='34%' r='70%'>
+      <stop offset='0' stop-color='#f6f8fa'/><stop offset='.45' stop-color='#b9c0c8'/><stop offset='.8' stop-color='#6f777f'/><stop offset='1' stop-color='#3b424a'/>
+    </radialGradient>
+    <radialGradient id='w' cx='50%' cy='50%' r='50%'>
+      <stop offset='.82' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.45'/>
+    </radialGradient>
+  </defs>
+  <circle cx='10' cy='10' r='9.5' fill='url(#w)'/>
+  <circle cx='10' cy='10' r='8' fill='url(#h)' stroke='#2b3138' stroke-width='.6'/>
+  <g stroke-linecap='round' fill='none'>
+    <path d='M5.6 5.6 L14.4 14.4' stroke='#e9edf1' stroke-width='2' transform='translate(.5 .5)'/>
+    <path d='M5.6 5.6 L14.4 14.4' stroke='#2a3038' stroke-width='2'/>
+  </g>
+</svg>`);
+/** The reflection: alternating hot and dark bands, as a curved sheet of steel shows under a strip light. */
 const METAL_SHEEN =
-  'linear-gradient(135deg, #e9ecf0 0%, #c9ced5 18%, #a9b0b9 34%, #dfe3e8 50%, #b3b9c2 66%, #eef0f3 82%, #b8bec6 100%)';
-const METAL_GRAIN =
-  'repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, rgba(0, 0, 0, 0) 1px 3px, rgba(0, 0, 0, 0.05) 3px 4px)';
+  'linear-gradient(118deg, #f3f5f7 0%, #d5dae0 9%, #a5adb6 22%, #8f98a2 29%, #d9dee3 41%, #f4f6f8 47%, #c3cad1 58%, #98a1ab 70%, #cdd3d9 83%, #edf0f3 91%, #a7afb8 100%)';
+/** Bright catch top-left, shadow bottom-right, then a 1px chamfer ring 3px in. */
 const METAL_BEVEL =
-  'inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -1px 0 rgba(0, 0, 0, 0.28), inset 1px 0 0 rgba(255, 255, 255, 0.45), inset -1px 0 0 rgba(0, 0, 0, 0.18)';
+  'inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.55), inset -1px 0 0 rgba(0, 0, 0, 0.32), inset 0 0 0 3px rgba(255, 255, 255, 0.16), inset 0 0 0 4px rgba(0, 0, 0, 0.14)';
+const METAL_DROP = '0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 22px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.5)';
 
 /**
- * "Metallic": a brushed steel plate. A diagonal sheen runs across the card,
- * a fine vertical grain sits on top, and the edge is bevelled with a light
- * catch on the top-left and a shadow on the bottom-right. Controls use the
- * existing metallic surface. Graphite text is etched into the plate; the
- * primary is gunmetal, the accent blued steel.
+ * "Metallic": a brushed steel plate screwed to the wall. Real anisotropic
+ * brushing (procedural noise stretched along the plate), a banded specular
+ * sheen across it, a chamfered edge with a light catch top-left and shadow
+ * bottom-right, and a slotted screw in each corner. Text is etched (dark
+ * with a light catch below), controls are gunmetal, the accent blued steel.
+ * Nested surfaces are recesses milled into the plate.
  */
 export const METALLIC_THEME: UcThemeDefinition = {
   id: 'metallic',
   name: 'Metallic',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'Brushed steel plate with a machined bevel: diagonal sheen, fine grain, gunmetal controls and blued-steel accents.',
+    'A brushed steel plate screwed to the wall: real brushing, banded sheen, chamfered edge and corner screws. Etched text, gunmetal controls, blued-steel accents.',
   icon: 'mdi:anvil',
   source: 'builtin',
   tokens: {
@@ -596,7 +641,7 @@ export const METALLIC_THEME: UcThemeDefinition = {
     radius_sm: 6,
     border_width: 1,
     border_color: METAL_EDGE,
-    shadow: `${METAL_BEVEL}, 0 8px 20px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.4)`,
+    shadow: `${METAL_BEVEL}, ${METAL_DROP}`,
     density: 'regular',
     accent: METAL_BLUED,
     font_family: "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
@@ -606,7 +651,7 @@ export const METALLIC_THEME: UcThemeDefinition = {
       card_bg: METAL_PLATE,
       text: METAL_INK,
       text_secondary: METAL_INK_SOFT,
-      divider: 'rgba(22, 26, 32, 0.22)',
+      divider: 'rgba(22, 26, 32, 0.25)',
     },
   },
   card: {
@@ -614,12 +659,12 @@ export const METALLIC_THEME: UcThemeDefinition = {
     card_border_radius: 8,
     card_border_color: METAL_EDGE,
     card_border_width: 1,
-    card_padding: 16,
+    card_padding: 18,
     card_shadow_enabled: true,
-    card_shadow_color: 'rgba(0, 0, 0, 0.35)',
+    card_shadow_color: 'rgba(0, 0, 0, 0.45)',
     card_shadow_horizontal: 0,
-    card_shadow_vertical: 8,
-    card_shadow_blur: 20,
+    card_shadow_vertical: 10,
+    card_shadow_blur: 22,
     card_shadow_spread: 0,
   },
   modules: {
@@ -639,17 +684,24 @@ export const METALLIC_THEME: UcThemeDefinition = {
   css: `
 .card-container {
   background-color: ${METAL_PLATE} !important;
-  background-image: ${METAL_GRAIN}, ${METAL_SHEEN} !important;
+  /* Layers, top to bottom: four corner screws, the brushing, the banded sheen. */
+  background-image:
+    ${METAL_SCREW}, ${METAL_SCREW}, ${METAL_SCREW}, ${METAL_SCREW},
+    ${METAL_BRUSH},
+    ${METAL_SHEEN} !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
+  background-size: 14px 14px, 14px 14px, 14px 14px, 14px 14px, 480px 160px, 100% 100% !important;
+  background-position: left 7px top 7px, right 7px top 7px, left 7px bottom 7px, right 7px bottom 7px, 0 0, 0 0 !important;
   border: 1px solid ${METAL_EDGE} !important;
-  box-shadow:
-    ${METAL_BEVEL},
-    0 8px 20px rgba(0, 0, 0, 0.35),
-    0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: ${METAL_BEVEL}, ${METAL_DROP} !important;
+  /* Etched: dark ink with the light catching the lower edge of each stroke. */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
   letter-spacing: 0.02em;
 }
-/* Nested surfaces read as recessed panels milled into the plate. */
+/* Nested surfaces read as recesses milled into the plate. */
 [style*="--uc-design-surface"] {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+  background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.10), rgba(0, 0, 0, 0.04));
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(255, 255, 255, 0.7), 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 `.trim(),
 };
@@ -878,28 +930,54 @@ export const VAPOR_THEME: UcThemeDefinition = {
 
 // Gummy: every card is a different flavour. The hue comes from --uc-card-hue,
 // which the card sets per instance; the ink is one dark plum that clears AA
-// on every hue at this lightness (worst case 5.6:1 on blue).
+// on every hue at this lightness (worst case 5.2:1 on blue).
 const GUMMY_H = 'var(--uc-card-hue, 340)';
 const GUMMY_INK = '#2a1838';
-const GUMMY_INK_SOFT = '#35243f'; // 4.9:1 worst case
+const GUMMY_INK_SOFT = '#35243f'; // 4.6:1 worst case
 const GUMMY_PRIMARY = '#3a2350'; // liquorice: white on it 13.7:1
 const gummy = (s: number, l: number, a?: number) =>
   a === undefined ? `hsl(${GUMMY_H} ${s}% ${l}%)` : `hsl(${GUMMY_H} ${s}% ${l}% / ${a})`;
+/** The shine marks: a long curved specular swoosh, a small hot spot beside it, a fleck below. */
+const GUMMY_SHINE = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 80'>
+  <defs><filter id='b' x='-10%' y='-20%' width='120%' height='140%'><feGaussianBlur stdDeviation='0.7'/></filter></defs>
+  <g fill='#fff' filter='url(#b)'>
+    <path d='M14 26 C22 10 60 4 104 8 C112 9 110 15 100 16 C64 16 34 22 22 34 C16 40 10 34 14 26Z' fill-opacity='.92'/>
+    <ellipse cx='124' cy='10' rx='9' ry='4.5' transform='rotate(-16 124 10)' fill-opacity='.95'/>
+    <ellipse cx='30' cy='44' rx='3.2' ry='2' transform='rotate(-30 30 44)' fill-opacity='.7'/>
+  </g>
+</svg>`);
+const GUMMY_SHINE_SM = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 30'>
+  <g fill='#fff'>
+    <path d='M6 12 C10 5 30 2 52 4 C56 4.5 55 8 50 8 C32 8 18 10 10 16 C7 18 4 15 6 12Z' fill-opacity='.85'/>
+    <ellipse cx='63' cy='5' rx='5' ry='2.4' transform='rotate(-16 63 5)' fill-opacity='.9'/>
+  </g>
+</svg>`);
+/**
+ * Subsurface: light travels further through the edges of a gummy than the
+ * middle, so the rim is deeper and more saturated and the centre glows. An
+ * inner ring, a wide inner glow, a heavier pool at the bottom, a bright
+ * refraction line along the bottom edge, and a coloured drop shadow.
+ */
+const GUMMY_BODY_SHADOW = `inset 0 -2px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 3px ${gummy(92, 56, 0.42)}, inset 0 0 36px ${gummy(96, 46, 0.62)}, inset 0 -16px 22px ${gummy(96, 44, 0.5)}, 0 12px 26px ${gummy(80, 40, 0.42)}, 0 2px 6px ${gummy(80, 35, 0.35)}`;
 
 /**
  * "Gummy": gummy-bear cards. Each card gets its own candy hue (from
- * `--uc-card-hue`, stable per card) rendered as translucent jelly: a bright
- * body, a soft white highlight at the top, a deeper saturated glow pooling at
- * the bottom, a sugar-glass rim and a coloured drop shadow. Dark-plum ink and
+ * `--uc-card-hue`, stable per card) rendered as translucent jelly with real
+ * shine marks: a curved specular swoosh and hot spot top-left, a faint floor
+ * reflection bottom-right, subsurface glow that deepens toward the rim, a
+ * refraction line along the bottom edge and a coloured drop shadow. Nested
+ * surfaces are smaller gummies with their own shine. Dark-plum ink and
  * liquorice controls read on every flavour. Big soft radii, rounded type.
  */
 export const GUMMY_THEME: UcThemeDefinition = {
   id: 'gummy',
   name: 'Gummy',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'Gummy-bear cards: every card its own candy colour, rendered as glossy translucent jelly with a sugar rim. Dark-plum ink, liquorice controls.',
+    'Gummy-bear cards: every card its own candy colour, rendered as translucent jelly with shine marks, a glowing rim and a sugar edge. Dark-plum ink, liquorice controls.',
   icon: 'mdi:candy',
   source: 'builtin',
   tokens: {
@@ -907,8 +985,8 @@ export const GUMMY_THEME: UcThemeDefinition = {
     radius: 26,
     radius_sm: 18,
     border_width: 2,
-    border_color: 'rgba(255, 255, 255, 0.55)',
-    shadow: `inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -10px 18px ${gummy(80, 50, 0.45)}, 0 10px 24px ${gummy(70, 40, 0.35)}`,
+    border_color: 'rgba(255, 255, 255, 0.62)',
+    shadow: GUMMY_BODY_SHADOW,
     density: 'comfortable',
     accent: `hsl(calc(${GUMMY_H} + 40) 90% 52%)`,
     font_family: "'Baloo 2', 'Fredoka', 'Nunito', 'Varela Round', 'Quicksand', system-ui, sans-serif",
@@ -916,23 +994,23 @@ export const GUMMY_THEME: UcThemeDefinition = {
       primary: GUMMY_PRIMARY,
       on_primary: '#ffffff',
       accent: `hsl(calc(${GUMMY_H} + 40) 90% 52%)`,
-      card_bg: gummy(90, 76),
+      card_bg: gummy(88, 72),
       text: GUMMY_INK,
       text_secondary: GUMMY_INK_SOFT,
       divider: 'rgba(42, 24, 56, 0.18)',
     },
   },
   card: {
-    card_background: gummy(90, 76),
+    card_background: gummy(88, 72),
     card_border_radius: 26,
-    card_border_color: 'rgba(255, 255, 255, 0.55)',
+    card_border_color: 'rgba(255, 255, 255, 0.62)',
     card_border_width: 2,
     card_padding: 20,
     card_shadow_enabled: true,
-    card_shadow_color: gummy(70, 40, 0.35),
+    card_shadow_color: gummy(80, 40, 0.42),
     card_shadow_horizontal: 0,
-    card_shadow_vertical: 10,
-    card_shadow_blur: 24,
+    card_shadow_vertical: 12,
+    card_shadow_blur: 26,
     card_shadow_spread: 0,
   },
   modules: {
@@ -957,24 +1035,28 @@ export const GUMMY_THEME: UcThemeDefinition = {
   --input-fill-color: ${gummy(90, 86)};
   --mdc-select-fill-color: ${gummy(90, 86)};
   --mdc-text-field-fill-color: ${gummy(90, 86)};
-  --mdc-theme-surface: ${gummy(90, 76)};
-  background-color: ${gummy(90, 76)} !important;
-  /* Highlight at the top, saturated pool at the bottom, jelly body between. */
+  --mdc-theme-surface: ${gummy(88, 72)};
+  background-color: ${gummy(88, 72)} !important;
+  /* Layers, top to bottom: shine marks, floor reflection, saturated pool, jelly body (light centre, deep rim). */
   background-image:
-    radial-gradient(ellipse 65% 38% at 30% 6%, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0) 70%),
-    radial-gradient(ellipse 90% 55% at 50% 112%, ${gummy(88, 58, 0.85)} 0%, ${gummy(88, 58, 0)} 70%),
-    linear-gradient(180deg, ${gummy(95, 84)} 0%, ${gummy(90, 70)} 100%) !important;
-  border: 2px solid rgba(255, 255, 255, 0.55) !important;
-  box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.7),
-    inset 0 -10px 18px ${gummy(80, 50, 0.45)},
-    inset 0 0 0 1px ${gummy(80, 60, 0.35)},
-    0 10px 24px ${gummy(70, 40, 0.35)} !important;
+    ${GUMMY_SHINE},
+    radial-gradient(ellipse 26% 9% at 80% 93%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(ellipse 70% 45% at 50% 108%, ${gummy(95, 58, 0.9)} 0%, ${gummy(95, 58, 0)} 70%),
+    radial-gradient(ellipse 110% 75% at 45% 45%, ${gummy(86, 80)} 0%, ${gummy(90, 72)} 60%, ${gummy(94, 62)} 100%) !important;
+  background-repeat: no-repeat !important;
+  background-size: 160px 80px, auto, auto, auto !important;
+  background-position: left 14px top 8px, 0 0, 0 0, 0 0 !important;
+  border: 2px solid rgba(255, 255, 255, 0.62) !important;
+  box-shadow: ${GUMMY_BODY_SHADOW} !important;
 }
-/* Nested surfaces are smaller gummies: lighter body, same highlight. */
+/* Nested surfaces are smaller gummies: lighter body, their own shine, the same glowing rim. */
 [style*="--uc-design-surface"] {
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 55%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -3px 6px ${gummy(80, 50, 0.3)};
+  background-color: ${gummy(90, 84)};
+  background-image: ${GUMMY_SHINE_SM}, linear-gradient(180deg, ${gummy(90, 88)}, ${gummy(92, 78)});
+  background-repeat: no-repeat;
+  background-size: 80px 30px, auto;
+  background-position: left 6px top 4px, 0 0;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 2px ${gummy(90, 66, 0.3)}, inset 0 0 12px ${gummy(95, 55, 0.45)}, inset 0 -6px 10px ${gummy(95, 50, 0.4)}, 0 3px 8px ${gummy(80, 40, 0.25)};
 }
 `.trim(),
 };

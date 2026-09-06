@@ -11,6 +11,7 @@ import {
   BEACH_THEME,
   BUILTIN_THEMES,
   GLASS_THEME,
+  GUMMY_THEME,
   METALLIC_THEME,
   GREEN_TERMINAL_THEME,
   HILLARY_THEME,
@@ -390,7 +391,9 @@ describe('sanitizeThemeDefinition', () => {
   it('beach and metallic ship artwork that survives the sanitiser', () => {
     expect(BEACH_THEME.css).toContain('data:image/svg+xml');
     expect(sanitizeThemeDefinition(BEACH_THEME).theme?.css).toBe(BEACH_THEME.css);
-    expect(METALLIC_THEME.css).toContain('repeating-linear-gradient');
+    expect(METALLIC_THEME.css).toContain('data:image/svg+xml'); // brushing + corner screws
+    expect(GUMMY_THEME.css).toContain('data:image/svg+xml'); // shine marks
+    expect(sanitizeThemeDefinition(GUMMY_THEME).theme?.css).toBe(GUMMY_THEME.css);
     expect(sanitizeThemeDefinition(METALLIC_THEME).theme?.css).toBe(METALLIC_THEME.css);
   });
 });

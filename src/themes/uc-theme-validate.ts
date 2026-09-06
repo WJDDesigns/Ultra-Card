@@ -139,7 +139,8 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
   if (bw !== undefined) tokens.border_width = bw;
   const bc = cssValue(r.border_color);
   if (bc) tokens.border_color = bc;
-  const shadow = cssValue(r.shadow);
+  // Layered materials (bevel + chamfer + drop) legitimately run past 300 chars.
+  const shadow = cssValue(r.shadow, 600);
   if (shadow) tokens.shadow = shadow;
   if (DENSITIES.includes(r.density as UcThemeDensity)) tokens.density = r.density as UcThemeDensity;
   const accent = cssValue(r.accent);
