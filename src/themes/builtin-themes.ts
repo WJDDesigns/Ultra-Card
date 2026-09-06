@@ -529,6 +529,88 @@ export const HILLARY_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+// Moose: hide, antler and mud. Every colour is a brown.
+const MOOSE_HIDE = '#2b1d14'; // dark cocoa card
+const MOOSE_ANTLER = '#e8d9c3'; // pale antler: text (11.8:1 on hide)
+const MOOSE_TAN = '#b89a74'; // sun-bleached tan: secondary text (6.1:1 on hide)
+const MOOSE_SADDLE = '#8b5a2b'; // saddle brown: primary (white on it 5.8:1)
+const MOOSE_VELVET = '#c2a37c'; // antler velvet: accent
+const MOOSE_HAIRLINE = 'rgba(194, 163, 124, 0.22)';
+const MOOSE_SHADOW = 'rgba(12, 7, 3, 0.45)';
+
+/**
+ * "Moose": a dark cocoa hide with antler-cream text, saddle-brown controls
+ * and a warm tan accent. Nothing in the palette leaves the brown family, so
+ * it holds together on any HA theme. Rounded, a touch heavier than Soft,
+ * with a low-slung shadow like something big standing in the shade.
+ */
+export const MOOSE_THEME: UcThemeDefinition = {
+  id: 'moose',
+  name: 'Moose',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'All browns, like a moose: dark cocoa hide, antler-cream text, saddle-brown controls and a warm tan accent.',
+  icon: 'mdi:pine-tree',
+  source: 'builtin',
+  tokens: {
+    surface: 'flat',
+    radius: 18,
+    radius_sm: 12,
+    border_width: 1,
+    border_color: MOOSE_HAIRLINE,
+    shadow: `0 10px 28px ${MOOSE_SHADOW}, 0 1px 2px rgba(12, 7, 3, 0.3)`,
+    density: 'regular',
+    accent: MOOSE_VELVET,
+    font_family: "'Bitter', 'Merriweather', 'Source Serif 4', 'Roboto Slab', Georgia, serif",
+    palette: {
+      primary: MOOSE_SADDLE,
+      accent: MOOSE_VELVET,
+      card_bg: MOOSE_HIDE,
+      text: MOOSE_ANTLER,
+      text_secondary: MOOSE_TAN,
+      divider: MOOSE_HAIRLINE,
+    },
+  },
+  card: {
+    card_background: MOOSE_HIDE,
+    card_border_radius: 18,
+    card_border_color: MOOSE_HAIRLINE,
+    card_border_width: 1,
+    card_padding: 18,
+    card_shadow_enabled: true,
+    card_shadow_color: MOOSE_SHADOW,
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 10,
+    card_shadow_blur: 28,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'flat' },
+    bar: { bar_style: 'flat' },
+    slider_control: { slider_style: 'flat' },
+    spinbox: { button_style: 'flat', button_shape: 'rounded' },
+    popup: { trigger_button_style: 'flat' },
+    grid: { grid_style: 'style_20' },
+    navigation: { nav_style: 'uc_minimal' },
+    area_summary: { style_preset: 'iconic_soft', accent_color: MOOSE_VELVET, tile_border_radius: 14 },
+    auto_entity_list: { row_style: 'card' },
+    unifi: { rack_style: 'dark' },
+    activity_feed: { feed_card_style: 'elevated' },
+    tabs: { style: 'simple_2' },
+  },
+  css: `
+.card-container {
+  /* A faint antler highlight on the top edge over a warm hide gradient. */
+  background-image: linear-gradient(180deg, rgba(232, 217, 195, 0.05) 0%, rgba(232, 217, 195, 0) 40%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(232, 217, 195, 0.1),
+    0 10px 28px ${MOOSE_SHADOW},
+    0 1px 2px rgba(12, 7, 3, 0.3) !important;
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   CLASSIC_THEME,
@@ -539,5 +621,6 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   MATERIAL_THEME,
   LIQUID_GLASS_THEME,
   HILLARY_THEME,
+  MOOSE_THEME,
   GREEN_TERMINAL_THEME,
 ];
