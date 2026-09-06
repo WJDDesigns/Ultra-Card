@@ -1325,12 +1325,146 @@ export const WOOD_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+// Neumorphism: one material, lit from the top-left. Everything is the same
+// colour as the surface it sits on and reads only through two shadows, a
+// light one toward the light and a dark one away from it. Raised elements
+// extrude, panels recess.
+interface NeuPalette {
+  surface: string;
+  light: string;
+  dark: string;
+  text: string;
+  textSoft: string;
+  primary: string;
+  onPrimary: string;
+  accent: string;
+}
+const NEU_LIGHT: NeuPalette = {
+  surface: '#e4e8ef',
+  light: '#ffffff',
+  dark: '#b8c2d3',
+  text: '#3b4656', // 7.7:1
+  textSoft: '#56637a', // 4.9:1
+  primary: '#4f63d2', // white on it 5.5:1
+  onPrimary: '#ffffff',
+  accent: '#4f63d2',
+};
+const NEU_DARK: NeuPalette = {
+  surface: '#2a2e35',
+  light: '#363b44',
+  dark: '#1a1d22',
+  text: '#e8ecf2', // 11.5:1
+  textSoft: '#aab3c2', // 6.5:1
+  primary: '#8b9cff', // dark on it 7.5:1
+  onPrimary: '#10142a',
+  accent: '#8b9cff',
+};
+
+function neumorphicTheme(id: string, name: string, icon: string, mode: 'light' | 'dark', c: NeuPalette): UcThemeDefinition {
+  const raised = `10px 10px 22px ${c.dark}, -10px -10px 22px ${c.light}`;
+  const raisedSm = `5px 5px 12px ${c.dark}, -5px -5px 12px ${c.light}`;
+  const recessed = `inset 5px 5px 10px ${c.dark}, inset -5px -5px 10px ${c.light}`;
+  return {
+    id,
+    name,
+    version: 1,
+    author: 'Ultra Card',
+    description:
+      mode === 'light'
+        ? 'Soft UI in a pale grey: one material lit from the top-left, raised cards and controls, recessed panels, no lines anywhere.'
+        : 'Soft UI in charcoal: one material lit from the top-left, raised cards and controls, recessed panels, no lines anywhere.',
+    icon,
+    source: 'builtin',
+    tokens: {
+      surface: 'neumorphic',
+      radius: 22,
+      radius_sm: 16,
+      border_width: 0,
+      border_color: 'transparent',
+      shadow: raised,
+      density: 'comfortable',
+      accent: c.accent,
+      font_family: "'Nunito', 'Poppins', 'Quicksand', 'Varela Round', system-ui, sans-serif",
+      palette: {
+        primary: c.primary,
+        on_primary: c.onPrimary,
+        accent: c.accent,
+        card_bg: c.surface,
+        text: c.text,
+        text_secondary: c.textSoft,
+        divider: 'transparent',
+      },
+    },
+    card: {
+      card_background: c.surface,
+      card_border_radius: 22,
+      card_border_color: 'transparent',
+      card_border_width: 0,
+      card_padding: 22,
+      card_shadow_enabled: true,
+      card_shadow_color: c.dark,
+      card_shadow_horizontal: 10,
+      card_shadow_vertical: 10,
+      card_shadow_blur: 22,
+      card_shadow_spread: 0,
+    },
+    modules: {
+      button: { style: 'neumorphic' },
+      bar: { bar_style: 'neumorphic' },
+      slider_control: { slider_style: 'neumorphic' },
+      spinbox: { button_style: 'neumorphic', button_shape: 'circle' },
+      popup: { trigger_button_style: 'neumorphic' },
+      grid: { grid_style: 'style_19' },
+      navigation: { nav_style: 'uc_neumorphic' },
+      area_summary: { style_preset: 'iconic_soft', accent_color: c.accent, tile_border_radius: 18 },
+      auto_entity_list: { row_style: 'card' },
+      unifi: { rack_style: mode === 'light' ? 'light' : 'dark' },
+      activity_feed: { feed_card_style: 'flat' },
+      tabs: { style: 'switch_2' },
+    },
+    css: `
+.card-container {
+  --secondary-background-color: ${c.surface};
+  --primary-background-color: ${c.surface};
+  --input-fill-color: ${c.surface};
+  --mdc-select-fill-color: ${c.surface};
+  --mdc-text-field-fill-color: ${c.surface};
+  --divider-color: transparent;
+  background-color: ${c.surface} !important;
+  /* A barely-there sheen toward the light so the slab reads as a solid, not a flat fill. */
+  background-image: linear-gradient(145deg, ${c.light}22 0%, ${c.surface}00 45%, ${c.dark}1f 100%) !important;
+  border: none !important;
+  box-shadow: ${raised} !important;
+}
+/* Nested surfaces are the same material, recessed into the slab. */
+[style*="--uc-design-surface"] {
+  background-image: linear-gradient(${c.surface}, ${c.surface});
+  border: none;
+  box-shadow: ${recessed};
+}
+/* Hairlines vanish: neumorphism draws edges with light, not lines. */
+.card-container hr,
+.card-container [class*="divider"],
+.card-container [class*="separator"] {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: ${raisedSm};
+}
+`.trim(),
+  };
+}
+
+export const NEUMORPHIC_LIGHT_THEME = neumorphicTheme('neumorphic-light', 'Neumorphic Light', 'mdi:white-balance-sunny', 'light', NEU_LIGHT);
+export const NEUMORPHIC_DARK_THEME = neumorphicTheme('neumorphic-dark', 'Neumorphic Dark', 'mdi:weather-night', 'dark', NEU_DARK);
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   GLASS_THEME,
   BOLD_THEME,
   MONOCHROME_THEME,
   MATERIAL_THEME,
+  NEUMORPHIC_LIGHT_THEME,
+  NEUMORPHIC_DARK_THEME,
   LIQUID_GLASS_THEME,
   HILLARY_THEME,
   MOOSE_THEME,
