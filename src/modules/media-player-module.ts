@@ -449,7 +449,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         ? html`
             <div
               class="settings-section"
-              style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+              style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
             >
               <div
                 class="section-title"
@@ -502,7 +502,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       <!-- Icon Customization -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -572,7 +572,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       <!-- Link Configuration -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         ${UltraLinkComponent.render(
           hass,
@@ -1746,7 +1746,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       .media-player-container {
         position: relative;
         padding: 16px;
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         background: var(--card-background-color, var(--secondary-background-color));
         opacity: 0.9;
         transition: all 0.3s ease;
@@ -1774,7 +1774,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       .mp-blurred-bg.mp-blur-contained {
         inset: 0;
         transform: scale(1.1);
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
       }
 
       /* Keep everything inside the card */
@@ -1885,7 +1885,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         width: 8px;
         height: 80px;
         background: var(--visualizer-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         animation: mp-viz-bar-bounce 0.5s ease-in-out infinite;
         animation-delay: calc(var(--bar-index) * 0.04s);
         opacity: 0.9;
@@ -1907,7 +1907,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         width: 90%;
         height: 5px;
         background: var(--visualizer-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         animation: mp-viz-wave-flow 1.5s ease-in-out infinite;
         opacity: 0.9;
       }
@@ -1962,7 +1962,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         position: absolute;
         width: 5px;
         background: var(--visualizer-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         transform-origin: center bottom;
         transform: rotate(calc(var(--spectrum-index) * 15deg)) translateY(-35%);
         animation: mp-viz-spectrum-grow 0.8s ease-in-out infinite;
@@ -2106,7 +2106,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       .mp-visualizer-equalizer .mp-viz-eq-bar {
         width: 10px;
         background: linear-gradient(to top, var(--visualizer-color) 0%, transparent 100%);
-        border-radius: 5px 5px 0 0;
+        border-radius: calc(5px * var(--uc-radius-scale, 1)) calc(5px * var(--uc-radius-scale, 1)) 0 0;
         animation: mp-viz-eq-bounce 0.4s ease-in-out infinite;
         animation-delay: calc(var(--eq-index) * 0.03s);
         opacity: 0.85;
@@ -2382,7 +2382,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       .mp-progress-bar {
         flex: 1;
         height: 4px;
-        border-radius: 2px;
+        border-radius: calc(2px * var(--uc-radius-scale, 1));
         cursor: pointer;
         overflow: hidden;
         transition: height 0.2s ease;
@@ -2402,7 +2402,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
 
       .mp-progress-fill {
         height: 100%;
-        border-radius: 2px;
+        border-radius: calc(2px * var(--uc-radius-scale, 1));
         transition: width 0.1s linear;
       }
 
@@ -2446,7 +2446,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           var(--bg-color, var(--divider-color)) var(--progress, 50%),
           var(--bg-color, var(--divider-color)) 100%
         );
-        border-radius: 2px;
+        border-radius: calc(2px * var(--uc-radius-scale, 1));
         cursor: pointer;
       }
 
@@ -2508,7 +2508,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         flex: 1;
         padding: 6px 10px;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         font-size: 13px;

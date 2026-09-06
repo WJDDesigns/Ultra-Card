@@ -128,7 +128,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
       .bm-strip {
         display: flex;
         height: 28px;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         overflow: hidden;
         border: 1px solid var(--divider-color);
       }
@@ -176,7 +176,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
       <style>
         .settings-section {
           background: var(--secondary-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           padding: 16px;
           margin-bottom: 24px;
         }
@@ -199,7 +199,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
         .style-btn {
           padding: 12px 8px;
           border: 2px solid var(--divider-color);
-          border-radius: 12px;
+          border-radius: calc(12px * var(--uc-radius-scale, 1));
           background: var(--card-background-color);
           cursor: pointer;
           text-align: center;
@@ -243,7 +243,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           padding: 6px 12px;
           background: var(--primary-color);
           color: var(--text-primary-color);
-          border-radius: 16px;
+          border-radius: calc(16px * var(--uc-radius-scale, 1));
           font-size: 13px;
           position: relative;
         }
@@ -273,7 +273,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           flex: 1;
           padding: 8px;
           border: 1px solid var(--divider-color);
-          border-radius: 4px;
+          border-radius: calc(4px * var(--uc-radius-scale, 1));
           background: var(--secondary-background-color);
           color: var(--primary-text-color);
           font-size: 14px;
@@ -283,7 +283,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           background: var(--primary-color);
           color: var(--text-primary-color);
           border: none;
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           cursor: pointer;
           font-weight: 600;
           display: flex;
@@ -302,7 +302,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           gap: 8px;
           padding: 12px;
           background: var(--card-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           margin-bottom: 8px;
           border: 1px solid var(--divider-color);
         }
@@ -335,7 +335,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           padding: 16px;
           background: rgba(var(--rgb-primary-color), 0.05);
           border-left: 3px solid var(--primary-color);
-          border-radius: 0 8px 8px 0;
+          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
           margin-bottom: 8px;
         }
       </style>
@@ -1186,7 +1186,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'list');
           return html`
             <div
-              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:${o.cardBg};${itemBorder}"
+              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(10px * var(--uc-radius-scale, 1));background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1205,7 +1205,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
                     : nothing}
                 </div>
                 <div
-                  style="height:6px;border-radius:4px;background:rgba(127,127,127,0.25);margin-top:6px;overflow:hidden;"
+                  style="height:6px;border-radius:calc(4px * var(--uc-radius-scale, 1));background:rgba(127,127,127,0.25);margin-top:6px;overflow:hidden;"
                 >
                   <div
                     style="width:${Math.max(0, Math.min(100, r.value))}%;height:100%;background:${rowColor};"
@@ -1254,7 +1254,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'bar');
           return html`
             <div
-              style="padding:10px;border-radius:10px;background:${o.cardBg};${itemBorder}"
+              style="padding:10px;border-radius:calc(10px * var(--uc-radius-scale, 1));background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1276,7 +1276,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
                   ${this._renderRemove(m, r, o.showDel, o.lang)}
                 </span>
               </div>
-              <div style="height:14px;border-radius:8px;background:rgba(127,127,127,0.25);overflow:hidden;">
+              <div style="height:14px;border-radius:calc(8px * var(--uc-radius-scale, 1));background:rgba(127,127,127,0.25);overflow:hidden;">
                 <div
                   style="width:${Math.max(0, Math.min(100, r.value))}%;height:100%;background:${rowColor};"
                 ></div>
@@ -1317,7 +1317,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const itemBorder = showBorder ? `border:1px solid ${fill}55;` : '';
           return html`
             <div
-              style="position:relative;padding:14px;border-radius:12px;background:${fill}22;${itemBorder}text-align:center;"
+              style="position:relative;padding:14px;border-radius:calc(12px * var(--uc-radius-scale, 1));background:${fill}22;${itemBorder}text-align:center;"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1382,7 +1382,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'ring');
           return html`
             <div
-              style="text-align:center;padding:10px;border-radius:12px;background:${o.cardBg};${itemBorder}position:relative;"
+              style="text-align:center;padding:10px;border-radius:calc(12px * var(--uc-radius-scale, 1));background:${o.cardBg};${itemBorder}position:relative;"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}

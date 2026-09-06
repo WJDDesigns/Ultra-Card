@@ -133,7 +133,7 @@ export function renderChildModulePreview(
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
+            border-radius: calc(12px * var(--uc-radius-scale, 1));
             z-index: 10;
           "
         >

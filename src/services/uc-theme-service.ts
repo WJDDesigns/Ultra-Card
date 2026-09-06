@@ -81,6 +81,15 @@ const DENSITY_SCALE: Record<string, string> = {
   comfortable: '1.125',
 };
 
+/** Default card radius the modules' internal radii were designed against. */
+const BASE_CARD_RADIUS = 12;
+export const UC_RADIUS_SCALE_MAX = 1.75;
+
+export function radiusScale(cardRadius: number): string {
+  const s = Math.min(UC_RADIUS_SCALE_MAX, Math.max(0, cardRadius / BASE_CARD_RADIUS));
+  return String(Math.round(s * 100) / 100);
+}
+
 const PALETTE_TO_VARS: Record<string, string[]> = {
   primary: ['--primary-color'],
   accent: ['--accent-color'],
@@ -361,6 +370,10 @@ class UcThemeService {
       '--uc-surface-backdrop': surface.backdropFilter,
       '--uc-shadow': surface.shadow,
       '--uc-density': DENSITY_SCALE[t.density ?? 'regular'] ?? '1',
+      // Module-internal radii (rows, tiles, chips, tracks) are authored against
+      // the 12px default card and scale with the theme's card radius, so a
+      // square theme squares everything and a round one rounds everything.
+      '--uc-radius-scale': radiusScale(t.radius),
     };
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;

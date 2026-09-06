@@ -1262,7 +1262,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       <style>
         .vacuum-card-layout {
           background: var(--secondary-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           padding: 16px;
           margin-bottom: 16px;
         }
@@ -1291,7 +1291,7 @@ export class UltraVacuumModule extends BaseUltraModule {
 
         .vacuum-section-item {
           background: var(--primary-background-color);
-          border-radius: 6px;
+          border-radius: calc(6px * var(--uc-radius-scale, 1));
           cursor: move;
           border: 2px solid transparent;
           transition: all 0.2s;
@@ -1312,7 +1312,7 @@ export class UltraVacuumModule extends BaseUltraModule {
 
         .vacuum-section-header:hover {
           background: rgba(var(--rgb-primary-color), 0.05);
-          border-radius: 6px;
+          border-radius: calc(6px * var(--uc-radius-scale, 1));
         }
 
         .vacuum-drag-handle {
@@ -1386,7 +1386,7 @@ export class UltraVacuumModule extends BaseUltraModule {
           border: 2px dashed var(--primary-color);
           background: transparent;
           color: var(--primary-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           cursor: pointer;
           font-size: 14px;
           font-weight: 500;
@@ -1408,7 +1408,7 @@ export class UltraVacuumModule extends BaseUltraModule {
           right: 0;
           background: var(--primary-background-color);
           border: 1px solid var(--divider-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
           max-height: 300px;
           overflow-y: auto;
@@ -1480,7 +1480,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         .vacuum-layout-style-select {
           flex: 1;
           padding: 8px 12px;
-          border-radius: 6px;
+          border-radius: calc(6px * var(--uc-radius-scale, 1));
           border: 1px solid var(--divider-color);
           background: var(--primary-background-color);
           color: var(--primary-text-color);
@@ -1497,7 +1497,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         .vacuum-column {
           background: rgba(var(--rgb-primary-color), 0.03);
           border: 1px dashed var(--divider-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           padding: 8px;
           min-height: 100px;
         }
@@ -1527,7 +1527,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         
         .vacuum-column-drop-zone {
           border: 2px dashed var(--divider-color);
-          border-radius: 6px;
+          border-radius: calc(6px * var(--uc-radius-scale, 1));
           padding: 16px;
           text-align: center;
           color: var(--secondary-text-color);
@@ -2054,7 +2054,7 @@ export class UltraVacuumModule extends BaseUltraModule {
             (e: CustomEvent) => updateSettings(section.id, { display_mode: e.detail.value.display_mode })
           )}
           ${isSwipeMode ? html`
-            <div class="vacuum-setting-desc" style="margin: 8px 0; padding: 8px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 6px; font-size: 12px;">
+            <div class="vacuum-setting-desc" style="margin: 8px 0; padding: 8px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); font-size: 12px;">
               <ha-icon icon="mdi:information" style="--mdc-icon-size: 14px; margin-right: 4px;"></ha-icon>
               Map height is automatic in Swipe mode (matches vacuum image size)
             </div>
@@ -3071,7 +3071,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       <!-- Entity Configuration (single settings-section box with entity picker + display name) -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -3895,7 +3895,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     return html`
       <div 
         class="vacuum-dnd-status ${isOn ? 'dnd-active' : ''} ${isToggleable ? 'clickable' : ''}" 
-        style="${buttonStyle} border-radius: 8px; padding: 8px 12px; cursor: ${isToggleable ? 'pointer' : 'default'};"
+        style="${buttonStyle} border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 8px 12px; cursor: ${isToggleable ? 'pointer' : 'default'};"
         @click=${isToggleable ? (e: Event) => this.toggleSwitch(e, dndEntityId, hass) : nothing}
       >
         <div class="dnd-header" style="display: flex; align-items: center; gap: 8px;">
@@ -4322,7 +4322,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       .vacuum-module-container {
         padding: 12px 16px 16px 16px;
         background: var(--card-background-color, var(--ha-card-background));
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         position: relative;
         overflow: hidden;
       }
@@ -4442,7 +4442,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       }
       .vacuum-status-badge {
         padding: 4px 12px;
-        border-radius: 16px;
+        border-radius: calc(16px * var(--uc-radius-scale, 1));
         font-size: 12px;
         font-weight: 600;
         color: white;
@@ -4610,12 +4610,12 @@ export class UltraVacuumModule extends BaseUltraModule {
         flex: 1;
         height: 6px;
         background: var(--divider-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         overflow: hidden;
       }
       .component-bar-fill {
         height: 100%;
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         transition: width 0.3s ease;
       }
       .component-value {
@@ -4647,7 +4647,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: rgba(var(--rgb-error-color, 244, 67, 54), 0.15);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         color: var(--error-color, #f44336);
         font-size: 13px;
         margin-bottom: 12px;
@@ -4692,7 +4692,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       .vacuum-dnd-status {
         margin-top: 12px;
         padding: 12px;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         border: 1px solid;
         transition: all 0.2s ease;
       }
@@ -4718,7 +4718,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         margin-top: 12px;
         padding: 12px;
         background: var(--secondary-background-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         border: 1px solid var(--divider-color);
       }
       .volume-header {
@@ -4736,13 +4736,13 @@ export class UltraVacuumModule extends BaseUltraModule {
       .volume-bar {
         height: 6px;
         background: var(--divider-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         overflow: hidden;
       }
       .volume-bar-fill {
         height: 100%;
         background: var(--primary-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         transition: width 0.3s ease;
       }
       
@@ -4771,7 +4771,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         padding: 12px 16px;
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         cursor: pointer;
         transition: all 0.2s ease;
         color: var(--primary-text-color);
@@ -4834,7 +4834,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         align-items: center;
         padding: 12px 16px;
         background: var(--secondary-background-color);
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         margin-bottom: 0;
         gap: 16px;
         width: 100%;
@@ -4871,7 +4871,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       .vacuum-swipe-carousel {
         overflow: hidden;
         position: relative;
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         /* Helps mobile browsers allow horizontal swipe without scroll hijack */
         touch-action: pan-y;
         user-select: none;
@@ -4927,7 +4927,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         background: var(--primary-color);
         color: var(--text-primary-color, white);
         border: none;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         font-size: 14px;
         font-weight: 500;
         cursor: pointer;
@@ -4969,7 +4969,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         gap: 8px;
         padding: 12px;
         background: var(--secondary-background-color);
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
       }
       .fan-speed-label {
         display: flex;
@@ -4991,7 +4991,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         padding: 6px 12px;
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
-        border-radius: 16px;
+        border-radius: calc(16px * var(--uc-radius-scale, 1));
         font-size: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -5080,7 +5080,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       .vacuum-dot.active {
         background: var(--primary-color);
         width: 24px;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
       }
       
       /* SVG Brush Animations */
@@ -5336,7 +5336,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         width: 100%;
         background: rgba(var(--rgb-error-color, 244, 67, 54), 0.1);
         border: 1px solid var(--error-color, #f44336);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 8px 12px;
         display: flex;
         align-items: center;
@@ -5359,7 +5359,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       .vacuum-sections-layout .wear-item {
         background: rgba(var(--rgb-primary-color), 0.05);
         padding: 8px 12px;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
       }
       
       .vacuum-sections-layout .wear-header {
@@ -5389,13 +5389,13 @@ export class UltraVacuumModule extends BaseUltraModule {
       .vacuum-sections-layout .wear-bar {
         height: 6px;
         background: var(--divider-color, rgba(0,0,0,0.1));
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         overflow: hidden;
       }
       
       .vacuum-sections-layout .wear-progress {
         height: 100%;
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         transition: width 0.3s ease;
       }
       

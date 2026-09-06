@@ -167,7 +167,7 @@ export class UltraMapModule extends BaseUltraModule {
         ${mapModule.map_provider === 'google'
           ? html`
               <div
-                style="margin-bottom: 24px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-left: 3px solid var(--primary-color); border-radius: 4px;"
+                style="margin-bottom: 24px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-left: 3px solid var(--primary-color); border-radius: calc(4px * var(--uc-radius-scale, 1));"
               >
                 <div
                   style="font-weight: 600; margin-bottom: 12px; color: var(--primary-text-color);"
@@ -511,7 +511,7 @@ export class UltraMapModule extends BaseUltraModule {
           ${(mapModule.markers || []).length === 0
             ? html`
                 <div
-                  style="text-align: center; padding: 48px 16px; color: var(--secondary-text-color); background: var(--secondary-background-color); border-radius: 8px; border: 2px dashed var(--divider-color);"
+                  style="text-align: center; padding: 48px 16px; color: var(--secondary-text-color); background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 2px dashed var(--divider-color);"
                 >
                   <ha-icon
                     icon="mdi:map-marker-question"
@@ -637,7 +637,7 @@ export class UltraMapModule extends BaseUltraModule {
     return html`
       <div
         class="marker-item"
-        style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: 8px; border: 1px solid var(--divider-color); overflow: hidden;"
+        style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 1px solid var(--divider-color); overflow: hidden;"
         data-marker-id="${marker.id}"
         data-marker-index="${index}"
         @dragover=${(e: DragEvent) => this.handleMarkerDragOver(e)}
@@ -653,7 +653,7 @@ export class UltraMapModule extends BaseUltraModule {
           <div style="display: flex; align-items: center; gap: 12px;">
             <div
               class="drag-handle"
-              style="padding: 8px; margin: -8px; cursor: grab; border-radius: 4px; transition: background-color 0.2s ease;"
+              style="padding: 8px; margin: -8px; cursor: grab; border-radius: calc(4px * var(--uc-radius-scale, 1)); transition: background-color 0.2s ease;"
               draggable="true"
               @dragstart=${(e: DragEvent) => this.handleMarkerDragStart(e, index)}
               @dragend=${(e: DragEvent) => this.handleMarkerDragEnd(e)}
@@ -845,7 +845,7 @@ export class UltraMapModule extends BaseUltraModule {
         ? html`
             <div
               class="field-group"
-              style="margin-bottom: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-left: 3px solid var(--primary-color); border-radius: 4px;"
+              style="margin-bottom: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-left: 3px solid var(--primary-color); border-radius: calc(4px * var(--uc-radius-scale, 1));"
             >
               <div style="font-weight: 600; margin-bottom: 12px; color: var(--primary-text-color);">
                 ${localize('editor.map.marker.manual_position', lang, 'Manual Position')}
@@ -925,7 +925,7 @@ export class UltraMapModule extends BaseUltraModule {
         ? html`
             <div
               class="field-group"
-              style="margin-bottom: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-left: 3px solid var(--primary-color); border-radius: 4px;"
+              style="margin-bottom: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-left: 3px solid var(--primary-color); border-radius: calc(4px * var(--uc-radius-scale, 1));"
             >
               <div style="font-weight: 600; margin-bottom: 12px; color: var(--primary-text-color);">
                 ${localize('editor.map.marker.entity_tracker', lang, 'Entity Tracker')}
@@ -1436,8 +1436,8 @@ export class UltraMapModule extends BaseUltraModule {
       mapModule.aspect_ratio && mapModule.aspect_ratio !== 'custom'
         ? `position: relative; width: 100%; height: 0; padding-bottom: ${
             { '16:9': '56.25%', '4:3': '75%', '1:1': '100%' }[mapModule.aspect_ratio]
-          }; overflow: hidden; border-radius: 8px;`
-        : `width: 100%; height: ${height}px; position: relative; overflow: hidden; border-radius: 8px;`;
+          }; overflow: hidden; border-radius: calc(8px * var(--uc-radius-scale, 1));`
+        : `width: 100%; height: ${height}px; position: relative; overflow: hidden; border-radius: calc(8px * var(--uc-radius-scale, 1));`;
 
     const mapStyle =
       mapModule.aspect_ratio && mapModule.aspect_ratio !== 'custom'

@@ -543,7 +543,7 @@ export class UltraLightModule extends BaseUltraModule {
           <button
             class="add-preset-btn"
             @click=${() => this.addPreset(lightModule, updateModule)}
-            style="width: 100%; padding: 12px; border: 2px dashed var(--primary-color); background: transparent; color: var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 16px;"
+            style="width: 100%; padding: 12px; border: 2px dashed var(--primary-color); background: transparent; color: var(--primary-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 16px;"
           >
             ${localize('editor.light.add_preset', lang, '+ Add New Preset')}
           </button>
@@ -552,7 +552,7 @@ export class UltraLightModule extends BaseUltraModule {
         <!-- Layout Configuration -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px; margin-top: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px; margin-top: 32px;"
         >
           <div
             class="section-title"
@@ -632,7 +632,7 @@ export class UltraLightModule extends BaseUltraModule {
         <!-- Gap Configuration -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -661,7 +661,7 @@ export class UltraLightModule extends BaseUltraModule {
             ? html`
                 <div
                   class="settings-section"
-                  style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+                  style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
                 >
                   <div
                     class="section-title"
@@ -703,7 +703,7 @@ export class UltraLightModule extends BaseUltraModule {
         <!-- Global Settings -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -753,7 +753,7 @@ export class UltraLightModule extends BaseUltraModule {
           <button
             class="add-preset-btn"
             @click=${() => this.addPreset(lightModule, updateModule)}
-            style="width: 100%; padding: 12px; border: 2px dashed var(--primary-color); background: transparent; color: var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 16px;"
+            style="width: 100%; padding: 12px; border: 2px dashed var(--primary-color); background: transparent; color: var(--primary-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 16px;"
           >
             + Add New Preset
           </button>
@@ -893,7 +893,7 @@ export class UltraLightModule extends BaseUltraModule {
     return html`
       <div
         class="preset-item"
-        style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: 8px; border: 1px solid var(--divider-color); overflow: hidden;"
+        style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 1px solid var(--divider-color); overflow: hidden;"
         data-preset-id="${preset.id}"
         data-preset-index="${index}"
         @dragover=${(e: DragEvent) => this.handlePresetDragOver(e)}
@@ -909,7 +909,7 @@ export class UltraLightModule extends BaseUltraModule {
           <div style="display: flex; align-items: center; gap: 12px;">
             <div
               class="drag-handle"
-              style="padding: 8px; margin: -8px; cursor: grab; border-radius: 4px; transition: background-color 0.2s ease;"
+              style="padding: 8px; margin: -8px; cursor: grab; border-radius: calc(4px * var(--uc-radius-scale, 1)); transition: background-color 0.2s ease;"
               draggable="true"
               @dragstart=${(e: DragEvent) => this.handlePresetDragStart(e, index)}
               @dragend=${(e: DragEvent) => this.handlePresetDragEnd(e)}
@@ -1205,7 +1205,7 @@ export class UltraLightModule extends BaseUltraModule {
 
         <!-- Button Style (moved here from global settings) -->
         <div
-          style="margin-top: 16px; background: rgba(var(--rgb-accent-color), 0.05); border-radius: 6px; padding: 12px;"
+          style="margin-top: 16px; background: rgba(var(--rgb-accent-color), 0.05); border-radius: calc(6px * var(--uc-radius-scale, 1)); padding: 12px;"
         >
           <div style="font-weight: 500; margin-bottom: 12px; color: var(--primary-text-color);">
             Button Appearance
@@ -1293,7 +1293,7 @@ export class UltraLightModule extends BaseUltraModule {
             `
           : html`
               <div
-                style="padding: 20px; text-align: center; color: var(--secondary-text-color); background: var(--secondary-background-color); border-radius: 8px; font-style: italic; margin-top: 20px;"
+                style="padding: 20px; text-align: center; color: var(--secondary-text-color); background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); font-style: italic; margin-top: 20px;"
               >
                 Light controls are not available for "Turn Off" action
               </div>
@@ -1312,7 +1312,7 @@ export class UltraLightModule extends BaseUltraModule {
           <!-- Smart Color Toggles -->
           <div
             class="smart-color-toggles"
-            style="margin-bottom: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 6px; padding: 12px;"
+            style="margin-bottom: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(6px * var(--uc-radius-scale, 1)); padding: 12px;"
           >
             <div style="font-weight: 500; margin-bottom: 12px; color: var(--primary-text-color);">
               Smart Color Options
@@ -1407,7 +1407,7 @@ export class UltraLightModule extends BaseUltraModule {
                               Text Color
                             </div>
                             <div
-                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: calc(4px * var(--uc-radius-scale, 1));"
                             >
                               Using icon color
                             </div>
@@ -1439,7 +1439,7 @@ export class UltraLightModule extends BaseUltraModule {
                               Icon Color
                             </div>
                             <div
-                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: calc(4px * var(--uc-radius-scale, 1));"
                             >
                               Using light color
                             </div>
@@ -1471,7 +1471,7 @@ export class UltraLightModule extends BaseUltraModule {
                               Button Color
                             </div>
                             <div
-                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: calc(4px * var(--uc-radius-scale, 1));"
                             >
                               Using light color
                             </div>
@@ -1481,7 +1481,7 @@ export class UltraLightModule extends BaseUltraModule {
                 `
               : html`
                   <div
-                    style="text-align: center; padding: 24px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 6px;"
+                    style="text-align: center; padding: 24px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(6px * var(--uc-radius-scale, 1));"
                   >
                     Smart Contrast Mode is enabled - colors are automatically optimized
                   </div>
@@ -1519,7 +1519,7 @@ export class UltraLightModule extends BaseUltraModule {
         >
           <button
             @click=${() => this.applyPreset(preset, lightModule, hass)}
-            style="width: 100%; padding: 12px; background: var(--primary-color); color: var(--text-primary-color); border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px;"
+            style="width: 100%; padding: 12px; background: var(--primary-color); color: var(--text-primary-color); border: none; border-radius: calc(6px * var(--uc-radius-scale, 1)); cursor: pointer; font-weight: 500; font-size: 14px;"
             .disabled=${!preset.entities || preset.entities.length === 0}
           >
             <ha-icon icon="mdi:play" style="margin-right: 8px;"></ha-icon>
@@ -2748,7 +2748,7 @@ export class UltraLightModule extends BaseUltraModule {
       .light-module-container {
         padding: 16px;
         background: var(--card-background-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
       }
 
       .no-presets-preview {
@@ -2776,7 +2776,7 @@ export class UltraLightModule extends BaseUltraModule {
       .ultra-config-needed {
         position: relative;
         padding: 16px;
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         overflow: hidden;
         backdrop-filter: blur(10px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -2831,7 +2831,7 @@ export class UltraLightModule extends BaseUltraModule {
       .ultra-config-banner {
         position: relative;
         padding: 10px 14px;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         overflow: hidden;
         margin-bottom: 12px;
         backdrop-filter: blur(10px);
@@ -2891,7 +2891,7 @@ export class UltraLightModule extends BaseUltraModule {
         justify-content: center !important;
         gap: 8px !important;
         padding: 12px 16px !important;
-        border-radius: 8px !important;
+        border-radius: calc(8px * var(--uc-radius-scale, 1)) !important;
         border: none !important;
         cursor: pointer !important;
         font-size: 14px !important;
@@ -3064,7 +3064,7 @@ export class UltraLightModule extends BaseUltraModule {
       /* Light control styles */
       .light-controls-section {
         background: rgba(var(--rgb-primary-color), 0.02);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 16px;
         border: 1px solid rgba(var(--rgb-primary-color), 0.1);
       }
@@ -3073,7 +3073,7 @@ export class UltraLightModule extends BaseUltraModule {
       .color-picker-section,
       .effects-control {
         background: var(--card-background-color);
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         padding: 12px;
         border: 1px solid var(--divider-color);
       }
@@ -3083,7 +3083,7 @@ export class UltraLightModule extends BaseUltraModule {
         flex: 1;
         height: 6px;
         background: linear-gradient(to right, #333, #fff);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         outline: none;
         appearance: none;
         cursor: pointer;
@@ -3121,7 +3121,7 @@ export class UltraLightModule extends BaseUltraModule {
       .color-preview div {
         width: 32px;
         height: 32px;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         border: 1px solid var(--divider-color);
       }
 
@@ -3172,14 +3172,14 @@ export class UltraLightModule extends BaseUltraModule {
       /* Visual customization styles */
       .visual-customization {
         background: rgba(var(--rgb-primary-color), 0.02);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 16px;
         border: 1px solid rgba(var(--rgb-primary-color), 0.1);
       }
 
       .smart-color-toggles {
         background: rgba(var(--rgb-primary-color), 0.05);
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         padding: 12px;
         margin-bottom: 16px;
       }
@@ -3192,7 +3192,7 @@ export class UltraLightModule extends BaseUltraModule {
 
       .color-field {
         background: var(--card-background-color);
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         padding: 12px;
         border: 1px solid var(--divider-color);
       }
@@ -3213,7 +3213,7 @@ export class UltraLightModule extends BaseUltraModule {
         flex: 1;
         height: 6px;
         background: var(--divider-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         outline: none;
         appearance: none;
         -webkit-appearance: none;
@@ -3262,7 +3262,7 @@ export class UltraLightModule extends BaseUltraModule {
         min-width: 48px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         font-size: 13px;
@@ -3283,7 +3283,7 @@ export class UltraLightModule extends BaseUltraModule {
         height: 36px;
         padding: 0;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         cursor: pointer;

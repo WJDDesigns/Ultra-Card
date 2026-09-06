@@ -327,7 +327,7 @@ export class UltraFlipCardModule extends BaseUltraModule {
         min-height: 80px;
         padding: 16px;
         border: 1px dashed var(--divider-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         color: var(--secondary-text-color);
         font-size: 13px;
         font-style: italic;

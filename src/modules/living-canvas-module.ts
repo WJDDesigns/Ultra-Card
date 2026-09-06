@@ -113,7 +113,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
         ${this.injectUcFormStyles()}
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <ha-icon
@@ -134,7 +134,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
             </div>
           </div>
           <div
-            style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: 6px; border-left: 4px solid var(--info-color); font-size: 12px; line-height: 1.45;"
+            style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--info-color); font-size: 12px; line-height: 1.45;"
           >
             ${localize(
               'editor.living_canvas.view_note',
@@ -164,7 +164,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -229,7 +229,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
           return html`
             <div
               class="settings-section"
-              style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+              style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
             >
               <div
                 class="section-title"
@@ -339,7 +339,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -388,7 +388,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             style="font-size: 16px; font-weight: 600; margin-bottom: 10px; color: var(--primary-color);"
@@ -405,7 +405,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
             )}
           </div>
           <div
-            style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 20px; line-height: 1.55; padding: 10px 12px; background: rgba(var(--rgb-primary-color), 0.06); border-radius: 6px;"
+            style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 20px; line-height: 1.55; padding: 10px 12px; background: rgba(var(--rgb-primary-color), 0.06); border-radius: calc(6px * var(--uc-radius-scale, 1));"
           >
             ${localize(
               'editor.living_canvas.drivers_detail',
@@ -452,7 +452,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
           padding: 32px;
           text-align: center;
           background: var(--secondary-background-color);
-          border-radius: 12px;
+          border-radius: calc(12px * var(--uc-radius-scale, 1));
           margin: 16px;
         "
       >
@@ -483,7 +483,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
             padding: 12px 24px;
             background: var(--primary-color);
             color: var(--text-primary-color, white);
-            border-radius: 8px;
+            border-radius: calc(8px * var(--uc-radius-scale, 1));
             text-decoration: none;
             font-weight: 600;
           "
@@ -529,7 +529,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
         : lc.preset || 'aurora';
       return this.wrapWithAnimation(html`
         <div
-          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; border: 2px dashed var(--divider-color);"
+          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 2px dashed var(--divider-color);"
         >
           <ha-icon
             icon="mdi:palette-swatch"

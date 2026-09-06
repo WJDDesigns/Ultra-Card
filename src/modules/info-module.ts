@@ -1130,7 +1130,7 @@ export class UltraInfoModule extends BaseUltraModule {
       
       .entity-item {
         border: 1px solid var(--divider-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 12px;
         margin-bottom: 12px;
         background: var(--card-background-color);
@@ -1151,7 +1151,7 @@ export class UltraInfoModule extends BaseUltraModule {
         color: var(--error-color);
         cursor: pointer;
         padding: 4px;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         font-size: 14px;
       }
       
@@ -1168,7 +1168,7 @@ export class UltraInfoModule extends BaseUltraModule {
         width: 100%;
         padding: 12px;
         border: 2px dashed var(--primary-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         background: none;
         color: var(--primary-color);
         cursor: pointer;
@@ -1194,7 +1194,7 @@ export class UltraInfoModule extends BaseUltraModule {
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
         color: var(--primary-text-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -1217,7 +1217,7 @@ export class UltraInfoModule extends BaseUltraModule {
       
       .control-button-group {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         overflow: visible;
         position: relative;
       }
@@ -1227,21 +1227,21 @@ export class UltraInfoModule extends BaseUltraModule {
       }
       
       .control-button-group .control-btn:first-child {
-        border-radius: 4px 0 0 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1)) 0 0 calc(4px * var(--uc-radius-scale, 1));
       }
       
       .control-button-group .control-btn:last-child {
-        border-radius: 0 4px 4px 0;
+        border-radius: 0 calc(4px * var(--uc-radius-scale, 1)) calc(4px * var(--uc-radius-scale, 1)) 0;
       }
       
       .control-button-group .control-btn:only-child {
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
       }
 
       .control-button-group .control-btn.active {
         position: relative;
         z-index: 2;
-        border-radius: 4px !important;
+        border-radius: calc(4px * var(--uc-radius-scale, 1)) !important;
       }
       
       /* Position-specific layout styles */
@@ -1269,7 +1269,7 @@ export class UltraInfoModule extends BaseUltraModule {
       /* Template Section Styles */
       .template-section {
         background: var(--card-background-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 16px;
         border: 1px solid var(--divider-color);
         margin-bottom: 32px;
@@ -1348,7 +1348,7 @@ export class UltraInfoModule extends BaseUltraModule {
         bottom: 0;
         background-color: var(--disabled-color);
         transition: 0.3s;
-        border-radius: 24px;
+        border-radius: calc(24px * var(--uc-radius-scale, 1));
       }
 
       .slider:before {
@@ -1372,7 +1372,7 @@ export class UltraInfoModule extends BaseUltraModule {
       }
 
       .slider.round {
-        border-radius: 24px;
+        border-radius: calc(24px * var(--uc-radius-scale, 1));
       }
 
       .slider.round:before {
@@ -1400,7 +1400,7 @@ export class UltraInfoModule extends BaseUltraModule {
         resize: vertical;
         padding: 12px;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--code-editor-background-color, #1e1e1e);
         color: var(--primary-text-color);
         outline: none;
@@ -1436,7 +1436,7 @@ export class UltraInfoModule extends BaseUltraModule {
       .template-help code {
         background: rgba(var(--rgb-primary-color), 0.1);
         padding: 2px 4px;
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         font-family: 'Courier New', monospace;
         font-size: 11px;
       }

@@ -1428,7 +1428,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     return `
       .settings-section {
         background: var(--secondary-background-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 16px;
         margin-bottom: 24px;
       }
@@ -1459,7 +1459,7 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .calendar-item {
         background: var(--card-background-color, var(--ha-card-background));
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         overflow: hidden;
         border: 1px solid var(--divider-color);
       }
@@ -1523,7 +1523,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         background: var(--primary-color);
         color: var(--text-primary-color, #fff);
         border: none;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
@@ -1539,7 +1539,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         margin-top: 24px;
         padding: 16px;
         background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         border-left: 4px solid var(--primary-color);
       }
 
@@ -1601,7 +1601,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;
@@ -1985,7 +1985,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         gap: 12px;
         padding: 16px;
         background: rgba(var(--rgb-error-color, 244, 67, 54), 0.1);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         color: var(--error-color);
       }
 
@@ -2021,12 +2021,12 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-compact.auto-fit-height::-webkit-scrollbar-track {
         background: transparent;
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
       }
 
       .uc-calendar-compact.auto-fit-height::-webkit-scrollbar-thumb {
         background: var(--primary-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
       }
 
       .uc-calendar-compact.auto-fit-height::-webkit-scrollbar-thumb:hover {
@@ -2100,7 +2100,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         align-items: flex-start;
         gap: 12px;
         padding: 8px;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         cursor: pointer;
         transition: background 0.2s ease;
       }
@@ -2112,7 +2112,7 @@ export class UltraCalendarModule extends BaseUltraModule {
       .uc-calendar-event-accent {
         width: ${module.vertical_line_width || '3px'};
         min-height: 100%;
-        border-radius: 2px;
+        border-radius: calc(2px * var(--uc-radius-scale, 1));
         flex-shrink: 0;
         align-self: stretch;
       }
@@ -2182,7 +2182,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         background: var(--primary-color);
         color: var(--text-primary-color);
         border: none;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         cursor: pointer;
         font-size: 13px;
         font-weight: 500;
@@ -2216,7 +2216,7 @@ export class UltraCalendarModule extends BaseUltraModule {
           rgba(var(--rgb-primary-color, 3, 169, 244), 0.05)
         );
         border: none;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         cursor: pointer;
         transition: all 0.2s ease;
         color: var(--primary-color);
@@ -2288,7 +2288,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         min-height: 60px;
         padding: 4px;
         background: var(--card-background-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         border: 1px solid var(--divider-color);
         cursor: pointer;
         transition: background 0.2s ease;
@@ -2362,7 +2362,7 @@ export class UltraCalendarModule extends BaseUltraModule {
       .uc-calendar-table-color-bar {
         width: 4px;
         height: 100%;
-        border-radius: 2px;
+        border-radius: calc(2px * var(--uc-radius-scale, 1));
       }
 
       /* Grid View Styles */
@@ -2374,7 +2374,7 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-grid-card {
         background: var(--card-background-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         border: 1px solid var(--divider-color);
         overflow: hidden;
         cursor: pointer;
@@ -2505,7 +2505,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         flex-direction: column;
         align-items: center;
         padding: 8px 4px;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
       }
 
       .uc-calendar-week-day-header.today {
@@ -2542,7 +2542,7 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-week-allday-event {
         padding: 2px 6px;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         font-size: 11px;
         font-weight: 500;
         white-space: nowrap;
@@ -2571,7 +2571,7 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-week-event {
         padding: 2px 6px;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         font-size: 11px;
         border-left: 3px solid;
         margin-bottom: 2px;
@@ -2608,7 +2608,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         gap: 12px;
         padding: 12px;
         background: rgba(var(--rgb-primary-color), 0.05);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         margin-bottom: 16px;
       }
 
@@ -2629,7 +2629,7 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-day-allday-event {
         padding: 6px 12px;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         font-size: 13px;
         font-weight: 500;
         cursor: pointer;
@@ -2662,7 +2662,7 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-day-event {
         padding: 8px 12px;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         cursor: pointer;
         transition: transform 0.2s ease;
       }

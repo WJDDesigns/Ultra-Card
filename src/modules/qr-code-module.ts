@@ -538,7 +538,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
                   )}
                   ${qrModule.logo_url && logoDataUrlCache.get(qrModule.logo_url) === ''
                     ? html`
-                        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--warning-color-int,255,152,0),0.12);border:1px solid var(--warning-color,#ff9800);border-radius:8px;font-size:13px;">
+                        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--warning-color-int,255,152,0),0.12);border:1px solid var(--warning-color,#ff9800);border-radius:calc(8px * var(--uc-radius-scale, 1));font-size:13px;">
                           <ha-icon icon="mdi:alert-outline" style="--mdi-icon-size:18px;color:var(--warning-color,#ff9800);flex-shrink:0;margin-top:1px;"></ha-icon>
                           <div>
                             <strong>${localize('editor.qr_code.cors_title', lang, 'Image blocked by CORS')}</strong><br/>
@@ -629,7 +629,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
             )}
             ${(qrModule.error_correction || 'M') !== 'H'
               ? html`
-                  <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--info-color-int,33,150,243),0.1);border:1px solid var(--info-color,#2196f3);border-radius:8px;font-size:13px;">
+                  <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--info-color-int,33,150,243),0.1);border:1px solid var(--info-color,#2196f3);border-radius:calc(8px * var(--uc-radius-scale, 1));font-size:13px;">
                     <ha-icon icon="mdi:information-outline" style="--mdi-icon-size:18px;color:var(--info-color,#2196f3);flex-shrink:0;margin-top:1px;"></ha-icon>
                     <div>
                       <strong>${localize('editor.qr_code.logo_ec_tip_title', lang, 'Tip: use H error correction')}</strong><br/>
@@ -650,7 +650,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
         : ''}
 
       <!-- Advanced -->
-      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;">
         <div class="section-title">${localize('editor.qr_code.advanced_title', lang, 'Advanced')}</div>
         <div class="field-title" style="margin-top: 8px;">${localize('editor.qr_code.fg_color', lang, 'Foreground color')}</div>
         <ultra-color-picker
@@ -713,7 +713,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
           padding: 32px;
           text-align: center;
           background: var(--secondary-background-color);
-          border-radius: 12px;
+          border-radius: calc(12px * var(--uc-radius-scale, 1));
           margin: 16px;
         "
       >
@@ -743,7 +743,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
             padding: 12px 24px;
             background: var(--primary-color);
             color: var(--text-primary-color, white);
-            border-radius: 8px;
+            border-radius: calc(8px * var(--uc-radius-scale, 1));
             text-decoration: none;
             font-weight: 600;
           "
@@ -996,7 +996,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
       ? html`
           <div
             class="qr-cors-warning"
-            style="display:flex;align-items:center;gap:6px;padding:6px 10px;margin-top:6px;background:rgba(var(--warning-color-int,255,152,0),0.15);border:1px solid var(--warning-color,#ff9800);border-radius:6px;font-size:12px;color:var(--primary-text-color);"
+            style="display:flex;align-items:center;gap:6px;padding:6px 10px;margin-top:6px;background:rgba(var(--warning-color-int,255,152,0),0.15);border:1px solid var(--warning-color,#ff9800);border-radius:calc(6px * var(--uc-radius-scale, 1));font-size:12px;color:var(--primary-text-color);"
           >
             <ha-icon icon="mdi:alert-outline" style="--mdi-icon-size:16px;color:var(--warning-color,#ff9800);flex-shrink:0;"></ha-icon>
             <span>${localize('editor.qr_code.cors_error', hass?.locale?.language || 'en', 'Logo not loaded — the image server blocked cross-origin requests. Use a /local/ path or a CORS-enabled URL.')}</span>

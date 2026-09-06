@@ -276,7 +276,7 @@ export class UltraLockModule extends BaseUltraModule {
     if (!entityId || !hass?.states?.[entityId]) {
       return html`
         ${this.injectLockStyles()}
-        <div class="uc-lock-wrapper" style="border-radius: 16px; overflow: hidden;">
+        <div class="uc-lock-wrapper" style="border-radius: calc(16px * var(--uc-radius-scale, 1)); overflow: hidden;">
           ${this.renderGradientErrorState(
             localize('editor.lock.config_needed', lang, 'Select a lock'),
             localize('editor.lock.config_needed_desc', lang, 'Choose a lock entity in the General tab'),
@@ -500,7 +500,7 @@ export class UltraLockModule extends BaseUltraModule {
       ${this.injectLockStyles()}
       <div
         class="uc-lock-wrapper ${hoverClass} ${isJammed ? 'uc-lock-wrapper--jammed' : ''}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: 18px; overflow: hidden; ${styleStr}"
+        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: calc(18px * var(--uc-radius-scale, 1)); overflow: hidden; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
@@ -757,7 +757,7 @@ export class UltraLockModule extends BaseUltraModule {
         font-size: 0.8125rem;
         font-weight: 700;
         padding: 10px 14px;
-        border-radius: 14px;
+        border-radius: calc(14px * var(--uc-radius-scale, 1));
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
         background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));

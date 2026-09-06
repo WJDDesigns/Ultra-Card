@@ -552,7 +552,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         gap: 16px;
         padding: 20px 16px 16px 16px;
         background: var(--forecast-background);
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
       }
 
       .forecast-day {

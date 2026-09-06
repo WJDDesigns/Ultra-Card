@@ -333,7 +333,7 @@ export class UltraGraphsModule extends BaseUltraModule {
           }
           .settings-section {
             background: var(--secondary-background-color);
-            border-radius: 12px;
+            border-radius: calc(12px * var(--uc-radius-scale, 1));
             padding: 20px;
             margin-bottom: 20px;
             border: 1px solid rgba(var(--rgb-primary-color), 0.12);
@@ -368,7 +368,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Data Source Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
+          style="background: var(--secondary-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1)); padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -523,7 +523,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Data Sources Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
+          style="background: var(--secondary-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1)); padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -536,7 +536,7 @@ export class UltraGraphsModule extends BaseUltraModule {
           </div>
           ${graphsModule.data_source === 'forecast'
             ? html`<div
-                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: 8px; border-left: 3px solid var(--primary-color);"
+                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: calc(8px * var(--uc-radius-scale, 1)); border-left: 3px solid var(--primary-color);"
               >
                 ${localize(
                   'editor.graphs.forecast_attributes.desc',
@@ -553,7 +553,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                   class="entity-card"
                   style="
                     background: var(--primary-background-color); 
-                    border-radius: 8px; 
+                    border-radius: calc(8px * var(--uc-radius-scale, 1)); 
                     padding: 16px; 
                     border-left: 4px solid ${entity.color || this._getDefaultColor(index)};
                     position: relative;
@@ -592,7 +592,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                              width: 12px;
                              height: 12px;
                              background: ${entity.color || this._getDefaultColor(index)};
-                             border-radius: 2px;
+                             border-radius: calc(2px * var(--uc-radius-scale, 1));
                              flex-shrink: 0;
                            "
                         ></div>
@@ -741,7 +741,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                         style="
                           padding: 10px 12px;
                           border: 1px solid var(--divider-color);
-                          border-radius: 6px;
+                          border-radius: calc(6px * var(--uc-radius-scale, 1));
                           background: var(--secondary-background-color);
                           color: var(--primary-text-color);
                           font-size: 14px;
@@ -767,7 +767,7 @@ export class UltraGraphsModule extends BaseUltraModule {
 
                       <!-- Primary entity toggle -->
                       <div
-                        style="padding:8px; border-radius:6px; background: var(--primary-background-color);"
+                        style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1)); background: var(--primary-background-color);"
                       >
                         ${this._renderInlineToggle(
                           hass,
@@ -869,7 +869,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                                 style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"
                               >
                                 <div
-                                  style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                                  style="padding: 8px; border-radius: calc(6px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color);"
                                 >
                                   ${this._renderInlineToggle(
                                     hass,
@@ -890,7 +890,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                                 </div>
 
                                 <div
-                                  style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                                  style="padding: 8px; border-radius: calc(6px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color);"
                                 >
                                   ${this._renderInlineToggle(
                                     hass,
@@ -982,7 +982,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                         ${['pie', 'donut'].includes(graphsModule.chart_type)
                           ? html`
                               <div
-                                style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                                style="padding: 8px; border-radius: calc(6px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color);"
                               >
                                 ${this._renderInlineToggle(
                                   hass,
@@ -1002,7 +1002,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                                 )}
                               </div>
                               <div
-                                style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                                style="padding: 8px; border-radius: calc(6px * var(--uc-radius-scale, 1)); background: var(--secondary-background-color);"
                               >
                                 ${this._renderInlineToggle(
                                   hass,
@@ -1060,7 +1060,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                   padding: 40px 20px; 
                   color: var(--secondary-text-color); 
                   background: var(--primary-background-color); 
-                  border-radius: 8px; 
+                  border-radius: calc(8px * var(--uc-radius-scale, 1)); 
                   border: 2px dashed var(--divider-color);
                 "
                   >
@@ -1104,7 +1104,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Display Options Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
+          style="background: var(--secondary-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1)); padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -1157,7 +1157,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                       width: 100%;
                       padding: 10px 12px;
                       border: 1px solid var(--divider-color);
-                      border-radius: 6px;
+                      border-radius: calc(6px * var(--uc-radius-scale, 1));
                       background: var(--secondary-background-color);
                       color: var(--primary-text-color);
                       font-size: 14px;
@@ -1239,7 +1239,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             <!-- Forecast Info (Forecast Mode Only) -->
             ${graphsModule.data_source === 'forecast'
               ? html`<div
-                    style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: 8px; border-left: 3px solid var(--primary-color); margin-bottom: 16px;"
+                    style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: calc(8px * var(--uc-radius-scale, 1)); border-left: 3px solid var(--primary-color); margin-bottom: 16px;"
                   >
                     <div
                       style="font-size: 13px; color: var(--primary-text-color); font-weight: 500;"
@@ -1438,7 +1438,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                             width: 100%;
                             padding: 10px 12px;
                             border: 1px solid var(--divider-color);
-                            border-radius: 6px;
+                            border-radius: calc(6px * var(--uc-radius-scale, 1));
                             background: var(--secondary-background-color);
                             color: var(--primary-text-color);
                             font-size: 14px;
@@ -1462,7 +1462,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                             height: 32px;
                             padding: 0;
                             border: 1px solid var(--divider-color);
-                            border-radius: 4px;
+                            border-radius: calc(4px * var(--uc-radius-scale, 1));
                             background: var(--secondary-background-color);
                             color: var(--primary-text-color);
                             cursor: pointer;
@@ -1517,7 +1517,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                             width: 100%;
                             padding: 10px 12px;
                             border: 1px solid var(--divider-color);
-                            border-radius: 6px;
+                            border-radius: calc(6px * var(--uc-radius-scale, 1));
                             background: var(--secondary-background-color);
                             color: var(--primary-text-color);
                             font-size: 14px;
@@ -1541,7 +1541,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                             height: 32px;
                             padding: 0;
                             border: 1px solid var(--divider-color);
-                            border-radius: 4px;
+                            border-radius: calc(4px * var(--uc-radius-scale, 1));
                             background: var(--secondary-background-color);
                             color: var(--primary-text-color);
                             cursor: pointer;
@@ -1767,7 +1767,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             <div
               style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;"
             >
-              <div style="padding:8px; border-radius:6px;">
+              <div style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1));">
                 ${this._renderInlineToggle(
                   hass,
                   localize('editor.graphs.display.show_legend', lang, 'Show Legend'),
@@ -1777,7 +1777,7 @@ export class UltraGraphsModule extends BaseUltraModule {
               </div>
               ${graphsModule.chart_type === 'line'
                 ? html`
-                    <div style="padding:8px; border-radius:6px;">
+                    <div style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1));">
                       ${this._renderInlineToggle(
                         hass,
                         localize('editor.graphs.display.show_grid', lang, 'Show Grid'),
@@ -1789,7 +1789,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 : ''}
               ${graphsModule.chart_type === 'line' && graphsModule.show_grid !== false
                 ? html`
-                    <div style="padding:8px; border-radius:6px;">
+                    <div style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1));">
                       ${this._renderInlineToggle(
                         hass,
                         localize(
@@ -1805,7 +1805,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 : ''}
               ${graphsModule.chart_type === 'line'
                 ? html`
-                    <div style="padding:8px; border-radius:6px;">
+                    <div style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1));">
                       ${this._renderInlineToggle(
                         hass,
                         localize(
@@ -1831,7 +1831,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                           style="
                             flex: 1;
                             padding: 8px 12px;
-                            border-radius: 8px;
+                            border-radius: calc(8px * var(--uc-radius-scale, 1));
                             border: 1px solid ${(graphsModule as any).chart_layout !== 'full' ? 'var(--primary-color)' : 'var(--divider-color)'};
                             background: ${(graphsModule as any).chart_layout !== 'full' ? 'rgba(var(--rgb-primary-color, 3,169,244), 0.15)' : 'var(--secondary-background-color, transparent)'};
                             color: var(--primary-text-color);
@@ -1855,7 +1855,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                           style="
                             flex: 1;
                             padding: 8px 12px;
-                            border-radius: 8px;
+                            border-radius: calc(8px * var(--uc-radius-scale, 1));
                             border: 1px solid ${(graphsModule as any).chart_layout === 'full' ? 'var(--primary-color)' : 'var(--divider-color)'};
                             background: ${(graphsModule as any).chart_layout === 'full' ? 'rgba(var(--rgb-primary-color, 3,169,244), 0.15)' : 'var(--secondary-background-color, transparent)'};
                             color: var(--primary-text-color);
@@ -1880,7 +1880,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 : ''}
               ${['pie', 'donut'].includes(graphsModule.chart_type)
                 ? html`
-                    <div style="padding:8px; border-radius:6px;">
+                    <div style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1));">
                       ${this._renderInlineToggle(
                         hass,
                         localize(
@@ -1905,7 +1905,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 : ''}
               ${graphsModule.chart_type === 'line'
                 ? html`
-                    <div style="padding:8px; border-radius:6px;">
+                    <div style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1));">
                       ${this._renderInlineToggle(
                         hass,
                         localize('editor.graphs.display.smooth_lines', lang, 'Smooth Lines'),
@@ -1917,7 +1917,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 : ''}
               ${graphsModule.chart_type === 'line'
                 ? html`
-                    <div style="padding:8px; border-radius:6px;">
+                    <div style="padding:8px; border-radius:calc(6px * var(--uc-radius-scale, 1));">
                       ${this._renderInlineToggle(
                         hass,
                         localize(
@@ -1941,7 +1941,7 @@ export class UltraGraphsModule extends BaseUltraModule {
              of the .switch-container row; the toggle's own label is suppressed. -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-top: 16px; margin-bottom: 32px;"
         >
           <div
             class="switch-container"
@@ -2412,7 +2412,7 @@ export class UltraGraphsModule extends BaseUltraModule {
               box-sizing: border-box;
               overflow: hidden;
               padding: 4px 8px;
-              border-radius: 6px;
+              border-radius: calc(6px * var(--uc-radius-scale, 1));
               background: rgba(0, 0, 0, 0.3);
               backdrop-filter: blur(4px);
               -webkit-backdrop-filter: blur(4px);
@@ -2596,7 +2596,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                   background: rgba(0,0,0,0.35);
                   backdrop-filter: blur(2px);
                   border: 1px solid var(--divider-color);
-                  border-radius: 10px;
+                  border-radius: calc(10px * var(--uc-radius-scale, 1));
                   padding: 10px 14px;
                   display: inline-flex;
                   align-items: center;
@@ -2622,7 +2622,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     return this.wrapWithAnimation(this.hasActiveLink(graphsModule)
       ? html`<div
           class="graphs-module-clickable ${hoverEffectClass}"
-          style="${designStyles}; cursor: pointer; transition: all 0.2s ease; border-radius: 4px;"
+          style="${designStyles}; cursor: pointer; transition: all 0.2s ease; border-radius: calc(4px * var(--uc-radius-scale, 1));"
           @click=${(e: Event) => this.handleClick(e, graphsModule, hass)}
           @dblclick=${(e: Event) => this.handleDoubleClick(e, graphsModule, hass)}
           @mousedown=${(e: Event) => this.handleMouseDown(e, graphsModule, hass)}
@@ -3456,7 +3456,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         text-overflow: ellipsis;
         white-space: nowrap;
         padding: 4px 8px;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         background: rgba(0, 0, 0, 0.3);
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
@@ -3478,7 +3478,7 @@ export class UltraGraphsModule extends BaseUltraModule {
               width:10px; 
               height:10px; 
               background:${d.color}; 
-              border-radius:2px;
+              border-radius:calc(2px * var(--uc-radius-scale, 1));
               flex-shrink: 0;
             "
             ></span>
@@ -3828,7 +3828,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                             bottom:0;
                             width:${barWidth}px;
                             transform:translateX(${offset}px);
-                            border-radius:3px 3px 0 0;
+                            border-radius:calc(3px * var(--uc-radius-scale, 1)) calc(3px * var(--uc-radius-scale, 1)) 0 0;
                             background:${dataset.color};
                             box-shadow:0 4px 10px rgba(0,0,0,0.15);
                             cursor:${showTooltips ? 'pointer' : 'default'};
@@ -3922,7 +3922,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         display: none;
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         padding: 10px 14px;
         font-size: 14px;
         color: var(--primary-text-color);
@@ -5378,7 +5378,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       .entity-item {
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 16px;
         margin-bottom: 12px;
       }
@@ -5472,7 +5472,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;
@@ -5500,7 +5500,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         flex: 0 0 65%;
         height: 6px;
         background: var(--divider-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         outline: none;
         appearance: none;
         -webkit-appearance: none;
@@ -5548,7 +5548,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         flex: 0 0 20%;
         padding: 6px 8px !important;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         font-size: 13px;
@@ -5568,7 +5568,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         height: 32px;
         padding: 0;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         cursor: pointer;

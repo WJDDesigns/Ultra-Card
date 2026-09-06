@@ -408,9 +408,9 @@ export class UltraTimerModule extends BaseUltraModule {
                     <div style="font-size: 28px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">
                       ${formatRemaining(remaining)}
                     </div>
-                    <div style="height: 12px; background: var(--divider-color); border-radius: 6px; overflow: hidden;">
+                    <div style="height: 12px; background: var(--divider-color); border-radius: calc(6px * var(--uc-radius-scale, 1)); overflow: hidden;">
                       <div
-                        style="height: 100%; width: ${progressPct}%; background: var(--primary-color); border-radius: 6px; transition: width 0.3s ease;"
+                        style="height: 100%; width: ${progressPct}%; background: var(--primary-color); border-radius: calc(6px * var(--uc-radius-scale, 1)); transition: width 0.3s ease;"
                       ></div>
                     </div>
                   </div>
@@ -421,7 +421,7 @@ export class UltraTimerModule extends BaseUltraModule {
                       style="
                         position: relative;
                         min-height: 80px;
-                        border-radius: 12px;
+                        border-radius: calc(12px * var(--uc-radius-scale, 1));
                         background: var(--divider-color);
                         overflow: hidden;
                         margin-bottom: 16px;
@@ -471,7 +471,7 @@ export class UltraTimerModule extends BaseUltraModule {
     })());
 
     return this.wrapWithAnimation(html`
-      <div class="uc-timer-wrapper ${hoverClass}" style="${designStyles}; background: var(--card-background-color); border-radius: 12px; overflow: hidden;">
+      <div class="uc-timer-wrapper ${hoverClass}" style="${designStyles}; background: var(--card-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1)); overflow: hidden;">
         ${content}
       </div>
     `, module, hass);

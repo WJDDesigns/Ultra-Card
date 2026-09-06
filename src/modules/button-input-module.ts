@@ -174,7 +174,7 @@ export class UltraButtonInputModule extends BaseUltraModule {
       <style>
         .btn-input-${mid} {
           display:inline-flex; align-items:center; justify-content:center; gap:8px;
-          padding:12px 24px; border-radius:8px; cursor:pointer; font-size:${fontSize}px;
+          padding:12px 24px; border-radius:calc(8px * var(--uc-radius-scale, 1)); cursor:pointer; font-size:${fontSize}px;
           font-family:inherit; font-weight:500; transition:all .2s; position:relative;
           overflow:hidden; background:${bg}; border:${border}; color:${color};
           width:100%; box-sizing:border-box; --mdc-icon-size:${Math.min(24, fontSize + 4)}px;

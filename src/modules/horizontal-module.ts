@@ -595,7 +595,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
               display: flex;
               align-items: center;
               justify-content: center;
-              border-radius: 12px;
+              border-radius: calc(12px * var(--uc-radius-scale, 1));
               z-index: 10;
             "
             >
@@ -1205,7 +1205,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
       .horizontal-preview-content {
         background: transparent;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         border: none;
         transition: all 0.2s ease;
         position: relative;
@@ -1235,7 +1235,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
         pointer-events: auto;
         background: transparent;
         border: none;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         padding: 0;
         transition: all 0.2s ease, transform 0.3s ease;
         /* Child modules should respect parent container bounds */
@@ -1364,7 +1364,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
         -webkit-appearance: none;
         appearance: none;
         height: 6px;
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         background: var(--disabled-color);
         outline: none;
         opacity: 0.7;
@@ -1410,7 +1410,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
       input[type="range"]::-moz-range-track {
         height: 6px;
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         background: var(--disabled-color);
         border: none;
       }

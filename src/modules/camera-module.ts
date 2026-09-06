@@ -183,7 +183,7 @@ export class UltraCameraModule extends BaseUltraModule {
         <!-- Camera Name Settings with toggle in header -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           ${this.renderFieldSection(
             localize('editor.camera.show_name', lang, 'Show Camera Name'),
@@ -310,7 +310,7 @@ export class UltraCameraModule extends BaseUltraModule {
         <!-- Tap to Open Fullscreen Settings -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           ${this.renderFieldSection(
             localize('editor.camera.tap_opens_fullscreen', lang, 'Tap Camera Opens Fullscreen'),
@@ -326,7 +326,7 @@ export class UltraCameraModule extends BaseUltraModule {
 
           <div
             class="field-description"
-            style="margin-bottom: 16px; color: var(--secondary-text-color); font-style: italic; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 6px; border-left: 4px solid var(--primary-color);"
+            style="margin-bottom: 16px; color: var(--secondary-text-color); font-style: italic; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--primary-color);"
           >
             <ha-icon icon="mdi:information" style="font-size: 14px; margin-right: 6px;"></ha-icon>
             ${localize(
@@ -340,7 +340,7 @@ export class UltraCameraModule extends BaseUltraModule {
         <!-- Display Settings Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 32px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-top: 32px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -538,7 +538,7 @@ export class UltraCameraModule extends BaseUltraModule {
             </div>
             <div
               class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 6px; border-left: 4px solid var(--primary-color);"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--primary-color);"
             >
               <ha-icon icon="mdi:information" style="font-size: 14px; margin-right: 6px;"></ha-icon>
               ${localize(
@@ -676,7 +676,7 @@ export class UltraCameraModule extends BaseUltraModule {
             ${cameraModule.aspect_ratio_linked !== false
               ? html`
                   <div
-                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; border-left: 4px solid var(--primary-color);"
+                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(8px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--primary-color);"
                   >
                     <div
                       style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
@@ -703,7 +703,7 @@ export class UltraCameraModule extends BaseUltraModule {
                 `
               : html`
                   <div
-                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-secondary-text-color), 0.1); border-radius: 8px; border-left: 4px solid var(--secondary-text-color);"
+                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-secondary-text-color), 0.1); border-radius: calc(8px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--secondary-text-color);"
                   >
                     <div
                       style="font-size: 13px; color: var(--secondary-text-color); font-weight: 500; margin-bottom: 4px;"
@@ -756,7 +756,7 @@ export class UltraCameraModule extends BaseUltraModule {
         <!-- Crop & Position Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -861,7 +861,7 @@ export class UltraCameraModule extends BaseUltraModule {
           0
             ? html`
                 <div
-                  style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; border-left: 4px solid var(--primary-color);"
+                  style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(8px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--primary-color);"
                 >
                   <div
                     style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
@@ -885,7 +885,7 @@ export class UltraCameraModule extends BaseUltraModule {
               style="
                 padding: 8px 16px;
                 border: 1px solid var(--primary-color);
-                border-radius: 6px;
+                border-radius: calc(6px * var(--uc-radius-scale, 1));
                 background: transparent;
                 color: var(--primary-color);
                 cursor: pointer;
@@ -2146,7 +2146,7 @@ export class UltraCameraModule extends BaseUltraModule {
         padding: 10px 16px !important;
         background: rgba(0,0,0,0.8) !important;
         color: white !important;
-        border-radius: 8px !important;
+        border-radius: calc(8px * var(--uc-radius-scale, 1)) !important;
         font-size: 16px !important;
         font-weight: 500 !important;
         backdrop-filter: blur(4px) !important;
@@ -3206,7 +3206,7 @@ export class UltraCameraModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;

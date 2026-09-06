@@ -265,7 +265,7 @@ export class UltraTodoListModule extends BaseUltraModule {
     return html`
       <div
         class="uc-todo-wrapper ${hoverClass}"
-        style="padding:16px;border-radius:12px;background:${cardBg};${designStyles}"
+        style="padding:16px;border-radius:calc(12px * var(--uc-radius-scale, 1));background:${cardBg};${designStyles}"
       >
         ${this.wrapWithAnimation(
           html`
@@ -306,7 +306,7 @@ export class UltraTodoListModule extends BaseUltraModule {
                     <input
                       type="text"
                       class="uc-todo-add-input"
-                      style="flex:1;padding:8px 12px;border:1px solid var(--divider-color);border-radius:8px;background:transparent;color:${text};font-size:13px;outline:none;"
+                      style="flex:1;padding:8px 12px;border:1px solid var(--divider-color);border-radius:calc(8px * var(--uc-radius-scale, 1));background:transparent;color:${text};font-size:13px;outline:none;"
                       placeholder=${localize('editor.todo_list.add_ph', lang, 'Add item…')}
                       @keydown=${(ev: KeyboardEvent) => {
                         if (ev.key === 'Enter') {
@@ -315,7 +315,7 @@ export class UltraTodoListModule extends BaseUltraModule {
                       }}
                     />
                     <button
-                      style="flex-shrink:0;width:36px;height:36px;border:none;border-radius:8px;background:${accent};color:var(--text-primary-color,#fff);cursor:pointer;display:flex;align-items:center;justify-content:center;"
+                      style="flex-shrink:0;width:36px;height:36px;border:none;border-radius:calc(8px * var(--uc-radius-scale, 1));background:${accent};color:var(--text-primary-color,#fff);cursor:pointer;display:flex;align-items:center;justify-content:center;"
                       title=${localize('editor.todo_list.add', lang, 'Add')}
                       @click=${(ev: Event) => {
                         const input = (ev.currentTarget as HTMLElement)
@@ -349,7 +349,7 @@ export class UltraTodoListModule extends BaseUltraModule {
     return html`
       <div style="display:flex;align-items:center;gap:10px;padding:6px 2px;">
         <button
-          style="flex-shrink:0;width:20px;height:20px;border-radius:6px;border:2px solid ${done ? o.accent : 'var(--divider-color)'};background:${done ? o.accent : 'transparent'};cursor:${canUpdate ? 'pointer' : 'default'};display:flex;align-items:center;justify-content:center;padding:0;"
+          style="flex-shrink:0;width:20px;height:20px;border-radius:calc(6px * var(--uc-radius-scale, 1));border:2px solid ${done ? o.accent : 'var(--divider-color)'};background:${done ? o.accent : 'transparent'};cursor:${canUpdate ? 'pointer' : 'default'};display:flex;align-items:center;justify-content:center;padding:0;"
           ?disabled=${!canUpdate}
           @click=${() => {
             if (!canUpdate) return;

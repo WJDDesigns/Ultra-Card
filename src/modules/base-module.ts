@@ -1196,7 +1196,7 @@ export abstract class BaseUltraModule implements UltraModule {
         flex: 1;
         height: 6px;
         background: var(--divider-color);
-        border-radius: 3px;
+        border-radius: calc(3px * var(--uc-radius-scale, 1));
         outline: none;
         appearance: none;
         -webkit-appearance: none;
@@ -1245,7 +1245,7 @@ export abstract class BaseUltraModule implements UltraModule {
         min-width: 48px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         font-size: 13px;
@@ -1266,7 +1266,7 @@ export abstract class BaseUltraModule implements UltraModule {
         height: 36px;
         padding: 0;
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
@@ -1413,7 +1413,7 @@ export abstract class BaseUltraModule implements UltraModule {
       .ultra-config-needed {
         position: relative;
         padding: 16px;
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         overflow: hidden;
         backdrop-filter: blur(10px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -1468,7 +1468,7 @@ export abstract class BaseUltraModule implements UltraModule {
       .ultra-config-banner {
         position: relative;
         padding: 10px 14px;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         overflow: hidden;
         margin-bottom: 12px;
         backdrop-filter: blur(10px);

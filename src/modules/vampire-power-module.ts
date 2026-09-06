@@ -243,7 +243,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -296,7 +296,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
         )}
 
         <div
-          style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; background: rgba(var(--rgb-primary-color), 0.08); margin-bottom: 16px;"
+          style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: calc(8px * var(--uc-radius-scale, 1)); background: rgba(var(--rgb-primary-color), 0.08); margin-bottom: 16px;"
         >
           <ha-icon
             icon=${discovered.length > 0 ? 'mdi:magnify-scan' : 'mdi:alert-circle-outline'}
@@ -407,7 +407,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
             type="button"
             class="uc-vp-restore"
             ?disabled=${hiddenCount === 0}
-            style="display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: ${hiddenCount ===
+            style="display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 10px 16px; border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 1px solid var(--divider-color); background: var(--card-background-color); color: ${hiddenCount ===
             0
               ? 'var(--disabled-text-color)'
               : 'var(--primary-text-color)'}; font-size: 14px; font-weight: 600; cursor: ${hiddenCount ===
@@ -437,7 +437,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -545,7 +545,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -637,7 +637,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -867,7 +867,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1089,24 +1089,24 @@ export class UltraVampirePowerModule extends BaseUltraModule {
     return html`
       ${m.show_title !== false ? this._renderTitle(m, lang, palette) : nothing}
       <div
-        style="border-radius: 14px; padding: 16px; background: ${palette.cardBg}; border: 1px solid var(--divider-color); margin-bottom: 12px;"
+        style="border-radius: calc(14px * var(--uc-radius-scale, 1)); padding: 16px; background: ${palette.cardBg}; border: 1px solid var(--divider-color); margin-bottom: 12px;"
       >
         <div
           style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: ${palette.secondary}; margin-bottom: 10px;"
         >
           ${localize('editor.vampire_power.total_label', lang, 'Standby waste')}
         </div>
-        <div class="uc-vp-shimmer" style="height: 30px; width: 62%; border-radius: 8px;"></div>
+        <div class="uc-vp-shimmer" style="height: 30px; width: 62%; border-radius: calc(8px * var(--uc-radius-scale, 1));"></div>
         <div
           class="uc-vp-shimmer"
-          style="height: 12px; margin-top: 12px; border-radius: 6px;"
+          style="height: 12px; margin-top: 12px; border-radius: calc(6px * var(--uc-radius-scale, 1));"
         ></div>
       </div>
       <div style="display: flex; flex-direction: column; gap: 8px;">
         ${rows.map(
           i => html`
             <div
-              style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: ${palette.cardBg}; border: 1px solid var(--divider-color);"
+              style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: calc(12px * var(--uc-radius-scale, 1)); background: ${palette.cardBg}; border: 1px solid var(--divider-color);"
             >
               <div
                 class="uc-vp-shimmer"
@@ -1115,16 +1115,16 @@ export class UltraVampirePowerModule extends BaseUltraModule {
               <div style="flex: 1; min-width: 0;">
                 <div
                   class="uc-vp-shimmer"
-                  style="height: 12px; width: ${70 - i * 12}%; border-radius: 6px;"
+                  style="height: 12px; width: ${70 - i * 12}%; border-radius: calc(6px * var(--uc-radius-scale, 1));"
                 ></div>
                 <div
                   class="uc-vp-shimmer"
-                  style="height: 8px; margin-top: 8px; width: ${55 - i * 10}%; border-radius: 5px;"
+                  style="height: 8px; margin-top: 8px; width: ${55 - i * 10}%; border-radius: calc(5px * var(--uc-radius-scale, 1));"
                 ></div>
               </div>
               <div
                 class="uc-vp-shimmer"
-                style="width: 52px; height: 16px; border-radius: 6px; flex-shrink: 0;"
+                style="width: 52px; height: 16px; border-radius: calc(6px * var(--uc-radius-scale, 1)); flex-shrink: 0;"
               ></div>
             </div>
           `
@@ -1174,7 +1174,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
     return html`
       <div
         class="uc-vp-total"
-        style="border-radius: 14px; padding: 16px; margin-bottom: 12px; background: ${palette.cardBg}; border: 1px solid var(--divider-color);"
+        style="border-radius: calc(14px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 12px; background: ${palette.cardBg}; border: 1px solid var(--divider-color);"
       >
         <div
           style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: ${palette.secondary}; margin-bottom: 8px;"
@@ -1206,7 +1206,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
         ${totals.totalStandbyWatts > 0
           ? html`
               <div
-                style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(127,127,127,0.18);"
+                style="display: flex; height: 12px; border-radius: calc(6px * var(--uc-radius-scale, 1)); overflow: hidden; background: rgba(127,127,127,0.18);"
                 role="img"
                 aria-label=${this._fill(
                   localize(
@@ -1288,7 +1288,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
           return html`
             <div
               class="uc-vp-row"
-              style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: ${palette.cardBg}; border: 1px solid var(--divider-color);"
+              style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: calc(12px * var(--uc-radius-scale, 1)); background: ${palette.cardBg}; border: 1px solid var(--divider-color);"
               @pointerdown=${gestures.onPointerDown}
               @pointermove=${gestures.onPointerMove}
               @pointerup=${gestures.onPointerUp}
@@ -1296,7 +1296,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
               @pointercancel=${gestures.onPointerCancel}
             >
               <div
-                style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: ${color}22; color: ${color}; font-size: 12px; font-weight: 700; flex-shrink: 0;"
+                style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: calc(6px * var(--uc-radius-scale, 1)); background: ${color}22; color: ${color}; font-size: 12px; font-weight: 700; flex-shrink: 0;"
               >
                 ${index + 1}
               </div>
@@ -1320,7 +1320,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
                 ${m.show_bars !== false
                   ? html`
                       <div
-                        style="height: 6px; border-radius: 4px; background: rgba(127,127,127,0.18); margin-top: 7px; overflow: hidden;"
+                        style="height: 6px; border-radius: calc(4px * var(--uc-radius-scale, 1)); background: rgba(127,127,127,0.18); margin-top: 7px; overflow: hidden;"
                       >
                         <div style="width: ${width}%; height: 100%; background: ${color};"></div>
                       </div>
@@ -1373,7 +1373,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
           return html`
             <div
               class="uc-vp-tile"
-              style="position: relative; padding: 14px 12px; border-radius: 12px; text-align: center; background: ${color}18; border: 1px solid ${color}44;"
+              style="position: relative; padding: 14px 12px; border-radius: calc(12px * var(--uc-radius-scale, 1)); text-align: center; background: ${color}18; border: 1px solid ${color}44;"
               @pointerdown=${gestures.onPointerDown}
               @pointermove=${gestures.onPointerMove}
               @pointerup=${gestures.onPointerUp}
@@ -1434,7 +1434,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
   ): TemplateResult {
     return html`
       <div
-        style="border-radius: 12px; overflow: hidden; border: 1px solid var(--divider-color); background: ${palette.cardBg};"
+        style="border-radius: calc(12px * var(--uc-radius-scale, 1)); overflow: hidden; border: 1px solid var(--divider-color); background: ${palette.cardBg};"
       >
         ${items.map((a, index) => {
           const color = a.isOffender ? palette.offender : palette.bar;
@@ -1626,7 +1626,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
 
     return html`
       <div
-        style="display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(127,127,127,0.1);"
+        style="display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: calc(12px * var(--uc-radius-scale, 1)); background: rgba(127,127,127,0.1);"
       >
         <ha-icon
           icon="mdi:lightbulb-on-outline"
@@ -1730,7 +1730,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
   ): TemplateResult {
     return html`
       <div
-        style="display: flex; align-items: center; gap: 12px; padding: 18px 16px; border-radius: 12px; background: ${palette.cardBg}; border: 1px dashed var(--divider-color);"
+        style="display: flex; align-items: center; gap: 12px; padding: 18px 16px; border-radius: calc(12px * var(--uc-radius-scale, 1)); background: ${palette.cardBg}; border: 1px dashed var(--divider-color);"
       >
         <ha-icon
           icon="mdi:leaf"
@@ -1918,7 +1918,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
         height: 22px;
         padding: 0;
         border: none;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         background: transparent;
         color: var(--error-color);
         cursor: pointer;

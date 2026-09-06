@@ -163,7 +163,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
     if (style === 'segmented') {
       return this.wrapWithAnimation(html`
         <style>
-          .sel-seg-${mid} { display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--divider-color); }
+          .sel-seg-${mid} { display:flex; border-radius:calc(8px * var(--uc-radius-scale, 1)); overflow:hidden; border:1px solid var(--divider-color); }
           .sel-seg-btn-${mid} { flex:1; padding:10px 12px; border:none; background:transparent; cursor:pointer;
             font-size:${fontSize}px; color:${textColor}; font-family:inherit; transition:all .2s;
             border-right:1px solid var(--divider-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -187,7 +187,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
       return this.wrapWithAnimation(html`
         <style>
           .sel-chips-${mid} { display:flex; flex-wrap:wrap; gap:8px; }
-          .sel-chip-${mid} { padding:8px 16px; border-radius:20px; border:1px solid var(--divider-color);
+          .sel-chip-${mid} { padding:8px 16px; border-radius:calc(20px * var(--uc-radius-scale, 1)); border:1px solid var(--divider-color);
             background:transparent; cursor:pointer; font-size:${fontSize}px; color:${textColor};
             font-family:inherit; transition:all .2s; white-space:nowrap; }
           .sel-chip-${mid}.active { background:${activeColor}; color:#fff; border-color:${activeColor}; font-weight:500; }
@@ -210,7 +210,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
       <style>
         .sel-dd-wrap-${mid} { position:relative; }
         .sel-dd-${mid} { width:100%; padding:12px; font-size:${fontSize}px; color:${textColor}; font-family:inherit;
-          background:transparent; border:1px solid var(--divider-color); border-radius:8px; cursor:pointer;
+          background:transparent; border:1px solid var(--divider-color); border-radius:calc(8px * var(--uc-radius-scale, 1)); cursor:pointer;
           appearance:none; -webkit-appearance:none; outline:none; transition:border-color .2s, box-shadow .2s; }
         .sel-dd-${mid}:focus { border-color:${activeColor}; box-shadow:0 0 0 1px ${activeColor}; }
         .sel-dd-arrow { position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none;

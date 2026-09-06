@@ -304,7 +304,7 @@ export class UltraBackgroundModule extends BaseUltraModule {
       return this.wrapWithAnimation(html`
         <div
           class="${hoverClass}"
-          style="${designStyles}; padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; border: 2px dashed var(--divider-color);"
+          style="${designStyles}; padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 2px dashed var(--divider-color);"
         >
           <ha-icon
             icon="mdi:image-outline"

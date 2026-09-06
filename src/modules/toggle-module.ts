@@ -173,7 +173,7 @@ export class UltraToggleModule extends BaseUltraModule {
       <style>
         .settings-section {
           background: var(--secondary-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           padding: 16px;
           margin-bottom: 24px;
         }
@@ -199,7 +199,7 @@ export class UltraToggleModule extends BaseUltraModule {
           gap: 8px;
           padding: 12px;
           background: var(--card-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           margin-bottom: 8px;
           cursor: move;
           border: 1px solid var(--divider-color);
@@ -274,7 +274,7 @@ export class UltraToggleModule extends BaseUltraModule {
           padding: 16px;
           background: rgba(var(--rgb-primary-color), 0.05);
           border-left: 3px solid var(--primary-color);
-          border-radius: 0 8px 8px 0;
+          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
           margin-bottom: 8px;
           animation: slideDown 0.3s ease;
           overflow: visible;
@@ -297,7 +297,7 @@ export class UltraToggleModule extends BaseUltraModule {
           background: var(--primary-color);
           color: var(--text-primary-color);
           border: none;
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           cursor: pointer;
           font-size: 14px;
           font-weight: 600;
@@ -518,7 +518,7 @@ export class UltraToggleModule extends BaseUltraModule {
                   ${localize('editor.toggle.create_toggle_points', lang, 'Create Toggle Points')}
                 </button>
                 <div
-                  style="font-size: 11px; color: var(--warning-color); margin-top: 8px; padding: 8px; background: rgba(var(--rgb-warning-color), 0.1); border-radius: 4px;"
+                  style="font-size: 11px; color: var(--warning-color); margin-top: 8px; padding: 8px; background: rgba(var(--rgb-warning-color), 0.1); border-radius: calc(4px * var(--uc-radius-scale, 1));"
                 >
                   <ha-icon icon="mdi:alert" style="--mdc-icon-size: 14px;"></ha-icon>
                   ${localize(
@@ -987,7 +987,7 @@ export class UltraToggleModule extends BaseUltraModule {
                   }
                 )}
                 <div
-                  style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; padding: 8px; background: var(--card-background-color); border-radius: 4px;"
+                  style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; padding: 8px; background: var(--card-background-color); border-radius: calc(4px * var(--uc-radius-scale, 1));"
                 >
                   <strong>Tip:</strong> Use comma-separated values to match multiple states (e.g.,
                   "on, open")
@@ -2095,7 +2095,7 @@ export class UltraToggleModule extends BaseUltraModule {
           display: flex;
           flex-direction: ${isHorizontal ? 'row' : 'column'};
           background: var(--card-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           padding: 4px;
           gap: ${module.spacing || 0}px;
           width: ${module.alignment === 'justify' ? '100%' : 'auto'};
@@ -2111,7 +2111,7 @@ export class UltraToggleModule extends BaseUltraModule {
           color: var(--primary-text-color);
           cursor: pointer;
           transition: all 0.3s ease;
-          border-radius: 6px;
+          border-radius: calc(6px * var(--uc-radius-scale, 1));
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2217,7 +2217,7 @@ export class UltraToggleModule extends BaseUltraModule {
           padding: ${size.padding};
           font-size: ${size.fontSize};
           border: 2px solid var(--divider-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           cursor: pointer;
           transition: all 0.3s ease;
           display: flex;
@@ -2339,7 +2339,7 @@ export class UltraToggleModule extends BaseUltraModule {
             height: 40px;
           `}
           background: var(--secondary-background-color);
-          border-radius: 20px;
+          border-radius: calc(20px * var(--uc-radius-scale, 1));
           overflow: hidden;
         }
 
@@ -2347,7 +2347,7 @@ export class UltraToggleModule extends BaseUltraModule {
           position: absolute;
           background: var(--primary-color);
           transition: ${isVertical ? 'height' : 'width'} 0.3s ease;
-          border-radius: 20px;
+          border-radius: calc(20px * var(--uc-radius-scale, 1));
           ${isVertical
           ? `
             top: 0;

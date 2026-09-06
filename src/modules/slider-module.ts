@@ -207,7 +207,7 @@ export class UltraSliderModule extends BaseUltraModule {
             background: var(--info-color, #2196f3);
             color: white;
             padding: 12px 16px;
-            border-radius: 8px;
+            border-radius: calc(8px * var(--uc-radius-scale, 1));
             margin-bottom: 24px;
             display: flex;
             align-items: flex-start;
@@ -234,7 +234,7 @@ export class UltraSliderModule extends BaseUltraModule {
         <!-- SLIDER LAYOUT -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -481,7 +481,7 @@ export class UltraSliderModule extends BaseUltraModule {
         <!-- PAGINATION -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div class="inline-toggle">
             <div class="section-title">
@@ -604,7 +604,7 @@ export class UltraSliderModule extends BaseUltraModule {
         <!-- NAVIGATION ARROWS -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div class="inline-toggle">
             <div class="section-title">
@@ -742,7 +742,7 @@ export class UltraSliderModule extends BaseUltraModule {
         <!-- TRANSITION & ANIMATION -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -781,7 +781,7 @@ export class UltraSliderModule extends BaseUltraModule {
         <!-- AUTO-PLAY -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div class="inline-toggle">
             <div class="section-title">
@@ -833,7 +833,7 @@ export class UltraSliderModule extends BaseUltraModule {
         <!-- INTERACTION -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -901,7 +901,7 @@ export class UltraSliderModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -2387,11 +2387,11 @@ export class UltraSliderModule extends BaseUltraModule {
         .ultra-slider-container .slider-pagination-row .swiper-scrollbar {
           height: 8px;
           background: ${sliderModule.pagination_color || 'rgba(0, 0, 0, 0.1)'};
-          border-radius: 4px;
+          border-radius: calc(4px * var(--uc-radius-scale, 1));
         }
         .ultra-slider-container .slider-pagination-row .swiper-scrollbar .swiper-scrollbar-drag {
           background: ${sliderModule.pagination_active_color || 'var(--primary-color)'};
-          border-radius: 4px;
+          border-radius: calc(4px * var(--uc-radius-scale, 1));
         }
         `
           : ''}
@@ -2712,12 +2712,12 @@ export class UltraSliderModule extends BaseUltraModule {
             top: auto;
           `}
           background: ${sliderModule.pagination_color || 'rgba(0, 0, 0, 0.1)'};
-          border-radius: 4px;
+          border-radius: calc(4px * var(--uc-radius-scale, 1));
           z-index: ${paginationZIndex};
         }
         .ultra-slider-container .swiper-scrollbar-drag {
           background: ${sliderModule.pagination_active_color || 'var(--primary-color)'};
-          border-radius: 4px;
+          border-radius: calc(4px * var(--uc-radius-scale, 1));
           ${isVertical
           ? `
             width: 100%;
@@ -2952,7 +2952,7 @@ export class UltraSliderModule extends BaseUltraModule {
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                border-radius: 12px;
+                                border-radius: calc(12px * var(--uc-radius-scale, 1));
                                 z-index: 10;
                               "
                               >
@@ -3179,7 +3179,7 @@ export class UltraSliderModule extends BaseUltraModule {
               display: inline-flex !important;
               align-items: center !important;
               justify-content: center !important;
-              border-radius: 4px !important;
+              border-radius: calc(4px * var(--uc-radius-scale, 1)) !important;
               font-size: ${size + 2}px !important;
               line-height: 1 !important;
               margin: 0 4px !important;

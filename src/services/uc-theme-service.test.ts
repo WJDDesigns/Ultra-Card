@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { UC_THEME_BASE_CSS, ucThemeService } from './uc-theme-service';
+import { UC_RADIUS_SCALE_MAX, UC_THEME_BASE_CSS, radiusScale, ucThemeService } from './uc-theme-service';
 import {
   BEACH_THEME,
   BUILTIN_THEMES,
@@ -78,6 +78,17 @@ describe('resolution order', () => {
     expect(el.style.getPropertyValue('--uc-card-hue')).toBe(String((hueA + 1) % 360));
     ucThemeService.applyThemeToHost(el, null);
     expect(el.style.getPropertyValue('--uc-card-hue')).toBe('');
+  });
+
+  it('scales module-internal radii with the card radius', () => {
+    expect(radiusScale(12)).toBe('1'); // designed against the 12px default
+    expect(radiusScale(0)).toBe('0'); // square themes square everything
+    expect(radiusScale(8)).toBe('0.67');
+    expect(radiusScale(26)).toBe(String(UC_RADIUS_SCALE_MAX)); // clamped
+    for (const t of BUILTIN_THEMES) {
+      if (t.id === UC_THEME_HA_NATIVE) continue;
+      expect(ucThemeService.getHostVars(t)['--uc-radius-scale']).toBe(radiusScale(t.tokens.radius));
+    }
   });
 
   it('material follows MD3: 12dp corners, pill controls, level-1 elevation, tonal tint', () => {

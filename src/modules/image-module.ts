@@ -770,7 +770,7 @@ export class UltraImageModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;

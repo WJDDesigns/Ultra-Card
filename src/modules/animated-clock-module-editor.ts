@@ -36,7 +36,7 @@ export function renderAnimatedClockModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+        style="background: var(--secondary-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1)); padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
       >
         <div
           class="section-title"
@@ -131,7 +131,7 @@ export function renderAnimatedClockModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+        style="background: var(--secondary-background-color); border-radius: calc(12px * var(--uc-radius-scale, 1)); padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
       >
         <div
           class="section-title"

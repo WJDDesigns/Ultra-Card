@@ -177,7 +177,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
       <style>
         .settings-section {
           background: var(--secondary-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           padding: 16px;
           margin-bottom: 24px;
         }
@@ -200,7 +200,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
         .style-btn {
           padding: 12px 8px;
           border: 2px solid var(--divider-color);
-          border-radius: 12px;
+          border-radius: calc(12px * var(--uc-radius-scale, 1));
           background: var(--card-background-color);
           cursor: pointer;
           text-align: center;
@@ -244,7 +244,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           padding: 6px 12px;
           background: var(--primary-color);
           color: var(--text-primary-color);
-          border-radius: 16px;
+          border-radius: calc(16px * var(--uc-radius-scale, 1));
           font-size: 13px;
           position: relative;
         }
@@ -274,7 +274,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           flex: 1;
           padding: 8px;
           border: 1px solid var(--divider-color);
-          border-radius: 4px;
+          border-radius: calc(4px * var(--uc-radius-scale, 1));
           background: var(--secondary-background-color);
           color: var(--primary-text-color);
           font-size: 14px;
@@ -284,7 +284,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           background: var(--primary-color);
           color: var(--text-primary-color);
           border: none;
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           cursor: pointer;
           font-weight: 600;
           display: flex;
@@ -303,7 +303,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           gap: 8px;
           padding: 12px;
           background: var(--card-background-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           margin-bottom: 8px;
           border: 1px solid var(--divider-color);
         }
@@ -336,7 +336,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           padding: 16px;
           background: rgba(var(--rgb-primary-color), 0.05);
           border-left: 3px solid var(--primary-color);
-          border-radius: 0 8px 8px 0;
+          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
           margin-bottom: 8px;
         }
         .state-filter-row {
@@ -357,7 +357,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           padding: 6px 12px;
           background: var(--primary-color);
           color: var(--text-primary-color, #fff);
-          border-radius: 16px;
+          border-radius: calc(16px * var(--uc-radius-scale, 1));
           font-size: 13px;
           max-width: 100%;
           position: relative;
@@ -397,7 +397,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           padding: 16px;
           background: rgba(var(--rgb-primary-color), 0.05);
           border-left: 3px solid var(--primary-color);
-          border-radius: 0 8px 8px 0;
+          border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
           margin-bottom: 12px;
         }
         .uc-ael-overrides-header {
@@ -1649,7 +1649,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
-              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${o.cardBg};border:1px solid var(--divider-color);"
+              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(8px * var(--uc-radius-scale, 1));background:${o.cardBg};border:1px solid var(--divider-color);"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1702,7 +1702,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
-              style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:${o.cardBg};border:1px solid var(--divider-color);"
+              style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:calc(10px * var(--uc-radius-scale, 1));background:${o.cardBg};border:1px solid var(--divider-color);"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1812,7 +1812,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
-              style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:24px;background:${o.cardBg};border-left:4px solid ${accent};box-shadow:0 1px 2px rgba(0,0,0,0.05);box-sizing:border-box;${sizeStyle}"
+              style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:calc(24px * var(--uc-radius-scale, 1));background:${o.cardBg};border-left:4px solid ${accent};box-shadow:0 1px 2px rgba(0,0,0,0.05);box-sizing:border-box;${sizeStyle}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}

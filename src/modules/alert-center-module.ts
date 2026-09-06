@@ -310,7 +310,7 @@ export class UltraAlertCenterModule extends BaseUltraModule {
           padding: 6px 12px;
           background: var(--primary-color);
           color: var(--text-primary-color, #fff);
-          border-radius: 16px;
+          border-radius: calc(16px * var(--uc-radius-scale, 1));
           font-size: 13px;
           max-width: 100%;
           position: relative;
@@ -435,7 +435,7 @@ export class UltraAlertCenterModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -478,7 +478,7 @@ export class UltraAlertCenterModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -680,7 +680,7 @@ export class UltraAlertCenterModule extends BaseUltraModule {
       }
       .uc-ac-row {
         border: none;
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         width: 100%;
         padding: 10px 12px;
         display: flex;
@@ -739,7 +739,7 @@ export class UltraAlertCenterModule extends BaseUltraModule {
         display: flex;
         align-items: center;
         gap: 12px;
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         padding: 10px 12px;
         background: color-mix(in srgb, var(--success-color) 14%, transparent);
       }

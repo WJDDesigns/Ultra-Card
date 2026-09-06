@@ -261,7 +261,7 @@ export class UltraNumberInputModule extends BaseUltraModule {
       <style>
         .num-wrap-${mid} {
           display: flex; align-items: center; background: ${bgCss};
-          border: ${borderCss}; border-radius: 8px; ${extraCss}
+          border: ${borderCss}; border-radius: calc(8px * var(--uc-radius-scale, 1)); ${extraCss}
           transition: border-color .2s, box-shadow .2s; overflow: hidden;
         }
         .num-wrap-${mid}:focus-within {

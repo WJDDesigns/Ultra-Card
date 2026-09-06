@@ -26,7 +26,7 @@ export function renderAnimatedForecastModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
       >
         <div
           class="section-title"
@@ -84,7 +84,7 @@ export function renderAnimatedForecastModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
       >
         <div
           class="section-title"
@@ -112,7 +112,7 @@ export function renderAnimatedForecastModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
       >
         <div
           class="section-title"
@@ -161,7 +161,7 @@ export function renderAnimatedForecastModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
       >
         <div
           class="section-title"
@@ -222,7 +222,7 @@ export function renderAnimatedForecastModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
       >
         <div
           class="section-title"
@@ -271,7 +271,7 @@ export function renderAnimatedForecastModuleEditor(
       <!-- ============================================ -->
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
       >
         <div
           class="section-title"

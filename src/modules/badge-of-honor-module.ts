@@ -166,7 +166,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
         padding: 32px;
         text-align: center;
         background: var(--secondary-background-color);
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         margin: 16px;
       "
       >
@@ -196,7 +196,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
             padding: 12px 24px;
             background: var(--primary-color);
             color: var(--text-primary-color, white);
-            border-radius: 8px;
+            border-radius: calc(8px * var(--uc-radius-scale, 1));
             text-decoration: none;
             font-weight: 600;
           "
@@ -217,7 +217,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
       >
         <div
           class="section-title"
@@ -261,7 +261,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
       >
         <div
           class="section-title"
@@ -405,7 +405,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
       >
         <div
           class="section-title"
@@ -543,7 +543,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
       >
         <div
           class="section-title"
@@ -971,7 +971,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     return `
       .settings-section {
         background: var(--secondary-background-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         padding: 16px;
         margin-bottom: 16px;
       }

@@ -393,7 +393,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
           flex: 1;
           min-width: 0;
           border: 1px solid var(--divider-color);
-          border-radius: 8px;
+          border-radius: calc(8px * var(--uc-radius-scale, 1));
           background: transparent;
           cursor: pointer;
           transition: border-color 0.2s ease, box-shadow 0.2s ease;

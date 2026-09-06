@@ -2187,7 +2187,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
 
       .uc-appl-wrapper {
         box-sizing: border-box;
-        border-radius: 16px;
+        border-radius: calc(16px * var(--uc-radius-scale, 1));
         padding: 16px;
         overflow: hidden;
       }
@@ -2207,7 +2207,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        border-radius: 18px;
+        border-radius: calc(18px * var(--uc-radius-scale, 1));
         padding: 10px 12px;
         background:
           radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 9%, transparent), transparent 70%),
@@ -2215,8 +2215,8 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         border: 1px solid color-mix(in srgb, var(--divider-color) 50%, transparent);
         transition: box-shadow 0.25s ease, border-color 0.25s ease;
       }
-      .uc-appl-visual--hero { border-radius: 22px; padding: 14px 18px; }
-      .uc-appl-visual--compact { padding: 4px 6px; border-radius: 12px; }
+      .uc-appl-visual--hero { border-radius: calc(22px * var(--uc-radius-scale, 1)); padding: 14px 18px; }
+      .uc-appl-visual--compact { padding: 4px 6px; border-radius: calc(12px * var(--uc-radius-scale, 1)); }
       .uc-appl-visual--on {
         border-color: color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 42%, transparent);
         box-shadow: 0 4px 22px color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 16%, transparent);
@@ -2443,7 +2443,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         font-weight: 600;
         width: 100%;
         padding: 7px 28px 7px 11px;
-        border-radius: 10px;
+        border-radius: calc(10px * var(--uc-radius-scale, 1));
         cursor: pointer;
         color: var(--primary-text-color);
         border: 1px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
@@ -2504,7 +2504,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         flex-direction: column;
         gap: 2px;
         padding: 9px 12px;
-        border-radius: 12px;
+        border-radius: calc(12px * var(--uc-radius-scale, 1));
         background: color-mix(in srgb, var(--divider-color) 10%, transparent);
         border: 1px solid color-mix(in srgb, var(--divider-color) 32%, transparent);
         min-width: 0;
@@ -2542,7 +2542,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         flex-direction: column;
         gap: 6px;
         padding: 12px 14px;
-        border-radius: 14px;
+        border-radius: calc(14px * var(--uc-radius-scale, 1));
         background: color-mix(in srgb, var(--divider-color) 10%, transparent);
         border: 1px solid color-mix(in srgb, var(--divider-color) 32%, transparent);
         min-width: 0;

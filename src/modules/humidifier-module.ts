@@ -331,7 +331,7 @@ export class UltraHumidifierModule extends BaseUltraModule {
     return html`
       <div
         class="uc-humidifier-wrapper ${hoverClass}"
-        style="padding:16px;border-radius:12px;background:${cardBg};${designStyles}"
+        style="padding:16px;border-radius:calc(12px * var(--uc-radius-scale, 1));background:${cardBg};${designStyles}"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}
         @pointerup=${g.onPointerUp}
@@ -423,7 +423,7 @@ export class UltraHumidifierModule extends BaseUltraModule {
                       const isActive = mode === activeMode && isOn;
                       return html`
                         <button
-                          style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:16px;border:1px solid ${isActive ? accent : 'var(--divider-color)'};background:${isActive ? `${this._cssColorWithAlpha(accent)}` : 'transparent'};color:${isActive ? accent : secondary};font-size:12px;font-weight:600;cursor:pointer;text-transform:capitalize;"
+                          style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:calc(16px * var(--uc-radius-scale, 1));border:1px solid ${isActive ? accent : 'var(--divider-color)'};background:${isActive ? `${this._cssColorWithAlpha(accent)}` : 'transparent'};color:${isActive ? accent : secondary};font-size:12px;font-weight:600;cursor:pointer;text-transform:capitalize;"
                           ?disabled=${unavailable}
                           @click=${(ev: Event) => {
                             ev.stopPropagation();
@@ -483,7 +483,7 @@ export class UltraHumidifierModule extends BaseUltraModule {
         height: 6px;
         -webkit-appearance: none;
         appearance: none;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: rgba(127, 127, 127, 0.25);
         outline: none;
         cursor: pointer;

@@ -681,7 +681,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
       >
         <div
           class="section-title"
@@ -1862,7 +1862,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
       </style>
       <div
         class="uc-vm-wrapper ${hoverClass}"
-        style="box-sizing: border-box; padding: 0; border-radius: 12px; overflow: hidden; background: ${p.cardBg}; color: ${p.text}; ${designStyles}"
+        style="box-sizing: border-box; padding: 0; border-radius: calc(12px * var(--uc-radius-scale, 1)); overflow: hidden; background: ${p.cardBg}; color: ${p.text}; ${designStyles}"
         @pointerdown=${gestures?.onPointerDown}
         @pointermove=${gestures?.onPointerMove}
         @pointerup=${gestures?.onPointerUp}
@@ -2594,7 +2594,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         padding: 10px 12px;
         margin: -6px 0 16px;
         border-left: 3px solid var(--primary-color);
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         background: rgba(var(--rgb-primary-text-color, 33, 33, 33), 0.06);
         font-size: 13px;
         line-height: 1.5;
@@ -2613,7 +2613,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         min-height: 36px;
         padding: 0 14px;
         border: 1px solid var(--divider-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         background: var(--card-background-color);
         color: var(--primary-text-color);
         font-size: 13px;
@@ -2638,7 +2638,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         height: 30px;
         padding: 0;
         border: none;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         background: transparent;
         color: var(--secondary-text-color);
         cursor: pointer;
@@ -2664,21 +2664,21 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         padding: 20px 12px;
         margin-bottom: 12px;
         border: 1px dashed var(--divider-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         text-align: center;
         font-size: 13px;
         color: var(--secondary-text-color);
       }
 
       ha-expansion-panel.vm-service-panel {
-        --ha-card-border-radius: 8px;
+        --ha-card-border-radius: calc(8px * var(--uc-radius-scale, 1));
         --expansion-panel-summary-padding: 0;
         /* Horizontal-only padding here, vertical via ::part(content), otherwise
            the height-animated container leaks space under collapsed rows. */
         --expansion-panel-content-padding: 0 12px;
         margin-bottom: 8px;
         background: var(--card-background-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
       }
       ha-expansion-panel.vm-service-panel::part(summary) { padding: 0; min-height: unset; }
       ha-expansion-panel.vm-service-panel::part(content) { padding: 12px 0 4px; }
@@ -2697,7 +2697,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 6px;
+        border-radius: calc(6px * var(--uc-radius-scale, 1));
         background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
         color: var(--primary-color);
       }
@@ -2750,7 +2750,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         gap: 2px;
         padding: 10px;
         border: 1px solid var(--divider-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         background: var(--card-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
@@ -2910,7 +2910,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         padding: 12px;
         border: 1px solid var(--divider-color);
         border-left-width: 3px;
-        border-radius: 10px;
+        border-radius: calc(10px * var(--uc-radius-scale, 1));
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -2923,7 +2923,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         background: rgba(var(--rgb-primary-text-color, 33, 33, 33), 0.07);
       }
       .uc-vm-next-icon ha-icon { --mdc-icon-size: 20px; }
@@ -2960,7 +2960,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         min-width: 32px;
         padding: 0 10px;
         border: 1px solid var(--divider-color);
-        border-radius: 8px;
+        border-radius: calc(8px * var(--uc-radius-scale, 1));
         background: transparent;
         color: inherit;
         font-size: 12px;
@@ -3071,7 +3071,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         height: 24px;
         padding: 0;
         border: none;
-        border-radius: 5px;
+        border-radius: calc(5px * var(--uc-radius-scale, 1));
         background: transparent;
         color: var(--secondary-text-color);
         cursor: pointer;
@@ -3107,7 +3107,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
       .uc-vm-skeletons { display: flex; flex-direction: column; gap: 6px; }
       .uc-vm-skeleton {
         height: 14px;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         background: linear-gradient(
           90deg,
           var(--divider-color) 25%,

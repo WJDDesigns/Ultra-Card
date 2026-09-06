@@ -259,7 +259,7 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 32px;"
         >
           <div
             class="section-title"
@@ -356,7 +356,7 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
                       ${m.title || localize('editor.update_monitor.default_title', lang, 'Updates')}
                     </span>
                     <span
-                      style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;background:${pending > 0 ? cUpd : cOk}22;color:${pending > 0 ? cUpd : cOk};"
+                      style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:calc(10px * var(--uc-radius-scale, 1));background:${pending > 0 ? cUpd : cOk}22;color:${pending > 0 ? cUpd : cOk};"
                     >
                       ${pending > 0
                         ? `${pending} ${localize('editor.update_monitor.pending', lang, 'pending')}`
@@ -406,7 +406,7 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
 
     return html`
       <div
-        style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:${o.cardBg};border:1px solid var(--divider-color);"
+        style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:calc(10px * var(--uc-radius-scale, 1));background:${o.cardBg};border:1px solid var(--divider-color);"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}
         @pointerup=${g.onPointerUp}
@@ -416,7 +416,7 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
         ${m.show_entity_picture !== false && r.picture
           ? html`<img
               src="${r.picture}"
-              style="width:28px;height:28px;border-radius:6px;object-fit:contain;flex-shrink:0;"
+              style="width:28px;height:28px;border-radius:calc(6px * var(--uc-radius-scale, 1));object-fit:contain;flex-shrink:0;"
             />`
           : html`<ha-icon
               icon=${r.hasUpdate ? 'mdi:package-up' : 'mdi:check-circle-outline'}
@@ -440,7 +440,7 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
             ? html`
                 <button
                   class="um-install-btn"
-                  style="flex-shrink:0;padding:6px 12px;border:none;border-radius:8px;background:${col};color:var(--text-primary-color,#fff);font-weight:600;font-size:12px;cursor:pointer;"
+                  style="flex-shrink:0;padding:6px 12px;border:none;border-radius:calc(8px * var(--uc-radius-scale, 1));background:${col};color:var(--text-primary-color,#fff);font-weight:600;font-size:12px;cursor:pointer;"
                   @click=${(ev: Event) => {
                     ev.stopPropagation();
                     hass.callService('update', 'install', { entity_id: r.entityId });

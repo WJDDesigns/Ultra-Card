@@ -224,7 +224,7 @@ const USE_BTN_STYLE = `
   background: var(--primary-color);
   color: var(--text-primary-color, #fff);
   border: none;
-  border-radius: 6px;
+  border-radius: calc(6px * var(--uc-radius-scale, 1));
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -243,7 +243,7 @@ const BTN_STYLE = `
   background: rgba(var(--rgb-primary-color, 33,150,243), 0.12);
   color: var(--primary-color);
   border: 1px solid rgba(var(--rgb-primary-color, 33,150,243), 0.3);
-  border-radius: 8px;
+  border-radius: calc(8px * var(--uc-radius-scale, 1));
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -262,7 +262,7 @@ const PAGE_BTN_STYLE = `
   background: rgba(var(--rgb-primary-color, 33,150,243), 0.12);
   color: var(--primary-color);
   border: 1px solid rgba(var(--rgb-primary-color, 33,150,243), 0.3);
-  border-radius: 6px;
+  border-radius: calc(6px * var(--uc-radius-scale, 1));
   padding: 4px;
   cursor: pointer;
 `;
@@ -450,7 +450,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- Source type: Template vs Todo List (dropdown) -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -479,7 +479,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- ── Todo List (field mapping) source ─────────────────────────────── -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -758,7 +758,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
           </div>
           <div
             class="field-description"
-            style="font-size: 11px; margin-top: 12px; padding: 8px; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: 6px; color: var(--secondary-text-color); line-height: 1.4;"
+            style="font-size: 11px; margin-top: 12px; padding: 8px; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: calc(6px * var(--uc-radius-scale, 1)); color: var(--secondary-text-color); line-height: 1.4;"
           >
             <strong>Description JSON (Local Todo, etc.):</strong> You can put JSON in an item’s description to override display or define multiple modules. Object (e.g. <code>{"color": "#f00", "text": "Custom"}</code>) is merged into the row. Array of module configs shows multiple modules for that one item.
           </div>
@@ -768,7 +768,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- ── Todo List + Jinja2 Template source ────────────────────────────── -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -862,7 +862,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -903,7 +903,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- ── Action / Service source ───────────────────────────────────────── -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -990,7 +990,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -1031,7 +1031,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- ── Jinja2 Template source ─────────────────────────────────────────── -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -1083,7 +1083,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- Layout Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -1312,7 +1312,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- Examples Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -1333,7 +1333,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
               { title: 'Temperature Sensors', desc: 'Text per sensor — blue when cold, red when hot, green when comfortable', tpl: EXAMPLE_TEMPERATURE },
               { title: 'CPU / Memory / Disk', desc: 'Bar per system metric — color shifts at 50% and 80%', tpl: EXAMPLE_CPU_MEMORY },
             ] as const).map(ex => html`
-              <details style="border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden;">
+              <details style="border: 1px solid var(--divider-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); overflow: hidden;">
                 <summary style="${EXAMPLE_HEADER_STYLE} list-style: none; cursor: pointer;">
                   <div style="flex: 1; min-width: 0;">
                     <div style="font-size: 13px; font-weight: 600; color: var(--primary-text-color);">${ex.title}</div>
@@ -1357,7 +1357,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- Domain Cheat Sheet Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -1483,7 +1483,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
 {{ ns.mods | tojson }}`;
 
               return html`
-                <details style="border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden;">
+                <details style="border: 1px solid var(--divider-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); overflow: hidden;">
                   <summary style="${EXAMPLE_HEADER_STYLE} list-style: none; cursor: pointer;">
                     <div style="flex: 1; min-width: 0;">
                       <div style="font-size: 13px; font-weight: 600; color: var(--primary-text-color);">${d.label}</div>
@@ -1509,7 +1509,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         <!-- Reference / Key Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 24px;"
         >
           <div
             class="section-title"
@@ -1548,7 +1548,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
                 ['value | default("N/A")', 'Use fallback if value is undefined/none'],
                 ['A ~ B', 'Concatenate strings — equivalent to A + B'],
               ] as const).map(([k, v]) => html`
-                <div style="background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: 6px; padding: 8px 10px;">
+                <div style="background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: calc(6px * var(--uc-radius-scale, 1)); padding: 8px 10px;">
                   <code style="font-size: 11px; color: var(--primary-color); font-family: 'Fira Code', Consolas, monospace; display: block; margin-bottom: 3px;">${k}</code>
                   <span style="font-size: 11px; color: var(--secondary-text-color);">${v}</span>
                 </div>
@@ -1561,7 +1561,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
             <div style="font-size: 13px; font-weight: 700; color: var(--primary-text-color); margin-bottom: 8px;">Module type fields</div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
 
-              <details style="border: 1px solid var(--divider-color); border-radius: 6px; overflow: hidden;">
+              <details style="border: 1px solid var(--divider-color); border-radius: calc(6px * var(--uc-radius-scale, 1)); overflow: hidden;">
                 <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); color: var(--primary-text-color); list-style: none;">
                   text — plain text with optional color
                 </summary>
@@ -1571,7 +1571,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
  'display_mode': 'always', 'display_conditions': []}</pre>
               </details>
 
-              <details style="border: 1px solid var(--divider-color); border-radius: 6px; overflow: hidden;">
+              <details style="border: 1px solid var(--divider-color); border-radius: calc(6px * var(--uc-radius-scale, 1)); overflow: hidden;">
                 <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); color: var(--primary-text-color); list-style: none;">
                   icon — entity-linked icon with active/inactive states
                 </summary>
@@ -1592,7 +1592,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
  'display_mode': 'always', 'display_conditions': []}</pre>
               </details>
 
-              <details style="border: 1px solid var(--divider-color); border-radius: 6px; overflow: hidden;">
+              <details style="border: 1px solid var(--divider-color); border-radius: calc(6px * var(--uc-radius-scale, 1)); overflow: hidden;">
                 <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); color: var(--primary-text-color); list-style: none;">
                   bar — horizontal progress bar
                 </summary>
@@ -1616,7 +1616,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
                 ['display_mode', 'Always set to "always" unless using visibility conditions'],
                 ['display_conditions', 'Always set to [] unless using visibility conditions'],
               ] as const).map(([k, v]) => html`
-                <div style="background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: 6px; padding: 8px 10px;">
+                <div style="background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: calc(6px * var(--uc-radius-scale, 1)); padding: 8px 10px;">
                   <code style="font-size: 11px; color: var(--primary-color); font-family: 'Fira Code', Consolas, monospace; display: block; margin-bottom: 3px;">${k}</code>
                   <span style="font-size: 11px; color: var(--secondary-text-color);">${v}</span>
                 </div>

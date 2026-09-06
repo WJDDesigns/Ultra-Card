@@ -834,7 +834,7 @@ export class UltraTextModule extends BaseUltraModule {
       }
 
       .rich-text-content mark {
-        border-radius: 2px;
+        border-radius: calc(2px * var(--uc-radius-scale, 1));
         padding: 0 2px;
       }
       
@@ -844,7 +844,7 @@ export class UltraTextModule extends BaseUltraModule {
         text-align: center;
         padding: 12px;
         background: var(--secondary-background-color);
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
       }
       
       /* Field styling */
@@ -884,7 +884,7 @@ export class UltraTextModule extends BaseUltraModule {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);
         background: rgba(var(--rgb-primary-color), 0.08);
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 calc(8px * var(--uc-radius-scale, 1)) calc(8px * var(--uc-radius-scale, 1)) 0;
         overflow: hidden;
         transition: all 0.2s ease;
         animation: slideInFromLeft 0.3s ease-out;
@@ -940,7 +940,7 @@ export class UltraTextModule extends BaseUltraModule {
       code {
         background: var(--secondary-background-color);
         padding: 2px 6px;
-        border-radius: 4px;
+        border-radius: calc(4px * var(--uc-radius-scale, 1));
         font-family: 'Courier New', monospace;
         font-size: 0.9em;
         color: var(--primary-color);
@@ -989,7 +989,7 @@ export class UltraTextModule extends BaseUltraModule {
         bottom: 0;
         background-color: var(--disabled-color);
         transition: 0.3s;
-        border-radius: 24px;
+        border-radius: calc(24px * var(--uc-radius-scale, 1));
       }
       .template-header .slider:before {
         position: absolute;

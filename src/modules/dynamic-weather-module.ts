@@ -92,7 +92,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         <!-- Module Info -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <ha-icon
@@ -108,7 +108,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
           </div>
 
           <div
-            style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: 6px; border-left: 4px solid var(--info-color);"
+            style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--info-color);"
           >
             <div style="font-size: 13px; line-height: 1.5;">
               <strong>Note:</strong> This module controls weather effects for the entire view. It
@@ -118,7 +118,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
           </div>
 
           <div
-            style="margin-top: 12px; padding: 10px; background: rgba(var(--rgb-warning-color), 0.12); border-radius: 6px; border-left: 4px solid var(--warning-color); color: var(--warning-color); font-size: 12px; line-height: 1.4;"
+            style="margin-top: 12px; padding: 10px; background: rgba(var(--rgb-warning-color), 0.12); border-radius: calc(6px * var(--uc-radius-scale, 1)); border-left: 4px solid var(--warning-color); color: var(--warning-color); font-size: 12px; line-height: 1.4;"
           >
             ⚠️ Lightning effects (Rain Storm) include rapid flashes.
           </div>
@@ -127,7 +127,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         <!-- Core Settings -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -183,7 +183,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
                       <!-- Current Effect Preview -->
                       ${weatherModule.weather_entity && hass.states[weatherModule.weather_entity]
                         ? html`
-                            <div style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 6px;">
+                            <div style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: calc(6px * var(--uc-radius-scale, 1));">
                               <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
                                 Current Detection:
                               </div>
@@ -254,7 +254,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         <!-- Display Settings -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -292,7 +292,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         <!-- Mobile & Accessibility Settings -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -330,7 +330,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
   private renderProLockUI(lang: string): TemplateResult {
     return html`
       <div
-        style="padding: 32px; text-align: center; background: var(--secondary-background-color); border-radius: 8px; margin: 16px;"
+        style="padding: 32px; text-align: center; background: var(--secondary-background-color); border-radius: calc(8px * var(--uc-radius-scale, 1)); margin: 16px;"
       >
         <ha-icon
           icon="mdi:lock"
@@ -346,7 +346,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         <a
           href="https://ultracardpro.com"
           target="_blank"
-          style="display: inline-block; padding: 12px 24px; background: var(--primary-color); color: var(--text-primary-color, #fff); text-decoration: none; border-radius: 8px; font-weight: 600;"
+          style="display: inline-block; padding: 12px 24px; background: var(--primary-color); color: var(--text-primary-color, #fff); text-decoration: none; border-radius: calc(8px * var(--uc-radius-scale, 1)); font-weight: 600;"
         >
           Upgrade to Pro
         </a>
@@ -400,7 +400,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
     if (showPlaceholder) {
       return this.wrapWithAnimation(html`
         <div
-          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; border: 2px dashed var(--divider-color);"
+          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: calc(8px * var(--uc-radius-scale, 1)); border: 2px dashed var(--divider-color);"
         >
           <ha-icon
             icon="mdi:weather-partly-rainy"
