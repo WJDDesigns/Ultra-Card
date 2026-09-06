@@ -44,6 +44,9 @@ import { findMissingVariables, scanConfigForVariables } from '../utils/uc-templa
 import '../components/uc-snapshot-history-modal';
 import '../components/uc-snapshot-settings-dialog';
 import '../components/uc-manual-backup-dialog';
+import '../components/uc-theme-picker';
+import { ucThemeService } from '../services/uc-theme-service';
+import { openHubThemes } from '../panels/hub-navigation';
 import { getModuleRegistry } from '../modules';
 import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
 import { collectConfigEntityIds, anyEntityChanged } from '../utils/uc-config-entity-ids';
@@ -75,6 +78,7 @@ export class UltraCardEditor extends LitElement {
   @state() private _activeTab: EditorTab = 'layout';
   @state() private _configDebounceTimeout: number | undefined;
   private _localeUnsub: (() => void) | undefined;
+  private _themeUnsub: (() => void) | undefined;
   @state() private _isFullScreen: boolean = false;
   /**
    * Reflected to `data-settings-open` on the host so `:host([data-settings-open])`
@@ -386,6 +390,7 @@ export class UltraCardEditor extends LitElement {
     super.connectedCallback();
 
     this._localeUnsub = onLocaleLoaded(() => this.requestUpdate());
+    this._themeUnsub = ucThemeService.subscribe(() => this.requestUpdate());
 
     // Initialize Pro settings from localStorage
     this._skipDefaultModules = UltraCardEditor.getSkipDefaultModulesSetting();
@@ -507,6 +512,8 @@ export class UltraCardEditor extends LitElement {
     super.disconnectedCallback();
     this._localeUnsub?.();
     this._localeUnsub = undefined;
+    this._themeUnsub?.();
+    this._themeUnsub = undefined;
     // Cancel any pending debounced config-changed so a stale config from this
     // editing session can never fire into a later session (issue #103).
     if (this._configDebounceTimeout) {
@@ -1130,6 +1137,54 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
+   * Ultra Card theme for this card: surface treatment, radius, module style
+   * presets. Defaults to following the global default set in the Hub.
+   */
+  private _renderUcThemePicker(lang: string) {
+    if (!this.config) return '';
+    const current = this.config.uc_theme ?? '';
+    const resolved = ucThemeService.resolveThemeId(this.config);
+    const resolvedName = ucThemeService.getTheme(resolved)?.name ?? resolved;
+    return html`
+      <div class="setting-item" style="grid-column: 1 / -1;">
+        <label>${localize('editor.appearance.uc_theme', lang, 'Ultra Card Theme')}</label>
+        <div class="setting-description" style="margin-bottom: 8px;">
+          ${localize(
+            'editor.appearance.uc_theme_desc',
+            lang,
+            'Sets the surface look (glass, soft, flat...), corner radius and the default style of every module on this card. Modules set to "Inherit from theme" follow it.'
+          )}
+          ${current === ''
+            ? html` <b>${localize('editor.appearance.uc_theme_active', lang, 'Active:')} ${resolvedName}</b>`
+            : ''}
+        </div>
+        <uc-theme-picker
+          .hass=${this.hass}
+          .value=${current}
+          @theme-picked=${(e: CustomEvent<{ value: string }>) => {
+            const value = e.detail.value;
+            this._updateConfig({ uc_theme: value || undefined });
+          }}
+        ></uc-theme-picker>
+        <div class="setting-description" style="margin-top: 8px;">
+          <a
+            href="#"
+            @click=${(e: Event) => {
+              e.preventDefault();
+              this._openHubThemes();
+            }}
+            >${localize('editor.appearance.uc_theme_manage', lang, 'Manage themes and the global default in the Hub')}</a
+          >
+        </div>
+      </div>
+    `;
+  }
+
+  private _openHubThemes(): void {
+    openHubThemes(this.hass as any);
+  }
+
+  /**
    * Per-card Home Assistant theme, the same `theme:` option HA core cards expose.
    * Lets a user pull any installed (HACS) theme onto one Ultra Card without
    * changing the dashboard theme.
@@ -1327,6 +1382,8 @@ export class UltraCardEditor extends LitElement {
                       )}
                     </div>
                   </div>
+
+                  ${this._renderUcThemePicker(lang)}
 
                   ${this._renderHaThemePicker(lang)}
 

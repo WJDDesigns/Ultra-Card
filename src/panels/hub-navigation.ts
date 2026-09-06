@@ -40,6 +40,27 @@ export function moduleDocsSlug(moduleType: string): string {
   return t.startsWith('module-') ? t : `module-${t}`;
 }
 
+/**
+ * Jump to the Hub's Themes tab from anywhere (card editor). Remembers the tab
+ * so a cold Hub load lands on it, tells an already-open Hub to switch, and
+ * navigates to the panel when it is installed.
+ */
+export function openHubThemes(hass?: { panels?: Record<string, unknown> } | null): void {
+  try {
+    localStorage.setItem('ultra_card_hub_tab', 'themes');
+  } catch {
+    /* ignore */
+  }
+  dispatchHubNavigateGlobal({ tab: 'themes' });
+  const panelInstalled = !!hass?.panels?.['ultra-card-hub'];
+  if (panelInstalled && typeof window !== 'undefined' && window.location.pathname !== '/ultra-card-hub') {
+    history.pushState(null, '', '/ultra-card-hub');
+    window.dispatchEvent(
+      new CustomEvent('location-changed', { detail: { replace: false }, bubbles: true, composed: true })
+    );
+  }
+}
+
 export function openHubDocs(slug: string): void {
   try {
     localStorage.setItem(PENDING_DOCS_SLUG_KEY, slug);

@@ -468,7 +468,7 @@ export class HubDashboardTab extends LitElement {
     }
   }
 
-  private _nav(tab: 'presets' | 'colors' | 'docs' | 'account', slug?: string): void {
+  private _nav(tab: 'presets' | 'themes' | 'colors' | 'docs' | 'account', slug?: string): void {
     if (slug) {
       dispatchHubNavigate(this, { tab, slug });
     } else {
@@ -632,6 +632,10 @@ export class HubDashboardTab extends LitElement {
             <button @click=${() => this._nav('presets')}>
               <ha-icon icon="mdi:palette"></ha-icon>
               Presets
+            </button>
+            <button @click=${() => this._nav('themes')}>
+              <ha-icon icon="mdi:palette-swatch"></ha-icon>
+              Themes
             </button>
             <button @click=${() => this._nav('colors')}>
               <ha-icon icon="mdi:eyedropper-variant"></ha-icon>

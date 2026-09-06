@@ -4,6 +4,7 @@ export type HubTab =
   | 'account'
   | 'favorites'
   | 'presets'
+  | 'themes'
   | 'colors'
   | 'variables'
   | 'templates'

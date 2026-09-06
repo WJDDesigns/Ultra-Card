@@ -30,6 +30,7 @@ const TAB_LOADERS: Record<HubTab, () => Promise<unknown>> = {
   account: () => import('./tabs/hub-account-tab'),
   favorites: () => import('./tabs/hub-favorites-tab'),
   presets: () => import('./tabs/hub-presets-tab'),
+  themes: () => import('./tabs/hub-themes-tab'),
   colors: () => import('./tabs/hub-colors-tab'),
   variables: () => import('./tabs/hub-variables-tab'),
   templates: () => import('./tabs/hub-templates-tab'),
@@ -40,6 +41,7 @@ const HUB_TABS: HubTabDef[] = [
   { key: 'dashboard', labelKey: 'hub.groups.home', icon: 'mdi:home' },
   { key: 'favorites', labelKey: 'hub.tabs.favorites', icon: 'mdi:heart' },
   { key: 'presets', labelKey: 'hub.tabs.presets', icon: 'mdi:palette' },
+  { key: 'themes', labelKey: 'hub.tabs.themes', icon: 'mdi:palette-swatch' },
   { key: 'colors', labelKey: 'hub.tabs.colors', icon: 'mdi:eyedropper-variant' },
   { key: 'variables', labelKey: 'hub.tabs.variables', icon: 'mdi:variable' },
   { key: 'templates', labelKey: 'hub.tabs.templates', icon: 'mdi:code-tags' },
@@ -496,6 +498,8 @@ export class UltraCardPanel extends LitElement {
             this._pendingPresetsView = '';
           }}
         ></hub-presets-tab>`;
+      case 'themes':
+        return html`<hub-themes-tab .hass=${this.hass}></hub-themes-tab>`;
       case 'colors':
         return html`<hub-colors-tab .hass=${this.hass}></hub-colors-tab>`;
       case 'variables':
