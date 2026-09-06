@@ -979,6 +979,123 @@ export const GUMMY_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+// Wood: a walnut plank. The grain is procedural: an SVG fractal-noise filter
+// stretched along the plank, mapped to dark and pale streaks over the base.
+const WOOD_BASE = '#6f4423'; // walnut
+const WOOD_INK = '#f7ecd9'; // cream (7.1:1 on walnut)
+const WOOD_INK_SOFT = '#ead8bd'; // sand (6:1 on walnut)
+const WOOD_DARK = '#3e2412'; // primary: dark walnut (cream on it 12:1)
+const WOOD_BRASS = '#c9a25a'; // accent: brass hardware
+const WOOD_EDGE = '#3a2210'; // routed edge
+const WOOD_GRAIN = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' width='600' height='240'>
+  <defs>
+    <filter id='d' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.003 0.11' numOctaves='4' seed='11'/>
+      <feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.08  0 0 0 0 0.03  1.6 0 0 0 -0.75'/>
+    </filter>
+    <filter id='l' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.004 0.07' numOctaves='3' seed='4'/>
+      <feColorMatrix values='0 0 0 0 0.85  0 0 0 0 0.62  0 0 0 0 0.38  1.3 0 0 0 -0.85'/>
+    </filter>
+    <filter id='f' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.9 0.9' numOctaves='1' seed='2'/>
+      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.35 0 0 0 -0.1'/>
+    </filter>
+  </defs>
+  <rect width='600' height='240' fill='${WOOD_BASE}'/>
+  <rect width='600' height='240' filter='url(#l)'/>
+  <rect width='600' height='240' filter='url(#d)'/>
+  <rect width='600' height='240' filter='url(#f)'/>
+</svg>`);
+
+/**
+ * "Wood": a walnut plank. The grain is real procedural grain (SVG fractal
+ * noise stretched along the board: long dark figure, paler early-wood
+ * streaks, a fine pore texture) over a walnut base, with a routed edge,
+ * a soft top-light and a warm shadow. Cream ink, dark-walnut controls and
+ * brass hardware for the accent. Controls are embossed like carved wood.
+ */
+export const WOOD_THEME: UcThemeDefinition = {
+  id: 'wood',
+  name: 'Wood',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'A walnut plank with real procedural grain, routed edges and brass hardware. Cream ink, carved controls.',
+  icon: 'mdi:tree',
+  source: 'builtin',
+  tokens: {
+    surface: 'neumorphic',
+    radius: 10,
+    radius_sm: 8,
+    border_width: 1,
+    border_color: WOOD_EDGE,
+    shadow: 'inset 0 1px 0 rgba(255, 220, 180, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.35), 0 8px 20px rgba(30, 15, 5, 0.45)',
+    density: 'regular',
+    accent: WOOD_BRASS,
+    font_family: "'Lora', 'Merriweather', 'Source Serif 4', Georgia, 'Times New Roman', serif",
+    palette: {
+      primary: WOOD_DARK,
+      accent: WOOD_BRASS,
+      card_bg: WOOD_BASE,
+      text: WOOD_INK,
+      text_secondary: WOOD_INK_SOFT,
+      divider: 'rgba(247, 236, 217, 0.18)',
+    },
+  },
+  card: {
+    card_background: WOOD_BASE,
+    card_border_radius: 10,
+    card_border_color: WOOD_EDGE,
+    card_border_width: 1,
+    card_padding: 18,
+    card_shadow_enabled: true,
+    card_shadow_color: 'rgba(30, 15, 5, 0.45)',
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 8,
+    card_shadow_blur: 20,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'embossed' },
+    bar: { bar_style: 'embossed' },
+    slider_control: { slider_style: 'embossed' },
+    spinbox: { button_style: 'embossed', button_shape: 'rounded' },
+    popup: { trigger_button_style: 'embossed' },
+    grid: { grid_style: 'style_12' },
+    navigation: { nav_style: 'uc_minimal' },
+    area_summary: { style_preset: 'iconic_soft', accent_color: WOOD_BRASS, tile_border_radius: 8 },
+    auto_entity_list: { row_style: 'card' },
+    unifi: { rack_style: 'dark' },
+    activity_feed: { feed_card_style: 'elevated' },
+    tabs: { style: 'simple_3' },
+  },
+  css: `
+.card-container {
+  background-color: ${WOOD_BASE} !important;
+  /* Top light over the grain plank; the plank stretches with the card so the figure runs its length. */
+  background-image:
+    linear-gradient(180deg, rgba(255, 225, 190, 0.10) 0%, rgba(255, 225, 190, 0) 35%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.14) 100%),
+    ${WOOD_GRAIN} !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-size: auto, 100% 100% !important;
+  border: 1px solid ${WOOD_EDGE} !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 180, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    inset 1px 0 0 rgba(255, 220, 180, 0.08),
+    inset -1px 0 0 rgba(0, 0, 0, 0.2),
+    0 8px 20px rgba(30, 15, 5, 0.45) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+/* Nested surfaces are recesses carved into the board. */
+[style*="--uc-design-surface"] {
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45), inset 0 -1px 0 rgba(255, 220, 180, 0.12);
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   GLASS_THEME,
@@ -992,5 +1109,6 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   BEACH_THEME,
   VAPOR_THEME,
   GUMMY_THEME,
+  WOOD_THEME,
   GREEN_TERMINAL_THEME,
 ];
