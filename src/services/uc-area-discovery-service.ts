@@ -99,7 +99,7 @@ function domainOf(entityId: string): string {
   return entityId.includes('.') ? entityId.split('.')[0] : '';
 }
 
-function inferRole(entityId: string, hass: HomeAssistant): RoomEntityRole {
+export function inferRole(entityId: string, hass: HomeAssistant): RoomEntityRole {
   const st = hass.states[entityId];
   const attrs = (st?.attributes || {}) as Record<string, unknown>;
   const deviceClass = String(attrs.device_class || '');

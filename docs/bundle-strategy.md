@@ -56,6 +56,13 @@
   - **`uc-default-image.*`:** the 180 KB base64 default image, fetched only when
     an image module is on "default" (`src/utils/default-image.ts`, rendered via
     lit `until`).
+  - **`uc-strategy.*` (beta4):** the Ultra Dashboard strategy generator and its
+    config editor (~26 KB). Only the element shim is in the entry
+    (`src/strategy/ultra-dashboard-strategy.ts`): HA resolves
+    `ll-strategy-dashboard-ultra-dashboard` by tag name as soon as a dashboard
+    using it opens, so the tag must exist at resource load; its static
+    `generate()` / `getConfigElement()` import the chunk. See
+    `docs/ultra-dashboard.md`.
   - The editor (`uc-editor.*`, ~1.9 MB), one chunk per non-English locale,
     the Dynamic Weather worker, and Hub panel tabs, as in Phase 1.
   - **Module settings tabs live in the editor chunk (beta2).** `src/tabs/` keeps

@@ -13,6 +13,7 @@ import {
   UC_ULTRA_CARD_HASS_READY,
   runUltraCardVersionBanner,
 } from './utils/uc-pro-banner';
+import { registerUltraDashboardStrategy } from './strategy/ultra-dashboard-strategy';
 
 // The English dictionary is its own chunk; start it now so it is in memory
 // before the first card renders (call sites carry the same text as fallbacks).
@@ -53,3 +54,6 @@ window.customCards.push({
   documentationURL: 'https://github.com/WJDDesigns/Ultra-Card',
   version: VERSION,
 } as CustomCard);
+
+// "Ultra Dashboard" in the new-dashboard dialog (Community dashboards, HA 2026.5+).
+registerUltraDashboardStrategy();

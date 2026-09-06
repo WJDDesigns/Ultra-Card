@@ -132,6 +132,8 @@ if (!singleFile) {
     'uc-default-image.',
     'uc-core-settings.',
     'uc-locale-en.',
+    // Ultra Dashboard strategy: only the element shim lives in the entry.
+    'uc-strategy.',
   ]) {
     if (!chunks.some(c => c.startsWith(prefix))) {
       errors.push(
@@ -147,7 +149,14 @@ if (!singleFile) {
     errors.push('ultra-card.js contains the English dictionary (uc-locale-en folded back in).');
   }
   if (entrySource.includes('bar-side-actions')) {
-    errors.push('ultra-card.js contains core module settings UI (uc-core-settings folded back in).');
+    errors.push(
+      'ultra-card.js contains core module settings UI (uc-core-settings folded back in).'
+    );
+  }
+  if (entrySource.includes('Home overview page')) {
+    errors.push(
+      'ultra-card.js contains the dashboard strategy editor (uc-strategy folded back in).'
+    );
   }
   const moduleChunks = chunks.filter(c => c.startsWith('uc-m-')).length;
   notes.push(`module chunks (uc-m-*): ${moduleChunks}`);

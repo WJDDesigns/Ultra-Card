@@ -19,6 +19,8 @@ https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 
 **Visual editor** - Every setting lives in the UI. No YAML required.
 
+**Ultra Dashboard** - A complete dashboard from your areas in one click (Settings → Dashboards → Add dashboard → Community dashboards). Pick a style, take control, and every card opens in the visual editor. [Read more](docs/ultra-dashboard.md).
+
 **94 modules** - Layouts, gauges, graphs, controls, media, and more. Drag-and-drop columns with nesting so you can build the layout you want.
 
 **Template Mode** - Jinja2 templates that change how a module looks as your entities change. Free for everyone.
