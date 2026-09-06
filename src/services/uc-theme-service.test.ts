@@ -195,10 +195,10 @@ describe('built-ins', () => {
     const vars = ucThemeService.getHostVars(LIQUID_GLASS_THEME);
     expect(vars['--uc-radius']).toBe('32px');
     expect(vars['--uc-radius-sm']).toBe('22px');
-    expect(vars['--uc-surface-backdrop']).toContain('blur(28px)');
+    expect(vars['--uc-surface-backdrop']).toContain('blur(10px)');
     expect(vars['--uc-shadow']).toContain('inset 0 1px 0');
     expect(vars['--primary-text-color']).toBe('#10224d');
-    expect(vars['--card-background-color']).toMatch(/rgba\(255, 255, 255, 0\.1/);
+    expect(vars['--card-background-color']).toBe('rgba(255, 255, 255, 0.08)');
     // Inline lens artwork sized to cover, over the sky gradient.
     expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/^url\("data:image\/svg\+xml,[^"]+"\) center \/ 100% 100% no-repeat fixed, /);
     expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/linear-gradient\(180deg/);
@@ -207,7 +207,7 @@ describe('built-ins', () => {
     // Chromium-only refraction: an inline SVG displacement filter as backdrop-filter,
     // gated so other engines keep the plain blur.
     expect(LIQUID_GLASS_THEME.css).toMatch(
-      /@supports \(-webkit-app-region: no-drag\)[\s\S]*backdrop-filter: saturate\(180%\) brightness\(1\.04\) url\("data:image\/svg\+xml,[^"]*#card"\)/
+      /@supports \(-webkit-app-region: no-drag\)[\s\S]*backdrop-filter: saturate\(150%\) url\("data:image\/svg\+xml,[^"]*#card"\)/
     );
     const decoded = decodeURIComponent(/url\("data:image\/svg\+xml,([^"#]*)#card"\)/.exec(LIQUID_GLASS_THEME.css!)![1]);
     expect(decoded).toContain('<feDisplacementMap');

@@ -328,7 +328,7 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
 // as in iOS light mode; the glass itself stays white and clear.
 const LG_INK = '#10224d';
 const LG_INK_SOFT = 'rgba(16, 34, 77, 0.7)';
-const LG_TINT = 'rgba(255, 255, 255, 0.16)';
+const LG_TINT = 'rgba(255, 255, 255, 0.08)';
 const LG_PRIMARY = '#1b5fd6'; // white on it 5.7:1
 const LG_ACCENT = '#3d8bff';
 const LG_SHADOW_TINT = '30, 60, 140';
@@ -384,7 +384,7 @@ const LG_RIM =
   'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.4) 84%, rgba(255, 255, 255, 0.85) 100%)';
 const LG_RIM_MASK = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
 const LG_SHADOW = `0 14px 36px rgba(${LG_SHADOW_TINT}, 0.22), 0 2px 6px rgba(${LG_SHADOW_TINT}, 0.12)`;
-const LG_INNER = 'inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.12), inset 0 0 20px rgba(255, 255, 255, 0.06)';
+const LG_INNER = 'inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.14), inset 0 0 18px rgba(255, 255, 255, 0.05)';
 const LG_PANE_SHADOW =
   `inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(${LG_SHADOW_TINT}, 0.12)`;
 
@@ -450,7 +450,7 @@ function lgRefractionFilter(id: string, bezel: number, frost: number, scale: num
   <feDisplacementMap in="glass" in2="map" scale="${scale}" xChannelSelector="R" yChannelSelector="G"/>
 </filter>`;
 }
-const LG_FILTERS = `<svg xmlns="http://www.w3.org/2000/svg">${lgRefractionFilter('card', 26, 9, 40)}${lgRefractionFilter('pane', 12, 4, 20)}</svg>`;
+const LG_FILTERS = `<svg xmlns="http://www.w3.org/2000/svg">${lgRefractionFilter('card', 26, 5, 40)}${lgRefractionFilter('pane', 12, 3, 20)}</svg>`;
 const LG_REFRACT_CARD = svgFilterUrl(LG_FILTERS, 'card');
 const LG_REFRACT_PANE = svgFilterUrl(LG_FILTERS, 'pane');
 
@@ -467,7 +467,7 @@ const LG_REFRACT_PANE = svgFilterUrl(LG_FILTERS, 'pane');
 export const LIQUID_GLASS_THEME: UcThemeDefinition = {
   id: 'liquid_glass',
   name: 'Liquid Glass',
-  version: 4,
+  version: 5,
   author: 'Ultra Card',
   description:
     'Apple Liquid Glass: clear glass over a pale blue-to-pink wallpaper that bends what is behind it at the edge. Blur, refraction, rim light, capsule controls.',
@@ -477,12 +477,12 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
     surface: 'glass',
     radius: 32,
     radius_sm: 22,
-    blur: 28,
+    blur: 10,
     border_width: 0,
     border_color: 'transparent',
     shadow: `${LG_INNER}, ${LG_SHADOW}`,
     page_background: LG_WALLPAPER,
-    pane_background: 'rgba(255, 255, 255, 0.18)',
+    pane_background: 'rgba(255, 255, 255, 0.1)',
     pane_border: 'none',
     pane_shadow: LG_PANE_SHADOW,
     density: 'comfortable',
@@ -524,21 +524,22 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
 .card-container {
   position: relative;
   isolation: isolate;
-  --secondary-background-color: rgba(255, 255, 255, 0.18);
-  --primary-background-color: rgba(255, 255, 255, 0.1);
-  --input-fill-color: rgba(255, 255, 255, 0.18);
-  --mdc-select-fill-color: rgba(255, 255, 255, 0.18);
-  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.18);
+  --secondary-background-color: rgba(255, 255, 255, 0.1);
+  --primary-background-color: rgba(255, 255, 255, 0.06);
+  --input-fill-color: rgba(255, 255, 255, 0.1);
+  --mdc-select-fill-color: rgba(255, 255, 255, 0.1);
+  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.1);
   --rgb-card-background-color: 255, 255, 255;
   --rgb-primary-text-color: 16, 34, 77;
   color: ${LG_INK};
   background-color: ${LG_TINT} !important;
   /* Specular top-left, a fainter lens light bottom-right, the rest clear. */
   background-image:
-    radial-gradient(120% 70% at 8% 0%, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0) 48%),
-    radial-gradient(80% 50% at 96% 100%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%) !important;
-  backdrop-filter: blur(var(--uc-blur, 28px)) saturate(190%) brightness(1.06);
-  -webkit-backdrop-filter: blur(var(--uc-blur, 28px)) saturate(190%) brightness(1.06);
+    radial-gradient(120% 70% at 8% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 48%),
+    radial-gradient(80% 50% at 96% 100%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 55%) !important;
+  /* See-through: a moderate blur keeps the wallpaper's shapes legible through the pane. */
+  backdrop-filter: blur(var(--uc-blur, 10px)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--uc-blur, 10px)) saturate(150%);
   border: none !important;
   box-shadow: ${LG_INNER}, ${LG_SHADOW} !important;
 }
@@ -546,12 +547,12 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
    backdrop at the bezel. Other engines keep the blur above. */
 @supports (-webkit-app-region: no-drag) {
   .card-container {
-    backdrop-filter: saturate(180%) brightness(1.04) ${LG_REFRACT_CARD};
-    -webkit-backdrop-filter: saturate(180%) brightness(1.04) ${LG_REFRACT_CARD};
+    backdrop-filter: saturate(150%) ${LG_REFRACT_CARD};
+    -webkit-backdrop-filter: saturate(150%) ${LG_REFRACT_CARD};
   }
   [style*="--uc-design-surface"] {
-    backdrop-filter: saturate(150%) ${LG_REFRACT_PANE};
-    -webkit-backdrop-filter: saturate(150%) ${LG_REFRACT_PANE};
+    backdrop-filter: saturate(130%) ${LG_REFRACT_PANE};
+    -webkit-backdrop-filter: saturate(130%) ${LG_REFRACT_PANE};
   }
 }
 /* The refraction rim: a 1.5px ring painted with the lensing gradient,
@@ -572,12 +573,12 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
 }
 /* Nested surfaces are smaller lenses of the same glass. */
 [style*="--uc-design-surface"] {
-  background-color: rgba(255, 255, 255, 0.18);
-  background-image: radial-gradient(120% 80% at 10% 0%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 50%);
+  background-color: rgba(255, 255, 255, 0.1);
+  background-image: radial-gradient(120% 80% at 10% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 50%);
   border: none;
   box-shadow: ${LG_PANE_SHADOW};
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(6px) saturate(130%);
+  -webkit-backdrop-filter: blur(6px) saturate(130%);
 }
 /* Hairlines are ink at low opacity, never solid. */
 .card-container hr,
