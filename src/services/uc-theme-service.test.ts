@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { UC_THEME_BASE_CSS, ucThemeService } from './uc-theme-service';
-import { GLASS_THEME, GREEN_TERMINAL_THEME, MONOCHROME_THEME } from '../themes/builtin-themes';
+import {
+  BUILTIN_THEMES,
+  GLASS_THEME,
+  GREEN_TERMINAL_THEME,
+  LIQUID_GLASS_THEME,
+  MONOCHROME_THEME,
+} from '../themes/builtin-themes';
 import { UC_THEME_HA_NATIVE, UC_THEME_NONE } from '../themes/uc-theme-types';
 import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
 import type { UltraCardConfig } from '../types';
@@ -44,6 +50,29 @@ describe('resolution order', () => {
     expect(ucThemeService.resolveModuleStyle(glass, 'button', 'entity', undefined, 'x')).toBe('x');
     // no theme → fallback
     expect(ucThemeService.resolveModuleStyle(cfg(), 'button', 'style', undefined, 'flat')).toBe('flat');
+  });
+});
+
+describe('built-ins', () => {
+  it('every built-in survives the sanitiser without losing anything', () => {
+    for (const builtin of BUILTIN_THEMES) {
+      const { theme, warnings } = sanitizeThemeDefinition(builtin);
+      expect(warnings, builtin.id).toEqual([]);
+      expect(theme?.id).toBe(builtin.id);
+      expect(theme?.tokens).toEqual(builtin.tokens);
+      expect(theme?.css ?? undefined).toBe(builtin.css ?? undefined);
+      expect(theme?.card ?? undefined).toEqual(builtin.card ?? undefined);
+      expect(theme?.modules ?? undefined).toEqual(builtin.modules ?? undefined);
+    }
+  });
+
+  it('liquid glass exposes a deep blur and specular rim', () => {
+    const vars = ucThemeService.getHostVars(LIQUID_GLASS_THEME);
+    expect(vars['--uc-radius']).toBe('28px');
+    expect(vars['--uc-radius-sm']).toBe('18px');
+    expect(vars['--uc-surface-backdrop']).toContain('blur(24px)');
+    expect(vars['--uc-shadow']).toContain('inset 0 1px 0');
+    expect(LIQUID_GLASS_THEME.css).toContain('backdrop-filter');
   });
 });
 

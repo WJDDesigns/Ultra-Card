@@ -367,6 +367,81 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+/**
+ * Apple's Liquid Glass (iOS 26): a thick, refractive pane rather than a
+ * frosted sheet. Deep blur with lifted saturation, big concentric corners,
+ * a bright specular rim along the top edge, a faint inner glow and a soft,
+ * wide shadow. Tint is a translucent version of the HA card colour, so it
+ * adapts to light and dark themes; the rim stays white in both.
+ */
+export const LIQUID_GLASS_THEME: UcThemeDefinition = {
+  id: 'liquid_glass',
+  name: 'Liquid Glass',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'Apple-style refractive glass. Deep blur, big continuous corners, a specular highlight along the edge and a soft floating shadow. Best over a wallpaper.',
+  icon: 'mdi:water-opacity',
+  source: 'builtin',
+  tokens: {
+    surface: 'glass',
+    radius: 28,
+    radius_sm: 18,
+    blur: 24,
+    border_width: 1,
+    border_color: 'rgba(255, 255, 255, 0.28)',
+    shadow: '0 12px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.08)',
+    density: 'comfortable',
+    font_family:
+      "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Inter, system-ui, sans-serif",
+  },
+  card: {
+    card_background: 'rgba(var(--rgb-card-background-color, 255, 255, 255), 0.42)',
+    card_border_radius: 28,
+    card_border_color: 'rgba(255, 255, 255, 0.28)',
+    card_border_width: 1,
+    card_padding: 18,
+    // Shadow is left to the css below (drop + specular rim in one box-shadow);
+    // the swatch previews it through the `shadow` token.
+  },
+  modules: {
+    button: { style: 'glass' },
+    bar: { bar_style: 'glass', glass_blur_amount: 14 },
+    slider_control: { slider_style: 'glass', glass_blur_amount: 14 },
+    spinbox: { button_style: 'glass', button_shape: 'circle' },
+    popup: { trigger_button_style: 'glass' },
+    grid: { grid_style: 'style_16' },
+    navigation: { nav_style: 'uc_ios_glass' },
+    area_summary: { style_preset: 'graph_glow', tile_border_radius: 18 },
+    auto_entity_list: { row_style: 'slim' },
+    unifi: { rack_style: 'glass' },
+    activity_feed: { feed_card_style: 'flat' },
+    tabs: { style: 'switch_2' },
+  },
+  css: `
+.card-container {
+  backdrop-filter: blur(var(--uc-blur, 24px)) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(var(--uc-blur, 24px)) saturate(180%) brightness(1.04);
+  /* Specular rim on the top edge, faint inner glow, soft floating shadow. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 1px 0 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 24px rgba(255, 255, 255, 0.05),
+    0 12px 40px rgba(0, 0, 0, 0.22),
+    0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  /* Gloss: a diagonal sheen over the tint, the way light sits on curved glass. */
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.06) 38%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   CLASSIC_THEME,
@@ -375,5 +450,6 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   BOLD_THEME,
   MONOCHROME_THEME,
   MATERIAL_THEME,
+  LIQUID_GLASS_THEME,
   GREEN_TERMINAL_THEME,
 ];
