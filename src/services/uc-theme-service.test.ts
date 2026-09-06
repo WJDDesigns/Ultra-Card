@@ -402,10 +402,10 @@ describe('sanitizeThemeDefinition', () => {
     expect(scanThemeCss(`.a { background: ${leak} }`).ok).toBe(false);
   });
 
-  it('beach and metallic ship artwork that survives the sanitiser', () => {
+  it('beach artwork and the metallic recess pseudo-element survive the sanitiser', () => {
     expect(BEACH_THEME.css).toContain('data:image/svg+xml');
     expect(sanitizeThemeDefinition(BEACH_THEME).theme?.css).toBe(BEACH_THEME.css);
-    expect(METALLIC_THEME.css).toContain('data:image/svg+xml'); // brushing + corner screws
+    expect(METALLIC_THEME.css).toContain('.card-container::before'); // the recessed panel
     expect(sanitizeThemeDefinition(GUMMY_THEME).theme?.css).toBe(GUMMY_THEME.css);
     expect(sanitizeThemeDefinition(METALLIC_THEME).theme?.css).toBe(METALLIC_THEME.css);
   });

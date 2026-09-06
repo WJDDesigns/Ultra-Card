@@ -560,122 +560,83 @@ export const MOOSE_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-// Metallic: a brushed steel plate, screwed to the wall.
-const METAL_PLATE = '#c0c6cd'; // mid steel (palette base; the sheen runs #8f98a2..#f4f6f8)
-const METAL_INK = '#161a20'; // etched graphite text (7.3:1 on the darkest stop)
-const METAL_INK_SOFT = '#3a414a'; // secondary (4.6:1 on the darkest stop)
-const METAL_GUNMETAL = '#3a434f'; // primary (white on it 10:1)
-const METAL_BLUED = '#35516f'; // blued-steel accent
-const METAL_EDGE = '#5f6870'; // machined edge
-/**
- * Anisotropic brushing: three layers of fractal noise stretched hard along
- * X (very low X frequency, high Y frequency) give long fine streaks: bright
- * scratches, dark scratches, and a few broad soft score marks. Tiles seamlessly.
- */
-const METAL_BRUSH = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' width='480' height='160'>
-  <defs>
-    <filter id='hi' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.004 0.9' numOctaves='3' seed='3' stitchTiles='stitch'/>
-      <feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.6 0 0 0 -0.7'/>
-    </filter>
-    <filter id='lo' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.006 0.8' numOctaves='3' seed='9' stitchTiles='stitch'/>
-      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0.02  1.5 0 0 0 -0.76'/>
-    </filter>
-    <filter id='scr' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.002 0.35' numOctaves='2' seed='21' stitchTiles='stitch'/>
-      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.2 0 0 0 -0.72'/>
-    </filter>
-  </defs>
-  <rect width='480' height='160' filter='url(#hi)'/>
-  <rect width='480' height='160' filter='url(#lo)'/>
-  <rect width='480' height='160' filter='url(#scr)'/>
-</svg>`);
-/** A countersunk slotted screw head: domed radial shading, dark well, slot with a light catch. */
-const METAL_SCREW = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'>
-  <defs>
-    <radialGradient id='h' cx='38%' cy='34%' r='70%'>
-      <stop offset='0' stop-color='#f6f8fa'/><stop offset='.45' stop-color='#b9c0c8'/><stop offset='.8' stop-color='#6f777f'/><stop offset='1' stop-color='#3b424a'/>
-    </radialGradient>
-    <radialGradient id='w' cx='50%' cy='50%' r='50%'>
-      <stop offset='.82' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.45'/>
-    </radialGradient>
-  </defs>
-  <circle cx='10' cy='10' r='9.5' fill='url(#w)'/>
-  <circle cx='10' cy='10' r='8' fill='url(#h)' stroke='#2b3138' stroke-width='.6'/>
-  <g stroke-linecap='round' fill='none'>
-    <path d='M5.6 5.6 L14.4 14.4' stroke='#e9edf1' stroke-width='2' transform='translate(.5 .5)'/>
-    <path d='M5.6 5.6 L14.4 14.4' stroke='#2a3038' stroke-width='2'/>
-  </g>
-</svg>`);
-/** The reflection: alternating hot and dark bands, as a curved sheet of steel shows under a strip light. */
-const METAL_SHEEN =
-  'linear-gradient(118deg, #f3f5f7 0%, #d5dae0 9%, #a5adb6 22%, #8f98a2 29%, #d9dee3 41%, #f4f6f8 47%, #c3cad1 58%, #98a1ab 70%, #cdd3d9 83%, #edf0f3 91%, #a7afb8 100%)';
-/** Bright catch top-left, shadow bottom-right, then a 1px chamfer ring 3px in. */
-const METAL_BEVEL =
-  'inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.55), inset -1px 0 0 rgba(0, 0, 0, 0.32), inset 0 0 0 3px rgba(255, 255, 255, 0.16), inset 0 0 0 4px rgba(0, 0, 0, 0.14)';
-const METAL_DROP = '0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 22px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.5)';
+// Metallic: a polished chrome bezel around a deep black recessed panel, the
+// way a skeuomorphic switch plate is built. Content sits in the recess.
+const METAL_PANEL = '#1e2226'; // the recess: palette base (content sits here)
+const METAL_INK = '#eef1f4'; // 14:1 on the panel
+const METAL_INK_SOFT = '#aeb6bf'; // 7.6:1 on the panel
+const METAL_CHROME = '#cfd4da'; // primary: chrome knobs and buttons
+const METAL_ON_CHROME = '#14171a'; // 12:1 on chrome
+const METAL_STEEL_BLUE = '#8fb3d9'; // accent: cool steel, 7.4:1 on the panel
+const METAL_BEZEL = '#c9ced4'; // bezel base
+const METAL_EDGE = '#7f8790'; // bezel edge
+/** Polished bezel: a vertical light-to-dark-to-light sweep with two soft horizontal reflections. */
+const METAL_BEZEL_SHEEN =
+  'linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0.06) 62%, rgba(255, 255, 255, 0.28) 86%, rgba(255, 255, 255, 0) 100%), linear-gradient(180deg, #f7f9fb 0%, #cfd5db 14%, #a9b1b9 50%, #bfc6cd 80%, #eef1f4 100%)';
+const METAL_BEZEL_SHADOW =
+  'inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.45)';
+const METAL_BEZEL_WIDTH = 12;
 
 /**
- * "Metallic": a brushed steel plate screwed to the wall. Real anisotropic
- * brushing (procedural noise stretched along the plate), a banded specular
- * sheen across it, a chamfered edge with a light catch top-left and shadow
- * bottom-right, and a slotted screw in each corner. Text is etched (dark
- * with a light catch below), controls are gunmetal, the accent blued steel.
- * Nested surfaces are recesses milled into the plate.
+ * "Metallic": a polished chrome bezel around a deep black recessed panel,
+ * like a skeuomorphic switch plate. The card itself is the bezel (vertical
+ * polish sweep, bright top lip, dark bottom lip); a pseudo-element paints
+ * the recess inset by the bezel width, with a heavy inner shadow at its top
+ * edge and a light lip below it. Content lives in the recess on light text.
+ * Controls are chrome with dark type, nested surfaces are deeper wells in
+ * the panel, the accent is cool steel. Pill radii throughout.
  */
 export const METALLIC_THEME: UcThemeDefinition = {
   id: 'metallic',
   name: 'Metallic',
-  version: 2,
+  version: 3,
   author: 'Ultra Card',
   description:
-    'A brushed steel plate screwed to the wall: real brushing, banded sheen, chamfered edge and corner screws. Etched text, gunmetal controls, blued-steel accents.',
+    'A polished chrome bezel around a deep black recessed panel, like a real switch plate. Chrome controls with dark type, cool steel accents.',
   icon: 'mdi:anvil',
   source: 'builtin',
   tokens: {
     surface: 'glossy',
-    radius: 8,
-    radius_sm: 6,
+    radius: 28,
+    radius_sm: 16,
     border_width: 1,
     border_color: METAL_EDGE,
-    shadow: `${METAL_BEVEL}, ${METAL_DROP}`,
+    shadow: METAL_BEZEL_SHADOW,
     density: 'regular',
-    accent: METAL_BLUED,
+    accent: METAL_STEEL_BLUE,
     font_family: "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
     palette: {
-      primary: METAL_GUNMETAL,
-      accent: METAL_BLUED,
-      card_bg: METAL_PLATE,
+      primary: METAL_CHROME,
+      on_primary: METAL_ON_CHROME,
+      accent: METAL_STEEL_BLUE,
+      card_bg: METAL_PANEL,
       text: METAL_INK,
       text_secondary: METAL_INK_SOFT,
-      divider: 'rgba(22, 26, 32, 0.25)',
+      divider: 'rgba(255, 255, 255, 0.12)',
     },
   },
   card: {
-    card_background: METAL_PLATE,
-    card_border_radius: 8,
+    card_background: METAL_PANEL,
+    card_border_radius: 28,
     card_border_color: METAL_EDGE,
     card_border_width: 1,
-    card_padding: 18,
+    card_padding: METAL_BEZEL_WIDTH + 14,
     card_shadow_enabled: true,
-    card_shadow_color: 'rgba(0, 0, 0, 0.45)',
+    card_shadow_color: 'rgba(0, 0, 0, 0.4)',
     card_shadow_horizontal: 0,
-    card_shadow_vertical: 10,
-    card_shadow_blur: 22,
+    card_shadow_vertical: 12,
+    card_shadow_blur: 28,
     card_shadow_spread: 0,
   },
   modules: {
     button: { style: 'metallic' },
     bar: { bar_style: 'metallic' },
     slider_control: { slider_style: 'metallic' },
-    spinbox: { button_style: 'metallic', button_shape: 'square' },
+    spinbox: { button_style: 'metallic', button_shape: 'circle' },
     popup: { trigger_button_style: 'metallic' },
     grid: { grid_style: 'style_12' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'compact_controls', accent_color: METAL_BLUED, tile_border_radius: 6 },
+    area_summary: { style_preset: 'compact_controls', accent_color: METAL_STEEL_BLUE, tile_border_radius: 14 },
     auto_entity_list: { row_style: 'detailed' },
     unifi: { rack_style: 'dark' },
     activity_feed: { feed_card_style: 'outlined' },
@@ -683,25 +644,39 @@ export const METALLIC_THEME: UcThemeDefinition = {
   },
   css: `
 .card-container {
-  background-color: ${METAL_PLATE} !important;
-  /* Layers, top to bottom: four corner screws, the brushing, the banded sheen. */
-  background-image:
-    ${METAL_SCREW}, ${METAL_SCREW}, ${METAL_SCREW}, ${METAL_SCREW},
-    ${METAL_BRUSH},
-    ${METAL_SHEEN} !important;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
-  background-size: 14px 14px, 14px 14px, 14px 14px, 14px 14px, 480px 160px, 100% 100% !important;
-  background-position: left 7px top 7px, right 7px top 7px, left 7px bottom 7px, right 7px bottom 7px, 0 0, 0 0 !important;
+  position: relative;
+  isolation: isolate;
+  /* The bezel. */
+  background-color: ${METAL_BEZEL} !important;
+  background-image: ${METAL_BEZEL_SHEEN} !important;
   border: 1px solid ${METAL_EDGE} !important;
-  box-shadow: ${METAL_BEVEL}, ${METAL_DROP} !important;
-  /* Etched: dark ink with the light catching the lower edge of each stroke. */
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: ${METAL_BEZEL_SHADOW} !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
   letter-spacing: 0.02em;
 }
-/* Nested surfaces read as recesses milled into the plate. */
+/* The recess: inset by the bezel width, concentric with the bezel's corner. */
+.card-container::before {
+  content: '';
+  position: absolute;
+  inset: ${METAL_BEZEL_WIDTH}px;
+  z-index: -1;
+  border-radius: calc(var(--uc-radius, 28px) - ${METAL_BEZEL_WIDTH}px);
+  pointer-events: none;
+  background-color: ${METAL_PANEL};
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 30%),
+    linear-gradient(180deg, #15181b 0%, #21252a 45%, #2a2f35 100%);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(0, 0, 0, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+/* Nested surfaces are deeper wells sunk into the panel. */
 [style*="--uc-design-surface"] {
-  background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.10), rgba(0, 0, 0, 0.04));
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(255, 255, 255, 0.7), 0 1px 0 rgba(255, 255, 255, 0.5);
+  background-image: linear-gradient(180deg, #14171a, #1c2024);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 `.trim(),
 };
