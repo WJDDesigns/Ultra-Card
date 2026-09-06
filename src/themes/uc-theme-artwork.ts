@@ -8,7 +8,20 @@
  * confuse a CSS string or the sanitiser's matcher percent-encoded.
  */
 export function svgDataUrl(svg: string): string {
+  return `url("${svgDataUri(svg)}")`;
+}
+
+/**
+ * `url("data:image/svg+xml,…#id")`: a reference to a `<filter id>` inside an
+ * inline SVG, for `filter` / `backdrop-filter`. Same encoding and the same
+ * sanitiser allowance as artwork; the fragment stays literal.
+ */
+export function svgFilterUrl(svg: string, id: string): string {
+  return `url("${svgDataUri(svg)}#${id}")`;
+}
+
+function svgDataUri(svg: string): string {
   const compact = svg.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
   const encoded = compact.replace(/[%<>#"'(){}\[\]\\]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`);
-  return `url("data:image/svg+xml,${encoded}")`;
+  return `data:image/svg+xml,${encoded}`;
 }

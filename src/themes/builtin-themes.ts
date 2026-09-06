@@ -1,6 +1,6 @@
 import type { UcThemeDefinition } from './uc-theme-types';
 import { UC_THEME_HA_NATIVE } from './uc-theme-types';
-import { svgDataUrl } from './uc-theme-artwork';
+import { svgDataUrl, svgFilterUrl } from './uc-theme-artwork';
 
 /**
  * Built-in themes. The first group (Glass / Bold / Monochrome / Material)
@@ -336,8 +336,9 @@ const LG_WALLPAPER = [
   'radial-gradient(60% 50% at 85% 10%, rgba(6, 24, 74, 0.9) 0%, rgba(6, 24, 74, 0) 70%)',
   'linear-gradient(165deg, #0a2a72 0%, #1a5fd6 48%, #3b8ff0 62%, #0b2564 100%)',
 ].join(', ');
-// The lensing edge: bright where the rim bends light toward the viewer
-// (top-left and bottom-right), nearly clear along the sides.
+// The specular: a rim light whose intensity follows the angle between the
+// edge normal and a fixed light (top-left), so it is bright at the corners
+// that face the light, nearly clear along the sides.
 const LG_RIM =
   'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.4) 84%, rgba(255, 255, 255, 0.85) 100%)';
 const LG_RIM_MASK = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
@@ -347,21 +348,87 @@ const LG_PANE_SHADOW =
   'inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(4, 18, 60, 0.18)';
 
 /**
+ * Refraction as a backdrop filter (after kube.io, "Liquid Glass in the
+ * Browser"): the backdrop is pushed through an SVG displacement map so the
+ * bezel bends what is behind it toward the centre, the way a convex glass
+ * edge does.
+ *
+ * The map is not a pre-rendered image (cards come in every size); it is
+ * built inside the filter from primitives, so it fits any box. The filter
+ * region is exactly the element (bounding-box fractions; percentages would
+ * resolve against the viewport for HTML elements), so floods default to the
+ * element box. Four edge bands of bezel width push the red (x) or green (y)
+ * channel to 1 or 0 (offset the box by the bezel, keep the band colour only
+ * where the offset box is not), each pair is blurred into a convex falloff,
+ * alpha is forced opaque (the arithmetic composite works on premultiplied
+ * colour and would otherwise corrupt the neutral channel at the edges), and
+ * R is taken from the x map, G from the y map. 0.5 is rest; `scale` px is
+ * the swing at full deflection.
+ *
+ * The frost is progressive, as on Apple's panels: the interior is blurred by
+ * `frost`, the bezel stays near-sharp so the bend reads. The heavy blur is
+ * masked to the inset box (the four offset boxes intersected, then blurred),
+ * which also hides its transparent edge fringe; the sharp layer underneath
+ * fills the rim. Displacement samples inward, so nothing is read from
+ * outside the element.
+ */
+function lgRefractionFilter(id: string, bezel: number, frost: number, scale: number): string {
+  const soft = Math.max(2, Math.round(bezel * 0.45));
+  const opaque = '1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1';
+  return `
+<filter id="${id}" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+  <feFlood flood-color="#808080" result="mid"/>
+  <feFlood flood-color="#ffffff" result="box"/>
+  <feFlood flood-color="#ff8080" result="cl"/>
+  <feFlood flood-color="#008080" result="cr"/>
+  <feFlood flood-color="#80ff80" result="ct"/>
+  <feFlood flood-color="#800080" result="cb"/>
+  <feOffset in="box" dx="${bezel}" dy="0" result="bxp"/>
+  <feOffset in="box" dx="-${bezel}" dy="0" result="bxm"/>
+  <feOffset in="box" dx="0" dy="${bezel}" result="byp"/>
+  <feOffset in="box" dx="0" dy="-${bezel}" result="bym"/>
+  <feComposite in="cl" in2="bxp" operator="out" result="l"/>
+  <feComposite in="cr" in2="bxm" operator="out" result="r"/>
+  <feComposite in="ct" in2="byp" operator="out" result="t"/>
+  <feComposite in="cb" in2="bym" operator="out" result="b"/>
+  <feMerge result="mx"><feMergeNode in="mid"/><feMergeNode in="l"/><feMergeNode in="r"/></feMerge>
+  <feGaussianBlur in="mx" stdDeviation="${soft}" result="mxs"/>
+  <feColorMatrix in="mxs" type="matrix" values="${opaque}" result="mxo"/>
+  <feMerge result="my"><feMergeNode in="mid"/><feMergeNode in="t"/><feMergeNode in="b"/></feMerge>
+  <feGaussianBlur in="my" stdDeviation="${soft}" result="mys"/>
+  <feColorMatrix in="mys" type="matrix" values="${opaque}" result="myo"/>
+  <feComposite in="mxo" in2="myo" operator="arithmetic" k1="0" k2="1" k3="1" k4="-0.5" result="map"/>
+  <feComposite in="bxp" in2="bxm" operator="in" result="ix"/>
+  <feComposite in="byp" in2="bym" operator="in" result="iy"/>
+  <feComposite in="ix" in2="iy" operator="in" result="inset"/>
+  <feGaussianBlur in="inset" stdDeviation="${soft}" result="interior"/>
+  <feGaussianBlur in="SourceGraphic" stdDeviation="${frost}" result="frost"/>
+  <feComposite in="frost" in2="interior" operator="in" result="frostIn"/>
+  <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="clear"/>
+  <feMerge result="glass"><feMergeNode in="clear"/><feMergeNode in="frostIn"/></feMerge>
+  <feDisplacementMap in="glass" in2="map" scale="${scale}" xChannelSelector="R" yChannelSelector="G"/>
+</filter>`;
+}
+const LG_FILTERS = `<svg xmlns="http://www.w3.org/2000/svg">${lgRefractionFilter('card', 26, 9, 40)}${lgRefractionFilter('pane', 12, 4, 20)}</svg>`;
+const LG_REFRACT_CARD = svgFilterUrl(LG_FILTERS, 'card');
+const LG_REFRACT_PANE = svgFilterUrl(LG_FILTERS, 'pane');
+
+/**
  * Apple's Liquid Glass (iOS 26): clear, thick glass that lenses whatever is
  * behind it. The theme brings its own wallpaper (the blue default), because
- * glass on a flat page is just paper. The pane is barely tinted with a deep
- * blur and lifted saturation, the edge is a refraction rim (bright at the
- * corners that catch light, clear along the sides) rather than a stroke, a
- * soft specular sits top-left, and type is white with vibrancy. Controls are
- * capsules of the same glass; the selected state is solid white.
+ * glass on a flat page is just paper. The backdrop is blurred and, in
+ * Chromium, refracted at the bezel by an SVG displacement filter; the edge
+ * is a rim light (bright at the corners facing the light, clear along the
+ * sides) rather than a stroke; a soft specular sits top-left; type is white
+ * with vibrancy. Controls are capsules of the same glass.
  */
 export const LIQUID_GLASS_THEME: UcThemeDefinition = {
   id: 'liquid_glass',
   name: 'Liquid Glass',
-  version: 2,
+  version: 3,
   author: 'Ultra Card',
   description:
-    'Apple Liquid Glass: clear lensing glass on the blue wallpaper. Deep blur, refraction rim, capsule controls and white vibrancy type.',
+    'Apple Liquid Glass: clear glass on the blue wallpaper that bends what is behind it at the edge. Blur, refraction, rim light, capsule controls and white vibrancy type.',
   icon: 'mdi:water-opacity',
   source: 'builtin',
   tokens: {
@@ -433,6 +500,18 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
   border: none !important;
   box-shadow: ${LG_INNER}, ${LG_SHADOW} !important;
   text-shadow: 0 1px 2px rgba(4, 18, 60, 0.25);
+}
+/* Chromium accepts an SVG filter as backdrop-filter: blur, then bend the
+   backdrop at the bezel. Other engines keep the blur above. */
+@supports (-webkit-app-region: no-drag) {
+  .card-container {
+    backdrop-filter: saturate(180%) brightness(1.04) ${LG_REFRACT_CARD};
+    -webkit-backdrop-filter: saturate(180%) brightness(1.04) ${LG_REFRACT_CARD};
+  }
+  [style*="--uc-design-surface"] {
+    backdrop-filter: saturate(150%) ${LG_REFRACT_PANE};
+    -webkit-backdrop-filter: saturate(150%) ${LG_REFRACT_PANE};
+  }
 }
 /* The refraction rim: a 1.5px ring painted with the lensing gradient,
    masked to the border zone so it is an edge, not a fill. */

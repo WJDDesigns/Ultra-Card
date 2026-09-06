@@ -202,6 +202,15 @@ describe('built-ins', () => {
     expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/gradient/);
     expect(LIQUID_GLASS_THEME.css).toContain('backdrop-filter');
     expect(LIQUID_GLASS_THEME.css).toMatch(/\.card-container::before[\s\S]*mask-composite: exclude/);
+    // Chromium-only refraction: an inline SVG displacement filter as backdrop-filter,
+    // gated so other engines keep the plain blur.
+    expect(LIQUID_GLASS_THEME.css).toMatch(
+      /@supports \(-webkit-app-region: no-drag\)[\s\S]*backdrop-filter: saturate\(180%\) brightness\(1\.04\) url\("data:image\/svg\+xml,[^"]*#card"\)/
+    );
+    const decoded = decodeURIComponent(/url\("data:image\/svg\+xml,([^"#]*)#card"\)/.exec(LIQUID_GLASS_THEME.css!)![1]);
+    expect(decoded).toContain('<feDisplacementMap');
+    expect(decoded).toMatch(/<filter id="card" x="0" y="0" width="1" height="1"/);
+    expect(decoded).toMatch(/<filter id="pane"/);
   });
 
   it('material themes paint the page in their own colour; adaptive ones leave it to HA', () => {
