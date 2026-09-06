@@ -322,80 +322,149 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+// Liquid Glass (iOS 26 / macOS Tahoe). The wallpaper is the default blue:
+// deep ultramarine with flowing azure light. Everything on it is clear glass
+// with white vibrancy type.
+const LG_INK = '#ffffff';
+const LG_INK_SOFT = 'rgba(255, 255, 255, 0.72)';
+const LG_TINT = 'rgba(255, 255, 255, 0.14)';
+const LG_ACCENT = '#8fd6ff'; // azure, lifted from the wallpaper highlights
+const LG_WALLPAPER = [
+  'radial-gradient(55% 40% at 22% 18%, rgba(140, 214, 255, 0.85) 0%, rgba(140, 214, 255, 0) 70%)',
+  'radial-gradient(45% 35% at 78% 72%, rgba(66, 150, 255, 0.8) 0%, rgba(66, 150, 255, 0) 70%)',
+  'radial-gradient(70% 30% at 50% 45%, rgba(20, 90, 220, 0.75) 0%, rgba(20, 90, 220, 0) 70%)',
+  'radial-gradient(60% 50% at 85% 10%, rgba(6, 24, 74, 0.9) 0%, rgba(6, 24, 74, 0) 70%)',
+  'linear-gradient(165deg, #0a2a72 0%, #1a5fd6 48%, #3b8ff0 62%, #0b2564 100%)',
+].join(', ');
+// The lensing edge: bright where the rim bends light toward the viewer
+// (top-left and bottom-right), nearly clear along the sides.
+const LG_RIM =
+  'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.4) 84%, rgba(255, 255, 255, 0.85) 100%)';
+const LG_RIM_MASK = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
+const LG_SHADOW = '0 14px 36px rgba(4, 18, 60, 0.35), 0 2px 6px rgba(4, 18, 60, 0.18)';
+const LG_INNER = 'inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.12), inset 0 0 20px rgba(255, 255, 255, 0.06)';
+const LG_PANE_SHADOW =
+  'inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(4, 18, 60, 0.18)';
+
 /**
- * Apple's Liquid Glass (iOS 26): a thick, refractive pane rather than a
- * frosted sheet. Deep blur with lifted saturation, big concentric corners,
- * a bright specular rim along the top edge, a faint inner glow and a soft,
- * wide shadow. Tint is a translucent version of the HA card colour, so it
- * adapts to light and dark themes; the rim stays white in both.
+ * Apple's Liquid Glass (iOS 26): clear, thick glass that lenses whatever is
+ * behind it. The theme brings its own wallpaper (the blue default), because
+ * glass on a flat page is just paper. The pane is barely tinted with a deep
+ * blur and lifted saturation, the edge is a refraction rim (bright at the
+ * corners that catch light, clear along the sides) rather than a stroke, a
+ * soft specular sits top-left, and type is white with vibrancy. Controls are
+ * capsules of the same glass; the selected state is solid white.
  */
 export const LIQUID_GLASS_THEME: UcThemeDefinition = {
   id: 'liquid_glass',
   name: 'Liquid Glass',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'Apple-style refractive glass. Deep blur, big continuous corners, a specular highlight along the edge and a soft floating shadow. Best over a wallpaper.',
+    'Apple Liquid Glass: clear lensing glass on the blue wallpaper. Deep blur, refraction rim, capsule controls and white vibrancy type.',
   icon: 'mdi:water-opacity',
   source: 'builtin',
   tokens: {
     surface: 'glass',
-    radius: 28,
-    radius_sm: 18,
-    blur: 24,
-    border_width: 1,
-    border_color: 'rgba(255, 255, 255, 0.28)',
-    shadow: '0 12px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.08)',
-    // A soft wallpaper for the glass to refract; flat pages make glass read as paper.
-    page_background:
-      'radial-gradient(at 18% 12%, rgba(125, 211, 252, 0.75) 0, transparent 50%), radial-gradient(at 82% 28%, rgba(196, 181, 253, 0.7) 0, transparent 55%), radial-gradient(at 55% 92%, rgba(251, 207, 232, 0.7) 0, transparent 50%), #e9eef9',
+    radius: 32,
+    radius_sm: 22,
+    blur: 28,
+    border_width: 0,
+    border_color: 'transparent',
+    shadow: `${LG_INNER}, ${LG_SHADOW}`,
+    page_background: LG_WALLPAPER,
+    pane_background: 'rgba(255, 255, 255, 0.10)',
+    pane_border: 'none',
+    pane_shadow: LG_PANE_SHADOW,
     density: 'comfortable',
+    accent: LG_ACCENT,
     font_family:
       "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Inter, system-ui, sans-serif",
+    palette: {
+      primary: LG_INK,
+      on_primary: '#0a2a72', // 11.8:1 on white
+      accent: LG_ACCENT,
+      card_bg: LG_TINT,
+      text: LG_INK,
+      text_secondary: LG_INK_SOFT,
+      divider: 'rgba(255, 255, 255, 0.18)',
+    },
   },
   card: {
-    card_background: 'rgba(var(--rgb-card-background-color, 255, 255, 255), 0.42)',
-    card_border_radius: 28,
-    card_border_color: 'rgba(255, 255, 255, 0.28)',
-    card_border_width: 1,
+    card_background: LG_TINT,
+    card_border_radius: 32,
+    card_border_color: 'transparent',
+    card_border_width: 0,
     card_padding: 18,
-    // Shadow is left to the css below (drop + specular rim in one box-shadow);
-    // the swatch previews it through the `shadow` token.
   },
   modules: {
     button: { style: 'glass' },
-    bar: { bar_style: 'glass', glass_blur_amount: 14 },
-    slider_control: { slider_style: 'glass', glass_blur_amount: 14 },
+    bar: { bar_style: 'glass', glass_blur_amount: 16 },
+    slider_control: { slider_style: 'glass', glass_blur_amount: 16 },
     spinbox: { button_style: 'glass', button_shape: 'circle' },
     popup: { trigger_button_style: 'glass' },
     grid: { grid_style: 'style_16' },
     navigation: { nav_style: 'uc_ios_glass' },
-    area_summary: { style_preset: 'graph_glow', tile_border_radius: 18 },
-    auto_entity_list: { row_style: 'slim' },
+    area_summary: { style_preset: 'graph_glow', accent_color: LG_ACCENT, tile_border_radius: 22 },
+    auto_entity_list: { row_style: 'card' },
     unifi: { rack_style: 'glass' },
     activity_feed: { feed_card_style: 'flat' },
     tabs: { style: 'switch_2' },
   },
   css: `
 .card-container {
-  backdrop-filter: blur(var(--uc-blur, 24px)) saturate(180%) brightness(1.04);
-  -webkit-backdrop-filter: blur(var(--uc-blur, 24px)) saturate(180%) brightness(1.04);
-  /* Specular rim on the top edge, faint inner glow, soft floating shadow. */
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    inset 1px 0 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 24px rgba(255, 255, 255, 0.05),
-    0 12px 40px rgba(0, 0, 0, 0.22),
-    0 2px 6px rgba(0, 0, 0, 0.08) !important;
-  /* Gloss: a diagonal sheen over the tint, the way light sits on curved glass. */
-  background-image: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    rgba(255, 255, 255, 0.06) 38%,
-    rgba(255, 255, 255, 0) 60%,
-    rgba(255, 255, 255, 0.08) 100%
-  ) !important;
+  position: relative;
+  isolation: isolate;
+  --secondary-background-color: rgba(255, 255, 255, 0.10);
+  --primary-background-color: rgba(255, 255, 255, 0.06);
+  --input-fill-color: rgba(255, 255, 255, 0.10);
+  --mdc-select-fill-color: rgba(255, 255, 255, 0.10);
+  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.10);
+  --rgb-card-background-color: 255, 255, 255;
+  --rgb-primary-text-color: 255, 255, 255;
+  color: ${LG_INK};
+  background-color: ${LG_TINT} !important;
+  /* Specular top-left, a fainter lens light bottom-right, the rest clear. */
+  background-image:
+    radial-gradient(120% 70% at 8% 0%, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0) 48%),
+    radial-gradient(80% 50% at 96% 100%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%) !important;
+  backdrop-filter: blur(var(--uc-blur, 28px)) saturate(190%) brightness(1.06);
+  -webkit-backdrop-filter: blur(var(--uc-blur, 28px)) saturate(190%) brightness(1.06);
+  border: none !important;
+  box-shadow: ${LG_INNER}, ${LG_SHADOW} !important;
+  text-shadow: 0 1px 2px rgba(4, 18, 60, 0.25);
+}
+/* The refraction rim: a 1.5px ring painted with the lensing gradient,
+   masked to the border zone so it is an edge, not a fill. */
+.card-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: ${LG_RIM};
+  -webkit-mask: ${LG_RIM_MASK};
+  -webkit-mask-composite: xor;
+  mask: ${LG_RIM_MASK};
+  mask-composite: exclude;
+}
+/* Nested surfaces are smaller lenses of the same glass. */
+[style*="--uc-design-surface"] {
+  background-color: rgba(255, 255, 255, 0.10);
+  background-image: radial-gradient(120% 80% at 10% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 50%);
+  border: none;
+  box-shadow: ${LG_PANE_SHADOW};
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+/* Hairlines are light, not dark. */
+.card-container hr,
+.card-container [class*="divider"],
+.card-container [class*="separator"] {
+  border-color: rgba(255, 255, 255, 0.18);
+  background-color: rgba(255, 255, 255, 0.18);
 }
 `.trim(),
 };

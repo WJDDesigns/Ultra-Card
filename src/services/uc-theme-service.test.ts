@@ -191,13 +191,17 @@ describe('built-ins', () => {
     }
   });
 
-  it('liquid glass exposes a deep blur and specular rim', () => {
+  it('liquid glass: clear tint, deep blur, lensing rim, white vibrancy type on its own wallpaper', () => {
     const vars = ucThemeService.getHostVars(LIQUID_GLASS_THEME);
-    expect(vars['--uc-radius']).toBe('28px');
-    expect(vars['--uc-radius-sm']).toBe('18px');
-    expect(vars['--uc-surface-backdrop']).toContain('blur(24px)');
+    expect(vars['--uc-radius']).toBe('32px');
+    expect(vars['--uc-radius-sm']).toBe('22px');
+    expect(vars['--uc-surface-backdrop']).toContain('blur(28px)');
     expect(vars['--uc-shadow']).toContain('inset 0 1px 0');
+    expect(vars['--primary-text-color']).toBe('#ffffff');
+    expect(vars['--card-background-color']).toMatch(/rgba\(255, 255, 255, 0\.1/);
+    expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/gradient/);
     expect(LIQUID_GLASS_THEME.css).toContain('backdrop-filter');
+    expect(LIQUID_GLASS_THEME.css).toMatch(/\.card-container::before[\s\S]*mask-composite: exclude/);
   });
 
   it('material themes paint the page in their own colour; adaptive ones leave it to HA', () => {
