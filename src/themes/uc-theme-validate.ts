@@ -22,7 +22,8 @@ const SOURCES: readonly UcThemeSource[] = ['builtin', 'official', 'community', '
 const PALETTE_KEYS = ['primary', 'accent', 'card_bg', 'text', 'text_secondary', 'divider', 'on_primary'] as const;
 
 export const UC_THEME_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
-export const UC_THEME_MAX_CSS_LENGTH = 20_000;
+/** Room for a few compact SVG data URIs (waves, grain, frames) on top of rules. */
+export const UC_THEME_MAX_CSS_LENGTH = 40_000;
 
 /** CSS constructs that can reach outside the card or the browser. */
 const CSS_FORBIDDEN = [
@@ -36,6 +37,16 @@ const CSS_FORBIDDEN = [
   /@font-face/i,
 ];
 
+/**
+ * Inline artwork a theme may ship: `url()` whose argument is an image data
+ * URI. SVG-as-image cannot run script or load external resources, so this
+ * never reaches the network; the payload is still checked for markup that
+ * only makes sense in a live document.
+ */
+const INLINE_IMAGE_URL =
+  /url\(\s*(["']?)data:image\/(?:svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"']*)\1\s*\)/gi;
+const SVG_PAYLOAD_FORBIDDEN = [/<\s*script/i, /\bon[a-z]+\s*=/i, /javascript:/i, /<\s*foreignObject/i, /(?:xlink:)?href\s*=\s*["']?\s*(?:https?:|\/\/)/i, /url\s*\(/i];
+
 export interface UcThemeCssScan {
   ok: boolean;
   reasons: string[];
@@ -45,8 +56,23 @@ export function scanThemeCss(css: string | undefined): UcThemeCssScan {
   if (!css) return { ok: true, reasons: [] };
   const reasons: string[] = [];
   if (css.length > UC_THEME_MAX_CSS_LENGTH) reasons.push(`css longer than ${UC_THEME_MAX_CSS_LENGTH} chars`);
+
+  // Lift inline artwork out before the forbidden scan so only other url() forms trip it.
+  const stripped = css.replace(INLINE_IMAGE_URL, (_m, _q, params: string, payload: string) => {
+    let decoded = payload;
+    try {
+      decoded = /;base64/i.test(params) ? atob(payload) : decodeURIComponent(payload);
+    } catch {
+      /* keep raw */
+    }
+    for (const re of SVG_PAYLOAD_FORBIDDEN) {
+      if (re.test(decoded)) reasons.push(`inline image contains forbidden pattern ${re.source}`);
+    }
+    return 'inline-image';
+  });
+
   for (const re of CSS_FORBIDDEN) {
-    if (re.test(css)) reasons.push(`css contains forbidden pattern ${re.source}`);
+    if (re.test(stripped)) reasons.push(`css contains forbidden pattern ${re.source}`);
   }
   return { ok: reasons.length === 0, reasons };
 }

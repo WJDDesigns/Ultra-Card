@@ -28,7 +28,7 @@ define('UC_THEME_POST_TYPE', 'ultra_theme');
 define('UC_THEME_TAG_TAXONOMY', 'uc_theme_tag');
 define('UC_THEME_META_DEFINITION', '_uc_theme_definition');
 define('UC_THEME_MAX_DEFINITION_BYTES', 64 * 1024);
-define('UC_THEME_MAX_CSS_CHARS', 20000);
+define('UC_THEME_MAX_CSS_CHARS', 40000);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -77,6 +77,29 @@ function uc_theme_css_problems($css) {
     if (strlen($css) > UC_THEME_MAX_CSS_CHARS) {
         $problems[] = 'css longer than ' . UC_THEME_MAX_CSS_CHARS . ' characters';
     }
+    // Inline image data URIs are allowed artwork (SVG-as-image cannot run
+    // script or fetch). Lift them out, check their payload, then scan the rest.
+    $inline_re = '/url\(\s*(["\']?)data:image\/(?:svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"\']*)\1\s*\)/i';
+    $css = preg_replace_callback($inline_re, function ($m) use (&$problems) {
+        $payload = stripos($m[2], 'base64') !== false ? base64_decode($m[3], true) : rawurldecode($m[3]);
+        if ($payload === false) {
+            $payload = $m[3];
+        }
+        $bad = array(
+            '/<\s*script/i'                                   => 'script',
+            '/\bon[a-z]+\s*=/i'                               => 'event handler',
+            '/javascript:/i'                                  => 'javascript:',
+            '/<\s*foreignObject/i'                            => 'foreignObject',
+            '/(?:xlink:)?href\s*=\s*["\']?\s*(?:https?:|\/\/)/i' => 'external href',
+            '/url\s*\(/i'                                     => 'url()',
+        );
+        foreach ($bad as $re => $label) {
+            if (preg_match($re, $payload)) {
+                $problems[] = 'inline image contains ' . $label;
+            }
+        }
+        return 'inline-image';
+    }, $css);
     $patterns = array(
         '/@import/i'                       => '@import',
         '/url\s*\(/i'                      => 'url()',

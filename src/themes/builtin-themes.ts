@@ -1,5 +1,6 @@
 import type { UcThemeDefinition } from './uc-theme-types';
 import { UC_THEME_HA_NATIVE } from './uc-theme-types';
+import { svgDataUrl } from './uc-theme-artwork';
 
 /**
  * Built-in themes. These are the Ultra Dashboard styles (Classic / Soft /
@@ -611,6 +612,208 @@ export const MOOSE_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+// Metallic: brushed steel plate with a machined bevel.
+const METAL_PLATE = '#c4c9d0'; // mid steel (palette base; the gradient runs #a9b0b9..#eef0f3)
+const METAL_INK = '#161a20'; // etched graphite text (8:1 on the darkest stop)
+const METAL_INK_SOFT = '#3d444d'; // secondary (4.5:1 on the darkest stop)
+const METAL_GUNMETAL = '#3a434f'; // primary (white on it 10:1)
+const METAL_BLUED = '#35516f'; // blued-steel accent
+const METAL_EDGE = '#7d858f'; // machined edge
+const METAL_SHEEN =
+  'linear-gradient(135deg, #e9ecf0 0%, #c9ced5 18%, #a9b0b9 34%, #dfe3e8 50%, #b3b9c2 66%, #eef0f3 82%, #b8bec6 100%)';
+const METAL_GRAIN =
+  'repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, rgba(0, 0, 0, 0) 1px 3px, rgba(0, 0, 0, 0.05) 3px 4px)';
+const METAL_BEVEL =
+  'inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -1px 0 rgba(0, 0, 0, 0.28), inset 1px 0 0 rgba(255, 255, 255, 0.45), inset -1px 0 0 rgba(0, 0, 0, 0.18)';
+
+/**
+ * "Metallic": a brushed steel plate. A diagonal sheen runs across the card,
+ * a fine vertical grain sits on top, and the edge is bevelled with a light
+ * catch on the top-left and a shadow on the bottom-right. Controls use the
+ * existing metallic surface. Graphite text is etched into the plate; the
+ * primary is gunmetal, the accent blued steel.
+ */
+export const METALLIC_THEME: UcThemeDefinition = {
+  id: 'metallic',
+  name: 'Metallic',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'Brushed steel plate with a machined bevel: diagonal sheen, fine grain, gunmetal controls and blued-steel accents.',
+  icon: 'mdi:anvil',
+  source: 'builtin',
+  tokens: {
+    surface: 'glossy',
+    radius: 8,
+    radius_sm: 6,
+    border_width: 1,
+    border_color: METAL_EDGE,
+    shadow: `${METAL_BEVEL}, 0 8px 20px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.4)`,
+    density: 'regular',
+    accent: METAL_BLUED,
+    font_family: "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
+    palette: {
+      primary: METAL_GUNMETAL,
+      accent: METAL_BLUED,
+      card_bg: METAL_PLATE,
+      text: METAL_INK,
+      text_secondary: METAL_INK_SOFT,
+      divider: 'rgba(22, 26, 32, 0.22)',
+    },
+  },
+  card: {
+    card_background: METAL_PLATE,
+    card_border_radius: 8,
+    card_border_color: METAL_EDGE,
+    card_border_width: 1,
+    card_padding: 16,
+    card_shadow_enabled: true,
+    card_shadow_color: 'rgba(0, 0, 0, 0.35)',
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 8,
+    card_shadow_blur: 20,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'metallic' },
+    bar: { bar_style: 'metallic' },
+    slider_control: { slider_style: 'metallic' },
+    spinbox: { button_style: 'metallic', button_shape: 'square' },
+    popup: { trigger_button_style: 'metallic' },
+    grid: { grid_style: 'style_12' },
+    navigation: { nav_style: 'uc_minimal' },
+    area_summary: { style_preset: 'compact_controls', accent_color: METAL_BLUED, tile_border_radius: 6 },
+    auto_entity_list: { row_style: 'detailed' },
+    unifi: { rack_style: 'dark' },
+    activity_feed: { feed_card_style: 'outlined' },
+    tabs: { style: 'switch_1' },
+  },
+  css: `
+.card-container {
+  background-color: ${METAL_PLATE} !important;
+  background-image: ${METAL_GRAIN}, ${METAL_SHEEN} !important;
+  border: 1px solid ${METAL_EDGE} !important;
+  box-shadow:
+    ${METAL_BEVEL},
+    0 8px 20px rgba(0, 0, 0, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  letter-spacing: 0.02em;
+}
+/* Nested surfaces read as recessed panels milled into the plate. */
+[style*="--uc-design-surface"] {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+}
+`.trim(),
+};
+
+// Beach: sand, sea, driftwood and a lick of coral.
+const BEACH_SAND = '#f3e9d2';
+const BEACH_SEA = '#1f3a4d'; // deep water: text (9.8:1 on sand)
+const BEACH_DRIFTWOOD = '#6b5d4a'; // secondary text (5.3:1 on sand)
+const BEACH_OCEAN = '#186a7a'; // primary (white on it 6.2:1)
+const BEACH_CORAL = '#c9543a'; // accent
+const BEACH_WAVES = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' preserveAspectRatio='none'>
+  <path d='M0 11 C30 3 50 19 80 11 S130 3 160 11 S210 19 240 11 V24 H0Z' fill='${BEACH_OCEAN}' fill-opacity='.18'/>
+  <path d='M0 16 C30 8 50 24 80 16 S130 8 160 16 S210 24 240 16 V24 H0Z' fill='${BEACH_OCEAN}' fill-opacity='.3'/>
+  <path d='M0 11 C30 3 50 19 80 11 S130 3 160 11 S210 19 240 11' fill='none' stroke='#ffffff' stroke-opacity='.75' stroke-width='1.5'/>
+</svg>`);
+const BEACH_GRAIN = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56'>
+  <g fill='${BEACH_DRIFTWOOD}' fill-opacity='.14'>
+    <circle cx='6' cy='9' r='1'/><circle cx='23' cy='4' r='.8'/><circle cx='41' cy='12' r='1'/>
+    <circle cx='14' cy='26' r='.8'/><circle cx='33' cy='30' r='1.1'/><circle cx='50' cy='27' r='.7'/>
+    <circle cx='8' cy='45' r='1'/><circle cx='27' cy='49' r='.8'/><circle cx='45' cy='44' r='1'/><circle cx='52' cy='52' r='.7'/>
+  </g>
+</svg>`);
+const BEACH_ROPE = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' width='12' height='6'>
+  <path d='M0 3 Q3 0 6 3 T12 3' fill='none' stroke='${BEACH_DRIFTWOOD}' stroke-opacity='.45' stroke-width='1.4'/>
+</svg>`);
+
+/**
+ * "Beach": a sand card with water lapping along the bottom edge, a sun glow
+ * in the top-right corner, fine sand grain across the surface and a rope
+ * hairline under the top edge. All artwork is inline SVG, so nothing is
+ * fetched. Deep-water text on sand, an ocean primary, a coral accent, and a
+ * soft rounded sans.
+ */
+export const BEACH_THEME: UcThemeDefinition = {
+  id: 'beach',
+  name: 'Beach',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'Sand cards with waves lapping the bottom edge, a sun glow, sand grain and a rope hairline. Deep-water text, ocean controls, coral accents.',
+  icon: 'mdi:beach',
+  source: 'builtin',
+  tokens: {
+    surface: 'flat',
+    radius: 22,
+    radius_sm: 14,
+    border_width: 1,
+    border_color: 'rgba(107, 93, 74, 0.28)',
+    shadow: '0 10px 26px rgba(31, 58, 77, 0.14), 0 1px 2px rgba(31, 58, 77, 0.08)',
+    density: 'comfortable',
+    accent: BEACH_CORAL,
+    font_family: "'Nunito', 'Quicksand', 'Varela Round', 'Avenir Next Rounded', system-ui, sans-serif",
+    palette: {
+      primary: BEACH_OCEAN,
+      accent: BEACH_CORAL,
+      card_bg: BEACH_SAND,
+      text: BEACH_SEA,
+      text_secondary: BEACH_DRIFTWOOD,
+      divider: 'rgba(107, 93, 74, 0.28)',
+    },
+  },
+  card: {
+    card_background: BEACH_SAND,
+    card_border_radius: 22,
+    card_border_color: 'rgba(107, 93, 74, 0.28)',
+    card_border_width: 1,
+    card_padding: 22,
+    card_shadow_enabled: true,
+    card_shadow_color: 'rgba(31, 58, 77, 0.14)',
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 10,
+    card_shadow_blur: 26,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'flat' },
+    bar: { bar_style: 'flat' },
+    slider_control: { slider_style: 'flat' },
+    spinbox: { button_style: 'flat', button_shape: 'circle' },
+    popup: { trigger_button_style: 'flat' },
+    grid: { grid_style: 'style_14' },
+    navigation: { nav_style: 'uc_minimal' },
+    area_summary: { style_preset: 'iconic_soft', accent_color: BEACH_CORAL, tile_border_radius: 16 },
+    auto_entity_list: { row_style: 'card' },
+    unifi: { rack_style: 'light' },
+    activity_feed: { feed_card_style: 'elevated' },
+    tabs: { style: 'simple' },
+  },
+  css: `
+.card-container {
+  background-color: ${BEACH_SAND} !important;
+  /* Layers, top to bottom: waves at the foot, rope under the top edge, sun glow, sand grain, sky wash. */
+  background-image:
+    ${BEACH_WAVES},
+    ${BEACH_ROPE},
+    radial-gradient(circle at 92% -8%, rgba(255, 196, 110, 0.55) 0%, rgba(255, 196, 110, 0.18) 18%, rgba(255, 196, 110, 0) 42%),
+    ${BEACH_GRAIN},
+    linear-gradient(180deg, rgba(24, 106, 122, 0.06) 0%, rgba(24, 106, 122, 0) 45%) !important;
+  background-repeat: no-repeat, repeat-x, no-repeat, repeat, no-repeat !important;
+  background-size: 100% 20px, 12px 6px, auto, 56px 56px, auto !important;
+  background-position: bottom center, left 9px, 0 0, 0 0, 0 0 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 10px 26px rgba(31, 58, 77, 0.14),
+    0 1px 2px rgba(31, 58, 77, 0.08) !important;
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   CLASSIC_THEME,
@@ -622,5 +825,7 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   LIQUID_GLASS_THEME,
   HILLARY_THEME,
   MOOSE_THEME,
+  METALLIC_THEME,
+  BEACH_THEME,
   GREEN_TERMINAL_THEME,
 ];

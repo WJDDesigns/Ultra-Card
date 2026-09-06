@@ -2,7 +2,8 @@
  * What a downloaded theme can do to you once installed.
  *
  * The sanitiser (`sanitizeThemeDefinition`) already refuses CSS that reaches
- * outside the browser (`url()`, `@import`, `@font-face`, expressions). What is
+ * outside the browser (`url()` other than inline `data:image/*` artwork,
+ * `@import`, `@font-face`, expressions). What is
  * left is still worth a look before it lands on every card: custom CSS can hide
  * or cover controls, a palette override recolours Home Assistant variables on
  * the card, and a preview image tells its host that you looked at the theme.
@@ -38,6 +39,7 @@ const CSS_CHECKS: Array<{ re: RegExp; reason: string }> = [
   { re: /position\s*:\s*(fixed|sticky)/i, reason: 'positions content over the page (position: fixed/sticky)' },
   { re: /z-index\s*:\s*\d{4,}/i, reason: 'very high z-index (may cover dialogs)' },
   { re: /content\s*:\s*["'][^"']+["']/i, reason: 'injects text (content: "...")' },
+  { re: /url\(\s*["']?data:image\//i, reason: 'ships inline artwork (data: images)' },
 ];
 
 const OUTSIDE_CARD_SELECTOR = /(^|[\s,>+~])(:host|html|body|ha-card|hui-[a-z-]+|home-assistant[a-z-]*)(?![\w-])/i;

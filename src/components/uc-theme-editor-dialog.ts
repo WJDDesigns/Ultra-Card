@@ -383,7 +383,7 @@ export class UcThemeEditorDialog extends LitElement {
 
             <section>
               <h3>${t('editor_css', 'Custom CSS')}</h3>
-              <p class="hint">${t('editor_css_help', 'Scoped to this card\'s shadow root. Use .card-container and module classes. url(), @import and @font-face are not allowed.')}</p>
+              <p class="hint">${t('editor_css_help', 'Scoped to this card\'s shadow root. Use .card-container and module classes. Inline SVG/PNG artwork via url(\'data:image/...\') is allowed; remote url(), @import and @font-face are not.')}</p>
               <textarea
                 rows="6"
                 spellcheck="false"

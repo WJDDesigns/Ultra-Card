@@ -5207,7 +5207,7 @@
       "editor_card": "Card chrome",
       "editor_modules": "Module defaults",
       "editor_css": "Custom CSS",
-      "editor_css_help": "Scoped to this card's shadow root. Use .card-container and module classes. url(), @import and @font-face are not allowed.",
+      "editor_css_help": "Scoped to this card's shadow root. Use .card-container and module classes. Inline SVG/PNG artwork via url(\"data:image/...\") is allowed; remote url(), @import and @font-face are not.",
       "editor_name": "Name",
       "editor_id": "Id",
       "editor_description": "Description",

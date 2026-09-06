@@ -1,14 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { UC_THEME_BASE_CSS, ucThemeService } from './uc-theme-service';
 import {
+  BEACH_THEME,
   BUILTIN_THEMES,
   GLASS_THEME,
+  METALLIC_THEME,
   GREEN_TERMINAL_THEME,
   HILLARY_THEME,
   LIQUID_GLASS_THEME,
   MONOCHROME_THEME,
 } from '../themes/builtin-themes';
 import { contrastRatio, isLight, parseColor, toRgbTriple } from '../themes/uc-theme-color';
+import { svgDataUrl } from '../themes/uc-theme-artwork';
 import { UC_THEME_HA_NATIVE, UC_THEME_NONE } from '../themes/uc-theme-types';
 import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
 import type { UltraCardConfig } from '../types';
@@ -275,5 +278,30 @@ describe('sanitizeThemeDefinition', () => {
   it('keeps safe css', () => {
     expect(scanThemeCss('.card-container { border-radius: 4px }').ok).toBe(true);
     expect(scanThemeCss('@import "x"').ok).toBe(false);
+  });
+
+  it('allows inline image artwork but no other url()', () => {
+    const art = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><circle cx='5' cy='5' r='4' fill='#186a7a'/></svg>`);
+    expect(art.startsWith('url("data:image/svg+xml,')).toBe(true);
+    expect(art.slice('url("data:image/svg+xml,'.length, -2)).not.toMatch(/[<>#'()]/);
+    expect(scanThemeCss(`.card-container { background-image: ${art}; }`).ok).toBe(true);
+    expect(scanThemeCss(`.card-container { background-image: url(data:image/png;base64,iVBORw0KGgo=); }`).ok).toBe(true);
+
+    expect(scanThemeCss(`.card-container { background-image: url(https://evil.example/x.png); }`).ok).toBe(false);
+    expect(scanThemeCss(`.card-container { background-image: url(data:text/html,hi); }`).ok).toBe(false);
+    // Script or external references inside the SVG payload are refused even though SVG-as-image would ignore them.
+    const scripted = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>`);
+    expect(scanThemeCss(`.a { background: ${scripted} }`).ok).toBe(false);
+    const external = svgDataUrl(`<svg xmlns='http://www.w3.org/2000/svg'><image href='https://evil.example/t.png'/></svg>`);
+    expect(scanThemeCss(`.a { background: ${external} }`).ok).toBe(false);
+    const b64 = `url(data:image/svg+xml;base64,${btoa('<svg onload="x()"></svg>')})`;
+    expect(scanThemeCss(`.a { background: ${b64} }`).ok).toBe(false);
+  });
+
+  it('beach and metallic ship artwork that survives the sanitiser', () => {
+    expect(BEACH_THEME.css).toContain('data:image/svg+xml');
+    expect(sanitizeThemeDefinition(BEACH_THEME).theme?.css).toBe(BEACH_THEME.css);
+    expect(METALLIC_THEME.css).toContain('repeating-linear-gradient');
+    expect(sanitizeThemeDefinition(METALLIC_THEME).theme?.css).toBe(METALLIC_THEME.css);
   });
 });
