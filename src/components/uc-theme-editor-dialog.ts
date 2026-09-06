@@ -1,13 +1,26 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { localize } from '../localize/localize';
-import type { UcThemeDefinition, UcThemeSurface, UcThemeDensity } from '../themes/uc-theme-types';
+import type {
+  UcThemeDefinition,
+  UcThemeSurface,
+  UcThemeDensity,
+  UcThemePaletteKey,
+} from '../themes/uc-theme-types';
 import { UC_THEME_MODULE_FIELDS } from '../themes/uc-theme-module-options';
 import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
 import './uc-theme-swatch';
 
 const SURFACES: UcThemeSurface[] = ['flat', 'glass', 'neumorphic', 'glossy', 'outline', 'minimal'];
 const DENSITIES: UcThemeDensity[] = ['compact', 'regular', 'comfortable'];
+const PALETTE_FIELDS: { key: UcThemePaletteKey; label: string; placeholder: string }[] = [
+  { key: 'primary', label: 'Primary', placeholder: 'var(--primary-color)' },
+  { key: 'accent', label: 'Accent', placeholder: 'var(--accent-color)' },
+  { key: 'card_bg', label: 'Card background', placeholder: 'var(--card-background-color)' },
+  { key: 'text', label: 'Text', placeholder: 'var(--primary-text-color)' },
+  { key: 'text_secondary', label: 'Secondary text', placeholder: 'var(--secondary-text-color)' },
+  { key: 'divider', label: 'Divider', placeholder: 'var(--divider-color)' },
+];
 
 type Draft = {
   id: string;
@@ -28,6 +41,7 @@ type Draft = {
   card_background: string;
   card_padding: string;
   card_shadow_enabled: '' | 'true' | 'false';
+  palette: Partial<Record<UcThemePaletteKey, string>>;
   modules: Record<string, Record<string, string>>;
   css: string;
 };
@@ -69,6 +83,7 @@ function draftFromTheme(theme: UcThemeDefinition | null): Draft {
     card_padding: theme?.card?.card_padding !== undefined ? String(theme.card.card_padding) : '',
     card_shadow_enabled:
       theme?.card?.card_shadow_enabled === undefined ? '' : theme.card.card_shadow_enabled ? 'true' : 'false',
+    palette: { ...(t?.palette ?? {}) },
     modules,
     css: theme?.css ?? '',
   };
@@ -93,6 +108,12 @@ function themeFromDraft(d: Draft, version: number): Record<string, unknown> {
   if (d.density) tokens.density = d.density;
   if (d.accent.trim()) tokens.accent = d.accent.trim();
   if (d.font_family.trim()) tokens.font_family = d.font_family.trim();
+  const palette: Record<string, string> = {};
+  for (const f of PALETTE_FIELDS) {
+    const v = d.palette[f.key]?.trim();
+    if (v) palette[f.key] = v;
+  }
+  if (Object.keys(palette).length) tokens.palette = palette;
 
   const card: Record<string, unknown> = {
     card_border_radius: tokens.radius,
@@ -144,6 +165,7 @@ export class UcThemeEditorDialog extends LitElement {
   @state() private _error = '';
   @state() private _cssWarnings: string[] = [];
   @state() private _modulesOpen = false;
+  @state() private _paletteOpen = false;
 
   private get _lang(): string {
     return this.hass?.locale?.language || 'en';
@@ -159,7 +181,15 @@ export class UcThemeEditorDialog extends LitElement {
       this._draft = d;
       this._error = '';
       this._cssWarnings = [];
+      if (Object.keys(d.palette).length) this._paletteOpen = true;
     }
+  }
+
+  private _setPalette(key: UcThemePaletteKey, value: string): void {
+    const palette = { ...this._draft.palette };
+    if (value.trim() === '') delete palette[key];
+    else palette[key] = value;
+    this._draft = { ...this._draft, palette };
   }
 
   private _set<K extends keyof Draft>(key: K, value: Draft[K]): void {
@@ -286,6 +316,29 @@ export class UcThemeEditorDialog extends LitElement {
                   v => this._set('card_shadow_enabled', v as Draft['card_shadow_enabled'])
                 )}
               </div>
+            </section>
+
+            <section>
+              <button class="section-toggle" @click=${() => (this._paletteOpen = !this._paletteOpen)}>
+                <h3>${t('editor_palette', 'Colours')}</h3>
+                <ha-icon icon=${this._paletteOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+              </button>
+              ${this._paletteOpen
+                ? html`
+                    <p class="hint">${t('editor_palette_hint', 'Pins Home Assistant colour variables on cards using this theme. Leave empty to follow the active HA theme.')}</p>
+                    <div class="grid-2">
+                      ${PALETTE_FIELDS.map(f =>
+                        this._text(
+                          `palette.${f.key}`,
+                          t(`editor_palette_${f.key}`, f.label),
+                          d.palette[f.key] ?? '',
+                          v => this._setPalette(f.key, v),
+                          f.placeholder
+                        )
+                      )}
+                    </div>
+                  `
+                : nothing}
             </section>
 
             <section>

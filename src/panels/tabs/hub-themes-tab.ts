@@ -19,6 +19,7 @@ import { ucCloudAuthService, type CloudUser } from '../../services/uc-cloud-auth
 import { copyTextToClipboard } from '../../utils/uc-clipboard';
 import type { UcThemeDefinition, UcThemeSource } from '../../themes/uc-theme-types';
 import { UC_THEME_HA_NATIVE } from '../../themes/uc-theme-types';
+import { haThemeToUcTheme, listHaThemes, type HaThemeMode } from '../../themes/uc-ha-theme-import';
 import '../../components/uc-theme-picker';
 import '../../components/uc-theme-swatch';
 import '../../components/uc-theme-editor-dialog';
@@ -42,6 +43,9 @@ export class HubThemesTab extends LitElement {
   @state() private _editor: { theme: UcThemeDefinition | null; asCopy: boolean } | null = null;
   @state() private _importOpen = false;
   @state() private _importText = '';
+  @state() private _haImportOpen = false;
+  @state() private _haImportName = '';
+  @state() private _haImportMode: HaThemeMode = 'auto';
   @state() private _dashboards: UcDashboardRef[] = [];
   @state() private _applyDashboard = '';
   @state() private _applyTheme = '';
@@ -409,6 +413,31 @@ export class HubThemesTab extends LitElement {
     this._toast(fmt(this._t('import_done', 'Imported "{name}"'), { name: saved.name }));
   }
 
+  /**
+   * Build a local theme from an installed HA theme and open it in the editor
+   * so the user can add a surface and module presets before saving.
+   */
+  private _importFromHa(): void {
+    const record = this.hass?.themes?.themes?.[this._haImportName];
+    if (!record) return;
+    const { theme, mapped } = haThemeToUcTheme(this._haImportName, record, {
+      mode: this._haImportMode,
+      darkMode: !!this.hass?.themes?.darkMode,
+    });
+    this._haImportOpen = false;
+    this._editor = { theme, asCopy: false };
+    this._toast(
+      mapped.length
+        ? fmt(this._t('ha_import_mapped', 'Mapped {count} values from "{name}"'), {
+            count: mapped.length,
+            name: this._haImportName,
+          })
+        : fmt(this._t('ha_import_nothing', '"{name}" sets no card variables; starting from defaults'), {
+            name: this._haImportName,
+          })
+    );
+  }
+
   // ---------------------------------------------------------------- render
 
   protected override render(): TemplateResult {
@@ -718,6 +747,8 @@ export class HubThemesTab extends LitElement {
       { key: 'community', label: this._t('filter_community', 'Community'), icon: 'mdi:account-group' },
     ];
     const themes = this._visibleThemes();
+    const haThemes = listHaThemes(this.hass);
+    const haSelected = haThemes.find(t => t.name === this._haImportName);
 
     return html`
       <div class="hub-section">
@@ -728,7 +759,27 @@ export class HubThemesTab extends LitElement {
             <p>${this._t('library_desc', 'Built-in themes plus the ones you created, imported or installed.')}</p>
           </div>
           <div class="header-actions">
-            <button class="btn ghost" @click=${() => (this._importOpen = !this._importOpen)}>
+            ${haThemes.length
+              ? html`<button
+                  class="btn ghost"
+                  @click=${() => {
+                    this._haImportOpen = !this._haImportOpen;
+                    this._importOpen = false;
+                    if (!this._haImportName) {
+                      this._haImportName = this.hass?.themes?.theme || haThemes[0].name;
+                    }
+                  }}
+                >
+                  <ha-icon icon="mdi:home-assistant"></ha-icon>${this._t('ha_import', 'From HA theme')}
+                </button>`
+              : nothing}
+            <button
+              class="btn ghost"
+              @click=${() => {
+                this._importOpen = !this._importOpen;
+                this._haImportOpen = false;
+              }}
+            >
               <ha-icon icon="mdi:import"></ha-icon>${this._t('import', 'Import JSON')}
             </button>
             <button class="btn primary" @click=${() => (this._editor = { theme: null, asCopy: false })}>
@@ -737,6 +788,48 @@ export class HubThemesTab extends LitElement {
           </div>
         </div>
 
+        ${this._haImportOpen
+          ? html`
+              <div class="import-box">
+                <h4>${this._t('ha_import_title', 'Import from a Home Assistant theme')}</h4>
+                <p>${this._t('ha_import_desc', 'Reads the card colours, radius, shadow and font from an installed HA theme and opens the result in the editor. Add a surface and module presets, then save.')}</p>
+                <div class="apply-row">
+                  <label class="field">
+                    <span>${this._t('ha_import_theme', 'HA theme')}</span>
+                    <select
+                      .value=${this._haImportName}
+                      @change=${(e: Event) => (this._haImportName = (e.target as HTMLSelectElement).value)}
+                    >
+                      ${haThemes.map(
+                        t => html`<option value=${t.name} ?selected=${t.name === this._haImportName}>${t.name}</option>`
+                      )}
+                    </select>
+                  </label>
+                  ${haSelected?.hasModes
+                    ? html`<label class="field">
+                        <span>${this._t('ha_import_mode', 'Mode')}</span>
+                        <select
+                          .value=${this._haImportMode}
+                          @change=${(e: Event) => (this._haImportMode = (e.target as HTMLSelectElement).value as HaThemeMode)}
+                        >
+                          <option value="auto" ?selected=${this._haImportMode === 'auto'}>${this._t('ha_import_mode_auto', 'Current (follow HA dark mode)')}</option>
+                          <option value="light" ?selected=${this._haImportMode === 'light'}>${this._t('ha_import_mode_light', 'Light')}</option>
+                          <option value="dark" ?selected=${this._haImportMode === 'dark'}>${this._t('ha_import_mode_dark', 'Dark')}</option>
+                        </select>
+                      </label>`
+                    : nothing}
+                </div>
+                <div class="row-end">
+                  <button class="btn ghost" @click=${() => (this._haImportOpen = false)}>
+                    ${this._t('editor_cancel', 'Cancel')}
+                  </button>
+                  <button class="btn primary" ?disabled=${!haSelected} @click=${this._importFromHa}>
+                    <ha-icon icon="mdi:import"></ha-icon>${this._t('ha_import_button', 'Open in editor')}
+                  </button>
+                </div>
+              </div>
+            `
+          : nothing}
         ${this._importOpen
           ? html`
               <div class="import-box">
