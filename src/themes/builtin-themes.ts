@@ -444,18 +444,22 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-const HILLARY_INK = '#1f2d3d'; // navy ink
-const HILLARY_BRASS = '#b08d57'; // brass / cognac accent
-const HILLARY_LINEN = '#f7f2e8'; // linen card
-const HILLARY_TAUPE = '#6e6257'; // warm secondary text (5.1:1 on linen)
-const HILLARY_SAND = 'rgba(31, 45, 61, 0.12)'; // hairline
+// Michiana Mahjong Club brand palette.
+const HILLARY_PINE = '#1f3b2e'; // pine: primary + ink (9.5:1 on linen)
+const HILLARY_NAVY = '#1e2f4b'; // navy: shadow tint
+const HILLARY_GOLD = '#d4af6c'; // gold: accent + piping
+const HILLARY_LINEN = '#eae2d6'; // linen card
+const HILLARY_TAUPE = '#8b7355'; // taupe: hairlines (3.5:1, too light for body text)
+const HILLARY_TAUPE_INK = '#6f5a40'; // taupe deepened for secondary text (5.1:1 on linen)
+const HILLARY_HAIRLINE = 'rgba(139, 115, 85, 0.35)'; // taupe hairline
+const HILLARY_SHADOW = 'rgba(30, 47, 75, 0.14)'; // navy-tinted shadow
 
 /**
- * "Hillary": a Nancy Meyers kitchen in Ralph Lauren tailoring. Linen and
- * cream surfaces, navy ink for text, brass for the accent, a warm shadow
- * and an editorial serif. Cards carry a fine brass piping along the top
- * edge. The palette is pinned, so it reads the same over light and dark HA
- * themes: this one is the room, not a filter on it.
+ * "Hillary": a Nancy Meyers kitchen in Ralph Lauren tailoring. Linen
+ * surfaces, pine ink for text, gold for the accent, a navy-tinted shadow and
+ * an editorial serif. Cards carry a fine gold piping along the top edge. The
+ * palette is pinned, so it reads the same over light and dark HA themes: this
+ * one is the room, not a filter on it.
  */
 export const HILLARY_THEME: UcThemeDefinition = {
   id: 'hillary',
@@ -463,7 +467,7 @@ export const HILLARY_THEME: UcThemeDefinition = {
   version: 1,
   author: 'Ultra Card',
   description:
-    'Linen, cream and navy ink with brass accents. A Nancy Meyers palette in Ralph Lauren tailoring: warm, elevated, unhurried.',
+    'Linen, pine ink and taupe with gold accents. A Nancy Meyers palette in Ralph Lauren tailoring: warm, elevated, unhurried.',
   icon: 'mdi:flower-tulip-outline',
   source: 'builtin',
   tokens: {
@@ -471,29 +475,29 @@ export const HILLARY_THEME: UcThemeDefinition = {
     radius: 14,
     radius_sm: 10,
     border_width: 1,
-    border_color: HILLARY_SAND,
-    shadow: '0 8px 24px rgba(66, 50, 30, 0.12), 0 1px 2px rgba(66, 50, 30, 0.06)',
+    border_color: HILLARY_HAIRLINE,
+    shadow: `0 8px 24px ${HILLARY_SHADOW}, 0 1px 2px rgba(30, 47, 75, 0.06)`,
     density: 'comfortable',
-    accent: HILLARY_BRASS,
+    accent: HILLARY_GOLD,
     font_family:
       "'Playfair Display', 'Didot', 'Bodoni 72', 'Cormorant Garamond', 'Libre Baskerville', Georgia, 'Times New Roman', serif",
     palette: {
-      primary: HILLARY_INK,
-      accent: HILLARY_BRASS,
+      primary: HILLARY_PINE,
+      accent: HILLARY_GOLD,
       card_bg: HILLARY_LINEN,
-      text: HILLARY_INK,
-      text_secondary: HILLARY_TAUPE,
-      divider: HILLARY_SAND,
+      text: HILLARY_PINE,
+      text_secondary: HILLARY_TAUPE_INK,
+      divider: HILLARY_HAIRLINE,
     },
   },
   card: {
     card_background: HILLARY_LINEN,
     card_border_radius: 14,
-    card_border_color: HILLARY_SAND,
+    card_border_color: HILLARY_HAIRLINE,
     card_border_width: 1,
     card_padding: 20,
     card_shadow_enabled: true,
-    card_shadow_color: 'rgba(66, 50, 30, 0.12)',
+    card_shadow_color: HILLARY_SHADOW,
     card_shadow_horizontal: 0,
     card_shadow_vertical: 8,
     card_shadow_blur: 24,
@@ -507,7 +511,7 @@ export const HILLARY_THEME: UcThemeDefinition = {
     popup: { trigger_button_style: 'outline' },
     grid: { grid_style: 'style_20' },
     navigation: { nav_style: 'uc_minimal' },
-    area_summary: { style_preset: 'iconic_soft', accent_color: HILLARY_BRASS, tile_border_radius: 12 },
+    area_summary: { style_preset: 'iconic_soft', accent_color: HILLARY_GOLD, tile_border_radius: 12 },
     auto_entity_list: { row_style: 'card' },
     unifi: { rack_style: 'light' },
     activity_feed: { feed_card_style: 'elevated' },
@@ -515,11 +519,11 @@ export const HILLARY_THEME: UcThemeDefinition = {
   },
   css: `
 .card-container {
-  /* Brass piping along the top edge, then the warm shadow. */
+  /* Gold piping along the top edge, then the navy-tinted shadow. */
   box-shadow:
-    inset 0 2px 0 ${HILLARY_BRASS},
-    0 8px 24px rgba(66, 50, 30, 0.12),
-    0 1px 2px rgba(66, 50, 30, 0.06) !important;
+    inset 0 2px 0 ${HILLARY_GOLD},
+    0 8px 24px ${HILLARY_SHADOW},
+    0 1px 2px rgba(30, 47, 75, 0.06) !important;
   letter-spacing: 0.01em;
 }
 `.trim(),

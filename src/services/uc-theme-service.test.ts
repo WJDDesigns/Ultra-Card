@@ -100,10 +100,11 @@ describe('host vars', () => {
     expect(vars['--rgb-secondary-background-color']).toBe(toRgbTriple(nested));
     expect(vars['--input-fill-color']).toBe(vars['--secondary-background-color']);
     expect(vars['--mdc-theme-surface']).toBe(HILLARY_THEME.tokens.palette!.card_bg);
-    // Navy primary gets white on top; text companions follow the pinned ink.
+    // Pine primary gets white on top; text companions follow the pinned ink.
     expect(vars['--text-primary-color']).toBe('#ffffff');
     expect(vars['--rgb-text-primary-color']).toBe('255, 255, 255');
-    expect(vars['--disabled-text-color']).toMatch(/^rgba\(31, 45, 61, 0\.38\)$/);
+    const ink = parseColor(HILLARY_THEME.tokens.palette!.text)!;
+    expect(vars['--disabled-text-color']).toBe(`rgba(${toRgbTriple(ink)}, 0.38)`);
     expect(vars['--input-ink-color']).toBe(HILLARY_THEME.tokens.palette!.text);
     // Explicit palette entries are never overwritten by derivation.
     expect(vars['--secondary-text-color']).toBe(HILLARY_THEME.tokens.palette!.text_secondary);
