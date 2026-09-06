@@ -928,32 +928,16 @@ export const VAPOR_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-// Gummy: every card is a different flavour. The hue comes from --uc-card-hue,
-// which the card sets per instance; the ink is one dark plum that clears AA
-// on every hue at this lightness (worst case 5.2:1 on blue).
+// Gummy: every card is a different flavour. The card sets --uc-card-hue and
+// three --uc-card-seed-N values per instance (see ucThemeService.cardSeed);
+// the ink is one dark plum that clears AA on every hue at this lightness
+// (worst case 5.2:1 on blue).
 const GUMMY_H = 'var(--uc-card-hue, 340)';
 const GUMMY_INK = '#2a1838';
 const GUMMY_INK_SOFT = '#35243f'; // 4.6:1 worst case
 const GUMMY_PRIMARY = '#3a2350'; // liquorice: white on it 13.7:1
 const gummy = (s: number, l: number, a?: number) =>
   a === undefined ? `hsl(${GUMMY_H} ${s}% ${l}%)` : `hsl(${GUMMY_H} ${s}% ${l}% / ${a})`;
-/** The shine marks: a long curved specular swoosh, a small hot spot beside it, a fleck below. */
-const GUMMY_SHINE = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 80'>
-  <defs><filter id='b' x='-10%' y='-20%' width='120%' height='140%'><feGaussianBlur stdDeviation='0.7'/></filter></defs>
-  <g fill='#fff' filter='url(#b)'>
-    <path d='M14 26 C22 10 60 4 104 8 C112 9 110 15 100 16 C64 16 34 22 22 34 C16 40 10 34 14 26Z' fill-opacity='.92'/>
-    <ellipse cx='124' cy='10' rx='9' ry='4.5' transform='rotate(-16 124 10)' fill-opacity='.95'/>
-    <ellipse cx='30' cy='44' rx='3.2' ry='2' transform='rotate(-30 30 44)' fill-opacity='.7'/>
-  </g>
-</svg>`);
-const GUMMY_SHINE_SM = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 30'>
-  <g fill='#fff'>
-    <path d='M6 12 C10 5 30 2 52 4 C56 4.5 55 8 50 8 C32 8 18 10 10 16 C7 18 4 15 6 12Z' fill-opacity='.85'/>
-    <ellipse cx='63' cy='5' rx='5' ry='2.4' transform='rotate(-16 63 5)' fill-opacity='.9'/>
-  </g>
-</svg>`);
 /**
  * Subsurface: light travels further through the edges of a gummy than the
  * middle, so the rim is deeper and more saturated and the centre glows. An
@@ -963,21 +947,23 @@ const GUMMY_SHINE_SM = svgDataUrl(`
 const GUMMY_BODY_SHADOW = `inset 0 -2px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 3px ${gummy(92, 56, 0.42)}, inset 0 0 36px ${gummy(96, 46, 0.62)}, inset 0 -16px 22px ${gummy(96, 44, 0.5)}, 0 12px 26px ${gummy(80, 40, 0.42)}, 0 2px 6px ${gummy(80, 35, 0.35)}`;
 
 /**
- * "Gummy": gummy-bear cards. Each card gets its own candy hue (from
- * `--uc-card-hue`, stable per card) rendered as translucent jelly with real
- * shine marks: a curved specular swoosh and hot spot top-left, a faint floor
- * reflection bottom-right, subsurface glow that deepens toward the rim, a
- * refraction line along the bottom edge and a coloured drop shadow. Nested
- * surfaces are smaller gummies with their own shine. Dark-plum ink and
- * liquorice controls read on every flavour. Big soft radii, rounded type.
+ * "Gummy": gummy-bear cards. Each card gets its own candy hue (dealt so that
+ * neighbours never match) rendered as translucent jelly. The gloss is not a
+ * stamp: a soft specular bloom with a hot core, a diagonal sheen band, a
+ * floor reflection and the position of the light pool are all driven by the
+ * card's random seeds, so every card catches the light differently.
+ * Subsurface glow deepens toward the rim, a refraction line runs along the
+ * bottom edge and the drop shadow is the card's own colour. Nested surfaces
+ * are smaller gummies with their own gloss. Dark-plum ink and liquorice
+ * controls read on every flavour. Big soft radii, rounded type.
  */
 export const GUMMY_THEME: UcThemeDefinition = {
   id: 'gummy',
   name: 'Gummy',
-  version: 2,
+  version: 3,
   author: 'Ultra Card',
   description:
-    'Gummy-bear cards: every card its own candy colour, rendered as translucent jelly with shine marks, a glowing rim and a sugar edge. Dark-plum ink, liquorice controls.',
+    'Gummy-bear cards: every card its own candy colour, rendered as translucent jelly that catches the light differently on each card. Dark-plum ink, liquorice controls.',
   icon: 'mdi:candy',
   source: 'builtin',
   tokens: {
@@ -1036,26 +1022,35 @@ export const GUMMY_THEME: UcThemeDefinition = {
   --mdc-select-fill-color: ${gummy(90, 86)};
   --mdc-text-field-fill-color: ${gummy(90, 86)};
   --mdc-theme-surface: ${gummy(88, 72)};
+  /* Where this card catches the light, from its own seeds. */
+  --g-s1: var(--uc-card-seed-1, 0.5);
+  --g-s2: var(--uc-card-seed-2, 0.5);
+  --g-s3: var(--uc-card-seed-3, 0.5);
+  --g-x: calc(14% + var(--g-s1) * 56%);
+  --g-y: calc(3% + var(--g-s2) * 14%);
+  --g-w: calc(22% + var(--g-s3) * 26%);
+  --g-h: calc(9% + var(--g-s2) * 10%);
+  --g-a: calc(96deg + var(--g-s3) * 48deg);
+  --g-p: calc(28% + var(--g-s1) * 30%);
   background-color: ${gummy(88, 72)} !important;
-  /* Layers, top to bottom: shine marks, floor reflection, saturated pool, jelly body (light centre, deep rim). */
+  /* Layers, top to bottom: hot core, specular bloom, sheen band, floor reflection, saturated pool, jelly body. */
   background-image:
-    ${GUMMY_SHINE},
-    radial-gradient(ellipse 26% 9% at 80% 93%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%),
-    radial-gradient(ellipse 70% 45% at 50% 108%, ${gummy(95, 58, 0.9)} 0%, ${gummy(95, 58, 0)} 70%),
-    radial-gradient(ellipse 110% 75% at 45% 45%, ${gummy(86, 80)} 0%, ${gummy(90, 72)} 60%, ${gummy(94, 62)} 100%) !important;
-  background-repeat: no-repeat !important;
-  background-size: 160px 80px, auto, auto, auto !important;
-  background-position: left 14px top 8px, 0 0, 0 0, 0 0 !important;
+    radial-gradient(ellipse calc(var(--g-w) * 0.32) calc(var(--g-h) * 0.42) at calc(var(--g-x) - var(--g-w) * 0.14) calc(var(--g-y) + 1%), rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 45%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(ellipse var(--g-w) var(--g-h) at var(--g-x) var(--g-y), rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 45%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(var(--g-a), rgba(255, 255, 255, 0) calc(var(--g-p) - 14%), rgba(255, 255, 255, 0.2) var(--g-p), rgba(255, 255, 255, 0) calc(var(--g-p) + 12%)),
+    radial-gradient(ellipse calc(18% + var(--g-s2) * 16%) 8% at calc(56% + var(--g-s3) * 34%) 95%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(ellipse 70% 45% at calc(30% + var(--g-s1) * 40%) 108%, ${gummy(95, 58, 0.9)} 0%, ${gummy(95, 58, 0)} 70%),
+    radial-gradient(ellipse 110% 75% at calc(35% + var(--g-s2) * 30%) 45%, ${gummy(86, 80)} 0%, ${gummy(90, 72)} 60%, ${gummy(94, 62)} 100%) !important;
   border: 2px solid rgba(255, 255, 255, 0.62) !important;
   box-shadow: ${GUMMY_BODY_SHADOW} !important;
 }
-/* Nested surfaces are smaller gummies: lighter body, their own shine, the same glowing rim. */
+/* Nested surfaces are smaller gummies: lighter body, their own bloom and sheen, the same glowing rim. */
 [style*="--uc-design-surface"] {
   background-color: ${gummy(90, 84)};
-  background-image: ${GUMMY_SHINE_SM}, linear-gradient(180deg, ${gummy(90, 88)}, ${gummy(92, 78)});
-  background-repeat: no-repeat;
-  background-size: 80px 30px, auto;
-  background-position: left 6px top 4px, 0 0;
+  background-image:
+    radial-gradient(ellipse calc(14% + var(--g-s3) * 14%) 45% at calc(10% + var(--g-s2) * 30%) 0%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(calc(100deg + var(--g-s1) * 40deg), rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, ${gummy(90, 88)}, ${gummy(92, 78)});
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 2px ${gummy(90, 66, 0.3)}, inset 0 0 12px ${gummy(95, 55, 0.45)}, inset 0 -6px 10px ${gummy(95, 50, 0.4)}, 0 3px 8px ${gummy(80, 40, 0.25)};
 }
 `.trim(),

@@ -89,6 +89,34 @@ const STORAGE_LIBRARY = 'ultra-card-theme-library';
 const STORAGE_GLOBAL = 'ultra-card-global-theme';
 const HOST_VARS_APPLIED = new WeakMap<HTMLElement, { key: string; props: string[] }>();
 
+export interface UcCardSeed {
+  /** 0..359 */
+  hue: number;
+  /** Three values in [0, 1), two decimals. */
+  seeds: [number, number, number];
+}
+
+const CARD_SLOT = new WeakMap<HTMLElement, number>();
+let cardSlotCounter = 0;
+const PAGE_SALT = Math.floor(Math.random() * 0xffffffff) >>> 0;
+const GOLDEN_ANGLE = 137.50776;
+
+/** Pure: the hue and seeds dealt to the n-th card on a page for a given salt. */
+export function seedForSlot(slot: number, salt: number): UcCardSeed {
+  const hue = Math.round((salt % 360) + slot * GOLDEN_ANGLE) % 360;
+  // xorshift32 from a slot/salt mix; three draws
+  let x = (Math.imul(slot + 1, 0x9e3779b1) ^ salt) >>> 0 || 1;
+  const next = () => {
+    x ^= x << 13;
+    x >>>= 0;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    x >>>= 0;
+    return Math.round((x / 0x100000000) * 100) / 100;
+  };
+  return { hue, seeds: [next(), next(), next()] };
+}
+
 const DENSITY_SCALE: Record<string, string> = {
   compact: '0.875',
   regular: '1',
@@ -360,21 +388,19 @@ class UcThemeService {
   // ----------------------------------------------------------- host styling
 
   /**
-   * A stable 0–359 hue for one card, exposed as `--uc-card-hue` so a theme
-   * can give every card on a dashboard its own colour (Gummy does). Seeded
-   * from the whole layout: row/module ids are not unique enough (the default
-   * card ships `row1`), so two cards only share a hue when they are identical.
-   * Editing a card may move it to a new flavour.
+   * Per-card randomness for themes that vary card to card (Gummy). Hues are
+   * dispensed in page order along the golden angle from a per-load offset, so
+   * consecutive cards are always distinct flavours and a page never shows the
+   * same colour twice in a row; the offset means a reload deals a new hand.
+   * Three seeds in [0, 1) let CSS vary highlight position, size and angle.
    */
-  cardHue(config: UltraCardConfig | undefined | null): number {
-    const seed = JSON.stringify(config?.layout ?? config ?? '');
-    // FNV-1a
-    let h = 0x811c9dc5;
-    for (let i = 0; i < seed.length; i++) {
-      h ^= seed.charCodeAt(i);
-      h = Math.imul(h, 0x01000193);
+  cardSeed(el: HTMLElement): UcCardSeed {
+    let slot = CARD_SLOT.get(el);
+    if (slot === undefined) {
+      slot = cardSlotCounter++;
+      CARD_SLOT.set(el, slot);
     }
-    return (h >>> 0) % 360;
+    return seedForSlot(slot, PAGE_SALT);
   }
 
   /** Pure: the CSS custom properties a theme sets on the card host. */
@@ -430,8 +456,8 @@ class UcThemeService {
    * Apply (or clear) a theme's host variables and `data-uc-theme` attribute.
    * Returns true when something changed.
    */
-  applyThemeToHost(el: HTMLElement, theme: UcThemeDefinition | null, cardHue?: number): boolean {
-    const key = theme ? `${theme.id}@${theme.version}#${cardHue ?? ''}` : '';
+  applyThemeToHost(el: HTMLElement, theme: UcThemeDefinition | null, seed?: UcCardSeed): boolean {
+    const key = theme ? `${theme.id}@${theme.version}#${seed ? `${seed.hue}/${seed.seeds.join(',')}` : ''}` : '';
     const prev = HOST_VARS_APPLIED.get(el);
     if (prev?.key === key) return false;
     if (prev) for (const p of prev.props) el.style.removeProperty(p);
@@ -441,7 +467,10 @@ class UcThemeService {
       return !!prev;
     }
     const vars = this.getHostVars(theme);
-    if (cardHue !== undefined) vars['--uc-card-hue'] = String(cardHue);
+    if (seed) {
+      vars['--uc-card-hue'] = String(seed.hue);
+      seed.seeds.forEach((v, i) => (vars[`--uc-card-seed-${i + 1}`] = String(v)));
+    }
     for (const [p, v] of Object.entries(vars)) el.style.setProperty(p, v);
     el.setAttribute('data-uc-theme', theme.id);
     HOST_VARS_APPLIED.set(el, { key, props: Object.keys(vars) });

@@ -5,6 +5,7 @@ import {
   UC_THEME_BASE_CSS,
   radiusInner,
   radiusScale,
+  seedForSlot,
   ucThemeService,
 } from './uc-theme-service';
 import {
@@ -60,32 +61,45 @@ describe('resolution order', () => {
     expect(ids).not.toContain('soft');
   });
 
-  it('gives each card a stable hue and gummy paints with it', () => {
-    const a = cfg('gummy');
-    (a.layout as any) = { rows: [{ id: 'row-a', columns: [] }] };
-    const b = cfg('gummy');
-    (b.layout as any) = { rows: [{ id: 'row-b', columns: [] }] };
-    const hueA = ucThemeService.cardHue(a);
-    expect(hueA).toBe(ucThemeService.cardHue(a));
-    expect(hueA).toBeGreaterThanOrEqual(0);
-    expect(hueA).toBeLessThan(360);
-    expect(hueA).not.toBe(ucThemeService.cardHue(b));
-    // Cards built from the default config share `row1`; different content must still differ.
-    const d1 = { ...cfg('gummy'), layout: { rows: [{ id: 'row1', columns: [{ id: 'col1', modules: [{ type: 'text', text: 'Kitchen' }] }] }] } } as any;
-    const d2 = { ...cfg('gummy'), layout: { rows: [{ id: 'row1', columns: [{ id: 'col1', modules: [{ type: 'text', text: 'Office' }] }] }] } } as any;
-    expect(ucThemeService.cardHue(d1)).not.toBe(ucThemeService.cardHue(d2));
+  it('deals each card a distinct hue and random seeds, and gummy paints with them', () => {
+    // Golden-angle dispensing: any run of consecutive cards differs by well over a flavour step.
+    const hues = Array.from({ length: 12 }, (_, i) => seedForSlot(i, 1234).hue);
+    for (let i = 1; i < hues.length; i++) {
+      const d = Math.abs(hues[i] - hues[i - 1]);
+      expect(Math.min(d, 360 - d)).toBeGreaterThan(60);
+    }
+    for (const h of hues) expect(h).toBeGreaterThanOrEqual(0), expect(h).toBeLessThan(360);
+    // Seeds are in [0, 1), deterministic per slot/salt, and differ between slots.
+    const s0 = seedForSlot(0, 1234);
+    expect(s0).toEqual(seedForSlot(0, 1234));
+    for (const v of s0.seeds) expect(v).toBeGreaterThanOrEqual(0), expect(v).toBeLessThan(1);
+    expect(s0.seeds).not.toEqual(seedForSlot(1, 1234).seeds);
+    // A different salt (page load) deals a different hand.
+    expect(seedForSlot(0, 1).hue).not.toBe(seedForSlot(0, 181).hue);
+
+    // Each element keeps its slot; two elements get different hues.
+    const elA = document.createElement('div');
+    const elB = document.createElement('div');
+    const seedA = ucThemeService.cardSeed(elA);
+    expect(ucThemeService.cardSeed(elA)).toEqual(seedA);
+    expect(ucThemeService.cardSeed(elB).hue).not.toBe(seedA.hue);
 
     const gummy = BUILTIN_THEMES.find(t => t.id === 'gummy')!;
-    const el = document.createElement('div');
-    ucThemeService.applyThemeToHost(el, gummy, hueA);
-    expect(el.style.getPropertyValue('--uc-card-hue')).toBe(String(hueA));
-    expect(el.style.getPropertyValue('--card-background-color')).toContain('var(--uc-card-hue');
+    ucThemeService.applyThemeToHost(elA, gummy, seedA);
+    expect(elA.style.getPropertyValue('--uc-card-hue')).toBe(String(seedA.hue));
+    expect(elA.style.getPropertyValue('--uc-card-seed-1')).toBe(String(seedA.seeds[0]));
+    expect(elA.style.getPropertyValue('--uc-card-seed-3')).toBe(String(seedA.seeds[2]));
+    expect(elA.style.getPropertyValue('--card-background-color')).toContain('var(--uc-card-hue');
     expect(gummy.css).toContain('--uc-card-hue');
-    // Changing only the hue re-applies.
-    expect(ucThemeService.applyThemeToHost(el, gummy, (hueA + 1) % 360)).toBe(true);
-    expect(el.style.getPropertyValue('--uc-card-hue')).toBe(String((hueA + 1) % 360));
-    ucThemeService.applyThemeToHost(el, null);
-    expect(el.style.getPropertyValue('--uc-card-hue')).toBe('');
+    expect(gummy.css).toContain('--uc-card-seed-1');
+    expect(gummy.css).not.toContain('data:image'); // gloss is gradients driven by seeds, not a stamp
+    // Changing only the seed re-applies.
+    const seedB = { ...seedA, hue: (seedA.hue + 1) % 360 };
+    expect(ucThemeService.applyThemeToHost(elA, gummy, seedB)).toBe(true);
+    expect(elA.style.getPropertyValue('--uc-card-hue')).toBe(String(seedB.hue));
+    ucThemeService.applyThemeToHost(elA, null);
+    expect(elA.style.getPropertyValue('--uc-card-hue')).toBe('');
+    expect(elA.style.getPropertyValue('--uc-card-seed-1')).toBe('');
   });
 
   it('scales module-internal radii with the card radius', () => {
@@ -392,7 +406,6 @@ describe('sanitizeThemeDefinition', () => {
     expect(BEACH_THEME.css).toContain('data:image/svg+xml');
     expect(sanitizeThemeDefinition(BEACH_THEME).theme?.css).toBe(BEACH_THEME.css);
     expect(METALLIC_THEME.css).toContain('data:image/svg+xml'); // brushing + corner screws
-    expect(GUMMY_THEME.css).toContain('data:image/svg+xml'); // shine marks
     expect(sanitizeThemeDefinition(GUMMY_THEME).theme?.css).toBe(GUMMY_THEME.css);
     expect(sanitizeThemeDefinition(METALLIC_THEME).theme?.css).toBe(METALLIC_THEME.css);
   });

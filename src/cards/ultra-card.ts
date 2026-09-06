@@ -3948,7 +3948,7 @@ export class UltraCard extends LitElement {
    */
   private _applyUcTheme(): void {
     const theme = ucThemeService.resolveTheme(this.config);
-    ucThemeService.applyThemeToHost(this, theme, theme ? ucThemeService.cardHue(this.config) : undefined);
+    ucThemeService.applyThemeToHost(this, theme, theme ? ucThemeService.cardSeed(this) : undefined);
 
     const cssKey = theme ? `${theme.id}@${theme.version}` : '';
     if (cssKey === this._ucThemeCssKey && (!cssKey || this._ucThemeStyleElement?.isConnected)) {
