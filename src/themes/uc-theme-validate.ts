@@ -101,6 +101,31 @@ function cssValue(v: unknown, max = 300): string | undefined {
 }
 
 /**
+ * A background value that may also carry inline artwork: the same `url()`
+ * allowance as theme CSS (image data URIs only, payload scanned), nothing
+ * else. Rejected rather than truncated when over `max`, because a cut data
+ * URI is garbage.
+ */
+function cssBackground(v: unknown, max: number): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const s = v.trim();
+  if (!s || s.length > max) return undefined;
+  let bad = false;
+  const stripped = s.replace(INLINE_IMAGE_URL, (_m, _q, params: string, payload: string) => {
+    let decoded = payload;
+    try {
+      decoded = /;base64/i.test(params) ? atob(payload) : decodeURIComponent(payload);
+    } catch {
+      /* keep raw */
+    }
+    if (SVG_PAYLOAD_FORBIDDEN.some(re => re.test(decoded))) bad = true;
+    return 'inline-image';
+  });
+  if (bad) return undefined;
+  return cssValue(stripped, max) === undefined ? undefined : s;
+}
+
+/**
  * A `filter` chain made only of colour functions. `url()`, `drop-shadow()` and
  * `blur()` are rejected: the first can reach the network, the others change
  * layout/legibility rather than colour.
@@ -142,13 +167,13 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
   // Layered materials (bevel + chamfer + drop) legitimately run past 300 chars.
   const shadow = cssValue(r.shadow, 600);
   if (shadow) tokens.shadow = shadow;
-  const paneBackground = cssValue(r.pane_background, 600);
+  const paneBackground = cssBackground(r.pane_background, 4000);
   if (paneBackground) tokens.pane_background = paneBackground;
   const paneBorder = cssValue(r.pane_border);
   if (paneBorder) tokens.pane_border = paneBorder;
   const paneShadow = cssValue(r.pane_shadow, 600);
   if (paneShadow) tokens.pane_shadow = paneShadow;
-  const pageBackground = cssValue(r.page_background, 600);
+  const pageBackground = cssBackground(r.page_background, 12000);
   if (pageBackground) tokens.page_background = pageBackground;
   if (DENSITIES.includes(r.density as UcThemeDensity)) tokens.density = r.density as UcThemeDensity;
   const accent = cssValue(r.accent);

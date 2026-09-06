@@ -52,7 +52,10 @@ export class UcThemeSwatch extends LitElement {
 
     // The stage shows the page the theme asks for, so materials that depend
     // on a matching page (neumorphism, wood) preview the way they render.
-    const stageStyle = theme?.tokens.page_background ? { background: theme.tokens.page_background } : {};
+    // `fixed` would pin a wallpaper to the viewport; the tile wants it inside the tile.
+    const stageStyle = theme?.tokens.page_background
+      ? { background: theme.tokens.page_background.replace(/\s+fixed\b/g, '') }
+      : {};
 
     return html`
       <div class="swatch ${this.large ? 'large' : ''}" style=${styleMap(stageStyle)}>

@@ -322,19 +322,60 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-// Liquid Glass (iOS 26 / macOS Tahoe). The wallpaper is the default blue:
-// deep ultramarine with flowing azure light. Everything on it is clear glass
-// with white vibrancy type.
-const LG_INK = '#ffffff';
-const LG_INK_SOFT = 'rgba(255, 255, 255, 0.72)';
-const LG_TINT = 'rgba(255, 255, 255, 0.14)';
-const LG_ACCENT = '#8fd6ff'; // azure, lifted from the wallpaper highlights
+// Liquid Glass (iOS 26). The wallpaper is in the spirit of Apple's: a pale
+// sky that drifts from cornflower into lavender and pink, with a few huge
+// glass lenses drawn by their rims and a soft specular. Type is dark ink,
+// as in iOS light mode; the glass itself stays white and clear.
+const LG_INK = '#10224d';
+const LG_INK_SOFT = 'rgba(16, 34, 77, 0.7)';
+const LG_TINT = 'rgba(255, 255, 255, 0.16)';
+const LG_PRIMARY = '#1b5fd6'; // white on it 5.7:1
+const LG_ACCENT = '#3d8bff';
+const LG_SHADOW_TINT = '30, 60, 140';
+// Three lenses, laid out for a portrait screen and stretched to whatever
+// the screen is (rims keep their width): a great circle whose lower arc
+// crosses the top third, a wide lens across the middle, and a tall rounded
+// slab filling the lower half. Each is a faint white fill, a crisp rim, a
+// darker refraction line inside the lower edge and a blurred specular along
+// the top. `fixed` pins the wallpaper to the viewport, so long dashboards
+// scroll over it instead of stretching it.
+const LG_LENSES = svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="fa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.3"/>
+      <stop offset="0.45" stop-color="#fff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="fb" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.95"/>
+      <stop offset="0.6" stop-color="#fff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="s" x="-20%" y="-300%" width="140%" height="700%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="r" x="-10%" y="-100%" width="120%" height="300%"><feGaussianBlur stdDeviation="5"/></filter>
+    <clipPath id="ca"><rect x="20" y="380" width="960" height="580" rx="330"/></clipPath>
+    <clipPath id="cb"><ellipse cx="500" cy="420" rx="520" ry="110"/></clipPath>
+    <clipPath id="cc"><circle cx="500" cy="-300" r="730"/></clipPath>
+  </defs>
+  <circle cx="500" cy="-300" r="730" fill="#fff" fill-opacity="0.12" stroke="#fff" stroke-opacity="0.65" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+  <path d="M 40 300 Q 500 480 960 300" fill="none" stroke="#3f6fe0" stroke-opacity="0.3" stroke-width="9" filter="url(#r)" clip-path="url(#cc)"/>
+  <rect x="20" y="380" width="960" height="580" rx="330" fill="url(#fa)" stroke="url(#rim)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+  <path d="M 60 930 Q 500 1000 940 930" fill="none" stroke="#3f6fe0" stroke-opacity="0.35" stroke-width="10" filter="url(#r)" clip-path="url(#ca)"/>
+  <path d="M 250 386 Q 500 374 750 386" fill="none" stroke="#fff" stroke-opacity="0.95" stroke-width="5" filter="url(#s)" clip-path="url(#ca)"/>
+  <ellipse cx="500" cy="420" rx="520" ry="110" fill="url(#fb)" stroke="url(#rim)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+  <path d="M 20 440 Q 500 560 980 440" fill="none" stroke="#3f6fe0" stroke-opacity="0.4" stroke-width="9" filter="url(#r)" clip-path="url(#cb)"/>
+  <path d="M 120 340 Q 500 296 880 340" fill="none" stroke="#fff" stroke-opacity="0.95" stroke-width="5" filter="url(#s)" clip-path="url(#cb)"/>
+</svg>`);
 const LG_WALLPAPER = [
-  'radial-gradient(55% 40% at 22% 18%, rgba(140, 214, 255, 0.85) 0%, rgba(140, 214, 255, 0) 70%)',
-  'radial-gradient(45% 35% at 78% 72%, rgba(66, 150, 255, 0.8) 0%, rgba(66, 150, 255, 0) 70%)',
-  'radial-gradient(70% 30% at 50% 45%, rgba(20, 90, 220, 0.75) 0%, rgba(20, 90, 220, 0) 70%)',
-  'radial-gradient(60% 50% at 85% 10%, rgba(6, 24, 74, 0.9) 0%, rgba(6, 24, 74, 0) 70%)',
-  'linear-gradient(165deg, #0a2a72 0%, #1a5fd6 48%, #3b8ff0 62%, #0b2564 100%)',
+  `${LG_LENSES} center / 100% 100% no-repeat fixed`,
+  'radial-gradient(60% 28% at 50% 100%, rgba(150, 225, 245, 0.55) 0%, rgba(150, 225, 245, 0) 70%) fixed',
+  'radial-gradient(70% 32% at 50% 80%, rgba(242, 200, 230, 0.8) 0%, rgba(242, 200, 230, 0) 70%) fixed',
+  'linear-gradient(180deg, #5e9bf3 0%, #86b5ff 28%, #b3c6fb 52%, #d6c8f2 74%, #e8cfe9 100%) fixed',
 ].join(', ');
 // The specular: a rim light whose intensity follows the angle between the
 // edge normal and a fixed light (top-left), so it is bright at the corners
@@ -342,10 +383,10 @@ const LG_WALLPAPER = [
 const LG_RIM =
   'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.4) 84%, rgba(255, 255, 255, 0.85) 100%)';
 const LG_RIM_MASK = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
-const LG_SHADOW = '0 14px 36px rgba(4, 18, 60, 0.35), 0 2px 6px rgba(4, 18, 60, 0.18)';
+const LG_SHADOW = `0 14px 36px rgba(${LG_SHADOW_TINT}, 0.22), 0 2px 6px rgba(${LG_SHADOW_TINT}, 0.12)`;
 const LG_INNER = 'inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.12), inset 0 0 20px rgba(255, 255, 255, 0.06)';
 const LG_PANE_SHADOW =
-  'inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(4, 18, 60, 0.18)';
+  `inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(${LG_SHADOW_TINT}, 0.12)`;
 
 /**
  * Refraction as a backdrop filter (after kube.io, "Liquid Glass in the
@@ -415,20 +456,21 @@ const LG_REFRACT_PANE = svgFilterUrl(LG_FILTERS, 'pane');
 
 /**
  * Apple's Liquid Glass (iOS 26): clear, thick glass that lenses whatever is
- * behind it. The theme brings its own wallpaper (the blue default), because
- * glass on a flat page is just paper. The backdrop is blurred and, in
+ * behind it. The theme brings its own wallpaper (after Apple's: pale sky into
+ * lavender and pink, with glass lenses), because glass on a flat page is
+ * just paper. The backdrop is blurred and, in
  * Chromium, refracted at the bezel by an SVG displacement filter; the edge
  * is a rim light (bright at the corners facing the light, clear along the
- * sides) rather than a stroke; a soft specular sits top-left; type is white
- * with vibrancy. Controls are capsules of the same glass.
+ * sides) rather than a stroke; a soft specular sits top-left; type is dark
+ * ink as in iOS light mode. Controls are capsules of the same glass.
  */
 export const LIQUID_GLASS_THEME: UcThemeDefinition = {
   id: 'liquid_glass',
   name: 'Liquid Glass',
-  version: 3,
+  version: 4,
   author: 'Ultra Card',
   description:
-    'Apple Liquid Glass: clear glass on the blue wallpaper that bends what is behind it at the edge. Blur, refraction, rim light, capsule controls and white vibrancy type.',
+    'Apple Liquid Glass: clear glass over a pale blue-to-pink wallpaper that bends what is behind it at the edge. Blur, refraction, rim light, capsule controls.',
   icon: 'mdi:water-opacity',
   source: 'builtin',
   tokens: {
@@ -440,7 +482,7 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
     border_color: 'transparent',
     shadow: `${LG_INNER}, ${LG_SHADOW}`,
     page_background: LG_WALLPAPER,
-    pane_background: 'rgba(255, 255, 255, 0.10)',
+    pane_background: 'rgba(255, 255, 255, 0.18)',
     pane_border: 'none',
     pane_shadow: LG_PANE_SHADOW,
     density: 'comfortable',
@@ -448,13 +490,13 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
     font_family:
       "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Inter, system-ui, sans-serif",
     palette: {
-      primary: LG_INK,
-      on_primary: '#0a2a72', // 11.8:1 on white
+      primary: LG_PRIMARY,
+      on_primary: '#ffffff',
       accent: LG_ACCENT,
       card_bg: LG_TINT,
       text: LG_INK,
       text_secondary: LG_INK_SOFT,
-      divider: 'rgba(255, 255, 255, 0.18)',
+      divider: 'rgba(16, 34, 77, 0.12)',
     },
   },
   card: {
@@ -482,13 +524,13 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
 .card-container {
   position: relative;
   isolation: isolate;
-  --secondary-background-color: rgba(255, 255, 255, 0.10);
-  --primary-background-color: rgba(255, 255, 255, 0.06);
-  --input-fill-color: rgba(255, 255, 255, 0.10);
-  --mdc-select-fill-color: rgba(255, 255, 255, 0.10);
-  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.10);
+  --secondary-background-color: rgba(255, 255, 255, 0.18);
+  --primary-background-color: rgba(255, 255, 255, 0.1);
+  --input-fill-color: rgba(255, 255, 255, 0.18);
+  --mdc-select-fill-color: rgba(255, 255, 255, 0.18);
+  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.18);
   --rgb-card-background-color: 255, 255, 255;
-  --rgb-primary-text-color: 255, 255, 255;
+  --rgb-primary-text-color: 16, 34, 77;
   color: ${LG_INK};
   background-color: ${LG_TINT} !important;
   /* Specular top-left, a fainter lens light bottom-right, the rest clear. */
@@ -499,7 +541,6 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
   -webkit-backdrop-filter: blur(var(--uc-blur, 28px)) saturate(190%) brightness(1.06);
   border: none !important;
   box-shadow: ${LG_INNER}, ${LG_SHADOW} !important;
-  text-shadow: 0 1px 2px rgba(4, 18, 60, 0.25);
 }
 /* Chromium accepts an SVG filter as backdrop-filter: blur, then bend the
    backdrop at the bezel. Other engines keep the blur above. */
@@ -531,19 +572,19 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
 }
 /* Nested surfaces are smaller lenses of the same glass. */
 [style*="--uc-design-surface"] {
-  background-color: rgba(255, 255, 255, 0.10);
-  background-image: radial-gradient(120% 80% at 10% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 50%);
+  background-color: rgba(255, 255, 255, 0.18);
+  background-image: radial-gradient(120% 80% at 10% 0%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 50%);
   border: none;
   box-shadow: ${LG_PANE_SHADOW};
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
-/* Hairlines are light, not dark. */
+/* Hairlines are ink at low opacity, never solid. */
 .card-container hr,
 .card-container [class*="divider"],
 .card-container [class*="separator"] {
-  border-color: rgba(255, 255, 255, 0.18);
-  background-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(16, 34, 77, 0.12);
+  background-color: rgba(16, 34, 77, 0.12);
 }
 `.trim(),
 };

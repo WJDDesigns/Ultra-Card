@@ -191,15 +191,17 @@ describe('built-ins', () => {
     }
   });
 
-  it('liquid glass: clear tint, deep blur, lensing rim, white vibrancy type on its own wallpaper', () => {
+  it('liquid glass: clear tint, deep blur, lensing rim, dark ink on its own lens wallpaper', () => {
     const vars = ucThemeService.getHostVars(LIQUID_GLASS_THEME);
     expect(vars['--uc-radius']).toBe('32px');
     expect(vars['--uc-radius-sm']).toBe('22px');
     expect(vars['--uc-surface-backdrop']).toContain('blur(28px)');
     expect(vars['--uc-shadow']).toContain('inset 0 1px 0');
-    expect(vars['--primary-text-color']).toBe('#ffffff');
+    expect(vars['--primary-text-color']).toBe('#10224d');
     expect(vars['--card-background-color']).toMatch(/rgba\(255, 255, 255, 0\.1/);
-    expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/gradient/);
+    // Inline lens artwork sized to cover, over the sky gradient.
+    expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/^url\("data:image\/svg\+xml,[^"]+"\) center \/ 100% 100% no-repeat fixed, /);
+    expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(/linear-gradient\(180deg/);
     expect(LIQUID_GLASS_THEME.css).toContain('backdrop-filter');
     expect(LIQUID_GLASS_THEME.css).toMatch(/\.card-container::before[\s\S]*mask-composite: exclude/);
     // Chromium-only refraction: an inline SVG displacement filter as backdrop-filter,
@@ -220,6 +222,30 @@ describe('built-ins', () => {
     for (const id of ['ha-native', 'glass', 'bold', 'monochrome', 'material']) {
       expect(paints.get(id), id).toBeUndefined();
     }
+  });
+});
+
+describe('background tokens with artwork', () => {
+  const mk = (page_background: string) =>
+    sanitizeThemeDefinition({ id: 'a', name: 'A', tokens: { surface: 'flat', radius: 8, page_background } });
+
+  it('accepts inline image data URIs in page/pane backgrounds and keeps them intact', () => {
+    const art = svgDataUrl('<svg xmlns="http://www.w3.org/2000/svg"><circle r="4" fill="url(#g)"/></svg>');
+    const value = `${art} center / cover no-repeat, #e4e8ef`;
+    expect(mk(value).theme?.tokens.page_background).toBe(value);
+  });
+
+  it('rejects external url() and scripted artwork in backgrounds', () => {
+    expect(mk('url(https://evil.example/x.png), #fff').theme?.tokens.page_background).toBeUndefined();
+    const bad = svgDataUrl('<svg xmlns="http://www.w3.org/2000/svg"><script>1</script></svg>');
+    expect(mk(`${bad}, #fff`).theme?.tokens.page_background).toBeUndefined();
+    const ext = svgDataUrl('<svg xmlns="http://www.w3.org/2000/svg"><image href="https://evil.example/a.png"/></svg>');
+    expect(mk(`${ext}, #fff`).theme?.tokens.page_background).toBeUndefined();
+  });
+
+  it('drops an oversize background rather than truncating it', () => {
+    const huge = svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg">${'<circle r="1"/>'.repeat(1200)}</svg>`);
+    expect(mk(`${huge}, #fff`).theme?.tokens.page_background).toBeUndefined();
   });
 });
 
