@@ -942,9 +942,11 @@ const gummy = (s: number, l: number, a?: number) =>
  * Subsurface: light travels further through the edges of a gummy than the
  * middle, so the rim is deeper and more saturated and the centre glows. An
  * inner ring, a wide inner glow, a heavier pool at the bottom, a bright
- * refraction line along the bottom edge, and a coloured drop shadow.
+ * refraction line along the bottom edge, and a coloured drop shadow. No
+ * border: a hard outline reads as a sticker, so the edge is defined only by
+ * a soft light catch along the top and the rim glow.
  */
-const GUMMY_BODY_SHADOW = `inset 0 -2px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 3px ${gummy(92, 56, 0.42)}, inset 0 0 36px ${gummy(96, 46, 0.62)}, inset 0 -16px 22px ${gummy(96, 44, 0.5)}, 0 12px 26px ${gummy(80, 40, 0.42)}, 0 2px 6px ${gummy(80, 35, 0.35)}`;
+const GUMMY_BODY_SHADOW = `inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 3px ${gummy(92, 56, 0.42)}, inset 0 0 36px ${gummy(96, 46, 0.62)}, inset 0 -16px 22px ${gummy(96, 44, 0.5)}, 0 12px 26px ${gummy(80, 40, 0.42)}, 0 2px 6px ${gummy(80, 35, 0.35)}`;
 
 /**
  * "Gummy": gummy-bear cards. Each card gets its own candy hue (dealt so that
@@ -953,14 +955,15 @@ const GUMMY_BODY_SHADOW = `inset 0 -2px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 
  * floor reflection and the position of the light pool are all driven by the
  * card's random seeds, so every card catches the light differently.
  * Subsurface glow deepens toward the rim, a refraction line runs along the
- * bottom edge and the drop shadow is the card's own colour. Nested surfaces
+ * bottom edge and the drop shadow is the card's own colour. No border: the
+ * edge is only the light catching it. Nested surfaces
  * are smaller gummies with their own gloss. Dark-plum ink and liquorice
  * controls read on every flavour. Big soft radii, rounded type.
  */
 export const GUMMY_THEME: UcThemeDefinition = {
   id: 'gummy',
   name: 'Gummy',
-  version: 3,
+  version: 4,
   author: 'Ultra Card',
   description:
     'Gummy-bear cards: every card its own candy colour, rendered as translucent jelly that catches the light differently on each card. Dark-plum ink, liquorice controls.',
@@ -970,8 +973,8 @@ export const GUMMY_THEME: UcThemeDefinition = {
     surface: 'glossy',
     radius: 26,
     radius_sm: 18,
-    border_width: 2,
-    border_color: 'rgba(255, 255, 255, 0.62)',
+    border_width: 0,
+    border_color: 'transparent',
     shadow: GUMMY_BODY_SHADOW,
     density: 'comfortable',
     accent: `hsl(calc(${GUMMY_H} + 40) 90% 52%)`,
@@ -989,8 +992,8 @@ export const GUMMY_THEME: UcThemeDefinition = {
   card: {
     card_background: gummy(88, 72),
     card_border_radius: 26,
-    card_border_color: 'rgba(255, 255, 255, 0.62)',
-    card_border_width: 2,
+    card_border_color: 'transparent',
+    card_border_width: 0,
     card_padding: 20,
     card_shadow_enabled: true,
     card_shadow_color: gummy(80, 40, 0.42),
@@ -1041,7 +1044,7 @@ export const GUMMY_THEME: UcThemeDefinition = {
     radial-gradient(ellipse calc(18% + var(--g-s2) * 16%) 8% at calc(56% + var(--g-s3) * 34%) 95%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 100%),
     radial-gradient(ellipse 70% 45% at calc(30% + var(--g-s1) * 40%) 108%, ${gummy(95, 58, 0.9)} 0%, ${gummy(95, 58, 0)} 70%),
     radial-gradient(ellipse 110% 75% at calc(35% + var(--g-s2) * 30%) 45%, ${gummy(86, 80)} 0%, ${gummy(90, 72)} 60%, ${gummy(94, 62)} 100%) !important;
-  border: 2px solid rgba(255, 255, 255, 0.62) !important;
+  border: none !important;
   box-shadow: ${GUMMY_BODY_SHADOW} !important;
 }
 /* Nested surfaces are smaller gummies: lighter body, their own bloom and sheen, the same glowing rim. */
