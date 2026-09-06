@@ -822,18 +822,20 @@ const VAPOR_GRID = svgDataUrl(`
 </svg>`);
 
 /**
- * "Vapor": vaporwave. A midnight-purple card with a striped sunset sun in the
- * top-right corner, a cyan perspective grid running off the bottom edge, a
- * faint VHS scanline and a pink neon rim. Hot-pink primary with dark text on
+ * "Vapor": vaporwave. A midnight-purple card with a striped sunset sun, a
+ * cyan perspective grid running off the bottom edge, a faint VHS scanline, a
+ * few stars and a pink neon rim. No two cards are the same frame: the card's
+ * random seeds place and size the sun, tint and place the haze, set the
+ * grid's horizon and scatter the stars. Hot-pink primary with dark text on
  * it, cyan accent, neon-glow controls, a wide techno sans.
  */
 export const VAPOR_THEME: UcThemeDefinition = {
   id: 'vapor',
   name: 'Vapor',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'Vaporwave: midnight purple, a striped sunset sun, a cyan perspective grid, VHS scanlines and a hot-pink neon rim.',
+    'Vaporwave: midnight purple, a striped sunset sun, a cyan perspective grid, VHS scanlines and a hot-pink neon rim. Every card is a different frame.',
   icon: 'mdi:weather-sunset',
   source: 'builtin',
   tokens: {
@@ -885,17 +887,31 @@ export const VAPOR_THEME: UcThemeDefinition = {
   },
   css: `
 .card-container {
+  /* This card's frame, from its seeds. */
+  --v-s1: var(--uc-card-seed-1, 0.5);
+  --v-s2: var(--uc-card-seed-2, 0.5);
+  --v-s3: var(--uc-card-seed-3, 0.5);
+  --v-sun: calc(88px + var(--v-s3) * 64px);
+  --v-sun-x: calc(30% + var(--v-s1) * 70%);
+  --v-sun-y: calc(-24px + var(--v-s2) * 18px);
+  --v-haze: calc(190 + var(--v-s2) * 130); /* cyan .. violet .. pink */
+  --v-haze-x: calc(10% + var(--v-s3) * 80%);
+  --v-horizon: calc(48px + var(--v-s2) * 40px);
+  --v-sky: hsl(calc(250 + var(--v-s1) * 40) 62% 15%);
   background-color: ${VAPOR_NIGHT} !important;
-  /* Layers, top to bottom: grid at the foot, sun in the corner, pink haze, scanlines, night gradient. */
+  /* Layers, top to bottom: grid at the foot, sun, three stars, haze, scanlines, night gradient. */
   background-image:
     ${VAPOR_GRID},
     ${VAPOR_SUN},
-    radial-gradient(ellipse at 15% 110%, rgba(255, 79, 216, 0.28) 0%, rgba(255, 79, 216, 0) 55%),
+    radial-gradient(circle 1.2px at calc(var(--v-s2) * 100%) calc(6% + var(--v-s1) * 30%), rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(circle 1px at calc(var(--v-s3) * 100%) calc(4% + var(--v-s2) * 34%), rgba(255, 255, 255, 0.8) 0, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(circle 1.5px at calc(100% - var(--v-s1) * 100%) calc(8% + var(--v-s3) * 26%), rgba(79, 240, 255, 0.9) 0, rgba(79, 240, 255, 0) 100%),
+    radial-gradient(ellipse at var(--v-haze-x) 110%, hsl(var(--v-haze) 100% 65% / 0.3) 0%, hsl(var(--v-haze) 100% 65% / 0) 55%),
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
-    linear-gradient(180deg, #1d0d3d 0%, ${VAPOR_NIGHT} 55%, #0e0821 100%) !important;
-  background-repeat: no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
-  background-size: 100% 70px, 120px 120px, auto, auto, auto !important;
-  background-position: bottom center, right -14px top -18px, 0 0, 0 0, 0 0 !important;
+    linear-gradient(180deg, var(--v-sky) 0%, ${VAPOR_NIGHT} 55%, #0e0821 100%) !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
+  background-size: 100% var(--v-horizon), var(--v-sun) var(--v-sun), auto, auto, auto, auto, auto, auto !important;
+  background-position: bottom center, var(--v-sun-x) var(--v-sun-y), 0 0, 0 0, 0 0, 0 0, 0 0, 0 0 !important;
   box-shadow: ${VAPOR_GLOW} !important;
   text-shadow: 0 0 8px rgba(255, 79, 216, 0.25);
   letter-spacing: 0.03em;
