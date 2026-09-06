@@ -46,17 +46,10 @@ describe('resolution order', () => {
     expect(ucThemeService.resolveThemeId(cfg('does-not-exist'))).toBe('bold');
   });
 
-  it('removed built-ins (classic, soft) alias to their closest current theme', () => {
-    expect(BUILTIN_THEMES.map(t => t.id)).not.toContain('classic');
-    expect(BUILTIN_THEMES.map(t => t.id)).not.toContain('soft');
-    expect(ucThemeService.resolveThemeId(cfg('soft'))).toBe('material');
-    expect(ucThemeService.resolveThemeId(cfg('classic'))).toBe(UC_THEME_HA_NATIVE);
-    ucThemeService.setGlobalDefault('soft');
-    expect(ucThemeService.resolveThemeId(cfg())).toBe('material');
-    // A user theme installed under a legacy id is not aliased away.
-    const mine = ucThemeService.saveToLibrary({ id: 'soft', name: 'Mine', version: 1, tokens: { surface: 'flat', radius: 4 } });
-    expect(mine?.id).toBe('soft');
-    expect(ucThemeService.resolveThemeId(cfg('soft'))).toBe('soft');
+  it('classic and soft are gone', () => {
+    const ids = BUILTIN_THEMES.map(t => t.id);
+    expect(ids).not.toContain('classic');
+    expect(ids).not.toContain('soft');
   });
 
   it('material follows MD3: 12dp corners, pill controls, level-1 elevation, tonal tint', () => {

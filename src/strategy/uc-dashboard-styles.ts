@@ -93,16 +93,9 @@ export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
 
 export const DEFAULT_DASHBOARD_STYLE: UltraDashboardStyleId = 'material';
 
-/** Styles that existed in earlier releases; dashboards saved with them keep working. */
-const LEGACY_STYLE_IDS: Record<string, UltraDashboardStyleId> = {
-  classic: 'material',
-  soft: 'material',
-};
-
 export function getDashboardStyle(id: string | undefined | null): UltraDashboardStyle {
-  const resolved = (id && LEGACY_STYLE_IDS[id]) || id;
   return (
-    ULTRA_DASHBOARD_STYLES.find(s => s.id === resolved) ??
+    ULTRA_DASHBOARD_STYLES.find(s => s.id === id) ??
     ULTRA_DASHBOARD_STYLES.find(s => s.id === DEFAULT_DASHBOARD_STYLE)!
   );
 }

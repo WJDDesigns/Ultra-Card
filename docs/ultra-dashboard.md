@@ -71,8 +71,7 @@ strategy:
 | Material   | Material Design 3: tonal elevated cards, 12dp corners, pill controls. The default.     |
 
 Each style is an Ultra Card theme; generated cards carry `uc_theme: <style>` so
-the whole dashboard can be re-themed from the Hub's Themes tab. Dashboards saved
-with the retired `classic` or `soft` styles resolve to `material`.
+the whole dashboard can be re-themed from the Hub's Themes tab.
 
 Areas with no entities get no page. Config and diagnostic entities (signal
 strength, restart buttons) never appear on a room page.
