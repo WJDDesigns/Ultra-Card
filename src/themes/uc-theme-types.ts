@@ -19,7 +19,15 @@ export type UcThemeDensity = 'compact' | 'regular' | 'comfortable';
 
 export type UcThemeSource = 'builtin' | 'official' | 'community' | 'local';
 
-export type UcThemePaletteKey = 'primary' | 'accent' | 'card_bg' | 'text' | 'text_secondary' | 'divider';
+export type UcThemePaletteKey =
+  | 'primary'
+  | 'accent'
+  | 'card_bg'
+  | 'text'
+  | 'text_secondary'
+  | 'divider'
+  /** Text drawn on top of `primary` (HA's `--text-primary-color`). Derived from `primary` when omitted. */
+  | 'on_primary';
 
 export interface UcThemeTokens {
   surface: UcThemeSurface;

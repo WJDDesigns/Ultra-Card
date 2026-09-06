@@ -4,9 +4,11 @@ import {
   BUILTIN_THEMES,
   GLASS_THEME,
   GREEN_TERMINAL_THEME,
+  HILLARY_THEME,
   LIQUID_GLASS_THEME,
   MONOCHROME_THEME,
 } from '../themes/builtin-themes';
+import { contrastRatio, isLight, parseColor, toRgbTriple } from '../themes/uc-theme-color';
 import { UC_THEME_HA_NATIVE, UC_THEME_NONE } from '../themes/uc-theme-types';
 import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
 import type { UltraCardConfig } from '../types';
@@ -87,6 +89,70 @@ describe('host vars', () => {
     const mono = ucThemeService.getHostVars(MONOCHROME_THEME);
     expect(mono['--primary-color']).toBe('var(--primary-text-color)');
     expect(mono['--uc-density']).toBe('0.875');
+  });
+
+  it('derives the companion HA variables from a literal palette', () => {
+    const vars = ucThemeService.getHostVars(HILLARY_THEME);
+    // Nested surfaces step off the linen card instead of staying HA-dark.
+    const nested = parseColor(vars['--secondary-background-color'])!;
+    expect(isLight(nested)).toBe(true);
+    expect(nested).not.toEqual(parseColor(HILLARY_THEME.tokens.palette!.card_bg));
+    expect(vars['--rgb-secondary-background-color']).toBe(toRgbTriple(nested));
+    expect(vars['--input-fill-color']).toBe(vars['--secondary-background-color']);
+    expect(vars['--mdc-theme-surface']).toBe(HILLARY_THEME.tokens.palette!.card_bg);
+    // Navy primary gets white on top; text companions follow the pinned ink.
+    expect(vars['--text-primary-color']).toBe('#ffffff');
+    expect(vars['--rgb-text-primary-color']).toBe('255, 255, 255');
+    expect(vars['--disabled-text-color']).toMatch(/^rgba\(31, 45, 61, 0\.38\)$/);
+    expect(vars['--input-ink-color']).toBe(HILLARY_THEME.tokens.palette!.text);
+    // Explicit palette entries are never overwritten by derivation.
+    expect(vars['--secondary-text-color']).toBe(HILLARY_THEME.tokens.palette!.text_secondary);
+    expect(vars['--divider-color']).toBe(HILLARY_THEME.tokens.palette!.divider);
+  });
+
+  it('puts dark text on a bright phosphor primary', () => {
+    const vars = ucThemeService.getHostVars(GREEN_TERMINAL_THEME);
+    expect(vars['--text-primary-color']).toBe('#212121');
+    expect(isLight(parseColor(vars['--secondary-background-color'])!)).toBe(false);
+  });
+
+  it('honours an explicit on_primary and derives nothing from var() palettes', () => {
+    const mono = ucThemeService.getHostVars(MONOCHROME_THEME);
+    expect(mono['--text-primary-color']).toMatch(/^var\(--card-background-color/);
+    expect(mono['--secondary-background-color']).toBeUndefined();
+    // Translucent card backgrounds (Material) are not a readable surface to derive from.
+    const material = BUILTIN_THEMES.find(t => t.id === 'material')!;
+    expect(ucThemeService.getHostVars(material)['--secondary-background-color']).toBeUndefined();
+  });
+
+  it('pins readable text when only card_bg is pinned', () => {
+    const vars = ucThemeService.getHostVars({
+      id: 't',
+      name: 'T',
+      version: 1,
+      tokens: { surface: 'flat', radius: 8, palette: { card_bg: '#101418' } },
+    });
+    expect(vars['--primary-text-color']).toBe('#ffffff');
+    expect(vars['--secondary-text-color']).toBe('rgba(255, 255, 255, 0.7)');
+  });
+
+  it('every built-in palette meets WCAG AA on its own card', () => {
+    for (const theme of BUILTIN_THEMES) {
+      const p = theme.tokens.palette;
+      const bg = parseColor(p?.card_bg);
+      if (!bg || bg.a < 1) continue;
+      const text = parseColor(p?.text);
+      const secondary = parseColor(p?.text_secondary);
+      if (text) expect(contrastRatio(bg, text), `${theme.id} text`).toBeGreaterThanOrEqual(4.5);
+      if (secondary && secondary.a >= 1) {
+        expect(contrastRatio(bg, secondary), `${theme.id} text_secondary`).toBeGreaterThanOrEqual(4.5);
+      }
+      const primary = parseColor(p?.primary);
+      if (primary) {
+        const on = parseColor(ucThemeService.getHostVars(theme)['--text-primary-color'])!;
+        expect(contrastRatio(primary, on), `${theme.id} on_primary`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 
   it('monochrome desaturates the whole card; colour themes set no filter', () => {

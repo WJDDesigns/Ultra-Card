@@ -41,6 +41,7 @@ const PALETTE_SOURCES: Record<UcThemePaletteKey, string[]> = {
   text: ['primary-text-color'],
   text_secondary: ['secondary-text-color'],
   divider: ['divider-color'],
+  on_primary: ['text-primary-color'],
 };
 
 const FONT_SOURCES = ['primary-font-family', 'paper-font-common-base_-_font-family', 'ha-font-family-body'];

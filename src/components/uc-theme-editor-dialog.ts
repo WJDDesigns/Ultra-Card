@@ -20,6 +20,7 @@ const PALETTE_FIELDS: { key: UcThemePaletteKey; label: string; placeholder: stri
   { key: 'text', label: 'Text', placeholder: 'var(--primary-text-color)' },
   { key: 'text_secondary', label: 'Secondary text', placeholder: 'var(--secondary-text-color)' },
   { key: 'divider', label: 'Divider', placeholder: 'var(--divider-color)' },
+  { key: 'on_primary', label: 'Text on primary', placeholder: 'auto (derived from primary)' },
 ];
 
 type Draft = {

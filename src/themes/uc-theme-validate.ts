@@ -19,7 +19,7 @@ import { UC_THEME_CARD_CHROME_KEYS, UC_THEME_MODULE_STYLE_KEYS } from './uc-them
 const SURFACES: readonly UcThemeSurface[] = ['flat', 'glass', 'neumorphic', 'glossy', 'outline', 'minimal'];
 const DENSITIES: readonly UcThemeDensity[] = ['compact', 'regular', 'comfortable'];
 const SOURCES: readonly UcThemeSource[] = ['builtin', 'official', 'community', 'local'];
-const PALETTE_KEYS = ['primary', 'accent', 'card_bg', 'text', 'text_secondary', 'divider'] as const;
+const PALETTE_KEYS = ['primary', 'accent', 'card_bg', 'text', 'text_secondary', 'divider', 'on_primary'] as const;
 
 export const UC_THEME_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 export const UC_THEME_MAX_CSS_LENGTH = 20_000;

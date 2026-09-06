@@ -222,6 +222,8 @@ export const MONOCHROME_THEME: UcThemeDefinition = {
     palette: {
       primary: 'var(--primary-text-color)',
       accent: 'var(--primary-text-color)',
+      // Primary is the ink colour, so anything drawn on primary must be paper.
+      on_primary: 'var(--card-background-color, var(--ha-card-background, white))',
       divider: 'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.35)',
     },
   },
@@ -445,7 +447,7 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
 const HILLARY_INK = '#1f2d3d'; // navy ink
 const HILLARY_BRASS = '#b08d57'; // brass / cognac accent
 const HILLARY_LINEN = '#f7f2e8'; // linen card
-const HILLARY_TAUPE = '#7d7166'; // warm secondary text
+const HILLARY_TAUPE = '#6e6257'; // warm secondary text (5.1:1 on linen)
 const HILLARY_SAND = 'rgba(31, 45, 61, 0.12)'; // hairline
 
 /**

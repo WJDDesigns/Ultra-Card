@@ -5408,7 +5408,8 @@
       "ha_import_mapped": "Mapped {count} values from \"{name}\"",
       "ha_import_nothing": "\"{name}\" sets no card variables; starting from defaults",
       "editor_grayscale": "Desaturate whole card (0 = colour, 1 = monochrome)",
-      "editor_color_filter": "Colour filter (CSS filter chain, overrides desaturate)"
+      "editor_color_filter": "Colour filter (CSS filter chain, overrides desaturate)",
+      "editor_palette_on_primary": "Text on primary"
     },
     "submit_theme": {
       "create_title": "Share your theme",

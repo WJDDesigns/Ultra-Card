@@ -2,8 +2,18 @@ import type { UltraCardConfig } from '../types';
 import type {
   UcThemeCardChrome,
   UcThemeDefinition,
+  UcThemePaletteKey,
   UcThemeSource,
 } from '../themes/uc-theme-types';
+import {
+  contrastText,
+  parseColor,
+  step,
+  toCss,
+  toRgbTriple,
+  withAlpha,
+  type Rgba,
+} from '../themes/uc-theme-color';
 import {
   UC_THEME_HA_NATIVE,
   UC_THEME_MODULE_STYLE_KEYS,
@@ -78,6 +88,7 @@ const PALETTE_TO_VARS: Record<string, string[]> = {
   text: ['--primary-text-color'],
   text_secondary: ['--secondary-text-color'],
   divider: ['--divider-color'],
+  on_primary: ['--text-primary-color'],
 };
 
 function hexToRgb(hex: string): string | null {
@@ -87,6 +98,68 @@ function hexToRgb(hex: string): string | null {
   if (h.length === 3) h = h.split('').map(c => c + c).join('');
   const n = parseInt(h, 16);
   return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+}
+
+/**
+ * Fill in the HA variables modules paint *with* a pinned colour, so a palette
+ * never leaves a mismatched pair (navy text on a still-dark
+ * `--secondary-background-color`, white on a bright phosphor primary, ...).
+ * Only literal colours are derived; anything the palette already set wins.
+ */
+function deriveCompanionVars(
+  palette: Partial<Record<UcThemePaletteKey, string>>,
+  vars: Record<string, string>
+): void {
+  const set = (name: string, value: string) => {
+    if (vars[name] === undefined) vars[name] = value;
+  };
+  const setColor = (name: string, c: Rgba) => {
+    set(name, toCss(c));
+    if (name.endsWith('-color')) set(`--rgb${name.slice(1)}`, toRgbTriple(c));
+  };
+
+  const bg = parseColor(palette.card_bg);
+  const text = parseColor(palette.text);
+  const primary = parseColor(palette.primary);
+  const secondaryText = parseColor(palette.text_secondary);
+
+  if (bg && bg.a >= 0.5) {
+    // Nested surfaces step away from the card, page sits just behind it.
+    const nested = step(bg, 0.06);
+    setColor('--secondary-background-color', nested);
+    setColor('--primary-background-color', step(bg, 0.03));
+    set('--mdc-theme-surface', toCss(bg));
+    set('--input-fill-color', toCss(nested));
+    set('--mdc-select-fill-color', toCss(nested));
+    set('--mdc-text-field-fill-color', toCss(nested));
+    if (!text) {
+      // A pinned background with unpinned text is the other half of the same
+      // hazard: HA's text may be the wrong pole for it.
+      const ink = contrastText(bg);
+      setColor('--primary-text-color', ink);
+      setColor('--secondary-text-color', withAlpha(ink, 0.7));
+    }
+  }
+
+  if (text) {
+    set('--mdc-theme-on-surface', toCss(text));
+    set('--input-ink-color', toCss(text));
+    set('--mdc-select-ink-color', toCss(text));
+    set('--mdc-text-field-ink-color', toCss(text));
+    setColor('--disabled-text-color', withAlpha(text, 0.38));
+    const muted = secondaryText ?? withAlpha(text, 0.7);
+    set('--input-label-ink-color', toCss(muted));
+    set('--input-dropdown-icon-color', toCss(muted));
+    if (!secondaryText) setColor('--secondary-text-color', muted);
+    if (!palette.divider) setColor('--divider-color', withAlpha(text, 0.12));
+  }
+
+  if (primary) {
+    const onPrimary = contrastText(primary);
+    setColor('--text-primary-color', onPrimary);
+    set('--mdc-theme-primary', toCss(primary));
+    set('--mdc-theme-on-primary', toCss(onPrimary));
+  }
 }
 
 class UcThemeService {
@@ -288,6 +361,7 @@ class UcThemeService {
           if (rgb && v.endsWith('-color')) vars[`--rgb${v.slice(1)}`] = rgb;
         }
       }
+      deriveCompanionVars(t.palette, vars);
     }
     return vars;
   }
