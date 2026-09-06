@@ -325,13 +325,12 @@ class UcThemeService {
   /**
    * A stable 0–359 hue for one card, exposed as `--uc-card-hue` so a theme
    * can give every card on a dashboard its own colour (Gummy does). Seeded
-   * from the first row id when there is one, so editing modules inside the
-   * card does not reshuffle its colour; otherwise from the layout itself.
+   * from the whole layout: row/module ids are not unique enough (the default
+   * card ships `row1`), so two cards only share a hue when they are identical.
+   * Editing a card may move it to a new flavour.
    */
   cardHue(config: UltraCardConfig | undefined | null): number {
-    const seed =
-      (config?.layout as { rows?: Array<{ id?: string }> } | undefined)?.rows?.[0]?.id ??
-      JSON.stringify(config?.layout ?? config ?? '');
+    const seed = JSON.stringify(config?.layout ?? config ?? '');
     // FNV-1a
     let h = 0x811c9dc5;
     for (let i = 0; i < seed.length; i++) {

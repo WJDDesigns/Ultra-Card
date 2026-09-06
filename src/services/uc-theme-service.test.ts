@@ -62,9 +62,10 @@ describe('resolution order', () => {
     expect(hueA).toBeGreaterThanOrEqual(0);
     expect(hueA).toBeLessThan(360);
     expect(hueA).not.toBe(ucThemeService.cardHue(b));
-    // Editing modules inside the card keeps its colour (seeded by the first row id).
-    const edited = { ...a, layout: { rows: [{ id: 'row-a', columns: [{ id: 'c', modules: [{ type: 'text' }] }] }] } } as any;
-    expect(ucThemeService.cardHue(edited)).toBe(hueA);
+    // Cards built from the default config share `row1`; different content must still differ.
+    const d1 = { ...cfg('gummy'), layout: { rows: [{ id: 'row1', columns: [{ id: 'col1', modules: [{ type: 'text', text: 'Kitchen' }] }] }] } } as any;
+    const d2 = { ...cfg('gummy'), layout: { rows: [{ id: 'row1', columns: [{ id: 'col1', modules: [{ type: 'text', text: 'Office' }] }] }] } } as any;
+    expect(ucThemeService.cardHue(d1)).not.toBe(ucThemeService.cardHue(d2));
 
     const gummy = BUILTIN_THEMES.find(t => t.id === 'gummy')!;
     const el = document.createElement('div');
