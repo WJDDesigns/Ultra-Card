@@ -712,7 +712,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
           justify-content: center;
           padding: 32px;
           text-align: center;
-          background: var(--secondary-background-color);
+          background: var(--uc-pane-bg, var(--secondary-background-color));
           border-radius: var(--uc-r-12, 12px);
           margin: 16px;
         "

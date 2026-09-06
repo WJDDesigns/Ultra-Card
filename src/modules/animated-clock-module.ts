@@ -359,7 +359,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
             --clock-size: ${clockModule.clock_size || 50}px;
             --clock-size-value: ${clockModule.clock_size || 50};
             --clock-color: ${clockModule.clock_color || 'var(--primary-text-color)'};
-            --clock-background: ${clockModule.clock_background || 'var(--card-background-color)'};
+            --clock-background: ${clockModule.clock_background || 'var(--uc-pane-bg, var(--card-background-color))'};
           "
         >
           ${clockContent}
@@ -557,8 +557,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       'var(--primary-text-color)';
     const faceBackgroundColor =
       clockModule.analog_face_background_color ||
-      clockModule.clock_background ||
-      'var(--card-background-color)';
+      clockModule.clock_background || 'var(--uc-pane-bg, var(--card-background-color))';
 
     // Get background image based on type
     let backgroundImageUrl = '';
@@ -1236,8 +1235,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     // Get colors
     const backgroundColor =
       clockModule.material_background_color ||
-      clockModule.clock_background ||
-      'var(--card-background-color)';
+      clockModule.clock_background || 'var(--uc-pane-bg, var(--card-background-color))';
     const hoursColor =
       clockModule.material_hours_color || clockModule.clock_color || 'var(--primary-text-color)';
     const minutesColor =

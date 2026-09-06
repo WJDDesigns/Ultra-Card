@@ -2218,11 +2218,11 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
         margin-bottom: 12px;
       }
       .uc-bf-panel {
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-10, 10px);
         padding: 12px 14px;
         margin-bottom: 16px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
       }
       .uc-bf-panel--empty {
         border-style: dashed;
@@ -2258,8 +2258,8 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
         max-width: 190px;
         padding: 4px 9px;
         border-radius: var(--uc-r-14, 14px);
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         font-size: 12px;
         color: var(--primary-text-color);
       }
@@ -2325,8 +2325,8 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
         align-items: center;
         gap: 10px;
         padding: 10px 12px;
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
       }

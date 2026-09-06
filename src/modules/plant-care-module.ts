@@ -2676,10 +2676,10 @@ export class UltraPlantCareModule extends BaseUltraModule {
       }
 
       .uc-pc-row {
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         overflow: hidden;
       }
       .uc-pc-row.expanded { border-color: var(--primary-color); }

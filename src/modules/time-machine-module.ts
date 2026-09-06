@@ -1138,8 +1138,8 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         flex: 1;
         height: 12px;
         border-radius: var(--uc-r-3, 3px);
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         overflow: hidden;
       }
       .uc-tm-lane-seg {
@@ -1254,8 +1254,8 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         position: relative;
         height: 40px;
         border-radius: var(--uc-r-8, 8px);
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         cursor: ew-resize;
         touch-action: none;
         user-select: none;

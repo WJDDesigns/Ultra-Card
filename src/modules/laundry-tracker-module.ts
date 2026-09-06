@@ -2522,9 +2522,9 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       }
 
       .uc-lt-row {
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-10, 10px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         margin-bottom: 10px;
         overflow: hidden;
       }
@@ -2648,7 +2648,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         min-width: 0;
         padding: 6px 8px;
         border-radius: var(--uc-r-8, 8px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         text-align: center;
       }
       .uc-lt-helper-stat-label {

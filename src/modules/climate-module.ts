@@ -1962,8 +1962,8 @@ export class UltraClimateModule extends BaseUltraModule {
       .climate-chip {
         padding: 6px 12px;
         border-radius: var(--uc-r-16, 16px);
-        border: 1px solid var(--divider-color);
-        background: var(--card-background-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         color: var(--primary-text-color);
         font-size: 12px;
         font-weight: 500;

@@ -3643,7 +3643,7 @@ export class UltraGridModule extends BaseUltraModule {
         border-radius: 50%;
         overflow: hidden;
         flex-shrink: 0;
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
         display: flex;
         align-items: center;
         justify-content: center;

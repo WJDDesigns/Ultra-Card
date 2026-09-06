@@ -2498,7 +2498,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
           justify-content: center;
           padding: 32px;
           text-align: center;
-          background: var(--secondary-background-color);
+          background: var(--uc-pane-bg, var(--secondary-background-color));
           border-radius: var(--uc-r-12, 12px);
           margin: 16px;
         "
@@ -2589,8 +2589,8 @@ export class UltraDogDutyModule extends BaseUltraModule {
         gap: 8px;
         padding: 10px 12px;
         border-radius: var(--uc-r-12, 12px);
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         max-height: 280px;
       }
       .dog-duty-list-header {
@@ -2639,8 +2639,8 @@ export class UltraDogDutyModule extends BaseUltraModule {
         flex-direction: column;
         gap: 4px;
         text-align: left;
-        border: 1px solid var(--divider-color);
-        background: var(--card-background-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         border-radius: var(--uc-r-10, 10px);
         padding: 8px 10px;
         cursor: pointer;
@@ -2714,9 +2714,9 @@ export class UltraDogDutyModule extends BaseUltraModule {
         border-radius: 999px;
         font-size: 12px;
         font-weight: 600;
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
         color: var(--primary-text-color);
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
       }
       .dog-duty-chip.toggle,
       .dog-duty-chip.action {

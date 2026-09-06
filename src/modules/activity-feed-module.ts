@@ -1085,7 +1085,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     textColor: string,
     secondaryColor: string
   ): TemplateResult {
-    const cardBg = feedModule.card_background_color || 'var(--card-background-color)';
+    const cardBg = feedModule.card_background_color || 'var(--uc-pane-bg, var(--card-background-color))';
     const style = feedModule.feed_card_style || 'elevated';
     const grouped = feedModule.group_by_time ? this._groupByDate(events) : null;
 

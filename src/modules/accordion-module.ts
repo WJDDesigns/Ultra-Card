@@ -1530,7 +1530,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     const containerBorderWidth = d.container_border_width ?? 1;
     const containerBorderColor = d.container_border_color || 'var(--divider-color)';
     const containerBorderRadius = d.container_border_radius ?? 8;
-    const containerBackground = d.container_background_color || 'var(--card-background-color)';
+    const containerBackground = d.container_background_color || 'var(--uc-pane-bg, var(--card-background-color))';
     const containerStyles = {
       border: `${containerBorderWidth}px solid ${containerBorderColor}`,
       borderRadius: `${containerBorderRadius}px`,
@@ -1549,7 +1549,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     const headerPadding = d.header_padding ?? 12;
     const headerBorderWidth = d.header_border_width ?? 1;
     const headerBorderColor = d.header_border_color || 'var(--divider-color)';
-    const headerBackground = d.header_background_color || 'var(--card-background-color)';
+    const headerBackground = d.header_background_color || 'var(--uc-pane-bg, var(--card-background-color))';
     const headerStyles: Record<string, string> = {
       display: 'flex',
       alignItems: 'center',

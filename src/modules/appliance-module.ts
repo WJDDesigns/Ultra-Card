@@ -1574,7 +1574,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     const animate = m.enable_animations !== false;
     const text = m.text_color || 'var(--primary-text-color)';
     const secondary = m.secondary_text_color || 'var(--secondary-text-color)';
-    const cardBg = m.card_background_color || 'var(--card-background-color)';
+    const cardBg = m.card_background_color || 'var(--uc-pane-bg, var(--card-background-color))';
     const isFridge = type === 'fridge';
     const isRange = type === 'range';
 

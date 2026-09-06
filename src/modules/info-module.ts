@@ -1129,11 +1129,11 @@ export class UltraInfoModule extends BaseUltraModule {
       }
       
       .entity-item {
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-8, 8px);
         padding: 12px;
         margin-bottom: 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
       }
       
       .entity-header {

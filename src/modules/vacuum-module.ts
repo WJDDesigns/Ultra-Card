@@ -4833,7 +4833,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         justify-content: space-between;
         align-items: center;
         padding: 12px 16px;
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
         border-radius: var(--uc-r-12, 12px);
         margin-bottom: 0;
         gap: 16px;

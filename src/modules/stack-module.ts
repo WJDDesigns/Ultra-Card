@@ -778,7 +778,7 @@ export class UltraStackModule extends BaseUltraModule {
           justify-content: center;
           gap: 4px;
           padding: 12px 8px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
           color: var(--primary-text-color);
           border: 2px solid var(--divider-color);
           border-radius: var(--uc-r-8, 8px);
@@ -815,8 +815,8 @@ export class UltraStackModule extends BaseUltraModule {
           align-items: flex-start;
           gap: 6px;
           padding: 14px;
-          background: var(--card-background-color);
-          border: 1px solid var(--divider-color);
+          background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
+          border: var(--uc-pane-border, 1px solid var(--divider-color));
           border-radius: var(--uc-r-8, 8px);
           cursor: pointer;
           text-align: left;
@@ -853,7 +853,7 @@ export class UltraStackModule extends BaseUltraModule {
           align-items: center;
           gap: 10px;
           padding: 10px 12px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
           border: 2px solid var(--divider-color);
           border-radius: var(--uc-r-8, 8px);
           cursor: pointer;
@@ -931,7 +931,7 @@ export class UltraStackModule extends BaseUltraModule {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
           border: 2px solid var(--divider-color);
           border-radius: var(--uc-r-8, 8px);
           cursor: pointer;

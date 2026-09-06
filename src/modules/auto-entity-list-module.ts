@@ -1500,7 +1500,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
 
     const text = m.text_color || 'var(--primary-text-color)';
     const secondary = m.secondary_text_color || 'var(--secondary-text-color)';
-    const cardBg = m.card_background_color || 'var(--card-background-color)';
+    const cardBg = m.card_background_color || 'var(--uc-pane-bg, var(--card-background-color))';
     const accent = m.accent_color || 'var(--primary-color)';
     const active = m.active_color || 'var(--success-color)';
     const inactive = m.inactive_color || 'var(--secondary-text-color)';
@@ -1649,7 +1649,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
-              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--uc-r-8, 8px);background:${o.cardBg};border:1px solid var(--divider-color);"
+              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--uc-r-8, 8px);background:${o.cardBg};border: var(--uc-pane-border, 1px solid var(--divider-color)); box-shadow: var(--uc-pane-shadow, none);"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1702,7 +1702,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
-              style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};border:1px solid var(--divider-color);"
+              style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};border: var(--uc-pane-border, 1px solid var(--divider-color)); box-shadow: var(--uc-pane-shadow, none);"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}

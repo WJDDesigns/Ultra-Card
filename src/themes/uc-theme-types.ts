@@ -63,6 +63,16 @@ export interface UcThemeTokens {
    * opacity. Takes precedence over `grayscale` when both are set.
    */
   color_filter?: string | undefined;
+  /**
+   * Inner panes: the rows, tiles, chips and tracks modules draw inside the
+   * card. Modules read `--uc-pane-bg`, `--uc-pane-border` and
+   * `--uc-pane-shadow` with their own look as the fallback, so a theme owns
+   * every layer, not just the card chrome. Unset tokens are derived from
+   * `surface`. A background may be a colour or gradient list.
+   */
+  pane_background?: string | undefined;
+  pane_border?: string | undefined;
+  pane_shadow?: string | undefined;
 }
 
 /** Card chrome keys a theme may set. Same shape as `UltraCardConfig.card_*`. */

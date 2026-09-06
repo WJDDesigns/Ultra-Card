@@ -2302,10 +2302,10 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
       }
 
       .uc-cz-row {
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         overflow: hidden;
       }
       .uc-cz-row.expanded { border-color: var(--primary-color); }
@@ -2738,7 +2738,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
         gap: 3px;
         padding: 1px 7px;
         border-radius: var(--uc-r-10, 10px);
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
         font-size: 10px;
       }
 

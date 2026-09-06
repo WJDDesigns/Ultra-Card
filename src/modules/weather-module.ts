@@ -332,7 +332,7 @@ export class UltraWeatherModule extends BaseUltraModule {
     const tempColor = m.temp_color || 'var(--primary-text-color)';
     const text = m.text_color || 'var(--primary-text-color)';
     const secondary = m.secondary_text_color || 'var(--secondary-text-color)';
-    const cardBg = m.card_background_color || 'var(--card-background-color)';
+    const cardBg = m.card_background_color || 'var(--uc-pane-bg, var(--card-background-color))';
 
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const hoverClass = this.getHoverEffectClass(module);

@@ -3,6 +3,7 @@ import {
   UC_MODULE_RADII,
   UC_RADIUS_SCALE_MAX,
   UC_THEME_BASE_CSS,
+  paneVars,
   radiusInner,
   radiusScale,
   seedForSlot,
@@ -111,6 +112,26 @@ describe('resolution order', () => {
       if (t.id === UC_THEME_HA_NATIVE) continue;
       expect(ucThemeService.getHostVars(t)['--uc-radius-scale']).toBe(radiusScale(t.tokens.radius));
     }
+  });
+
+  it('exposes pane tokens for module-drawn rows, tiles and chips', () => {
+    for (const t of BUILTIN_THEMES) {
+      if (t.id === UC_THEME_HA_NATIVE) continue;
+      const vars = ucThemeService.getHostVars(t);
+      expect(vars['--uc-pane-bg']).toBeTruthy();
+      expect(vars['--uc-pane-border']).toBeTruthy();
+      expect(vars['--uc-pane-shadow']).toBeTruthy();
+    }
+    // Explicit tokens win; otherwise the surface decides.
+    const neu = BUILTIN_THEMES.find(t => t.id === 'neumorphic-dark')!;
+    expect(ucThemeService.getHostVars(neu)['--uc-pane-shadow']).toContain('inset');
+    expect(paneVars({ surface: 'outline', radius: 8 } as any)['--uc-pane-bg']).toBe('transparent');
+    expect(paneVars({ surface: 'flat', radius: 8, pane_background: '#abc' } as any)['--uc-pane-bg']).toBe('#abc');
+    // HA Native resolves to no theme, so nothing is set and module fallbacks apply untouched.
+    expect(ucThemeService.resolveTheme(cfg(UC_THEME_HA_NATIVE))).toBeNull();
+    expect(ucThemeService.getHostVars(null)).toEqual({});
+    // Design surfaces pick up the pane shadow from the base CSS.
+    expect(UC_THEME_BASE_CSS).toContain('box-shadow: var(--uc-pane-shadow, none)');
   });
 
   it('caps nested radii so they step down concentrically from the card radius', () => {

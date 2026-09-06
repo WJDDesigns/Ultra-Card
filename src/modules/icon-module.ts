@@ -1343,7 +1343,7 @@ export class UltraIconModule extends BaseUltraModule {
           <!-- Inactive Preview -->
           <div
             style="
-                 background: var(--card-background-color);
+                 background: var(--uc-pane-bg, var(--card-background-color));
                  border-right: 1px solid var(--divider-color);
                  padding: 16px;
                  display: flex;
@@ -1357,7 +1357,7 @@ export class UltraIconModule extends BaseUltraModule {
           <!-- Active Preview -->
           <div
             style="
-                 background: var(--card-background-color);
+                 background: var(--uc-pane-bg, var(--card-background-color));
                  padding: 16px;
                  display: flex;
                  align-items: center;

@@ -2677,7 +2677,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
            the height-animated container leaks space under collapsed rows. */
         --expansion-panel-content-padding: 0 12px;
         margin-bottom: 8px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         border-radius: var(--uc-r-8, 8px);
       }
       ha-expansion-panel.vm-service-panel::part(summary) { padding: 0; min-height: unset; }
@@ -2749,9 +2749,9 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         align-items: flex-start;
         gap: 2px;
         padding: 10px;
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-8, 8px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         color: var(--primary-text-color);
         cursor: pointer;
         text-align: left;

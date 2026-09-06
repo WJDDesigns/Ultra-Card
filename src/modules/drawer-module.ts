@@ -428,7 +428,7 @@ export class UltraDrawerModule extends BaseUltraModule {
     const position = drawerModule.drawer_position || 'right';
     const isVertical = position === 'top' || position === 'bottom';
     const size = drawerModule.drawer_size || (isVertical ? '45vh' : '340px');
-    const background = drawerModule.drawer_background || 'var(--card-background-color)';
+    const background = drawerModule.drawer_background || 'var(--uc-pane-bg, var(--card-background-color))';
     const children = drawerModule.modules || [];
 
     const panelPositionCss: Record<string, string> = {

@@ -3932,7 +3932,7 @@ export class UltraPopupModule extends BaseUltraModule {
               ? 'max-height: 100vh; max-height: 100dvh;'
               : 'max-height: 90vh;'}
               overflow-y: auto;
-              background: ${popupModule.popup_background_color || 'var(--card-background-color)'};
+              background: ${popupModule.popup_background_color || 'var(--uc-pane-bg, var(--card-background-color))'};
               color: ${popupModule.popup_text_color || 'var(--primary-text-color)'};
               border-radius: ${layout === 'default'
               ? popupModule.popup_border_radius || '8px'

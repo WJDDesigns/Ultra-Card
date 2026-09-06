@@ -2864,7 +2864,7 @@ export class UltraPeopleModule extends BaseUltraModule {
 
       /* Data Items Builder */
       .data-items-section {
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color)); box-shadow: var(--uc-pane-shadow, none);
       }
 
       .data-items-list {

@@ -4,6 +4,7 @@ import type {
   UcThemeDefinition,
   UcThemePaletteKey,
   UcThemeSource,
+  UcThemeTokens,
 } from '../themes/uc-theme-types';
 import {
   contrastText,
@@ -79,6 +80,9 @@ export const UC_THEME_BASE_CSS = `
 [style*="--uc-design-surface"]:not([style*="border-radius"]) {
   border-radius: var(--uc-radius-inner, var(--uc-radius-sm));
 }
+[style*="--uc-design-surface"] {
+  box-shadow: var(--uc-pane-shadow, none);
+}
 .card-container {
   filter: var(--uc-color-filter, none);
 ${MODULE_RADIUS_VARS}
@@ -130,6 +134,42 @@ export const UC_RADIUS_SCALE_MAX = 1.75;
 export function radiusScale(cardRadius: number): string {
   const s = Math.min(UC_RADIUS_SCALE_MAX, Math.max(0, cardRadius / BASE_CARD_RADIUS));
   return String(Math.round(s * 100) / 100);
+}
+
+/**
+ * Inner-pane tokens. Modules paint their rows, tiles, chips and tracks with
+ * `var(--uc-pane-bg, <own>)` etc., so under a theme every nested layer takes
+ * the theme's material; outside a theme the variables are unset and modules
+ * look as they always did. Explicit `pane_*` tokens win; otherwise the look
+ * follows the theme's surface.
+ */
+export function paneVars(t: UcThemeTokens): Record<string, string> {
+  const bySurface: Record<string, [string, string, string]> = {
+    flat: ['var(--secondary-background-color)', '1px solid var(--divider-color)', 'none'],
+    glass: [
+      'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)',
+      '1px solid rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1)',
+      'none',
+    ],
+    neumorphic: [
+      'var(--card-background-color)',
+      'none',
+      'inset 4px 4px 9px rgba(0, 0, 0, 0.22), inset -4px -4px 9px rgba(255, 255, 255, 0.07)',
+    ],
+    glossy: [
+      'linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)), var(--card-background-color)',
+      'none',
+      'inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15)',
+    ],
+    outline: ['transparent', '1px solid var(--divider-color)', 'none'],
+    minimal: ['transparent', 'none', 'none'],
+  };
+  const [bg, border, shadow] = bySurface[t.surface] ?? bySurface.flat;
+  return {
+    '--uc-pane-bg': t.pane_background ?? bg,
+    '--uc-pane-border': t.pane_border ?? border,
+    '--uc-pane-shadow': t.pane_shadow ?? shadow,
+  };
 }
 
 /**
@@ -429,6 +469,7 @@ class UcThemeService {
       // square theme squares everything and a round one rounds everything.
       '--uc-radius-scale': radiusScale(t.radius),
       '--uc-radius-inner': `${radiusInner(t.radius, theme.card?.card_padding)}px`,
+      ...paneVars(t),
     };
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;

@@ -282,7 +282,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         justify-content: center;
         padding: 32px;
         text-align: center;
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color));
         border-radius: var(--uc-r-12, 12px);
         margin: 16px;
       ">
@@ -1330,7 +1330,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         padding: 24px;
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color));
         border-radius: var(--uc-r-8, 8px);
         text-align: center;
       ">
@@ -2229,7 +2229,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         justify-content: center;
         padding: 24px;
         text-align: center;
-        background: var(--secondary-background-color);
+        background: var(--uc-pane-bg, var(--secondary-background-color));
         border-radius: var(--uc-r-8, 8px);
       ">
         <ha-icon icon="mdi:scoreboard-outline" style="--mdi-icon-size: 32px; color: var(--secondary-text-color); margin-bottom: 8px;"></ha-icon>

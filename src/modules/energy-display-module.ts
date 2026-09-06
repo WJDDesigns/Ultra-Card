@@ -148,11 +148,11 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         align-items: center;
         gap: 8px;
         padding: 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         cursor: move;
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         transition: all 0.2s ease;
       }
       .entity-row.dragging { opacity: 0.5; transform: scale(0.95); }
@@ -259,7 +259,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
           justify-content: center;
           padding: 32px;
           text-align: center;
-          background: var(--secondary-background-color);
+          background: var(--uc-pane-bg, var(--secondary-background-color));
           border-radius: var(--uc-r-12, 12px);
           margin: 16px;
         "

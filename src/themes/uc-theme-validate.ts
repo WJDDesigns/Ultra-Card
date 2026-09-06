@@ -142,6 +142,12 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
   // Layered materials (bevel + chamfer + drop) legitimately run past 300 chars.
   const shadow = cssValue(r.shadow, 600);
   if (shadow) tokens.shadow = shadow;
+  const paneBackground = cssValue(r.pane_background, 600);
+  if (paneBackground) tokens.pane_background = paneBackground;
+  const paneBorder = cssValue(r.pane_border);
+  if (paneBorder) tokens.pane_border = paneBorder;
+  const paneShadow = cssValue(r.pane_shadow, 600);
+  if (paneShadow) tokens.pane_shadow = paneShadow;
   if (DENSITIES.includes(r.density as UcThemeDensity)) tokens.density = r.density as UcThemeDensity;
   const accent = cssValue(r.accent);
   if (accent) tokens.accent = accent;

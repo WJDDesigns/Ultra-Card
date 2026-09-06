@@ -330,7 +330,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
   private renderProLockUI(lang: string): TemplateResult {
     return html`
       <div
-        style="padding: 32px; text-align: center; background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); margin: 16px;"
+        style="padding: 32px; text-align: center; background: var(--uc-pane-bg, var(--secondary-background-color)); border-radius: var(--uc-r-8, 8px); margin: 16px;"
       >
         <ha-icon
           icon="mdi:lock"

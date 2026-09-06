@@ -2037,8 +2037,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
           font-size: 14px;
           font-weight: 600;
           color: ${summaryModule.header_text_color || 'var(--primary-text-color)'};
-          background: ${summaryModule.header_background_color ||
-        'var(--secondary-background-color)'};
+          background: ${summaryModule.header_background_color || 'var(--uc-pane-bg, var(--secondary-background-color))'};
           padding: 8px;
           text-align: left;
         }

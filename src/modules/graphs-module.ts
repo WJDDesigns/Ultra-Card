@@ -5376,8 +5376,8 @@ export class UltraGraphsModule extends BaseUltraModule {
       }
 
       .entity-item {
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
+        background: var(--uc-pane-bg, var(--card-background-color)); box-shadow: var(--uc-pane-shadow, none);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
         border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         margin-bottom: 12px;

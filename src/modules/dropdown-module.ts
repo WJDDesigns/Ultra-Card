@@ -1499,7 +1499,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     const textColor = moduleWithDesign.color || 'var(--primary-text-color)';
     const fontSize = moduleWithDesign.font_size || 14;
     const backgroundColor =
-      moduleWithDesign.background_color || 'var(--secondary-background-color)';
+      moduleWithDesign.background_color || 'var(--uc-pane-bg, var(--secondary-background-color))';
     const borderColor = moduleWithDesign.border_color || 'var(--divider-color)';
     const borderRadius = moduleWithDesign.border_radius || 4;
 
@@ -2123,7 +2123,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div
                 class="dropdown-options"
                 role="listbox"
-                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: var(--uc-r-4, 4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${Z_INDEX.DROPDOWN_MENU} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--uc-pane-bg, var(--card-background-color)); border: var(--uc-pane-border, 1px solid var(--divider-color)); border-radius: var(--uc-r-4, 4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${Z_INDEX.DROPDOWN_MENU} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
                 @scroll=${(e: Event) => {
