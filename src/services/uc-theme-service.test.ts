@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { UC_THEME_BASE_CSS, ucThemeService } from './uc-theme-service';
-import { GLASS_THEME, MONOCHROME_THEME } from '../themes/builtin-themes';
+import { GLASS_THEME, GREEN_TERMINAL_THEME, MONOCHROME_THEME } from '../themes/builtin-themes';
 import { UC_THEME_HA_NATIVE, UC_THEME_NONE } from '../themes/uc-theme-types';
 import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
 import type { UltraCardConfig } from '../types';
@@ -77,6 +77,26 @@ describe('host vars', () => {
     expect(zero.tokens.grayscale).toBeUndefined();
     const bool = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: true } }).theme!;
     expect(bool.tokens.grayscale).toBe(1);
+  });
+
+  it('color_filter accepts only colour functions and wins over grayscale', () => {
+    const tok = (color_filter: unknown) =>
+      sanitizeThemeDefinition({ id: 'f', name: 'F', tokens: { surface: 'flat', radius: 8, grayscale: 1, color_filter } }).theme!.tokens;
+    expect(tok('grayscale(1) sepia(1)  hue-rotate(80deg) saturate(2.5)').color_filter).toBe(
+      'grayscale(1) sepia(1) hue-rotate(80deg) saturate(2.5)'
+    );
+    expect(tok('url(#x)').color_filter).toBeUndefined();
+    expect(tok('blur(4px)').color_filter).toBeUndefined();
+    expect(tok('drop-shadow(0 0 4px red)').color_filter).toBeUndefined();
+    expect(tok('sepia(1); background: red').color_filter).toBeUndefined();
+    expect(tok('none').color_filter).toBeUndefined();
+
+    const green = tok('sepia(1) hue-rotate(80deg)');
+    expect(ucThemeService.getHostVars({ id: 'f', name: 'F', version: 1, tokens: green })['--uc-color-filter']).toBe(
+      'sepia(1) hue-rotate(80deg)'
+    );
+    expect(ucThemeService.getHostVars(GREEN_TERMINAL_THEME)['--uc-color-filter']).toContain('hue-rotate(80deg)');
+    expect(ucThemeService.getHostVars(GREEN_TERMINAL_THEME)['--uc-font-family']).toContain('monospace');
   });
 
   it('applies and clears on an element without leaking', () => {

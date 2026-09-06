@@ -5233,6 +5233,7 @@
       "editor_preview": "Preview",
       "editor_name_required": "Give the theme a name first",
       "editor_grayscale": "Desaturate whole card (0 = colour, 1 = monochrome)",
+      "editor_color_filter": "Colour filter (CSS filter chain, overrides desaturate)",
       "editor_palette": "Colours",
       "editor_palette_hint": "Pins Home Assistant colour variables on cards using this theme. Leave empty to follow the active HA theme.",
       "editor_palette_primary": "Primary",

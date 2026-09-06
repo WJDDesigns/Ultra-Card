@@ -39,6 +39,7 @@ type Draft = {
   accent: string;
   font_family: string;
   grayscale: string;
+  color_filter: string;
   card_background: string;
   card_padding: string;
   card_shadow_enabled: '' | 'true' | 'false';
@@ -81,6 +82,7 @@ function draftFromTheme(theme: UcThemeDefinition | null): Draft {
     accent: t?.accent ?? '',
     font_family: t?.font_family ?? '',
     grayscale: t?.grayscale !== undefined ? String(t.grayscale) : '',
+    color_filter: t?.color_filter ?? '',
     card_background: theme?.card?.card_background ?? '',
     card_padding: theme?.card?.card_padding !== undefined ? String(theme.card.card_padding) : '',
     card_shadow_enabled:
@@ -112,6 +114,7 @@ function themeFromDraft(d: Draft, version: number): Record<string, unknown> {
   if (d.font_family.trim()) tokens.font_family = d.font_family.trim();
   const gray = numOrUndef(d.grayscale);
   if (gray !== undefined && gray > 0) tokens.grayscale = Math.min(1, gray);
+  if (d.color_filter.trim()) tokens.color_filter = d.color_filter.trim();
   const palette: Record<string, string> = {};
   for (const f of PALETTE_FIELDS) {
     const v = d.palette[f.key]?.trim();
@@ -302,6 +305,7 @@ export class UcThemeEditorDialog extends LitElement {
               ${this._text('shadow', t('editor_shadow', 'Shadow (CSS box-shadow)'), d.shadow, v => this._set('shadow', v), '0 4px 16px rgba(0,0,0,0.08)')}
               ${this._text('font_family', t('editor_font', 'Font family'), d.font_family, v => this._set('font_family', v), 'inherit')}
               ${this._text('grayscale', t('editor_grayscale', 'Desaturate whole card (0 = colour, 1 = monochrome)'), d.grayscale, v => this._set('grayscale', v), '0', 'number')}
+              ${this._text('color_filter', t('editor_color_filter', 'Colour filter (CSS filter chain, overrides desaturate)'), d.color_filter, v => this._set('color_filter', v), 'grayscale(1) sepia(1) hue-rotate(80deg) saturate(2.5)')}
             </section>
 
             <section>

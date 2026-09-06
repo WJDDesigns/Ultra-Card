@@ -66,6 +66,21 @@ function cssValue(v: unknown, max = 300): string | undefined {
   return s;
 }
 
+/**
+ * A `filter` chain made only of colour functions. `url()`, `drop-shadow()` and
+ * `blur()` are rejected: the first can reach the network, the others change
+ * layout/legibility rather than colour.
+ */
+const COLOR_FILTER_FN = /^(grayscale|sepia|saturate|hue-rotate|brightness|contrast|invert|opacity)\(\s*-?\d*\.?\d+\s*(deg|turn|rad|%)?\s*\)$/;
+
+export function colorFilter(v: unknown): string | undefined {
+  const s = str(v, 200);
+  if (!s || s === 'none') return undefined;
+  const parts = s.split(/\)\s+(?=[a-z])/i).map((p, i, arr) => (i < arr.length - 1 ? `${p})` : p));
+  if (!parts.every(p => COLOR_FILTER_FN.test(p.trim()))) return undefined;
+  return parts.map(p => p.trim()).join(' ');
+}
+
 function num(v: unknown, min: number, max: number): number | undefined {
   const n = typeof v === 'string' ? parseFloat(v) : v;
   if (typeof n !== 'number' || !isFinite(n)) return undefined;
@@ -99,6 +114,8 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
   if (font) tokens.font_family = font;
   const grayscale = typeof r.grayscale === 'boolean' ? (r.grayscale ? 1 : undefined) : num(r.grayscale, 0, 1);
   if (grayscale !== undefined && grayscale > 0) tokens.grayscale = grayscale;
+  const filter = colorFilter(r.color_filter);
+  if (filter) tokens.color_filter = filter;
   if (r.palette && typeof r.palette === 'object') {
     const palette: Record<string, string> = {};
     for (const key of PALETTE_KEYS) {

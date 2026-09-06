@@ -292,6 +292,81 @@ export const MATERIAL_THEME: UcThemeDefinition = {
   },
 };
 
+const PHOSPHOR = '#33ff66';
+const PHOSPHOR_DIM = 'rgba(51, 255, 102, 0.6)';
+const PHOSPHOR_LINE = 'rgba(51, 255, 102, 0.35)';
+
+/**
+ * Green phosphor CRT. Square corners, hairline borders, monospace type, a
+ * soft glow, and a colour filter that tints everything on the card green,
+ * so icons, images and modules with their own colours all read as one
+ * terminal. Popups portal out of the card and stay in colour.
+ */
+export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
+  id: 'green_terminal',
+  name: 'Green Terminal',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'Green phosphor on black. Monospace type, square corners, hairline borders and a glow. Everything on the card is tinted green.',
+  icon: 'mdi:console',
+  source: 'builtin',
+  tokens: {
+    surface: 'outline',
+    radius: 0,
+    radius_sm: 0,
+    border_width: 1,
+    border_color: PHOSPHOR_LINE,
+    shadow: `0 0 14px rgba(51, 255, 102, 0.18)`,
+    accent: PHOSPHOR,
+    density: 'compact',
+    font_family: "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, Consolas, 'Courier New', monospace",
+    palette: {
+      primary: PHOSPHOR,
+      accent: PHOSPHOR,
+      card_bg: '#050a06',
+      text: PHOSPHOR,
+      text_secondary: PHOSPHOR_DIM,
+      divider: PHOSPHOR_LINE,
+    },
+    // grey → sepia → rotate the warm tone onto green → boost. Black stays black.
+    color_filter: 'grayscale(1) sepia(1) hue-rotate(80deg) saturate(2.5) brightness(1.05)',
+  },
+  card: {
+    card_background: '#050a06',
+    card_border_radius: 0,
+    card_border_color: PHOSPHOR_LINE,
+    card_border_width: 1,
+    card_padding: 14,
+    card_shadow_enabled: true,
+    card_shadow_color: 'rgba(51, 255, 102, 0.18)',
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 0,
+    card_shadow_blur: 14,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'outline' },
+    bar: { bar_style: 'outline' },
+    slider_control: { slider_style: 'outline' },
+    spinbox: { button_style: 'outline', button_shape: 'square' },
+    popup: { trigger_button_style: 'outline' },
+    grid: { grid_style: 'style_8' },
+    navigation: { nav_style: 'uc_minimal' },
+    area_summary: { style_preset: 'compact_controls', accent_color: PHOSPHOR, tile_border_radius: 0 },
+    auto_entity_list: { row_style: 'slim' },
+    unifi: { rack_style: 'blueprint' },
+    activity_feed: { feed_card_style: 'outlined' },
+    tabs: { style: 'simple' },
+  },
+  css: `
+.card-container {
+  text-shadow: 0 0 6px rgba(51, 255, 102, 0.45);
+  letter-spacing: 0.02em;
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   CLASSIC_THEME,
@@ -300,4 +375,5 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   BOLD_THEME,
   MONOCHROME_THEME,
   MATERIAL_THEME,
+  GREEN_TERMINAL_THEME,
 ];

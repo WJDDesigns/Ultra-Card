@@ -47,6 +47,14 @@ export interface UcThemeTokens {
    * monochrome theme is for. Images and camera feeds are desaturated too.
    */
   grayscale?: number | undefined;
+  /**
+   * Full CSS `filter` chain applied to the whole card, for looks a single
+   * grayscale cannot express (a phosphor tint: `grayscale(1) sepia(1)
+   * hue-rotate(80deg) saturate(2.5)`). Only colour functions are accepted:
+   * grayscale, sepia, saturate, hue-rotate, brightness, contrast, invert,
+   * opacity. Takes precedence over `grayscale` when both are set.
+   */
+  color_filter?: string | undefined;
 }
 
 /** Card chrome keys a theme may set. Same shape as `UltraCardConfig.card_*`. */

@@ -274,7 +274,9 @@ class UcThemeService {
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;
     if (t.font_family) vars['--uc-font-family'] = t.font_family;
-    if (t.grayscale && t.grayscale > 0) {
+    if (t.color_filter) {
+      vars['--uc-color-filter'] = t.color_filter;
+    } else if (t.grayscale && t.grayscale > 0) {
       vars['--uc-color-filter'] = `grayscale(${Math.min(1, t.grayscale)})`;
     }
     if (t.palette) {
