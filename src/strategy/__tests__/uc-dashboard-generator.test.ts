@@ -24,8 +24,8 @@ function makeHass() {
     (states[id] = state(id, s, attrs));
 
   // Kitchen: lights, a temperature sensor, a door sensor, a diagnostic entity.
-  add('light.kitchen_ceiling');
-  add('light.kitchen_counter', 'off');
+  add('light.kitchen_ceiling', 'on', { supported_color_modes: ['brightness'] });
+  add('light.kitchen_counter', 'off', { supported_color_modes: ['brightness'] });
   add('sensor.kitchen_temperature', '21.5', { device_class: 'temperature' });
   // Sorts before "kitchen_temperature" by name, so a naive first-match would pick it.
   add('sensor.fridge_temperature', '4', {
@@ -42,7 +42,35 @@ function makeHass() {
   add('camera.living', 'idle');
   // Garage: only a switch (via device area), plus a fan.
   add('switch.garage_outlet', 'off');
+  add('switch.garage_heater', 'unavailable');
   add('fan.garage', 'off');
+  // Office: a WLED strip (main light + segments on one device), a light group
+  // over two bulbs, a scene, an illuminance sensor, a diagnostic uptime sensor
+  // that HA would list in the area, and a plain on/off light.
+  add('light.desk_strip', 'on', { friendly_name: 'Desk strip', supported_color_modes: ['rgb'] });
+  add('light.desk_strip_segment_001', 'off', { friendly_name: 'Desk strip Segment 001' });
+  add('light.desk_strip_segment_002', 'off', { friendly_name: 'Desk strip Segment 002' });
+  add('light.office_lamps', 'on', {
+    friendly_name: 'Office lamps',
+    entity_id: ['light.lamp_left', 'light.lamp_right'],
+    supported_color_modes: ['color_temp'],
+  });
+  add('light.lamp_left', 'on', {
+    friendly_name: 'Lamp left',
+    supported_color_modes: ['color_temp'],
+  });
+  add('light.lamp_right', 'on', {
+    friendly_name: 'Lamp right',
+    supported_color_modes: ['color_temp'],
+  });
+  add('light.office_closet', 'off', { friendly_name: 'Closet', supported_color_modes: ['onoff'] });
+  add('scene.office_focus', 'scening', { friendly_name: 'Focus' });
+  add('sensor.office_lux', '320', { device_class: 'illuminance', unit_of_measurement: 'lx' });
+  add('sensor.office_ap_uptime', '4 days', { friendly_name: 'AP uptime' });
+  add('sensor.wayne_phone_steps', '4021', { unit_of_measurement: 'steps' });
+  // Misc: two utility sensors and nothing to control; not worth a page.
+  add('sensor.grid_co2_intensity', '400', { unit_of_measurement: 'g/kWh' });
+  add('sensor.grid_fossil_pct', '58', { unit_of_measurement: '%' });
   // Attic: an empty area.
   // Ungrouped things for the Home page.
   add('person.wayne', 'home');
@@ -58,6 +86,8 @@ function makeHass() {
       kitchen: { area_id: 'kitchen', name: 'Kitchen', icon: 'mdi:stove', floor_id: 'ground' },
       living: { area_id: 'living', name: 'Living Room', floor_id: 'ground' },
       garage: { area_id: 'garage', name: 'Garage', floor_id: null },
+      office: { area_id: 'office', name: 'Office', floor_id: 'upstairs' },
+      misc: { area_id: 'misc', name: 'Misc', floor_id: null },
       attic: { area_id: 'attic', name: 'Attic', floor_id: 'upstairs' },
     },
     floors: {
@@ -66,6 +96,7 @@ function makeHass() {
     },
     devices: {
       dev_garage: { id: 'dev_garage', area_id: 'garage' },
+      dev_wled: { id: 'dev_wled', area_id: 'office', name: 'WLED', name_by_user: 'Desk strip' },
     },
     entities: {
       'light.kitchen_ceiling': { entity_id: 'light.kitchen_ceiling', area_id: 'kitchen' },
@@ -84,8 +115,36 @@ function makeHass() {
       'cover.living_blinds': { entity_id: 'cover.living_blinds', area_id: 'living' },
       'camera.living': { entity_id: 'camera.living', area_id: 'living' },
       'switch.garage_outlet': { entity_id: 'switch.garage_outlet', device_id: 'dev_garage' },
+      'switch.garage_heater': { entity_id: 'switch.garage_heater', device_id: 'dev_garage' },
       'fan.garage': { entity_id: 'fan.garage', device_id: 'dev_garage' },
       'light.hidden_one': { entity_id: 'light.hidden_one', area_id: 'kitchen', hidden: true },
+      'light.desk_strip': { entity_id: 'light.desk_strip', device_id: 'dev_wled' },
+      'light.desk_strip_segment_001': {
+        entity_id: 'light.desk_strip_segment_001',
+        device_id: 'dev_wled',
+      },
+      'light.desk_strip_segment_002': {
+        entity_id: 'light.desk_strip_segment_002',
+        device_id: 'dev_wled',
+      },
+      'light.office_lamps': { entity_id: 'light.office_lamps', area_id: 'office' },
+      'light.lamp_left': { entity_id: 'light.lamp_left', area_id: 'office' },
+      'light.lamp_right': { entity_id: 'light.lamp_right', area_id: 'office' },
+      'light.office_closet': { entity_id: 'light.office_closet', area_id: 'office' },
+      'scene.office_focus': { entity_id: 'scene.office_focus', area_id: 'office' },
+      'sensor.office_lux': { entity_id: 'sensor.office_lux', area_id: 'office' },
+      'sensor.office_ap_uptime': {
+        entity_id: 'sensor.office_ap_uptime',
+        area_id: 'office',
+        entity_category: 'diagnostic',
+      },
+      'sensor.wayne_phone_steps': {
+        entity_id: 'sensor.wayne_phone_steps',
+        area_id: 'office',
+        platform: 'mobile_app',
+      },
+      'sensor.grid_co2_intensity': { entity_id: 'sensor.grid_co2_intensity', area_id: 'misc' },
+      'sensor.grid_fossil_pct': { entity_id: 'sensor.grid_fossil_pct', area_id: 'misc' },
     },
     callWS: async () => {
       throw new Error('sync registries should be used');
@@ -124,11 +183,25 @@ describe('generateUltraDashboard', () => {
 
   it('builds a Home page plus one page per area that has entities', async () => {
     const dash = await generateUltraDashboard({ type: 'custom:ultra-dashboard' }, hass);
-    expect(dash.views.map(v => v.title)).toEqual(['Home', 'Garage', 'Kitchen', 'Living Room']);
-    expect(dash.views.map(v => v.path)).toEqual(['home', 'garage', 'kitchen', 'living']);
+    expect(dash.views.map(v => v.title)).toEqual([
+      'Home',
+      'Garage',
+      'Kitchen',
+      'Living Room',
+      'Office',
+    ]);
+    expect(dash.views.map(v => v.path)).toEqual(['home', 'garage', 'kitchen', 'living', 'office']);
     expect(dash.views.every(v => v.type === 'sections')).toBe(true);
-    // The Attic has no entities, so it gets no page.
+    // The Attic has no entities, so it gets no page. Misc has two utility
+    // sensors and nothing to control: a bucket, not a room, so no page either.
     expect(dash.views.some(v => v.title === 'Attic')).toBe(false);
+    expect(dash.views.some(v => v.title === 'Misc')).toBe(false);
+    // ...unless it is asked for by name.
+    const withMisc = await generateUltraDashboard(
+      { type: 'custom:ultra-dashboard', areas: ['misc'], home_view: false },
+      hass
+    );
+    expect(withMisc.views.map(v => v.title)).toEqual(['Misc']);
     // Area icon flows through to the tab.
     expect(dash.views.find(v => v.title === 'Kitchen')?.icon).toBe('mdi:stove');
   });
@@ -148,7 +221,10 @@ describe('generateUltraDashboard', () => {
       }
     }
     expect(seenTypes).toContain('area_summary');
-    expect(seenTypes).toContain('auto_entity_list');
+    // Rooms are composed from the module that suits each thing, not one list.
+    for (const t of ['light', 'slider_control', 'icon', 'graphs', 'native_card', 'bar']) {
+      expect(seenTypes).toContain(t);
+    }
   });
 
   it('gives every module and row a unique id', async () => {
@@ -167,34 +243,155 @@ describe('generateUltraDashboard', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('classifies the room content into blocks', async () => {
+  it('composes each room from the modules that suit its content', async () => {
     const dash = await generateUltraDashboard({ type: 'custom:ultra-dashboard' }, hass);
-    const kitchen = dash.views.find(v => v.title === 'Kitchen')!;
-    const headings = allCards(kitchen)
-      .filter(c => c.type === 'heading')
-      .map(c => c.heading);
-    expect(headings).toEqual(['Lights', 'Climate', 'Security']);
+    const headingsOf = (v: LovelaceViewRawConfig) =>
+      allCards(v)
+        .filter(c => c.type === 'heading')
+        .map(c => c.heading);
 
-    const lights = modulesOf(ultraCards(kitchen)[1])[0];
-    expect(lights.type).toBe('auto_entity_list');
-    expect(lights.include_areas).toEqual(['kitchen']);
-    expect(lights.include_domains).toEqual(['light']);
-    expect(lights.show_title).toBe(false);
+    const kitchen = dash.views.find(v => v.title === 'Kitchen')!;
+    expect(headingsOf(kitchen)).toEqual(['Lights', 'Climate', 'Security']);
+    // Two dimmable lights: scene buttons over one slider per light.
+    const lightTypes = modulesOf(ultraCards(kitchen)[1]).map(m => m.type);
+    expect(lightTypes).toEqual(['light', 'slider_control']);
+    const scenes = modulesOf(ultraCards(kitchen)[1])[0];
+    expect(scenes.presets.map((p: any) => p.name)).toEqual(['Bright', 'Dim', 'Off']);
+    expect(scenes.presets[0].entities).toEqual(['light.kitchen_ceiling', 'light.kitchen_counter']);
+    const sliders = modulesOf(ultraCards(kitchen)[1])[1];
+    expect(sliders.bars.map((b: any) => b.entity)).toEqual([
+      'light.kitchen_ceiling',
+      'light.kitchen_counter',
+    ]);
+    // Temperature and humidity become a 24h chart, not a list of rows.
+    const chart = modulesOf(ultraCards(kitchen)[2])[0];
+    expect(chart.type).toBe('graphs');
+    expect(chart.time_period).toBe('24h');
+    expect(chart.entities.map((e: any) => e.entity)).toEqual(['sensor.kitchen_temperature']);
+    // The door sensor is a status row with its last change.
+    const security = modulesOf(ultraCards(kitchen)[3])[0];
+    expect(security.type).toBe('status_summary');
+    expect(security.entities.map((e: any) => e.entity)).toEqual(['binary_sensor.kitchen_door']);
 
     const living = dash.views.find(v => v.title === 'Living Room')!;
-    const livingHeadings = allCards(living)
-      .filter(c => c.type === 'heading')
-      .map(c => c.heading);
-    expect(livingHeadings).toEqual(['Climate', 'Media', 'Covers', 'Cameras']);
-    const types = ultraCards(living).flatMap(c => modulesOf(c).map(m => m.type));
-    expect(types).toContain('media_player');
-    expect(types).toContain('cover');
-    expect(types).toContain('camera');
+    expect(headingsOf(living)).toEqual(['Climate', 'Media', 'Covers', 'Cameras']);
+    const livingTypes = ultraCards(living).flatMap(c => modulesOf(c).map(m => m.type));
+    // The thermostat is Home Assistant's own thermostat card inside an Ultra Card.
+    const thermostat = ultraCards(living)
+      .flatMap(c => modulesOf(c))
+      .find(m => m.type === 'native_card');
+    expect(thermostat.card_config).toEqual({ type: 'thermostat', entity: 'climate.living' });
+    // A lone media player gets the full card layout.
+    const media = ultraCards(living)
+      .flatMap(c => modulesOf(c))
+      .find(m => m.type === 'media_player');
+    expect(media.layout).toBe('card');
+    expect(livingTypes).toContain('cover');
+    expect(livingTypes).toContain('camera');
 
-    // Diagnostic and hidden registry entries never reach a room page.
+    // A single switch is a tap grid, not a list.
     const garage = dash.views.find(v => v.title === 'Garage')!;
     const garageTypes = ultraCards(garage).flatMap(c => modulesOf(c).map(m => m.type));
-    expect(garageTypes).toEqual(['area_summary', 'fan', 'auto_entity_list']);
+    expect(garageTypes).toEqual(['area_summary', 'fan', 'icon', 'accordion', 'auto_entity_list']);
+    const toggles = modulesOf(ultraCards(garage)[2])[0].icons;
+    expect(toggles.map((i: any) => i.entity)).toEqual(['switch.garage_outlet']);
+    expect(toggles[0].tap_action).toEqual({ action: 'toggle', entity: 'switch.garage_outlet' });
+    // The unavailable heater is not a dead button; it is listed under More.
+    const more = modulesOf(ultraCards(garage)[3]).find(m => m.type === 'auto_entity_list');
+    expect(more.include_domains).toContain('switch');
+    expect(more.hidden_entities).toContain('switch.garage_outlet');
+    expect(more.hidden_entities).not.toContain('switch.garage_heater');
+  });
+
+  it('shows the lights a person reaches for: groups over members, one light per strip', async () => {
+    const dash = await generateUltraDashboard({ type: 'custom:ultra-dashboard' }, hass);
+    const office = dash.views.find(v => v.title === 'Office')!;
+    const headings = allCards(office)
+      .filter(c => c.type === 'heading')
+      .map(c => c.heading);
+    expect(headings).toEqual(['Lights', 'Scenes', 'Environment']);
+
+    const lights = modulesOf(ultraCards(office)[1]);
+    const scenes = lights.find(m => m.type === 'light');
+    // Segments hide behind the strip; the two lamps hide behind their group.
+    expect(scenes.presets[0].entities).toEqual([
+      'light.office_closet',
+      'light.desk_strip',
+      'light.office_lamps',
+    ]);
+    const sliders = lights.find(m => m.type === 'slider_control');
+    expect(sliders.bars.map((b: any) => b.entity)).toEqual([
+      'light.desk_strip',
+      'light.office_lamps',
+    ]);
+    // The on/off closet light is a toggle, not a brightness slider.
+    const toggles = lights.find(m => m.type === 'icon');
+    expect(toggles.icons.map((i: any) => i.entity)).toEqual(['light.office_closet']);
+
+    // Scenes run rather than toggle.
+    const scene = modulesOf(ultraCards(office)[2])[0].icons[0];
+    expect(scene.tap_action).toMatchObject({
+      action: 'perform-action',
+      perform_action: 'scene.turn_on',
+      target: { entity_id: 'scene.office_focus' },
+    });
+
+    // Illuminance is a level bar with a short label; the diagnostic uptime
+    // sensor is nowhere on the page.
+    const env = modulesOf(ultraCards(office)[3]);
+    const bar = env.find(m => m.type === 'bar');
+    expect(bar).toMatchObject({
+      entity: 'sensor.office_lux',
+      left_title: 'Light level',
+      left_entity: 'sensor.office_lux',
+      percentage_max: 1000,
+    });
+    // Nor is the phone that happens to live in the office a room sensor.
+    const everyEntity = JSON.stringify(office).replace(/"hidden_entities":\[[^\]]*\]/g, '');
+    expect(everyEntity).not.toContain('sensor.office_ap_uptime');
+    expect(everyEntity).not.toContain('sensor.wayne_phone_steps');
+  });
+
+  it('gives each room its own accent in styles without a fixed one', async () => {
+    const dash = await generateUltraDashboard({ type: 'custom:ultra-dashboard' }, hass);
+    const accents = dash.views
+      .slice(1)
+      .map(v => modulesOf(ultraCards(v)[0])[0].accent_color as string);
+    expect(accents.every(Boolean)).toBe(true);
+    expect(new Set(accents).size).toBe(accents.length);
+    // The slider fill and scene buttons follow the room accent.
+    const kitchen = dash.views.find(v => v.title === 'Kitchen')!;
+    const kitchenAccent = modulesOf(ultraCards(kitchen)[0])[0].accent_color;
+    const sliders = modulesOf(ultraCards(kitchen)[1]).find(m => m.type === 'slider_control');
+    expect(sliders.slider_fill_color).toBe(kitchenAccent);
+
+    const bold = await generateUltraDashboard(
+      { type: 'custom:ultra-dashboard', style: 'bold' },
+      hass
+    );
+    const boldAccents = bold.views.slice(1).map(v => modulesOf(ultraCards(v)[0])[0].accent_color);
+    expect(new Set(boldAccents)).toEqual(new Set(['var(--primary-color)']));
+  });
+
+  it('keeps auto lists in step with the generator', async () => {
+    // Many switches fall back to a list; it must hide the room's diagnostic
+    // entities and list unavailable ones instead of showing "No entities match".
+    const many = makeHass();
+    for (let i = 0; i < 10; i++) {
+      many.states[`switch.office_plug_${i}`] = state(`switch.office_plug_${i}`, 'off');
+      many.entities[`switch.office_plug_${i}`] = {
+        entity_id: `switch.office_plug_${i}`,
+        area_id: 'office',
+      };
+    }
+    const dash = await generateUltraDashboard({ type: 'custom:ultra-dashboard' }, many);
+    const office = dash.views.find(v => v.title === 'Office')!;
+    const list = ultraCards(office)
+      .flatMap(c => modulesOf(c))
+      .find(m => m.type === 'auto_entity_list');
+    expect(list.include_domains).toEqual(['switch', 'input_boolean']);
+    expect(list.show_unavailable).toBe(true);
+    expect(list.hidden_entities).toContain('sensor.office_ap_uptime');
   });
 
   it('points the room tile at a live, room-like temperature sensor', async () => {
@@ -221,6 +418,7 @@ describe('generateUltraDashboard', () => {
       .filter(c => c.type === 'heading')
       .map(c => c.heading);
     expect(headings).toEqual([
+      'Upstairs',
       'Ground Floor',
       'Other rooms',
       'People',
@@ -237,7 +435,7 @@ describe('generateUltraDashboard', () => {
 
     // Room tiles are half-width and navigate to the area page of this dashboard.
     const tiles = ultraCards(home).filter(c => modulesOf(c)[0]?.type === 'area_summary');
-    expect(tiles).toHaveLength(3);
+    expect(tiles).toHaveLength(4);
     expect(tiles.every(t => t.grid_options?.columns === 6)).toBe(true);
     const kitchenTile = modulesOf(tiles.find(t => modulesOf(t)[0].area_id === 'kitchen'))[0];
     expect(kitchenTile.tap_action).toEqual({
@@ -266,7 +464,7 @@ describe('generateUltraDashboard', () => {
     const headings = allCards(dash.views[0])
       .filter(c => c.type === 'heading')
       .map(c => c.heading);
-    expect(headings).toEqual(['Ground Floor', 'Other rooms']);
+    expect(headings).toEqual(['Upstairs', 'Ground Floor', 'Other rooms']);
 
     const noHome = await generateUltraDashboard(
       { type: 'custom:ultra-dashboard', home_view: false },
@@ -311,7 +509,7 @@ describe('generateUltraDashboard', () => {
       { type: 'custom:ultra-dashboard', exclude_areas: ['kitchen'], home_view: false },
       hass
     );
-    expect(without.views.map(v => v.title)).toEqual(['Garage', 'Living Room']);
+    expect(without.views.map(v => v.title)).toEqual(['Garage', 'Living Room', 'Office']);
   });
 
   it('groups by floor when asked, with an Other page for areas without a floor', async () => {
@@ -319,18 +517,21 @@ describe('generateUltraDashboard', () => {
       { type: 'custom:ultra-dashboard', group_by: 'floor' },
       hass
     );
-    expect(dash.views.map(v => v.title)).toEqual(['Home', 'Ground Floor', 'Other']);
-    expect(dash.views[1].icon).toBe('mdi:home-floor-0');
+    expect(dash.views.map(v => v.title)).toEqual(['Home', 'Upstairs', 'Ground Floor', 'Other']);
+    expect(dash.views[2].icon).toBe('mdi:home-floor-0');
     // One section per area, each starting with its heading and tile.
-    const ground = dash.views[1];
+    const ground = dash.views[2];
     expect(ground.sections!.map(s => s.cards[0].heading)).toEqual(['Kitchen', 'Living Room']);
     expect(ground.sections!.every(s => modulesOf(s.cards[1])[0].type === 'area_summary')).toBe(
       true
     );
-    // Lists carry their own titles because there are no per-block headings here.
-    const kitchenList = modulesOf(ground.sections![0].cards[2])[0];
-    expect(kitchenList.type).toBe('auto_entity_list');
-    expect(kitchenList.show_title).toBe(true);
+    // Blocks are introduced by subtitle headings inside the area's section.
+    const kitchenSub = ground.sections![0].cards[2];
+    expect(kitchenSub).toMatchObject({
+      type: 'heading',
+      heading: 'Lights',
+      heading_style: 'subtitle',
+    });
     // Home tiles navigate to the floor page.
     const tiles = ultraCards(dash.views[0]).filter(c => modulesOf(c)[0]?.type === 'area_summary');
     const garageTile = modulesOf(tiles.find(t => modulesOf(t)[0].area_id === 'garage'))[0];
@@ -391,7 +592,13 @@ describe('generateUltraDashboard', () => {
     };
     const dash = await generateUltraDashboard({ type: 'custom:ultra-dashboard' }, wsHass);
     expect(calls).toContain('config/entity_registry/list');
-    expect(dash.views.map(v => v.title)).toEqual(['Home', 'Garage', 'Kitchen', 'Living Room']);
+    expect(dash.views.map(v => v.title)).toEqual([
+      'Home',
+      'Garage',
+      'Kitchen',
+      'Living Room',
+      'Office',
+    ]);
     // No floors -> a single "Rooms" heading on the Home page.
     expect(allCards(dash.views[0]).find(c => c.type === 'heading')?.heading).toBe('Rooms');
   });

@@ -4,10 +4,7 @@
  */
 
 import { HomeAssistant } from 'custom-card-helpers';
-import type {
-  AreaSummaryDiscoveryToggles,
-  AreaSummaryModule,
-} from '../types';
+import type { AreaSummaryDiscoveryToggles, AreaSummaryModule } from '../types';
 
 export type RoomEntityRole =
   | 'lights'
@@ -171,7 +168,16 @@ function mdiForRole(role: RoomEntityRole, entityId: string, hass: HomeAssistant)
   }
 }
 
-export function isEntityActive(entityId: string, role: RoomEntityRole, hass: HomeAssistant): boolean {
+const isUnknownState = (state: unknown): boolean => {
+  const s = String(state).toLowerCase();
+  return s === 'unavailable' || s === 'unknown';
+};
+
+export function isEntityActive(
+  entityId: string,
+  role: RoomEntityRole,
+  hass: HomeAssistant
+): boolean {
   const st = hass.states[entityId];
   if (!st) return false;
   const s = String(st.state).toLowerCase();
@@ -215,14 +221,12 @@ export function sortBucket(role: RoomEntityRole, active: boolean): number {
 }
 
 class UcAreaDiscoveryService {
-  private registryCache:
-    | {
-        at: number;
-        areas: AreaRegistryRow[];
-        devices: DeviceRegistryRow[];
-        entities: EntityRegistryRow[];
-      }
-    | null = null;
+  private registryCache: {
+    at: number;
+    areas: AreaRegistryRow[];
+    devices: DeviceRegistryRow[];
+    entities: EntityRegistryRow[];
+  } | null = null;
 
   private readonly registryTtlMs = 45_000;
 
@@ -341,28 +345,26 @@ class UcAreaDiscoveryService {
       }
     }
 
+    // Prefer a sensor that is reporting a number right now; an unavailable
+    // sensor only wins when it is the sole candidate.
+    const firstReading = (role: RoomEntityRole): string | undefined => {
+      const ofRole = roles.filter(r => r.role === role);
+      const live = ofRole.find(r => Number.isFinite(Number(hass.states[r.entity_id]?.state)));
+      return (live ?? ofRole[0])?.entity_id;
+    };
+
     let temperature_entity_id: string | undefined;
     if (manualTemperatureEntity && hass.states[manualTemperatureEntity]) {
       temperature_entity_id = manualTemperatureEntity;
     } else {
-      for (const r of roles) {
-        if (r.role === 'temperature') {
-          temperature_entity_id = r.entity_id;
-          break;
-        }
-      }
+      temperature_entity_id = firstReading('temperature');
     }
 
     let humidity_entity_id: string | undefined;
     if (manualHumidityEntity && hass.states[manualHumidityEntity]) {
       humidity_entity_id = manualHumidityEntity;
     } else {
-      for (const r of roles) {
-        if (r.role === 'humidity') {
-          humidity_entity_id = r.entity_id;
-          break;
-        }
-      }
+      humidity_entity_id = firstReading('humidity');
     }
 
     const climateState = climate_entity_id ? hass.states[climate_entity_id] : undefined;
@@ -374,6 +376,9 @@ class UcAreaDiscoveryService {
       const tAttrs = (tState.attributes || {}) as Record<string, unknown>;
       if (typeof tAttrs.current_temperature === 'number') {
         temperature_label = `${tAttrs.current_temperature}°`;
+      } else if (isUnknownState(tState.state)) {
+        // "unavailable °F" is worse than no reading at all.
+        temperature_label = undefined;
       } else {
         temperature_label = String(tState.state);
         const unit = tAttrs.unit_of_measurement;
@@ -391,6 +396,8 @@ class UcAreaDiscoveryService {
       const hAttrs = (hState.attributes || {}) as Record<string, unknown>;
       if (typeof hAttrs.current_humidity === 'number') {
         humidity_label = `${hAttrs.current_humidity}%`;
+      } else if (isUnknownState(hState.state)) {
+        humidity_label = undefined;
       } else {
         humidity_label = String(hState.state);
         const unit = hAttrs.unit_of_measurement;

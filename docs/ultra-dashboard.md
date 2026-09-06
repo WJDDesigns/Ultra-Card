@@ -5,8 +5,9 @@ and floors, built entirely out of Ultra Cards. It ships inside Ultra Card and is
 free.
 
 Pick it from **Settings → Dashboards → Add dashboard → Community dashboards**
-(Home Assistant 2026.5 or newer). No YAML, no configuration required; every
-option below has a sensible default.
+(Home Assistant 2026.5 or newer). The next screen is the style picker and the
+options below; every one has a sensible default, so **Next** straight away
+works too. Then give the dashboard a name and it is built.
 
 ## What you get
 
@@ -14,16 +15,33 @@ option below has a sensible default.
   floor, then People, Alerts, Batteries and Updates. Room tiles open that room's
   page.
 - **A page per area** (or per floor): the room tile with temperature, humidity,
-  lights and quick actions, followed by Lights, Climate, Media, Covers, Fans,
-  Locks, Cameras, Security, Switches and More, each only when the room has
-  something for it.
+  lights and quick actions, then a block for each thing the room has, built
+  from the module that suits it:
+  - **Lights**: Bright / Dim / Off scene buttons, a brightness slider per
+    dimmable light, a toggle grid for on/off ones. Members of a light group
+    hide behind the group and a WLED strip shows one light, not one per segment.
+  - **Climate**: the Home Assistant thermostat card, a 24h temperature and
+    humidity chart, humidifier controls.
+  - **Media**: a full player card for a lone speaker, compact rows otherwise.
+  - **Appliances**: washer, dryer, dishwasher, fridge and range cards when a
+    device by that name is in the room.
+  - **Security**: doors, windows, motion and presence as status rows.
+  - **Switches** and **Scenes** as tap grids; **Covers**, **Fans**, **Locks**,
+    **Cameras** with their own modules.
+  - **Environment**: CO₂, air quality, light level, power and the like as level
+    bars, other readings as an info grid.
+  - **More**: everything left over, folded into an accordion. Unavailable
+    controls land here too, so a room never shows a dead button.
+- **Each room gets its own accent colour** (except in the Bold style, which
+  uses your theme accent everywhere), so pages do not read as one page repeated.
 - **Everything is an Ultra Card.** Section titles are Home Assistant heading
   cards; every other card is a `custom:ultra-card` you can open in the visual
   editor after taking control.
 
-Only free modules are used (`area_summary`, `auto_entity_list`, `media_player`,
-`cover`, `fan`, `lock`, `camera`, `people`, `weather`, `clock`, `alert_center`,
-`battery_monitor`, `update_monitor`, `horizontal`).
+Only free modules are used. Config and diagnostic entities, hidden entities and
+phone (`mobile_app`) sensors never appear on a room page, and an area that has
+nothing to control and fewer than four readings does not get a page of its own
+unless you list it under **Only these areas**.
 
 ## Options
 
@@ -45,12 +63,12 @@ strategy:
   weather_entity: weather.home # default: your first weather entity
 ```
 
-| Style   | Look                                                              |
-| ------- | ----------------------------------------------------------------- |
-| Classic | The standard card look of your theme.                             |
-| Soft    | Rounded corners, no borders, a light shadow. The default.         |
-| Glass   | Translucent panels with a fine border; made for wallpapers.       |
-| Bold    | Large radius, deep shadow and your theme accent on every room.    |
+| Style   | Look                                                           |
+| ------- | -------------------------------------------------------------- |
+| Classic | The standard card look of your theme.                          |
+| Soft    | Rounded corners, no borders, a light shadow. The default.      |
+| Glass   | Translucent panels with a fine border; made for wallpapers.    |
+| Bold    | Large radius, deep shadow and your theme accent on every room. |
 
 Areas with no entities get no page. Config and diagnostic entities (signal
 strength, restart buttons) never appear on a room page.
@@ -63,7 +81,7 @@ writes the generated config to the dashboard, the strategy is removed, and every
 card is an ordinary Ultra Card: open one and you are in the Ultra Card editor
 with its rows, columns and modules.
 
-Tip: pick your style and options *before* taking control; afterwards the
+Tip: pick your style and options _before_ taking control; afterwards the
 dashboard no longer follows the strategy settings.
 
 ## Just one room

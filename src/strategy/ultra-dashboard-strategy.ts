@@ -48,8 +48,12 @@ export function __resetUltraDashboardStrategyLoaderForTests(): void {
 }
 
 export class UltraDashboardStrategy extends HTMLElement {
-  /** Defaults work for every home, so the create dialog needs no config step. */
-  static configRequired = false;
+  /**
+   * Show the config editor (style, areas, options) before the name/URL step.
+   * Every option has a default, so "Next" straight away also works, but the
+   * style choice is the point of the dashboard and it belongs up front.
+   */
+  static configRequired = true;
 
   static getCreateSuggestions(_hass?: HomeAssistant): { title: string; icon: string } {
     return { title: 'Ultra Dashboard', icon: 'mdi:view-dashboard-variant' };

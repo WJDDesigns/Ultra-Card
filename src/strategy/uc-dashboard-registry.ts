@@ -24,11 +24,26 @@ export interface FloorInfo {
   level?: number | undefined;
 }
 
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  area_id?: string | undefined;
+}
+
 export interface DashboardRegistry {
   areas: AreaInfo[];
   floors: FloorInfo[];
   /** area_id -> entity ids present in `hass.states`, config/diagnostic entities excluded */
   entitiesByArea: Map<string, string[]>;
+  /**
+   * area_id -> entity ids that are in the area and in `hass.states` but were
+   * excluded above (config/diagnostic or hidden). Modules that discover by
+   * area on their own get these as `hidden_entities` so they agree with us.
+   */
+  noiseByArea: Map<string, string[]>;
+  /** entity id -> device id, for entities that have one */
+  deviceOf: Map<string, string>;
+  devices: Map<string, DeviceInfo>;
 }
 
 interface AreaRow {
@@ -46,6 +61,8 @@ interface FloorRow {
 interface DeviceRow {
   id: string;
   area_id?: string | null | undefined;
+  name?: string | null | undefined;
+  name_by_user?: string | null | undefined;
 }
 interface EntityRow {
   entity_id: string;
@@ -55,7 +72,11 @@ interface EntityRow {
   disabled_by?: string | null | undefined;
   hidden_by?: string | null | undefined;
   hidden?: boolean | undefined;
+  platform?: string | undefined;
 }
+
+/** Integrations whose entities follow a person, not a room. */
+const NOT_ROOM_PLATFORMS = new Set(['mobile_app']);
 
 type RegistryHass = HomeAssistant & {
   areas?: Record<string, AreaRow> | undefined;
@@ -118,24 +139,35 @@ export async function loadDashboardRegistry(hass: HomeAssistant): Promise<Dashbo
         : (b.level ?? Number.NEGATIVE_INFINITY) - (a.level ?? Number.NEGATIVE_INFINITY)
     );
 
-  const deviceArea = new Map<string, string>();
+  const devices = new Map<string, DeviceInfo>();
   for (const d of rows.devices) {
-    if (d.area_id) deviceArea.set(d.id, d.area_id);
+    devices.set(d.id, {
+      id: d.id,
+      name: d.name_by_user || d.name || d.id,
+      area_id: d.area_id || undefined,
+    });
   }
 
   const entitiesByArea = new Map<string, string[]>();
-  for (const a of areas) entitiesByArea.set(a.area_id, []);
+  const noiseByArea = new Map<string, string[]>();
+  const deviceOf = new Map<string, string>();
+  for (const a of areas) {
+    entitiesByArea.set(a.area_id, []);
+    noiseByArea.set(a.area_id, []);
+  }
   for (const e of rows.entities) {
-    if (e.disabled_by || e.hidden_by || e.hidden) continue;
-    // Config/diagnostic entities (signal strength, restart buttons, ...) are
-    // noise on a room page.
-    if (e.entity_category) continue;
+    if (e.disabled_by) continue;
     if (!hass.states?.[e.entity_id]) continue;
-    const areaId = e.area_id || (e.device_id ? deviceArea.get(e.device_id) : undefined);
+    if (e.device_id) deviceOf.set(e.entity_id, e.device_id);
+    const areaId = e.area_id || (e.device_id ? devices.get(e.device_id)?.area_id : undefined);
     if (!areaId) continue;
-    const list = entitiesByArea.get(areaId);
-    if (list) list.push(e.entity_id);
+    // Config/diagnostic entities (signal strength, restart buttons, ...),
+    // hidden ones and phone sensors are noise on a room page.
+    const noise = Boolean(
+      e.entity_category || e.hidden_by || e.hidden || NOT_ROOM_PLATFORMS.has(e.platform ?? '')
+    );
+    (noise ? noiseByArea : entitiesByArea).get(areaId)?.push(e.entity_id);
   }
 
-  return { areas, floors, entitiesByArea };
+  return { areas, floors, entitiesByArea, noiseByArea, deviceOf, devices };
 }

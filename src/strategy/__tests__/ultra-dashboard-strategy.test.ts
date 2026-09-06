@@ -46,8 +46,9 @@ describe('Ultra Dashboard strategy registration', () => {
     expect(images!.light).not.toBe(images!.dark);
   });
 
-  it('works with no configuration and suggests a title and icon for the create dialog', () => {
-    expect(UltraDashboardStrategy.configRequired).toBe(false);
+  it('asks for the style up front and suggests a title and icon for the create dialog', () => {
+    // HA shows getConfigElement() during creation only when this is true.
+    expect(UltraDashboardStrategy.configRequired).toBe(true);
     expect(UltraDashboardStrategy.getCreateSuggestions()).toEqual({
       title: 'Ultra Dashboard',
       icon: 'mdi:view-dashboard-variant',

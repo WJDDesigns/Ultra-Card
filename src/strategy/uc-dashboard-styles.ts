@@ -20,7 +20,39 @@ export interface UltraDashboardStyle {
   listRowStyle: AutoEntityListRowStyle;
   /** Accent colour handed to modules that take one (`accent_color`). */
   accent?: string | undefined;
+  /**
+   * Per-room accents, cycled in area order, when the style has no single
+   * accent. Gives each room page its own colour so a home does not read as
+   * the same page repeated.
+   */
+  roomPalette?: readonly string[] | undefined;
+  /** Slider look for `slider_control`. */
+  sliderStyle: 'flat' | 'glass' | 'neumorphic' | 'minimal' | 'glossy';
+  /** Level-bar look for environment readings. */
+  barStyle:
+    | 'flat'
+    | 'glossy'
+    | 'glass'
+    | 'neumorphic'
+    | 'minimal'
+    | 'neon-glow'
+    | 'gradient-overlay';
 }
+
+/**
+ * Eight accents that sit well together on light and dark themes. Chosen from
+ * the HA colour palette so they never fight the theme's own primary.
+ */
+export const ROOM_PALETTE: readonly string[] = [
+  '#4F8DF7', // blue
+  '#F59E0B', // amber
+  '#10B981', // emerald
+  '#EC4899', // pink
+  '#8B5CF6', // violet
+  '#14B8A6', // teal
+  '#F97316', // orange
+  '#06B6D4', // cyan
+];
 
 const CLASSIC_CHROME: Partial<UltraCardConfig> = {
   card_background: 'var(--card-background-color, var(--ha-card-background, white))',
@@ -39,6 +71,9 @@ export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
     card: CLASSIC_CHROME,
     areaSummaryPreset: 'compact_controls',
     listRowStyle: 'compact',
+    roomPalette: ROOM_PALETTE,
+    sliderStyle: 'flat',
+    barStyle: 'flat',
   },
   {
     id: 'soft',
@@ -59,6 +94,9 @@ export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
     },
     areaSummaryPreset: 'iconic_soft',
     listRowStyle: 'compact',
+    roomPalette: ROOM_PALETTE,
+    sliderStyle: 'neumorphic',
+    barStyle: 'glossy',
   },
   {
     id: 'glass',
@@ -82,6 +120,9 @@ export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
     },
     areaSummaryPreset: 'graph_glow',
     listRowStyle: 'slim',
+    roomPalette: ROOM_PALETTE,
+    sliderStyle: 'glass',
+    barStyle: 'neon-glow',
   },
   {
     id: 'bold',
@@ -103,6 +144,8 @@ export const ULTRA_DASHBOARD_STYLES: readonly UltraDashboardStyle[] = [
     areaSummaryPreset: 'graph_glow',
     listRowStyle: 'card',
     accent: 'var(--primary-color)',
+    sliderStyle: 'glossy',
+    barStyle: 'gradient-overlay',
   },
 ];
 
