@@ -442,6 +442,87 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
+const HILLARY_INK = '#1f2d3d'; // navy ink
+const HILLARY_BRASS = '#b08d57'; // brass / cognac accent
+const HILLARY_LINEN = '#f7f2e8'; // linen card
+const HILLARY_TAUPE = '#7d7166'; // warm secondary text
+const HILLARY_SAND = 'rgba(31, 45, 61, 0.12)'; // hairline
+
+/**
+ * "Hillary": a Nancy Meyers kitchen in Ralph Lauren tailoring. Linen and
+ * cream surfaces, navy ink for text, brass for the accent, a warm shadow
+ * and an editorial serif. Cards carry a fine brass piping along the top
+ * edge. The palette is pinned, so it reads the same over light and dark HA
+ * themes: this one is the room, not a filter on it.
+ */
+export const HILLARY_THEME: UcThemeDefinition = {
+  id: 'hillary',
+  name: 'Hillary',
+  version: 1,
+  author: 'Ultra Card',
+  description:
+    'Linen, cream and navy ink with brass accents. A Nancy Meyers palette in Ralph Lauren tailoring: warm, elevated, unhurried.',
+  icon: 'mdi:flower-tulip-outline',
+  source: 'builtin',
+  tokens: {
+    surface: 'flat',
+    radius: 14,
+    radius_sm: 10,
+    border_width: 1,
+    border_color: HILLARY_SAND,
+    shadow: '0 8px 24px rgba(66, 50, 30, 0.12), 0 1px 2px rgba(66, 50, 30, 0.06)',
+    density: 'comfortable',
+    accent: HILLARY_BRASS,
+    font_family:
+      "'Playfair Display', 'Didot', 'Bodoni 72', 'Cormorant Garamond', 'Libre Baskerville', Georgia, 'Times New Roman', serif",
+    palette: {
+      primary: HILLARY_INK,
+      accent: HILLARY_BRASS,
+      card_bg: HILLARY_LINEN,
+      text: HILLARY_INK,
+      text_secondary: HILLARY_TAUPE,
+      divider: HILLARY_SAND,
+    },
+  },
+  card: {
+    card_background: HILLARY_LINEN,
+    card_border_radius: 14,
+    card_border_color: HILLARY_SAND,
+    card_border_width: 1,
+    card_padding: 20,
+    card_shadow_enabled: true,
+    card_shadow_color: 'rgba(66, 50, 30, 0.12)',
+    card_shadow_horizontal: 0,
+    card_shadow_vertical: 8,
+    card_shadow_blur: 24,
+    card_shadow_spread: 0,
+  },
+  modules: {
+    button: { style: 'outline' },
+    bar: { bar_style: 'flat' },
+    slider_control: { slider_style: 'flat' },
+    spinbox: { button_style: 'outline', button_shape: 'rounded' },
+    popup: { trigger_button_style: 'outline' },
+    grid: { grid_style: 'style_20' },
+    navigation: { nav_style: 'uc_minimal' },
+    area_summary: { style_preset: 'iconic_soft', accent_color: HILLARY_BRASS, tile_border_radius: 12 },
+    auto_entity_list: { row_style: 'card' },
+    unifi: { rack_style: 'light' },
+    activity_feed: { feed_card_style: 'elevated' },
+    tabs: { style: 'simple_2' },
+  },
+  css: `
+.card-container {
+  /* Brass piping along the top edge, then the warm shadow. */
+  box-shadow:
+    inset 0 2px 0 ${HILLARY_BRASS},
+    0 8px 24px rgba(66, 50, 30, 0.12),
+    0 1px 2px rgba(66, 50, 30, 0.06) !important;
+  letter-spacing: 0.01em;
+}
+`.trim(),
+};
+
 export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   HA_NATIVE_THEME,
   CLASSIC_THEME,
@@ -451,5 +532,6 @@ export const BUILTIN_THEMES: readonly UcThemeDefinition[] = [
   MONOCHROME_THEME,
   MATERIAL_THEME,
   LIQUID_GLASS_THEME,
+  HILLARY_THEME,
   GREEN_TERMINAL_THEME,
 ];
