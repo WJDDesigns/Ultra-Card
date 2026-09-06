@@ -173,8 +173,12 @@ export class UcThemePicker extends LitElement {
         border-color 120ms ease,
         box-shadow 120ms ease;
     }
-    .tile:hover {
-      border-color: var(--primary-color);
+    /* Pointer-only: touch devices keep :hover latched on the last tapped tile,
+       which reads as a second selection. */
+    @media (hover: hover) {
+      .tile:hover {
+        border-color: var(--primary-color);
+      }
     }
     .tile.selected {
       border-color: var(--primary-color);

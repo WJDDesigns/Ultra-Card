@@ -205,7 +205,8 @@ export const MONOCHROME_THEME: UcThemeDefinition = {
   name: 'Monochrome',
   version: 1,
   author: 'Ultra Card',
-  description: 'Black, white and grey only. Thin outlines, no shadows, text does the talking.',
+  description:
+    'Black, white and grey only. Every module is desaturated, including ones with their own colours. Thin outlines, no shadows, text does the talking.',
   icon: 'mdi:contrast-box',
   source: 'builtin',
   tokens: {
@@ -217,6 +218,7 @@ export const MONOCHROME_THEME: UcThemeDefinition = {
     shadow: 'none',
     accent: 'var(--primary-text-color)',
     density: 'compact',
+    grayscale: 1,
     palette: {
       primary: 'var(--primary-text-color)',
       accent: 'var(--primary-text-color)',

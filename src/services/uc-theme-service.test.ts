@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ucThemeService } from './uc-theme-service';
+import { UC_THEME_BASE_CSS, ucThemeService } from './uc-theme-service';
 import { GLASS_THEME, MONOCHROME_THEME } from '../themes/builtin-themes';
 import { UC_THEME_HA_NATIVE, UC_THEME_NONE } from '../themes/uc-theme-types';
 import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
@@ -58,6 +58,25 @@ describe('host vars', () => {
     const mono = ucThemeService.getHostVars(MONOCHROME_THEME);
     expect(mono['--primary-color']).toBe('var(--primary-text-color)');
     expect(mono['--uc-density']).toBe('0.875');
+  });
+
+  it('monochrome desaturates the whole card; colour themes set no filter', () => {
+    expect(ucThemeService.getHostVars(MONOCHROME_THEME)['--uc-color-filter']).toBe('grayscale(1)');
+    expect(ucThemeService.getHostVars(GLASS_THEME)['--uc-color-filter']).toBeUndefined();
+    // The base sheet routes the variable onto the card container and falls back to none.
+    expect(UC_THEME_BASE_CSS).toMatch(/\.card-container\s*\{\s*filter:\s*var\(--uc-color-filter,\s*none\)/);
+  });
+
+  it('grayscale token is clamped and dropped when zero', () => {
+    const half = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: 0.5 } }).theme!;
+    expect(half.tokens.grayscale).toBe(0.5);
+    expect(ucThemeService.getHostVars(half)['--uc-color-filter']).toBe('grayscale(0.5)');
+    const over = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: 3 } }).theme!;
+    expect(over.tokens.grayscale).toBe(1);
+    const zero = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: 0 } }).theme!;
+    expect(zero.tokens.grayscale).toBeUndefined();
+    const bool = sanitizeThemeDefinition({ id: 'g', name: 'G', tokens: { surface: 'flat', radius: 8, grayscale: true } }).theme!;
+    expect(bool.tokens.grayscale).toBe(1);
   });
 
   it('applies and clears on an element without leaking', () => {

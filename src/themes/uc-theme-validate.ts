@@ -97,6 +97,8 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
   if (accent) tokens.accent = accent;
   const font = cssValue(r.font_family, 200);
   if (font) tokens.font_family = font;
+  const grayscale = typeof r.grayscale === 'boolean' ? (r.grayscale ? 1 : undefined) : num(r.grayscale, 0, 1);
+  if (grayscale !== undefined && grayscale > 0) tokens.grayscale = grayscale;
   if (r.palette && typeof r.palette === 'object') {
     const palette: Record<string, string> = {};
     for (const key of PALETTE_KEYS) {

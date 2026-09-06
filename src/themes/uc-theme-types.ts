@@ -40,6 +40,13 @@ export interface UcThemeTokens {
   font_family?: string | undefined;
   /** Optional palette overrides mapped onto HA variables on the card host. */
   palette?: Partial<Record<UcThemePaletteKey, string>> | undefined;
+  /**
+   * 0..1 desaturation applied to the whole card (1 = true monochrome). This
+   * is the only token that reaches into module colours a user set explicitly
+   * (bar colours, gauge gradients, icon colours), which is exactly what a
+   * monochrome theme is for. Images and camera feeds are desaturated too.
+   */
+  grayscale?: number | undefined;
 }
 
 /** Card chrome keys a theme may set. Same shape as `UltraCardConfig.card_*`. */

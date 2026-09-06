@@ -5406,7 +5406,8 @@
       "ha_import_mode_dark": "Dark",
       "ha_import_button": "Open in editor",
       "ha_import_mapped": "Mapped {count} values from \"{name}\"",
-      "ha_import_nothing": "\"{name}\" sets no card variables; starting from defaults"
+      "ha_import_nothing": "\"{name}\" sets no card variables; starting from defaults",
+      "editor_grayscale": "Desaturate whole card (0 = colour, 1 = monochrome)"
     },
     "submit_theme": {
       "create_title": "Share your theme",

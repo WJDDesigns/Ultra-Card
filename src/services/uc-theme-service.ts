@@ -45,10 +45,19 @@ export const UC_THEME_CHANGED_EVENT = 'ultra-card-theme-changed';
  * inline `style` attribute keeps this a pure fallback: an explicit
  * border-radius in the Design tab always wins, and nothing here exists under
  * HA Native so legacy configs render byte-for-byte as before.
+ *
+ * Colour filter: `tokens.grayscale` becomes `--uc-color-filter` on the host
+ * and is applied to the card container so every module, including ones with
+ * explicit colours, is desaturated. `filter: none` (the default) creates no
+ * containing block, so themes without the token change nothing. Popups and
+ * drawers portal to `document.body` and are deliberately left in colour.
  */
 export const UC_THEME_BASE_CSS = `
 [style*="--uc-design-surface"]:not([style*="border-radius"]) {
   border-radius: var(--uc-radius-sm);
+}
+.card-container {
+  filter: var(--uc-color-filter, none);
 }
 `.trim();
 
@@ -265,6 +274,9 @@ class UcThemeService {
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;
     if (t.font_family) vars['--uc-font-family'] = t.font_family;
+    if (t.grayscale && t.grayscale > 0) {
+      vars['--uc-color-filter'] = `grayscale(${Math.min(1, t.grayscale)})`;
+    }
     if (t.palette) {
       for (const [key, value] of Object.entries(t.palette)) {
         if (!value) continue;

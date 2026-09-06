@@ -46,6 +46,7 @@ export class UcThemeSwatch extends LitElement {
       border: `${borderWidth}px solid ${borderColor}`,
       boxShadow: shadow,
       backdropFilter: surface === 'glass' ? vars['--uc-surface-backdrop'] ?? 'none' : 'none',
+      filter: vars['--uc-color-filter'] ?? 'none',
     };
     if (font) cardStyle.fontFamily = font;
 
