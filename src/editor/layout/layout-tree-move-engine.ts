@@ -476,12 +476,14 @@ export function relocateLayoutModule(
   }
 
   function moveRow(layout: any, source: any, target: any): void {
-    // Remove row from source
+    // target.rowIndex is an insertion index into the *original* list ("insert before row N"),
+    // matching moveModule / moveColumn. Removing the source first shifts later indices down.
+    let targetIndex = target.rowIndex;
+    if (source.rowIndex < targetIndex) targetIndex--;
+    if (targetIndex === source.rowIndex) return;
+
     const sourceRow = layout.rows[source.rowIndex];
     layout.rows.splice(source.rowIndex, 1);
-
-    // Insert at target position
-    const targetIndex = target.rowIndex;
     layout.rows.splice(targetIndex, 0, sourceRow);
   }
 

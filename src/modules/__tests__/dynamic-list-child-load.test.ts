@@ -65,3 +65,25 @@ describe('dynamic list: generated children that are not loaded yet', () => {
     host.remove();
   });
 });
+
+describe('dynamic list: live updates after save (issue #130)', () => {
+  beforeAll(async () => {
+    await getModuleRegistry().ensureModuleLoaded('dynamic-list');
+  });
+
+  it('exposes sensors named in the template so the host card re-renders on state changes', async () => {
+    const handler = getModuleRegistry().getModule('dynamic-list')!;
+    const module = {
+      id: 'dl-temp',
+      type: 'dynamic-list',
+      source_type: 'template',
+      dynamic_template: `{% set sensors = [
+        {'entity': 'sensor.temperature_outside', 'name': 'Living Room'}
+      ] %}
+      {% set temp = states(s.entity) %}`,
+    };
+    expect(handler.getRuntimeEntityIds?.(module as never)).toEqual([
+      'sensor.temperature_outside',
+    ]);
+  });
+});

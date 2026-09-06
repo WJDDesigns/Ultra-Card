@@ -119,6 +119,29 @@ describe('keyboard sibling moves', () => {
     expect(next?.rows[0].columns[0].modules.map((m: any) => m.id)).toEqual(['m2', 'm1']);
   });
 
+  it('moves a module down (middle and to the end)', () => {
+    const layout = {
+      rows: [
+        {
+          columns: [
+            {
+              modules: [
+                { id: 'm1', type: 'text' },
+                { id: 'm2', type: 'icon' },
+                { id: 'm3', type: 'text' },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const first = moveModuleSibling(layout, 0, 0, 0, 'down');
+    expect(first?.rows[0].columns[0].modules.map((m: any) => m.id)).toEqual(['m2', 'm1', 'm3']);
+    const last = moveModuleSibling(first!, 0, 0, 1, 'down');
+    expect(last?.rows[0].columns[0].modules.map((m: any) => m.id)).toEqual(['m2', 'm3', 'm1']);
+    expect(moveModuleSibling(last!, 0, 0, 2, 'down')).toBeNull();
+  });
+
   it('moves a row down', () => {
     const layout = {
       rows: [
@@ -143,6 +166,23 @@ describe('keyboard sibling moves', () => {
     };
     const next = moveColumnSibling(layout, 0, 1, 'up');
     expect(next?.rows[0].columns.map((c: any) => c.id)).toEqual(['c2', 'c1']);
+  });
+
+  it('moves a column down', () => {
+    const layout = {
+      rows: [
+        {
+          columns: [
+            { id: 'c1', modules: [] },
+            { id: 'c2', modules: [] },
+            { id: 'c3', modules: [] },
+          ],
+        },
+      ],
+    };
+    const next = moveColumnSibling(layout, 0, 0, 'down');
+    expect(next?.rows[0].columns.map((c: any) => c.id)).toEqual(['c2', 'c1', 'c3']);
+    expect(moveColumnSibling(next!, 0, 2, 'down')).toBeNull();
   });
 
   it('returns null at boundaries', () => {

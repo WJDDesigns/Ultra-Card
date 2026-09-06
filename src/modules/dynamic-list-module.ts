@@ -14,6 +14,7 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
+import { extractEntityIdsFromTemplate } from '../utils/uc-template-entity-ids';
 import { UcStatesMemo } from '../utils/uc-states-memo';
 
 import '../components/ultra-color-picker';
@@ -285,6 +286,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
   /** Serialised watch_entities per cache key, so the subscription can be rebuilt on change. */
   private _actionWatchKeys: Map<string, string> = new Map();
   private _firstTodoMemo = new UcStatesMemo<string | undefined>();
+  /** Entity IDs HA reported as render_template listeners, keyed by module id. */
+  private _runtimeEntities: Map<string, string[]> = new Map();
 
   /** First `todo.*` entity, backing the "Default (first available)" option. Cached per hass tick. */
   private _firstTodoEntity(hass: HomeAssistant): string | undefined {
@@ -310,6 +313,46 @@ export class UltraDynamicListModule extends BaseUltraModule {
     this._actionWatchKeys.clear();
     this._actionCache.clear();
     this._actionFetching.clear();
+    this._runtimeEntities.clear();
+  }
+
+  /**
+   * Sensors named in the Jinja template (and any HA later reports as listeners)
+   * never appear as config fields, so without this the host card's shouldUpdate
+   * filter ignores their state changes after Save (issue #130).
+   */
+  override getRuntimeEntityIds(module: CardModule): string[] {
+    const dyn = module as DynamicListModule;
+    const ids = new Set<string>(this._runtimeEntities.get(dyn.id) || []);
+    for (const text of [
+      dyn.dynamic_template,
+      dyn.todo_dynamic_template,
+      dyn.action_template,
+    ]) {
+      for (const id of extractEntityIdsFromTemplate(text)) ids.add(id);
+    }
+    const todoPrimary = dyn.todo_entity?.trim();
+    if (todoPrimary && todoPrimary.includes('.')) ids.add(todoPrimary);
+    for (const id of dyn.todo_entities || []) {
+      if (id?.trim() && id.includes('.')) ids.add(id.trim());
+    }
+    for (const id of dyn.action_source?.watch_entities || []) {
+      if (id?.trim() && id.includes('.')) ids.add(id.trim());
+    }
+    return [...ids];
+  }
+
+  private _readTemplateResult(hass: HomeAssistant, key: string): unknown {
+    const fromService = this._templateService?.getLastResult(key);
+    if (fromService !== undefined) return fromService;
+    return hass.__uvc_template_strings?.[key];
+  }
+
+  private _recordTemplateEntities(moduleId: string, key: string): void {
+    const fromWs = this._templateService?.getLastEntities(key) ?? [];
+    if (fromWs.length === 0) return;
+    const prev = this._runtimeEntities.get(moduleId) ?? [];
+    this._runtimeEntities.set(moduleId, [...new Set([...prev, ...fromWs])]);
   }
 
   private _hashString(str: string): string {
@@ -1963,12 +2006,16 @@ export class UltraDynamicListModule extends BaseUltraModule {
       this._templateService.subscribeToTemplate(
         processedTpl,
         tKey,
-        onUpdate,
+        () => {
+          this._recordTemplateEntities(dynModule.id, tKey);
+          this.triggerPreviewUpdate();
+        },
         {},
         config,
         entitySig
       );
-      const rawTodo = hass.__uvc_template_strings?.[tKey];
+      this._recordTemplateEntities(dynModule.id, tKey);
+      const rawTodo = this._readTemplateResult(hass, tKey);
       if (!rawTodo) {
         return html`
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:var(--secondary-text-color);font-size:13px;">
@@ -2104,12 +2151,16 @@ export class UltraDynamicListModule extends BaseUltraModule {
       this._templateService.subscribeToTemplate(
         processedTpl,
         tKey,
-        onUpdate,
+        () => {
+          this._recordTemplateEntities(dynModule.id, tKey);
+          onUpdate();
+        },
         {},
         config,
         entitySig
       );
-      const rawAction = hass.__uvc_template_strings?.[tKey];
+      this._recordTemplateEntities(dynModule.id, tKey);
+      const rawAction = this._readTemplateResult(hass, tKey);
       if (!rawAction) {
         return html`
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:var(--secondary-text-color);font-size:13px;">
@@ -2158,13 +2209,15 @@ export class UltraDynamicListModule extends BaseUltraModule {
         processedTemplate,
         templateKey,
         () => {
+          this._recordTemplateEntities(dynModule.id, templateKey);
           this.triggerPreviewUpdate();
         },
         {},
         config
       );
+      this._recordTemplateEntities(dynModule.id, templateKey);
 
-      const raw = hass.__uvc_template_strings?.[templateKey];
+      const raw = this._readTemplateResult(hass, templateKey);
 
       if (!raw) {
         return html`

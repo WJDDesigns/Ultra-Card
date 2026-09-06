@@ -2,7 +2,7 @@
 
 ## Version 3.10.0-beta4
 
-The fourth 3.10.0 beta turns Ultra Card into a dashboard builder. **Ultra Dashboard** creates a complete, good-looking dashboard from your areas and floors in one click — and unlike every other generated dashboard, you can take control of it and edit every single card in the visual editor. It is free, it needs Home Assistant 2026.5 or newer, and it uses only free modules. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+The fourth 3.10.0 beta turns Ultra Card into a dashboard builder. **Ultra Dashboard** creates a complete, good-looking dashboard from your areas and floors in one click — and unlike every other generated dashboard, you can take control of it and edit every single card in the visual editor. It is free, it needs Home Assistant 2026.5 or newer, and it uses only free modules. This beta also finishes the Dynamic List live-update bug from [#130](https://github.com/WJDDesigns/Ultra-Card/issues/130) and tightens drag-and-drop and keyboard reordering in the layout tree. This is a pre-release for testing — please report anything odd on GitHub or Discord.
 
 **If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
 
@@ -17,6 +17,12 @@ The fourth 3.10.0 beta turns Ultra Card into a dashboard builder. **Ultra Dashbo
 - **Room tiles pick the right thermometer** - When a room has several temperature or humidity sensors, the room tile now prefers one that is reporting a number and is not attached to an appliance, so a kitchen shows the room temperature rather than the oven or the fridge
 - **The download stays small** - Ultra Dashboard adds about 1 KB to the file every dashboard loads; the generator and its settings panel are fetched only when you create or edit an Ultra Dashboard
 - **Templates that return a CSS variable with a fallback now work** - A template producing `var(--my-color, #000000)` was being replaced with the default color. It is now used as written, matching the color picker fix in beta3. Thanks for the report in [#129](https://github.com/WJDDesigns/Ultra-Card/issues/129)
+
+### 🐛 Bug Fixes
+
+- **Fixed Dynamic Lists not updating after you save the card** - Changing a sensor on the live dashboard did nothing until you refreshed the page, and after every edit you had to press F5 before values started moving again. The list now keeps updating as soon as you save, including the Temperature Sensors example. Follow-up to [#130](https://github.com/WJDDesigns/Ultra-Card/issues/130)
+- **Fixed drag and drop in the layout tree** - Dragging a row, column or module could highlight the wrong drop target, leave a dimmed ghost behind, or drop onto itself. The tree now tracks the drag cleanly from start to drop
+- **Fixed moving a row, column or module down with the keyboard** - Moving an item down could land it in the wrong place because the insert point was off by one. It now swaps with the next sibling
 
 ---
 

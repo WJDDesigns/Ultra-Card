@@ -9,7 +9,8 @@ import { forEachNestedChildModules } from './uc-layout-module-types';
  * dog_duty, vehicle_maintenance, cleaning_zones, laundry_tracker,
  * battery_fleet). Only two of those force broad hass updates, so for the rest
  * this walk is the *only* thing that keeps their content live — a render gate
- * that ignores it will appear to freeze those modules.
+ * that ignores it will appear to freeze those modules. Dynamic List is in the
+ * same boat: its sensors live inside a Jinja string, not as config fields.
  *
  * Deliberately not cached: discovery resolves asynchronously (the registry
  * lookup in area-summary-module lands a tick after the layout is first read),

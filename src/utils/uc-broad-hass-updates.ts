@@ -42,6 +42,8 @@ function scansAllStatesWhenConfigured(mod: Record<string, unknown>): boolean {
       return (mod.discovery_mode ?? 'auto') !== 'manual';
     case 'dynamic-list':
       // Resolves the "first available" todo entity by scanning for `todo.*`.
+      // Template sources do not belong here: their entities are named only in
+      // the Jinja string and are tracked via getRuntimeEntityIds (issue #130).
       return mod.source_type === 'todo' || mod.source_type === 'todo-template';
     default:
       return false;

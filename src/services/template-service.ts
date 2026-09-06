@@ -144,8 +144,24 @@ export class TemplateService {
   private _liveGenByKey: Map<string, number> = new Map();
   /** Serialize subscribe/unsubscribe per key to avoid overlapping WS operations. */
   private _subscribeChains: Map<string, Promise<void>> = new Map();
+  /** Latest rendered value per key, kept off the hass object so a new hass tick cannot drop it. */
+  private _lastResults: Map<string, unknown> = new Map();
+  /** Entity IDs HA reported as render_template listeners for each key. */
+  private _lastEntities: Map<string, string[]> = new Map();
+  /** Latest paint callback per key; replaced on every subscribe so a new card instance is notified. */
+  private _onResultChangedByKey: Map<string, () => void> = new Map();
 
   constructor(private hass: HomeAssistant) {}
+
+  /** Last rendered value for this key, if any websocket result has landed. */
+  public getLastResult(templateKey: string): unknown {
+    return this._lastResults.get(templateKey);
+  }
+
+  /** Entity IDs HA is watching for this template, if the last message included listeners. */
+  public getLastEntities(templateKey: string): string[] {
+    return this._lastEntities.get(templateKey) ?? [];
+  }
 
   public getTemplateResult(templateKey: string): boolean | undefined {
     const cached = this._evaluationCache.get(templateKey);
@@ -183,6 +199,7 @@ export class TemplateService {
     entitySignature?: string
   ): void {
     const key = templateKey;
+    if (onResultChanged) this._onResultChangedByKey.set(key, onResultChanged);
     const prev = this._subscribeChains.get(key) ?? Promise.resolve();
     const next = prev
       .then(() =>
@@ -238,6 +255,9 @@ export class TemplateService {
       } catch {}
     }
     this._templateSubscriptions.delete(templateKey);
+    this._lastResults.delete(templateKey);
+    this._lastEntities.delete(templateKey);
+    this._onResultChangedByKey.delete(templateKey);
   }
 
   private async _subscribeToTemplateInner(
@@ -271,24 +291,37 @@ export class TemplateService {
 
     if (hadSub) {
       if (!trackEntity && !varsChanged) {
+        // Keep the existing websocket subscription, but make sure the current
+        // hass object can still read the last result (issue #130: after Save
+        // the live card re-renders with a new hass and would otherwise miss it).
+        this._writeResultToHass(templateKey, this._lastResults.get(templateKey));
         return;
       }
       if (trackEntity && entitySignature === prevSig && !varsChanged) {
+        this._writeResultToHass(templateKey, this._lastResults.get(templateKey));
         return;
       }
-      const preserved = this.hass.__uvc_template_strings?.[templateKey];
+      const preservedResult =
+        this._lastResults.has(templateKey)
+          ? this._lastResults.get(templateKey)
+          : this.hass.__uvc_template_strings?.[templateKey];
+      const preservedEntities = this._lastEntities.get(templateKey);
       await this._unsubscribeKey(templateKey);
       if (!this.hass.__uvc_template_strings) {
         this.hass.__uvc_template_strings = {};
       }
-      if (preserved !== undefined) {
-        this.hass.__uvc_template_strings[templateKey] = preserved;
+      if (preservedResult !== undefined) {
+        this._lastResults.set(templateKey, preservedResult);
+        this._writeResultToHass(templateKey, preservedResult);
       }
+      if (preservedEntities) this._lastEntities.set(templateKey, preservedEntities);
     } else if (trackEntity) {
       // first subscription with tracking
     } else {
       // first static subscription
     }
+
+    if (onResultChanged) this._onResultChangedByKey.set(templateKey, onResultChanged);
 
     const processedTemplate = preprocessTemplateVariables(template, this.hass, cardConfig);
 
@@ -317,10 +350,9 @@ export class TemplateService {
               ? JSON.stringify(renderedResult)
               : String(renderedResult);
 
-          if (!this.hass.__uvc_template_strings) {
-            this.hass.__uvc_template_strings = {};
-          }
-          this.hass.__uvc_template_strings[templateKey] = renderedResult;
+          this._lastResults.set(templateKey, renderedResult);
+          this._captureListeners(templateKey, message);
+          this._writeResultToHass(templateKey, renderedResult);
 
           let hasChanged = false;
           if (isStringBasedTemplate(templateKey)) {
@@ -344,8 +376,9 @@ export class TemplateService {
 
           isFirstMessage = false;
 
-          if (hasChanged && onResultChanged) {
-            onResultChanged();
+          const notify = this._onResultChangedByKey.get(templateKey) ?? onResultChanged;
+          if (hasChanged && notify) {
+            notify();
           }
 
           const boolValue = this.parseTemplateResult(renderedResult, templateKey);
@@ -433,6 +466,9 @@ export class TemplateService {
       this._customVarSignatures.delete(key);
       this._liveGenByKey.delete(key);
       this._subscribeChains.delete(key);
+      this._lastResults.delete(key);
+      this._lastEntities.delete(key);
+      this._onResultChangedByKey.delete(key);
       if (this.hass?.__uvc_template_strings) {
         delete this.hass.__uvc_template_strings[key];
       }
@@ -451,15 +487,21 @@ export class TemplateService {
     this._customVarSignatures.clear();
     this._liveGenByKey.clear();
     this._subscribeChains.clear();
+    this._lastResults.clear();
+    this._lastEntities.clear();
+    this._onResultChangedByKey.clear();
   }
 
   public updateHass(hass: HomeAssistant): void {
     if (this.hass && hass !== this.hass) {
+      if (!hass.__uvc_template_strings) {
+        hass.__uvc_template_strings = {};
+      }
       if (this.hass.__uvc_template_strings) {
-        if (!hass.__uvc_template_strings) {
-          hass.__uvc_template_strings = {};
-        }
         Object.assign(hass.__uvc_template_strings, this.hass.__uvc_template_strings);
+      }
+      for (const [key, value] of this._lastResults) {
+        hass.__uvc_template_strings[key] = value as string;
       }
       if ((this.hass as any).__uvc_todo_cache) {
         if (!(hass as any).__uvc_todo_cache) {
@@ -470,5 +512,20 @@ export class TemplateService {
     }
     this.hass = hass;
     this._evaluationCache.clear();
+  }
+
+  private _writeResultToHass(templateKey: string, result: unknown): void {
+    if (result === undefined || !this.hass) return;
+    if (!this.hass.__uvc_template_strings) {
+      this.hass.__uvc_template_strings = {};
+    }
+    this.hass.__uvc_template_strings[templateKey] = result as string;
+  }
+
+  private _captureListeners(templateKey: string, message: { listeners?: { entities?: unknown } }): void {
+    const raw = message.listeners?.entities;
+    if (!Array.isArray(raw)) return;
+    const ids = raw.filter((id): id is string => typeof id === 'string' && id.includes('.'));
+    if (ids.length > 0) this._lastEntities.set(templateKey, ids);
   }
 }

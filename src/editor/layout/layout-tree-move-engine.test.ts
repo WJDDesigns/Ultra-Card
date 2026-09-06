@@ -73,19 +73,64 @@ describe('performLayoutMove', () => {
     expect(next.rows[0].columns[0].modules.map((m: any) => m.id)).toEqual(['m2', 'm1']);
   });
 
-  it('moves a row', () => {
+  it('moves a row (insert-before semantics, like modules and columns)', () => {
     const layout = {
       rows: [
         { id: 'r1', columns: [] },
         { id: 'r2', columns: [] },
+        { id: 'r3', columns: [] },
       ],
     };
-    const next = performLayoutMove(
+    // "after r2" == insert before index 2
+    let next = performLayoutMove(layout, { type: 'row', rowIndex: 0 }, { type: 'row', rowIndex: 2 });
+    expect(next.rows.map((r: any) => r.id)).toEqual(['r2', 'r1', 'r3']);
+
+    // "before r2" when dragging r1 is a no-op
+    next = performLayoutMove(layout, { type: 'row', rowIndex: 0 }, { type: 'row', rowIndex: 1 });
+    expect(next.rows.map((r: any) => r.id)).toEqual(['r1', 'r2', 'r3']);
+
+    // "after r3" moves to the end
+    next = performLayoutMove(layout, { type: 'row', rowIndex: 0 }, { type: 'row', rowIndex: 3 });
+    expect(next.rows.map((r: any) => r.id)).toEqual(['r2', 'r3', 'r1']);
+
+    // moving up: "before r1"
+    next = performLayoutMove(layout, { type: 'row', rowIndex: 2 }, { type: 'row', rowIndex: 0 });
+    expect(next.rows.map((r: any) => r.id)).toEqual(['r3', 'r1', 'r2']);
+
+    // moving up: "after r1" == before index 1
+    next = performLayoutMove(layout, { type: 'row', rowIndex: 2 }, { type: 'row', rowIndex: 1 });
+    expect(next.rows.map((r: any) => r.id)).toEqual(['r1', 'r3', 'r2']);
+  });
+
+  it('reorders columns with insert-before semantics in both directions', () => {
+    const layout = {
+      rows: [
+        {
+          id: 'r1',
+          column_layout: '1-2-1',
+          columns: [
+            { id: 'c1', modules: [] },
+            { id: 'c2', modules: [] },
+            { id: 'c3', modules: [] },
+          ],
+        },
+      ],
+    };
+    // c1 dropped "after c2" (insert before index 2)
+    let next = performLayoutMove(
       layout,
-      { type: 'row', rowIndex: 0 },
-      { type: 'row', rowIndex: 1 }
+      { type: 'column', rowIndex: 0, columnIndex: 0 },
+      { type: 'column', rowIndex: 0, columnIndex: 2 }
     );
-    expect(next.rows.map((r: any) => r.id)).toEqual(['r2', 'r1']);
+    expect(next.rows[0].columns.map((c: any) => c.id)).toEqual(['c2', 'c1', 'c3']);
+
+    // c3 dropped "after c1" (insert before index 1)
+    next = performLayoutMove(
+      layout,
+      { type: 'column', rowIndex: 0, columnIndex: 2 },
+      { type: 'column', rowIndex: 0, columnIndex: 1 }
+    );
+    expect(next.rows[0].columns.map((c: any) => c.id)).toEqual(['c1', 'c3', 'c2']);
   });
 
   it('does not mutate the original layout', () => {

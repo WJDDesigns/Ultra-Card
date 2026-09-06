@@ -151,3 +151,81 @@ describe('TemplateService subscription churn (P1)', () => {
     expect(subscribeCount).toBe(2);
   });
 });
+
+describe('TemplateService last result (issue #130)', () => {
+  let lastCb: ((message: unknown) => void) | undefined;
+
+  function makePushHass(): HomeAssistant {
+    lastCb = undefined;
+    return {
+      states: {},
+      connection: {
+        subscribeMessage: (cb: (message: unknown) => void) => {
+          lastCb = cb;
+          subscribeCount++;
+          return Promise.resolve(async () => {
+            unsubscribeCount++;
+          });
+        },
+      },
+    } as unknown as HomeAssistant;
+  }
+
+  it('keeps the rendered result off the hass object and copies it onto a new hass', async () => {
+    const hass = makePushHass();
+    const service = new TemplateService(hass);
+    service.subscribeToTemplate(`{{ states('sensor.x') }}`, 'layout_mods_dynlist_k', undefined, {});
+    await settle();
+    lastCb?.({
+      result: [{ id: 't1', type: 'text', text: '21.0' }],
+      listeners: { entities: ['sensor.temperature_outside'] },
+    });
+
+    expect(service.getLastResult('layout_mods_dynlist_k')).toEqual([
+      { id: 't1', type: 'text', text: '21.0' },
+    ]);
+    expect(service.getLastEntities('layout_mods_dynlist_k')).toEqual([
+      'sensor.temperature_outside',
+    ]);
+
+    const nextHass = makePushHass();
+    service.updateHass(nextHass);
+    expect(nextHass.__uvc_template_strings?.['layout_mods_dynlist_k']).toEqual([
+      { id: 't1', type: 'text', text: '21.0' },
+    ]);
+  });
+
+  it('writes the last result onto hass when a later subscribe early-returns', async () => {
+    const hass = makePushHass();
+    const service = new TemplateService(hass);
+    service.subscribeToTemplate(`{{ states('sensor.x') }}`, 'layout_mods_k', undefined, {});
+    await settle();
+    lastCb?.({ result: 'first', listeners: { entities: ['sensor.x'] } });
+
+    const nextHass = makePushHass();
+    service.updateHass(nextHass);
+    // Simulate the live card re-rendering after Save with a fresh hass object.
+    delete nextHass.__uvc_template_strings;
+    service.subscribeToTemplate(`{{ states('sensor.x') }}`, 'layout_mods_k', undefined, {});
+    await settle();
+    expect(subscribeCount).toBe(1);
+    expect(nextHass.__uvc_template_strings?.['layout_mods_k']).toBe('first');
+  });
+
+  it('notifies the latest callback when a later result arrives', async () => {
+    const hass = makePushHass();
+    const service = new TemplateService(hass);
+    const first = vi.fn();
+    const second = vi.fn();
+    service.subscribeToTemplate(`{{ 1 }}`, 'layout_mods_k', first, {});
+    await settle();
+    lastCb?.({ result: 'a', listeners: { entities: [] } });
+    expect(first).toHaveBeenCalledTimes(1);
+
+    service.subscribeToTemplate(`{{ 1 }}`, 'layout_mods_k', second, {});
+    await settle();
+    lastCb?.({ result: 'b', listeners: { entities: [] } });
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(first).toHaveBeenCalledTimes(1);
+  });
+});
