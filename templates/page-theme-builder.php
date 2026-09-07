@@ -87,11 +87,11 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
               <button type="button" data-value="flat">Flat</button><button type="button" data-value="glass">Glass</button><button type="button" data-value="neumorphic">Neumorphic</button><button type="button" data-value="glossy">Glossy</button><button type="button" data-value="outline">Outline</button><button type="button" data-value="minimal">Minimal</button>
             </div>
           </div>
-          <div class="ucp-field tb-range"><label for="tb-radius">Corner radius <output id="tb-radius-out">12px</output></label><input type="range" id="tb-radius" min="0" max="48" step="1" data-path="tokens.radius" data-type="number" data-out="tb-radius-out"></div>
+          <div class="ucp-field tb-range"><label for="tb-radius">Corner radius <output id="tb-radius-out">12px</output></label><input type="range" id="tb-radius" min="0" max="48" step="1" data-path="tokens.radius" data-type="number" data-out="tb-radius-out" data-override="card.card_border_radius"></div>
           <div class="ucp-field tb-range adv"><label for="tb-radius-sm">Small control radius <output id="tb-radius-sm-out">auto</output></label><input type="range" id="tb-radius-sm" min="0" max="40" step="1" data-path="tokens.radius_sm" data-type="number" data-out="tb-radius-sm-out" data-optional="1"><span class="ucp-hint">Buttons, chips, tracks. Auto is half the card radius.</span></div>
-          <div class="ucp-field tb-range"><label for="tb-bw">Border width <output id="tb-bw-out">1px</output></label><input type="range" id="tb-bw" min="0" max="8" step="1" data-path="tokens.border_width" data-type="number" data-out="tb-bw-out" data-optional="1"></div>
+          <div class="ucp-field tb-range"><label for="tb-bw">Border width <output id="tb-bw-out">1px</output></label><input type="range" id="tb-bw" min="0" max="8" step="1" data-path="tokens.border_width" data-type="number" data-out="tb-bw-out" data-optional="1" data-override="card.card_border_width"><span class="ucp-hint">Auto follows the surface: 1px for flat, glass and outline; none for neumorphic, glossy and minimal.</span></div>
           <div class="ucp-field"><label>Border colour</label><div class="tb-color" data-path="tokens.border_color"></div></div>
-          <div class="ucp-field tb-range" id="tb-blur-field"><label for="tb-blur">Glass blur <output id="tb-blur-out">12px</output></label><input type="range" id="tb-blur" min="0" max="60" step="1" data-path="tokens.blur" data-type="number" data-out="tb-blur-out" data-optional="1"></div>
+          <div class="ucp-field tb-range" id="tb-blur-field"><label for="tb-blur">Glass blur <output id="tb-blur-out">12px</output></label><input type="range" id="tb-blur" min="0" max="60" step="1" data-path="tokens.blur" data-type="number" data-out="tb-blur-out" data-optional="1"><span class="ucp-hint">Blur shows over a wallpaper or anything behind the card; on a flat page it is invisible, so the preview adds soft colour behind glass.</span></div>
           <div class="ucp-field">
             <label for="tb-shadow-preset">Shadow</label>
             <select id="tb-shadow-preset"><option value="">Surface default</option><option value="none">None</option><option value="soft">Soft</option><option value="medium">Medium</option><option value="deep">Deep</option><option value="custom">Custom…</option></select>
@@ -121,6 +121,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
           <div class="ucp-field adv"><label>Divider</label><div class="tb-color" data-path="tokens.palette.divider"></div></div>
           <div class="ucp-field adv"><label>Text on primary</label><div class="tb-color" data-path="tokens.palette.on_primary"></div><span class="ucp-hint">Derived from Primary when left on Auto.</span></div>
           <div id="tb-contrast" class="tb-contrast" hidden></div>
+          <button type="button" class="ucp-btn ucp-btn-ghost tb-fix-contrast" id="tb-fix-contrast" hidden><i class="mdi mdi-auto-fix"></i> Fix contrast</button>
         </div>
       </details>
 
@@ -130,11 +131,20 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
           <div class="ucp-field">
             <label>Dashboard background</label>
             <div class="tb-wall" id="tb-wall"></div>
+            <input type="file" id="tb-wall-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.svg" hidden>
             <div class="tb-color" data-path="__wallColor" id="tb-wall-color" hidden></div>
+            <div class="tb-wall-img" id="tb-wall-img" hidden>
+              <div class="tb-wall-img-head"><span id="tb-wall-img-info" class="ucp-hint"></span><button type="button" class="tb-link" id="tb-wall-replace">Replace</button><button type="button" class="tb-link" id="tb-wall-remove">Remove</button></div>
+              <div class="tb-grid2">
+                <div class="ucp-field tb-range"><label for="tb-wall-dim">Darken <output id="tb-wall-dim-out">0%</output></label><input type="range" id="tb-wall-dim" min="0" max="80" step="5" value="0"><span class="ucp-hint">A dark wash over the picture so cards and text stay readable.</span></div>
+                <div class="ucp-field"><label for="tb-wall-pos">Anchor</label><select id="tb-wall-pos"><option value="center">Centre</option><option value="top">Top</option><option value="bottom">Bottom</option></select></div>
+              </div>
+            </div>
+            <div id="tb-wall-busy" class="ucp-hint" hidden><i class="mdi mdi-loading mdi-spin"></i> Preparing image…</div>
             <textarea class="adv code" id="tb-page-bg" rows="3" data-path="tokens.page_background" data-type="text" placeholder="linear-gradient(180deg, #0b1020, #1b2a4a) fixed"></textarea>
-            <span class="ucp-hint">Painted behind every card on the view (users can switch this off in the Hub). Gradients, colours and inline SVG data URIs are allowed; remote images are not.</span>
+            <span class="ucp-hint">Painted behind every card on the view (users can switch this off in the Hub). Pick a gradient, a colour, or upload a picture or SVG: images are resized and compressed here to fit about <span id="tb-wall-budget">150 KB</span>, so the theme stays quick to sync. Remote images are not allowed.</span>
           </div>
-          <div class="ucp-field adv"><label for="tb-pane-bg">Inner pane background</label><textarea class="code" id="tb-pane-bg" rows="2" data-path="tokens.pane_background" data-type="text" placeholder="rgba(255,255,255,0.06)"></textarea><span class="ucp-hint">Rows, tiles, chips and tracks drawn inside modules. Empty follows the surface.</span></div>
+          <div class="ucp-field adv"><label for="tb-pane-bg">Inner pane background</label><textarea class="code" id="tb-pane-bg" rows="2" data-path="tokens.pane_background" data-type="text" placeholder="rgba(255,255,255,0.06)"></textarea><span class="ucp-hint">Rows, tiles, chips and tracks drawn inside modules. Empty follows the surface. Colours, gradients and small inline SVG data URIs (up to 20k characters).</span></div>
           <div class="ucp-field adv"><label for="tb-pane-border">Inner pane border</label><input type="text" id="tb-pane-border" data-path="tokens.pane_border" data-type="text" placeholder="1px solid rgba(255,255,255,0.1)"></div>
           <div class="ucp-field adv"><label for="tb-pane-shadow">Inner pane shadow</label><input type="text" id="tb-pane-shadow" data-path="tokens.pane_shadow" data-type="text" placeholder="none"></div>
         </div>
@@ -164,7 +174,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
       <details class="tb-sec adv">
         <summary><i class="mdi mdi-view-module-outline"></i> Module defaults</summary>
         <div class="tb-sec-body">
-          <p class="ucp-hint" style="margin-bottom:10px">What each module uses when its own style is set to "Theme". Leave blank to keep module defaults.</p>
+          <p class="ucp-hint" style="margin-bottom:10px">What each module uses when its own style is set to "Theme". Leave blank to keep module defaults. These are not drawn in the preview; real modules pick them up in Home Assistant.</p>
           <div id="tb-modules"></div>
         </div>
       </details>
@@ -181,7 +191,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
         <summary><i class="mdi mdi-code-braces"></i> Custom CSS</summary>
         <div class="tb-sec-body">
           <div class="ucp-field"><textarea class="code" id="tb-css" rows="10" data-path="css" data-type="text" placeholder=".card-container {&#10;  background-image: linear-gradient(180deg, rgba(255,255,255,.08), transparent 40%) !important;&#10;}"></textarea>
-          <span class="ucp-hint">Scoped to the card. <code>.card-container</code> is the shell; use <code>var(--uc-card-hue)</code> and <code>var(--uc-card-seed-1..3)</code> for per-card variety. No @import, remote url() or @font-face.</span></div>
+          <span class="ucp-hint">Scoped to the card. <code>.card-container</code> is the shell; use <code>var(--uc-card-hue)</code> and <code>var(--uc-card-seed-1..3)</code> for per-card variety (the dice in the preview deal new values). Inline <code>url("data:image/…")</code> artwork is fine up to 60k characters in total; no @import, remote url() or @font-face.</span></div>
         </div>
       </details>
 
@@ -222,18 +232,19 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
         <div class="tb-prev-bar">
           <div class="tb-seg tb-seg-sm" id="tb-prev-mode"><button type="button" data-value="light" class="active"><i class="mdi mdi-white-balance-sunny"></i> Light HA</button><button type="button" data-value="dark"><i class="mdi mdi-weather-night"></i> Dark HA</button></div>
           <div class="tb-seg tb-seg-sm" id="tb-prev-width"><button type="button" data-value="phone"><i class="mdi mdi-cellphone"></i></button><button type="button" data-value="desktop" class="active"><i class="mdi mdi-monitor"></i></button></div>
-          <button type="button" class="ucp-btn ucp-btn-ghost tb-reroll" id="tb-reroll" title="New random seeds"><i class="mdi mdi-dice-multiple-outline"></i></button>
+          <button type="button" class="ucp-btn ucp-btn-ghost tb-reroll" id="tb-reroll" title="Deal new per-card hue and seeds"><i class="mdi mdi-dice-multiple-outline"></i> <span>Reroll</span></button>
         </div>
         <div id="tb-preview" class="tb-preview" aria-live="polite"></div>
-        <p class="ucp-hint tb-prev-note">Preview mirrors the card's theme engine. Real modules add their own detail; per-card randomness (hue and seeds) rerolls on each dashboard load.</p>
+        <p class="ucp-hint tb-prev-note">Preview mirrors the card's theme engine. Real modules add their own detail; per-card randomness (hue and seeds) is dealt afresh on each dashboard load.</p>
       </div>
 
       <div class="tb-actions ucp-card">
         <div class="tb-actions-main">
           <button type="button" class="ucp-btn ucp-btn-blue" id="tb-submit"><i class="mdi mdi-send"></i> <span id="tb-submit-label"><?php echo $edit_id ? 'Save changes' : 'Submit for review'; ?></span></button>
           <a class="ucp-btn ucp-btn-ghost" href="<?php echo esc_url(home_url('/dashboard/#themes')); ?>">My themes</a>
+          <span class="ucp-hint tb-size" id="tb-size" title="Theme size as stored and synced"></span>
         </div>
-        <p class="ucp-hint">Approved themes appear in the Hub catalog and the <a href="<?php echo esc_url(home_url('/themes/')); ?>" style="color:var(--uc-blue)">gallery</a> with downloads and ratings. Your own submissions, live or pending, sync into <b>Hub › Themes › My Themes</b> when you are signed in with Ultra Card Connect.</p>
+        <p class="ucp-hint">Approved themes appear in the Hub catalog and the <a href="<?php echo esc_url(home_url('/themes/')); ?>" style="color:var(--uc-blue)">gallery</a>; your own submissions sync into <b>Hub › Themes › My Themes</b> when signed in with Ultra Card Connect.</p>
       </div>
 
       <div id="tb-success" class="ucp-card ucp-success" hidden>
@@ -252,7 +263,12 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .ucp-tb-hero{padding-bottom:28px}
 .ucp-tb-body{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:24px;align-items:start;padding-bottom:120px}
 .ucp-tb-panel{display:flex;flex-direction:column;gap:10px;min-width:0}
-.ucp-tb-preview{position:sticky;top:calc(var(--ucp-header-offset,96px) + 12px);display:flex;flex-direction:column;gap:14px;min-width:0}
+/* The preview column sticks under the site header and is capped to the viewport:
+   the stage scrolls inside its card while the action bar stays in reach. */
+.ucp-tb-preview{position:sticky;top:calc(var(--ucp-header-offset,96px) + 12px);max-height:calc(100vh - var(--ucp-header-offset,96px) - 24px);display:flex;flex-direction:column;gap:14px;min-width:0}
+.ucp-tb-preview .tb-prev-card{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.ucp-tb-preview .tb-prev-card .tb-preview{flex:1 1 auto;min-height:0;overflow:auto;scrollbar-width:thin;border-radius:14px}
+.ucp-tb-preview .tb-actions,.ucp-tb-preview #tb-success{flex:none}
 .tb-mode{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--uc-line);border-radius:12px;background:var(--uc-card)}
 .tb-mode-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:9px;font-weight:700;font-size:13.5px;color:var(--uc-dim)}
 .tb-mode-btn.active{background:linear-gradient(135deg,rgba(41,182,246,.22),rgba(128,23,162,.22));color:#fff}
@@ -273,8 +289,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tb-sec-body select{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--uc-line);border-radius:10px;color:#fff;padding:10px 12px;font-size:14px}
 .tb-sec-body input[type=number]{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--uc-line);border-radius:10px;color:#fff;padding:10px 12px;font-size:14px}
 .tb-sec-body textarea.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;min-height:0}
-.tb-range label{display:flex;justify-content:space-between}
-.tb-range output{color:var(--uc-dim);font-weight:500;font-size:12.5px}
+.tb-range label{display:flex;justify-content:space-between;gap:8px}
+.tb-range output{color:var(--uc-dim);font-weight:500;font-size:12.5px;text-align:right}
+.tb-range.is-overridden input[type=range]{opacity:.45}
+.tb-range output .ov{color:var(--uc-warn)}
 .tb-range input[type=range]{width:100%;accent-color:var(--uc-blue)}
 .tb-seg{display:flex;flex-wrap:wrap;gap:4px;padding:4px;border:1px solid var(--uc-line);border-radius:10px;background:rgba(0,0,0,.2)}
 .tb-seg button{flex:1 1 auto;padding:8px 10px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--uc-dim);white-space:nowrap}
@@ -296,13 +314,33 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tb-starter:hover{border-color:rgba(255,255,255,.3)}
 .tb-starter .uc-swatch{border-radius:7px}
 .tb-starter span{font-size:11.5px;font-weight:600;color:var(--uc-dim);padding:0 2px}
-.tb-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
+.tb-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px;border-radius:10px;transition:box-shadow .15s}
+.tb-wall.drag{box-shadow:0 0 0 2px var(--uc-blue)}
 .tb-wall button{height:44px;border-radius:9px;border:2px solid transparent;position:relative;overflow:hidden}
 .tb-wall button.active{border-color:var(--uc-blue);box-shadow:0 0 0 2px rgba(41,182,246,.3)}
 .tb-wall button span{position:absolute;inset:auto 0 0;font-size:9.5px;font-weight:700;text-align:center;padding:2px;background:rgba(0,0,0,.55);color:#fff}
+.tb-wall button[data-wall=image] .mdi{position:absolute;inset:0 0 14px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;opacity:.8}
+.tb-wall-img{margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.2);border:1px solid var(--uc-line)}
+.tb-wall-img-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.tb-wall-img-head .ucp-hint{flex:1;min-width:0;color:#dbe6ff}
+.tb-link{font-size:12.5px;font-weight:700;color:var(--uc-blue);padding:0}
+.tb-link:hover{text-decoration:underline}
+.tb-wall-img .tb-grid2 .ucp-field{margin-bottom:0}
+#tb-wall-busy{margin-top:8px}
+.mdi-spin{display:inline-block;animation:tbSpin 1s linear infinite}
+@keyframes tbSpin{to{transform:rotate(360deg)}}
 .tb-contrast{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.2);font-size:12.5px}
-.tb-contrast .row{display:flex;justify-content:space-between;gap:8px}
+.tb-contrast .row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.tb-contrast .row .sw{display:inline-flex;align-items:center;gap:6px}
+.tb-contrast .row .sw i{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.25);display:inline-block}
+.tb-contrast .row small{color:var(--uc-dim);font-size:11px}
 .tb-contrast .ok{color:var(--uc-ok)}.tb-contrast .bad{color:var(--uc-bad)}
+.tb-fix-contrast{margin-top:8px;padding:8px 14px;font-size:13px;border-color:rgba(251,191,36,.45);color:#fde68a}
+.tb-fix-contrast:hover{border-color:var(--uc-warn)}
+.tb-reroll .mdi{transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.tb-reroll.rolling .mdi{transform:rotate(360deg)}
+.tb-size{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tb-size.warn{color:var(--uc-warn)}
 .tb-mod{border-top:1px solid var(--uc-line);padding:10px 0}
 .tb-mod:first-child{border-top:0;padding-top:0}
 .tb-mod h4{margin:0 0 8px;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--uc-dim)}
@@ -314,7 +352,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tb-pre{margin:8px 0 0;max-height:260px;overflow:auto;padding:10px;border-radius:10px;background:rgba(0,0,0,.35);font-size:11.5px;line-height:1.45;white-space:pre-wrap;word-break:break-all}
 .tb-prev-card{padding:14px}
 .tb-prev-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
-.tb-prev-bar .tb-reroll{margin-left:auto;padding:8px 10px}
+.tb-prev-bar .tb-reroll{margin-left:auto;padding:8px 12px;font-size:12.5px}
 .tb-preview{min-height:320px}
 .tb-prev-note{margin-top:10px}
 .tb-actions{display:flex;flex-direction:column;gap:10px}
@@ -333,7 +371,8 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .ucp-success-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
 @media (max-width:1000px){
   .ucp-tb-body{grid-template-columns:1fr}
-  .ucp-tb-preview{position:static;order:-1}
+  .ucp-tb-preview{position:static;order:-1;max-height:none}
+  .ucp-tb-preview .tb-prev-card .tb-preview{overflow:visible}
   .tb-preview{min-height:0}
 }
 @media (max-width:600px){
@@ -364,19 +403,27 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     { key: 'mist', label: 'Mist', value: 'linear-gradient(180deg, #f4f6f8 0%, #e6ebf0 100%) fixed' },
     { key: 'aurora', label: 'Aurora', value: 'radial-gradient(60% 50% at 20% 10%, rgba(64, 200, 170, 0.35), transparent 70%), radial-gradient(50% 40% at 80% 20%, rgba(120, 90, 220, 0.4), transparent 70%), #0a0f1a fixed' },
     { key: 'sand', label: 'Sand', value: 'linear-gradient(180deg, #f2ead9 0%, #e6dbc3 100%) fixed' },
+    { key: 'image', label: 'Image', value: '__image' },
     { key: 'custom', label: 'Custom', value: '__custom' }
   ];
+  // Tokens only: the engine derives the card shell (radius, border, surface
+  // background, shadow) from them, so the Simple sliders stay in charge. Card
+  // chrome is for the rare override, not a copy of the tokens.
   var STARTERS = [
     { id: 'flat', name: 'Flat', def: { tokens: { surface: 'flat', radius: 12, border_width: 1 } } },
-    { id: 'glass', name: 'Glass', def: { tokens: { surface: 'glass', radius: 20, radius_sm: 12, blur: 18, border_width: 1, border_color: 'rgba(255,255,255,0.28)', shadow: '0 12px 32px rgba(0, 0, 0, 0.25)', page_background: 'linear-gradient(160deg, #1b2a4a 0%, #3a2f5c 50%, #0b1020 100%) fixed', palette: { text: '#f3f6fb', text_secondary: 'rgba(243,246,251,0.7)' } }, card: { card_background: 'rgba(255,255,255,0.08)', card_border_radius: 20 } } },
-    { id: 'neu-light', name: 'Neumorphic', def: { tokens: { surface: 'neumorphic', radius: 22, radius_sm: 14, border_width: 0, shadow: '8px 8px 18px rgba(163, 177, 198, 0.6), -8px -8px 18px rgba(255, 255, 255, 0.9)', page_background: '#e4e8ef', palette: { card_bg: '#e4e8ef', text: '#2b3140', primary: '#5b6cff' } }, card: { card_background: '#e4e8ef', card_border_radius: 22, card_border_width: 0 } } },
-    { id: 'neu-dark', name: 'Neu dark', def: { tokens: { surface: 'neumorphic', radius: 22, radius_sm: 14, border_width: 0, shadow: '8px 8px 18px rgba(0, 0, 0, 0.55), -8px -8px 18px rgba(255, 255, 255, 0.05)', page_background: '#2a2e35', palette: { card_bg: '#2a2e35', text: '#e8ecf3', primary: '#7aa2ff' } }, card: { card_background: '#2a2e35', card_border_radius: 22, card_border_width: 0 } } },
-    { id: 'glossy', name: 'Glossy', def: { tokens: { surface: 'glossy', radius: 16, radius_sm: 10, border_width: 0, shadow: '0 6px 20px rgba(0, 0, 0, 0.16)' } } },
-    { id: 'outline', name: 'Outline', def: { tokens: { surface: 'outline', radius: 10, radius_sm: 6, border_width: 1, shadow: 'none' }, card: { card_transparent: true, card_border_width: 1 } } },
-    { id: 'minimal', name: 'Minimal', def: { tokens: { surface: 'minimal', radius: 8, radius_sm: 6, border_width: 0, shadow: 'none' }, card: { card_transparent: true, card_border_width: 0 } } },
-    { id: 'material', name: 'Material', def: { tokens: { surface: 'flat', radius: 12, radius_sm: 20, border_width: 0, shadow: '0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)', pane_background: '#ece6f0', pane_border: 'none', pane_shadow: 'none', page_background: '#fef7ff', font_family: '"Google Sans Text", "Google Sans", Roboto, sans-serif', palette: { primary: '#6750a4', on_primary: '#ffffff', accent: '#6750a4', card_bg: '#f7f2fa', text: '#1d1b20', text_secondary: '#49454f', divider: '#cac4d0' } }, card: { card_background: '#f7f2fa', card_border_radius: 12, card_border_width: 0, card_padding: 16 }, modules: { spinbox: { button_shape: 'circle' }, activity_feed: { feed_card_style: 'elevated' } } } },
-    { id: 'terminal', name: 'Terminal', def: { tokens: { surface: 'outline', radius: 0, radius_sm: 0, border_width: 1, border_color: 'rgba(51,255,102,0.45)', shadow: '0 0 18px rgba(51,255,102,0.18)', font_family: 'ui-monospace, SFMono-Regular, Menlo, monospace', color_filter: 'grayscale(1) sepia(1) hue-rotate(60deg) saturate(3)', page_background: '#020503', palette: { card_bg: '#061008', text: '#33ff66', text_secondary: 'rgba(51,255,102,0.6)', primary: '#33ff66', accent: '#33ff66' } }, card: { card_background: '#061008', card_border_radius: 0 } } }
+    { id: 'glass', name: 'Glass', def: { tokens: { surface: 'glass', radius: 20, radius_sm: 12, blur: 18, border_width: 1, border_color: 'rgba(255,255,255,0.28)', shadow: '0 12px 32px rgba(0, 0, 0, 0.25)', page_background: 'linear-gradient(160deg, #1b2a4a 0%, #3a2f5c 50%, #0b1020 100%) fixed', palette: { text: '#f3f6fb', text_secondary: 'rgba(243,246,251,0.7)' } } } },
+    { id: 'neu-light', name: 'Neumorphic', def: { tokens: { surface: 'neumorphic', radius: 22, radius_sm: 14, shadow: '8px 8px 18px rgba(163, 177, 198, 0.6), -8px -8px 18px rgba(255, 255, 255, 0.9)', page_background: '#e4e8ef', palette: { card_bg: '#e4e8ef', text: '#2b3140', primary: '#4f5ee6' } } } },
+    { id: 'neu-dark', name: 'Neu dark', def: { tokens: { surface: 'neumorphic', radius: 22, radius_sm: 14, shadow: '8px 8px 18px rgba(0, 0, 0, 0.55), -8px -8px 18px rgba(255, 255, 255, 0.05)', page_background: '#2a2e35', palette: { card_bg: '#2a2e35', text: '#e8ecf3', primary: '#7aa2ff' } } } },
+    { id: 'glossy', name: 'Glossy', def: { tokens: { surface: 'glossy', radius: 16, radius_sm: 10, shadow: '0 6px 20px rgba(0, 0, 0, 0.16)' } } },
+    { id: 'outline', name: 'Outline', def: { tokens: { surface: 'outline', radius: 10, radius_sm: 6, border_width: 1, shadow: 'none' } } },
+    { id: 'minimal', name: 'Minimal', def: { tokens: { surface: 'minimal', radius: 8, radius_sm: 6, shadow: 'none' } } },
+    { id: 'material', name: 'Material', def: { tokens: { surface: 'flat', radius: 12, radius_sm: 20, border_width: 0, shadow: '0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)', pane_background: '#ece6f0', pane_border: 'none', pane_shadow: 'none', page_background: '#fef7ff', font_family: '"Google Sans Text", "Google Sans", Roboto, sans-serif', palette: { primary: '#6750a4', on_primary: '#ffffff', accent: '#6750a4', card_bg: '#f7f2fa', text: '#1d1b20', text_secondary: '#49454f', divider: '#cac4d0' } }, modules: { spinbox: { button_shape: 'circle' }, activity_feed: { feed_card_style: 'elevated' } } } },
+    { id: 'terminal', name: 'Terminal', def: { tokens: { surface: 'outline', radius: 0, radius_sm: 0, border_width: 1, border_color: 'rgba(51,255,102,0.45)', shadow: '0 0 18px rgba(51,255,102,0.18)', font_family: 'ui-monospace, SFMono-Regular, Menlo, monospace', color_filter: 'grayscale(1) sepia(1) hue-rotate(60deg) saturate(3)', page_background: '#020503', palette: { card_bg: '#061008', text: '#33ff66', text_secondary: 'rgba(51,255,102,0.6)', primary: '#33ff66', accent: '#33ff66' } }, card: { card_background: '#061008' } } }
   ];
+  // Wallpaper images are written in one canonical shape so the picker can read them back.
+  var WALL_IMG_RE = /^(?:linear-gradient\(rgba\(0, ?0, ?0, ?([\d.]+)\), ?rgba\(0, ?0, ?0, ?[\d.]+\)\), ?)?url\("(data:image\/[^"]+)"\) (center|top|bottom) \/ cover no-repeat fixed$/;
+  // Room left for the wrapper around the data URI.
+  var WALL_IMG_BUDGET = U.LIMITS.page_background - 200;
 
   var def = { id: '', name: '', version: 1, author: AUTHOR, description: '', tokens: { surface: 'flat', radius: 12 }, card: {}, modules: {} };
   var meta = { tags: '', previewId: 0, previewUrl: '', previewFile: null, previewDirty: false, editStatus: '' };
@@ -387,8 +434,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     submitLabel: document.getElementById('tb-submit-label'), success: document.getElementById('tb-success'),
     shadowPreset: document.getElementById('tb-shadow-preset'), fontPreset: document.getElementById('tb-font-preset'),
     pageBg: document.getElementById('tb-page-bg'), wall: document.getElementById('tb-wall'), wallColor: document.getElementById('tb-wall-color'),
-    contrast: document.getElementById('tb-contrast'), thumb: document.getElementById('tb-thumb'), blurField: document.getElementById('tb-blur-field'),
-    cshadow: document.getElementById('tb-cshadow')
+    contrast: document.getElementById('tb-contrast'), fixContrast: document.getElementById('tb-fix-contrast'), thumb: document.getElementById('tb-thumb'), blurField: document.getElementById('tb-blur-field'),
+    cshadow: document.getElementById('tb-cshadow'), size: document.getElementById('tb-size'),
+    wallFile: document.getElementById('tb-wall-file'), wallImg: document.getElementById('tb-wall-img'), wallInfo: document.getElementById('tb-wall-img-info'),
+    wallDim: document.getElementById('tb-wall-dim'), wallDimOut: document.getElementById('tb-wall-dim-out'), wallPos: document.getElementById('tb-wall-pos'), wallBusy: document.getElementById('tb-wall-busy')
   };
 
   // ------------------------------------------------------------ state utils
@@ -441,8 +490,14 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     var out = input.getAttribute('data-out'); if (!out) return;
     var v = get(input.getAttribute('data-path'));
     var el = document.getElementById(out);
-    if (v === undefined) { el.textContent = input.hasAttribute('data-optional') ? (input.id === 'tb-cbr' || input.id === 'tb-cbw' ? 'token' : 'auto') : input.value + 'px'; return; }
-    el.textContent = input.getAttribute('data-fmt') === 'pct' ? Math.round(v * 100) + '%' : v + 'px';
+    var text;
+    if (v === undefined) text = input.hasAttribute('data-optional') ? (input.id === 'tb-cbr' || input.id === 'tb-cbw' ? 'token' : 'auto') : input.value + 'px';
+    else text = input.getAttribute('data-fmt') === 'pct' ? Math.round(v * 100) + '%' : v + 'px';
+    // A Card chrome override shadows the token slider; say so instead of looking broken.
+    var ov = input.getAttribute('data-override');
+    var overridden = ov && get(ov) !== undefined;
+    el.innerHTML = U.esc(text) + (overridden ? ' <span class="ov" title="Set in Advanced › Card chrome; clear it there to use this slider">· overridden (' + U.esc(get(ov)) + 'px)</span>' : '');
+    input.closest('.tb-range').classList.toggle('is-overridden', !!overridden);
   }
   function bindInputs() {
     root.querySelectorAll('[data-path][data-type]').forEach(function (el) {
@@ -457,13 +512,15 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
         });
         return;
       }
-      var ev = (type === 'number' && el.type === 'range') || type === 'text' ? 'input' : 'change';
+      var ev = type === 'number' || type === 'text' ? 'input' : 'change';
       el.addEventListener(ev, function () {
         if (type === 'number') set(path, el.value === '' ? undefined : Number(el.value));
         else if (type === 'bool') set(path, el.checked ? true : undefined);
         else if (type === 'tribool') set(path, el.value === '' ? undefined : el.value === 'true');
         else set(path, el.value);
         fmtOut(el); changed();
+        // Card chrome overrides change what the token sliders mean; refresh their readouts.
+        if (path.indexOf('card.') === 0) root.querySelectorAll('[data-override="' + path + '"]').forEach(fmtOut);
       });
       if (type === 'number' && el.type === 'range' && el.hasAttribute('data-optional')) {
         el.addEventListener('dblclick', function () { set(path, undefined); syncInputs(); changed({ now: true }); });
@@ -533,13 +590,15 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   // wallpaper chips
   function buildWall() {
     els.wall.innerHTML = WALLS.map(function (w) {
-      var bg = w.value === '' ? 'repeating-conic-gradient(#2a2f3a 0 25%, #1a1e26 0 50%) 0 0/12px 12px' : w.value === '__color' ? 'conic-gradient(from 90deg, #f87171, #fbbf24, #4ade80, #29b6f6, #a78bfa, #f87171)' : w.value === '__custom' ? 'rgba(255,255,255,.06)' : w.value.replace(/\s+fixed\b/g, '');
-      return '<button type="button" data-wall="' + w.key + '" style="background:' + bg + '"><span>' + w.label + '</span></button>';
+      var bg = w.value === '' ? 'repeating-conic-gradient(#2a2f3a 0 25%, #1a1e26 0 50%) 0 0/12px 12px' : w.value === '__color' ? 'conic-gradient(from 90deg, #f87171, #fbbf24, #4ade80, #29b6f6, #a78bfa, #f87171)' : (w.value === '__custom' || w.value === '__image') ? 'rgba(255,255,255,.06)' : w.value.replace(/\s+fixed\b/g, '');
+      return '<button type="button" data-wall="' + w.key + '" style="background:' + bg + '">' + (w.value === '__image' ? '<i class="mdi mdi-image-plus-outline"></i>' : '') + '<span>' + w.label + '</span></button>';
     }).join('');
     els.wall.querySelectorAll('button').forEach(function (b) {
       b.addEventListener('click', function () {
-        ui.wall = b.getAttribute('data-wall');
-        var w = WALLS.find(function (x) { return x.key === ui.wall; });
+        var key = b.getAttribute('data-wall');
+        var w = WALLS.find(function (x) { return x.key === key; });
+        if (w.value === '__image') { els.wallFile.click(); return; } // stays on the current wallpaper until a file lands
+        ui.wall = key;
         if (w.value === '') set('tokens.page_background', undefined);
         else if (w.value === '__color') { if (!U.parseColor(get('tokens.page_background') || '')) set('tokens.page_background', ui.previewMode === 'dark' ? '#111318' : '#f2f4f8'); }
         else if (w.value !== '__custom') set('tokens.page_background', w.value);
@@ -547,13 +606,94 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
       });
     });
   }
+  function wallImage() { var m = WALL_IMG_RE.exec(get('tokens.page_background') || ''); return m ? { dim: m[1] ? Math.round(parseFloat(m[1]) * 100) : 0, uri: m[2], pos: m[3] } : null; }
+  function setWallImage(uri, dim, pos) {
+    var v = 'url("' + uri + '") ' + (pos || 'center') + ' / cover no-repeat fixed';
+    if (dim > 0) v = 'linear-gradient(rgba(0,0,0,' + (dim / 100) + '), rgba(0,0,0,' + (dim / 100) + ')), ' + v;
+    set('tokens.page_background', v);
+    syncWall(); els.pageBg.value = v; changed({ now: true });
+  }
+  function fmtBytes(n) { return n >= 1024 * 100 ? Math.round(n / 1024) + ' KB' : n >= 1024 ? (Math.round(n / 102.4) / 10) + ' KB' : n + ' B'; }
+  function dataUriBytes(uri) { var i = uri.indexOf(','); var body = i < 0 ? uri : uri.slice(i + 1); return /;base64,/.test(uri) ? Math.round(body.length * 3 / 4) : body.length; }
   function syncWall() {
     var v = get('tokens.page_background');
+    var img = wallImage();
     var match = WALLS.find(function (w) { return w.value === (v || ''); });
-    if (match) ui.wall = match.key; else if (U.parseColor(v || '')) ui.wall = 'color'; else ui.wall = 'custom';
+    if (img) ui.wall = 'image'; else if (match) ui.wall = match.key; else if (U.parseColor(v || '')) ui.wall = 'color'; else ui.wall = 'custom';
     els.wall.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-wall') === ui.wall); });
     els.wallColor.hidden = ui.wall !== 'color';
+    els.wallImg.hidden = !img;
+    if (img) {
+      var kind = /^data:image\/svg/.test(img.uri) ? 'SVG' : /^data:image\/webp/.test(img.uri) ? 'WebP' : /^data:image\/jpeg/.test(img.uri) ? 'JPEG' : 'Image';
+      els.wallInfo.innerHTML = '<i class="mdi mdi-image-check-outline"></i> ' + kind + ' wallpaper · ' + fmtBytes(dataUriBytes(img.uri)) + ' <span style="color:var(--uc-dim)">(' + U.esc((img.uri.length).toLocaleString()) + ' of ' + U.LIMITS.page_background.toLocaleString() + ' characters)</span>';
+      els.wallDim.value = img.dim; els.wallDimOut.textContent = img.dim + '%'; els.wallPos.value = img.pos;
+    }
     els.pageBg.style.display = (ui.wall === 'custom' || ui.mode === 'advanced') ? 'block' : 'none';
+  }
+
+  // Wallpaper upload. Raster: drawn to a canvas, scaled down and re-encoded
+  // (WebP where the browser can, else JPEG), stepping quality then size until
+  // it fits the budget. SVG: scanned like any inline artwork, minified,
+  // percent-encoded the way the card's own svgDataUrl() does.
+  function wallFileChosen(file) {
+    if (!file) return;
+    showError('');
+    els.wallBusy.hidden = false;
+    var done = function (uri) {
+      els.wallBusy.hidden = true;
+      var cur = wallImage();
+      setWallImage(uri, cur ? cur.dim : 0, cur ? cur.pos : 'center');
+    };
+    var fail = function (msg) { els.wallBusy.hidden = true; showError(msg); };
+    if (/svg/i.test(file.type) || /\.svg$/i.test(file.name)) {
+      var rd = new FileReader();
+      rd.onload = function () {
+        var svg = String(rd.result || '');
+        var bad = U.svgProblems(svg);
+        if (bad.length) return fail('That SVG cannot be used as a wallpaper: it contains ' + bad.join(', ') + '.');
+        if (!/<svg[\s>]/i.test(svg)) return fail('That file does not look like an SVG.');
+        var compact = svg.replace(/<\?xml[\s\S]*?\?>/g, '').replace(/<!DOCTYPE[\s\S]*?>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
+        var encoded = compact.replace(/[%<>#"'(){}\[\]\\]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'); }).replace(/[^\x20-\x7e]/g, function (c) { return encodeURIComponent(c); });
+        var uri = 'data:image/svg+xml,' + encoded;
+        if (uri.length > WALL_IMG_BUDGET) return fail('That SVG is ' + fmtBytes(compact.length) + ' after minifying; wallpapers must fit in about ' + fmtBytes(WALL_IMG_BUDGET * 0.75) + '. Simplify it, or export it as a picture and upload that instead.');
+        done(uri);
+      };
+      rd.onerror = function () { fail('Could not read that file.'); };
+      rd.readAsText(file);
+      return;
+    }
+    if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) return fail('Use a PNG, JPEG, WebP, GIF or SVG.');
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      var canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+      var webp = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+      var type = webp ? 'image/webp' : 'image/jpeg';
+      var longest = Math.max(img.naturalWidth, img.naturalHeight) || 1;
+      var sizes = [1920, 1600, 1280, 1024, 800, 640].filter(function (s, i, arr) { return s <= longest || i === arr.length - 1 || arr[i - 1] > longest; });
+      if (longest < 640) sizes = [longest];
+      var qualities = [0.84, 0.74, 0.64, 0.54, 0.45];
+      for (var si = 0; si < sizes.length; si++) {
+        var scale = Math.min(1, sizes[si] / longest);
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        if (!webp) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); } // JPEG has no alpha
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        for (var qi = 0; qi < qualities.length; qi++) {
+          var out = canvas.toDataURL(type, qualities[qi]);
+          if (out.length <= WALL_IMG_BUDGET) {
+            done(out);
+            showNotice('Wallpaper stored at ' + canvas.width + '×' + canvas.height + ' as ' + (webp ? 'WebP' : 'JPEG') + ' (' + fmtBytes(dataUriBytes(out)) + ').');
+            setTimeout(function () { showNotice(''); }, 4500);
+            return;
+          }
+        }
+      }
+      fail('Could not shrink that image enough to fit. Try a simpler picture or crop it first.');
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); fail('Could not decode that image.'); };
+    img.src = url;
   }
 
   // starters
@@ -591,24 +731,104 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   function renderPreview() {
     U.renderPreview(els.preview, cleanDef(), { mode: ui.previewMode, width: ui.previewWidth === 'phone' ? 400 : null });
   }
-  function renderJson() { els.json.textContent = JSON.stringify(cleanDef(), null, 2); }
+  function renderJson() {
+    var json = JSON.stringify(cleanDef(), null, 2);
+    // A wallpaper is thousands of characters of base64; the JSON view shows it folded.
+    els.json.textContent = json.replace(/(data:image\/[a-z+]+;base64,)[A-Za-z0-9+/=]{80,}/g, function (m, head) { return head + '… (' + fmtBytes(dataUriBytes(m)) + ' inline)'; }).replace(/(data:image\/svg\+xml,)[^"]{400,}/g, function (m, head) { return head + '… (' + fmtBytes(m.length - head.length) + ' inline SVG)'; });
+    var bytes = JSON.stringify(cleanDef()).length;
+    els.size.textContent = fmtBytes(bytes) + ' theme';
+    els.size.classList.toggle('warn', bytes > U.LIMITS.definition * 0.8);
+    els.size.title = 'Stored and synced size. Limit ' + fmtBytes(U.LIMITS.definition) + '; most of it is usually the wallpaper.';
+  }
+  // ------------------------------------------------------------- contrast
+  // Flatten a translucent colour onto what sits behind it (same maths the eye does).
+  function over(fg, bg) {
+    if (!fg) return null;
+    if (fg.a >= 1 || !bg) return fg;
+    var a = fg.a;
+    return { r: Math.round(fg.r * a + bg.r * (1 - a)), g: Math.round(fg.g * a + bg.g * (1 - a)), b: Math.round(fg.b * a + bg.b * (1 - a)), a: 1 };
+  }
+  /**
+   * The colours the preview actually shows, pinned or derived the way the
+   * card engine derives them (deriveCompanionVars), each tagged with whether
+   * the author chose it. Used for both the report and the fixer.
+   */
+  function effectiveColors() {
+    var t = def.tokens || {}, p = t.palette || {}, base = U.HA_BASE[ui.previewMode];
+    var page = U.parseColor(t.page_background || '') || U.parseColor(base['--primary-background-color']);
+    var cardRaw = U.parseColor(p.card_bg || '') || U.parseColor((def.card && def.card.card_background) || '');
+    var pinnedBg = !!cardRaw;
+    var bg = over(cardRaw || U.parseColor(base['--card-background-color']), page);
+    var textPinned = !!U.parseColor(p.text || '');
+    var text = over(U.parseColor(p.text || '') || (pinnedBg ? U.contrastText(bg) : U.parseColor(base['--primary-text-color'])), bg);
+    var secPinned = !!U.parseColor(p.text_secondary || '');
+    var sec = over(U.parseColor(p.text_secondary || '') || (textPinned || pinnedBg ? { r: text.r, g: text.g, b: text.b, a: 0.7 } : U.parseColor(base['--secondary-text-color'])), bg);
+    var primPinned = !!U.parseColor(p.primary || '');
+    var prim = over(U.parseColor(p.primary || '') || U.parseColor(base['--primary-color']), bg);
+    var onPPinned = !!U.parseColor(p.on_primary || '');
+    var onP = over(U.parseColor(p.on_primary || '') || (primPinned ? U.contrastText(prim) : U.parseColor(base['--text-primary-color'])), prim);
+    var accPinned = !!U.parseColor(t.accent || '');
+    var acc = over(U.parseColor(t.accent || '') || prim, bg);
+    var any = pinnedBg || textPinned || secPinned || primPinned || onPPinned || accPinned;
+    return {
+      any: any, bg: bg,
+      rows: [
+        { key: 'text', label: 'Text on card', fg: text, bg: bg, min: 4.5, pinned: textPinned, path: 'tokens.palette.text' },
+        { key: 'sec', label: 'Secondary text on card', fg: sec, bg: bg, min: 4.5, pinned: secPinned, path: 'tokens.palette.text_secondary' },
+        { key: 'onp', label: 'Text on primary', fg: onP, bg: prim, min: 4.5, pinned: onPPinned, path: 'tokens.palette.on_primary' },
+        { key: 'acc', label: 'Accent on card (fills, icons)', fg: acc, bg: bg, min: 3, pinned: accPinned, path: accPinned ? 'tokens.accent' : 'tokens.palette.primary' }
+      ]
+    };
+  }
+  function hex(c) { return '#' + [c.r, c.g, c.b].map(function (n) { return ('0' + Math.max(0, Math.min(255, Math.round(n))).toString(16)).slice(-2); }).join(''); }
+  /** Nudge fg toward black or white (whichever gains contrast) until it clears `min`; keeps the hue. */
+  function ensureContrast(fg, bg, min) {
+    if (U.contrast(fg, bg) >= min) return fg;
+    var toWhite = U.lum(bg) < 0.4;
+    var target = toWhite ? { r: 255, g: 255, b: 255, a: 1 } : { r: 0, g: 0, b: 0, a: 1 };
+    var c = { r: fg.r, g: fg.g, b: fg.b, a: 1 };
+    for (var i = 0; i < 24 && U.contrast(c, bg) < min; i++) c = U.mix(c, target, 0.12);
+    return U.contrast(c, bg) >= min ? c : target;
+  }
   function renderContrast() {
-    var p = (def.tokens && def.tokens.palette) || {};
-    var base = U.HA_BASE[ui.previewMode];
-    var bg = U.parseColor(p.card_bg || (def.card && def.card.card_background) || base['--card-background-color']);
-    var text = U.parseColor(p.text || '') || (p.card_bg ? null : U.parseColor(base['--primary-text-color']));
-    var rows = [];
-    if (bg && bg.a >= 0.5 && text) rows.push(['Text on card', U.contrast(bg, text)]);
-    var sec = U.parseColor(p.text_secondary || '');
-    if (bg && bg.a >= 0.5 && sec && sec.a >= 0.9) rows.push(['Secondary text on card', U.contrast(bg, sec)]);
-    var prim = U.parseColor(p.primary || '');
-    var onP = U.parseColor(p.on_primary || '');
-    if (prim && onP) rows.push(['Text on primary', U.contrast(prim, onP)]);
-    els.contrast.hidden = !rows.length;
-    els.contrast.innerHTML = rows.map(function (r) {
-      var ok = r[1] >= 4.5;
-      return '<div class="row"><span>' + r[0] + '</span><b class="' + (ok ? 'ok' : 'bad') + '">' + (Math.round(r[1] * 10) / 10) + ':1 ' + (ok ? 'AA' : 'below AA') + '</b></div>';
-    }).join('');
+    var e = effectiveColors();
+    els.contrast.hidden = !e.any;
+    els.fixContrast.hidden = true;
+    if (!e.any) return;
+    var failing = 0;
+    els.contrast.innerHTML = e.rows.map(function (r) {
+      var ratio = U.contrast(r.fg, r.bg), ok = ratio >= r.min;
+      if (!ok) failing++;
+      return '<div class="row"><span class="sw"><i style="background:' + hex(r.bg) + '"></i><i style="background:' + hex(r.fg) + '"></i>' + r.label + (r.pinned ? '' : ' <small>auto</small>') + '</span><b class="' + (ok ? 'ok' : 'bad') + '">' + (Math.round(ratio * 10) / 10) + ':1 ' + (ok ? (r.min === 3 ? 'AA' : 'AA') : 'below AA') + '</b></div>';
+    }).join('') + '<div class="row"><small>Checked against the ' + ui.previewMode + ' Home Assistant theme; text needs 4.5:1, UI colour 3:1.</small></div>';
+    els.fixContrast.hidden = failing === 0;
+  }
+  /** Pin whatever fails to the nearest colour of the same hue that passes. */
+  function fixContrast() {
+    var changedAny = false;
+    // Fixing one row can move a colour another row depends on (the accent
+    // row may retint Primary, which Text-on-primary sits on), so re-derive
+    // after every change and fix rows in dependency order until all pass.
+    var ORDER = { text: 0, sec: 1, acc: 2, onp: 3 };
+    for (var pass = 0; pass < 8; pass++) {
+      var rows = effectiveColors().rows.slice().sort(function (a, b) { return ORDER[a.key] - ORDER[b.key]; });
+      var r = null;
+      for (var k = 0; k < rows.length; k++) if (U.contrast(rows[k].fg, rows[k].bg) < rows[k].min) { r = rows[k]; break; }
+      if (!r) break;
+      var fixed = ensureContrast(r.fg, r.bg, r.min);
+      if (r.key === 'onp' && U.contrast(fixed, r.bg) < r.min) {
+        // Neither black nor white reads on this primary (a mid-tone): keep
+        // the hue and deepen or lift the primary itself until the text passes.
+        var ink = U.contrastText(r.bg), prim = { r: r.bg.r, g: r.bg.g, b: r.bg.b, a: 1 };
+        var toward = ink.r === 255 ? { r: 0, g: 0, b: 0, a: 1 } : { r: 255, g: 255, b: 255, a: 1 };
+        for (var i = 0; i < 24 && U.contrast(ink, prim) < r.min; i++) prim = U.mix(prim, toward, 0.1);
+        set('tokens.palette.primary', hex(prim));
+        fixed = ink;
+      }
+      set(r.path, hex(fixed));
+      changedAny = true;
+    }
+    if (changedAny) { syncInputs(); changed({ now: true }); showNotice('Pinned the failing colours to the nearest shade that meets WCAG AA. Adjust them further if you like.'); setTimeout(function () { showNotice(''); }, 4500); }
   }
 
   // ----------------------------------------------------------------- mode
@@ -704,7 +924,27 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     els.pageBg.addEventListener('input', function () { syncWall(); });
     document.querySelectorAll('#tb-prev-mode button').forEach(function (b) { b.addEventListener('click', function () { ui.previewMode = b.getAttribute('data-value'); document.querySelectorAll('#tb-prev-mode button').forEach(function (x) { x.classList.toggle('active', x === b); }); changed({ now: true, silent: true }); }); });
     document.querySelectorAll('#tb-prev-width button').forEach(function (b) { b.addEventListener('click', function () { ui.previewWidth = b.getAttribute('data-value'); document.querySelectorAll('#tb-prev-width button').forEach(function (x) { x.classList.toggle('active', x === b); }); changed({ now: true, silent: true }); }); });
-    document.getElementById('tb-reroll').addEventListener('click', function () { changed({ now: true, silent: true }); });
+    var reroll = document.getElementById('tb-reroll');
+    reroll.addEventListener('click', function () {
+      U.reroll();
+      reroll.classList.remove('rolling'); void reroll.offsetWidth; reroll.classList.add('rolling');
+      changed({ now: true, silent: true });
+      if (!U.usesSeeds(cleanDef())) {
+        showNotice('New hue and seeds dealt, but nothing in this theme reads them yet. Reference var(--uc-card-hue) or var(--uc-card-seed-1..3) in Custom CSS (Advanced) to give every card its own variation.');
+        setTimeout(function () { showNotice(''); }, 6000);
+      }
+    });
+    els.fixContrast.addEventListener('click', fixContrast);
+    els.wallFile.addEventListener('change', function (e) { wallFileChosen(e.target.files && e.target.files[0]); e.target.value = ''; });
+    document.getElementById('tb-wall-replace').addEventListener('click', function () { els.wallFile.click(); });
+    document.getElementById('tb-wall-remove').addEventListener('click', function () { set('tokens.page_background', undefined); syncWall(); els.pageBg.value = ''; changed({ now: true }); });
+    els.wallDim.addEventListener('input', function () { var img = wallImage(); if (!img) return; els.wallDimOut.textContent = els.wallDim.value + '%'; setWallImage(img.uri, Number(els.wallDim.value), img.pos); });
+    els.wallPos.addEventListener('change', function () { var img = wallImage(); if (img) setWallImage(img.uri, img.dim, els.wallPos.value); });
+    // Dropping a picture on the wallpaper chips uploads it.
+    els.wall.addEventListener('dragover', function (e) { e.preventDefault(); els.wall.classList.add('drag'); });
+    els.wall.addEventListener('dragleave', function () { els.wall.classList.remove('drag'); });
+    els.wall.addEventListener('drop', function (e) { e.preventDefault(); els.wall.classList.remove('drag'); var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f && /^image\//.test(f.type)) { e.stopPropagation(); wallFileChosen(f); } });
+    document.getElementById('tb-wall-budget').textContent = fmtBytes(WALL_IMG_BUDGET * 0.75);
     els.submit.addEventListener('click', submit);
     document.getElementById('tb-export').addEventListener('click', download);
     document.getElementById('tb-copy').addEventListener('click', function () {

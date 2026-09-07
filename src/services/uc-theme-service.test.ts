@@ -3,7 +3,9 @@ import {
   UC_MODULE_RADII,
   UC_RADIUS_SCALE_MAX,
   UC_THEME_BASE_CSS,
+  chromeFromTokens,
   paneVars,
+  resolveThemeCardChrome,
   radiusInner,
   radiusScale,
   seedForSlot,
@@ -23,7 +25,12 @@ import {
 import { contrastRatio, isLight, parseColor, toRgbTriple } from '../themes/uc-theme-color';
 import { svgDataUrl } from '../themes/uc-theme-artwork';
 import { UC_THEME_HA_NATIVE, UC_THEME_NONE } from '../themes/uc-theme-types';
-import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
+import {
+  UC_THEME_MAX_PAGE_BACKGROUND_LENGTH,
+  UC_THEME_MAX_PANE_BACKGROUND_LENGTH,
+  sanitizeThemeDefinition,
+  scanThemeCss,
+} from '../themes/uc-theme-validate';
 import type { UltraCardConfig } from '../types';
 
 const cfg = (uc_theme?: string): UltraCardConfig =>
@@ -60,6 +67,37 @@ describe('resolution order', () => {
     const ids = BUILTIN_THEMES.map(t => t.id);
     expect(ids).not.toContain('classic');
     expect(ids).not.toContain('soft');
+  });
+
+  it('tokens alone style the card shell: radius, border and see-through surfaces', () => {
+    // A builder/Hub-editor theme has no `card` block; the shell must still follow it.
+    expect(chromeFromTokens({ surface: 'flat', radius: 20, border_width: 3, border_color: '#f00' })).toEqual({
+      card_border_radius: 20,
+      card_border_width: 3,
+      card_border_color: '#f00',
+    });
+    // Surfaces supply the border when the theme does not.
+    expect(chromeFromTokens({ surface: 'glossy', radius: 16 })).toEqual({ card_border_radius: 16, card_border_width: 0 });
+    expect(chromeFromTokens({ surface: 'outline', radius: 8 })).toMatchObject({
+      card_border_width: 1,
+      card_border_color: 'var(--divider-color)',
+      card_background: 'transparent',
+    });
+    expect(chromeFromTokens({ surface: 'minimal', radius: 8 })).toMatchObject({ card_border_width: 0, card_background: 'transparent' });
+    // An explicit `card` block still wins over what tokens imply.
+    ucThemeService.saveToLibrary({
+      id: 'tok',
+      name: 'Tokens only',
+      version: 1,
+      tokens: { surface: 'flat', radius: 30, border_width: 2 },
+      card: { card_border_radius: 4 },
+    });
+    expect(ucThemeService.getCardChrome(cfg('tok'))).toEqual({ card_border_radius: 4, card_border_width: 2, card_border_color: 'var(--divider-color)' });
+    expect(resolveThemeCardChrome(null)).toEqual({});
+    // Background, shadow and backdrop ride the host variables via the base stylesheet.
+    expect(UC_THEME_BASE_CSS).toMatch(/\.card-container \{[^}]*background: var\(--uc-surface-bg/);
+    expect(UC_THEME_BASE_CSS).toMatch(/box-shadow: var\(--uc-shadow/);
+    expect(UC_THEME_BASE_CSS).toMatch(/backdrop-filter: var\(--uc-surface-backdrop/);
   });
 
   it('deals each card a distinct hue and random seeds, and gummy paints with them', () => {
@@ -249,11 +287,11 @@ describe('built-ins', () => {
 });
 
 describe('background tokens with artwork', () => {
-  const mk = (page_background: string) =>
+  const mk = (page_background: string, pane_background?: string) =>
     sanitizeThemeDefinition({
       id: 'a',
       name: 'A',
-      tokens: { surface: 'flat', radius: 8, page_background },
+      tokens: { surface: 'flat', radius: 8, page_background, pane_background },
     });
 
   it('accepts inline image data URIs in page/pane backgrounds and keeps them intact', () => {
@@ -277,10 +315,15 @@ describe('background tokens with artwork', () => {
   });
 
   it('drops an oversize background rather than truncating it', () => {
-    const huge = svgDataUrl(
-      `<svg xmlns="http://www.w3.org/2000/svg">${'<circle r="1"/>'.repeat(1200)}</svg>`
-    );
-    expect(mk(`${huge}, #fff`).theme?.tokens.page_background).toBeUndefined();
+    // Within budget: a ~150 KB raster (base64) is the wallpaper use case.
+    const photo = `url("data:image/webp;base64,${'A'.repeat(180_000)}") center / cover fixed`;
+    expect(mk(photo).theme?.tokens.page_background).toBe(photo);
+    // Over budget: rejected outright, never cut (a truncated data URI is garbage).
+    const huge = `url("data:image/webp;base64,${'A'.repeat(UC_THEME_MAX_PAGE_BACKGROUND_LENGTH)}") center / cover`;
+    expect(mk(huge).theme?.tokens.page_background).toBeUndefined();
+    // Panes have a much tighter budget: props, not photos.
+    const paneArt = `url("data:image/png;base64,${'A'.repeat(UC_THEME_MAX_PANE_BACKGROUND_LENGTH)}")`;
+    expect(mk('#fff', paneArt).theme?.tokens.pane_background).toBeUndefined();
   });
 });
 
@@ -385,7 +428,7 @@ describe('host vars', () => {
     expect(ucThemeService.getHostVars(GLASS_THEME)['--uc-color-filter']).toBeUndefined();
     // The base sheet routes the variable onto the card container and falls back to none.
     expect(UC_THEME_BASE_CSS).toMatch(
-      /\.card-container\s*\{\s*filter:\s*var\(--uc-color-filter,\s*none\)/
+      /\.card-container\s*\{[^}]*filter:\s*var\(--uc-color-filter,\s*none\)/
     );
   });
 

@@ -22,8 +22,18 @@ const SOURCES: readonly UcThemeSource[] = ['builtin', 'official', 'community', '
 const PALETTE_KEYS = ['primary', 'accent', 'card_bg', 'text', 'text_secondary', 'divider', 'on_primary'] as const;
 
 export const UC_THEME_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
-/** Room for a few compact SVG data URIs (waves, grain, frames) on top of rules. */
-export const UC_THEME_MAX_CSS_LENGTH = 40_000;
+/**
+ * Size budget for inline artwork. A theme is stored in the browser, synced
+ * through Connect and listed in the catalog, so it has to stay small, but a
+ * wallpaper needs room for a real picture: ~150 KB of WebP as base64 is
+ * 200k characters, enough for a 1600px photo at good quality. Panes and CSS
+ * get room for compact SVG props (frames, grain, shells), not photos.
+ */
+export const UC_THEME_MAX_CSS_LENGTH = 60_000;
+export const UC_THEME_MAX_PAGE_BACKGROUND_LENGTH = 200_000;
+export const UC_THEME_MAX_PANE_BACKGROUND_LENGTH = 20_000;
+/** Whole-definition ceiling; a theme at the wallpaper cap plus CSS still fits. */
+export const UC_THEME_MAX_DEFINITION_LENGTH = 320_000;
 
 /** CSS constructs that can reach outside the card or the browser. */
 const CSS_FORBIDDEN = [
@@ -44,7 +54,22 @@ const CSS_FORBIDDEN = [
  * only makes sense in a live document.
  */
 const INLINE_IMAGE_URL =
-  /url\(\s*(["']?)data:image\/(?:svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"']*)\1\s*\)/gi;
+  /url\(\s*(["']?)data:image\/(svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"']*)\1\s*\)/gi;
+/**
+ * Only SVG can carry markup worth scanning. Raster payloads are opaque bytes
+ * that the browser decodes as pixels; running text patterns over them would
+ * only produce false positives.
+ */
+function inlineImageProblems(mime: string, params: string, payload: string): boolean {
+  if (!/svg/i.test(mime)) return false;
+  let decoded = payload;
+  try {
+    decoded = /;base64/i.test(params) ? atob(payload) : decodeURIComponent(payload);
+  } catch {
+    /* keep raw */
+  }
+  return SVG_PAYLOAD_FORBIDDEN.some(re => re.test(decoded));
+}
 const SVG_PAYLOAD_FORBIDDEN = [
   /<\s*script/i,
   /\bon[a-z]+\s*=/i,
@@ -66,18 +91,15 @@ export function scanThemeCss(css: string | undefined): UcThemeCssScan {
   if (css.length > UC_THEME_MAX_CSS_LENGTH) reasons.push(`css longer than ${UC_THEME_MAX_CSS_LENGTH} chars`);
 
   // Lift inline artwork out before the forbidden scan so only other url() forms trip it.
-  const stripped = css.replace(INLINE_IMAGE_URL, (_m, _q, params: string, payload: string) => {
-    let decoded = payload;
-    try {
-      decoded = /;base64/i.test(params) ? atob(payload) : decodeURIComponent(payload);
-    } catch {
-      /* keep raw */
+  const stripped = css.replace(
+    INLINE_IMAGE_URL,
+    (_m, _q, mime: string, params: string, payload: string) => {
+      if (inlineImageProblems(mime, params, payload)) {
+        reasons.push('inline svg contains script, event handlers or external references');
+      }
+      return 'inline-image';
     }
-    for (const re of SVG_PAYLOAD_FORBIDDEN) {
-      if (re.test(decoded)) reasons.push(`inline image contains forbidden pattern ${re.source}`);
-    }
-    return 'inline-image';
-  });
+  );
 
   for (const re of CSS_FORBIDDEN) {
     if (re.test(stripped)) reasons.push(`css contains forbidden pattern ${re.source}`);
@@ -111,16 +133,13 @@ function cssBackground(v: unknown, max: number): string | undefined {
   const s = v.trim();
   if (!s || s.length > max) return undefined;
   let bad = false;
-  const stripped = s.replace(INLINE_IMAGE_URL, (_m, _q, params: string, payload: string) => {
-    let decoded = payload;
-    try {
-      decoded = /;base64/i.test(params) ? atob(payload) : decodeURIComponent(payload);
-    } catch {
-      /* keep raw */
+  const stripped = s.replace(
+    INLINE_IMAGE_URL,
+    (_m, _q, mime: string, params: string, payload: string) => {
+      if (inlineImageProblems(mime, params, payload)) bad = true;
+      return 'inline-image';
     }
-    if (SVG_PAYLOAD_FORBIDDEN.some(re => re.test(decoded))) bad = true;
-    return 'inline-image';
-  });
+  );
   if (bad) return undefined;
   return cssValue(stripped, max) === undefined ? undefined : s;
 }
@@ -167,13 +186,13 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
   // Layered materials (bevel + chamfer + drop) legitimately run past 300 chars.
   const shadow = cssValue(r.shadow, 600);
   if (shadow) tokens.shadow = shadow;
-  const paneBackground = cssBackground(r.pane_background, 4000);
+  const paneBackground = cssBackground(r.pane_background, UC_THEME_MAX_PANE_BACKGROUND_LENGTH);
   if (paneBackground) tokens.pane_background = paneBackground;
   const paneBorder = cssValue(r.pane_border);
   if (paneBorder) tokens.pane_border = paneBorder;
   const paneShadow = cssValue(r.pane_shadow, 600);
   if (paneShadow) tokens.pane_shadow = paneShadow;
-  const pageBackground = cssBackground(r.page_background, 12000);
+  const pageBackground = cssBackground(r.page_background, UC_THEME_MAX_PAGE_BACKGROUND_LENGTH);
   if (pageBackground) tokens.page_background = pageBackground;
   if (DENSITIES.includes(r.density as UcThemeDensity)) tokens.density = r.density as UcThemeDensity;
   const accent = cssValue(r.accent);

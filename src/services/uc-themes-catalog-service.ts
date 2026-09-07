@@ -39,6 +39,12 @@ export interface UcCatalogTheme {
   updated: string;
   /** Sanitised definition ready for `ucThemeService.saveToLibrary`. */
   definition: UcThemeDefinition;
+  /**
+   * True when the listing left out heavy fields (an inline wallpaper, large
+   * CSS) to keep the catalog page small. `install()` fetches the full
+   * definition first; previews fall back to the theme's preview image.
+   */
+  partial: boolean;
   /** Things the sanitiser dropped from the published definition. */
   warnings: string[];
 }
@@ -108,6 +114,7 @@ function normalizeEntry(raw: unknown): UcCatalogTheme | null {
     created: String(r.date || ''),
     updated: String(r.modified || ''),
     definition: theme,
+    partial: r.definition_partial === true,
     warnings,
   };
 }
@@ -174,12 +181,20 @@ class UcThemesCatalogService {
   /**
    * Copy a catalog theme into the local library. Returns the stored definition
    * or null when the sanitiser refused it. Counts as a download only for a
-   * fresh install or an update, not for re-saving the same version.
+   * fresh install or an update, not for re-saving the same version. A partial
+   * listing entry is completed from the single-theme endpoint first; if that
+   * fails the install is refused rather than saving a theme missing its art.
    */
-  install(entry: UcCatalogTheme): UcThemeDefinition | null {
-    const before = this.installState(entry);
-    const saved = ucThemeService.saveToLibrary(entry.definition, { source: entry.source });
-    if (saved && before !== 'installed') this.trackDownload(entry.id);
+  async install(entry: UcCatalogTheme): Promise<UcThemeDefinition | null> {
+    let full = entry;
+    if (entry.partial) {
+      const fetched = await this.fetchTheme(entry.id).catch(() => null);
+      if (!fetched || fetched.partial) return null;
+      full = fetched;
+    }
+    const before = this.installState(full);
+    const saved = ucThemeService.saveToLibrary(full.definition, { source: full.source });
+    if (saved && before !== 'installed') this.trackDownload(full.id);
     return saved;
   }
 

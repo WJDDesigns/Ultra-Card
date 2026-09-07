@@ -2035,6 +2035,17 @@ export class UltraCard extends LitElement {
       }),
     ].filter(Boolean);
 
+    // Under a theme the shell's shadow comes from the theme stylesheet
+    // (`--uc-shadow`); an explicit "no shadow" has to be inline to beat it.
+    // Without a theme nothing is emitted, so legacy cards render as before.
+    if (
+      appearance.card_shadow_enabled === false &&
+      !appearance.card_transparent &&
+      ucThemeService.resolveTheme(this.config)
+    ) {
+      styles.push('box-shadow: none');
+    }
+
     // Apply background image (skipped when the card is transparent)
     if (
       !appearance.card_transparent &&

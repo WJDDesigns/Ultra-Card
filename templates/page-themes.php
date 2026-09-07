@@ -251,18 +251,31 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   function track(t) {
     api('/themes/' + t.id + '/track-download', { method: 'POST' }).then(function (r) { if (r && typeof r.downloads === 'number') { t.downloads = r.downloads; } }).catch(function () {});
   }
+  // Listings leave out heavy fields (inline wallpapers, big CSS); fetch the
+  // whole theme once before anything that needs it exact.
+  function full(t) {
+    if (!t.definition_partial) return Promise.resolve(t);
+    return api('/themes/' + t.id).then(function (r) {
+      if (r && r.definition) { t.definition = r.definition; t.definition_partial = false; }
+      return t;
+    });
+  }
   function copyJson(t, btn) {
-    var json = JSON.stringify(t.definition || {}, null, 2);
-    navigator.clipboard.writeText(json).then(function () {
+    full(t).then(function () {
+      var json = JSON.stringify(t.definition || {}, null, 2);
+      return navigator.clipboard.writeText(json);
+    }).then(function () {
       if (btn) { var was = btn.innerHTML; btn.innerHTML = '<i class="mdi mdi-check"></i> Copied'; setTimeout(function () { btn.innerHTML = was; }, 1600); }
       track(t);
     }).catch(function () { alert('Copy failed. Use Download instead.'); });
   }
   function downloadJson(t) {
-    var blob = new Blob([JSON.stringify(t.definition || {}, null, 2)], { type: 'application/json' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = U.slugify(t.name) + '.ultratheme.json'; a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
-    track(t);
+    full(t).then(function () {
+      var blob = new Blob([JSON.stringify(t.definition || {}, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = U.slugify(t.name) + '.ultratheme.json'; a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+      track(t);
+    }).catch(function (e) { alert(e.message || 'Download failed'); });
   }
 
   // ------------------------------------------------------------------ modal
@@ -274,6 +287,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     document.getElementById('tg-m-desc').textContent = t.description || '';
     document.getElementById('tg-m-tags').innerHTML = (t.tags || []).map(function (x) { return '<span class="tg-tag">' + esc(x) + '</span>'; }).join('');
     U.renderPreview(document.getElementById('tg-m-preview'), t.definition || { tokens: { surface: 'flat', radius: 12 } }, { mode: state.mode, width: null });
+    if (t.definition_partial) full(t).then(function () { if (state.open === t) U.renderPreview(document.getElementById('tg-m-preview'), t.definition, { mode: state.mode, width: null }); }).catch(function () {});
     renderRate(t);
     modal.hidden = false;
     document.body.style.overflow = 'hidden';

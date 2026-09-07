@@ -89,7 +89,11 @@ body.admin-bar .ucp{--ucp-header-offset:172px}
 .ucp-alert-error{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.08);color:#fecaca}
 .ucp-alert-ok{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.08);color:#bbf7d0}
 .ucp-empty{text-align:center;padding:40px 16px;color:var(--uc-dim)}
-.ucp-empty .mdi{font-size:42px;opacity:.5;display:block;margin-bottom:10px}
+.ucp-empty>.mdi{font-size:42px;opacity:.5;display:block;margin-bottom:10px}
+.ucp-empty .ucp-btn{color:#fff!important;opacity:1;font-size:14.5px;line-height:1.2;padding:12px 22px;display:inline-flex}
+.ucp-empty .ucp-btn .mdi{font-size:18px;opacity:1;display:inline-block;margin:0}
+/* Inline code in hints: the host theme's <code> styling is too big and pale for this UI. */
+.ucp code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.08);color:#dbe6ff;border:0;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){
   .ucp *,.ucp *::before,.ucp *::after{animation-duration:.01s!important;transition-duration:.01s!important}
 }

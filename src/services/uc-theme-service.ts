@@ -76,6 +76,13 @@ const MODULE_RADIUS_VARS = UC_MODULE_RADII.map(
   n => `  --uc-r-${String(n).replace('.', '_')}: min(calc(${n}px * var(--uc-radius-scale, 1)), var(--uc-radius-inner, 999px));`
 ).join('\n');
 
+/**
+ * Card shell: the surface's background, shadow and backdrop come from the
+ * host variables so a theme made of tokens alone (what the theme builder and
+ * the Hub editor produce) styles the shell without also spelling out
+ * `card.*`. These are stylesheet rules, so any explicit chrome the card
+ * config or `theme.card` puts inline still wins.
+ */
 export const UC_THEME_BASE_CSS = `
 [style*="--uc-design-surface"]:not([style*="border-radius"]) {
   border-radius: var(--uc-radius-inner, var(--uc-radius-sm));
@@ -84,10 +91,51 @@ export const UC_THEME_BASE_CSS = `
   box-shadow: var(--uc-pane-shadow, none);
 }
 .card-container {
+  background: var(--uc-surface-bg, var(--card-background-color, var(--ha-card-background, white)));
+  box-shadow: var(--uc-shadow, var(--ha-card-box-shadow, none));
+  backdrop-filter: var(--uc-surface-backdrop, none);
+  -webkit-backdrop-filter: var(--uc-surface-backdrop, none);
   filter: var(--uc-color-filter, none);
 ${MODULE_RADIUS_VARS}
 }
 `.trim();
+
+/** Border the surface draws when the theme sets neither width nor colour. */
+const SURFACE_BORDER: Record<string, { width: number; color: string | undefined }> = {
+  flat: { width: 1, color: 'var(--divider-color)' },
+  glass: { width: 1, color: 'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.12)' },
+  outline: { width: 1, color: 'var(--divider-color)' },
+  neumorphic: { width: 0, color: undefined },
+  glossy: { width: 0, color: undefined },
+  minimal: { width: 0, color: undefined },
+};
+
+/**
+ * The card chrome a theme's tokens imply. `theme.card` is layered on top, so
+ * a theme only has to spell out chrome that differs from its tokens: radius
+ * follows `tokens.radius`, border follows `border_width` / `border_color`
+ * (falling back to the surface's own border), and see-through surfaces get a
+ * transparent shell. Background and shadow are not returned here: they are
+ * `--uc-surface-bg` / `--uc-shadow` in the base stylesheet so gradients,
+ * multi-layer shadows and `var()` values work.
+ */
+export function chromeFromTokens(t: UcThemeTokens): UcThemeCardChrome {
+  const surface = SURFACE_BORDER[t.surface] ?? SURFACE_BORDER.flat;
+  const chrome: UcThemeCardChrome = {
+    card_border_radius: t.radius,
+    card_border_width: t.border_width ?? surface.width,
+  };
+  const color = t.border_color ?? surface.color;
+  if (color) chrome.card_border_color = color;
+  if (t.surface === 'outline' || t.surface === 'minimal') chrome.card_background = 'transparent';
+  return chrome;
+}
+
+/** `theme.card` layered over what its tokens imply; `{}` for no theme. */
+export function resolveThemeCardChrome(theme: UcThemeDefinition | null | undefined): UcThemeCardChrome {
+  if (!theme) return {};
+  return { ...chromeFromTokens(theme.tokens), ...theme.card };
+}
 
 const STORAGE_LIBRARY = 'ultra-card-theme-library';
 const STORAGE_GLOBAL = 'ultra-card-global-theme';
@@ -411,9 +459,12 @@ class UcThemeService {
     return this.getTheme(id) ?? null;
   }
 
-  /** Card chrome the theme wants, for keys the card config leaves undefined. */
+  /**
+   * Card chrome the theme wants, for keys the card config leaves undefined:
+   * what the tokens imply, with the theme's explicit `card` on top.
+   */
   getCardChrome(config: UltraCardConfig | undefined | null): UcThemeCardChrome {
-    return this.resolveTheme(config)?.card ?? {};
+    return resolveThemeCardChrome(this.resolveTheme(config));
   }
 
   /**

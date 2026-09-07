@@ -213,23 +213,44 @@ window.UcTheme = (function () {
     return vars;
   }
 
-  /** Card chrome as inline style (port of the swatch / resolveCardAppearance). */
+  // Border a surface draws when the theme sets neither width nor colour
+  // (port of SURFACE_BORDER in uc-theme-service.ts).
+  var SURFACE_BORDER = {
+    flat: [1, 'var(--divider-color)'], glass: [1, 'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.12)'], outline: [1, 'var(--divider-color)'],
+    neumorphic: [0, null], glossy: [0, null], minimal: [0, null]
+  };
+  /** Port of chromeFromTokens: the card chrome a theme's tokens imply. */
+  function chromeFromTokens(t) {
+    var sb = SURFACE_BORDER[t.surface] || SURFACE_BORDER.flat;
+    var chrome = { card_border_radius: Number(t.radius) || 0, card_border_width: t.border_width == null ? sb[0] : t.border_width };
+    var color = t.border_color || sb[1];
+    if (color) chrome.card_border_color = color;
+    if (t.surface === 'outline' || t.surface === 'minimal') chrome.card_background = 'transparent';
+    return chrome;
+  }
+  /** Port of resolveThemeCardChrome: `theme.card` layered over the tokens. */
+  function resolveChrome(theme) {
+    if (!theme || !theme.tokens) return {};
+    return Object.assign(chromeFromTokens(theme.tokens), theme.card || {});
+  }
+
+  /** Card chrome as inline style: exactly what the card shell renders in HA. */
   function cardStyle(theme, vars) {
-    var chrome = (theme && theme.card) || {};
+    var chrome = resolveChrome(theme);
     var t = (theme && theme.tokens) || {};
-    var radius = chrome.card_border_radius != null ? chrome.card_border_radius : (t.radius != null ? t.radius : 12);
-    var bg = chrome.card_transparent ? 'transparent' : (chrome.card_background || 'var(--card-background-color, var(--ha-card-background, white))');
-    var bw = chrome.card_border_width != null ? chrome.card_border_width : (theme ? (t.border_width == null ? 1 : t.border_width) : 1);
-    var bc = chrome.card_border_color || t.border_color || 'var(--divider-color)';
+    var radius = chrome.card_border_radius != null ? chrome.card_border_radius : 12;
+    var bg = chrome.card_transparent ? 'transparent' : (chrome.card_background || (theme ? vars['--uc-surface-bg'] : null) || 'var(--card-background-color, var(--ha-card-background, white))');
+    var bw = chrome.card_transparent ? 0 : (chrome.card_border_width != null ? chrome.card_border_width : 1);
+    var bc = chrome.card_border_color || 'var(--divider-color)';
     var shadow;
-    if (chrome.card_shadow_enabled === false) shadow = 'none';
+    if (chrome.card_shadow_enabled === false || chrome.card_transparent) shadow = 'none';
     else if (chrome.card_shadow_enabled) shadow = (chrome.card_shadow_horizontal || 0) + 'px ' + (chrome.card_shadow_vertical == null ? 4 : chrome.card_shadow_vertical) + 'px ' + (chrome.card_shadow_blur == null ? 12 : chrome.card_shadow_blur) + 'px ' + (chrome.card_shadow_spread || 0) + 'px ' + (chrome.card_shadow_color || 'rgba(0,0,0,0.15)');
     else shadow = theme ? (vars['--uc-shadow'] || 'none') : 'var(--ha-card-box-shadow, none)';
     var st = {
       'border-radius': radius + 'px', background: bg, border: bw + 'px solid ' + bc, 'box-shadow': shadow,
       padding: (chrome.card_padding == null ? 16 : chrome.card_padding) + 'px',
-      'backdrop-filter': t.surface === 'glass' ? (vars['--uc-surface-backdrop'] || 'none') : 'none',
-      '-webkit-backdrop-filter': t.surface === 'glass' ? (vars['--uc-surface-backdrop'] || 'none') : 'none',
+      'backdrop-filter': vars['--uc-surface-backdrop'] || 'none',
+      '-webkit-backdrop-filter': vars['--uc-surface-backdrop'] || 'none',
       filter: vars['--uc-color-filter'] || 'none',
       color: 'var(--primary-text-color)'
     };
@@ -237,8 +258,19 @@ window.UcTheme = (function () {
     return st;
   }
 
+  // Semicolons outside quotes would start another declaration; inside a
+  // quoted url("data:image/webp;base64,…") they are part of the value.
   function styleString(map) {
-    return Object.keys(map).map(function (k) { return k + ':' + String(map[k]).replace(/;/g, ' ') + ';'; }).join('');
+    return Object.keys(map).map(function (k) {
+      var v = String(map[k]).replace(/("[^"]*"|'[^']*')|;/g, function (m, quoted) { return quoted || ' '; });
+      return k + ':' + v + ';';
+    }).join('');
+  }
+
+  // Values land inside style="…" attributes; a wallpaper written as
+  // url("data:…") would otherwise close the attribute early.
+  function attr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   }
 
   /**
@@ -284,12 +316,27 @@ window.UcTheme = (function () {
   // -------------------------------------------------------------- preview DOM
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
-  var seedCounter = 0;
-  function seedVars() {
-    var slot = seedCounter++;
-    var hue = Math.round(slot * 137.50776 + 40) % 360;
-    var r = function () { return Math.round(Math.random() * 100) / 100; };
-    return '--uc-card-hue:' + hue + ';--uc-card-seed-1:' + r() + ';--uc-card-seed-2:' + r() + ';--uc-card-seed-3:' + r() + ';';
+  /**
+   * Per-card hue and seeds, the same deal the card engine makes (seedForSlot):
+   * golden-angle hues from a page salt, xorshift32 seeds. A preview keeps its
+   * salt across edits so cards do not reshuffle on every keystroke; `reroll()`
+   * deals a new hand, which is what the dice button does.
+   */
+  var SALT = Math.floor(Math.random() * 0xffffffff) >>> 0;
+  function seedForSlot(slot, salt) {
+    var hue = Math.round((salt % 360) + slot * 137.50776) % 360;
+    var x = (Math.imul(slot + 1, 0x9e3779b1) ^ salt) >>> 0 || 1;
+    var next = function () { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return Math.round((x / 0x100000000) * 100) / 100; };
+    return { hue: hue, seeds: [next(), next(), next()] };
+  }
+  function seedVars(slot, salt) {
+    var s = seedForSlot(slot, salt == null ? SALT : salt);
+    return '--uc-card-hue:' + s.hue + ';--uc-card-seed-1:' + s.seeds[0] + ';--uc-card-seed-2:' + s.seeds[1] + ';--uc-card-seed-3:' + s.seeds[2] + ';';
+  }
+  function reroll() { SALT = Math.floor(Math.random() * 0xffffffff) >>> 0; return SALT; }
+  /** Does any part of the theme react to the per-card hue or seeds? */
+  function usesSeeds(theme) {
+    return /--uc-card-(hue|seed-[123])/.test(JSON.stringify(theme || {}));
   }
 
   var PANE = 'background:var(--uc-pane-bg);border:var(--uc-pane-border);box-shadow:var(--uc-pane-shadow);border-radius:var(--uc-r-10);';
@@ -302,11 +349,13 @@ window.UcTheme = (function () {
     flat: 'background:var(--uc-accent,var(--primary-color));border:0;color:var(--text-primary-color);'
   };
 
-  function sampleCards(theme, vars) {
+  function sampleCards(theme, vars, salt) {
     var t = (theme && theme.tokens) || { surface: 'flat' };
     var surface = t.surface || 'flat';
-    var card = styleString(cardStyle(theme, vars));
-    var host = styleString(vars);
+    var card = attr(styleString(cardStyle(theme, vars)));
+    var host = attr(styleString(vars));
+    var slot = 0;
+    var seedVarsNext = function () { return seedVars(slot++, salt); };
     var btn = 'padding:calc(9px * var(--uc-density,1)) 16px;border-radius:var(--uc-radius-sm);font:inherit;font-size:13px;font-weight:600;cursor:default;' + (BTN_SURFACE[surface] || BTN_SURFACE.flat);
     var ghost = 'padding:calc(9px * var(--uc-density,1)) 16px;border-radius:var(--uc-radius-sm);font:inherit;font-size:13px;font-weight:600;cursor:default;' + PANE + 'color:var(--primary-text-color);';
     var gap = 'calc(10px * var(--uc-density,1))';
@@ -323,17 +372,17 @@ window.UcTheme = (function () {
       return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:calc(12px * var(--uc-density,1)) 8px;text-align:center;' + PANE + '">' + icon(iconName, on ? 'var(--uc-accent,var(--primary-color))' : null) + '<span style="font-size:11.5px;color:var(--secondary-text-color)">' + esc(name) + '</span></div>';
     };
 
-    var c1 = '<div class="card-container uc-prev-card" style="' + card + host + seedVars() + 'display:flex;flex-direction:column;gap:' + gap + '">' +
+    var c1 = '<div class="card-container uc-prev-card" style="' + card + host + seedVarsNext() + 'display:flex;flex-direction:column;gap:' + gap + '">' +
       '<div style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">Living room</div><div style="font-size:12.5px;color:var(--secondary-text-color)">21.5° · 42% · 3 lights on</div></div>' + iconWrap('mdi-sofa-outline', true) + '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + tile('Lights', 'mdi-lightbulb-group-outline', true) + tile('Climate', 'mdi-thermostat', false) + '</div>' +
       '<div style="height:10px;border-radius:var(--uc-radius-sm);overflow:hidden;' + PANE + '"><div style="width:62%;height:100%;background:var(--uc-accent,var(--primary-color));border-radius:inherit"></div></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" style="' + btn + '">Movie night</button><button type="button" style="' + ghost + '">All off</button></div></div>';
 
-    var c2 = '<div class="card-container uc-prev-card" style="' + card + host + seedVars() + 'display:flex;flex-direction:column;gap:8px">' +
+    var c2 = '<div class="card-container uc-prev-card" style="' + card + host + seedVarsNext() + 'display:flex;flex-direction:column;gap:8px">' +
       '<div style="font-size:15px;font-weight:600;margin-bottom:2px">Devices</div>' +
       row('Ceiling light', 'On · 80%', 'mdi-ceiling-light', true) + row('Fan', 'Off', 'mdi-fan', false) + row('Blinds', 'Closed', 'mdi-blinds-horizontal', false) + '</div>';
 
-    var c3 = '<div class="card-container uc-prev-card" style="' + card + host + seedVars() + 'display:flex;flex-direction:column;gap:' + gap + '">' +
+    var c3 = '<div class="card-container uc-prev-card" style="' + card + host + seedVarsNext() + 'display:flex;flex-direction:column;gap:' + gap + '">' +
       '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:15px;font-weight:600">Thermostat</div><span style="font-size:12px;padding:4px 10px;border-radius:var(--uc-r-12);' + PANE + 'color:var(--secondary-text-color)">Heating</span></div>' +
       '<div style="display:flex;align-items:center;gap:12px"><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[surface] || BTN_SURFACE.flat) + '">−</button><div style="flex:1;text-align:center;font-size:30px;font-weight:300;letter-spacing:-.02em">21.5<span style="font-size:14px;color:var(--secondary-text-color)"> °C</span></div><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[surface] || BTN_SURFACE.flat) + '">+</button></div>' +
       '<div style="position:relative;height:28px;border-radius:var(--uc-radius-sm);overflow:hidden;' + PANE + '"><div style="position:absolute;inset:0 45% 0 0;background:var(--uc-accent,var(--primary-color));opacity:.85;border-radius:inherit"></div><span style="position:absolute;inset:0;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:var(--primary-text-color)">Brightness 55%</span></div>' +
@@ -353,7 +402,14 @@ window.UcTheme = (function () {
     var vars = hostVars(theme);
     var stageVars = Object.assign({}, base);
     var pageBg = theme && theme.tokens && theme.tokens.page_background ? String(theme.tokens.page_background).replace(/\s+fixed\b/g, '') : null;
-    var stageStyle = styleString(stageVars) + 'background:' + (pageBg || 'var(--lovelace-background)') + ';';
+    // Glass over a flat HA background is indistinguishable from flat; the
+    // stage adds soft colour behind the cards so blur and tint are visible,
+    // the way any wallpaper would make them. Only when the theme paints nothing.
+    var glassStage = !pageBg && theme && theme.tokens && theme.tokens.surface === 'glass';
+    var stageBg = pageBg || (glassStage
+      ? 'radial-gradient(60% 55% at 18% 15%, rgba(41, 182, 246, 0.35), transparent 70%), radial-gradient(50% 45% at 85% 25%, rgba(180, 76, 224, 0.32), transparent 70%), radial-gradient(55% 50% at 60% 95%, rgba(255, 152, 0, 0.22), transparent 70%), var(--lovelace-background)'
+      : 'var(--lovelace-background)');
+    var stageStyle = styleString(stageVars) + 'background:' + stageBg + ';';
     if (o.width) stageStyle += 'max-width:' + o.width + 'px;margin:0 auto;';
     el.classList.add('uc-stage-host');
     var scopeId = el.id || (el.id = 'uc-stage-' + Math.random().toString(36).slice(2, 8));
@@ -363,9 +419,9 @@ window.UcTheme = (function () {
       scope + ' .uc-prev-card button{margin:0}' +
       scope + ' .uc-prev-card i.mdi{line-height:1}';
     var themeCss = theme && theme.css ? scopeCss(theme.css, scope) : '';
-    var cards = sampleCards(theme, vars);
+    var cards = sampleCards(theme, vars, o.salt);
     var cols = o.width && o.width < 560 ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))';
-    el.innerHTML = '<style>' + baseCss + themeCss + '</style><div class="uc-stage" style="' + stageStyle + 'padding:20px;border-radius:14px;min-height:320px;transition:background .25s">' +
+    el.innerHTML = '<style>' + baseCss + themeCss + '</style><div class="uc-stage" style="' + attr(stageStyle) + 'padding:20px;border-radius:14px;min-height:320px;transition:background .25s">' +
       '<div style="display:grid;grid-template-columns:' + cols + ';gap:14px;align-items:start">' + cards.join('') + '</div></div>';
   }
 
@@ -381,8 +437,8 @@ window.UcTheme = (function () {
     var accent = t.accent || 'var(--primary-color)';
     var surface = t.surface || 'flat';
     var btn = 'flex:1;height:10px;border-radius:var(--uc-radius-sm,4px);' + (surface === 'outline' ? 'border:1px solid ' + accent + ';background:transparent;' : 'background:' + accent + ';');
-    return '<div class="uc-swatch" style="' + styleString(base) + 'background:' + pageBg + ';padding:10px;border-radius:8px;overflow:hidden">' +
-      '<div style="' + styleString(cs) + styleString(vars) + 'display:flex;flex-direction:column;gap:6px;min-height:52px;color:var(--primary-text-color)">' +
+    return '<div class="uc-swatch" style="' + attr(styleString(base) + 'background:' + pageBg + ';') + 'padding:10px;border-radius:8px;overflow:hidden">' +
+      '<div style="' + attr(styleString(cs) + styleString(vars)) + 'display:flex;flex-direction:column;gap:6px;min-height:52px;color:var(--primary-text-color)">' +
       '<div style="width:55%;height:5px;border-radius:3px;background:currentColor;opacity:.65"></div>' +
       '<div style="display:flex;gap:4px"><div style="' + btn + '"></div><div style="flex:1;height:10px;border-radius:var(--uc-radius-sm,4px);background:var(--uc-pane-bg);border:var(--uc-pane-border)"></div></div>' +
       '<div style="height:5px;border-radius:var(--uc-radius-sm,3px);background:var(--uc-pane-bg);border:var(--uc-pane-border);position:relative;overflow:hidden"><div style="position:absolute;inset:0 40% 0 0;background:' + accent + '"></div></div>' +
@@ -390,13 +446,31 @@ window.UcTheme = (function () {
   }
 
   // ------------------------------------------------------------- validation
+  // Size budget, kept in sync with src/themes/uc-theme-validate.ts.
+  var LIMITS = { css: 60000, page_background: 200000, pane_background: 20000, definition: 320000 };
   var CSS_BAD = [/@import/i, /expression\s*\(/i, /javascript:/i, /behavior\s*:/i, /-moz-binding/i, /<\s*\/?\s*(script|style|iframe)/i, /@font-face/i];
-  var INLINE_IMG = /url\(\s*(["']?)data:image\/(?:svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"']*)\1\s*\)/gi;
+  var INLINE_IMG = /url\(\s*(["']?)data:image\/(svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"']*)\1\s*\)/gi;
+  // Markup that only makes sense in a live document; SVG-as-image cannot run
+  // it, but a theme carrying it is not one we want to publish.
+  var SVG_BAD = [[/<\s*script/i, 'script'], [/\bon[a-z]+\s*=/i, 'event handler'], [/javascript:/i, 'javascript:'], [/<\s*foreignObject/i, 'foreignObject'], [/(?:xlink:)?href\s*=\s*["']?\s*(?:https?:|\/\/)/i, 'external href'], [/url\s*\(\s*["']?\s*(?!#)/i, 'external url()']];
+  function svgProblems(markup) {
+    var out = [];
+    SVG_BAD.forEach(function (p) { if (p[0].test(markup)) out.push(p[1]); });
+    return out;
+  }
   function cssProblems(css, max) {
     var out = [];
+    max = max || LIMITS.css;
     if (typeof css !== 'string' || !css) return out;
-    if (css.length > (max || 40000)) out.push('longer than ' + (max || 40000) + ' characters');
-    var stripped = css.replace(INLINE_IMG, 'inline-image');
+    if (css.length > max) out.push('longer than ' + max.toLocaleString() + ' characters');
+    var stripped = css.replace(INLINE_IMG, function (m, q, mime, params, payload) {
+      // Only SVG carries markup; raster payloads are opaque bytes.
+      if (!/svg/i.test(mime)) return 'inline-image';
+      var decoded = payload;
+      try { decoded = /;base64/i.test(params) ? atob(payload) : decodeURIComponent(payload); } catch (e) { /* keep raw */ }
+      svgProblems(decoded).forEach(function (p) { out.push('inline SVG contains ' + p); });
+      return 'inline-image';
+    });
     if (/url\s*\(/i.test(stripped)) out.push('external url() is not allowed (inline data:image/* is fine)');
     CSS_BAD.forEach(function (re) { if (re.test(stripped)) out.push('contains ' + String(re).replace(/^\/|\/i?$/g, '').replace(/\\/g, '')); });
     return out;
@@ -430,10 +504,13 @@ window.UcTheme = (function () {
     var gs = rt.grayscale === true ? 1 : num(rt.grayscale, 0, 1); if (gs) t.grayscale = gs;
     var cf = str(rt.color_filter, 200);
     if (cf) { if (/^(\s*(grayscale|sepia|saturate|hue-rotate|brightness|contrast|invert|opacity)\([^()]*\)\s*)+$/.test(cf)) t.color_filter = cf; else problems.push('Colour filter may only use grayscale/sepia/saturate/hue-rotate/brightness/contrast/invert/opacity'); }
-    var pb = str(rt.pane_background, 4000); if (pb) { if (cssProblems(pb, 4000).length) problems.push('Pane background rejected'); else t.pane_background = pb; }
+    // Backgrounds are rejected, never cut, when over budget: a truncated data URI is garbage.
+    var pb = typeof rt.pane_background === 'string' ? rt.pane_background.trim() : '';
+    if (pb) { var pbp = cssProblems(pb, LIMITS.pane_background); if (pbp.length) problems.push('Inner pane background rejected: ' + pbp.join(', ')); else t.pane_background = pb; }
     var pbo = cssv(rt.pane_border); if (pbo) t.pane_border = pbo;
     var psh = cssv(rt.pane_shadow, 600); if (psh) t.pane_shadow = psh;
-    var pg = str(rt.page_background, 12000); if (pg) { if (cssProblems(pg, 12000).length) problems.push('Page background rejected'); else t.page_background = pg; }
+    var pg = typeof rt.page_background === 'string' ? rt.page_background.trim() : '';
+    if (pg) { var pgp = cssProblems(pg, LIMITS.page_background); if (pgp.length) problems.push('Dashboard background rejected: ' + pgp.join(', ')); else t.page_background = pg; }
     if (rt.palette && typeof rt.palette === 'object') {
       var pal = {};
       PALETTE_KEYS.forEach(function (k) { var v = cssv(rt.palette[k]); if (v) pal[k] = v; });
@@ -469,18 +546,22 @@ window.UcTheme = (function () {
       if (Object.keys(mods).length) out.modules = mods;
     }
     if (typeof r.css === 'string' && r.css.trim()) {
-      var cp = cssProblems(r.css, 40000);
+      var cp = cssProblems(r.css, LIMITS.css);
       if (cp.length) problems.push('Custom CSS: ' + cp.join(', ')); else out.css = r.css.trim();
     }
-    return { theme: out, problems: problems };
+    var total = JSON.stringify(out).length;
+    if (total > LIMITS.definition) problems.push('Theme is ' + Math.round(total / 1024) + ' KB; the limit is ' + Math.round(LIMITS.definition / 1024) + ' KB. Use a smaller wallpaper or less CSS.');
+    return { theme: out, problems: problems, bytes: total };
   }
 
   function slugify(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'my-theme'; }
 
   return {
-    SURFACES: SURFACES, DENSITIES: DENSITIES, PALETTE_KEYS: PALETTE_KEYS, MODULE_FIELDS: MODULE_FIELDS, HA_BASE: HA_BASE,
-    hostVars: hostVars, cardStyle: cardStyle, scopeCss: scopeCss, renderPreview: renderPreview, swatchHtml: swatchHtml,
-    sanitize: sanitize, cssProblems: cssProblems, parseColor: parseColor, contrast: contrast, slugify: slugify, esc: esc
+    SURFACES: SURFACES, DENSITIES: DENSITIES, PALETTE_KEYS: PALETTE_KEYS, MODULE_FIELDS: MODULE_FIELDS, HA_BASE: HA_BASE, LIMITS: LIMITS,
+    hostVars: hostVars, cardStyle: cardStyle, resolveChrome: resolveChrome, chromeFromTokens: chromeFromTokens, scopeCss: scopeCss,
+    renderPreview: renderPreview, swatchHtml: swatchHtml, reroll: reroll, usesSeeds: usesSeeds,
+    sanitize: sanitize, cssProblems: cssProblems, svgProblems: svgProblems,
+    parseColor: parseColor, toCss: toCss, contrast: contrast, lum: lum, mix: mix, contrastText: contrastText, slugify: slugify, esc: esc
   };
 })();
 </script>

@@ -288,7 +288,7 @@ export class HubThemesTab extends LitElement {
     }
     this._installing = new Set(this._installing).add(entry.id);
     try {
-      const saved = ucThemesCatalogService.install(entry);
+      const saved = await ucThemesCatalogService.install(entry);
       if (saved) {
         this._catalog = this._catalog.map(t => (t.id === entry.id ? { ...t, downloads: t.downloads + 1 } : t));
       }

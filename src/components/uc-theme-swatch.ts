@@ -1,7 +1,7 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { ucThemeService } from '../services/uc-theme-service';
+import { resolveThemeCardChrome, ucThemeService } from '../services/uc-theme-service';
 import type { UcThemeDefinition } from '../themes/uc-theme-types';
 
 /**
@@ -19,15 +19,18 @@ export class UcThemeSwatch extends LitElement {
   protected override render(): TemplateResult {
     const theme = this.theme;
     const vars = theme ? ucThemeService.getHostVars(theme) : {};
-    const chrome = theme?.card ?? {};
-    const radius = chrome.card_border_radius ?? theme?.tokens.radius ?? 12;
+    // Same merge the card uses: tokens imply the chrome, `theme.card` overrides.
+    const chrome = resolveThemeCardChrome(theme);
+    const radius = chrome.card_border_radius ?? 12;
     const bg = chrome.card_transparent
       ? 'transparent'
-      : chrome.card_background ?? 'var(--card-background-color, var(--ha-card-background, white))';
-    const borderWidth = chrome.card_border_width ?? (theme ? theme.tokens.border_width ?? 1 : 1);
-    const borderColor = chrome.card_border_color ?? theme?.tokens.border_color ?? 'var(--divider-color)';
+      : chrome.card_background ??
+        (theme ? vars['--uc-surface-bg'] : undefined) ??
+        'var(--card-background-color, var(--ha-card-background, white))';
+    const borderWidth = chrome.card_transparent ? 0 : chrome.card_border_width ?? 1;
+    const borderColor = chrome.card_border_color ?? 'var(--divider-color)';
     const shadow =
-      chrome.card_shadow_enabled === false
+      chrome.card_shadow_enabled === false || chrome.card_transparent
         ? 'none'
         : chrome.card_shadow_enabled
           ? `${chrome.card_shadow_horizontal ?? 0}px ${chrome.card_shadow_vertical ?? 4}px ${chrome.card_shadow_blur ?? 12}px ${chrome.card_shadow_spread ?? 0}px ${chrome.card_shadow_color ?? 'rgba(0,0,0,0.15)'}`

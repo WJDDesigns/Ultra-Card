@@ -96,7 +96,7 @@ describe('ucThemesCatalogService', () => {
     const [t] = (await ucThemesCatalogService.fetchThemes()).themes;
     expect(ucThemesCatalogService.installState(t)).toBe('not_installed');
 
-    const saved = ucThemesCatalogService.install(t);
+    const saved = await ucThemesCatalogService.install(t);
     expect(saved?.id).toBe('wp-frosted');
     expect(ucThemeService.getTheme('wp-frosted')?.source).toBe('official');
     expect(ucThemesCatalogService.installState(t)).toBe('installed');
@@ -104,8 +104,46 @@ describe('ucThemesCatalogService', () => {
     expect(fn).toHaveBeenCalledTimes(2);
     expect(String((fn.mock.calls[1] as unknown[])[0])).toContain('/themes/42/track-download');
 
-    ucThemesCatalogService.install(t);
+    await ucThemesCatalogService.install(t);
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('completes a partial listing entry from the single-theme endpoint before installing', async () => {
+    // The list left the wallpaper out to stay small; the full theme carries it.
+    const wallpaper = 'url("data:image/png;base64,iVBORw0KGgo=") center / cover fixed';
+    const listed = entry({ definition_partial: true });
+    const full = entry({ definition: { ...listed.definition, tokens: { ...listed.definition.tokens, page_background: wallpaper } } });
+    const fn = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => (/\/themes\?/.test(url) ? { themes: [listed] } : /\/themes\/42$/.test(url) ? full : {}),
+    }));
+    vi.stubGlobal('fetch', fn);
+
+    const [t] = (await ucThemesCatalogService.fetchThemes()).themes;
+    expect(t.partial).toBe(true);
+    expect(t.definition.tokens.page_background).toBeUndefined();
+
+    const saved = await ucThemesCatalogService.install(t);
+    expect(saved?.tokens.page_background).toBe(wallpaper);
+    expect(ucThemesCatalogService.installState(t)).toBe('installed');
+    const urls = fn.mock.calls.map(c => String((c as unknown[])[0]));
+    expect(urls.some(u => /\/themes\/42$/.test(u))).toBe(true);
+  });
+
+  it('refuses to install a partial entry when the full definition cannot be fetched', async () => {
+    const listed = entry({ definition_partial: true });
+    const fn = vi.fn(async (url: string) => ({
+      ok: /\/themes\?/.test(url),
+      status: /\/themes\?/.test(url) ? 200 : 500,
+      statusText: '',
+      json: async () => ({ themes: [listed] }),
+    }));
+    vi.stubGlobal('fetch', fn);
+    const [t] = (await ucThemesCatalogService.fetchThemes()).themes;
+    expect(await ucThemesCatalogService.install(t)).toBeNull();
+    expect(ucThemeService.getTheme('wp-frosted')).toBeUndefined();
   });
 
   it('flags an update when the catalog version is newer than the installed one', async () => {

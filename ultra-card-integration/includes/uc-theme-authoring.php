@@ -27,8 +27,16 @@ if (!defined('ABSPATH')) {
 define('UC_THEME_POST_TYPE', 'ultra_theme');
 define('UC_THEME_TAG_TAXONOMY', 'uc_theme_tag');
 define('UC_THEME_META_DEFINITION', '_uc_theme_definition');
-define('UC_THEME_MAX_DEFINITION_BYTES', 64 * 1024);
-define('UC_THEME_MAX_CSS_CHARS', 40000);
+// Size budget, kept in sync with src/themes/uc-theme-validate.ts: a wallpaper
+// may be a real picture (~150 KB of WebP as base64), panes and CSS only get
+// room for compact SVG props.
+define('UC_THEME_MAX_DEFINITION_BYTES', 320000);
+define('UC_THEME_MAX_CSS_CHARS', 60000);
+define('UC_THEME_MAX_PAGE_BACKGROUND_CHARS', 200000);
+define('UC_THEME_MAX_PANE_BACKGROUND_CHARS', 20000);
+// Catalog listings leave out heavy fields above this many characters so a
+// page of themes stays small; the card fetches the full theme on install.
+define('UC_THEME_LIST_FIELD_LIMIT', 2000);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -122,21 +130,26 @@ function uc_theme_attach_my_ratings(array $items) {
  * CSS constructs the card refuses. Kept in sync with
  * src/themes/uc-theme-validate.ts (scanThemeCss).
  */
-function uc_theme_css_problems($css) {
+function uc_theme_css_problems($css, $max = UC_THEME_MAX_CSS_CHARS) {
     $problems = array();
     if (!is_string($css) || $css === '') {
         return $problems;
     }
-    if (strlen($css) > UC_THEME_MAX_CSS_CHARS) {
-        $problems[] = 'css longer than ' . UC_THEME_MAX_CSS_CHARS . ' characters';
+    if (strlen($css) > $max) {
+        $problems[] = 'longer than ' . $max . ' characters';
     }
     // Inline image data URIs are allowed artwork (SVG-as-image cannot run
     // script or fetch). Lift them out, check their payload, then scan the rest.
-    $inline_re = '/url\(\s*(["\']?)data:image\/(?:svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"\']*)\1\s*\)/i';
+    $inline_re = '/url\(\s*(["\']?)data:image\/(svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"\']*)\1\s*\)/i';
     $css = preg_replace_callback($inline_re, function ($m) use (&$problems) {
-        $payload = stripos($m[2], 'base64') !== false ? base64_decode($m[3], true) : rawurldecode($m[3]);
+        // Only SVG carries markup; raster payloads are opaque bytes and the
+        // text patterns below would only false-positive on them.
+        if (stripos($m[2], 'svg') === false) {
+            return 'inline-image';
+        }
+        $payload = stripos($m[3], 'base64') !== false ? base64_decode($m[4], true) : rawurldecode($m[4]);
         if ($payload === false) {
-            $payload = $m[3];
+            $payload = $m[4];
         }
         $bad = array(
             '/<\s*script/i'                                   => 'script',
@@ -181,7 +194,7 @@ function uc_theme_css_problems($css) {
 function uc_theme_sanitize_definition($raw) {
     if (is_string($raw)) {
         if (strlen($raw) > UC_THEME_MAX_DEFINITION_BYTES) {
-            return new WP_Error('theme_too_large', 'Theme definition exceeds 64 KB', array('status' => 400));
+            return new WP_Error('theme_too_large', 'Theme definition exceeds ' . round(UC_THEME_MAX_DEFINITION_BYTES / 1024) . ' KB', array('status' => 400));
         }
         $decoded = json_decode($raw, true);
         if (!is_array($decoded)) {
@@ -193,7 +206,7 @@ function uc_theme_sanitize_definition($raw) {
         return new WP_Error('invalid_theme', 'Theme definition must be an object', array('status' => 400));
     }
     if (strlen((string) wp_json_encode($raw)) > UC_THEME_MAX_DEFINITION_BYTES) {
-        return new WP_Error('theme_too_large', 'Theme definition exceeds 64 KB', array('status' => 400));
+        return new WP_Error('theme_too_large', 'Theme definition exceeds ' . round(UC_THEME_MAX_DEFINITION_BYTES / 1024) . ' KB', array('status' => 400));
     }
     if (empty($raw['tokens']) || !is_array($raw['tokens'])) {
         return new WP_Error('invalid_theme', 'Theme definition needs a "tokens" object', array('status' => 400));
@@ -210,7 +223,7 @@ function uc_theme_sanitize_definition($raw) {
     // Background tokens may carry inline artwork (kept in sync with
     // cssBackground in src/themes/uc-theme-validate.ts): same payload scan as
     // CSS, tighter length caps.
-    foreach (array('page_background' => 12000, 'pane_background' => 4000) as $token => $max) {
+    foreach (array('page_background' => UC_THEME_MAX_PAGE_BACKGROUND_CHARS, 'pane_background' => UC_THEME_MAX_PANE_BACKGROUND_CHARS) as $token => $max) {
         if (!isset($raw['tokens'][$token]) || !is_string($raw['tokens'][$token])) {
             continue;
         }
@@ -218,7 +231,7 @@ function uc_theme_sanitize_definition($raw) {
         if (strlen($value) > $max) {
             return new WP_Error('invalid_theme', 'tokens.' . $token . ' longer than ' . $max . ' characters', array('status' => 400));
         }
-        $problems = uc_theme_css_problems($value);
+        $problems = uc_theme_css_problems($value, $max);
         if ($problems) {
             return new WP_Error('unsafe_css', 'tokens.' . $token . ' rejected: ' . implode(', ', $problems), array('status' => 400));
         }
@@ -270,9 +283,30 @@ function uc_apply_theme_tags($post_id, $tags_csv) {
 }
 
 /**
- * API shape for a theme post.
+ * Listing copy of a definition: heavy fields (an inline wallpaper, big CSS)
+ * are left out so a catalog page stays small. Returns the trimmed definition
+ * and whether anything was removed; GET /themes/{id} always returns the whole thing.
  */
-function uc_normalize_theme($post, $include_definition = true) {
+function uc_theme_light_definition(array $definition) {
+    $partial = false;
+    foreach (array('page_background', 'pane_background') as $token) {
+        if (isset($definition['tokens'][$token]) && is_string($definition['tokens'][$token]) && strlen($definition['tokens'][$token]) > UC_THEME_LIST_FIELD_LIMIT) {
+            unset($definition['tokens'][$token]);
+            $partial = true;
+        }
+    }
+    if (isset($definition['css']) && is_string($definition['css']) && strlen($definition['css']) > UC_THEME_LIST_FIELD_LIMIT * 4) {
+        unset($definition['css']);
+        $partial = true;
+    }
+    return array($definition, $partial);
+}
+
+/**
+ * API shape for a theme post. `$light` trims heavy definition fields for
+ * listings (see uc_theme_light_definition) and flags it with definition_partial.
+ */
+function uc_normalize_theme($post, $include_definition = true, $light = false) {
     $post = get_post($post);
     if (!$post || $post->post_type !== UC_THEME_POST_TYPE) {
         return null;
@@ -343,7 +377,12 @@ function uc_normalize_theme($post, $include_definition = true) {
         'modified'             => $post->post_modified_gmt,
     );
     if ($include_definition) {
+        $partial = false;
+        if ($light && is_array($definition)) {
+            list($definition, $partial) = uc_theme_light_definition($definition);
+        }
         $out['definition'] = $definition;
+        $out['definition_partial'] = $partial;
         if (is_array($pending) && !empty($pending)) {
             $out['pending_revision'] = $pending;
         }
@@ -651,7 +690,7 @@ class UltraCardThemeAuthoring {
         $q = new WP_Query($args);
         $items = array();
         foreach ($q->posts as $post) {
-            $norm = uc_normalize_theme($post, true);
+            $norm = uc_normalize_theme($post, true, true);
             if ($norm) {
                 $items[] = $norm;
             }
