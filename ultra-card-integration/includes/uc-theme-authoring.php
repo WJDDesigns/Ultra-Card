@@ -214,6 +214,30 @@ function uc_theme_sanitize_definition($raw) {
     if (!empty($raw['tokens']['surface']) && !in_array($raw['tokens']['surface'], array('flat', 'glass', 'neumorphic', 'glossy', 'outline', 'minimal'), true)) {
         return new WP_Error('invalid_theme', 'Unknown surface "' . sanitize_text_field($raw['tokens']['surface']) . '"', array('status' => 400));
     }
+    // tokens.recipes: recipe per role (mirrors uc-surface-recipes.ts). Unknown
+    // entries are dropped rather than rejected, as the card's validator does.
+    if (isset($raw['tokens']['recipes'])) {
+        $recipes = array();
+        $known = array('flat', 'glossy', 'embossed', 'inset', 'gradient-overlay', 'neon-glow', 'outline', 'glass', 'metallic', 'neumorphic', 'dashed', 'dots', 'minimal');
+        $bar_only = array('dashed', 'dots', 'minimal');
+        if (is_array($raw['tokens']['recipes'])) {
+            foreach (array('control', 'track', 'fill', 'pane') as $role) {
+                $v = isset($raw['tokens']['recipes'][$role]) ? $raw['tokens']['recipes'][$role] : null;
+                if (!is_string($v) || !in_array($v, $known, true)) {
+                    continue;
+                }
+                if (($role === 'control' || $role === 'pane') && in_array($v, $bar_only, true)) {
+                    continue;
+                }
+                $recipes[$role] = $v;
+            }
+        }
+        if ($recipes) {
+            $raw['tokens']['recipes'] = $recipes;
+        } else {
+            unset($raw['tokens']['recipes']);
+        }
+    }
     if (isset($raw['css'])) {
         $problems = uc_theme_css_problems($raw['css']);
         if ($problems) {

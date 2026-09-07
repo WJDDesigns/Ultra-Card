@@ -24,6 +24,13 @@ import {
 import { BUILTIN_THEMES, HA_NATIVE_THEME } from '../themes/builtin-themes';
 import { sanitizeThemeDefinition } from '../themes/uc-theme-validate';
 import { getSurfaceTokens } from '../utils/uc-surface-styles';
+import {
+  recipeForRole,
+  recipesFromSurface,
+  surfaceRoleFor,
+  type UcSurfaceRecipe,
+  type UcSurfaceRole,
+} from '../utils/uc-surface-recipes';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../utils/safe-storage';
 import { getConnectInfo } from './uc-connect-compatibility';
 import { UC_DEBUG } from '../utils/uc-debug';
@@ -135,6 +142,19 @@ export function chromeFromTokens(t: UcThemeTokens): UcThemeCardChrome {
 export function resolveThemeCardChrome(theme: UcThemeDefinition | null | undefined): UcThemeCardChrome {
   if (!theme) return {};
   return { ...chromeFromTokens(theme.tokens), ...theme.card };
+}
+
+/**
+ * Surface recipe per role: `tokens.recipes` over what `tokens.surface`
+ * implies. No theme means flat everywhere, which is every module's own
+ * default, so HA Native stays a no-op.
+ */
+export function resolveThemeRecipes(
+  theme: UcThemeDefinition | null | undefined
+): Record<UcSurfaceRole, UcSurfaceRecipe> {
+  const derived = recipesFromSurface(theme?.tokens?.surface);
+  if (!theme?.tokens?.recipes) return derived;
+  return { ...derived, ...theme.tokens.recipes };
 }
 
 const STORAGE_LIBRARY = 'ultra-card-theme-library';
@@ -477,10 +497,21 @@ class UcThemeService {
     key: string
   ): unknown {
     const theme = this.resolveTheme(config);
-    if (!theme?.modules) return undefined;
+    if (!theme) return undefined;
     const allowed = UC_THEME_MODULE_STYLE_KEYS[moduleType];
     if (!allowed || !allowed.includes(key)) return undefined;
-    return theme.modules[moduleType]?.[key];
+    const explicit = theme.modules?.[moduleType]?.[key];
+    if (explicit !== undefined) return explicit;
+    // Surface fields fall back to the theme's recipe for their role, so a
+    // theme that says "controls are glass" once reaches every button.
+    const role = surfaceRoleFor(moduleType, key);
+    if (!role) return undefined;
+    return recipeForRole(resolveThemeRecipes(theme)[role], role);
+  }
+
+  /** Recipe per role the theme paints with: explicit `tokens.recipes` over what `surface` implies. */
+  getRecipes(config: UltraCardConfig | undefined | null): Record<UcSurfaceRole, UcSurfaceRecipe> {
+    return resolveThemeRecipes(this.resolveTheme(config));
   }
 
   /**
@@ -545,6 +576,9 @@ class UcThemeService {
       '--uc-radius-inner': `${radiusInner(t.radius, theme.card?.card_padding)}px`,
       ...paneVars(t),
     };
+    for (const [role, recipe] of Object.entries(resolveThemeRecipes(theme))) {
+      vars[`--uc-recipe-${role}`] = recipe;
+    }
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;
     if (t.font_family) vars['--uc-font-family'] = t.font_family;

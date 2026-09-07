@@ -1,4 +1,5 @@
 import type { UltraCardConfig } from '../types';
+import type { UcSurfaceRecipe, UcSurfaceRole } from '../utils/uc-surface-recipes';
 
 /**
  * Ultra Card theme format.
@@ -82,6 +83,14 @@ export interface UcThemeTokens {
    * painting off. A colour or gradient list.
    */
   page_background?: string | undefined;
+  /**
+   * Surface recipe per role for modules that defer to the theme
+   * (`'theme'`): what a button, a bar track, a bar fill and an inner pane
+   * are painted like. Unset roles derive from `surface`
+   * (`recipesFromSurface`). A per-module value in `modules` still wins, so
+   * a theme can say "controls are glass" once and override one module.
+   */
+  recipes?: Partial<Record<UcSurfaceRole, UcSurfaceRecipe>> | undefined;
 }
 
 /** Card chrome keys a theme may set. Same shape as `UltraCardConfig.card_*`. */

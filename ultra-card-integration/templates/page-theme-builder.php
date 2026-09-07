@@ -110,6 +110,14 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
       </details>
 
       <details class="tb-sec" open>
+        <summary><i class="mdi mdi-texture-box"></i> Surfaces</summary>
+        <div class="tb-sec-body">
+          <p class="ucp-hint" style="margin-bottom:10px">How modules that follow the theme paint their parts. <b>From surface</b> derives each one from the surface above; pick a recipe to set, say, glass buttons over flat bars. Module defaults (advanced) can still override a single module.</p>
+          <div class="tb-grid2" id="tb-recipes"></div>
+        </div>
+      </details>
+
+      <details class="tb-sec" open>
         <summary><i class="mdi mdi-palette-outline"></i> Colours</summary>
         <div class="tb-sec-body">
           <p class="ucp-hint" style="margin-bottom:10px">Leave a colour on <b>Auto</b> to follow the user's Home Assistant theme. Pin it to make your theme look the same everywhere.</p>
@@ -174,7 +182,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
       <details class="tb-sec adv">
         <summary><i class="mdi mdi-view-module-outline"></i> Module defaults</summary>
         <div class="tb-sec-body">
-          <p class="ucp-hint" style="margin-bottom:10px">What each module uses when its own style is set to "Theme". Leave blank to keep module defaults. These are not drawn in the preview; real modules pick them up in Home Assistant.</p>
+          <p class="ucp-hint" style="margin-bottom:10px">What each module uses when its own style is set to "Theme". Leave a surface field on <b>Theme surface</b> to follow the Surfaces section; other fields left blank keep the module's own default. Buttons, bars and panes are drawn in the preview; layout choices (grid, navigation, tabs) are not.</p>
           <div id="tb-modules"></div>
         </div>
       </details>
@@ -449,6 +457,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     if (value === undefined || value === '' || value === null) delete o[last]; else o[last] = value;
     // prune empty palette / card / modules holders so exports stay clean
     if (def.tokens.palette && !Object.keys(def.tokens.palette).length) delete def.tokens.palette;
+    if (def.tokens.recipes && !Object.keys(def.tokens.recipes).length) delete def.tokens.recipes;
     Object.keys(def.modules || {}).forEach(function (m) { if (def.modules[m] && !Object.keys(def.modules[m]).length) delete def.modules[m]; });
   }
   function api(path, o) {
@@ -559,6 +568,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     syncDerived();
   }
   function syncDerived() {
+    syncRecipeLabels();
     els.blurField.style.display = (get('tokens.surface') === 'glass' || ui.mode === 'advanced') ? 'flex' : 'none';
     els.cshadow.style.display = get('card.card_shadow_enabled') === true ? 'grid' : 'none';
   }
@@ -712,6 +722,26 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     });
   }
   function isLightHex(v) { var c = U.parseColor(v); return c ? (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255 > 0.5 : true; }
+
+  // surfaces (recipe per role)
+  var ROLE_LABELS = { control: 'Controls', track: 'Tracks', fill: 'Fills', pane: 'Panes' };
+  var ROLE_HINTS = { control: 'Buttons, chips, spinbox and popup triggers', track: 'Bar and slider tracks', fill: 'The filled part of bars and sliders', pane: 'Rows, tiles and inner boxes' };
+  function buildRecipes() {
+    document.getElementById('tb-recipes').innerHTML = U.ROLES.map(function (role) {
+      var id = 'tb-recipe-' + role;
+      return '<div class="ucp-field"><label for="' + id + '">' + ROLE_LABELS[role] + '</label><select id="' + id + '" data-path="tokens.recipes.' + role + '" data-type="text" data-role="' + role + '"><option value="">From surface</option>' + U.ROLE_RECIPES[role].map(function (r) { return '<option value="' + r + '">' + r + '</option>'; }).join('') + '</select><span class="ucp-hint">' + ROLE_HINTS[role] + '</span></div>';
+    }).join('');
+  }
+  /** "From surface (glass)" / "Theme surface (glass)" labels follow the current surface and recipes. */
+  function syncRecipeLabels() {
+    var derived = U.recipesFromSurface(get('tokens.surface'));
+    var rc = U.resolveRecipes(def);
+    root.querySelectorAll('#tb-recipes select[data-role]').forEach(function (sel) { sel.options[0].textContent = 'From surface (' + derived[sel.getAttribute('data-role')] + ')'; });
+    Object.keys(U.SURFACE_FIELD_ROLES).forEach(function (k) {
+      var sel = document.getElementById('tb-m-' + k.replace('.', '-'));
+      if (sel) sel.options[0].textContent = 'Theme surface (' + rc[U.SURFACE_FIELD_ROLES[k]] + ')';
+    });
+  }
 
   // module defaults form
   function buildModules() {
@@ -969,7 +999,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   }
 
   async function boot() {
-    buildWall(); buildStarters(); buildModules(); bindInputs(); wire();
+    buildWall(); buildStarters(); buildRecipes(); buildModules(); bindInputs(); wire();
     var savedMode = null; try { savedMode = localStorage.getItem('uc_theme_builder_mode'); } catch (e) {}
     ui.previewMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.querySelectorAll('#tb-prev-mode button').forEach(function (x) { x.classList.toggle('active', x.getAttribute('data-value') === ui.previewMode); });

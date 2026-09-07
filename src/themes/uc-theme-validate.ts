@@ -8,6 +8,13 @@ import type {
   UcThemeTokens,
 } from './uc-theme-types';
 import { UC_THEME_CARD_CHROME_KEYS, UC_THEME_MODULE_STYLE_KEYS } from './uc-theme-types';
+import {
+  UC_ROLE_RECIPES,
+  UC_SURFACE_ROLES,
+  normalizeRecipe,
+  type UcSurfaceRecipe,
+  type UcSurfaceRole,
+} from '../utils/uc-surface-recipes';
 
 /**
  * Turn untrusted JSON (a download, an import, a hand-edited file) into a
@@ -210,6 +217,14 @@ function sanitizeTokens(raw: unknown): UcThemeTokens | null {
       if (v) palette[key] = v;
     }
     if (Object.keys(palette).length) tokens.palette = palette as UcThemeTokens['palette'];
+  }
+  if (r.recipes && typeof r.recipes === 'object') {
+    const recipes: Partial<Record<UcSurfaceRole, UcSurfaceRecipe>> = {};
+    for (const role of UC_SURFACE_ROLES) {
+      const recipe = normalizeRecipe((r.recipes as Record<string, unknown>)[role]);
+      if (recipe && UC_ROLE_RECIPES[role].includes(recipe)) recipes[role] = recipe;
+    }
+    if (Object.keys(recipes).length) tokens.recipes = recipes;
   }
   return tokens;
 }

@@ -18,6 +18,7 @@ import { createDefaultGradientStops } from '../utils/uc-gradient-stops';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
 import { setVisibleInterval, UcVisibilityTimer } from '../utils/uc-visibility-timer';
 import { withThemedStyles } from '../services/uc-theme-service';
+import { getBarSurfaceCss } from '../utils/uc-surface-recipes';
 
 /** Unified-template output keys the bar module reads (position/label/color also appear inside `ticks` entries). */
 export const BAR_TEMPLATE_KEYS = [
@@ -1606,305 +1607,21 @@ export class UltraBarModule extends BaseUltraModule {
       return getBaseColorForStyle(background);
     };
 
-    const baseColor = getBaseColorForStyle(barFillBackground);
-
-    switch (barModule.bar_style) {
-      case 'flat':
-        barStyleCSS = `box-shadow: none;`;
-        break;
-      case 'glossy':
-        if (barModule.use_gradient) {
-          // For gradients, use overlay approach
-          fillOverlayCSS = `
-            background-image: linear-gradient(to bottom, 
-              rgba(255,255,255,0.3) 0%, 
-              rgba(255,255,255,0.1) 50%, 
-              rgba(0,0,0,0.1) 51%, 
-              rgba(0,0,0,0.05) 100%);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
-          `;
-        } else {
-          fillStyleCSS = `
-            background: linear-gradient(to bottom, ${barFillBackground}, ${barFillBackground} 50%, rgba(0,0,0,0.1) 51%, ${barFillBackground});
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
-          `;
-        }
-        break;
-      case 'embossed':
-        barStyleCSS = `
-          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8);
-          border: 1px solid rgba(0,0,0,0.1);
-        `;
-        fillStyleCSS = `
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);
-        `;
-        break;
-      case 'inset':
-        barStyleCSS = `
-          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-          border: 1px solid rgba(0,0,0,0.2);
-        `;
-        break;
-      case 'gradient-overlay':
-        if (barModule.use_gradient) {
-          // For gradients, add overlay on top
-          fillOverlayCSS = `
-            background-image: linear-gradient(to bottom, 
-              rgba(255,255,255,0.4) 0%, 
-              rgba(255,255,255,0) 100%);
-          `;
-        } else {
-          fillStyleCSS = `
-            background: linear-gradient(to bottom, 
-              ${barFillBackground} 0%, 
-              rgba(255,255,255,0) 100%
-            );
-          `;
-        }
-        break;
-      case 'neon-glow':
-        // For neon glow, we'll add the glow as a separate element positioned at the percentage
-        // The glow element is added in the HTML template after the bar fill
-        {
-          // Get the base color for the glow effect (handles gradients intelligently)
-          const glowColor = getGlowColorFromGradient(barFillBackground);
-
-          // Helper to convert color to rgba with specific opacity
-          const toRgbaWithOpacity = (color: string, opacity: number): string => {
-            // If already rgba, replace the alpha value
-            if (color.startsWith('rgba(')) {
-              return color.replace(/,\s*[\d.]+\s*\)$/, `, ${opacity})`);
-            }
-            // If rgb, convert to rgba
-            if (color.startsWith('rgb(')) {
-              return color.replace('rgb(', 'rgba(').replace(')', `, ${opacity})`);
-            }
-            // For hex colors, CSS variables, or named colors, use color-mix (modern CSS)
-            // Fallback: just use the color as-is (browsers will handle it)
-            return color.includes('#') || color.startsWith('var(') || color.match(/^[a-z]+$/i)
-              ? `color-mix(in srgb, ${color} ${opacity * 100}%, transparent)`
-              : color;
-          };
-
-          fillStyleCSS = `
-            filter: brightness(1.2);
-            box-shadow: 
-              0 0 7px 2px ${toRgbaWithOpacity(glowColor, 0.7)},
-              0 0 14px 6px ${toRgbaWithOpacity(glowColor, 0.5)},
-              0 0 20px 10px ${toRgbaWithOpacity(glowColor, 0.3)},
-              inset 0 0 10px rgba(255, 255, 255, 0.8);
-          `;
-
-          barStyleCSS = `
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-            overflow: hidden;
-          `;
-        }
-        break;
-      case 'outline':
-        {
-          // Outline style: Use same code for both solid and gradient modes
-          const trackColor = trackBackground || 'rgba(255, 255, 255, 0.1)';
-          const gapSize = 4;
-          const borderWidth = 2;
-          const outlineColor = resolveCSSColor(barModule.bar_color || 'var(--primary-color)');
-
-          barStyleCSS = `
-            border: ${borderWidth}px solid ${outlineColor};
-            border-radius: ${borderRadius}px;
-            background: ${trackColor};
-            padding: ${gapSize}px;
-          `;
-
-          fillStyleCSS = `
-            background: ${barFillBackground};
-            border: none;
-            box-sizing: border-box;
-            position: relative;
-            margin: 0;
-            width: ${percentage}%;
-            transition: width 0.3s ease;
-          `;
-        }
-        break;
-      case 'glass':
-        {
-          // Liquid Glass effect inspired by iOS 16
-          // Creates a frosted glass appearance with subtle depth and translucency
-          const glassOpacity = 0.15;
-          const glassBorderOpacity = 0.25;
-          const glassBlur = barModule.glass_blur_amount || 8;
-
-          barStyleCSS = `
-            backdrop-filter: blur(${glassBlur}px) saturate(180%);
-            background: linear-gradient(
-              135deg,
-              rgba(255, 255, 255, ${glassOpacity * 0.8}) 0%,
-              rgba(255, 255, 255, ${glassOpacity * 0.4}) 50%,
-              rgba(255, 255, 255, ${glassOpacity}) 100%
-            );
-            border: 1px solid rgba(255, 255, 255, ${glassBorderOpacity});
-            border-radius: ${borderRadius}px;
-            box-shadow: 
-              0 8px 32px rgba(0, 0, 0, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.4),
-              inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-            position: relative;
-          `;
-
-          // Fill should be solid, not glass - only the track background has glass effect
-          if (barModule.use_gradient) {
-            fillOverlayCSS = `
-              background: ${barFillBackground};
-              border-radius: ${Math.max(0, borderRadius - 2)}px;
-            `;
-          } else {
-            fillStyleCSS = `
-              background: ${barFillBackground};
-              border-radius: ${Math.max(0, borderRadius - 2)}px;
-              position: relative;
-            `;
-          }
-        }
-        break;
-      case 'metallic':
-        if (barModule.use_gradient) {
-          fillOverlayCSS = `
-            background-image: linear-gradient(to bottom, 
-              rgba(255,255,255,0.4) 0%, 
-              rgba(255,255,255,0) 20%, 
-              rgba(255,255,255,0) 80%, 
-              rgba(0,0,0,0.2) 100%);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);
-          `;
-        } else {
-          fillStyleCSS = `
-            background: linear-gradient(to bottom, 
-              rgba(255,255,255,0.4) 0%, 
-              ${barFillBackground} 20%, 
-              ${barFillBackground} 80%, 
-              rgba(0,0,0,0.2) 100%);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);
-          `;
-        }
-        break;
-      case 'neumorphic':
-        barStyleCSS = `
-          box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1);
-        `;
-        fillStyleCSS = `
-          box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);
-        `;
-        break;
-      case 'dashed':
-        // Create dashed segments with rounded last dash only at 100%
-        const segmentWidth = 12;
-        const gapWidth = 4;
-        const totalWidth = segmentWidth + gapWidth;
-        const isRightToLeft = fillDirection === 'right-to-left';
-
-        if (percentage >= 99.5) {
-          // At 100%, create rounded last dash
-          const borderRadiusStyle = isRightToLeft
-            ? `${borderRadius}px 0 0 ${borderRadius}px`
-            : `0 ${borderRadius}px ${borderRadius}px 0`;
-
-          fillStyleCSS = `
-            mask-image: repeating-linear-gradient(
-              90deg,
-              black 0px,
-              black ${segmentWidth}px,
-              transparent ${segmentWidth}px,
-              transparent ${totalWidth}px
-            );
-            -webkit-mask-image: repeating-linear-gradient(
-              90deg,
-              black 0px,
-              black ${segmentWidth}px,
-              transparent ${segmentWidth}px,
-              transparent ${totalWidth}px
-            );
-            border-radius: ${borderRadiusStyle};
-          `;
-        } else {
-          // Less than 100% - square dashes, force end with gap
-          const maskDirection = isRightToLeft ? '270deg' : '90deg';
-
-          fillStyleCSS = `
-            mask-image: 
-              repeating-linear-gradient(
-                90deg,
-                black 0px,
-                black ${segmentWidth}px,
-                transparent ${segmentWidth}px,
-                transparent ${totalWidth}px
-              ),
-              linear-gradient(
-                ${maskDirection},
-                black 0%,
-                black calc(100% - ${gapWidth + 2}px),
-                transparent calc(100% - ${gapWidth + 2}px),
-                transparent 100%
-              );
-            -webkit-mask-image: 
-              repeating-linear-gradient(
-                90deg,
-                black 0px,
-                black ${segmentWidth}px,
-                transparent ${segmentWidth}px,
-                transparent ${totalWidth}px
-              ),
-              linear-gradient(
-                ${maskDirection},
-                black 0%,
-                black calc(100% - ${gapWidth + 2}px),
-                transparent calc(100% - ${gapWidth + 2}px),
-                transparent 100%
-              );
-            mask-composite: intersect;
-            -webkit-mask-composite: source-in;
-            border-radius: 0;
-          `;
-        }
-        break;
-      case 'dots':
-        // Create individual circles at 10% intervals
-        const dotRadius = 4;
-        const positions = [];
-        const gradients = [];
-
-        // Create dots at 10% intervals from 10% to current percentage
-        for (let pos = 10; pos <= percentage && pos <= 100; pos += 10) {
-          positions.push(`${pos}%`);
-          gradients.push(
-            `radial-gradient(circle ${dotRadius}px at ${pos}% center, ${barFillBackground} 0%, ${barFillBackground} 100%, transparent 100%)`
-          );
-        }
-
-        if (gradients.length > 0) {
-          fillStyleCSS = `
-            background-image: ${gradients.join(', ')};
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
-          `;
-        } else {
-          fillStyleCSS = `background: transparent;`;
-        }
-        break;
-      case 'minimal':
-        // Minimal style: thin line with dot indicator
-        barStyleCSS = `
-          background: transparent;
-          border: none;
-          box-shadow: none;
-        `;
-        fillStyleCSS = `
-          background: transparent;
-          border: none;
-          position: relative;
-        `;
-        break;
-    }
+    const surface = getBarSurfaceCss(barModule.bar_style, {
+      percentage,
+      fill_direction: fillDirection,
+      borderRadius,
+      trackBackground,
+      fillBackground: barFillBackground,
+      useGradient: !!barModule.use_gradient,
+      barColor: barModule.bar_color || 'var(--primary-color)',
+      glowColor: getGlowColorFromGradient(barFillBackground),
+      glassBlur: barModule.glass_blur_amount,
+      resolveColor: resolveCSSColor,
+    });
+    barStyleCSS = surface.track;
+    fillStyleCSS = surface.fill;
+    fillOverlayCSS = surface.overlay;
 
     // Determine bar animation trigger
     const animType = (barModule as any).bar_animation_type || 'none';
@@ -2487,6 +2204,8 @@ export class UltraBarModule extends BaseUltraModule {
           style="display: flex; justify-content: ${barContainerAlignment}; width: 100%; min-height: ${barHeight}; align-items: center; min-width: 0; overflow: visible;">
           <div
             class="bar-container ${hoverEffectClass}"
+            data-uc-surface="${barModule.bar_style || 'flat'}"
+            data-uc-role="track"
             style="
             width: ${shouldGrow ? '100%' : barWidth};
             max-width: 100%;
@@ -2937,6 +2656,8 @@ export class UltraBarModule extends BaseUltraModule {
                       return html`
                         <div
                           class="bar-fill ${animationClass}"
+                          data-uc-surface="${barModule.bar_style || 'flat'}"
+                          data-uc-role="fill"
                           style="
                         width: ${fillWidth}%;
                         height: 100%;

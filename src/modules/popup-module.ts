@@ -3270,6 +3270,8 @@ export class UltraPopupModule extends BaseUltraModule {
           <button
             type="button"
             class="swiper-no-swiping popup-trigger"
+            data-uc-surface="${styleClass}"
+            data-uc-role="control"
             @click=${handleTriggerClick}
             @touchstart=${trackTouchStart}
             @touchend=${guardedTouchEnd(handleTriggerClick)}

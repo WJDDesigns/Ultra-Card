@@ -957,6 +957,8 @@ export const METALLIC_THEME: UcThemeDefinition = {
       'inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08)',
     density: 'regular',
     accent: METAL_STEEL_BLUE,
+    // The chrome bezel is glossy, but every control inside is brushed steel.
+    recipes: { control: 'metallic', track: 'metallic', fill: 'metallic', pane: 'inset' },
     font_family:
       "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
     palette: {

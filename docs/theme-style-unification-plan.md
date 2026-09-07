@@ -1,6 +1,39 @@
 # Unifying module styles with the theme engine
 
-Status: proposal (audit complete, nothing implemented yet)
+Status: Phases A, B and C shipped (September 2026); D and E open.
+
+## 0. What shipped
+
+- `src/utils/uc-surface-recipes.ts`: the recipe vocabulary, roles, alias map,
+  `UC_SURFACE_FIELD_ROLES`, `recipesFromSurface`, and the three renderers
+  (`getControlSurfaceStyles`, `getBarSurfaceCss`, `getSliderSurfaceCss`)
+  ported verbatim from button/bar/slider. `uc-surface-styles.ts` keeps the old
+  button names as re-exports.
+- `src/utils/__tests__/surface-goldens.test.ts`: 93 snapshots (bar × 13 styles
+  × gradient on/off × 55 %/100 %, slider × 11, button/spinbox/popup × 10)
+  rendered through the real modules in jsdom. The port produced zero diffs.
+- Button, popup trigger, spinbox, bar and slider render through the recipe
+  module and emit `data-uc-surface` / `data-uc-role` on the painted element.
+- `tokens.recipes` (`control | track | fill | pane`) in the theme type,
+  validator, PHP sanitizer and website runtime. `getModuleDefault` answers a
+  module on `'theme'` with `theme.modules` first, then the role recipe, then the
+  module fallback; `getHostVars` exposes `--uc-recipe-<role>`.
+- Hub theme editor and website builder both have a Surfaces section; the
+  per-module dropdowns read "Theme surface (glass)" for surface fields. The
+  website preview paints buttons, tracks, fills and panes from the recipes.
+- Metallic gained `recipes: { control/track/fill: metallic, pane: inset }`.
+
+Deviations from the proposal below:
+
+- Canonical names are the strings the modules already stored
+  (`gradient-overlay`, `neon-glow`); the three module vocabularies turned out
+  to be identical, so no YAML alias was needed. Short synonyms (`gradient`,
+  `neon`, `frosted`…) are accepted from themes only.
+- The metallic text-colour "contrast fix" was dropped: the plate colour is a
+  constant light gradient, so `#333` is already the measured answer.
+- Bar and slider keep separate renderers behind the shared vocabulary; their
+  geometry (percentage masks vs. hard-stop gradients) is genuinely different
+  and forcing one table would have meant rewriting rather than porting.
 Scope: how bar styles, button surfaces, slider tracks and every other "internal
 style" keep working while becoming layers of the theme engine, without
 changing what any existing dashboard renders.

@@ -349,6 +349,8 @@ export class UltraButtonModule extends BaseUltraModule {
               class="ultra-button ${styleClass} ${moduleAlignment === 'justify'
                 ? 'justify'
                 : ''} ${hoverEffectClass}"
+              data-uc-surface="${styleClass}"
+              data-uc-role="control"
               style="${this.buildStyleString(mergedButtonStyle)}"
               aria-label="${(buttonModule.label || 'Button').trim() || 'Button'}"
               @pointerdown=${handlers.onPointerDown}

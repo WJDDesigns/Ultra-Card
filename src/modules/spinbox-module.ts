@@ -998,6 +998,8 @@ export class UltraSpinboxModule extends BaseUltraModule {
     const decrementButton = html`
       <button
         class="spinbox-button decrement ${hoverEffectClass}"
+        data-uc-surface="${styleClass}"
+        data-uc-role="control"
         style="${buttonStyle}"
         aria-label="${localize('editor.spinbox.decrease', lang, 'Decrease')}"
         @click=${handleDecrement}
@@ -1011,6 +1013,8 @@ export class UltraSpinboxModule extends BaseUltraModule {
     const incrementButton = html`
       <button
         class="spinbox-button increment ${hoverEffectClass}"
+        data-uc-surface="${styleClass}"
+        data-uc-role="control"
         style="${buttonStyle}"
         aria-label="${localize('editor.spinbox.increase', lang, 'Increase')}"
         @click=${handleIncrement}

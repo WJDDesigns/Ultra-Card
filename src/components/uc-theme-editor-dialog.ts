@@ -9,7 +9,22 @@ import type {
 } from '../themes/uc-theme-types';
 import { UC_THEME_MODULE_FIELDS } from '../themes/uc-theme-module-options';
 import { sanitizeThemeDefinition, scanThemeCss } from '../themes/uc-theme-validate';
+import {
+  UC_ROLE_RECIPES,
+  UC_SURFACE_ROLES,
+  recipesFromSurface,
+  surfaceRoleFor,
+  type UcSurfaceRecipe,
+  type UcSurfaceRole,
+} from '../utils/uc-surface-recipes';
 import './uc-theme-swatch';
+
+const ROLE_LABELS: Record<UcSurfaceRole, string> = {
+  control: 'Controls (buttons, chips)',
+  track: 'Tracks (bars, sliders)',
+  fill: 'Fills (bar and slider fill)',
+  pane: 'Panes (rows, tiles)',
+};
 
 const SURFACES: UcThemeSurface[] = ['flat', 'glass', 'neumorphic', 'glossy', 'outline', 'minimal'];
 const DENSITIES: UcThemeDensity[] = ['compact', 'regular', 'comfortable'];
@@ -37,6 +52,7 @@ type Draft = {
   border_color: string;
   shadow: string;
   density: UcThemeDensity | '';
+  recipes: Partial<Record<UcSurfaceRole, UcSurfaceRecipe | ''>>;
   accent: string;
   font_family: string;
   grayscale: string;
@@ -84,6 +100,7 @@ function draftFromTheme(theme: UcThemeDefinition | null): Draft {
     border_color: t?.border_color ?? '',
     shadow: t?.shadow ?? '',
     density: t?.density ?? '',
+    recipes: { ...(t?.recipes ?? {}) },
     accent: t?.accent ?? '',
     font_family: t?.font_family ?? '',
     grayscale: t?.grayscale !== undefined ? String(t.grayscale) : '',
@@ -119,6 +136,9 @@ function themeFromDraft(d: Draft, version: number): Record<string, unknown> {
   if (d.border_color.trim()) tokens.border_color = d.border_color.trim();
   if (d.shadow.trim()) tokens.shadow = d.shadow.trim();
   if (d.density) tokens.density = d.density;
+  const recipes: Record<string, string> = {};
+  for (const role of UC_SURFACE_ROLES) if (d.recipes[role]) recipes[role] = d.recipes[role] as string;
+  if (Object.keys(recipes).length) tokens.recipes = recipes;
   if (d.accent.trim()) tokens.accent = d.accent.trim();
   if (d.font_family.trim()) tokens.font_family = d.font_family.trim();
   const gray = numOrUndef(d.grayscale);
@@ -217,6 +237,10 @@ export class UcThemeEditorDialog extends LitElement {
     if (key === 'css') {
       this._cssWarnings = scanThemeCss(value as string).reasons;
     }
+  }
+
+  private _setRecipe(role: UcSurfaceRole, value: UcSurfaceRecipe | ''): void {
+    this._draft = { ...this._draft, recipes: { ...this._draft.recipes, [role]: value } };
   }
 
   private _setModule(type: string, key: string, value: string): void {
@@ -322,6 +346,30 @@ export class UcThemeEditorDialog extends LitElement {
             </section>
 
             <section>
+              <h3>${t('editor_recipes', 'Surfaces')}</h3>
+              <p class="hint">
+                ${t(
+                  'editor_recipes_hint',
+                  'How controls, tracks, fills and inner panes are painted for modules that follow the theme. Leave on "From surface" to derive from the surface above; Module defaults below can still override one module.'
+                )}
+              </p>
+              <div class="grid-2">
+                ${UC_SURFACE_ROLES.map(role => {
+                  const derived = recipesFromSurface(d.surface)[role];
+                  return this._select(
+                    t(`editor_recipe_${role}`, ROLE_LABELS[role]),
+                    d.recipes[role] ?? '',
+                    [
+                      { value: '', label: `${t('editor_recipe_from_surface', 'From surface')} (${derived})` },
+                      ...UC_ROLE_RECIPES[role].map(r => ({ value: r, label: r })),
+                    ],
+                    v => this._setRecipe(role, v as UcSurfaceRecipe | '')
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
               <h3>${t('editor_layers', 'Layers')}</h3>
               <p class="hint">
                 ${t(
@@ -389,11 +437,15 @@ export class UcThemeEditorDialog extends LitElement {
                     ${UC_THEME_MODULE_FIELDS.map(f => {
                       const current = d.modules[f.moduleType]?.[f.key] ?? '';
                       const label = `${f.moduleLabel} · ${f.label}`;
+                      const role = surfaceRoleFor(f.moduleType, f.key);
+                      const inheritLabel = role
+                        ? `${t('editor_module_recipe', 'Theme surface')} (${(d.recipes[role] || recipesFromSurface(d.surface)[role])})`
+                        : t('editor_module_inherit', 'Module default');
                       return f.kind === 'select'
                         ? this._select(
                             label,
                             current,
-                            [{ value: '', label: t('editor_module_inherit', 'Module default') }, ...(f.options ?? [])],
+                            [{ value: '', label: inheritLabel }, ...(f.options ?? [])],
                             v => this._setModule(f.moduleType, f.key, v)
                           )
                         : this._text(

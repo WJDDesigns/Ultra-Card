@@ -230,6 +230,54 @@ describe('resolution order', () => {
       'flat'
     );
   });
+
+  it('surface fields fall back to the theme recipe for their role', () => {
+    // A theme that sets no per-module styles: recipes derive from `surface`.
+    ucThemeService.saveToLibrary({
+      id: 'local-just-glass',
+      name: 'Just glass',
+      version: 1,
+      tokens: { surface: 'glass', radius: 16 },
+    });
+    const c = cfg('local-just-glass');
+    expect(ucThemeService.getRecipes(c)).toEqual({ control: 'glass', track: 'glass', fill: 'flat', pane: 'glass' });
+    expect(ucThemeService.resolveModuleStyle(c, 'button', 'style', 'theme', 'flat')).toBe('glass');
+    expect(ucThemeService.resolveModuleStyle(c, 'bar', 'bar_style', 'theme', 'flat')).toBe('glass');
+    expect(ucThemeService.resolveModuleStyle(c, 'spinbox', 'button_style', 'theme', 'flat')).toBe('glass');
+    // layout vocabularies are not surfaces: still the module fallback
+    expect(ucThemeService.resolveModuleStyle(c, 'grid', 'grid_style', 'theme', 'style_1')).toBe('style_1');
+    // an explicit module value in the theme still wins over the recipe
+    ucThemeService.saveToLibrary({
+      id: 'local-glass-flat-bars',
+      name: 'Glass, flat bars',
+      version: 1,
+      tokens: { surface: 'glass', radius: 16, recipes: { track: 'inset' } },
+      modules: { bar: { bar_style: 'dots' } },
+    });
+    const c2 = cfg('local-glass-flat-bars');
+    expect(ucThemeService.getRecipes(c2).track).toBe('inset');
+    expect(ucThemeService.resolveModuleStyle(c2, 'bar', 'bar_style', 'theme', 'flat')).toBe('dots');
+    expect(ucThemeService.resolveModuleStyle(c2, 'slider_control', 'slider_style', 'theme', 'flat')).toBe('inset');
+    // a recipe the role cannot render reads as flat for that role
+    ucThemeService.saveToLibrary({
+      id: 'local-dotty',
+      name: 'Dotty',
+      version: 1,
+      tokens: { surface: 'flat', radius: 12, recipes: { control: 'dots' as any, track: 'dots' } },
+    });
+    const c3 = cfg('local-dotty');
+    expect(ucThemeService.getRecipes(c3)).toEqual({ control: 'flat', track: 'dots', fill: 'flat', pane: 'flat' });
+    expect(ucThemeService.resolveModuleStyle(c3, 'button', 'style', 'theme', 'flat')).toBe('flat');
+    // HA Native: flat everywhere, i.e. every module's own default
+    expect(ucThemeService.getRecipes(cfg())).toEqual({ control: 'flat', track: 'flat', fill: 'flat', pane: 'flat' });
+  });
+
+  it('host vars expose the recipe per role', () => {
+    const vars = ucThemeService.getHostVars(METALLIC_THEME);
+    expect(vars['--uc-recipe-control']).toBe('metallic');
+    expect(vars['--uc-recipe-pane']).toBe('inset');
+    expect(ucThemeService.getHostVars(GLASS_THEME)['--uc-recipe-track']).toBe('glass');
+  });
 });
 
 describe('built-ins', () => {

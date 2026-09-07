@@ -7,6 +7,7 @@ import { localize } from '../localize/localize';
 import { EntityIconService } from '../services/entity-icon-service';
 import { formatEntityState } from '../utils/number-format';
 import { resolveThemedModuleStyle, withThemedStyles } from '../services/uc-theme-service';
+import { getSliderSurfaceCss } from '../utils/uc-surface-recipes';
 
 export class UltraSliderControlModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -2517,109 +2518,17 @@ export class UltraSliderControlModule extends BaseUltraModule {
       if (barSliderRadius === 'square') borderRadius = '0';
       else if (barSliderRadius === 'pill') borderRadius = `${barSliderHeight / 2}px`;
 
-      switch (barSliderStyle) {
-        case 'flat':
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-          `;
-          break;
-        case 'glossy':
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-          `;
-          overlayContent = `
-            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1) 100%);
-          `;
-          break;
-        case 'glass': {
-          containerStyles = `
-            background: transparent;
-            border-radius: ${borderRadius};
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          `;
-          overlayContent = `
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(${barGlassBlurAmount}px);
-          `;
-          break;
-        }
-        case 'minimal':
-          containerStyles = `
-            background: ${trackColor};
-            border-radius: var(--uc-r-10, 10px);
-          `;
-          overlayContent = overlayFillSnippet;
-          break;
-        case 'embossed':
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 -2px 4px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.2);
-          `;
-          overlayContent = `
-            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, transparent 40%, rgba(0, 0, 0, 0.15) 100%);
-          `;
-          break;
-        case 'inset':
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 -1px 2px rgba(255, 255, 255, 0.05);
-          `;
-          break;
-        case 'gradient-overlay':
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-          `;
-          overlayContent = `
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%, rgba(0, 0, 0, 0.15) 100%);
-          `;
-          break;
-        case 'neon-glow': {
-          // Neon glow uses a blurred duplicate of the bar's background placed behind it,
-          // so the glow naturally follows gradients (RGB, color_temp) and solid fills alike.
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-          `;
-          break;
-        }
-        case 'outline':
-          containerStyles = `
-            background: transparent;
-            border-radius: ${borderRadius};
-            border: 2px solid ${gradient};
-          `;
-          overlayContent = overlayFillSnippet;
-          break;
-        case 'metallic':
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          `;
-          overlayContent = `
-            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(0, 0, 0, 0.05) 55%, rgba(255, 255, 255, 0.1) 100%);
-          `;
-          break;
-        case 'neumorphic':
-          containerStyles = `
-            background: ${trackColor};
-            border-radius: ${borderRadius};
-            box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.08);
-          `;
-          overlayContent = overlayFillSnippet;
-          break;
-        default:
-          containerStyles = `
-            background: ${baseBackground};
-            border-radius: ${borderRadius};
-          `;
+      {
+        const surface = getSliderSurfaceCss(barSliderStyle, {
+          trackColor,
+          fill: gradient,
+          baseBackground,
+          borderRadius,
+          overlayFillSnippet,
+          glassBlur: barGlassBlurAmount,
+        });
+        containerStyles = surface.container;
+        overlayContent = surface.overlay;
       }
 
       if (isCustomGradientFill && !overlayContent) {
@@ -2884,6 +2793,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
               : ''}
             <div
               class="slider-track-container uc-slider-track"
+              data-uc-surface="${barSliderStyle}"
+              data-uc-role="track"
               style="
                 position: relative;
                 height: ${containerHeight};

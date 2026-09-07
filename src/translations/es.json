@@ -5447,7 +5447,15 @@
       "open_builder_short": "Theme builder",
       "open_in_builder": "Open in theme builder",
       "builder_title": "Full theme builder with live previews on ultracard.io",
-      "builder_hint": "Want to make your own? The theme builder on ultracard.io has live previews for every control, and finished themes sync straight back here."
+      "builder_hint": "Want to make your own? The theme builder on ultracard.io has live previews for every control, and finished themes sync straight back here.",
+      "editor_module_recipe": "Theme surface",
+      "editor_recipes": "Surfaces",
+      "editor_recipes_hint": "How controls, tracks, fills and inner panes are painted for modules that follow the theme. Leave on \"From surface\" to derive from the surface above; Module defaults below can still override one module.",
+      "editor_recipe_from_surface": "From surface",
+      "editor_recipe_control": "Controls (buttons, chips)",
+      "editor_recipe_track": "Tracks (bars, sliders)",
+      "editor_recipe_fill": "Fills (bar and slider fill)",
+      "editor_recipe_pane": "Panes (rows, tiles)"
     },
     "submit_theme": {
       "create_title": "Share your theme",

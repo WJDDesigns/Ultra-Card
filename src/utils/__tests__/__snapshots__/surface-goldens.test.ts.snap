@@ -1,0 +1,1099 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`surface goldens > bar dashed gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); border-radius: 0 10px 10px 0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar dashed gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); mask-composite: intersect; -webkit-mask-composite: source-in; border-radius: 0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar dashed gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); border-radius: 0 10px 10px 0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar dashed gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); mask-composite: intersect; -webkit-mask-composite: source-in; border-radius: 0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar dots gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".dots-container {display:flex;align-items:center;justify-content:space-between;width:100%;height:100%;padding:0 4px;box-sizing:border-box;flex-direction:row;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar dots gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".dots-container {display:flex;align-items:center;justify-content:space-between;width:100%;height:100%;padding:0 4px;box-sizing:border-box;flex-direction:row;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar dots gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".dots-container {display:flex;align-items:center;justify-content:space-between;width:100%;height:100%;padding:0 4px;box-sizing:border-box;flex-direction:row;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(242, 13, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(230, 26, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(219, 36, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(207, 48, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(194, 61, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(181, 74, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(171, 84, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(158, 97, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(145, 110, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(133, 122, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(122, 133, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(110, 145, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(97, 158, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(84, 171, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(74, 181, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(61, 194, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(48, 207, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(36, 219, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(26, 230, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(13, 242, 0, 1.000);flex-shrink:0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar dots gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".dots-container {display:flex;align-items:center;justify-content:space-between;width:100%;height:100%;padding:0 4px;box-sizing:border-box;flex-direction:row;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(232, 23, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(209, 46, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(191, 64, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(166, 89, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(143, 112, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(120, 135, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(102, 153, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(79, 176, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(56, 199, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(33, 222, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:rgba(13, 242, 0, 1.000);flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar embossed gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar embossed gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar embossed gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar embossed gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar flat gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar flat gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar flat gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar flat gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glass gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border-radius: 8px; position: relative;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glass gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border-radius: 8px; position: relative;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glass gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border-radius: 8px;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glass gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border-radius: 8px;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glossy gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3, #2196f3 50%, rgba(0,0,0,0.1) 51%, #2196f3); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glossy gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3, #2196f3 50%, rgba(0,0,0,0.1) 51%, #2196f3); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glossy gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.1) 51%, rgba(0,0,0,0.05) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar glossy gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.1) 51%, rgba(0,0,0,0.05) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar gradient-overlay gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3 0%, rgba(255,255,255,0) 100% );}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar gradient-overlay gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3 0%, rgba(255,255,255,0) 100% );}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar gradient-overlay gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar gradient-overlay gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar inset gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar inset gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar inset gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar inset gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar metallic gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, #2196f3 20%, #2196f3 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar metallic gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, #2196f3 20%, #2196f3 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar metallic gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar metallic gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
+  ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar minimal gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 32px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
+  ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: #2196f3; transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
+  ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 100%, calc(100% - 12px)); width: 24px; height: 24px; background: #2196f3; border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar minimal gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 32px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
+  ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: #2196f3; transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
+  ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 55.00000000000001%, calc(100% - 12px)); width: 24px; height: 24px; background: #2196f3; border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar minimal gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 32px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
+  ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
+  ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 100%, calc(100% - 12px)); width: 24px; height: 24px; background: #00ff00; border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar minimal gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 32px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
+  ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
+  ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 55.00000000000001%, calc(100% - 12px)); width: 24px; height: 24px; background: rgba(115, 140, 0, 1.000); border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neon-glow gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #2196f3 70%, transparent), 0 0 14px 6px color-mix(in srgb, #2196f3 50%, transparent), 0 0 20px 10px color-mix(in srgb, #2196f3 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neon-glow gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #2196f3 70%, transparent), 0 0 14px 6px color-mix(in srgb, #2196f3 50%, transparent), 0 0 20px 10px color-mix(in srgb, #2196f3 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neon-glow gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #00ff00 70%, transparent), 0 0 14px 6px color-mix(in srgb, #00ff00 50%, transparent), 0 0 20px 10px color-mix(in srgb, #00ff00 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neon-glow gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #00ff00 70%, transparent), 0 0 14px 6px color-mix(in srgb, #00ff00 50%, transparent), 0 0 20px 10px color-mix(in srgb, #00ff00 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neumorphic gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neumorphic gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neumorphic gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar neumorphic gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar outline gradient=false sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border: none; box-sizing: border-box; position: relative; margin: 0; width: 100%; transition: width 0.3s ease;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar outline gradient=false sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border: none; box-sizing: border-box; position: relative; margin: 0; width: 55.00000000000001%; transition: width 0.3s ease;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar outline gradient=true sensor.full 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border: none; box-sizing: border-box; position: relative; margin: 0; width: 100%; transition: width 0.3s ease;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > bar outline gradient=true sensor.level 1`] = `
+[
+  ".bar-module-preview {padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border: none; border-radius: 10px; position: relative; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: 20; max-width: 100%; max-height: none; min-width: 0; min-height: auto; overflow: visible; box-sizing: border-box; clip-path: none; backdrop-filter: none; box-shadow: none; color: var(--primary-text-color); font-family: inherit; font-size: inherit; text-align: inherit; line-height: inherit; letter-spacing: normal; text-shadow: none; display: flex; flex-direction: column}",
+  ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
+  ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
+  ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border: none; box-sizing: border-box; position: relative; margin: 0; width: 55.00000000000001%; transition: width 0.3s ease;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+]
+`;
+
+exports[`surface goldens > button embossed 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.embossed {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)}",
+]
+`;
+
+exports[`surface goldens > button flat 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.flat {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: none}",
+]
+`;
+
+exports[`surface goldens > button glass 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.glass {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25)}",
+]
+`;
+
+exports[`surface goldens > button glossy 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.glossy {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), #2196f3; border: none}",
+]
+`;
+
+exports[`surface goldens > button gradient-overlay 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.gradient-overlay {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), #2196f3; border: none}",
+]
+`;
+
+exports[`surface goldens > button inset 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.inset {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: inset 0 2px 6px rgba(0,0,0,0.35)}",
+]
+`;
+
+exports[`surface goldens > button metallic 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.metallic {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); border: 1px solid #bbb}",
+]
+`;
+
+exports[`surface goldens > button neon-glow 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.neon-glow {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: 0 0 10px #2196f3, 0 0 20px #2196f3}",
+]
+`;
+
+exports[`surface goldens > button neumorphic 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.neumorphic {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: 4px 4px 10px rgba(0,0,0,0.18), -4px -4px 10px rgba(255,255,255,0.12)}",
+]
+`;
+
+exports[`surface goldens > button outline 1`] = `
+[
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
+  ".ultra-button.outline {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: transparent; border: 2px solid #2196f3}",
+]
+`;
+
+exports[`surface goldens > popup trigger embossed 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: var(--primary-color); border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)}",
+]
+`;
+
+exports[`surface goldens > popup trigger flat 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: var(--primary-color); border: none; box-shadow: none}",
+]
+`;
+
+exports[`surface goldens > popup trigger glass 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: var(--primary-color); border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(6px)}",
+]
+`;
+
+exports[`surface goldens > popup trigger glossy 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), var(--primary-color); border: none}",
+]
+`;
+
+exports[`surface goldens > popup trigger gradient-overlay 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), var(--primary-color); border: none}",
+]
+`;
+
+exports[`surface goldens > popup trigger inset 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: var(--primary-color); border: none; box-shadow: inset 0 2px 6px rgba(0,0,0,0.35)}",
+]
+`;
+
+exports[`surface goldens > popup trigger metallic 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); border: 1px solid #bbb}",
+]
+`;
+
+exports[`surface goldens > popup trigger neon-glow 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: var(--primary-color); border: none; box-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color)}",
+]
+`;
+
+exports[`surface goldens > popup trigger neumorphic 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: var(--primary-color); border: none; box-shadow: 4px 4px 10px rgba(0,0,0,0.18), -4px -4px 10px rgba(255,255,255,0.12)}",
+]
+`;
+
+exports[`surface goldens > popup trigger outline 1`] = `
+[
+  "div {}",
+  ".swiper-no-swiping {display: inline-flex; justify-content: center; width: 100%; pointer-events: auto;}",
+  ".swiper-no-swiping.popup-trigger {display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 24px; color: white; border-radius: var(--uc-r-8, 8px); cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; min-height: 40px; background: transparent; border: 2px solid var(--primary-color)}",
+]
+`;
+
+exports[`surface goldens > slider_control embossed 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, rgba(var(--rgb-primary-color), 0.25) 0%, rgba(var(--rgb-primary-color), 0.25) 100%); border-radius: 10px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 -2px 4px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.2); transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, transparent 40%, rgba(0, 0, 0, 0.15) 100%); border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control flat 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, rgba(var(--rgb-primary-color), 0.25) 0%, rgba(var(--rgb-primary-color), 0.25) 100%); border-radius: 10px; transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control glass 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: transparent; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(8px); border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control glossy 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, rgba(var(--rgb-primary-color), 0.25) 0%, rgba(var(--rgb-primary-color), 0.25) 100%); border-radius: 10px; box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1) 100%); border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control gradient-overlay 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, rgba(var(--rgb-primary-color), 0.25) 0%, rgba(var(--rgb-primary-color), 0.25) 100%); border-radius: 10px; transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%, rgba(0, 0, 0, 0.15) 100%); border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control inset 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, rgba(var(--rgb-primary-color), 0.25) 0%, rgba(var(--rgb-primary-color), 0.25) 100%); border-radius: 10px; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 -1px 2px rgba(255, 255, 255, 0.05); transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control metallic 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, rgba(var(--rgb-primary-color), 0.25) 0%, rgba(var(--rgb-primary-color), 0.25) 100%); border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(0, 0, 0, 0.05) 55%, rgba(255, 255, 255, 0.1) 100%); border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control minimal 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 8px; width: 100%; background: rgba(var(--rgb-primary-color), 0.25); border-radius: var(--uc-r-10, 10px); transition: all 200ms ease; overflow: visible; display: flex; align-items: center; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, transparent 0%, transparent 100%); opacity: 0.8; border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control neon-glow 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative; overflow: visible;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative; overflow: visible;}",
+  "div {position: absolute; inset: 0; background: var(--primary-color); border-radius: 10px; filter: blur(10px) saturate(1.5); opacity: 0.6; pointer-events: none; z-index: 0; transition: background 200ms ease;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, rgba(var(--rgb-primary-color), 0.25) 0%, rgba(var(--rgb-primary-color), 0.25) 100%); border-radius: 10px; transition: all 200ms ease; overflow: hidden; --slider-height: 55px; z-index: 1;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control neumorphic 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: rgba(var(--rgb-primary-color), 0.25); border-radius: 10px; box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.08); transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, transparent 0%, transparent 100%); opacity: 0.8; border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > slider_control outline 1`] = `
+[
+  ".slider-control-container.uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {border-radius: 10px; padding: 16px; position: relative;}",
+  ".uc-slider-layout.uc-layout-overlay.uc-orientation-horizontal {position: relative;}",
+  ".uc-slider-items {display: flex; flex-direction: column; gap: 8px; width: 100%;}",
+  "div {position: relative;}",
+  ".slider-track-container.uc-slider-track {position: relative; height: 55px; width: 100%; background: transparent; border-radius: 10px; border: 2px solid var(--primary-color); transition: all 200ms ease; overflow: hidden; --slider-height: 55px;}",
+  "div {position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color) 0%, transparent 0%, transparent 100%); opacity: 0.8; border-radius: 10px; pointer-events: none; z-index: 1; transition: width 80ms ease-out, height 80ms ease-out;}",
+  ".fill-slider {-webkit-appearance: none; appearance: none; width: 100%; height: 100%; background: transparent; outline: none; cursor: pointer; position: absolute; top: 0; left: 0; z-index: 2;}",
+  "div {position: absolute; inset: 0; pointer-events: none; z-index: 3;}",
+  "div {position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  "ha-icon {--mdc-icon-size: 24px; color: var(--primary-text-color); pointer-events: auto; cursor: pointer;}",
+  ".uc-slider-name {font-size: 14px; color: var(--primary-text-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;}",
+  "div {position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px;}",
+  ".uc-slider-value {font-size: 14px; color: var(--primary-text-color); font-weight: 600;}",
+]
+`;
+
+exports[`surface goldens > spinbox embossed 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15);}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15);}",
+]
+`;
+
+exports[`surface goldens > spinbox flat 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: none;}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: none;}",
+]
+`;
+
+exports[`surface goldens > spinbox glass 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25);}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25);}",
+]
+`;
+
+exports[`surface goldens > spinbox glossy 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), var(--primary-color); border: none;}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), var(--primary-color); border: none;}",
+]
+`;
+
+exports[`surface goldens > spinbox gradient-overlay 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), var(--primary-color); border: none;}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), var(--primary-color); border: none;}",
+]
+`;
+
+exports[`surface goldens > spinbox inset 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);}",
+]
+`;
+
+exports[`surface goldens > spinbox metallic 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); border: 1px solid #bbb; color: #333;}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); border: 1px solid #bbb; color: #333;}",
+]
+`;
+
+exports[`surface goldens > spinbox neon-glow 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);}",
+]
+`;
+
+exports[`surface goldens > spinbox neumorphic 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: 4px 4px 10px rgba(0,0,0,0.18), -4px -4px 10px rgba(255,255,255,0.12);}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: var(--primary-color); border: none; box-shadow: 4px 4px 10px rgba(0,0,0,0.18), -4px -4px 10px rgba(255,255,255,0.12);}",
+]
+`;
+
+exports[`surface goldens > spinbox outline 1`] = `
+[
+  ".spinbox-module-container {}",
+  ".spinbox-container {display: flex; align-items: center; justify-content: center;}",
+  "div {display: flex; flex-direction: row; align-items: center; gap: 12px;}",
+  "div {}",
+  ".spinbox-button.decrement {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: transparent; border: 2px solid var(--primary-color); color: var(--primary-color);}",
+  "div {}",
+  ".spinbox-value {color: var(--primary-text-color); font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; min-width: 60px;}",
+  ".spinbox-button.increment {background: var(--primary-color); color: white; padding: 0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: none; background: transparent; border: 2px solid var(--primary-color); color: var(--primary-color);}",
+]
+`;
