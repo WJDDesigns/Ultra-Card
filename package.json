@@ -40,7 +40,8 @@
     "previews": "node scripts/capture-previews.mjs",
     "previews:check": "node scripts/capture-previews.mjs --strict",
     "build:demo": "webpack -c webpack.demo.config.js",
-    "website:manifest": "node scripts/build-website-manifest.mjs"
+    "website:manifest": "node scripts/build-website-manifest.mjs",
+    "themes:export": "node scripts/export-builtin-themes.mjs"
   },
   "keywords": [
     "home-assistant",

@@ -1137,6 +1137,20 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     panel.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f && /json$/i.test(f.name)) { e.preventDefault(); var rd = new FileReader(); rd.onload = function () { importDefinition(String(rd.result)); }; rd.readAsText(f); } });
   }
 
+  // The gallery hands built-in themes over through sessionStorage (they are
+  // not posts, so there is no id to ?fork=). One-shot: cleared once read.
+  function sessionImport() {
+    if (sessionImport.cached) return sessionImport.cached;
+    try {
+      var raw = sessionStorage.getItem('uc_theme_builder_import');
+      if (!raw) return null;
+      sessionStorage.removeItem('uc_theme_builder_import');
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.definition || !parsed.definition.tokens) return null;
+      sessionImport.cached = parsed;
+      return parsed;
+    } catch (e) { return null; }
+  }
   async function boot() {
     buildWall(); buildStarters(); buildRecipes(); buildModules(); bindInputs(); wire();
     document.getElementById('tb-tint').addEventListener('change', function (e) {
@@ -1162,6 +1176,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
         var src = await api('/themes/' + FORK_ID);
         importDefinition(src.definition || src, { fork: true });
         showNotice('Remixing "' + (src.name || 'theme') + '" by ' + (src.author || 'unknown') + '. Change what you like and submit it as your own.');
+      } else if (/[?&]import=session\b/.test(location.search) && sessionImport()) {
+        var handoff = sessionImport();
+        importDefinition(handoff.definition, { fork: true });
+        showNotice('Starting from the built-in "' + (handoff.name || 'theme') + '". Change what you like and submit it as your own.');
       } else if (loadDraft()) {
         showNotice('Restored your unsaved draft.');
         setTimeout(function () { showNotice(''); }, 4000);

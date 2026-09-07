@@ -528,6 +528,8 @@ class UltraCardThemeAuthoring {
                 $back = add_query_arg('id', (int) $_GET['id'], $back);
             } elseif (!empty($_GET['fork'])) {
                 $back = add_query_arg('fork', (int) $_GET['fork'], $back);
+            } elseif (isset($_GET['import']) && $_GET['import'] === 'session') {
+                $back = add_query_arg('import', 'session', $back);
             }
             wp_safe_redirect(wp_login_url($back));
             exit;
@@ -610,6 +612,11 @@ class UltraCardThemeAuthoring {
             'callback'            => array($this, 'moderation_queue'),
             'permission_callback' => array($this, 'check_moderator'),
         ));
+        register_rest_route($ns, '/themes/builtin', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'list_builtin_themes'),
+            'permission_callback' => '__return_true',
+        ));
         register_rest_route($ns, '/themes/(?P<id>\d+)', array(
             array(
                 'methods'             => 'GET',
@@ -654,6 +661,56 @@ class UltraCardThemeAuthoring {
             'callback'            => array($this, 'track_download'),
             'permission_callback' => '__return_true',
         ));
+    }
+
+    /**
+     * GET /themes/builtin — the themes that ship inside the card, exported by
+     * the card build to website/builtin-themes.json and delivered through the
+     * website harness (same channel/ref as the page fragments). They are not
+     * posts, so there are no ratings or download counts; the gallery lists
+     * them under Default next to the official catalog entries.
+     */
+    public function list_builtin_themes($request) {
+        $force = (bool) $request->get_param('refresh') && current_user_can('manage_options');
+        if (!class_exists('UltraCardWebsiteHarness')) {
+            return new WP_Error('uc_no_harness', 'Website harness is not loaded.', array('status' => 503));
+        }
+        $asset = UltraCardWebsiteHarness::instance()->fetch_asset('builtin-themes', 'website/builtin-themes.json', $force);
+        $body = is_array($asset) && $asset['html'] !== '' ? json_decode($asset['html'], true) : null;
+        if (!is_array($body) || !isset($body['themes']) || !is_array($body['themes'])) {
+            return new WP_Error(
+                'uc_builtin_unavailable',
+                $asset['error'] ? 'Could not load built-in themes: ' . $asset['error'] : 'Built-in themes are not available on this channel yet.',
+                array('status' => 502)
+            );
+        }
+        $themes = array();
+        foreach ($body['themes'] as $def) {
+            if (!is_array($def) || empty($def['id']) || empty($def['tokens'])) {
+                continue;
+            }
+            $def['source'] = 'builtin';
+            $themes[] = array(
+                'id'          => 'builtin-' . sanitize_title($def['id']),
+                'catalog_id'  => (string) $def['id'],
+                'name'        => isset($def['name']) ? (string) $def['name'] : (string) $def['id'],
+                'description' => isset($def['description']) ? (string) $def['description'] : '',
+                'tags'        => isset($def['tags']) && is_array($def['tags']) ? array_values(array_map('strval', $def['tags'])) : array(),
+                'preview'     => isset($def['preview']) ? (string) $def['preview'] : '',
+                'version'     => isset($def['version']) ? (int) $def['version'] : 1,
+                'author'      => isset($def['author']) && $def['author'] !== '' ? (string) $def['author'] : 'Ultra Card',
+                'source'      => 'builtin',
+                'definition'  => $def,
+            );
+        }
+        $response = rest_ensure_response(array(
+            'themes'       => $themes,
+            'total'        => count($themes),
+            'card_version' => isset($body['cardVersion']) ? (string) $body['cardVersion'] : '',
+            'sha'          => $asset['sha'],
+        ));
+        $response->header('Cache-Control', 'public, max-age=600');
+        return $response;
     }
 
     /**

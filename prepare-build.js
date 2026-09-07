@@ -157,7 +157,24 @@ function syncTranslationFiles() {
   }
 }
 
+/**
+ * Publish the built-in themes for ultracard.io/themes/ (served via the
+ * website harness). Kept here so the JSON can never drift from the source.
+ */
+function exportBuiltinThemes() {
+  console.log('🎨 Exporting built-in themes for the website...');
+  try {
+    const { execFileSync } = require('child_process');
+    execFileSync(process.execPath, [path.resolve(__dirname, 'scripts/export-builtin-themes.mjs')], {
+      stdio: 'inherit',
+    });
+  } catch (error) {
+    console.error('   ❌ Built-in theme export failed:', error.message || error);
+  }
+}
+
 // Run the synchronization
 syncVersion();
 syncTranslationFiles();
+exportBuiltinThemes();
 console.log('\n✨ Pre-build checks complete!\n');

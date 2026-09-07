@@ -316,6 +316,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   function surfaceIcon(s) { return SURFACE[s] ? SURFACE[s][1] : 'mdi-palette-outline'; }
 
   var state = { all: [], q: '', source: 'all', surface: 'all', sort: 'downloads', mode: 'light', open: null };
+  var CARD_VERSION = '';
   var grid = document.getElementById('tg-grid');
 
   function api(path, o) {
@@ -341,8 +342,11 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   function num(n) { n = Number(n) || 0; return n >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'k' : String(n); }
 
   // ---------------------------------------------------------------- filters
+  function isBuiltin(t) { return t.source === 'builtin'; }
+  function isDefault(t) { return t.source === 'builtin' || t.source === 'official'; }
   function matches(t) {
-    if (state.source !== 'all' && t.source !== state.source) return false;
+    if (state.source === 'official' && !isDefault(t)) return false;
+    if (state.source === 'community' && t.source !== 'community') return false;
     if (state.surface !== 'all' && surfaceOf(t) !== state.surface) return false;
     if (!state.q) return true;
     return [t.name, t.author, t.description, surfaceOf(t)].concat(t.tags || []).join(' ').toLowerCase().indexOf(state.q) >= 0;
@@ -350,6 +354,9 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   function filtered() {
     var list = state.all.filter(matches);
     list.sort(function (a, b) {
+      // Built-ins have no downloads or ratings; they lead like in the Hub.
+      if (isBuiltin(a) !== isBuiltin(b)) return isBuiltin(a) ? -1 : 1;
+      if (isBuiltin(a)) return String(a.order).localeCompare(String(b.order), undefined, { numeric: true });
       if (state.sort === 'downloads') return (b.downloads || 0) - (a.downloads || 0);
       if (state.sort === 'rating') return ((b.rating || 0) - (a.rating || 0)) || ((b.rating_count || 0) - (a.rating_count || 0));
       if (state.sort === 'title') return String(a.name).localeCompare(String(b.name));
@@ -375,7 +382,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 
   function renderStats() {
     var official = 0, downloads = 0;
-    state.all.forEach(function (t) { if (t.source === 'official') official++; downloads += Number(t.downloads) || 0; });
+    state.all.forEach(function (t) { if (isDefault(t)) official++; downloads += Number(t.downloads) || 0; });
     root.querySelector('[data-stat="total"]').textContent = String(state.all.length);
     root.querySelector('[data-stat="community"]').textContent = String(state.all.length - official);
     root.querySelector('[data-stat="official"]').textContent = String(official);
@@ -384,6 +391,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 
   // ------------------------------------------------------------------- grid
   function badge(t) {
+    if (isBuiltin(t)) return '<span class="tg-badge tg-badge-official"><i class="mdi mdi-package-variant-closed"></i> Built in</span>';
     return t.source === 'official'
       ? '<span class="tg-badge tg-badge-official"><i class="mdi mdi-shield-check"></i> Default</span>'
       : '<span class="tg-badge tg-badge-community">Community</span>';
@@ -394,11 +402,14 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     return '<div class="tg-pv-ph"><i class="mdi ' + surfaceIcon(surfaceOf(t)) + '"></i><span>' + esc(surfaceLabel(surfaceOf(t))) + '</span></div>';
   }
   function card(t) {
-    var official = t.source === 'official', s = surfaceOf(t);
+    var official = isDefault(t), s = surfaceOf(t);
     var meta = '';
     if (t.author) meta += '<span><i class="mdi mdi-account-outline"></i> ' + esc(t.author) + '</span>';
-    meta += '<span title="Downloads"><i class="mdi mdi-download-outline"></i> ' + esc(num(t.downloads)) + '</span>';
-    if (t.rating_count) meta += '<span title="' + esc(ratingTitle(t)) + '">' + stars(t.rating) + ' ' + esc(ratingText(t)) + '</span>';
+    if (isBuiltin(t)) meta += '<span title="Installed with Ultra Card, no download needed"><i class="mdi mdi-check-circle-outline"></i> Ships with Ultra Card</span>';
+    else {
+      meta += '<span title="Downloads"><i class="mdi mdi-download-outline"></i> ' + esc(num(t.downloads)) + '</span>';
+      if (t.rating_count) meta += '<span title="' + esc(ratingTitle(t)) + '">' + stars(t.rating) + ' ' + esc(ratingText(t)) + '</span>';
+    }
     return '<article class="tg-card" id="theme-' + esc(t.id) + '" tabindex="0" role="button" data-id="' + esc(t.id) + '">' +
       '<div class="tg-pv">' + preview(t) + '<div class="tg-card-badge">' + badge(t) + '</div></div>' +
       '<div class="tg-card-body">' +
@@ -419,6 +430,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 
   function byId(id) { return state.all.find(function (t) { return String(t.id) === String(id); }); }
   function track(t) {
+    if (isBuiltin(t)) return;
     api('/themes/' + t.id + '/track-download', { method: 'POST' }).then(function (r) {
       if (r && typeof r.downloads === 'number') { t.downloads = r.downloads; render(); if (state.open === t) renderMeta(t); renderStats(); }
     }).catch(function () {});
@@ -467,9 +479,12 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   function renderMeta(t) {
     var meta = '';
     if (t.author) meta += '<span><i class="mdi mdi-account-outline"></i> ' + esc(t.author) + '</span>';
-    meta += '<span><i class="mdi mdi-download-outline"></i> ' + esc(num(t.downloads)) + ' download' + (Number(t.downloads) === 1 ? '' : 's') + '</span>';
-    meta += '<span title="' + esc(ratingTitle(t)) + '">' + stars(t.rating) + (t.rating_count ? ' ' + esc(ratingText(t)) : ' Not rated yet') + '</span>';
-    meta += '<span><i class="mdi mdi-tag-outline"></i> v' + esc(t.version || 1) + '</span>';
+    if (isBuiltin(t)) meta += '<span><i class="mdi mdi-check-circle-outline"></i> Ships with Ultra Card' + (CARD_VERSION ? ' ' + esc(CARD_VERSION) : '') + '</span>';
+    else {
+      meta += '<span><i class="mdi mdi-download-outline"></i> ' + esc(num(t.downloads)) + ' download' + (Number(t.downloads) === 1 ? '' : 's') + '</span>';
+      meta += '<span title="' + esc(ratingTitle(t)) + '">' + stars(t.rating) + (t.rating_count ? ' ' + esc(ratingText(t)) : ' Not rated yet') + '</span>';
+      meta += '<span><i class="mdi mdi-tag-outline"></i> v' + esc(t.version || 1) + '</span>';
+    }
     document.getElementById('tg-m-meta').innerHTML = meta;
   }
   function syncModeButtons() {
@@ -477,11 +492,15 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   }
   function openModal(t) {
     state.open = t; modalOpenedAt = Date.now();
-    var official = t.source === 'official', s = surfaceOf(t);
+    var official = isDefault(t), s = surfaceOf(t);
     document.getElementById('tg-m-title').textContent = t.name || 'Theme';
     document.getElementById('tg-m-icon').className = 'tg-modal-icon mdi ' + (official ? 'mdi-shield-check official' : 'mdi-palette-swatch-outline');
     document.getElementById('tg-m-badges').innerHTML = badge(t) + '<span class="tg-badge tg-badge-surface"><i class="mdi ' + surfaceIcon(s) + '"></i> ' + esc(surfaceLabel(s)) + '</span>';
     document.getElementById('tg-m-desc').textContent = t.description || 'No description provided.';
+    document.getElementById('tg-m-remix').innerHTML = '<i class="mdi mdi-source-fork"></i> ' + (isBuiltin(t) ? 'Open in builder' : 'Remix in builder');
+    document.querySelector('#tg-m-code-wrap .tg-modal-code-hint').textContent = isBuiltin(t)
+      ? 'Already in Home Assistant: Ultra Card Hub › Themes › Default themes. The JSON is here if you want to study it or start your own from it.'
+      : 'Paste into Home Assistant: Ultra Card Hub › Themes › Import. Or press Install on this theme in the Hub, it is listed there too.';
     renderMeta(t);
     document.getElementById('tg-m-tags').innerHTML = (t.tags || []).filter(Boolean).slice(0, 12).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
     renderRate(t);
@@ -504,6 +523,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   }
   function renderRate(t) {
     var box = document.getElementById('tg-m-rate');
+    if (isBuiltin(t)) { box.innerHTML = '<span class="ucp-hint"><i class="mdi mdi-package-variant-closed"></i> Built-in theme. It ships with every Ultra Card install and is not rated; ratings and download counts apply to community and official catalog themes.</span>'; return; }
     if (!USER) { box.innerHTML = '<span>Rate this theme</span>' + stars(0) + '<a class="ucp-btn ucp-btn-ghost ucp-btn-sm" href="' + esc(LOGIN) + '">Sign in to rate</a>'; return; }
     if (t.author_id === USER) { box.innerHTML = '<span class="ucp-hint">This is your theme. Ratings come from other members.</span>'; return; }
     var mine = t.my_rating || 0;
@@ -550,7 +570,14 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   document.getElementById('tg-m-copy-sm').addEventListener('click', function () { if (state.open) copyJson(state.open, this); });
   document.getElementById('tg-m-download').addEventListener('click', function () { if (state.open) downloadJson(state.open, this); });
   document.getElementById('tg-m-download-sm').addEventListener('click', function () { if (state.open) downloadJson(state.open, this); });
-  document.getElementById('tg-m-remix').addEventListener('click', function () { if (state.open) location.href = BUILDER + '?fork=' + encodeURIComponent(state.open.id); });
+  document.getElementById('tg-m-remix').addEventListener('click', function () {
+    var t = state.open; if (!t) return;
+    if (!isBuiltin(t)) { location.href = BUILDER + '?fork=' + encodeURIComponent(t.id); return; }
+    // Built-ins are not posts, so there is nothing to ?fork=; hand the
+    // definition over through sessionStorage and let the builder import it.
+    try { sessionStorage.setItem('uc_theme_builder_import', JSON.stringify({ definition: t.definition, name: t.name, author: t.author })); } catch (e) {}
+    location.href = BUILDER + '?import=session';
+  });
 
   var search = document.getElementById('tg-search'), clear = document.getElementById('tg-search-clear');
   search.addEventListener('input', function () { state.q = (search.value || '').trim().toLowerCase(); clear.hidden = !state.q; render(); });
@@ -581,14 +608,24 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     grid.innerHTML = '<div class="tg-skel"></div><div class="tg-skel"></div><div class="tg-skel"></div>';
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { state.mode = 'dark'; syncModeButtons(); }
     try {
+      var builtinReq = api('/themes/builtin').catch(function () { return null; });
       var all = [], page = 1, pages = 1;
       do {
         var r = await api('/themes?per_page=100&orderby=downloads&page=' + page);
         all = all.concat(r.themes || []); pages = r.total_pages || 1; page++;
       } while (page <= pages && page <= 5);
+      var b = await builtinReq;
+      if (b && Array.isArray(b.themes)) {
+        CARD_VERSION = b.card_version ? 'v' + b.card_version : '';
+        b.themes.forEach(function (t, i) {
+          t.source = 'builtin'; t.order = i; t.downloads = 0; t.rating = 0; t.rating_count = 0; t.definition_partial = false;
+          t.tags = (t.tags || []).length ? t.tags : [surfaceOf(t)];
+        });
+        all = b.themes.concat(all);
+      }
       state.all = all;
       renderStats(); renderChips(); render();
-      var hash = /^#theme-(\d+)$/.exec(location.hash || '');
+      var hash = /^#theme-([\w-]+)$/.exec(location.hash || '');
       if (hash) { var t = byId(hash[1]); if (t) openModal(t); }
     } catch (e) {
       grid.innerHTML = '';
