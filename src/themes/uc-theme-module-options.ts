@@ -138,6 +138,18 @@ export const UC_THEME_MODULE_FIELDS: readonly UcThemeModuleField[] = [
   {
     moduleType: 'area_summary',
     moduleLabel: 'Area Summary',
+    key: 'accent_color',
+    label: 'Accent colour',
+    kind: 'select',
+    options: [
+      { value: 'var(--primary-color)', label: 'Primary' },
+      { value: 'var(--accent-color)', label: 'Accent' },
+      { value: 'var(--primary-text-color)', label: 'Text' },
+    ],
+  },
+  {
+    moduleType: 'area_summary',
+    moduleLabel: 'Area Summary',
     key: 'tile_border_radius',
     label: 'Tile radius (px)',
     kind: 'number',
@@ -177,5 +189,22 @@ export const UC_THEME_MODULE_FIELDS: readonly UcThemeModuleField[] = [
     label: 'Card style',
     kind: 'select',
     options: ['flat', 'elevated', 'outlined'].map(v => ({ value: v, label: titleCase(v) })),
+  },
+  {
+    moduleType: 'button_input',
+    moduleLabel: 'Button Input',
+    key: 'button_style',
+    label: 'Button style',
+    kind: 'select',
+    // Surface recipes (theme cascade) plus the historic fill modes.
+    options: surface(['filled', 'outlined', 'text']),
+  },
+  {
+    moduleType: 'light',
+    moduleLabel: 'Light',
+    key: 'button_style',
+    label: 'Button style',
+    kind: 'select',
+    options: surface(['filled', 'outlined', 'text']),
   },
 ];

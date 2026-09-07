@@ -5,6 +5,12 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ButtonInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { resolveThemedModuleStyle } from '../services/uc-theme-service';
+import { UC_CONTROL_RECIPES, surfaceAttrs } from '../utils/uc-surface-recipes';
+import {
+  controlRecipeFromButtonStyle,
+  resolveControlButtonStyleString,
+} from '../utils/uc-control-style-resolve';
 import '../components/ultra-color-picker';
 
 export class UltraButtonInputModule extends BaseUltraModule {
@@ -27,7 +33,8 @@ export class UltraButtonInputModule extends BaseUltraModule {
       type: 'button_input',
       button_label: '',
       button_icon: '',
-      button_style: 'filled',
+      // Defer to the active theme's control recipe (same as Button).
+      button_style: 'theme',
       font_size: 14,
       text_color: '#ffffff',
       button_color: 'var(--primary-color)',
@@ -40,7 +47,9 @@ export class UltraButtonInputModule extends BaseUltraModule {
   }
 
   private getButtonStyleOptions(lang: string): Array<{ value: string; label: string }> {
+    const title = (s: string) => s.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     return [
+      ...UC_CONTROL_RECIPES.map(v => ({ value: v, label: title(v) })),
       { value: 'filled', label: localize('editor.button_input.style_options.filled', lang, 'Filled') },
       { value: 'outlined', label: localize('editor.button_input.style_options.outlined', lang, 'Outlined') },
       { value: 'text', label: localize('editor.button_input.style_options.text', lang, 'Text Only') },
@@ -93,10 +102,30 @@ export class UltraButtonInputModule extends BaseUltraModule {
           <div class="field-group" style="margin-bottom:16px;">
             ${this.renderFieldSection(
               localize('editor.button_input.button_style', lang, 'Button Style'),
-              localize('editor.button_input.button_style_desc', lang, 'Visual style of the button'),
-              hass, { button_style: btnMod.button_style || 'filled' },
-              [this.selectField('button_style', this.getButtonStyleOptions(lang))],
-              (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+              localize(
+                'editor.button_input.button_style_desc',
+                lang,
+                'Visual style of the button. Theme inherits the card theme control recipe.'
+              ),
+              hass,
+              { button_style: btnMod.button_style || 'theme' },
+              [
+                this.selectField(
+                  'button_style',
+                  this.withThemeInheritOption(
+                    lang,
+                    config,
+                    'button_input',
+                    'button_style',
+                    'flat',
+                    this.getButtonStyleOptions(lang)
+                  )
+                ),
+              ],
+              (e: CustomEvent) => {
+                updateModule(e.detail.value);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
             )}
           </div>
         </div>
@@ -148,27 +177,30 @@ export class UltraButtonInputModule extends BaseUltraModule {
     const fontSize = btnMod.font_size ?? 14;
     const textColor = btnMod.text_color || '#ffffff';
     const buttonColor = btnMod.button_color || 'var(--primary-color)';
-    const style = btnMod.button_style || 'filled';
+    const style = resolveThemedModuleStyle(
+      config,
+      'button_input',
+      'button_style',
+      btnMod.button_style,
+      'flat'
+    );
+    const recipe = controlRecipeFromButtonStyle(style);
     const label = btnMod.button_label || entityState.attributes?.friendly_name || 'Press';
     const icon = btnMod.button_icon || '';
-    const containerStyles = this._buildContainerStyles(designProperties);
     const hoverEffectClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const mid = btnMod.id;
+    const surfaceCss = resolveControlButtonStyleString(style, {
+      background: buttonColor,
+      textColor,
+      hasCustomTextColor: !!btnMod.text_color,
+    });
+    const roleAttrs = surfaceAttrs(recipe as any, 'control');
 
     const handlePress = () => {
       if (!btnMod.entity || !hass) return;
       hass.callService('input_button', 'press', { entity_id: btnMod.entity });
     };
-
-    let bg: string, border: string, color: string;
-    if (style === 'outlined') {
-      bg = 'transparent'; border = `2px solid ${buttonColor}`; color = buttonColor;
-    } else if (style === 'text') {
-      bg = 'transparent'; border = 'none'; color = buttonColor;
-    } else {
-      bg = buttonColor; border = 'none'; color = textColor;
-    }
 
     return this.wrapWithAnimation(html`
       <style>
@@ -176,8 +208,9 @@ export class UltraButtonInputModule extends BaseUltraModule {
           display:inline-flex; align-items:center; justify-content:center; gap:8px;
           padding:12px 24px; border-radius:var(--uc-r-8, 8px); cursor:pointer; font-size:${fontSize}px;
           font-family:inherit; font-weight:500; transition:all .2s; position:relative;
-          overflow:hidden; background:${bg}; border:${border}; color:${color};
-          width:100%; box-sizing:border-box; --mdc-icon-size:${Math.min(24, fontSize + 4)}px;
+          overflow:hidden; width:100%; box-sizing:border-box;
+          --mdc-icon-size:${Math.min(24, fontSize + 4)}px;
+          ${surfaceCss}
         }
         .btn-input-${mid}:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.15); }
         .btn-input-${mid}:active { transform:translateY(0); opacity:.8; }
@@ -188,7 +221,11 @@ export class UltraButtonInputModule extends BaseUltraModule {
         @keyframes btn-ripple-${mid} { to { transform:scale(4); opacity:0; } }
       </style>
       <div class="${hoverEffectClass}" style="${designStyles}">
-        <button class="btn-input-${mid}" @click=${(e: Event) => {
+        <button
+          class="btn-input-${mid}"
+          data-uc-surface="${roleAttrs['data-uc-surface']}"
+          data-uc-role="${roleAttrs['data-uc-role']}"
+          @click=${(e: Event) => {
           handlePress();
           const btn = e.currentTarget as HTMLElement;
           const rect = btn.getBoundingClientRect();

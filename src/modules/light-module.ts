@@ -10,6 +10,13 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { simpleEntityMapper } from '../components/uc-simple-entity-mapper';
 import { entityMapper } from '../services/uc-entity-mapper';
 import { ucConfirmService } from '../services/uc-confirm-service';
+import { resolveThemedModuleStyle } from '../services/uc-theme-service';
+import { UC_CONTROL_RECIPES, surfaceAttrs } from '../utils/uc-surface-recipes';
+import {
+  controlRecipeFromButtonStyle,
+  isTextLikeButtonStyle,
+  resolveControlButtonStyleString,
+} from '../utils/uc-control-style-resolve';
 
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
@@ -51,8 +58,8 @@ export interface LightPreset {
   use_light_color_for_button?: boolean | undefined; // Use current light color for button
   use_icon_color_for_text?: boolean | undefined; // Use icon color for text
   smart_color?: boolean | undefined; // Auto-contrast text based on button background
-  // Per-preset styling
-  button_style?: 'filled' | 'outlined' | 'text' | undefined; // Button visual style for this preset
+  // Per-preset styling (recipes + legacy filled/outlined/text + 'theme')
+  button_style?: string | undefined;
   show_label?: boolean | undefined; // Show preset name for this preset
   border_radius?: number | undefined; // Button border radius (0-50)
   // Color control toggles
@@ -283,7 +290,7 @@ export class UltraLightModule extends BaseUltraModule {
           use_light_color_for_button: true,
           use_icon_color_for_text: false,
           smart_color: true, // Enable smart contrast by default
-          button_style: 'filled',
+          button_style: 'theme',
           show_label: true,
           border_radius: 8,
           enable_color: true, // Enable color by default
@@ -296,7 +303,8 @@ export class UltraLightModule extends BaseUltraModule {
       button_gap: 0.8, // Gap between buttons in rem
       columns: 3, // For grid layout
       show_labels: true,
-      button_style: 'filled', // filled, outlined, text
+      // Defer to the active theme's control recipe (same as Button Input).
+      button_style: 'theme',
       default_transition_time: 0.5,
       // Standard action configuration
       tap_action: { action: 'nothing' },
@@ -306,6 +314,16 @@ export class UltraLightModule extends BaseUltraModule {
       display_mode: 'always',
       display_conditions: [],
     };
+  }
+
+  private getButtonStyleOptions(lang: string): Array<{ value: string; label: string }> {
+    const title = (s: string) => s.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return [
+      ...UC_CONTROL_RECIPES.map(v => ({ value: v, label: title(v) })),
+      { value: 'filled', label: 'Filled (solid background)' },
+      { value: 'outlined', label: 'Outlined (border only)' },
+      { value: 'text', label: 'Text (minimal style)' },
+    ];
   }
 
   private getSupportedColorModes(entityId: string, hass: HomeAssistant): LightColorMode[] {
@@ -729,6 +747,30 @@ export class UltraLightModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             },
             's'
+          )}
+
+          ${this.renderFieldSection(
+            'Button Style',
+            'Default visual style for preset buttons. Theme inherits the card theme control recipe. Per-preset styles can override this.',
+            hass,
+            { button_style: lightModule.button_style || 'theme' },
+            [
+              this.selectField(
+                'button_style',
+                this.withThemeInheritOption(
+                  lang,
+                  config,
+                  'light',
+                  'button_style',
+                  'flat',
+                  this.getButtonStyleOptions(lang)
+                )
+              ),
+            ],
+            (e: CustomEvent) => {
+              updateModule({ button_style: e.detail.value.button_style });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
           )}
           </div>
         </div>
@@ -1213,22 +1255,28 @@ export class UltraLightModule extends BaseUltraModule {
 
           ${this.renderFieldSection(
             'Button Style',
-            'Visual style for this preset button',
+            'Visual style for this preset button. Theme inherits the card theme control recipe.',
             hass,
-            { button_style: preset.button_style || 'filled' },
+            { button_style: preset.button_style || lightModule.button_style || 'theme' },
             [
-              this.selectField('button_style', [
-                { value: 'filled', label: 'Filled (solid background)' },
-                { value: 'outlined', label: 'Outlined (border only)' },
-                { value: 'text', label: 'Text (minimal style)' },
-              ]),
+              this.selectField(
+                'button_style',
+                this.withThemeInheritOption(
+                  hass?.locale?.language || 'en',
+                  config,
+                  'light',
+                  'button_style',
+                  'flat',
+                  this.getButtonStyleOptions(hass?.locale?.language || 'en')
+                )
+              ),
             ],
             (e: CustomEvent) => updatePreset({ button_style: e.detail.value.button_style })
           )}
 
-          <!-- Border Radius (for filled and outlined styles) -->
+          <!-- Border Radius (hidden for text-like / minimal styles) -->
           ${
-            (preset.button_style || 'filled') !== 'text'
+            !isTextLikeButtonStyle(preset.button_style || lightModule.button_style || 'filled')
               ? html`
                   <div style="margin-top: 12px;">
                     ${this.renderSliderField(
@@ -1672,7 +1720,7 @@ export class UltraLightModule extends BaseUltraModule {
       use_light_color_for_button: true, // Default to using light color for button
       use_icon_color_for_text: false,
       smart_color: true, // Enable smart contrast by default
-      button_style: 'filled',
+      button_style: 'theme',
       show_label: true,
       border_radius: 8,
       enable_color: true, // Enable color by default
@@ -2241,7 +2289,7 @@ export class UltraLightModule extends BaseUltraModule {
 
     const layout = lightModule.layout || 'buttons';
     const showLabels = lightModule.show_labels ?? true;
-    const buttonStyle = lightModule.button_style || 'filled';
+    const buttonStyle = lightModule.button_style || 'theme';
     const columns = lightModule.columns || 3;
     const buttonAlignment = lightModule.button_alignment || 'center';
     const allowWrapping = lightModule.allow_wrapping ?? true;
@@ -2412,16 +2460,29 @@ export class UltraLightModule extends BaseUltraModule {
   ): TemplateResult {
     const hasEntities = preset.entities && preset.entities.length > 0;
 
-    // Use per-preset styling if available, otherwise fall back to global
-    const buttonStyle = preset.button_style || globalButtonStyle;
+    // Use per-preset styling if available, otherwise fall back to global; theme resolves last.
+    const buttonStyle = resolveThemedModuleStyle(
+      config,
+      'light',
+      'button_style',
+      preset.button_style || lightModule.button_style || globalButtonStyle,
+      'flat'
+    );
+    const recipe = controlRecipeFromButtonStyle(buttonStyle);
     const showLabels = preset.show_label ?? globalShowLabels;
 
     // Get colors based on toggles and settings
-    const colors = this.getPresetColors(preset, hass);
+    const colors = this.getPresetColors(preset, hass, buttonStyle);
 
     // Build button style with proper color application and all critical styles inline
     const borderRadius = preset.border_radius ?? 8;
-    let buttonStyles = `
+    const surfaceCss = resolveControlButtonStyleString(buttonStyle, {
+      background: colors.buttonColor,
+      textColor: colors.textColor,
+      hasCustomTextColor: !!preset.text_color || !!preset.smart_color,
+    });
+    const roleAttrs = surfaceAttrs(recipe as any, 'control');
+    const buttonStyles = `
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2436,24 +2497,15 @@ export class UltraLightModule extends BaseUltraModule {
       position: relative;
       overflow: hidden;
       box-sizing: border-box;
+      ${surfaceCss}
     `;
-
-    if (buttonStyle === 'filled') {
-      if (colors.buttonColor.startsWith('linear-gradient')) {
-        buttonStyles += `background: ${colors.buttonColor}; color: ${colors.textColor}; border: none;`;
-      } else {
-        buttonStyles += `background-color: ${colors.buttonColor}; color: ${colors.textColor}; border: none;`;
-      }
-    } else if (buttonStyle === 'outlined') {
-      buttonStyles += `border: 2px solid ${colors.buttonColor}; color: ${colors.textColor}; background: transparent;`;
-    } else if (buttonStyle === 'text') {
-      buttonStyles += `color: ${colors.textColor}; background: transparent; border: none;`;
-    }
 
     return html`
       <div class="preset-button-container">
         <button
           class="preset-button ${buttonStyle} ${!hasEntities ? 'disabled' : ''}"
+          data-uc-surface="${roleAttrs['data-uc-surface']}"
+          data-uc-role="${roleAttrs['data-uc-role']}"
           @click=${hasEntities
             ? () => this.applyPreset(preset, lightModule, hass, config)
             : undefined}
@@ -2476,7 +2528,8 @@ export class UltraLightModule extends BaseUltraModule {
   // Get the effective colors for a preset based on toggles and light state
   private getPresetColors(
     preset: LightPreset,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    resolvedButtonStyle?: string
   ): {
     textColor: string;
     iconColor: string;
@@ -2496,19 +2549,22 @@ export class UltraLightModule extends BaseUltraModule {
       iconColor = preset.icon_color || 'var(--primary-color)';
     }
 
-    // Determine button color
+    // Determine button color (legacy fill modes + surface recipes)
     let buttonColor: string;
-    const buttonStyle = preset.button_style || 'filled';
+    const buttonStyle = resolvedButtonStyle || preset.button_style || 'filled';
+    const recipe = controlRecipeFromButtonStyle(buttonStyle);
+    const textLike = isTextLikeButtonStyle(buttonStyle);
+    const outlinedLike = buttonStyle === 'outlined' || recipe === 'outline';
 
-    if (buttonStyle === 'filled') {
-      // Filled: Use light color for background unless overridden
+    if (!textLike && !outlinedLike) {
+      // Filled / solid recipes: Use light color for background unless overridden
       if (preset.use_light_color_for_button && lightColor) {
         buttonColor = lightColor;
       } else {
         buttonColor = preset.button_color || lightColor || 'var(--primary-color)';
       }
     } else {
-      // Outlined and Text: Always use light color unless custom color is set
+      // Outlined, text, and minimal: Always use light color unless custom color is set
       buttonColor = preset.button_color || lightColor || 'var(--primary-color)';
     }
 
@@ -2520,14 +2576,14 @@ export class UltraLightModule extends BaseUltraModule {
       const contrastColor = this.getContrastColor(buttonColor);
       textColor = contrastColor;
       iconColor = contrastColor; // Icon also uses contrast color
-    } else if (buttonStyle === 'text') {
+    } else if (textLike) {
       // For text style, use the light color by default
       if (preset.use_icon_color_for_text) {
         textColor = iconColor;
       } else {
         textColor = preset.text_color || lightColor || iconColor;
       }
-    } else if (buttonStyle === 'outlined') {
+    } else if (outlinedLike) {
       // For outlined style, use the light color for text by default
       if (preset.use_icon_color_for_text) {
         textColor = iconColor;
