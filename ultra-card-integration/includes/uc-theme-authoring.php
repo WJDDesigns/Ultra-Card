@@ -154,6 +154,22 @@ function uc_theme_sanitize_definition($raw) {
             return new WP_Error('unsafe_css', 'Theme CSS rejected: ' . implode(', ', $problems), array('status' => 400));
         }
     }
+    // Background tokens may carry inline artwork (kept in sync with
+    // cssBackground in src/themes/uc-theme-validate.ts): same payload scan as
+    // CSS, tighter length caps.
+    foreach (array('page_background' => 12000, 'pane_background' => 4000) as $token => $max) {
+        if (!isset($raw['tokens'][$token]) || !is_string($raw['tokens'][$token])) {
+            continue;
+        }
+        $value = $raw['tokens'][$token];
+        if (strlen($value) > $max) {
+            return new WP_Error('invalid_theme', 'tokens.' . $token . ' longer than ' . $max . ' characters', array('status' => 400));
+        }
+        $problems = uc_theme_css_problems($value);
+        if ($problems) {
+            return new WP_Error('unsafe_css', 'tokens.' . $token . ' rejected: ' . implode(', ', $problems), array('status' => 400));
+        }
+    }
     if (isset($raw['preview']) && is_string($raw['preview']) && !preg_match('#^(https://|data:image/(png|jpe?g|webp);base64,)#i', $raw['preview'])) {
         unset($raw['preview']);
     }

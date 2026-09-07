@@ -28,7 +28,7 @@ define('UC_THEME_POST_TYPE', 'ultra_theme');
 define('UC_THEME_TAG_TAXONOMY', 'uc_theme_tag');
 define('UC_THEME_META_DEFINITION', '_uc_theme_definition');
 define('UC_THEME_MAX_DEFINITION_BYTES', 64 * 1024);
-define('UC_THEME_MAX_CSS_CHARS', 20000);
+define('UC_THEME_MAX_CSS_CHARS', 40000);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -77,6 +77,29 @@ function uc_theme_css_problems($css) {
     if (strlen($css) > UC_THEME_MAX_CSS_CHARS) {
         $problems[] = 'css longer than ' . UC_THEME_MAX_CSS_CHARS . ' characters';
     }
+    // Inline image data URIs are allowed artwork (SVG-as-image cannot run
+    // script or fetch). Lift them out, check their payload, then scan the rest.
+    $inline_re = '/url\(\s*(["\']?)data:image\/(?:svg\+xml|png|jpeg|gif|webp)((?:;[a-z0-9=-]+)*),([^)"\']*)\1\s*\)/i';
+    $css = preg_replace_callback($inline_re, function ($m) use (&$problems) {
+        $payload = stripos($m[2], 'base64') !== false ? base64_decode($m[3], true) : rawurldecode($m[3]);
+        if ($payload === false) {
+            $payload = $m[3];
+        }
+        $bad = array(
+            '/<\s*script/i'                                   => 'script',
+            '/\bon[a-z]+\s*=/i'                               => 'event handler',
+            '/javascript:/i'                                  => 'javascript:',
+            '/<\s*foreignObject/i'                            => 'foreignObject',
+            '/(?:xlink:)?href\s*=\s*["\']?\s*(?:https?:|\/\/)/i' => 'external href',
+            '/url\s*\(\s*["\']?\s*(?!#)/i'                    => 'external url()', // url(#id) paint servers are fine
+        );
+        foreach ($bad as $re => $label) {
+            if (preg_match($re, $payload)) {
+                $problems[] = 'inline image contains ' . $label;
+            }
+        }
+        return 'inline-image';
+    }, $css);
     $patterns = array(
         '/@import/i'                       => '@import',
         '/url\s*\(/i'                      => 'url()',
@@ -129,6 +152,22 @@ function uc_theme_sanitize_definition($raw) {
         $problems = uc_theme_css_problems($raw['css']);
         if ($problems) {
             return new WP_Error('unsafe_css', 'Theme CSS rejected: ' . implode(', ', $problems), array('status' => 400));
+        }
+    }
+    // Background tokens may carry inline artwork (kept in sync with
+    // cssBackground in src/themes/uc-theme-validate.ts): same payload scan as
+    // CSS, tighter length caps.
+    foreach (array('page_background' => 12000, 'pane_background' => 4000) as $token => $max) {
+        if (!isset($raw['tokens'][$token]) || !is_string($raw['tokens'][$token])) {
+            continue;
+        }
+        $value = $raw['tokens'][$token];
+        if (strlen($value) > $max) {
+            return new WP_Error('invalid_theme', 'tokens.' . $token . ' longer than ' . $max . ' characters', array('status' => 400));
+        }
+        $problems = uc_theme_css_problems($value);
+        if ($problems) {
+            return new WP_Error('unsafe_css', 'tokens.' . $token . ' rejected: ' . implode(', ', $problems), array('status' => 400));
         }
     }
     if (isset($raw['preview']) && is_string($raw['preview']) && !preg_match('#^(https://|data:image/(png|jpe?g|webp);base64,)#i', $raw['preview'])) {
