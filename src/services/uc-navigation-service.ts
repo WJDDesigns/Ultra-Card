@@ -175,6 +175,8 @@ class UcNavigationService {
       // Listen for editor close events to clear preview overrides
       // This uses MutationObserver to detect when editor dialogs are removed
       const observeEditorDialogs = () => {
+        // Deferred by a timer: in a torn-down test DOM the global is gone by then.
+        if (typeof MutationObserver === 'undefined' || !document.body) return;
         const observer = new MutationObserver(mutations => {
           for (const mutation of mutations) {
             for (const node of Array.from(mutation.removedNodes)) {
@@ -204,6 +206,7 @@ class UcNavigationService {
 
       // Watch HA shadow roots for dialogs, panel changes, and drawer so we can hide the navbar
       const observeHaOverlays = () => {
+        if (typeof MutationObserver === 'undefined') return;
         const ha = document.querySelector('home-assistant') as HTMLElement & { shadowRoot?: ShadowRoot } | null;
         const haRoot = ha?.shadowRoot;
         if (!haRoot) {
