@@ -1,5 +1,36 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta5
+
+The fifth 3.10.0 beta adds **Themes**: one setting that restyles every Ultra Card on a dashboard at once — surface, corners, colours, shadows, wallpaper and the way each module draws its buttons, bars and panels. Fifteen themes ship with the card, from Liquid Glass and Material 3 to Green Terminal, Neumorphic and Wood, and you can build your own in the Hub or in the new Theme Builder on ultracard.io, then share it with the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+**Nothing changes until you pick a theme.** Every card keeps its current look. Bar, slider and button styles you chose by hand stay exactly as they were; only modules left on the new "Theme" setting follow the theme.
+
+### 🚀 New Features
+
+- **Added Themes: restyle every card at once** - Open the Ultra Card Hub and go to the new **Themes** tab, or pick a theme for one card under Card Settings → Appearance → Theme. A theme controls the card chrome (background, border, radius, shadow, blur), the accent and text palette, the inner panes that rows, tiles and chips draw, and per-module defaults. Set one as the **Global default** to theme your whole dashboard; set a different one on any card to override it. Ultra Dashboard now writes its style as a theme too
+- **Fifteen built-in themes** - Glass, Bold, Monochrome, Material (following the Material 3 baseline with an expressive-shapes wallpaper), Neumorphic Light and Dark, Liquid Glass (Apple-style see-through glass with real refraction at the bezel), Hillary, Moose, Metallic, Beach, Vapor, Gummy, Wood and Green Terminal, plus HA Native which simply follows your Home Assistant theme. Several deal each card its own hue, highlight placement or artwork, so neighbouring cards never match exactly
+- **Themes can paint the view** - A theme may set the Lovelace view background behind its cards (most of the built-ins do; Glass, Bold and Monochrome leave yours alone). Cards claim and release it cleanly, and your own view background wins if you set one
+- **Build your own theme** - The Hub's theme editor and the **Theme Builder at ultracard.io/theme-builder** offer Simple mode (starter, surface, corners, shadow, density, font, accent and palette, page background) and Advanced mode (every token, pane styling, card chrome overrides, per-module defaults, grayscale and colour filters, custom CSS, image or SVG wallpapers with size limits, import/export JSON). A contrast fixer keeps text readable, "Tint everything to the accent" recolours a theme like Terminal to any hue, **Surprise me** generates a coherent random theme, and **Reset** returns to the starter you picked
+- **Community theme catalog** - Submit a theme from the builder; after review it appears under Community in the Hub and on the new **ultracard.io/themes** gallery alongside the built-in Default themes, with live previews, star ratings, download counts, JSON copy/download and "Remix in builder". My Themes in the website dashboard tracks your submissions and syncs them into the Hub through Ultra Card Connect. Every submitted theme is sanitised server-side and scanned for CSS that could hide or cover content
+- **Import a Home Assistant theme** - Turn any installed HA theme into a local Ultra theme from the Hub, light and dark variants included
+
+### 🔧 Improvements
+
+- **One surface vocabulary for every module** - Bar, slider, button, spinbox, popup, tabs, grid, entity list, activity feed, area summary and UniFi rack now share the same set of surface recipes (flat, glass, glossy, neumorphic, metallic, outline and friends) applied to four roles: controls, tracks, fills and panes. A theme picks a recipe per role and every module follows; your existing per-module style dropdowns still work and still win. Modules also expose `data-uc-surface` and `data-uc-role` attributes for theme CSS
+- **Radii step down concentrically** - Inner elements scale their corners with the theme's card radius so nested panes and controls stay proportional at any size
+- **Pinned palettes stay readable** - When a theme sets primary or card colours, the companion Home Assistant colours (secondary background, dividers, text) are derived automatically so nothing disappears
+- **Hub Themes tab mirrors Presets** - Themes / My Themes with Default and Community sections, ratings and install counts, and the My Presets rows no longer collide on phones
+
+### 🐛 Bug Fixes
+
+- **Monochrome actually desaturates everything** - Modules with their own colours are now included through the new grayscale token
+- **Theme picker hover effects only on pointer devices** - No stuck hover states on touch screens
+
+---
+
 ## Version 3.10.0-beta4
 
 The fourth 3.10.0 beta turns Ultra Card into a dashboard builder. **Ultra Dashboard** creates a complete, good-looking dashboard from your areas and floors in one click — and unlike every other generated dashboard, you can take control of it and edit every single card in the visual editor. It is free, it needs Home Assistant 2026.5 or newer, and it uses only free modules. This beta also finishes the Dynamic List live-update bug from [#130](https://github.com/WJDDesigns/Ultra-Card/issues/130) and tightens drag-and-drop and keyboard reordering in the layout tree. This is a pre-release for testing — please report anything odd on GitHub or Discord.
