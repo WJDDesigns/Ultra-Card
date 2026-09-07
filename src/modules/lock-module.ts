@@ -276,7 +276,11 @@ export class UltraLockModule extends BaseUltraModule {
     if (!entityId || !hass?.states?.[entityId]) {
       return html`
         ${this.injectLockStyles()}
-        <div class="uc-lock-wrapper" style="border-radius: var(--uc-r-16, 16px); overflow: hidden;">
+        <div
+          class="uc-lock-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.lock.config_needed', lang, 'Select a lock'),
             localize('editor.lock.config_needed_desc', lang, 'Choose a lock entity in the General tab'),
@@ -500,7 +504,8 @@ export class UltraLockModule extends BaseUltraModule {
       ${this.injectLockStyles()}
       <div
         class="uc-lock-wrapper ${hoverClass} ${isJammed ? 'uc-lock-wrapper--jammed' : ''}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
       </div>

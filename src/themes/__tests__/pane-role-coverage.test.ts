@@ -1,0 +1,75 @@
+/**
+ * Gate: every module source that references `--uc-pane-*` tokens must announce
+ * `data-uc-role="pane"` on a painted surface (so glass backdrop-filter from
+ * UC_THEME_BASE_CSS can apply). Intentional carve-outs are listed below.
+ */
+import { describe, it, expect } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const MODULES_DIR = path.resolve(__dirname, '../../modules');
+
+/** Files that may mention pane tokens without a live pane wrapper. */
+const PANE_ROLE_CARVE_OUTS: Readonly<Record<string, string>> = {
+  // Template stub, not shipped.
+  '_module-template.ts': 'template only',
+  // Stylesheet-only UniFi chrome; rack-view.ts owns the role attribute.
+  'unifi/styles.ts': 'CSS companion to rack-view.ts',
+  // Full-bleed background layer, not a nested pane.
+  'video-bg-module.ts': 'full-bleed background',
+  // Orphaned `.climate-chip` CSS only — no HTML uses that class.
+  'climate-module.ts': 'dead CSS; container has no pane background',
+  // Orphaned `.entity-item` CSS only — runtime chrome does not use pane vars.
+  'info-module.ts': 'dead CSS; no live pane wrapper',
+  'graphs-module.ts': 'dead CSS; no live pane wrapper',
+};
+
+function walk(dir: string, base = ''): string[] {
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = base ? `${base}/${entry.name}` : entry.name;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walk(full, rel));
+    else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+      out.push(rel);
+    }
+  }
+  return out;
+}
+
+describe('pane role adoption', () => {
+  const files = walk(MODULES_DIR);
+  const paneVarFiles = files.filter(rel => {
+    const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+    return /--uc-pane/.test(src);
+  });
+
+  it('every pane-token module announces data-uc-role="pane" (or is carved out)', () => {
+    const missing: string[] = [];
+    for (const rel of paneVarFiles) {
+      if (PANE_ROLE_CARVE_OUTS[rel]) continue;
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      if (!/data-uc-role=["']pane["']/.test(src)) {
+        missing.push(rel);
+      }
+    }
+    expect(missing, `Missing data-uc-role="pane" in: ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('carve-outs are still present and documented', () => {
+    for (const rel of Object.keys(PANE_ROLE_CARVE_OUTS)) {
+      expect(
+        fs.existsSync(path.join(MODULES_DIR, rel)),
+        `Carve-out file missing: ${rel}`
+      ).toBe(true);
+    }
+  });
+
+  it('entity wrappers (fan, lock, media_player) use pane tokens + role', () => {
+    for (const rel of ['fan-module.ts', 'lock-module.ts', 'media-player-module.ts']) {
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      expect(src, rel).toMatch(/--uc-pane-bg/);
+      expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
+    }
+  });
+});

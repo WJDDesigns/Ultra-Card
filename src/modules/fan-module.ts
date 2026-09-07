@@ -385,7 +385,11 @@ export class UltraFanModule extends BaseUltraModule {
     if (!entityId || !hass?.states?.[entityId]) {
       return html`
         ${this.injectFanStyles()}
-        <div class="uc-fan-wrapper" style="border-radius: var(--uc-r-16, 16px); overflow: hidden;">
+        <div
+          class="uc-fan-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.fan.config_needed', lang, 'Select a fan'),
             localize('editor.fan.config_needed_desc', lang, 'Choose a fan entity in the General tab'),
@@ -796,7 +800,8 @@ export class UltraFanModule extends BaseUltraModule {
       ${this.injectFanStyles()}
       <div
         class="uc-fan-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
