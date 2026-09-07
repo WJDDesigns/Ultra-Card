@@ -1,4 +1,3 @@
-/** @vitest-environment node */
 /**
  * Gate: every module style key the theme engine may default must have a Hub
  * editor field, and every surface-cascading field must be registered in
@@ -34,7 +33,7 @@ describe('theme module style coverage (100%)', () => {
     const orphans: string[] = [];
     for (const f of UC_THEME_MODULE_FIELDS) {
       const allowed = UC_THEME_MODULE_STYLE_KEYS[f.moduleType];
-      if (!allowed || !allowed.includes(f.key)) {
+      if (!allowed || !(allowed as readonly string[]).includes(f.key)) {
         orphans.push(`${f.moduleType}.${f.key}`);
       }
     }
@@ -42,7 +41,6 @@ describe('theme module style coverage (100%)', () => {
   });
 
   it('control surface modules cascade from recipes.control', () => {
-    // These must resolve via tokens.recipes so a theme can restyle them once.
     expect(surfaceRoleFor('button', 'style')).toBe('control');
     expect(surfaceRoleFor('popup', 'trigger_button_style')).toBe('control');
     expect(surfaceRoleFor('spinbox', 'button_style')).toBe('control');
@@ -53,8 +51,6 @@ describe('theme module style coverage (100%)', () => {
   });
 
   it('layout-only style keys are NOT surface-cascaded', () => {
-    // Layout/preset vocabularies stay on theme.modules — a glass theme must
-    // not silently rewrite grid_style or nav_style via recipes.
     expect(surfaceRoleFor('grid', 'grid_style')).toBeUndefined();
     expect(surfaceRoleFor('navigation', 'nav_style')).toBeUndefined();
     expect(surfaceRoleFor('area_summary', 'style_preset')).toBeUndefined();
