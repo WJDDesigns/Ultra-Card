@@ -2253,7 +2253,7 @@ export class UltraLightModule extends BaseUltraModule {
 
     if (presets.length === 0) {
       return html`
-        <div class="light-module-container ${hoverClass}" style="${designStyles}">
+        <div class="light-module-container ${hoverClass}" data-uc-role="pane" style="${designStyles}">
           <div class="no-presets-preview">
             <ha-icon icon="mdi:lightbulb-group"></ha-icon>
             <div>No presets configured</div>
@@ -2272,7 +2272,7 @@ export class UltraLightModule extends BaseUltraModule {
       const presetList = incompletePresets.map((p, i) => p.name || `Preset ${i + 1}`).join(', ');
 
       return html`
-        <div class="light-module-container ${hoverClass}" style="${designStyles}">
+        <div class="light-module-container ${hoverClass}" data-uc-role="pane" style="${designStyles}">
           <div class="ultra-config-needed">
             <div class="ultra-config-gradient"></div>
             <div class="ultra-config-content">
@@ -2333,7 +2333,7 @@ export class UltraLightModule extends BaseUltraModule {
         : '';
 
     return this.wrapWithAnimation(html`
-      <div class="light-module-container ${hoverClass}" style="${designStyles}">
+      <div class="light-module-container ${hoverClass}" data-uc-role="pane" style="${designStyles}">
         ${warningBanner}
         <div class="presets-container ${layout}" style="${containerLayoutStyles}">
           ${validPresets.map(preset =>
@@ -2803,7 +2803,9 @@ export class UltraLightModule extends BaseUltraModule {
       ${BaseUltraModule.getSliderStyles()}
       .light-module-container {
         padding: 16px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         border-radius: var(--uc-r-8, 8px);
       }
 
@@ -3128,10 +3130,11 @@ export class UltraLightModule extends BaseUltraModule {
       .brightness-control,
       .color-picker-section,
       .effects-control {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-6, 6px);
         padding: 12px;
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
+        box-shadow: var(--uc-pane-shadow, none);
       }
 
       /* Brightness slider styling */

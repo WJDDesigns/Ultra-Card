@@ -471,7 +471,7 @@ export class UltraTimerModule extends BaseUltraModule {
     })());
 
     return this.wrapWithAnimation(html`
-      <div class="uc-timer-wrapper ${hoverClass}" style="${designStyles}; background: var(--card-background-color); border-radius: var(--uc-r-12, 12px); overflow: hidden;">
+      <div class="uc-timer-wrapper ${hoverClass}" data-uc-role="pane" style="${designStyles}; background: var(--uc-pane-bg, var(--card-background-color)); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-12, 12px); overflow: hidden;">
         ${content}
       </div>
     `, module, hass);

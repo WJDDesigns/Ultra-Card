@@ -3209,6 +3209,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       
       <div 
         class="vacuum-module-container ${hoverEffectClass} layout-${layoutMode} ${mapDisplayMode === 'swipe' ? 'swipe-mode' : ''}"
+        data-uc-role="pane"
         style="${designStyles}"
         @touchstart=${(e: TouchEvent) => this.handleTouchStart(e, vacuumModule.id)}
         @touchmove=${(e: TouchEvent) => this.handleTouchMove(e, !!hasMap && mapDisplayMode === 'swipe', vacuumModule.id)}
@@ -4321,7 +4322,9 @@ export class UltraVacuumModule extends BaseUltraModule {
       
       .vacuum-module-container {
         padding: 12px 16px 16px 16px;
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         border-radius: var(--uc-r-12, 12px);
         position: relative;
         overflow: hidden;

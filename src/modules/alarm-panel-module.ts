@@ -448,7 +448,11 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     if (!entityId || !hass?.states?.[entityId]) {
       return html`
         <style>${this.getStyles()}</style>
-        <div class="uc-alarm-wrapper">
+        <div
+          class="uc-alarm-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.alarm_panel.config_needed', lang, 'Select an alarm panel'),
             localize('editor.alarm_panel.config_needed_desc', lang, 'Choose an alarm_control_panel entity in the General tab'),
@@ -622,7 +626,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-alarm-wrapper ${hoverClass} ${isTriggered ? 'uc-alarm-wrapper--triggered' : ''}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-alarm uc-alarm--hero">
 
@@ -665,7 +670,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-alarm-wrapper ${hoverClass}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-alarm uc-alarm--standard">
               <div class="uc-alarm-std__row">
@@ -727,7 +733,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     return html`
       <style>${this.getStyles()}</style>
       <div class="uc-alarm-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: ${pendingMode ? '20px' : '999px'}; overflow: hidden; ${styleStr}">
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: ${pendingMode ? '20px' : '999px'}; overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(html`
           <div class="uc-alarm uc-alarm--compact">
             <div class="uc-alarm-compact__row">

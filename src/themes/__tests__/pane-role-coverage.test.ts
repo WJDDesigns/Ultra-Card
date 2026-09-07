@@ -17,8 +17,6 @@ const PANE_ROLE_CARVE_OUTS: Readonly<Record<string, string>> = {
   'unifi/styles.ts': 'CSS companion to rack-view.ts',
   // Full-bleed background layer, not a nested pane.
   'video-bg-module.ts': 'full-bleed background',
-  // Orphaned `.climate-chip` CSS only — no HTML uses that class.
-  'climate-module.ts': 'dead CSS; container has no pane background',
   // Orphaned `.entity-item` CSS only — runtime chrome does not use pane vars.
   'info-module.ts': 'dead CSS; no live pane wrapper',
   'graphs-module.ts': 'dead CSS; no live pane wrapper',
@@ -67,6 +65,21 @@ describe('pane role adoption', () => {
 
   it('entity wrappers (fan, lock, media_player) use pane tokens + role', () => {
     for (const rel of ['fan-module.ts', 'lock-module.ts', 'media-player-module.ts']) {
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      expect(src, rel).toMatch(/--uc-pane-bg/);
+      expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
+    }
+  });
+
+  it('priority solid wrappers (alarm, solar, light, vacuum, timer, climate) use pane tokens + role', () => {
+    for (const rel of [
+      'alarm-panel-module.ts',
+      'solar-analytics-module.ts',
+      'light-module.ts',
+      'vacuum-module.ts',
+      'timer-module.ts',
+      'climate-module.ts',
+    ]) {
       const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
       expect(src, rel).toMatch(/--uc-pane-bg/);
       expect(src, rel).toMatch(/data-uc-role=["']pane["']/);

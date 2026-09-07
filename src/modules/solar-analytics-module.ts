@@ -257,7 +257,11 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
     if (!solarEntityId || !hass?.states?.[solarEntityId]) {
       return html`
         <style>${this.getStyles()}</style>
-        <div class="uc-solar-wrapper">
+        <div
+          class="uc-solar-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.solar_analytics.config_needed', lang, 'Select a solar sensor'),
             localize('editor.solar_analytics.config_needed_desc', lang, 'Choose a solar power sensor in the General tab'),
@@ -323,7 +327,8 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-solar-wrapper ${hoverClass}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-solar uc-solar--compact">
               <div class="uc-solar-compact__kpi">
@@ -359,7 +364,8 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
     return html`
       <style>${this.getStyles()}</style>
       <div class="uc-solar-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(html`
           <div class="uc-solar uc-solar--full">
 
