@@ -34,6 +34,7 @@ body.admin-bar .ucp{--ucp-header-offset:172px}
 .ucp p{margin:0}
 .ucp a{text-decoration:none;color:inherit}
 .ucp button,.ucp input,.ucp textarea,.ucp select{font-family:inherit}
+.ucp [hidden]{display:none!important}
 .ucp button{cursor:pointer;border:0;background:none;color:inherit}
 .ucp .mdi{line-height:1;vertical-align:middle}
 .ucp-hero{position:relative;padding:calc(var(--ucp-header-offset,140px) + 48px) 0 48px;overflow:hidden}

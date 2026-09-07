@@ -77,6 +77,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
               <span class="ucp-hint">Replaces surface, colours and layers. Your name and description stay.</span>
               <button type="button" class="ucp-btn ucp-btn-ghost tb-reset" id="tb-reset" hidden><i class="mdi mdi-restore"></i> <span>Reset</span></button>
             </div>
+            <button type="button" class="ucp-btn ucp-btn-ghost tb-surprise" id="tb-surprise" title="Generate a random, coherent theme: surface, shape, colours, wallpaper and font"><i class="mdi mdi-dice-multiple-outline"></i> Surprise me</button>
           </div>
         </div>
       </details>
@@ -244,7 +245,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
         <div class="tb-prev-bar">
           <div class="tb-seg tb-seg-sm" id="tb-prev-mode"><button type="button" data-value="light" class="active"><i class="mdi mdi-white-balance-sunny"></i> Light HA</button><button type="button" data-value="dark"><i class="mdi mdi-weather-night"></i> Dark HA</button></div>
           <div class="tb-seg tb-seg-sm" id="tb-prev-width"><button type="button" data-value="phone"><i class="mdi mdi-cellphone"></i></button><button type="button" data-value="desktop" class="active"><i class="mdi mdi-monitor"></i></button></div>
-          <button type="button" class="ucp-btn ucp-btn-ghost tb-reroll" id="tb-reroll" title="Deal new per-card hue and seeds"><i class="mdi mdi-dice-multiple-outline"></i> <span>Reroll</span></button>
+          <button type="button" class="ucp-btn ucp-btn-ghost tb-reroll" id="tb-reroll" hidden title="Deal a new per-card hue and seeds to see another variation of this theme"><i class="mdi mdi-shuffle-variant"></i> <span>Redeal cards</span></button>
         </div>
         <div id="tb-preview" class="tb-preview" aria-live="polite"></div>
         <p class="ucp-hint tb-prev-note">Preview mirrors the card's theme engine. Real modules add their own detail; per-card randomness (hue and seeds) is dealt afresh on each dashboard load.</p>
@@ -333,6 +334,9 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tb-starter-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
 .tb-starter-row .ucp-hint{margin:0}
 .tb-reset{padding:6px 10px;font-size:12px;white-space:nowrap}
+.tb-surprise{margin-top:10px;width:100%;justify-content:center;gap:8px}
+.tb-surprise .mdi{transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.tb-surprise.rolling .mdi{transform:rotate(360deg)}
 .tb-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px;border-radius:10px;transition:box-shadow .15s}
 .tb-wall.drag{box-shadow:0 0 0 2px var(--uc-blue)}
 .tb-wall button{height:44px;border-radius:9px;border:2px solid transparent;position:relative;overflow:hidden}
@@ -449,7 +453,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   var WALL_IMG_BUDGET = U.LIMITS.page_background - 200;
 
   var def = { id: '', name: '', version: 1, author: AUTHOR, description: '', tokens: { surface: 'flat', radius: 12 }, card: {}, modules: {} };
-  var meta = { tags: '', previewId: 0, previewUrl: '', previewFile: null, previewDirty: false, editStatus: '', starter: '' };
+  var meta = { tags: '', previewId: 0, previewUrl: '', previewFile: null, previewDirty: false, editStatus: '', starter: '', surprise: null };
   var BLANK_DEF = JSON.parse(JSON.stringify(def));
   var ui = { mode: 'simple', previewMode: 'light', previewWidth: 'desktop', wall: 'ha', submitting: false };
   var els = {
@@ -499,8 +503,8 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     if (!out.css) delete out.css;
     return out;
   }
-  function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ def: def, tags: meta.tags, wall: ui.wall, starter: meta.starter, t: Date.now() })); } catch (e) {} }
-  function loadDraft() { try { var d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); if (d && d.def && d.def.tokens) { def = d.def; meta.tags = d.tags || ''; ui.wall = d.wall || ui.wall; meta.starter = d.starter || ''; return true; } } catch (e) {} return false; }
+  function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ def: def, tags: meta.tags, wall: ui.wall, starter: meta.starter, surprise: meta.surprise, t: Date.now() })); } catch (e) {} }
+  function loadDraft() { try { var d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); if (d && d.def && d.def.tokens) { def = d.def; meta.tags = d.tags || ''; ui.wall = d.wall || ui.wall; meta.starter = d.starter || ''; meta.surprise = d.surprise || null; return true; } } catch (e) {} return false; }
   function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
 
   // --------------------------------------------------------------- binding
@@ -587,6 +591,9 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     syncRecipeLabels();
     syncStarter();
     syncTint();
+    // The dice in the preview bar only redeal per-card hue/seeds; hide them
+    // unless something in the theme reads those variables.
+    document.getElementById('tb-reroll').hidden = !U.usesSeeds(def);
     els.blurField.style.display = (get('tokens.surface') === 'glass' || ui.mode === 'advanced') ? 'flex' : 'none';
     els.cshadow.style.display = get('card.card_shadow_enabled') === true ? 'grid' : 'none';
   }
@@ -756,7 +763,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
       applyStarter(meta.starter);
     });
   }
-  function starterOf(id) { return STARTERS.find(function (x) { return x.id === id; }) || null; }
+  function starterOf(id) {
+    if (id === 'surprise' && meta.surprise) return { id: 'surprise', name: 'Surprise', def: meta.surprise };
+    return STARTERS.find(function (x) { return x.id === id; }) || null;
+  }
   /** Replace everything but identity with a starter's definition ('' = blank). */
   function applyStarter(id) {
     var s = starterOf(id);
@@ -784,6 +794,69 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     var same = stableJson(origin) === stableJson(current);
     btn.hidden = same;
     btn.querySelector('span').textContent = s ? 'Reset to ' + s.name : 'Reset to blank';
+  }
+  // ------------------------------------------------------------ surprise me
+  function hslHex(h, s, l) {
+    h = ((h % 360) + 360) % 360; s /= 100; l /= 100;
+    var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2, r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; } else if (h < 120) { r = x; g = c; b = 0; } else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; } else if (h < 300) { r = x; g = 0; b = c; } else { r = c; g = 0; b = x; }
+    return '#' + [r, g, b].map(function (v) { return ('0' + Math.round((v + m) * 255).toString(16)).slice(-2); }).join('');
+  }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  /** `ensureContrast` (below, shared with Fix contrast) for hex in, hex out. */
+  function contrastHex(fgHex, bgHex, min) { return hex(ensureContrast(U.parseColor(fgHex), U.parseColor(bgHex), min)); }
+  /**
+   * A primary must carry text: on dark themes it is pushed lighter until ink
+   * reads on it, on light themes darker until white does. Either move also
+   * increases its contrast against the card, so the 3:1 check above holds.
+   */
+  function textablePrimary(fgHex, dark) {
+    var c = U.parseColor(fgHex);
+    var ink = { r: 33, g: 33, b: 33, a: 1 }, white = { r: 255, g: 255, b: 255, a: 1 };
+    var label = dark ? ink : white, towards = dark ? white : ink;
+    for (var i = 0; i < 24 && U.contrast(c, label) < 4.6; i++) c = U.mix(c, towards, 0.1);
+    return hex(c);
+  }
+  function chance(p) { return Math.random() < p; }
+  /**
+   * A random theme that still hangs together: one base hue drives the card,
+   * text and wallpaper; the accent sits on a harmonic offset; shape, depth,
+   * font and surface recipes are drawn from the same menus the controls offer.
+   */
+  function surpriseTheme() {
+    var dark = chance(0.55);
+    var hue = Math.floor(Math.random() * 360);
+    var accentHue = (hue + pick([0, 30, 150, 180, 210, 300])) % 360;
+    var surface = pick(['flat', 'flat', 'glass', 'neumorphic', 'glossy', 'outline', 'minimal']);
+    var radius = pick([0, 4, 8, 12, 12, 16, 20, 24, 28]);
+    var muted = chance(0.4);
+    var cardBg = dark ? hslHex(hue, muted ? 12 : 28, pick([9, 12, 15])) : hslHex(hue, muted ? 15 : 35, pick([96, 98, 100]));
+    var text = dark ? hslHex(hue, 15, 93) : hslHex(hue, 30, 12);
+    // Accent and primary must read as UI colour on the card (3:1) whatever the hue's own brightness.
+    var primary = textablePrimary(contrastHex(hslHex(accentHue, muted ? 45 : 70, dark ? 62 : 44), cardBg, 3.2), dark);
+    var accent = chance(0.5) ? primary : contrastHex(hslHex((accentHue + pick([40, -40, 120])) % 360, 70, dark ? 60 : 46), cardBg, 3.2);
+    var wallHue = (hue + pick([0, 20, -20])) % 360;
+    var wall = dark
+      ? 'linear-gradient(' + pick([150, 160, 180]) + 'deg, ' + hslHex(wallHue, 30, 7) + ' 0%, ' + hslHex(wallHue + 30, 32, 13) + ' 65%, ' + hslHex(wallHue + 60, 28, 16) + ' 100%) fixed'
+      : 'linear-gradient(' + pick([150, 160, 180]) + 'deg, ' + hslHex(wallHue, 45, 95) + ' 0%, ' + hslHex(wallHue + 30, 40, 92) + ' 60%, ' + hslHex(wallHue + 60, 35, 90) + ' 100%) fixed';
+    var tokens = {
+      surface: surface,
+      radius: radius,
+      radius_sm: Math.max(0, Math.round(radius / 2)),
+      border_width: surface === 'neumorphic' || surface === 'glossy' ? 0 : pick([0, 1, 1, 2]),
+      shadow: SHADOWS[pick(surface === 'outline' || surface === 'minimal' ? ['none', 'soft'] : ['none', 'soft', 'medium', 'medium', 'deep'])],
+      density: pick(['compact', 'regular', 'regular', 'comfortable']),
+      font_family: pick(['Roboto, system-ui, sans-serif', 'Inter, system-ui, sans-serif', '"Google Sans Text", "Google Sans", Roboto, sans-serif', '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif', 'Georgia, "Times New Roman", serif', 'ui-monospace, SFMono-Regular, Menlo, monospace']),
+      page_background: wall,
+      palette: { card_bg: cardBg, text: text, text_secondary: dark ? 'rgba(255, 255, 255, 0.62)' : 'rgba(0, 0, 0, 0.6)', primary: primary, accent: accent }
+    };
+    if (surface === 'glass') tokens.blur = pick([8, 12, 16, 24]);
+    if (chance(0.35)) tokens.recipes = { control: pick(['glossy', 'embossed', 'glass', 'neumorphic', 'outline', 'gradient-overlay']) };
+    if (chance(0.25)) tokens.recipes = Object.assign(tokens.recipes || {}, { track: pick(['inset', 'glass', 'embossed', 'neumorphic']) });
+    // Warm dark themes lean the divider into the hue too.
+    if (dark) tokens.palette.divider = hslHex(hue, 15, 22); else tokens.palette.divider = hslHex(hue, 20, 86);
+    return { tokens: tokens, card: {}, modules: {} };
   }
   function isLightHex(v) { var c = U.parseColor(v); return c ? (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255 > 0.5 : true; }
 
@@ -1023,10 +1096,12 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
       U.reroll();
       reroll.classList.remove('rolling'); void reroll.offsetWidth; reroll.classList.add('rolling');
       changed({ now: true, silent: true });
-      if (!U.usesSeeds(cleanDef())) {
-        showNotice('New hue and seeds dealt, but nothing in this theme reads them yet. Reference var(--uc-card-hue) or var(--uc-card-seed-1..3) in Custom CSS (Advanced) to give every card its own variation.');
-        setTimeout(function () { showNotice(''); }, 6000);
-      }
+    });
+    var surprise = document.getElementById('tb-surprise');
+    surprise.addEventListener('click', function () {
+      surprise.classList.remove('rolling'); void surprise.offsetWidth; surprise.classList.add('rolling');
+      meta.surprise = surpriseTheme();
+      applyStarter('surprise');
     });
     els.fixContrast.addEventListener('click', fixContrast);
     els.wallFile.addEventListener('change', function (e) { wallFileChosen(e.target.files && e.target.files[0]); e.target.value = ''; });
