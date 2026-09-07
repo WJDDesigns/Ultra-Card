@@ -318,8 +318,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tb-color .tb-auto{padding:9px 12px;border-radius:9px;border:1px solid var(--uc-line);font-size:12px;font-weight:700;color:var(--uc-dim)}
 .tb-color.is-auto .tb-auto{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.35);color:#bbf7d0}
 .tb-color.is-auto input[type=color]{opacity:.35}
-.tb-check{display:flex;align-items:center;gap:10px;font-weight:600;cursor:pointer}
-.tb-check input{width:18px;height:18px;accent-color:var(--uc-blue)}
+.tb-check{display:flex;align-items:center;gap:10px;font-weight:600;line-height:1.3;cursor:pointer}
+/* The host theme restyles checkboxes (oversized, offset pseudo-elements); use the native box. */
+.ucp .tb-check input[type=checkbox]{appearance:auto!important;-webkit-appearance:checkbox!important;flex:0 0 18px;width:18px!important;height:18px!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;position:static!important;opacity:1!important;vertical-align:middle;accent-color:var(--uc-blue);cursor:pointer}
+.ucp .tb-check input[type=checkbox]::before,.ucp .tb-check input[type=checkbox]::after{content:none!important;display:none!important}
 .tb-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tb-starters{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
 .tb-starter{display:flex;flex-direction:column;gap:6px;padding:6px;border:1px solid var(--uc-line);border-radius:10px;background:rgba(0,0,0,.2);text-align:left}
