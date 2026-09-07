@@ -43,7 +43,7 @@ export function renderRackView(
   };
 
   return html`
-    <div class="uc-unifi-rack style-${style}">
+    <div class="uc-unifi-rack style-${style}" data-uc-role="pane">
       <div class="uc-unifi-rack-stack">
         ${rackDevices.length === 0
           ? html`<div class="uc-unifi-empty">No rack-mount UniFi devices discovered yet.</div>`

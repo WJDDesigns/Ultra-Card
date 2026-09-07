@@ -1,14 +1,14 @@
 # Unifying module styles with the theme engine
 
-Status: Phases A, B and C shipped (September 2026); D and E open.
+Status: all phases (A to E) shipped, September 2026.
 
 ## 0. What shipped
 
 - `src/utils/uc-surface-recipes.ts`: the recipe vocabulary, roles, alias map,
   `UC_SURFACE_FIELD_ROLES`, `recipesFromSurface`, and the three renderers
   (`getControlSurfaceStyles`, `getBarSurfaceCss`, `getSliderSurfaceCss`)
-  ported verbatim from button/bar/slider. `uc-surface-styles.ts` keeps the old
-  button names as re-exports.
+  ported verbatim from button/bar/slider. `uc-surface-styles.ts` now holds only
+  the card-chrome `getSurfaceTokens`; the old button names are gone (Phase E).
 - `src/utils/__tests__/surface-goldens.test.ts`: 93 snapshots (bar × 13 styles
   × gradient on/off × 55 %/100 %, slider × 11, button/spinbox/popup × 10)
   rendered through the real modules in jsdom. The port produced zero diffs.
@@ -22,6 +22,20 @@ Status: Phases A, B and C shipped (September 2026); D and E open.
   per-module dropdowns read "Theme surface (glass)" for surface fields. The
   website preview paints buttons, tracks, fills and panes from the recipes.
 - Metallic gained `recipes: { control/track/fill: metallic, pane: inset }`.
+- Phase D: the pane recipe is folded into `--uc-pane-bg/border/shadow`
+  (`paneVars(tokens, recipe)`), so the ~40 modules that already read those
+  variables take the recipe with no per-module work. A recipe equal to what
+  the surface implies leaves the variables byte-identical, so themes without
+  `recipes` render exactly as before. Glass panes add `--uc-pane-backdrop`,
+  applied by the theme base stylesheet to `[data-uc-role="pane"]`, which also
+  carries `box-shadow: var(--uc-pane-shadow)` for panes that do not set one
+  inline (hover rules still win on specificity). Adopters: tabs switch tracks
+  (pane) and active switch tabs (control recipe, applied only when it is not
+  flat), grid tiles (pane; user colours and self-chromed layouts `style_9/11/
+  12/16/17/19/20` opt out), auto-entity rows, activity-feed cards, area
+  summary tiles, UniFi rack. Website runtime mirrors `paneVars`.
+- `src/utils/__tests__/surface-roles.test.ts` pins the `data-uc-role` /
+  `data-uc-surface` contract for every adopter.
 
 Deviations from the proposal below:
 
@@ -34,6 +48,12 @@ Deviations from the proposal below:
 - Bar and slider keep separate renderers behind the shared vocabulary; their
   geometry (percentage masks vs. hard-stop gradients) is genuinely different
   and forcing one table would have meant rewriting rather than porting.
+- Phase D took the CSS-variable route rather than per-module `resolveSurface`
+  calls: panes are colour+border+shadow, which the variables already carry, and
+  it reaches every consumer at once. The UniFi rack keeps its skeuomorphic
+  `rack_style` chassis and only takes the pane shadow and role hook.
+- Navigation (decision 2) is left out: its presets are whole layouts.
+
 Scope: how bar styles, button surfaces, slider tracks and every other "internal
 style" keep working while becoming layers of the theme engine, without
 changing what any existing dashboard renders.

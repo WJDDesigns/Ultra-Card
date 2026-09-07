@@ -127,6 +127,7 @@ export function unifiModuleStyles(): string {
     radial-gradient(ellipse at 50% 0%, rgba(40,80,140,0.18), transparent 55%),
     linear-gradient(180deg, #10141c 0%, var(--rack-bg) 100%);
   border: 1px solid rgba(80,100,140,0.25);
+  box-shadow: var(--uc-pane-shadow, none);
   /* The rack paints its own dark chassis, so it must bring its own ink:
      inheriting the page text colour goes navy-on-charcoal under any light
      HA theme or a light Ultra Card theme. Blank inherits (no chassis). */

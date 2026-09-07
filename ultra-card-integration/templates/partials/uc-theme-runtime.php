@@ -132,7 +132,22 @@ window.UcTheme = (function () {
       default: return { background: 'var(--card-background-color, var(--ha-card-background, white))', border: border(1, 'var(--divider-color)'), shadow: sh || 'none', backdropFilter: 'none' };
     }
   }
-  function paneVars(t) {
+  // Mirrors paneVars() in uc-theme-service.ts: the surface picks the defaults,
+  // a pane recipe other than the surface's own replaces them, explicit
+  // pane_* tokens win over both.
+  var PANE_RECIPES = {
+    flat: ['var(--secondary-background-color)', '1px solid var(--divider-color)', 'none'],
+    glossy: ['linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)), var(--card-background-color)', 'none', 'inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15)'],
+    embossed: ['var(--secondary-background-color)', '1px solid rgba(0, 0, 0, 0.12)', 'inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.12)'],
+    inset: ['var(--secondary-background-color)', 'none', 'inset 0 2px 5px rgba(0, 0, 0, 0.25)'],
+    'gradient-overlay': ['linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.1)), var(--secondary-background-color)', 'none', 'none'],
+    'neon-glow': ['var(--secondary-background-color)', '1px solid rgba(var(--rgb-primary-color), 0.5)', '0 0 8px rgba(var(--rgb-primary-color), 0.45)'],
+    outline: ['transparent', '1px solid var(--divider-color)', 'none'],
+    glass: ['rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)', '1px solid rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1)', 'none'],
+    metallic: ['linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)', '1px solid #bbb', 'inset 0 1px 0 rgba(255, 255, 255, 0.6)'],
+    neumorphic: ['var(--card-background-color)', 'none', 'inset 4px 4px 9px rgba(0, 0, 0, 0.22), inset -4px -4px 9px rgba(255, 255, 255, 0.07)']
+  };
+  function paneVars(t, recipe) {
     var by = {
       flat: ['var(--secondary-background-color)', '1px solid var(--divider-color)', 'none'],
       glass: ['rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)', '1px solid rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1)', 'none'],
@@ -142,7 +157,12 @@ window.UcTheme = (function () {
       minimal: ['transparent', 'none', 'none']
     };
     var d = by[t.surface] || by.flat;
-    return { '--uc-pane-bg': t.pane_background || d[0], '--uc-pane-border': t.pane_border || d[1], '--uc-pane-shadow': t.pane_shadow || d[2] };
+    var derived = recipesFromSurface(t.surface).pane;
+    var r = recipe || derived;
+    if (r !== derived && PANE_RECIPES[r]) d = PANE_RECIPES[r];
+    var out = { '--uc-pane-bg': t.pane_background || d[0], '--uc-pane-border': t.pane_border || d[1], '--uc-pane-shadow': t.pane_shadow || d[2] };
+    if (r === 'glass') out['--uc-pane-backdrop'] = 'blur(' + Math.round((t.blur == null ? 12 : t.blur) / 2) + 'px) saturate(140%)';
+    return out;
   }
   function radiusScale(r) { return String(Math.round(Math.min(RADIUS_SCALE_MAX, Math.max(0, r / BASE_CARD_RADIUS)) * 100) / 100); }
   function radiusInner(r, pad) {
@@ -230,8 +250,9 @@ window.UcTheme = (function () {
       '--uc-radius-scale': radiusScale(radius),
       '--uc-radius-inner': radiusInner(radius, theme.card && theme.card.card_padding) + 'px'
     };
-    var pv = paneVars(t); for (var k in pv) vars[k] = pv[k];
-    var rc = resolveRecipes(theme); ROLES.forEach(function (role) { vars['--uc-recipe-' + role] = rc[role]; });
+    var rc = resolveRecipes(theme);
+    var pv = paneVars(t, rc.pane); for (var k in pv) vars[k] = pv[k];
+    ROLES.forEach(function (role) { vars['--uc-recipe-' + role] = rc[role]; });
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;
     if (t.font_family) vars['--uc-font-family'] = t.font_family;
@@ -428,19 +449,9 @@ window.UcTheme = (function () {
     dots: 'background:radial-gradient(circle 4px at 10% center,' + ACC + ' 100%,transparent 100%),radial-gradient(circle 4px at 30% center,' + ACC + ' 100%,transparent 100%),radial-gradient(circle 4px at 50% center,' + ACC + ' 100%,transparent 100%);width:100%!important;',
     minimal: 'height:2px;top:calc(50% - 1px);'
   };
-  // Pane recipes layered over the theme's pane tokens for rows, tiles and chips.
-  var PANE_SURFACE = {
-    flat: '',
-    glossy: 'background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 55%);',
-    embossed: 'box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(0,0,0,.12);',
-    inset: 'box-shadow:inset 0 2px 5px rgba(0,0,0,.25);',
-    'gradient-overlay': 'background-image:linear-gradient(135deg,rgba(255,255,255,.1),rgba(0,0,0,.1));',
-    'neon-glow': 'box-shadow:0 0 8px color-mix(in srgb,' + ACC + ' 45%,transparent);',
-    outline: 'background:transparent;border:1px solid ' + ACC + ';',
-    glass: 'backdrop-filter:blur(var(--uc-blur,8px));border:1px solid rgba(255,255,255,.2);',
-    metallic: 'background-image:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.04) 45%,rgba(0,0,0,.06) 55%,rgba(255,255,255,.08));',
-    neumorphic: 'box-shadow:4px 4px 9px rgba(0,0,0,.16),-4px -4px 9px rgba(255,255,255,.08);border:0;'
-  };
+  // The pane recipe is already folded into --uc-pane-* (paneVars); the only
+  // extra a pane element draws is the glass backdrop, as the card's base CSS does.
+  var PANE_EXTRA = 'backdrop-filter:var(--uc-pane-backdrop,none);-webkit-backdrop-filter:var(--uc-pane-backdrop,none);';
 
   function sampleCards(theme, vars, salt) {
     // Every sample control/track/pane follows what a real module on "theme"
@@ -448,7 +459,7 @@ window.UcTheme = (function () {
     var ctl = moduleSurface(theme, 'button', 'style') || 'flat';
     var trk = moduleSurface(theme, 'bar', 'bar_style') || 'flat';
     var rc = resolveRecipes(theme);
-    var PANE = PANE_BASE + (PANE_SURFACE[rc.pane] || '');
+    var PANE = PANE_BASE + PANE_EXTRA;
     var TRACK = PANE_BASE + (TRACK_SURFACE[trk] || '');
     var FILL = 'background:' + ACC + ';border-radius:inherit;' + (FILL_SURFACE[rc.fill] || '');
     var card = attr(styleString(cardStyle(theme, vars)));

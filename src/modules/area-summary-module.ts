@@ -1220,7 +1220,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
 
     if (preset === 'graph_glow') {
       inner = html`
-        <div class="uc-ar uc-ar--graph" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
+        <div class="uc-ar uc-ar--graph" data-uc-role="pane" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
           <svg class="uc-ar-wave" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true">
             <path
               d="M0,45 C60,10 120,70 180,40 S300,5 400,50 L400,80 L0,80 Z"
@@ -1253,7 +1253,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       `;
     } else if (preset === 'compact_controls') {
       inner = html`
-        <div class="uc-ar uc-ar--compact" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
+        <div class="uc-ar uc-ar--compact" data-uc-role="pane" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
           <div class="uc-ar-compact-grid">
             <div class="uc-ar-compact-left">
               <div class="uc-ar-compact-icon">
@@ -1305,7 +1305,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       `;
     } else {
       inner = html`
-        <div class="uc-ar uc-ar--iconic" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
+        <div class="uc-ar uc-ar--iconic" data-uc-role="pane" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
           <div class="uc-ar-iconic-top">
             <div class="uc-ar-name">${title}</div>
             <div class="uc-ar-sub">${stat}</div>
@@ -1354,8 +1354,9 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         overflow: hidden;
         min-height: 132px;
         color: var(--primary-text-color);
-        background: var(--card-background-color, var(--ha-card-background, #fff));
-        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background, #fff)));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, 0 4px 18px rgba(0,0,0,0.08));
       }
       .uc-ar--empty { padding: 0; }
       .uc-ar-retry {

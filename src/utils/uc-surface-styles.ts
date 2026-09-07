@@ -1,27 +1,8 @@
 /**
- * Card-chrome surface tokens. The button-like surface map that used to live
- * here moved to `uc-surface-recipes.ts` (role `control`); the old names are
- * re-exported so existing imports keep working.
+ * Card-chrome surface tokens: background, border, shadow and backdrop the card
+ * shell paints for a theme's `surface`. Button-like surfaces live in
+ * `uc-surface-recipes.ts` (role `control`).
  */
-
-import {
-  getControlSurfaceStyles,
-  getControlSurfaceStyleString,
-  UC_CONTROL_RECIPES,
-  type UcControlSurfaceOptions,
-  type UcSurfaceRecipe,
-} from './uc-surface-recipes';
-
-/** @deprecated use `UcSurfaceRecipe` */
-export type UcButtonSurfaceStyle = Exclude<UcSurfaceRecipe, 'dashed' | 'dots' | 'minimal'>;
-/** @deprecated use `UC_CONTROL_RECIPES` */
-export const UC_BUTTON_SURFACE_STYLES: readonly UcButtonSurfaceStyle[] = UC_CONTROL_RECIPES as readonly UcButtonSurfaceStyle[];
-/** @deprecated use `UcControlSurfaceOptions` */
-export type UcButtonSurfaceOptions = UcControlSurfaceOptions;
-/** @deprecated use `getControlSurfaceStyles` */
-export const getButtonSurfaceStyles = getControlSurfaceStyles;
-/** @deprecated use `getControlSurfaceStyleString` */
-export const getButtonSurfaceStyleString = getControlSurfaceStyleString;
 
 /**
  * Surface-level CSS tokens a theme exposes on the card host as `--uc-*`

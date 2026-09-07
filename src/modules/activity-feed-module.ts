@@ -1133,7 +1133,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           : '2px';
 
     return html`
-      <div class="af-feed-card af-feed-card--${style}" style="background: ${cardBg};">
+      <div class="af-feed-card af-feed-card--${style}" data-uc-role="pane" style="background: ${cardBg};">
         <div class="af-feed-card-body">
           ${feedModule.show_avatar
             ? html`
@@ -1473,7 +1473,8 @@ export class UltraActivityFeedModule extends BaseUltraModule {
       }
 
       .af-feed-card--outlined {
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
+        box-shadow: var(--uc-pane-shadow, none);
       }
 
       .af-feed-card-body {

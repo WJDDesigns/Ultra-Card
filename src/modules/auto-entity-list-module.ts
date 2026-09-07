@@ -1649,6 +1649,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
+              data-uc-role="pane"
               style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--uc-r-8, 8px);background:${o.cardBg};border: var(--uc-pane-border, 1px solid var(--divider-color)); box-shadow: var(--uc-pane-shadow, none);"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
@@ -1702,6 +1703,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
+              data-uc-role="pane"
               style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};border: var(--uc-pane-border, 1px solid var(--divider-color)); box-shadow: var(--uc-pane-shadow, none);"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
@@ -1760,6 +1762,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
+              data-uc-role="pane"
               style="display:flex;align-items:center;gap:8px;padding:6px 8px;${useDivider && !isLast
                 ? 'border-bottom:1px solid var(--divider-color);'
                 : ''}"
@@ -1812,6 +1815,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           return html`
             <div
               class="uc-ael-row"
+              data-uc-role="pane"
               style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--uc-r-24, 24px);background:${o.cardBg};border-left:4px solid ${accent};box-shadow:0 1px 2px rgba(0,0,0,0.05);box-sizing:border-box;${sizeStyle}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}

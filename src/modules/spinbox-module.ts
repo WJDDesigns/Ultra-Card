@@ -15,7 +15,7 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
-import { getButtonSurfaceStyleString } from '../utils/uc-surface-styles';
+import { getControlSurfaceStyleString } from '../utils/uc-surface-recipes';
 import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 
 /** Unified-template output keys the spinbox module reads. */
@@ -853,7 +853,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
     `;
 
     // Spinbox always recolours outline/metallic labels (hasCustomTextColor: false).
-    const buttonStyle = `${buttonBaseStyle} ${getButtonSurfaceStyleString(styleClass, {
+    const buttonStyle = `${buttonBaseStyle} ${getControlSurfaceStyleString(styleClass, {
       background: buttonBackground,
       hasCustomTextColor: false,
     })}`;

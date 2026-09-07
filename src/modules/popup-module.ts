@@ -15,7 +15,7 @@ import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-
 import '../components/ultra-color-picker';
 import { ucToastService } from '../services/uc-toast-service';
 import { autoMigrateCardModule } from '../utils/template-migration';
-import { getButtonSurfaceStyles } from '../utils/uc-surface-styles';
+import { getControlSurfaceStyles } from '../utils/uc-surface-recipes';
 import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 
 // Global store to persist popup state across module re-instantiation/reloads
@@ -3229,7 +3229,7 @@ export class UltraPopupModule extends BaseUltraModule {
 
         const textColor = popupModule.trigger_button_text_color || 'white';
 
-        const overrides = getButtonSurfaceStyles(styleClass, {
+        const overrides = getControlSurfaceStyles(styleClass, {
           background: bgColor,
           hasCustomTextColor,
         });

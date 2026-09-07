@@ -356,6 +356,9 @@ function getStyleConfig(styleId: GridStylePreset): GridStyleConfig {
   return GRID_STYLE_PRESETS.find(s => s.id === styleId) || GRID_STYLE_PRESETS[0];
 }
 
+/** Grid layouts that paint their own tile chrome; the theme pane border/shadow stays out of their way. */
+const GRID_STYLES_WITH_OWN_CHROME = new Set(['style_9', 'style_11', 'style_12', 'style_16', 'style_17', 'style_19', 'style_20']);
+
 export class UltraGridModule extends BaseUltraModule {
   private _autoFilterMemo = new UcStatesMemo<string[]>();
 
@@ -2871,6 +2874,7 @@ export class UltraGridModule extends BaseUltraModule {
     return html`
       <div
         class="uc-grid-item grid-style-${module.grid_style} ${modeClasses} ${hoverClass}"
+        data-uc-role="pane"
         style="${itemStyles}${animationStyles}"
         @pointerdown=${handlers.onPointerDown}
         @pointermove=${handlers.onPointerMove}
@@ -2891,7 +2895,16 @@ export class UltraGridModule extends BaseUltraModule {
     isOn: boolean,
     isUnavailable: boolean
   ): string {
-    const bgColor = entity.custom_background || module.global_background_color || 'var(--card-background-color)';
+    // A tile is an inner pane: without a user colour it follows the theme's
+    // pane (no theme: HA's card background, as before).
+    // `var(--card-background-color)` is the editor's default value, not a choice.
+    const userBg =
+      entity.custom_background ||
+      (module.global_background_color && module.global_background_color !== 'var(--card-background-color)'
+        ? module.global_background_color
+        : undefined);
+    const themedPane = !userBg;
+    const bgColor = userBg || 'var(--uc-pane-bg, var(--card-background-color))';
     const borderRadius = module.global_border_radius || styleConfig.defaultBorderRadius;
     const padding = module.global_padding || styleConfig.defaultPadding;
     const borderWidth = module.global_border_width || 0;
@@ -2901,6 +2914,10 @@ export class UltraGridModule extends BaseUltraModule {
 
     if (borderWidth > 0) {
       styles += `border: ${borderWidth}px solid ${borderColor};`;
+    } else if (themedPane && !GRID_STYLES_WITH_OWN_CHROME.has(module.grid_style)) {
+      // Shadow comes from the theme stylesheet ([data-uc-role="pane"]) so
+      // hover-lift / hover-glow rules keep winning; the border is inline.
+      styles += `border: var(--uc-pane-border, none);`;
     }
 
     // Style-specific additions using customizable colors

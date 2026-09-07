@@ -1,4 +1,4 @@
-import { UC_BUTTON_SURFACE_STYLES } from '../utils/uc-surface-styles';
+import { UC_CONTROL_RECIPES } from '../utils/uc-surface-recipes';
 
 /**
  * Option lists for every module style key a theme may default
@@ -27,7 +27,7 @@ const titleCase = (s: string) =>
   s.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 const surface = (extra: string[] = []): UcThemeModuleOption[] =>
-  [...UC_BUTTON_SURFACE_STYLES, ...extra].map(v => ({ value: v, label: titleCase(v) }));
+  [...UC_CONTROL_RECIPES, ...extra].map(v => ({ value: v, label: titleCase(v) }));
 
 const GRID_STYLE_LABELS: Record<string, string> = {
   style_1: 'Name / icon / state',

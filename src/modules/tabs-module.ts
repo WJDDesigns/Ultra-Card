@@ -8,7 +8,8 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
-import { withThemedStyles } from '../services/uc-theme-service';
+import { ucThemeService, withThemedStyles } from '../services/uc-theme-service';
+import { getControlSurfaceStyleString, type UcSurfaceRecipe } from '../utils/uc-surface-recipes';
 
 export class UltraTabsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -1470,6 +1471,7 @@ export class UltraTabsModule extends BaseUltraModule {
     // Build styles
     const containerStyles = this._buildContainerStyles(tabsModule);
     const tabsContainerStyles = this._buildTabsContainerStyles(tabsModule, orientation, alignment);
+    const controlRecipe = ucThemeService.getRecipes(config).control;
     const contentStyles = this._buildContentStyles(tabsModule);
 
     const position = tabsModule.tab_position || (orientation === 'vertical' ? 'left' : 'top');
@@ -1583,13 +1585,14 @@ export class UltraTabsModule extends BaseUltraModule {
         <!-- Tabs Header -->
         <div
           class="ultra-tabs-header"
+          data-uc-role="pane"
           style="${tabsContainerStyles}"
           role="tablist"
           aria-label="Tabs"
           aria-orientation="${orientation}"
           @keydown=${(e: KeyboardEvent) => this._handleTablistKeydown(e, tabsModule, sections)}
         >
-          ${sections.map(section => this._renderTabButton(section, activeTabId!, tabsModule, hass))}
+          ${sections.map(section => this._renderTabButton(section, activeTabId!, tabsModule, hass, controlRecipe))}
         </div>
 
         <!-- Tab Content -->
@@ -1630,7 +1633,8 @@ export class UltraTabsModule extends BaseUltraModule {
     section: TabSection,
     activeTabId: string,
     tabsModule: TabsModule,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    controlRecipe: UcSurfaceRecipe = 'flat'
   ): TemplateResult {
     const isActive = section.id === activeTabId;
     const style = tabsModule.style || 'switch';
@@ -1638,7 +1642,17 @@ export class UltraTabsModule extends BaseUltraModule {
     const hasTitle = !!section.title?.trim();
     const isIconOnly = hasIcon && !hasTitle;
 
-    const buttonStyles = this._buildTabButtonStyles(tabsModule, isActive, style, isIconOnly);
+    let buttonStyles = this._buildTabButtonStyles(tabsModule, isActive, style, isIconOnly);
+    // The active tab of a switch is a control: under a theme whose controls are
+    // glass, glossy, etc. it takes that recipe. Flat is the no-op so unthemed
+    // cards and layout styles that draw their own chrome are untouched.
+    const isSwitch = style === 'switch_1' || style === 'switch_2' || style === 'switch_3' || style === 'switch';
+    if (isActive && isSwitch && controlRecipe !== 'flat') {
+      buttonStyles += getControlSurfaceStyleString(controlRecipe, {
+        background: tabsModule.active_tab_background || 'var(--primary-color)',
+        hasCustomTextColor: !!tabsModule.active_tab_color,
+      });
+    }
 
     const handleClick = (e: Event) => {
       e.stopPropagation();
@@ -1658,6 +1672,8 @@ export class UltraTabsModule extends BaseUltraModule {
           ? 'has-icon'
           : ''}"
         style="${buttonStyles}"
+        data-uc-role="control"
+        data-uc-surface="${isActive && controlRecipe !== 'flat' ? controlRecipe : 'flat'}"
         role="tab"
         id="${tabsModule.id}-tab-${section.id}"
         aria-controls="${tabsModule.id}-panel-${section.id}"
@@ -1883,25 +1899,31 @@ export class UltraTabsModule extends BaseUltraModule {
     // Style-specific container backgrounds
     // Use track_background if set, otherwise use style-specific defaults
     const trackBg = tabsModule.track_background || '';
-    let containerBg = trackBg || 'var(--secondary-background-color)';
+    let containerBg = trackBg || 'var(--uc-pane-bg, var(--secondary-background-color))';
     let containerPadding = '4px';
     let containerRadius = tabsModule.tab_border_radius || '8px';
+    // Switch-style tracks are inner panes: they take the theme's pane border
+    // and shadow unless the user painted the track themselves.
+    let paneChrome = trackBg ? '' : 'border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none);';
 
     if (style === 'default' || style === 'simple' || style === 'simple_2' || style === 'simple_3') {
       containerBg = trackBg || 'transparent';
       containerPadding = '0';
       containerRadius = '0';
+      paneChrome = '';
     } else if (style === 'switch_2') {
       // Pill style - match the container radius to the button radius
       containerRadius = '50px';
     } else if (style === 'switch_3') {
-      containerBg = trackBg || 'rgba(0, 0, 0, 0.1)';
+      containerBg = trackBg || 'var(--uc-pane-bg, rgba(0, 0, 0, 0.1))';
     } else if (style === 'modern') {
       containerBg = trackBg || 'transparent';
       containerPadding = '0';
+      paneChrome = '';
     } else if (style === 'trendy') {
       containerBg = trackBg || 'transparent';
       containerPadding = '0';
+      paneChrome = '';
     }
 
     // Check if all sections are icon-only (have icon but no title)
@@ -1943,6 +1965,7 @@ export class UltraTabsModule extends BaseUltraModule {
       padding: ${containerPadding};
       background: ${containerBg};
       border-radius: ${containerRadius};
+      ${paneChrome}
       ${style === 'simple' || style === 'default' ? 'border-bottom: 1px solid var(--divider-color);' : ''}
       ${style === 'simple_2' ? 'border-top: 1px solid var(--divider-color); border-bottom: 1px solid var(--divider-color);' : ''}
     `;

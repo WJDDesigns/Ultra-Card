@@ -7,7 +7,7 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
-import { getButtonSurfaceStyles } from '../utils/uc-surface-styles';
+import { getControlSurfaceStyles } from '../utils/uc-surface-recipes';
 import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 
 const buttonSettings = createLazySettings(
@@ -216,7 +216,7 @@ export class UltraButtonModule extends BaseUltraModule {
 
     const mergedButtonStyle: Record<string, string> = {
       ...baseButtonStyle,
-      ...getButtonSurfaceStyles(styleClass, {
+      ...getControlSurfaceStyles(styleClass, {
         background: backgroundColor,
         hasCustomTextColor,
       }),

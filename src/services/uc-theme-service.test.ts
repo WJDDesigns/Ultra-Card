@@ -272,6 +272,29 @@ describe('resolution order', () => {
     expect(ucThemeService.getRecipes(cfg())).toEqual({ control: 'flat', track: 'flat', fill: 'flat', pane: 'flat' });
   });
 
+  it('pane recipe: surface-derived leaves pane vars untouched, another recipe replaces them', () => {
+    const glassTokens = { surface: 'glass', radius: 16 } as const;
+    const base = paneVars(glassTokens);
+    expect(paneVars(glassTokens, 'glass')).toEqual({ ...base, '--uc-pane-backdrop': 'blur(6px) saturate(140%)' });
+    expect(base['--uc-pane-backdrop']).toBe('blur(6px) saturate(140%)');
+    const inset = paneVars(glassTokens, 'inset');
+    expect(inset['--uc-pane-shadow']).toContain('inset 0 2px 5px');
+    expect(inset['--uc-pane-backdrop']).toBeUndefined();
+    // explicit pane tokens still win over any recipe
+    const pinned = paneVars({ surface: 'flat', radius: 12, pane_background: '#123', pane_shadow: 'none' }, 'neon-glow');
+    expect(pinned['--uc-pane-bg']).toBe('#123');
+    expect(pinned['--uc-pane-shadow']).toBe('none');
+    expect(pinned['--uc-pane-border']).toContain('rgba(var(--rgb-primary-color), 0.5)');
+    // themes without recipes: identical to before
+    for (const t of BUILTIN_THEMES) {
+      if (t.tokens.recipes) continue;
+      const before = paneVars(t.tokens);
+      const after = ucThemeService.getHostVars(t);
+      for (const k of Object.keys(before)) expect(after[k], `${t.id} ${k}`).toBe(before[k]);
+    }
+    expect(UC_THEME_BASE_CSS).toContain('[data-uc-role="pane"]');
+  });
+
   it('host vars expose the recipe per role', () => {
     const vars = ucThemeService.getHostVars(METALLIC_THEME);
     expect(vars['--uc-recipe-control']).toBe('metallic');

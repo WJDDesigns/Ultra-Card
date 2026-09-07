@@ -10,7 +10,6 @@ import {
   recipesFromSurface,
   surfaceRoleFor,
 } from '../uc-surface-recipes';
-import { getButtonSurfaceStyles, UC_BUTTON_SURFACE_STYLES } from '../uc-surface-styles';
 
 describe('surface recipes', () => {
   it('normalises synonyms and rejects non-recipes', () => {
@@ -39,13 +38,6 @@ describe('surface recipes', () => {
     expect(recipesFromSurface('glass')).toEqual({ control: 'glass', track: 'glass', fill: 'flat', pane: 'glass' });
     expect(recipesFromSurface('flat')).toEqual({ control: 'flat', track: 'flat', fill: 'flat', pane: 'flat' });
     expect(recipesFromSurface(undefined).control).toBe('flat');
-  });
-
-  it('keeps the legacy button helper as an alias', () => {
-    expect(UC_BUTTON_SURFACE_STYLES).toEqual(UC_CONTROL_RECIPES);
-    expect(getButtonSurfaceStyles('glass', { background: '#123456', blur: 4 })).toEqual(
-      getControlSurfaceStyles('glass', { background: '#123456', blur: 4 })
-    );
   });
 
   it('control: metallic and outline pick a readable text colour unless the user set one', () => {

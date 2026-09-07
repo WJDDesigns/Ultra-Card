@@ -97,6 +97,13 @@ export const UC_THEME_BASE_CSS = `
 [style*="--uc-design-surface"] {
   box-shadow: var(--uc-pane-shadow, none);
 }
+[data-uc-role="pane"] {
+  backdrop-filter: var(--uc-pane-backdrop, none);
+  -webkit-backdrop-filter: var(--uc-pane-backdrop, none);
+}
+[data-uc-role="pane"]:not([style*="box-shadow"]) {
+  box-shadow: var(--uc-pane-shadow, none);
+}
 .card-container {
   background: var(--uc-surface-bg, var(--card-background-color, var(--ha-card-background, white)));
   box-shadow: var(--uc-shadow, var(--ha-card-box-shadow, none));
@@ -212,7 +219,7 @@ export function radiusScale(cardRadius: number): string {
  * look as they always did. Explicit `pane_*` tokens win; otherwise the look
  * follows the theme's surface.
  */
-export function paneVars(t: UcThemeTokens): Record<string, string> {
+export function paneVars(t: UcThemeTokens, recipe?: UcSurfaceRecipe): Record<string, string> {
   const bySurface: Record<string, [string, string, string]> = {
     flat: ['var(--secondary-background-color)', '1px solid var(--divider-color)', 'none'],
     glass: [
@@ -233,13 +240,59 @@ export function paneVars(t: UcThemeTokens): Record<string, string> {
     outline: ['transparent', '1px solid var(--divider-color)', 'none'],
     minimal: ['transparent', 'none', 'none'],
   };
-  const [bg, border, shadow] = bySurface[t.surface] ?? bySurface.flat;
-  return {
+  let [bg, border, shadow] = bySurface[t.surface] ?? bySurface.flat;
+  // A pane recipe that differs from what the surface already implies replaces
+  // the surface defaults; the surface-derived recipe keeps them exactly as they
+  // were, so themes without `recipes` render unchanged.
+  const derived = recipesFromSurface(t.surface).pane;
+  const r = recipe ?? derived;
+  if (r !== derived && PANE_RECIPES[r]) [bg, border, shadow] = PANE_RECIPES[r];
+  const vars: Record<string, string> = {
     '--uc-pane-bg': t.pane_background ?? bg,
     '--uc-pane-border': t.pane_border ?? border,
     '--uc-pane-shadow': t.pane_shadow ?? shadow,
   };
+  if (r === 'glass') vars['--uc-pane-backdrop'] = `blur(${Math.round((t.blur ?? 12) / 2)}px) saturate(140%)`;
+  return vars;
 }
+
+/** [background, border, shadow] a pane recipe paints when it is not the surface's own. */
+const PANE_RECIPES: Partial<Record<UcSurfaceRecipe, [string, string, string]>> = {
+  flat: ['var(--secondary-background-color)', '1px solid var(--divider-color)', 'none'],
+  glossy: [
+    'linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)), var(--card-background-color)',
+    'none',
+    'inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15)',
+  ],
+  embossed: [
+    'var(--secondary-background-color)',
+    '1px solid rgba(0, 0, 0, 0.12)',
+    'inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.12)',
+  ],
+  inset: ['var(--secondary-background-color)', 'none', 'inset 0 2px 5px rgba(0, 0, 0, 0.25)'],
+  'gradient-overlay': [
+    'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.1)), var(--secondary-background-color)',
+    'none',
+    'none',
+  ],
+  'neon-glow': [
+    'var(--secondary-background-color)',
+    '1px solid rgba(var(--rgb-primary-color), 0.5)',
+    '0 0 8px rgba(var(--rgb-primary-color), 0.45)',
+  ],
+  outline: ['transparent', '1px solid var(--divider-color)', 'none'],
+  glass: [
+    'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)',
+    '1px solid rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1)',
+    'none',
+  ],
+  metallic: ['linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)', '1px solid #bbb', 'inset 0 1px 0 rgba(255, 255, 255, 0.6)'],
+  neumorphic: [
+    'var(--card-background-color)',
+    'none',
+    'inset 4px 4px 9px rgba(0, 0, 0, 0.22), inset -4px -4px 9px rgba(255, 255, 255, 0.07)',
+  ],
+};
 
 /**
  * Largest radius a first-level nested surface may have so its corner reads
@@ -574,7 +627,7 @@ class UcThemeService {
       // square theme squares everything and a round one rounds everything.
       '--uc-radius-scale': radiusScale(t.radius),
       '--uc-radius-inner': `${radiusInner(t.radius, theme.card?.card_padding)}px`,
-      ...paneVars(t),
+      ...paneVars(t, resolveThemeRecipes(theme).pane),
     };
     for (const [role, recipe] of Object.entries(resolveThemeRecipes(theme))) {
       vars[`--uc-recipe-${role}`] = recipe;
