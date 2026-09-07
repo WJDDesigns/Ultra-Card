@@ -190,8 +190,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tg-chip.active{color:#fff;border-color:var(--uc-blue);background:rgba(41,182,246,.14)}
 .tg-chip .mdi{font-size:16px}
 .tg-controls-end{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
-.ucp .tg-sort{background:var(--uc-card);border:1px solid var(--uc-line);border-radius:999px;color:#fff;padding:10px 36px 10px 16px;font-size:13.5px;font-weight:600;outline:0;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%239aa3b2' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer}
-.ucp .tg-sort:focus{border-color:var(--uc-blue)}
+/* Host themes style <select> hard (fixed height, big line-height, 100% width);
+   pin every box property so the pill matches the segments next to it. */
+.ucp .tg-controls select.tg-sort{display:inline-block;width:auto!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;line-height:1.2!important;margin:0!important;padding:12px 36px 12px 16px!important;font-size:13.5px!important;font-weight:600;color:#fff!important;text-indent:0;box-shadow:none!important;background-color:var(--uc-card)!important;border:1px solid var(--uc-line)!important;border-radius:999px!important;outline:0;appearance:none!important;-webkit-appearance:none!important;-moz-appearance:none!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%239aa3b2' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 14px center!important;background-size:12px 12px!important;cursor:pointer;vertical-align:middle}
+.ucp .tg-controls select.tg-sort:focus{border-color:var(--uc-blue)!important}
 .ucp .tg-sort option{background:#14171d;color:#fff}
 .tg-result-count{font-size:13px;color:var(--uc-dim);white-space:nowrap}
 
@@ -287,7 +289,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   .tg-modal-mode{left:18px;bottom:18px}
   .tg-modal-body{padding:20px}
   .tg-modal-ctas .ucp-btn{flex:1 1 auto}
-  .ucp .tg-sort{flex:1}
+  .ucp .tg-controls select.tg-sort{flex:1;width:100%!important}
 }
 </style>
 
