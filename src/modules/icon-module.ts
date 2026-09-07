@@ -1342,6 +1342,7 @@ export class UltraIconModule extends BaseUltraModule {
         >
           <!-- Inactive Preview -->
           <div
+            data-uc-role="pane"
             style="
                  background: var(--uc-pane-bg, var(--card-background-color));
                  border-right: 1px solid var(--divider-color);
@@ -1356,6 +1357,7 @@ export class UltraIconModule extends BaseUltraModule {
 
           <!-- Active Preview -->
           <div
+            data-uc-role="pane"
             style="
                  background: var(--uc-pane-bg, var(--card-background-color));
                  padding: 16px;

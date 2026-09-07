@@ -331,6 +331,7 @@ export class UltraHumidifierModule extends BaseUltraModule {
     return html`
       <div
         class="uc-humidifier-wrapper ${hoverClass}"
+        data-uc-role="pane"
         style="padding:16px;border-radius:var(--uc-r-12, 12px);background:${cardBg};${designStyles}"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}

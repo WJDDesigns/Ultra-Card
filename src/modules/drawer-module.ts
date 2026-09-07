@@ -521,6 +521,7 @@ export class UltraDrawerModule extends BaseUltraModule {
       ></div>
       <div
         class="uc-drawer-panel"
+        data-uc-role="pane"
         role="dialog"
         aria-modal="true"
         aria-label="${drawerModule.drawer_title || 'Drawer'}"

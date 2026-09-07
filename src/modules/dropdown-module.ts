@@ -1950,6 +1950,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             <div class="custom-dropdown" style="position: relative;">
               <div
                 class="dropdown-selected"
+                data-uc-role="pane"
                 style="${dropdownStyles}"
                 tabindex="0"
                 role="combobox"
@@ -2122,6 +2123,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
               <div
                 class="dropdown-options"
+                data-uc-role="pane"
                 role="listbox"
                 style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--uc-pane-bg, var(--card-background-color)); border: var(--uc-pane-border, 1px solid var(--divider-color)); border-radius: var(--uc-r-4, 4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${Z_INDEX.DROPDOWN_MENU} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()

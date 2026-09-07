@@ -326,7 +326,7 @@ export class UltraPlantCareModule extends BaseUltraModule {
     );
 
     return html`
-      <div class="uc-pc-row ${expanded ? 'expanded' : ''}">
+      <div class="uc-pc-row ${expanded ? 'expanded' : ''}" data-uc-role="pane">
         <div class="uc-pc-row-head">
           <div class="uc-pc-thumb">
             ${thumb

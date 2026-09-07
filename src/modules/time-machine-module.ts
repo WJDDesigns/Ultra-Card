@@ -515,6 +515,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
 
         <div
           class="uc-tm-track"
+          data-uc-role="pane"
           @pointerdown=${(e: PointerEvent) => this._onTrackPointerDown(e, m.id)}
           @pointermove=${(e: PointerEvent) => this._onTrackPointerMove(e, m.id)}
           @pointerup=${(e: PointerEvent) => this._onTrackPointerUp(e)}
@@ -792,7 +793,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
           return html`
             <div class="uc-tm-lane" title="${friendly}">
               <span class="uc-tm-lane-name">${friendly}</span>
-              <span class="uc-tm-lane-track">
+              <span class="uc-tm-lane-track" data-uc-role="pane">
                 ${lane.segments.map(seg => {
                   const left = ((seg.startMs - windowStart) / spanMs) * 100;
                   const width = ((seg.endMs - seg.startMs) / spanMs) * 100;

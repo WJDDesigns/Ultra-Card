@@ -2165,6 +2165,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       <style>${this.getStyles()}</style>
       <div
         class="uc-appl-wrapper ${hoverClass}"
+        data-uc-role="pane"
         style="background: ${cardBg};${designStyles}"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}

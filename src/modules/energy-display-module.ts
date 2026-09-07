@@ -252,6 +252,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     return html`
       <div
         class="pro-lock-container"
+        data-uc-role="pane"
         style="
           display: flex;
           flex-direction: column;
@@ -669,6 +670,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     return html`
       <div
         class="entity-row ${this._draggedDevice?.id === dev.id ? 'dragging' : ''}"
+        data-uc-role="pane"
         draggable="true"
         @dragstart=${(e: DragEvent) => this._onDeviceDragStart(e, dev)}
         @dragend=${() => this._onDeviceDragEnd()}

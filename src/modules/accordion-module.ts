@@ -1691,6 +1691,7 @@ export class UltraAccordionModule extends BaseUltraModule {
       </style>
       <div
         class="ultra-accordion-container ${hoverClass} ${accordionId}"
+        data-uc-role="pane"
         style="${this.buildStyleString(containerStyles)}; ${designStyles}${hasAccordionActions
           ? '; cursor: pointer'
           : ''}"

@@ -2128,11 +2128,11 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
           ${summaryModule.show_last_change_header || summaryModule.show_time_header
             ? html`
                 <div class="summary-header">
-                  <div class="header-cell">Entity</div>
+                  <div class="header-cell" data-uc-role="pane">Entity</div>
                   ${summaryModule.show_last_change_header
-                    ? html`<div class="header-cell">Last Change</div>`
+                    ? html`<div class="header-cell" data-uc-role="pane">Last Change</div>`
                     : ''}
-                  ${summaryModule.show_time_header ? html`<div class="header-cell">Time</div>` : ''}
+                  ${summaryModule.show_time_header ? html`<div class="header-cell" data-uc-role="pane">Time</div>` : ''}
                 </div>
               `
             : ''}

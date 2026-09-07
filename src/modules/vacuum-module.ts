@@ -4202,7 +4202,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     
     // Default mode
     return html`
-      <div class="vacuum-fan-speed-row">
+      <div class="vacuum-fan-speed-row" data-uc-role="pane">
         <div class="fan-speed-left">
           <ha-icon icon="mdi:fan" style="color: ${color};"></ha-icon>
           <span>Speed</span>

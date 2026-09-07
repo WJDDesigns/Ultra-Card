@@ -406,6 +406,7 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
 
     return html`
       <div
+        data-uc-role="pane"
         style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};border: var(--uc-pane-border, 1px solid var(--divider-color)); box-shadow: var(--uc-pane-shadow, none);"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}

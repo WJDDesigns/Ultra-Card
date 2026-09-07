@@ -275,7 +275,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
   private renderProLockUI(lang: string): TemplateResult {
     return html`
-      <div class="pro-lock-container" style="
+      <div class="pro-lock-container" data-uc-role="pane" style="
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -1324,7 +1324,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
   private renderLockedPreview(): TemplateResult {
     return html`
-      <div style="
+      <div data-uc-role="pane" style="
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -2222,7 +2222,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       : this._currentError || 'No game data available';
 
     return html`
-      <div style="
+      <div data-uc-role="pane" style="
         display: flex;
         flex-direction: column;
         align-items: center;

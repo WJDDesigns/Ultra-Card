@@ -646,6 +646,7 @@ export class UltraStackModule extends BaseUltraModule {
                 <button
                   type="button"
                   class="uc-stack-chip ${aspectRatioCurrent === opt.value ? 'active' : ''}"
+                  data-uc-role="pane"
                   @click=${() => {
                     updateModule({ aspect_ratio: opt.value } as Partial<CardModule>);
                     this.triggerPreviewUpdate();
@@ -1013,6 +1014,7 @@ export class UltraStackModule extends BaseUltraModule {
               <button
                 type="button"
                 class="uc-stack-preset-card"
+                data-uc-role="pane"
                 @click=${() => onPick(preset.id)}
               >
                 <ha-icon icon="${preset.icon}"></ha-icon>
@@ -1052,6 +1054,7 @@ export class UltraStackModule extends BaseUltraModule {
     return html`
       <div
         class="uc-stack-layer-row ${isSelected ? 'selected' : ''} ${isHidden ? 'hidden' : ''}"
+        data-uc-role="pane"
         @click=${() => {
           this._setStackSelectedLayerIndex(moduleId, index);
           this.triggerPreviewUpdate();
@@ -1160,6 +1163,7 @@ export class UltraStackModule extends BaseUltraModule {
               <button
                 type="button"
                 class="uc-stack-anchor-cell ${currentAnchor === cell.anchor ? 'active' : ''}"
+                data-uc-role="pane"
                 title="${localize(`editor.stack.anchor.${cell.anchor}`, lang, cell.label)}"
                 @click=${() => updateSelectedLayer({ anchor: cell.anchor })}
               >

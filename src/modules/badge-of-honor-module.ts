@@ -158,6 +158,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     return html`
       <div
         class="pro-lock-container"
+        data-uc-role="pane"
         style="
         display: flex;
         flex-direction: column;

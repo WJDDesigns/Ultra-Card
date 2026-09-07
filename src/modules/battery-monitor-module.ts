@@ -1186,6 +1186,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'list');
           return html`
             <div
+              data-uc-role="pane"
               style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
@@ -1254,6 +1255,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'bar');
           return html`
             <div
+              data-uc-role="pane"
               style="padding:10px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
@@ -1382,6 +1384,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'ring');
           return html`
             <div
+              data-uc-role="pane"
               style="text-align:center;padding:10px;border-radius:var(--uc-r-12, 12px);background:${o.cardBg};${itemBorder}position:relative;"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}

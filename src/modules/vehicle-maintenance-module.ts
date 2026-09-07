@@ -1200,6 +1200,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
       <button
         type="button"
         class="vm-preset-card"
+        data-uc-role="pane"
         title=${name}
         @click=${() => this._addPreset(m, preset, lang, updateModule)}
       >
@@ -1232,6 +1233,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
     return html`
       <ha-expansion-panel
         class="vm-service-panel"
+        data-uc-role="pane"
         .expanded=${expanded}
         @expanded-changed=${(e: CustomEvent) => {
           if (e.detail?.expanded) es.expandedRows.add(item.id);

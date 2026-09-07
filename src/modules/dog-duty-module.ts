@@ -1874,7 +1874,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         : localize('editor.dog_duty.list_week_title', lang, 'This week');
 
     return html`
-      <div class="dog-duty-list-panel" @click=${(e: Event) => e.stopPropagation()}>
+      <div class="dog-duty-list-panel" data-uc-role="pane" @click=${(e: Event) => e.stopPropagation()}>
         <div class="dog-duty-list-header">
           <strong>${title}</strong>
           <button
@@ -1930,6 +1930,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
                 return html`
                   <button
                     class="dog-duty-list-row ${ev.cleaned ? 'cleaned' : ''} ${st.selectedUid === ev.uid ? 'selected' : ''}"
+                    data-uc-role="pane"
                     @click=${() => {
                       st.selectedUid = ev.uid;
                       st.listPanel = null;
@@ -2491,6 +2492,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
     return html`
       <div
         class="pro-lock-container"
+        data-uc-role="pane"
         style="
           display: flex;
           flex-direction: column;

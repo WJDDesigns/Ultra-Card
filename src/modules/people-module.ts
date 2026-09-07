@@ -1055,6 +1055,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section data-items-section"
+        data-uc-role="pane"
         style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
