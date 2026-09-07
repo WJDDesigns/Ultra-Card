@@ -66,6 +66,59 @@ function uc_theme_catalog_id($post) {
 }
 
 /**
+ * Ratings live in one meta array (user_id => 1..5) with cached aggregates so
+ * the catalog can sort by them. Returns array('rating' => float, 'rating_count' => int).
+ */
+function uc_theme_rating_aggregate($post_id) {
+    return array(
+        'rating'       => round((float) get_post_meta($post_id, '_uc_rating_avg', true), 1),
+        'rating_count' => (int) get_post_meta($post_id, '_uc_rating_count', true),
+    );
+}
+
+function uc_theme_set_user_rating($post_id, $user_id, $rating) {
+    $all = get_post_meta($post_id, '_uc_theme_ratings', true);
+    if (!is_array($all)) {
+        $all = array();
+    }
+    $rating = (int) $rating;
+    if ($rating < 1) {
+        unset($all[$user_id]);
+    } else {
+        $all[$user_id] = min(5, $rating);
+    }
+    update_post_meta($post_id, '_uc_theme_ratings', $all);
+    $count = count($all);
+    $avg = $count ? array_sum($all) / $count : 0;
+    update_post_meta($post_id, '_uc_rating_avg', round($avg, 2));
+    update_post_meta($post_id, '_uc_rating_count', $count);
+    return array('rating' => round($avg, 1), 'rating_count' => $count, 'my_rating' => isset($all[$user_id]) ? $all[$user_id] : 0);
+}
+
+function uc_theme_my_rating($post_id, $user_id) {
+    if (!$user_id) {
+        return 0;
+    }
+    $all = get_post_meta($post_id, '_uc_theme_ratings', true);
+    return is_array($all) && isset($all[$user_id]) ? (int) $all[$user_id] : 0;
+}
+
+/**
+ * Add the caller's own rating to normalised items after any cache lookup, so
+ * cached catalog pages stay user-agnostic.
+ */
+function uc_theme_attach_my_ratings(array $items) {
+    $user_id = get_current_user_id();
+    foreach ($items as &$item) {
+        if (isset($item['id'])) {
+            $item['my_rating'] = uc_theme_my_rating((int) $item['id'], $user_id);
+        }
+    }
+    unset($item);
+    return $items;
+}
+
+/**
  * CSS constructs the card refuses. Kept in sync with
  * src/themes/uc-theme-validate.ts (scanThemeCss).
  */
@@ -263,6 +316,7 @@ function uc_normalize_theme($post, $include_definition = true) {
     }
 
     $pending = get_post_meta($post->ID, '_uc_pending_revision', true);
+    $rating_agg = uc_theme_rating_aggregate($post->ID);
 
     $out = array(
         'id'                   => (int) $post->ID,
@@ -277,6 +331,8 @@ function uc_normalize_theme($post, $include_definition = true) {
         'has_pending_revision' => is_array($pending) && !empty($pending),
         'preview'              => $preview,
         'downloads'            => (int) get_post_meta($post->ID, 'downloads', true),
+        'rating'               => $rating_agg['rating'],
+        'rating_count'         => $rating_agg['rating_count'],
         'version'              => max(1, (int) get_post_meta($post->ID, '_uc_theme_version', true)),
         'submitted_at'         => (string) get_post_meta($post->ID, '_uc_submitted_at', true),
         'reviewed_at'          => (string) get_post_meta($post->ID, '_uc_reviewed_at', true),
@@ -318,6 +374,9 @@ class UltraCardThemeAuthoring {
         add_action('trashed_post', array($this, 'invalidate_list_cache'));
         add_action('transition_post_status', array($this, 'on_status_transition'), 10, 3);
 
+        add_filter('template_include', array($this, 'template_include'), 98);
+        add_action('template_redirect', array($this, 'maybe_require_login'), 5);
+
         add_filter('manage_' . UC_THEME_POST_TYPE . '_posts_columns', array($this, 'admin_columns'));
         add_action('manage_' . UC_THEME_POST_TYPE . '_posts_custom_column', array($this, 'admin_column_value'), 10, 2);
     }
@@ -355,6 +414,63 @@ class UltraCardThemeAuthoring {
         ));
     }
 
+    /**
+     * Whether the current request is a specific page slug (pretty permalink or ?pagename=).
+     */
+    private function is_page_request($slug) {
+        if (is_page($slug)) {
+            return true;
+        }
+        $path = wp_parse_url(isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '', PHP_URL_PATH);
+        $path = untrailingslashit($path ?: '');
+        return $path === '/' . $slug || $path === $slug;
+    }
+
+    /**
+     * /theme-builder/ and /themes/ are ordinary WP pages whose body the plugin
+     * replaces, the same way /add-preset/ and /dashboard/ work.
+     */
+    public function template_include($template) {
+        $map = array(
+            'theme-builder' => 'templates/page-theme-builder.php',
+            'themes'        => 'templates/page-themes.php',
+        );
+        foreach ($map as $slug => $file) {
+            if (!$this->is_page_request($slug)) {
+                continue;
+            }
+            $custom = ULTRA_CARD_INTEGRATION_PLUGIN_DIR . $file;
+            if (!file_exists($custom)) {
+                continue;
+            }
+            // Works with or without a WP page of that slug: undo the 404 WP
+            // would otherwise send when the page has not been created yet.
+            if (is_404()) {
+                global $wp_query;
+                $wp_query->is_404 = false;
+                status_header(200);
+            }
+            return $custom;
+        }
+        return $template;
+    }
+
+    public function maybe_require_login() {
+        if (is_user_logged_in()) {
+            return;
+        }
+        if ($this->is_page_request('theme-builder')) {
+            $back = home_url('/theme-builder/');
+            if (!empty($_GET['id'])) {
+                $back = add_query_arg('id', (int) $_GET['id'], $back);
+            } elseif (!empty($_GET['fork'])) {
+                $back = add_query_arg('fork', (int) $_GET['fork'], $back);
+            }
+            wp_safe_redirect(wp_login_url($back));
+            exit;
+        }
+    }
+
     public function invalidate_list_cache($post_id = 0) {
         if ($post_id && get_post_type($post_id) !== UC_THEME_POST_TYPE) {
             return;
@@ -377,6 +493,7 @@ class UltraCardThemeAuthoring {
     public function admin_columns($columns) {
         $columns['uc_review'] = 'Review';
         $columns['uc_downloads'] = 'Downloads';
+        $columns['uc_rating'] = 'Rating';
         return $columns;
     }
 
@@ -389,6 +506,9 @@ class UltraCardThemeAuthoring {
             }
         } elseif ($column === 'uc_downloads') {
             echo (int) get_post_meta($post_id, 'downloads', true);
+        } elseif ($column === 'uc_rating') {
+            $agg = uc_theme_rating_aggregate($post_id);
+            echo $agg['rating_count'] ? esc_html($agg['rating'] . ' (' . $agg['rating_count'] . ')') : '—';
         }
     }
 
@@ -454,6 +574,18 @@ class UltraCardThemeAuthoring {
             'callback'            => array($this, 'moderate_theme'),
             'permission_callback' => array($this, 'check_moderator'),
         ));
+        register_rest_route($ns, '/themes/(?P<id>\d+)/rate', array(
+            array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'rate_theme'),
+                'permission_callback' => array($this, 'check_auth'),
+            ),
+            array(
+                'methods'             => 'DELETE',
+                'callback'            => array($this, 'unrate_theme'),
+                'permission_callback' => array($this, 'check_auth'),
+            ),
+        ));
         register_rest_route($ns, '/themes/(?P<id>\d+)/track-download', array(
             'methods'             => 'POST',
             'callback'            => array($this, 'track_download'),
@@ -470,14 +602,16 @@ class UltraCardThemeAuthoring {
         $search = sanitize_text_field($request->get_param('search') ?: '');
         $tag = sanitize_text_field($request->get_param('tag') ?: '');
         $orderby = sanitize_text_field($request->get_param('orderby') ?: 'date');
-        if (!in_array($orderby, array('date', 'downloads', 'title'), true)) {
+        if (!in_array($orderby, array('date', 'downloads', 'title', 'rating'), true)) {
             $orderby = 'date';
         }
 
         $cache_key = 'uc_themes_' . md5(wp_json_encode(compact('page', 'per_page', 'search', 'tag', 'orderby')));
         $cached = get_transient($cache_key);
         if (is_array($cached) && isset($cached['body'], $cached['total'], $cached['total_pages'])) {
-            $response = rest_ensure_response($cached['body']);
+            $body = $cached['body'];
+            $body['themes'] = uc_theme_attach_my_ratings($body['themes']);
+            $response = rest_ensure_response($body);
             $response->header('X-WP-Total', (string) $cached['total']);
             $response->header('X-WP-TotalPages', (string) $cached['total_pages']);
             $response->header('X-UC-Cache', 'HIT');
@@ -494,6 +628,9 @@ class UltraCardThemeAuthoring {
         if ($orderby === 'downloads') {
             $args['meta_key'] = 'downloads';
             $args['orderby'] = 'meta_value_num';
+        } elseif ($orderby === 'rating') {
+            $args['meta_key'] = '_uc_rating_avg';
+            $args['orderby'] = array('meta_value_num' => 'DESC', 'date' => 'DESC');
         } elseif ($orderby === 'title') {
             $args['orderby'] = 'title';
             $args['order'] = 'ASC';
@@ -532,6 +669,7 @@ class UltraCardThemeAuthoring {
             'total_pages' => (int) $q->max_num_pages,
         ), 10 * MINUTE_IN_SECONDS);
 
+        $body['themes'] = uc_theme_attach_my_ratings($body['themes']);
         $response = rest_ensure_response($body);
         $response->header('X-WP-Total', (string) $q->found_posts);
         $response->header('X-WP-TotalPages', (string) $q->max_num_pages);
@@ -571,7 +709,9 @@ class UltraCardThemeAuthoring {
         if ($post->post_status !== 'publish' && !uc_user_can_manage_theme($post)) {
             return new WP_Error('not_found', 'Theme not found', array('status' => 404));
         }
-        return rest_ensure_response(uc_normalize_theme($post, true));
+        $norm = uc_normalize_theme($post, true);
+        $norm['my_rating'] = uc_theme_my_rating($id, get_current_user_id());
+        return rest_ensure_response($norm);
     }
 
     /**
@@ -936,6 +1076,45 @@ class UltraCardThemeAuthoring {
         }
         $body .= "\nManage your themes: " . home_url('/dashboard/') . "\n";
         wp_mail($author->user_email, $subject, $body);
+    }
+
+    /**
+     * POST /themes/{id}/rate — one rating (1..5) per user per published theme.
+     * Authors cannot rate their own theme.
+     */
+    public function rate_theme($request) {
+        $id = (int) $request['id'];
+        $post = $id ? get_post($id) : null;
+        if (!$post || !uc_is_theme_post($id) || $post->post_status !== 'publish') {
+            return new WP_Error('invalid_theme', 'Theme not found', array('status' => 404));
+        }
+        $user_id = get_current_user_id();
+        if ((int) $post->post_author === $user_id) {
+            return new WP_Error('own_theme', 'You cannot rate your own theme', array('status' => 400));
+        }
+        $params = $request->get_json_params();
+        $rating = (int) (is_array($params) && isset($params['rating']) ? $params['rating'] : $request->get_param('rating'));
+        if ($rating < 1 || $rating > 5) {
+            return new WP_Error('invalid_rating', 'rating must be 1 to 5', array('status' => 400));
+        }
+        $result = uc_theme_set_user_rating($id, $user_id, $rating);
+        $this->invalidate_list_cache($id);
+        $result['success'] = true;
+        $result['id'] = $id;
+        return rest_ensure_response($result);
+    }
+
+    public function unrate_theme($request) {
+        $id = (int) $request['id'];
+        $post = $id ? get_post($id) : null;
+        if (!$post || !uc_is_theme_post($id)) {
+            return new WP_Error('invalid_theme', 'Theme not found', array('status' => 404));
+        }
+        $result = uc_theme_set_user_rating($id, get_current_user_id(), 0);
+        $this->invalidate_list_cache($id);
+        $result['success'] = true;
+        $result['id'] = $id;
+        return rest_ensure_response($result);
     }
 
     /**

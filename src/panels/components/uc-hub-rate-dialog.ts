@@ -12,6 +12,14 @@ export class UcHubRateDialog extends LitElement {
   @property() presetId = '';
   @property() presetName = '';
   @property({ type: Number }) existingRating = 0;
+  /** Dialog heading; defaults to the preset wording. */
+  @property() heading = '';
+  /**
+   * Optional custom submit. When set, the dialog calls it instead of the
+   * preset review API and re-emits its result, so themes (or anything else
+   * with stars) can share this UI.
+   */
+  @property({ attribute: false }) submitRating?: ((rating: number) => Promise<{ rating: number; count: number }>) | undefined;
 
   @state() private _selectedRating = 0;
   @state() private _hoveredRating = 0;
@@ -205,14 +213,21 @@ export class UcHubRateDialog extends LitElement {
     this._submitting = true;
     this._error = '';
     try {
-      const review = await ucCloudSyncService.submitReview(this.presetId, this._selectedRating);
+      let aggregate: { rating: number | undefined; count: number | undefined };
+      if (this.submitRating) {
+        const r = await this.submitRating(this._selectedRating);
+        aggregate = { rating: r.rating, count: r.count };
+      } else {
+        const review = await ucCloudSyncService.submitReview(this.presetId, this._selectedRating);
+        aggregate = { rating: review.preset_rating, count: review.preset_rating_count };
+      }
       this.dispatchEvent(
         new CustomEvent('rating-submitted', {
           detail: {
             presetId: this.presetId,
             rating: this._selectedRating,
-            presetRating: review.preset_rating,
-            presetRatingCount: review.preset_rating_count,
+            presetRating: aggregate.rating,
+            presetRatingCount: aggregate.count,
           },
           bubbles: true,
           composed: true,
@@ -234,7 +249,7 @@ export class UcHubRateDialog extends LitElement {
         <div class="dialog-surface">
 
           <div class="dialog-header">
-            <h2 class="dialog-title">Rate this preset</h2>
+            <h2 class="dialog-title">${this.heading || 'Rate this preset'}</h2>
             <button class="dialog-close" @click=${this._close} ?disabled=${this._submitting}>
               <ha-icon icon="mdi:close" style="--mdc-icon-size:20px;"></ha-icon>
             </button>

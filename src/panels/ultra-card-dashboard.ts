@@ -64,6 +64,7 @@ export class UltraCardPanel extends LitElement {
   @state() private _activeTab: HubTab = 'dashboard';
   @state() private _pendingDocsSlug = '';
   @state() private _pendingPresetsView: 'browse' | 'mine' | '' = '';
+  @state() private _pendingThemesView: 'browse' | 'mine' | '' = '';
   @state() private _proAuth: HubProTab['auth'] = null;
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _narrow = window.matchMedia('(max-width: 870px)').matches;
@@ -307,15 +308,16 @@ export class UltraCardPanel extends LitElement {
   private _onNavigateTab(e: CustomEvent<HubNavigateDetail>): void {
     const detail = e.detail;
     if (!detail?.tab) return;
-    const options: { docsSlug?: string; presetsView?: 'browse' | 'mine' } = {};
+    const options: { docsSlug?: string; presetsView?: 'browse' | 'mine'; themesView?: 'browse' | 'mine' } = {};
     if (detail.slug) options.docsSlug = detail.slug;
     if (detail.presetsView) options.presetsView = detail.presetsView;
+    if (detail.themesView) options.themesView = detail.themesView;
     this._selectTab(detail.tab, options);
   }
 
   private _selectTab(
     tab: HubTab,
-    options?: { docsSlug?: string; presetsView?: 'browse' | 'mine' }
+    options?: { docsSlug?: string; presetsView?: 'browse' | 'mine'; themesView?: 'browse' | 'mine' }
   ): void {
     this._activeTab = normalizeHubTab(tab) ?? 'dashboard';
     if (options?.docsSlug) {
@@ -323,6 +325,9 @@ export class UltraCardPanel extends LitElement {
     }
     if (options?.presetsView) {
       this._pendingPresetsView = options.presetsView;
+    }
+    if (options?.themesView) {
+      this._pendingThemesView = options.themesView;
     }
     this._persistNavState();
     this._onTabActivated(this._activeTab);
@@ -499,7 +504,13 @@ export class UltraCardPanel extends LitElement {
           }}
         ></hub-presets-tab>`;
       case 'themes':
-        return html`<hub-themes-tab .hass=${this.hass}></hub-themes-tab>`;
+        return html`<hub-themes-tab
+          .hass=${this.hass}
+          .initialView=${this._pendingThemesView || 'browse'}
+          @themes-view-applied=${() => {
+            this._pendingThemesView = '';
+          }}
+        ></hub-themes-tab>`;
       case 'colors':
         return html`<hub-colors-tab .hass=${this.hass}></hub-colors-tab>`;
       case 'variables':

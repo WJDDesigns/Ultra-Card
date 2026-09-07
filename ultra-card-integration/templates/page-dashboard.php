@@ -28,6 +28,8 @@ $account_url = function_exists('wc_get_account_endpoint_url')
     : admin_url('profile.php');
 $logout_url = wp_logout_url(home_url('/'));
 $add_preset_url = home_url('/add-preset/');
+$theme_builder_url = home_url('/theme-builder/');
+$themes_gallery_url = home_url('/themes/');
 
 // Better Messages embed HTML (server-rendered).
 $bm_active = class_exists('Better_Messages')
@@ -47,6 +49,10 @@ $partial = ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/ucp-shared-he
 if (file_exists($partial)) {
     include $partial;
 }
+$runtime = ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime.php';
+if (file_exists($runtime)) {
+    include $runtime;
+}
 ?>
 <div class="ucp ucp-dash" id="ucp-dash"
   data-api="<?php echo esc_attr($api_base); ?>"
@@ -54,6 +60,8 @@ if (file_exists($partial)) {
   data-ajax="<?php echo esc_attr($ajax_url); ?>"
   data-discord-nonce="<?php echo esc_attr($discord_nonce); ?>"
   data-add-preset="<?php echo esc_url($add_preset_url); ?>"
+  data-theme-builder="<?php echo esc_url($theme_builder_url); ?>"
+  data-themes-gallery="<?php echo esc_url($themes_gallery_url); ?>"
   data-user-name="<?php echo esc_attr($display); ?>">
   <header class="ucp-hero ucp-dash-hero">
     <div class="ucp-hero-glow" aria-hidden="true"></div>
@@ -68,6 +76,7 @@ if (file_exists($partial)) {
       </div>
       <div class="ucp-dash-hero-actions">
         <a class="ucp-btn ucp-btn-blue" href="<?php echo esc_url($add_preset_url); ?>"><i class="mdi mdi-plus"></i> Add preset</a>
+        <a class="ucp-btn ucp-btn-ghost" href="<?php echo esc_url($theme_builder_url); ?>"><i class="mdi mdi-palette-swatch-outline"></i> Theme builder</a>
         <span class="ucp-badge ucp-badge-pro" id="ucp-tier-badge" hidden>PRO</span>
       </div>
     </div>
@@ -76,7 +85,8 @@ if (file_exists($partial)) {
   <div class="ucp-wrap ucp-dash-shell">
     <nav class="ucp-dash-nav" aria-label="Dashboard">
       <a href="#overview" data-sec="overview" class="active"><i class="mdi mdi-view-dashboard-outline"></i><span>Overview</span></a>
-      <a href="#presets" data-sec="presets"><i class="mdi mdi-palette-outline"></i><span>My Presets</span></a>
+      <a href="#presets" data-sec="presets"><i class="mdi mdi-view-grid-plus-outline"></i><span>My Presets</span></a>
+      <a href="#themes" data-sec="themes"><i class="mdi mdi-palette-swatch-outline"></i><span>My Themes</span></a>
       <a href="#subscription" data-sec="subscription"><i class="mdi mdi-credit-card-outline"></i><span>Subscription</span></a>
       <a href="#backups" data-sec="backups"><i class="mdi mdi-cloud-outline"></i><span>Backups</span></a>
       <a href="#votes" data-sec="votes"><i class="mdi mdi-star-outline"></i><span>Votes</span></a>
@@ -94,11 +104,13 @@ if (file_exists($partial)) {
         <div class="ucp-stat-grid" id="ucp-overview-stats">
           <div class="ucp-stat-tile"><b id="ov-presets">—</b><span>My presets</span></div>
           <div class="ucp-stat-tile"><b id="ov-pending">—</b><span>Pending review</span></div>
+          <div class="ucp-stat-tile"><b id="ov-themes">—</b><span>My themes</span></div>
           <div class="ucp-stat-tile"><b id="ov-backups">—</b><span>Backups</span></div>
           <div class="ucp-stat-tile"><b id="ov-votes">—</b><span>Votes</span></div>
         </div>
         <div class="ucp-overview-ctas">
           <a class="ucp-btn ucp-btn-blue" href="<?php echo esc_url($add_preset_url); ?>"><i class="mdi mdi-plus"></i> Submit a preset</a>
+          <a class="ucp-btn ucp-btn-ghost" href="<?php echo esc_url($theme_builder_url); ?>"><i class="mdi mdi-palette-swatch-outline"></i> Build a theme</a>
           <a class="ucp-btn ucp-btn-ghost" href="#subscription"><i class="mdi mdi-credit-card-outline"></i> Manage billing</a>
           <a class="ucp-btn ucp-btn-ghost" href="#discord"><i class="mdi mdi-discord"></i> Discord</a>
         </div>
@@ -114,6 +126,21 @@ if (file_exists($partial)) {
           <a class="ucp-btn ucp-btn-blue" href="<?php echo esc_url($add_preset_url); ?>"><i class="mdi mdi-plus"></i> New</a>
         </div>
         <div id="ucp-presets-list" class="ucp-list"></div>
+      </section>
+
+      <!-- Themes -->
+      <section class="ucp-sec" id="sec-themes" data-sec="themes" hidden>
+        <div class="ucp-sec-head">
+          <div>
+            <h2>My Themes</h2>
+            <p class="ucp-hint" style="margin-top:6px">Themes you built here or submitted from the Hub. Live themes show downloads and ratings; everything here syncs into Hub › Themes › My Themes.</p>
+          </div>
+          <div class="ucp-sec-head-actions">
+            <a class="ucp-btn ucp-btn-ghost" href="<?php echo esc_url($themes_gallery_url); ?>"><i class="mdi mdi-compass-outline"></i> Gallery</a>
+            <a class="ucp-btn ucp-btn-blue" href="<?php echo esc_url($theme_builder_url); ?>"><i class="mdi mdi-plus"></i> New theme</a>
+          </div>
+        </div>
+        <div id="ucp-themes-list" class="ucp-list"></div>
       </section>
 
       <!-- Subscription -->
@@ -252,7 +279,7 @@ if (file_exists($partial)) {
 .ucp-dash-nav a.active{color:#fff;background:rgba(41,182,246,.14);border:1px solid rgba(41,182,246,.35)}
 .ucp-dash-content{min-width:0;padding-bottom:24px}
 .ucp-sec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.ucp-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ucp-stat-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 .ucp-stat-tile{padding:16px;border:1px solid var(--uc-line);border-radius:var(--uc-r);background:var(--uc-card)}
 .ucp-stat-tile b{display:block;font-size:28px;font-weight:800}
 .ucp-stat-tile span{font-size:12px;color:var(--uc-dim);text-transform:uppercase;letter-spacing:.04em}
@@ -260,12 +287,22 @@ if (file_exists($partial)) {
 .ucp-list{display:flex;flex-direction:column;gap:12px}
 /* withFade/skeleton wrap rows in one child — keep column gap there too */
 .ucp-list>.ucp-fade-in,.ucp-list>.ucp-skel{display:flex;flex-direction:column;gap:12px;width:100%}
-.ucp-row{display:flex;gap:14px;align-items:center;padding:16px 18px;border:1px solid var(--uc-line);border-radius:var(--uc-r);background:var(--uc-card)}
-.ucp-row-main{flex:1;min-width:0}
+.ucp-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--uc-line);border-radius:var(--uc-r);background:var(--uc-card)}
+.ucp-row.no-thumb{grid-template-columns:minmax(0,1fr) auto}
+.ucp-row-thumb{width:84px;height:60px;border-radius:10px;overflow:hidden;border:1px solid var(--uc-line);background:#111;flex:none;display:flex;align-items:center;justify-content:center;color:var(--uc-dim)}
+.ucp-row-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ucp-row-thumb .uc-swatch{width:100%;height:100%;padding:6px!important;border-radius:0!important}
+.ucp-row-thumb .mdi{font-size:26px}
+.ucp-row-main{min-width:0}
 .ucp-row-main strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ucp-row-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;align-items:center}
-.ucp-row-actions{display:flex;flex-wrap:wrap;gap:6px}
+.ucp-row-meta .ucp-hint{white-space:nowrap}
+.ucp-row-stat{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--uc-dim)}
+.ucp-row-stat .mdi{font-size:15px}
+.ucp-row-stat .star{color:var(--uc-gold)}
+.ucp-row-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .ucp-row-actions .ucp-btn{padding:8px 12px;font-size:12.5px;border-radius:9px}
+.ucp-sec-head-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .ucp-seg{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--uc-line);flex-wrap:wrap}
 .ucp-seg-btn{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;color:var(--uc-dim)}
 .ucp-seg-btn.active{background:rgba(41,182,246,.16);color:#fff}
@@ -322,8 +359,24 @@ if (file_exists($partial)) {
   .ucp-dash-nav a span{display:none}
   .ucp-stat-grid,.ucp-sub-grid,.ucp-billing-grid,.ucp-skel-grid{grid-template-columns:1fr 1fr}
   .ucp-skel-grid2{grid-template-columns:1fr}
-  .ucp-row{flex-direction:column;align-items:stretch}
-  .ucp-row-actions{width:100%}
+  /* Rows: thumb + text on the first line, actions on their own full-width line
+     so titles, badges and buttons never fight for the same space. */
+  .ucp-row{grid-template-columns:auto minmax(0,1fr);row-gap:12px}
+  .ucp-row.no-thumb{grid-template-columns:minmax(0,1fr)}
+  .ucp-row-thumb{width:64px;height:48px}
+  .ucp-row-main strong{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
+  .ucp-row{position:relative}
+  .ucp-row-main{padding-right:40px}
+  .ucp-row-actions{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px}
+  .ucp-row-actions .ucp-btn{padding:8px 10px;min-width:0;white-space:nowrap}
+  .ucp-row-actions .ucp-btn-danger{position:absolute;top:10px;right:10px;padding:6px 8px;border-radius:9px}
+  .ucp-sec-head{flex-direction:column;align-items:stretch}
+  .ucp-sec-head-actions .ucp-btn,.ucp-sec-head>.ucp-btn{flex:1 1 auto}
+}
+@media (max-width:480px){
+  .ucp-stat-grid{grid-template-columns:1fr 1fr}
+  .ucp-dash-hero-actions{width:100%}
+  .ucp-dash-hero-actions .ucp-btn{flex:1 1 auto}
 }
 </style>
 
@@ -442,6 +495,8 @@ if (file_exists($partial)) {
       document.getElementById('ov-pending').textContent = String(data.presets_pending != null ? data.presets_pending : 0);
       document.getElementById('ov-backups').textContent = String(data.backups_total != null ? data.backups_total : 0);
       document.getElementById('ov-votes').textContent = String(data.reviews_total != null ? data.reviews_total : 0);
+      if (data.themes_total != null) document.getElementById('ov-themes').textContent = String(data.themes_total);
+      else api('/themes/mine').then(function (t) { document.getElementById('ov-themes').textContent = String(((t && t.themes) || []).length); }).catch(function () {});
       var badge = document.getElementById('ucp-tier-badge');
       if (data.subscription && data.subscription.tier === 'pro' && data.subscription.status === 'active') {
         badge.hidden = false;
@@ -466,10 +521,14 @@ if (file_exists($partial)) {
       }
       box.innerHTML = withFade(list.map(function (p) {
         var canWithdraw = p.review_status === 'pending' || p.has_pending_revision || p.status === 'pending';
+        var thumb = p.featured_image ? '<img src="' + esc(p.featured_image) + '" alt="" loading="lazy">' : '<i class="mdi mdi-image-off-outline"></i>';
         return '<div class="ucp-row" data-id="' + esc(p.id) + '">' +
+          '<div class="ucp-row-thumb">' + thumb + '</div>' +
           '<div class="ucp-row-main"><strong>' + esc(p.name) + '</strong>' +
           '<div class="ucp-row-meta">' + statusBadge(p) +
           (p.category ? '<span class="ucp-hint">' + esc(p.category) + '</span>' : '') +
+          (p.status === 'publish' ? '<span class="ucp-row-stat" title="Downloads"><i class="mdi mdi-download-outline"></i>' + esc(p.downloads || 0) + '</span>' : '') +
+          (p.status === 'publish' && p.rating_count ? '<span class="ucp-row-stat" title="Rating"><i class="mdi mdi-star star"></i>' + esc(Number(p.rating).toFixed(1)) + ' (' + esc(p.rating_count) + ')</span>' : '') +
           (p.moderator_note ? '<span class="ucp-hint">Note: ' + esc(p.moderator_note) + '</span>' : '') +
           '</div></div>' +
           '<div class="ucp-row-actions">' +
@@ -500,6 +559,72 @@ if (file_exists($partial)) {
       });
     } catch (err) {
       box.innerHTML = empty(err.message || 'Could not load presets.');
+    }
+  }
+
+  async function loadThemes() {
+    var box = document.getElementById('ucp-themes-list');
+    var BUILDER = root.getAttribute('data-theme-builder');
+    var GALLERY = root.getAttribute('data-themes-gallery');
+    box.innerHTML = skeleton('list');
+    try {
+      var data = await api('/themes/mine');
+      var list = (data && data.themes) || [];
+      if (!list.length) {
+        box.innerHTML = withFade('<div class="ucp-empty"><i class="mdi mdi-palette-swatch-outline"></i><p>No themes yet. Design one in the theme builder, or submit from Hub › Themes.</p>' +
+          '<a class="ucp-btn ucp-btn-blue" style="margin-top:14px" href="' + esc(BUILDER) + '"><i class="mdi mdi-plus"></i> Open theme builder</a></div>');
+        return;
+      }
+      box.innerHTML = withFade(list.map(function (t) {
+        var canWithdraw = t.review_status === 'pending' || t.has_pending_revision || t.status === 'pending';
+        var live = t.status === 'publish';
+        var thumb = t.preview ? '<img src="' + esc(t.preview) + '" alt="" loading="lazy">' : (window.UcTheme && t.definition ? window.UcTheme.swatchHtml(t.definition, 'dark') : '<i class="mdi mdi-palette-outline"></i>');
+        return '<div class="ucp-row" data-id="' + esc(t.id) + '">' +
+          '<div class="ucp-row-thumb">' + thumb + '</div>' +
+          '<div class="ucp-row-main"><strong>' + esc(t.name) + '</strong>' +
+          '<div class="ucp-row-meta">' + statusBadge(t) +
+          '<span class="ucp-hint">v' + esc(t.version || 1) + '</span>' +
+          (live ? '<span class="ucp-row-stat" title="Downloads"><i class="mdi mdi-download-outline"></i>' + esc(t.downloads || 0) + '</span>' : '') +
+          (live ? '<span class="ucp-row-stat" title="Rating"><i class="mdi mdi-star star"></i>' + (t.rating_count ? esc(Number(t.rating).toFixed(1)) + ' (' + esc(t.rating_count) + ')' : 'No ratings yet') + '</span>' : '') +
+          (t.moderator_note ? '<span class="ucp-hint">Note: ' + esc(t.moderator_note) + '</span>' : '') +
+          '</div></div>' +
+          '<div class="ucp-row-actions">' +
+          '<a class="ucp-btn ucp-btn-ghost" href="' + esc(BUILDER) + '?id=' + encodeURIComponent(t.id) + '"><i class="mdi mdi-pencil"></i> Edit</a>' +
+          (live ? '<a class="ucp-btn ucp-btn-ghost" href="' + esc(GALLERY) + '#theme-' + encodeURIComponent(t.id) + '"><i class="mdi mdi-open-in-new"></i> View</a>' : '') +
+          '<button type="button" class="ucp-btn ucp-btn-ghost" data-act="copy" title="Copy theme JSON"><i class="mdi mdi-content-copy"></i> Copy</button>' +
+          (canWithdraw ? '<button type="button" class="ucp-btn ucp-btn-ghost" data-act="withdraw"><i class="mdi mdi-undo"></i> Withdraw</button>' : '') +
+          '<button type="button" class="ucp-btn ucp-btn-danger" data-act="delete" title="Delete"><i class="mdi mdi-delete-outline"></i></button>' +
+          '</div></div>';
+      }).join(''));
+      var byId = {};
+      list.forEach(function (t) { byId[String(t.id)] = t; });
+      box.querySelectorAll('[data-act]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          var row = btn.closest('.ucp-row');
+          var id = row.getAttribute('data-id');
+          var act = btn.getAttribute('data-act');
+          if (act === 'copy') {
+            var t = byId[id];
+            var def = (t && ((t.pending_revision && t.pending_revision.definition) || t.definition)) || {};
+            try { await navigator.clipboard.writeText(JSON.stringify(def, null, 2)); btn.innerHTML = '<i class="mdi mdi-check"></i>'; setTimeout(function () { btn.innerHTML = '<i class="mdi mdi-content-copy"></i>'; }, 1500); } catch (e) { alert('Copy failed'); }
+            return;
+          }
+          if (act === 'delete' && !confirm('Delete this theme permanently? Installed copies keep working, but it leaves the catalog.')) return;
+          if (act === 'withdraw' && !confirm('Withdraw this submission / pending revision?')) return;
+          try {
+            if (act === 'delete') await api('/themes/' + id, { method: 'DELETE' });
+            else await api('/themes/' + id + '/withdraw', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            loaded.themes = false;
+            loadThemes();
+            loaded.overview = false;
+            loadOverview();
+          } catch (err) {
+            alert(err.message || 'Action failed');
+          }
+        });
+      });
+    } catch (err) {
+      box.innerHTML = empty(err.message || 'Could not load themes.');
     }
   }
 
@@ -982,6 +1107,7 @@ if (file_exists($partial)) {
   function loadSection(name) {
     if (name === 'overview') loadOverview();
     else if (name === 'presets') loadPresets();
+    else if (name === 'themes') loadThemes();
     else if (name === 'subscription') loadSubscription();
     else if (name === 'backups') loadBackups();
     else if (name === 'votes') loadVotes();

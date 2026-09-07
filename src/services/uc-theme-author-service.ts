@@ -24,6 +24,8 @@ export interface AuthorTheme {
   pending_revision?: Record<string, unknown> | null | undefined;
   preview?: string | undefined;
   downloads: number;
+  rating: number;
+  rating_count: number;
   version: number;
   submitted_at?: string | undefined;
   reviewed_at?: string | undefined;
@@ -41,6 +43,12 @@ export interface SubmitThemePayload {
 }
 
 export type UpdateThemePayload = Partial<SubmitThemePayload>;
+
+export interface ThemeRatingResult {
+  rating: number;
+  ratingCount: number;
+  myRating: number;
+}
 
 function unwrapBody(raw: unknown): unknown {
   if (raw == null || typeof raw !== 'object') return raw;
@@ -91,6 +99,8 @@ function normalizeAuthorTheme(raw: unknown): AuthorTheme {
     review_status: (String(src.review_status ?? 'pending') as AuthorThemeReviewStatus) || 'pending',
     has_pending_revision: Boolean(src.has_pending_revision),
     downloads: Number(src.downloads) || 0,
+    rating: Math.max(0, Math.min(5, Number(src.rating) || 0)),
+    rating_count: Math.max(0, Number(src.rating_count) || 0),
     version: Math.max(1, Number(src.version) || 1),
     definition: theme,
   };
@@ -193,6 +203,50 @@ class UcThemeAuthorService {
       method: 'DELETE',
     });
     if (!response.ok) await fail(response, 'Failed to delete theme');
+  }
+
+  /**
+   * Rate a published catalog theme 1..5 (or 0 to remove your rating). One
+   * rating per member per theme; authors cannot rate their own theme.
+   */
+  async rate(id: number, rating: number): Promise<ThemeRatingResult> {
+    requireAuth('rate themes');
+    const value = Math.round(rating);
+    const response =
+      value >= 1
+        ? await ucCloudAuthService.authenticatedFetch(`${API_BASE}/themes/${id}/rate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating: Math.min(5, value) }),
+          })
+        : await ucCloudAuthService.authenticatedFetch(`${API_BASE}/themes/${id}/rate`, { method: 'DELETE' });
+    if (!response.ok) await fail(response, 'Failed to rate theme');
+    const raw = (unwrapBody(await parseJson(response)) ?? {}) as Record<string, unknown>;
+    return {
+      rating: Math.max(0, Math.min(5, Number(raw.rating) || 0)),
+      ratingCount: Math.max(0, Number(raw.rating_count) || 0),
+      myRating: Math.max(0, Math.min(5, Number(raw.my_rating) || 0)),
+    };
+  }
+
+  /**
+   * The signed-in member's ratings for a set of catalog themes. The public
+   * catalog is fetched anonymously (and cached), so "my rating" has to come
+   * from an authenticated read of the same list.
+   */
+  async myRatings(): Promise<Map<number, number>> {
+    const out = new Map<number, number>();
+    if (!ucCloudAuthService.isAuthenticated()) return out;
+    const response = await ucCloudAuthService.authenticatedFetch(`${API_BASE}/themes?per_page=100&orderby=downloads`);
+    if (!response.ok) return out;
+    const raw = unwrapBody(await parseJson(response)) as Record<string, unknown> | null;
+    const list = raw && Array.isArray(raw.themes) ? (raw.themes as Record<string, unknown>[]) : [];
+    for (const item of list) {
+      const id = Number(item.id);
+      const mine = Number(item.my_rating) || 0;
+      if (id > 0 && mine > 0) out.set(id, mine);
+    }
+    return out;
   }
 
   async withdraw(id: number): Promise<AuthorTheme> {

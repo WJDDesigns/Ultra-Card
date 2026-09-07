@@ -1058,9 +1058,21 @@ class UltraCardPresetAuthoring {
             );
         }
 
+        $themes_total = 0;
+        if (defined('UC_THEME_POST_TYPE')) {
+            $themes_total = (int) (new WP_Query(array(
+                'post_type'      => UC_THEME_POST_TYPE,
+                'post_status'    => array('publish', 'pending', 'draft', 'private', 'future'),
+                'author'         => $user_id,
+                'posts_per_page' => 1,
+                'fields'         => 'ids',
+            )))->found_posts;
+        }
+
         return rest_ensure_response(array(
             'presets_total'   => count($presets),
             'presets_pending' => $pending,
+            'themes_total'    => $themes_total,
             'backups_total'   => is_array($backup_ids) ? count($backup_ids) : 0,
             'reviews_total'   => is_array($reviews) ? count($reviews) : 0,
             'subscription'    => $subscription,

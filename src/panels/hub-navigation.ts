@@ -9,6 +9,8 @@ export interface HubNavigateDetail {
   slug?: string;
   /** Presets tab sub-view (when tab is presets). */
   presetsView?: 'browse' | 'mine';
+  /** Themes tab sub-view (when tab is themes). */
+  themesView?: 'browse' | 'mine';
 }
 
 export const HUB_NAVIGATE_EVENT = 'hub-navigate-tab';
@@ -45,13 +47,16 @@ export function moduleDocsSlug(moduleType: string): string {
  * so a cold Hub load lands on it, tells an already-open Hub to switch, and
  * navigates to the panel when it is installed.
  */
-export function openHubThemes(hass?: { panels?: Record<string, unknown> } | null): void {
+export function openHubThemes(
+  hass?: { panels?: Record<string, unknown> } | null,
+  view: 'browse' | 'mine' = 'browse'
+): void {
   try {
     localStorage.setItem('ultra_card_hub_tab', 'themes');
   } catch {
     /* ignore */
   }
-  dispatchHubNavigateGlobal({ tab: 'themes' });
+  dispatchHubNavigateGlobal({ tab: 'themes', themesView: view });
   const panelInstalled = !!hass?.panels?.['ultra-card-hub'];
   if (panelInstalled && typeof window !== 'undefined' && window.location.pathname !== '/ultra-card-hub') {
     history.pushState(null, '', '/ultra-card-hub');

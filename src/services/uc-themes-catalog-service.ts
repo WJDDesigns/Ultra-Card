@@ -13,7 +13,7 @@ import { sanitizeThemeDefinition } from '../themes/uc-theme-validate';
 import { ucThemeService } from './uc-theme-service';
 import { UC_DEBUG } from '../utils/uc-debug';
 
-export type UcThemeCatalogSort = 'date' | 'downloads' | 'title';
+export type UcThemeCatalogSort = 'date' | 'downloads' | 'title' | 'rating';
 
 export interface UcCatalogTheme {
   /** WordPress post id. */
@@ -27,6 +27,13 @@ export interface UcCatalogTheme {
   tags: string[];
   preview?: string | undefined;
   downloads: number;
+  /** Average star rating (0 when unrated) and how many members rated. */
+  rating: number;
+  ratingCount: number;
+  /** The signed-in member's own rating when the catalog was fetched with auth; 0 otherwise. */
+  myRating: number;
+  /** WordPress user id of the author (to hide the rate control on one's own theme). */
+  authorId: number;
   version: number;
   created: string;
   updated: string;
@@ -65,6 +72,10 @@ interface CacheEntry {
   timestamp: number;
 }
 
+export function normalizeCatalogTheme(raw: unknown): UcCatalogTheme | null {
+  return normalizeEntry(raw);
+}
+
 function normalizeEntry(raw: unknown): UcCatalogTheme | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -89,6 +100,10 @@ function normalizeEntry(raw: unknown): UcCatalogTheme | null {
     tags,
     preview,
     downloads: Number(r.downloads) || 0,
+    rating: Math.max(0, Math.min(5, Number(r.rating) || 0)),
+    ratingCount: Math.max(0, Number(r.rating_count) || 0),
+    myRating: Math.max(0, Math.min(5, Number(r.my_rating) || 0)),
+    authorId: Number(r.author_id) || 0,
     version,
     created: String(r.date || ''),
     updated: String(r.modified || ''),
