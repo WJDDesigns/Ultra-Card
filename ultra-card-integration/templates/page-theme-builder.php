@@ -73,7 +73,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
           <div class="ucp-field">
             <label>Start from</label>
             <div class="tb-starters" id="tb-starters"></div>
-            <span class="ucp-hint">Replaces surface, colours and layers. Your name and description stay.</span>
+            <div class="tb-starter-row">
+              <span class="ucp-hint">Replaces surface, colours and layers. Your name and description stay.</span>
+              <button type="button" class="ucp-btn ucp-btn-ghost tb-reset" id="tb-reset" hidden><i class="mdi mdi-restore"></i> <span>Reset</span></button>
+            </div>
           </div>
         </div>
       </details>
@@ -122,6 +125,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
         <div class="tb-sec-body">
           <p class="ucp-hint" style="margin-bottom:10px">Leave a colour on <b>Auto</b> to follow the user's Home Assistant theme. Pin it to make your theme look the same everywhere.</p>
           <div class="ucp-field"><label>Accent</label><div class="tb-color" data-path="tokens.accent"></div><span class="ucp-hint">Buttons, fills and highlights inside modules.</span></div>
+          <div class="ucp-field"><label class="tb-check"><input type="checkbox" id="tb-tint"> Tint everything to the accent</label><span class="ucp-hint">Recolours the whole card, icons and images included, to the accent's hue: the Terminal look in any colour. Change the accent and the tint follows.</span></div>
           <div class="ucp-field"><label>Primary</label><div class="tb-color" data-path="tokens.palette.primary"></div></div>
           <div class="ucp-field"><label>Card background</label><div class="tb-color" data-path="tokens.palette.card_bg"></div></div>
           <div class="ucp-field"><label>Text</label><div class="tb-color" data-path="tokens.palette.text"></div></div>
@@ -322,6 +326,11 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tb-starter:hover{border-color:rgba(255,255,255,.3)}
 .tb-starter .uc-swatch{border-radius:7px}
 .tb-starter span{font-size:11.5px;font-weight:600;color:var(--uc-dim);padding:0 2px}
+.tb-starter.active{border-color:var(--uc-blue);box-shadow:0 0 0 1px var(--uc-blue)}
+.tb-starter.active span{color:#fff}
+.tb-starter-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.tb-starter-row .ucp-hint{margin:0}
+.tb-reset{padding:6px 10px;font-size:12px;white-space:nowrap}
 .tb-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px;border-radius:10px;transition:box-shadow .15s}
 .tb-wall.drag{box-shadow:0 0 0 2px var(--uc-blue)}
 .tb-wall button{height:44px;border-radius:9px;border:2px solid transparent;position:relative;overflow:hidden}
@@ -357,7 +366,11 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 .tb-btnrow .ucp-btn{padding:9px 14px;font-size:13px}
 .tb-json{margin-top:10px}
 .tb-json summary{cursor:pointer;font-size:12.5px;color:var(--uc-dim)}
-.tb-pre{margin:8px 0 0;max-height:260px;overflow:auto;padding:10px;border-radius:10px;background:rgba(0,0,0,.35);font-size:11.5px;line-height:1.45;white-space:pre-wrap;word-break:break-all}
+.tb-pre{margin:8px 0 0;max-height:260px;overflow:auto;padding:12px;border-radius:10px;background:#0b0f16;border:1px solid var(--uc-line);color:#dbe4f0;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-all;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.tb-pre::-webkit-scrollbar{width:8px}
+.tb-pre::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:4px}
+.tb-pre::-webkit-scrollbar-track{background:transparent}
+.tb-json summary:hover{color:#fff}
 .tb-prev-card{padding:14px}
 .tb-prev-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 .tb-prev-bar .tb-reroll{margin-left:auto;padding:8px 12px;font-size:12.5px}
@@ -426,7 +439,7 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     { id: 'outline', name: 'Outline', def: { tokens: { surface: 'outline', radius: 10, radius_sm: 6, border_width: 1, shadow: 'none' } } },
     { id: 'minimal', name: 'Minimal', def: { tokens: { surface: 'minimal', radius: 8, radius_sm: 6, shadow: 'none' } } },
     { id: 'material', name: 'Material', def: { tokens: { surface: 'flat', radius: 12, radius_sm: 20, border_width: 0, shadow: '0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)', pane_background: '#ece6f0', pane_border: 'none', pane_shadow: 'none', page_background: '#fef7ff', font_family: '"Google Sans Text", "Google Sans", Roboto, sans-serif', palette: { primary: '#6750a4', on_primary: '#ffffff', accent: '#6750a4', card_bg: '#f7f2fa', text: '#1d1b20', text_secondary: '#49454f', divider: '#cac4d0' } }, modules: { spinbox: { button_shape: 'circle' }, activity_feed: { feed_card_style: 'elevated' } } } },
-    { id: 'terminal', name: 'Terminal', def: { tokens: { surface: 'outline', radius: 0, radius_sm: 0, border_width: 1, border_color: 'rgba(51,255,102,0.45)', shadow: '0 0 18px rgba(51,255,102,0.18)', font_family: 'ui-monospace, SFMono-Regular, Menlo, monospace', color_filter: 'grayscale(1) sepia(1) hue-rotate(60deg) saturate(3)', page_background: '#020503', palette: { card_bg: '#061008', text: '#33ff66', text_secondary: 'rgba(51,255,102,0.6)', primary: '#33ff66', accent: '#33ff66' } }, card: { card_background: '#061008' } } }
+    { id: 'terminal', name: 'Terminal', def: { tokens: { surface: 'outline', radius: 0, radius_sm: 0, border_width: 1, border_color: 'rgba(51,255,102,0.45)', shadow: '0 0 18px rgba(51,255,102,0.18)', font_family: 'ui-monospace, SFMono-Regular, Menlo, monospace', color_filter: 'grayscale(1) sepia(1) hue-rotate(97deg) saturate(3)', page_background: '#020503', palette: { card_bg: '#061008', text: '#33ff66', text_secondary: 'rgba(51,255,102,0.6)', primary: '#33ff66', accent: '#33ff66' } }, card: { card_background: '#061008' } } }
   ];
   // Wallpaper images are written in one canonical shape so the picker can read them back.
   var WALL_IMG_RE = /^(?:linear-gradient\(rgba\(0, ?0, ?0, ?([\d.]+)\), ?rgba\(0, ?0, ?0, ?[\d.]+\)\), ?)?url\("(data:image\/[^"]+)"\) (center|top|bottom) \/ cover no-repeat fixed$/;
@@ -434,7 +447,8 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   var WALL_IMG_BUDGET = U.LIMITS.page_background - 200;
 
   var def = { id: '', name: '', version: 1, author: AUTHOR, description: '', tokens: { surface: 'flat', radius: 12 }, card: {}, modules: {} };
-  var meta = { tags: '', previewId: 0, previewUrl: '', previewFile: null, previewDirty: false, editStatus: '' };
+  var meta = { tags: '', previewId: 0, previewUrl: '', previewFile: null, previewDirty: false, editStatus: '', starter: '' };
+  var BLANK_DEF = JSON.parse(JSON.stringify(def));
   var ui = { mode: 'simple', previewMode: 'light', previewWidth: 'desktop', wall: 'ha', submitting: false };
   var els = {
     err: document.getElementById('tb-error'), notice: document.getElementById('tb-notice'), preview: document.getElementById('tb-preview'),
@@ -483,8 +497,8 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     if (!out.css) delete out.css;
     return out;
   }
-  function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ def: def, tags: meta.tags, wall: ui.wall, t: Date.now() })); } catch (e) {} }
-  function loadDraft() { try { var d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); if (d && d.def && d.def.tokens) { def = d.def; meta.tags = d.tags || ''; ui.wall = d.wall || ui.wall; return true; } } catch (e) {} return false; }
+  function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ def: def, tags: meta.tags, wall: ui.wall, starter: meta.starter, t: Date.now() })); } catch (e) {} }
+  function loadDraft() { try { var d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); if (d && d.def && d.def.tokens) { def = d.def; meta.tags = d.tags || ''; ui.wall = d.wall || ui.wall; meta.starter = d.starter || ''; return true; } } catch (e) {} return false; }
   function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
 
   // --------------------------------------------------------------- binding
@@ -569,6 +583,8 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
   }
   function syncDerived() {
     syncRecipeLabels();
+    syncStarter();
+    syncTint();
     els.blurField.style.display = (get('tokens.surface') === 'glass' || ui.mode === 'advanced') ? 'flex' : 'none';
     els.cshadow.style.display = get('card.card_shadow_enabled') === true ? 'grid' : 'none';
   }
@@ -584,8 +600,25 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
     function commit() {
       var v = text.value.trim();
       if (path === '__wallColor') { set('tokens.page_background', v || undefined); syncColor(wrap); changed(); return; }
-      set(path, v || undefined); syncColor(wrap); changed();
+      set(path, v || undefined); syncColor(wrap);
+      if (path === 'tokens.accent' && tintOn()) {
+        var tint = U.parseTint(get('tokens.color_filter')) || {};
+        set('tokens.color_filter', U.tintFilter(tintSource(), tint.saturate, tint.brightness));
+        document.getElementById('tb-filter').value = get('tokens.color_filter');
+      }
+      changed();
     }
+  }
+  // Monochrome tint: a colour filter in the tintFilter shape, keyed to the accent.
+  function tintOn() { return !!U.parseTint(get('tokens.color_filter')); }
+  function tintSource() { return get('tokens.accent') || get('tokens.palette.primary') || '#33ff66'; }
+  function syncTint() {
+    var box = document.getElementById('tb-tint');
+    box.checked = tintOn();
+    var f = get('tokens.color_filter');
+    // Some other filter is set (advanced): the toggle would clobber it, so say so.
+    box.disabled = !!f && !tintOn();
+    box.closest('.ucp-field').title = box.disabled ? 'A custom colour filter is set in Advanced › Effects' : '';
   }
   function syncColor(wrap) {
     var path = wrap.getAttribute('data-path');
@@ -712,14 +745,43 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
       return '<button type="button" class="tb-starter" data-starter="' + s.id + '">' + U.swatchHtml(Object.assign({ id: s.id, name: s.name, version: 1 }, s.def), s.def.tokens.palette && U.parseColor(s.def.tokens.palette.card_bg || '') && !isLightHex(s.def.tokens.palette.card_bg) ? 'dark' : 'light') + '<span>' + s.name + '</span></button>';
     }).join('');
     document.querySelectorAll('.tb-starter').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var s = STARTERS.find(function (x) { return x.id === b.getAttribute('data-starter'); });
-        var keep = { id: def.id, name: def.name, description: def.description, author: def.author, icon: def.icon, version: def.version };
-        def = Object.assign({}, keep, JSON.parse(JSON.stringify(s.def)));
-        def.card = def.card || {}; def.modules = def.modules || {};
-        syncInputs(); changed({ now: true });
-      });
+      b.addEventListener('click', function () { applyStarter(b.getAttribute('data-starter')); });
     });
+    document.getElementById('tb-reset').addEventListener('click', function () {
+      var s = starterOf(meta.starter);
+      var what = s ? 'the ' + s.name + ' starter' : 'a blank theme';
+      if (!confirm('Reset surface, colours, layers and module defaults to ' + what + '? Your name, description and tags stay.')) return;
+      applyStarter(meta.starter);
+    });
+  }
+  function starterOf(id) { return STARTERS.find(function (x) { return x.id === id; }) || null; }
+  /** Replace everything but identity with a starter's definition ('' = blank). */
+  function applyStarter(id) {
+    var s = starterOf(id);
+    var keep = { id: def.id, name: def.name, description: def.description, author: def.author, icon: def.icon, version: def.version };
+    def = Object.assign({}, keep, JSON.parse(JSON.stringify(s ? s.def : { tokens: BLANK_DEF.tokens, card: {}, modules: {} })));
+    def.card = def.card || {}; def.modules = def.modules || {};
+    meta.starter = s ? s.id : '';
+    syncInputs(); changed({ now: true });
+  }
+  /** JSON with sorted keys and no undefined/empty leaves, so edit order does not count as a change. */
+  function stableJson(v) {
+    if (Array.isArray(v)) return '[' + v.map(stableJson).join(',') + ']';
+    if (v && typeof v === 'object') {
+      return '{' + Object.keys(v).sort().filter(function (k) { return v[k] !== undefined && !(v[k] && typeof v[k] === 'object' && !Array.isArray(v[k]) && !Object.keys(v[k]).length); }).map(function (k) { return JSON.stringify(k) + ':' + stableJson(v[k]); }).join(',') + '}';
+    }
+    return JSON.stringify(v);
+  }
+  function syncStarter() {
+    var s = starterOf(meta.starter);
+    document.querySelectorAll('.tb-starter').forEach(function (b) { b.classList.toggle('active', !!s && b.getAttribute('data-starter') === s.id); });
+    var btn = document.getElementById('tb-reset');
+    // Show the reset once the theme has moved away from where it started.
+    var origin = s ? Object.assign({}, s.def, { card: s.def.card || {}, modules: s.def.modules || {} }) : { tokens: BLANK_DEF.tokens, card: {}, modules: {} };
+    var current = { tokens: def.tokens, card: def.card || {}, modules: def.modules || {}, css: def.css };
+    var same = stableJson(origin) === stableJson(current);
+    btn.hidden = same;
+    btn.querySelector('span').textContent = s ? 'Reset to ' + s.name : 'Reset to blank';
   }
   function isLightHex(v) { var c = U.parseColor(v); return c ? (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255 > 0.5 : true; }
 
@@ -1000,6 +1062,10 @@ include ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'templates/partials/uc-theme-runtime
 
   async function boot() {
     buildWall(); buildStarters(); buildRecipes(); buildModules(); bindInputs(); wire();
+    document.getElementById('tb-tint').addEventListener('change', function (e) {
+      set('tokens.color_filter', e.target.checked ? U.tintFilter(tintSource()) : undefined);
+      syncInputs(); changed({ now: true });
+    });
     var savedMode = null; try { savedMode = localStorage.getItem('uc_theme_builder_mode'); } catch (e) {}
     ui.previewMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.querySelectorAll('#tb-prev-mode button').forEach(function (x) { x.classList.toggle('active', x.getAttribute('data-value') === ui.previewMode); });

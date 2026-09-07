@@ -117,6 +117,27 @@ window.UcTheme = (function () {
   function withAlpha(c, a) { return { r: c.r, g: c.g, b: c.b, a: Math.min(1, Math.max(0, a)) }; }
   function contrastText(bg) { return contrast(bg, WHITE) >= contrast(bg, INK) ? WHITE : INK; }
   function hexToRgb(hex) { var c = parseColor(hex); return c && /^#/.test(hex.trim()) ? triple(c) : null; }
+  function hueOf(c) {
+    var r = c.r / 255, g = c.g / 255, b = c.b / 255, max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    if (!d) return 0;
+    var h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return Math.round(((h * 60) + 360) % 360);
+  }
+  /**
+   * Monochrome tint: grayscale + sepia puts every pixel at hue ~38deg, then
+   * hue-rotate moves it onto the wanted hue. The Terminal look with any colour.
+   */
+  var SEPIA_HUE = 38;
+  var TINT_RE = /^grayscale\(1\)\s+sepia\(1\)\s+hue-rotate\((-?[\d.]+)deg\)\s+saturate\(([\d.]+)\)(?:\s+brightness\(([\d.]+)\))?$/;
+  function tintFilter(color, saturate, brightness) {
+    var c = parseColor(color || '') || { r: 51, g: 255, b: 102, a: 1 };
+    var rot = ((hueOf(c) - SEPIA_HUE) % 360 + 360) % 360;
+    return 'grayscale(1) sepia(1) hue-rotate(' + rot + 'deg) saturate(' + (saturate || 3) + ')' + (brightness ? ' brightness(' + brightness + ')' : '');
+  }
+  function parseTint(filter) {
+    var m = TINT_RE.exec(String(filter || '').trim());
+    return m ? { rotate: parseFloat(m[1]), saturate: parseFloat(m[2]), brightness: m[3] ? parseFloat(m[3]) : undefined } : null;
+  }
 
   // ---------------------------------------------------------------- surfaces
   function surfaceTokens(surface, o) {
@@ -678,7 +699,8 @@ window.UcTheme = (function () {
     hostVars: hostVars, cardStyle: cardStyle, resolveChrome: resolveChrome, chromeFromTokens: chromeFromTokens, scopeCss: scopeCss,
     renderPreview: renderPreview, swatchHtml: swatchHtml, reroll: reroll, usesSeeds: usesSeeds,
     sanitize: sanitize, cssProblems: cssProblems, svgProblems: svgProblems,
-    parseColor: parseColor, toCss: toCss, contrast: contrast, lum: lum, mix: mix, contrastText: contrastText, slugify: slugify, esc: esc
+    parseColor: parseColor, toCss: toCss, contrast: contrast, lum: lum, mix: mix, contrastText: contrastText, hueOf: hueOf,
+    tintFilter: tintFilter, parseTint: parseTint, slugify: slugify, esc: esc
   };
 })();
 </script>
