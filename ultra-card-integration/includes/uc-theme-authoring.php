@@ -672,15 +672,42 @@ class UltraCardThemeAuthoring {
      */
     public function list_builtin_themes($request) {
         $force = (bool) $request->get_param('refresh') && current_user_can('manage_options');
-        if (!class_exists('UltraCardWebsiteHarness')) {
-            return new WP_Error('uc_no_harness', 'Website harness is not loaded.', array('status' => 503));
+        $body = null;
+        $origin = '';
+        $sha = '';
+        $error = '';
+
+        // 1. The repo copy through the harness (follows the configured channel).
+        if (class_exists('UltraCardWebsiteHarness')) {
+            $asset = UltraCardWebsiteHarness::instance()->fetch_asset('builtin-themes', 'website/builtin-themes.json', $force);
+            $decoded = is_array($asset) && $asset['html'] !== '' ? json_decode($asset['html'], true) : null;
+            if (is_array($decoded) && isset($decoded['themes']) && is_array($decoded['themes'])) {
+                $body = $decoded;
+                $origin = 'harness';
+                $sha = (string) $asset['sha'];
+            } elseif (is_array($asset) && !empty($asset['error'])) {
+                $error = (string) $asset['error'];
+            }
         }
-        $asset = UltraCardWebsiteHarness::instance()->fetch_asset('builtin-themes', 'website/builtin-themes.json', $force);
-        $body = is_array($asset) && $asset['html'] !== '' ? json_decode($asset['html'], true) : null;
-        if (!is_array($body) || !isset($body['themes']) || !is_array($body['themes'])) {
+
+        // 2. The copy packaged with this plugin release (data/builtin-themes.json).
+        if ($body === null) {
+            $bundled = ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'data/builtin-themes.json';
+            if (file_exists($bundled)) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+                $decoded = json_decode((string) file_get_contents($bundled), true);
+                if (is_array($decoded) && isset($decoded['themes']) && is_array($decoded['themes'])) {
+                    $body = $decoded;
+                    $origin = 'bundled';
+                    $sha = defined('ULTRA_CARD_INTEGRATION_VERSION') ? 'plugin-' . ULTRA_CARD_INTEGRATION_VERSION : 'plugin';
+                }
+            }
+        }
+
+        if ($body === null) {
             return new WP_Error(
                 'uc_builtin_unavailable',
-                $asset['error'] ? 'Could not load built-in themes: ' . $asset['error'] : 'Built-in themes are not available on this channel yet.',
+                $error ? 'Could not load built-in themes: ' . $error : 'Built-in themes are not available.',
                 array('status' => 502)
             );
         }
@@ -707,7 +734,8 @@ class UltraCardThemeAuthoring {
             'themes'       => $themes,
             'total'        => count($themes),
             'card_version' => isset($body['cardVersion']) ? (string) $body['cardVersion'] : '',
-            'sha'          => $asset['sha'],
+            'origin'       => $origin,
+            'sha'          => $sha,
         ));
         $response->header('Cache-Control', 'public, max-age=600');
         return $response;

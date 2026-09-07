@@ -117,6 +117,27 @@ window.UcTheme = (function () {
   function withAlpha(c, a) { return { r: c.r, g: c.g, b: c.b, a: Math.min(1, Math.max(0, a)) }; }
   function contrastText(bg) { return contrast(bg, WHITE) >= contrast(bg, INK) ? WHITE : INK; }
   function hexToRgb(hex) { var c = parseColor(hex); return c && /^#/.test(hex.trim()) ? triple(c) : null; }
+  function hueOf(c) {
+    var r = c.r / 255, g = c.g / 255, b = c.b / 255, max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    if (!d) return 0;
+    var h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return Math.round(((h * 60) + 360) % 360);
+  }
+  /**
+   * Monochrome tint: grayscale + sepia puts every pixel at hue ~38deg, then
+   * hue-rotate moves it onto the wanted hue. The Terminal look with any colour.
+   */
+  var SEPIA_HUE = 38;
+  var TINT_RE = /^grayscale\(1\)\s+sepia\(1\)\s+hue-rotate\((-?[\d.]+)deg\)\s+saturate\(([\d.]+)\)(?:\s+brightness\(([\d.]+)\))?$/;
+  function tintFilter(color, saturate, brightness) {
+    var c = parseColor(color || '') || { r: 51, g: 255, b: 102, a: 1 };
+    var rot = ((hueOf(c) - SEPIA_HUE) % 360 + 360) % 360;
+    return 'grayscale(1) sepia(1) hue-rotate(' + rot + 'deg) saturate(' + (saturate || 3) + ')' + (brightness ? ' brightness(' + brightness + ')' : '');
+  }
+  function parseTint(filter) {
+    var m = TINT_RE.exec(String(filter || '').trim());
+    return m ? { rotate: parseFloat(m[1]), saturate: parseFloat(m[2]), brightness: m[3] ? parseFloat(m[3]) : undefined } : null;
+  }
 
   // ---------------------------------------------------------------- surfaces
   function surfaceTokens(surface, o) {
@@ -132,7 +153,22 @@ window.UcTheme = (function () {
       default: return { background: 'var(--card-background-color, var(--ha-card-background, white))', border: border(1, 'var(--divider-color)'), shadow: sh || 'none', backdropFilter: 'none' };
     }
   }
-  function paneVars(t) {
+  // Mirrors paneVars() in uc-theme-service.ts: the surface picks the defaults,
+  // a pane recipe other than the surface's own replaces them, explicit
+  // pane_* tokens win over both.
+  var PANE_RECIPES = {
+    flat: ['var(--secondary-background-color)', '1px solid var(--divider-color)', 'none'],
+    glossy: ['linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)), var(--card-background-color)', 'none', 'inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15)'],
+    embossed: ['var(--secondary-background-color)', '1px solid rgba(0, 0, 0, 0.12)', 'inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.12)'],
+    inset: ['var(--secondary-background-color)', 'none', 'inset 0 2px 5px rgba(0, 0, 0, 0.25)'],
+    'gradient-overlay': ['linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.1)), var(--secondary-background-color)', 'none', 'none'],
+    'neon-glow': ['var(--secondary-background-color)', '1px solid rgba(var(--rgb-primary-color), 0.5)', '0 0 8px rgba(var(--rgb-primary-color), 0.45)'],
+    outline: ['transparent', '1px solid var(--divider-color)', 'none'],
+    glass: ['rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)', '1px solid rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1)', 'none'],
+    metallic: ['linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)', '1px solid #bbb', 'inset 0 1px 0 rgba(255, 255, 255, 0.6)'],
+    neumorphic: ['var(--card-background-color)', 'none', 'inset 4px 4px 9px rgba(0, 0, 0, 0.22), inset -4px -4px 9px rgba(255, 255, 255, 0.07)']
+  };
+  function paneVars(t, recipe) {
     var by = {
       flat: ['var(--secondary-background-color)', '1px solid var(--divider-color)', 'none'],
       glass: ['rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)', '1px solid rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1)', 'none'],
@@ -142,7 +178,12 @@ window.UcTheme = (function () {
       minimal: ['transparent', 'none', 'none']
     };
     var d = by[t.surface] || by.flat;
-    return { '--uc-pane-bg': t.pane_background || d[0], '--uc-pane-border': t.pane_border || d[1], '--uc-pane-shadow': t.pane_shadow || d[2] };
+    var derived = recipesFromSurface(t.surface).pane;
+    var r = recipe || derived;
+    if (r !== derived && PANE_RECIPES[r]) d = PANE_RECIPES[r];
+    var out = { '--uc-pane-bg': t.pane_background || d[0], '--uc-pane-border': t.pane_border || d[1], '--uc-pane-shadow': t.pane_shadow || d[2] };
+    if (r === 'glass') out['--uc-pane-backdrop'] = 'blur(' + Math.round((t.blur == null ? 12 : t.blur) / 2) + 'px) saturate(140%)';
+    return out;
   }
   function radiusScale(r) { return String(Math.round(Math.min(RADIUS_SCALE_MAX, Math.max(0, r / BASE_CARD_RADIUS)) * 100) / 100); }
   function radiusInner(r, pad) {
@@ -172,6 +213,47 @@ window.UcTheme = (function () {
     if (primary) { var on = contrastText(primary); setColor('--text-primary-color', on); set('--mdc-theme-primary', toCss(primary)); }
   }
 
+  // ---------------------------------------------------------- recipes
+  // Port of src/utils/uc-surface-recipes.ts: one vocabulary of surface
+  // treatments, a recipe per role, derived from `surface` when unset.
+  var RECIPES = ['flat', 'glossy', 'embossed', 'inset', 'gradient-overlay', 'neon-glow', 'outline', 'glass', 'metallic', 'neumorphic', 'dashed', 'dots', 'minimal'];
+  var CONTROL_RECIPES = RECIPES.slice(0, 10);
+  var ROLES = ['control', 'track', 'fill', 'pane'];
+  var ROLE_RECIPES = { control: CONTROL_RECIPES, track: RECIPES, fill: RECIPES, pane: CONTROL_RECIPES };
+  var RECIPE_ALIASES = { gradient: 'gradient-overlay', neon: 'neon-glow', glow: 'neon-glow', neumorphism: 'neumorphic', frosted: 'glass' };
+  function normalizeRecipe(v) {
+    if (typeof v !== 'string') return undefined;
+    v = v.trim().toLowerCase();
+    return RECIPES.indexOf(v) >= 0 ? v : RECIPE_ALIASES[v];
+  }
+  function recipeForRole(v, role) { var r = normalizeRecipe(v); return r && ROLE_RECIPES[role].indexOf(r) >= 0 ? r : 'flat'; }
+  function recipesFromSurface(surface) {
+    switch (surface) {
+      case 'glass': return { control: 'glass', track: 'glass', fill: 'flat', pane: 'glass' };
+      case 'neumorphic': return { control: 'neumorphic', track: 'neumorphic', fill: 'flat', pane: 'neumorphic' };
+      case 'glossy': return { control: 'glossy', track: 'glossy', fill: 'glossy', pane: 'glossy' };
+      case 'outline': return { control: 'outline', track: 'outline', fill: 'flat', pane: 'outline' };
+      case 'minimal': return { control: 'flat', track: 'minimal', fill: 'flat', pane: 'flat' };
+      default: return { control: 'flat', track: 'flat', fill: 'flat', pane: 'flat' };
+    }
+  }
+  /** Port of resolveThemeRecipes: explicit tokens.recipes over the surface's defaults. */
+  function resolveRecipes(theme) {
+    var t = (theme && theme.tokens) || {};
+    var out = recipesFromSurface(t.surface);
+    if (t.recipes) ROLES.forEach(function (role) { var r = normalizeRecipe(t.recipes[role]); if (r && ROLE_RECIPES[role].indexOf(r) >= 0) out[role] = r; });
+    return out;
+  }
+  // Which module style fields are surfaces (theme.modules still wins over the recipe).
+  var SURFACE_FIELD_ROLES = { 'button.style': 'control', 'popup.trigger_button_style': 'control', 'spinbox.button_style': 'control', 'bar.bar_style': 'track', 'slider_control.slider_style': 'track' };
+  /** The value a module on "theme" renders with: theme.modules, then the role recipe. */
+  function moduleSurface(theme, moduleType, key) {
+    var m = theme && theme.modules && theme.modules[moduleType];
+    if (m && m[key] != null && m[key] !== '') return m[key];
+    var role = SURFACE_FIELD_ROLES[moduleType + '.' + key];
+    return role ? recipeForRole(resolveRecipes(theme)[role], role) : undefined;
+  }
+
   /** Port of ucThemeService.getHostVars. */
   function hostVars(theme) {
     if (!theme || !theme.tokens) return {};
@@ -189,7 +271,9 @@ window.UcTheme = (function () {
       '--uc-radius-scale': radiusScale(radius),
       '--uc-radius-inner': radiusInner(radius, theme.card && theme.card.card_padding) + 'px'
     };
-    var pv = paneVars(t); for (var k in pv) vars[k] = pv[k];
+    var rc = resolveRecipes(theme);
+    var pv = paneVars(t, rc.pane); for (var k in pv) vars[k] = pv[k];
+    ROLES.forEach(function (role) { vars['--uc-recipe-' + role] = rc[role]; });
     if (t.border_color) vars['--uc-border-color'] = t.border_color;
     if (t.accent) vars['--uc-accent'] = t.accent;
     if (t.font_family) vars['--uc-font-family'] = t.font_family;
@@ -339,24 +423,71 @@ window.UcTheme = (function () {
     return /--uc-card-(hue|seed-[123])/.test(JSON.stringify(theme || {}));
   }
 
-  var PANE = 'background:var(--uc-pane-bg);border:var(--uc-pane-border);box-shadow:var(--uc-pane-shadow);border-radius:var(--uc-r-10);';
+  var PANE_BASE = 'background:var(--uc-pane-bg);border:var(--uc-pane-border);box-shadow:var(--uc-pane-shadow);border-radius:var(--uc-r-10);';
+  // Control recipes, in the spirit of getControlSurfaceStyles (accent as the
+  // control colour). Keyed by recipe, so a theme's `recipes.control` reads here.
+  var ACC = 'var(--uc-accent,var(--primary-color))';
   var BTN_SURFACE = {
-    glass: 'background:rgba(var(--rgb-primary-color),0.18);border:1px solid rgba(var(--rgb-primary-color),0.35);color:var(--primary-text-color);backdrop-filter:blur(var(--uc-blur));',
-    outline: 'background:transparent;border:1.5px solid var(--uc-accent,var(--primary-color));color:var(--uc-accent,var(--primary-color));',
-    minimal: 'background:transparent;border:1px solid transparent;color:var(--uc-accent,var(--primary-color));',
-    neumorphic: 'background:var(--card-background-color);border:0;color:var(--primary-text-color);box-shadow:4px 4px 9px rgba(0,0,0,.2),-4px -4px 9px rgba(255,255,255,.08);',
-    glossy: 'background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 55%),var(--uc-accent,var(--primary-color));border:0;color:var(--text-primary-color);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.18);',
-    flat: 'background:var(--uc-accent,var(--primary-color));border:0;color:var(--text-primary-color);'
+    flat: 'background:' + ACC + ';border:0;color:var(--text-primary-color);',
+    glossy: 'background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 55%),' + ACC + ';border:0;color:var(--text-primary-color);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.18);',
+    embossed: 'background:' + ACC + ';border:1px solid rgba(0,0,0,.15);color:var(--text-primary-color);box-shadow:inset 0 2px 2px rgba(255,255,255,.2),inset 0 -2px 2px rgba(0,0,0,.15);',
+    inset: 'background:' + ACC + ';border:0;color:var(--text-primary-color);box-shadow:inset 0 2px 6px rgba(0,0,0,.35);',
+    'gradient-overlay': 'background:linear-gradient(135deg,rgba(255,255,255,.15),rgba(0,0,0,.15)),' + ACC + ';border:0;color:var(--text-primary-color);',
+    'neon-glow': 'background:' + ACC + ';border:0;color:var(--text-primary-color);box-shadow:0 0 10px ' + ACC + ',0 0 20px ' + ACC + ';',
+    outline: 'background:transparent;border:2px solid ' + ACC + ';color:' + ACC + ';',
+    glass: 'background:rgba(var(--rgb-primary-color),0.18);border:1px solid rgba(255,255,255,.25);color:var(--primary-text-color);backdrop-filter:blur(var(--uc-blur));',
+    metallic: 'background:linear-gradient(90deg,#d7d7d7,#f0f0f0 50%,#d7d7d7);border:1px solid #bbb;color:#333;',
+    neumorphic: 'background:var(--card-background-color);border:0;color:var(--primary-text-color);box-shadow:4px 4px 10px rgba(0,0,0,.18),-4px -4px 10px rgba(255,255,255,.12);',
+    minimal: 'background:transparent;border:1px solid transparent;color:' + ACC + ';'
   };
+  // Track recipes: what a bar track looks like (port of the track half of getBarSurfaceCss).
+  var TRACK_SURFACE = {
+    flat: 'box-shadow:none;',
+    glossy: '',
+    embossed: 'box-shadow:inset 0 1px 2px rgba(0,0,0,.2),0 1px 0 rgba(255,255,255,.8);border:1px solid rgba(0,0,0,.1);',
+    inset: 'box-shadow:inset 0 2px 4px rgba(0,0,0,.3);border:1px solid rgba(0,0,0,.2);',
+    'gradient-overlay': '',
+    'neon-glow': 'box-shadow:inset 0 0 10px rgba(0,0,0,.5);',
+    outline: 'border:2px solid ' + ACC + ';background:transparent;padding:3px;',
+    glass: 'backdrop-filter:blur(var(--uc-blur,8px)) saturate(180%);background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.06) 50%,rgba(255,255,255,.15));border:1px solid rgba(255,255,255,.25);box-shadow:0 8px 32px rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(0,0,0,.1);',
+    metallic: 'box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.3);',
+    neumorphic: 'box-shadow:inset 2px 2px 4px rgba(0,0,0,.1),inset -2px -2px 4px rgba(255,255,255,.1);',
+    dashed: '', dots: '',
+    minimal: 'background:transparent;border:none;box-shadow:none;'
+  };
+  // Fill recipes: the fill half of getBarSurfaceCss for a solid fill.
+  var FILL_SURFACE = {
+    flat: '',
+    glossy: 'background:linear-gradient(to bottom,' + ACC + ',' + ACC + ' 50%,rgba(0,0,0,.1) 51%,' + ACC + ');box-shadow:inset 0 1px 0 rgba(255,255,255,.3);',
+    embossed: 'box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.1);',
+    inset: '',
+    'gradient-overlay': 'background:linear-gradient(to bottom,' + ACC + ' 0%,rgba(255,255,255,0) 100%);',
+    'neon-glow': 'filter:brightness(1.2);box-shadow:0 0 7px 2px color-mix(in srgb,' + ACC + ' 70%,transparent),0 0 14px 6px color-mix(in srgb,' + ACC + ' 50%,transparent),inset 0 0 10px rgba(255,255,255,.8);',
+    outline: '', glass: '',
+    metallic: 'background:linear-gradient(to bottom,rgba(255,255,255,.4) 0%,' + ACC + ' 20%,' + ACC + ' 80%,rgba(0,0,0,.2) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.3);',
+    neumorphic: 'box-shadow:2px 2px 4px rgba(0,0,0,.1),-2px -2px 4px rgba(255,255,255,.1);',
+    dashed: 'mask-image:repeating-linear-gradient(90deg,black 0 12px,transparent 12px 16px);-webkit-mask-image:repeating-linear-gradient(90deg,black 0 12px,transparent 12px 16px);border-radius:0;',
+    dots: 'background:radial-gradient(circle 4px at 10% center,' + ACC + ' 100%,transparent 100%),radial-gradient(circle 4px at 30% center,' + ACC + ' 100%,transparent 100%),radial-gradient(circle 4px at 50% center,' + ACC + ' 100%,transparent 100%);width:100%!important;',
+    minimal: 'height:2px;top:calc(50% - 1px);'
+  };
+  // The pane recipe is already folded into --uc-pane-* (paneVars); the only
+  // extra a pane element draws is the glass backdrop, as the card's base CSS does.
+  var PANE_EXTRA = 'backdrop-filter:var(--uc-pane-backdrop,none);-webkit-backdrop-filter:var(--uc-pane-backdrop,none);';
 
   function sampleCards(theme, vars, salt) {
-    var t = (theme && theme.tokens) || { surface: 'flat' };
-    var surface = t.surface || 'flat';
+    // Every sample control/track/pane follows what a real module on "theme"
+    // would resolve to: theme.modules first, then the role recipe.
+    var ctl = moduleSurface(theme, 'button', 'style') || 'flat';
+    var trk = moduleSurface(theme, 'bar', 'bar_style') || 'flat';
+    var rc = resolveRecipes(theme);
+    var PANE = PANE_BASE + PANE_EXTRA;
+    var TRACK = PANE_BASE + (TRACK_SURFACE[trk] || '');
+    var FILL = 'background:' + ACC + ';border-radius:inherit;' + (FILL_SURFACE[rc.fill] || '');
     var card = attr(styleString(cardStyle(theme, vars)));
     var host = attr(styleString(vars));
     var slot = 0;
     var seedVarsNext = function () { return seedVars(slot++, salt); };
-    var btn = 'padding:calc(9px * var(--uc-density,1)) 16px;border-radius:var(--uc-radius-sm);font:inherit;font-size:13px;font-weight:600;cursor:default;' + (BTN_SURFACE[surface] || BTN_SURFACE.flat);
+    var btn = 'padding:calc(9px * var(--uc-density,1)) 16px;border-radius:var(--uc-radius-sm);font:inherit;font-size:13px;font-weight:600;cursor:default;' + (BTN_SURFACE[ctl] || BTN_SURFACE.flat);
     var ghost = 'padding:calc(9px * var(--uc-density,1)) 16px;border-radius:var(--uc-radius-sm);font:inherit;font-size:13px;font-weight:600;cursor:default;' + PANE + 'color:var(--primary-text-color);';
     var gap = 'calc(10px * var(--uc-density,1))';
     var icon = function (name, color) { return '<i class="mdi ' + name + '" style="font-size:20px;color:' + (color || 'var(--state-icon-color, var(--primary-text-color))') + '"></i>'; };
@@ -375,7 +506,7 @@ window.UcTheme = (function () {
     var c1 = '<div class="card-container uc-prev-card" style="' + card + host + seedVarsNext() + 'display:flex;flex-direction:column;gap:' + gap + '">' +
       '<div style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">Living room</div><div style="font-size:12.5px;color:var(--secondary-text-color)">21.5° · 42% · 3 lights on</div></div>' + iconWrap('mdi-sofa-outline', true) + '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + tile('Lights', 'mdi-lightbulb-group-outline', true) + tile('Climate', 'mdi-thermostat', false) + '</div>' +
-      '<div style="height:10px;border-radius:var(--uc-radius-sm);overflow:hidden;' + PANE + '"><div style="width:62%;height:100%;background:var(--uc-accent,var(--primary-color));border-radius:inherit"></div></div>' +
+      '<div data-uc-role="track" style="height:10px;border-radius:var(--uc-radius-sm);overflow:hidden;position:relative;' + TRACK + '"><div data-uc-role="fill" style="position:absolute;left:0;top:0;bottom:0;width:62%;' + FILL + '"></div></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" style="' + btn + '">Movie night</button><button type="button" style="' + ghost + '">All off</button></div></div>';
 
     var c2 = '<div class="card-container uc-prev-card" style="' + card + host + seedVarsNext() + 'display:flex;flex-direction:column;gap:8px">' +
@@ -384,8 +515,8 @@ window.UcTheme = (function () {
 
     var c3 = '<div class="card-container uc-prev-card" style="' + card + host + seedVarsNext() + 'display:flex;flex-direction:column;gap:' + gap + '">' +
       '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:15px;font-weight:600">Thermostat</div><span style="font-size:12px;padding:4px 10px;border-radius:var(--uc-r-12);' + PANE + 'color:var(--secondary-text-color)">Heating</span></div>' +
-      '<div style="display:flex;align-items:center;gap:12px"><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[surface] || BTN_SURFACE.flat) + '">−</button><div style="flex:1;text-align:center;font-size:30px;font-weight:300;letter-spacing:-.02em">21.5<span style="font-size:14px;color:var(--secondary-text-color)"> °C</span></div><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[surface] || BTN_SURFACE.flat) + '">+</button></div>' +
-      '<div style="position:relative;height:28px;border-radius:var(--uc-radius-sm);overflow:hidden;' + PANE + '"><div style="position:absolute;inset:0 45% 0 0;background:var(--uc-accent,var(--primary-color));opacity:.85;border-radius:inherit"></div><span style="position:absolute;inset:0;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:var(--primary-text-color)">Brightness 55%</span></div>' +
+      '<div style="display:flex;align-items:center;gap:12px"><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[ctl] || BTN_SURFACE.flat) + '">−</button><div style="flex:1;text-align:center;font-size:30px;font-weight:300;letter-spacing:-.02em">21.5<span style="font-size:14px;color:var(--secondary-text-color)"> °C</span></div><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[ctl] || BTN_SURFACE.flat) + '">+</button></div>' +
+      '<div data-uc-role="track" style="position:relative;height:28px;border-radius:var(--uc-radius-sm);overflow:hidden;' + TRACK + '"><div data-uc-role="fill" style="position:absolute;inset:0 45% 0 0;opacity:.85;' + FILL + '"></div><span style="position:absolute;inset:0;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:var(--primary-text-color)">Brightness 55%</span></div>' +
       '<div style="display:flex;gap:8px"><button type="button" style="flex:1;' + ghost + 'text-align:center">Eco</button><button type="button" style="flex:1;' + btn + 'text-align:center">Comfort</button><button type="button" style="flex:1;' + ghost + 'text-align:center">Away</button></div></div>';
     return [c1, c2, c3];
   }
@@ -516,6 +647,11 @@ window.UcTheme = (function () {
       PALETTE_KEYS.forEach(function (k) { var v = cssv(rt.palette[k]); if (v) pal[k] = v; });
       if (Object.keys(pal).length) t.palette = pal;
     }
+    if (rt.recipes && typeof rt.recipes === 'object') {
+      var rec = {};
+      ROLES.forEach(function (role) { var v = normalizeRecipe(rt.recipes[role]); if (v && ROLE_RECIPES[role].indexOf(v) >= 0) rec[role] = v; });
+      if (Object.keys(rec).length) t.recipes = rec;
+    }
     var out = {
       id: /^[a-z0-9][a-z0-9_-]{0,63}$/.test(String(r.id || '')) ? r.id : 'my-theme',
       name: str(r.name, 80) || 'Untitled theme',
@@ -558,10 +694,13 @@ window.UcTheme = (function () {
 
   return {
     SURFACES: SURFACES, DENSITIES: DENSITIES, PALETTE_KEYS: PALETTE_KEYS, MODULE_FIELDS: MODULE_FIELDS, HA_BASE: HA_BASE, LIMITS: LIMITS,
+    RECIPES: RECIPES, ROLES: ROLES, ROLE_RECIPES: ROLE_RECIPES, SURFACE_FIELD_ROLES: SURFACE_FIELD_ROLES,
+    recipesFromSurface: recipesFromSurface, resolveRecipes: resolveRecipes, moduleSurface: moduleSurface, normalizeRecipe: normalizeRecipe,
     hostVars: hostVars, cardStyle: cardStyle, resolveChrome: resolveChrome, chromeFromTokens: chromeFromTokens, scopeCss: scopeCss,
     renderPreview: renderPreview, swatchHtml: swatchHtml, reroll: reroll, usesSeeds: usesSeeds,
     sanitize: sanitize, cssProblems: cssProblems, svgProblems: svgProblems,
-    parseColor: parseColor, toCss: toCss, contrast: contrast, lum: lum, mix: mix, contrastText: contrastText, slugify: slugify, esc: esc
+    parseColor: parseColor, toCss: toCss, contrast: contrast, lum: lum, mix: mix, contrastText: contrastText, hueOf: hueOf,
+    tintFilter: tintFilter, parseTint: parseTint, slugify: slugify, esc: esc
   };
 })();
 </script>

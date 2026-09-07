@@ -308,10 +308,31 @@ class UltraCardWebsiteHarness {
         if (!isset($pages[$id])) {
             return array('html' => '', 'sha' => '', 'url' => '', 'error' => 'Unknown page', 'cached' => false, 'path' => null);
         }
-        $meta = $pages[$id];
+        return $this->fetch_repo_file($id, $pages[$id]['file'], $force);
+    }
+
+    /**
+     * Fetch (or serve cached) any repo-tracked website asset, e.g.
+     * website/builtin-themes.json. Same channel resolution, transient and
+     * on-disk fallback as page fragments; the body comes back in `html`.
+     *
+     * @param string $id   Cache id, [a-z0-9-]. Shares the fragment flush scope.
+     * @param string $file Repo-relative path.
+     * @return array{html:string,sha:string,url:string,error:?string,cached:bool,path:?string}
+     */
+    public function fetch_asset($id, $file, $force = false) {
+        $id = preg_replace('/[^a-z0-9-]/', '', strtolower((string) $id));
+        if ($id === '' || !preg_match('#^website/[a-zA-Z0-9._/-]+$#', (string) $file) || strpos($file, '..') !== false) {
+            return array('html' => '', 'sha' => '', 'url' => '', 'error' => 'Unknown asset', 'cached' => false, 'path' => null);
+        }
+        return $this->fetch_repo_file($id, $file, $force);
+    }
+
+    private function fetch_repo_file($id, $file, $force = false) {
         $channel = $this->resolve_channel($force);
         $sha = $channel['sha'];
-        $url = $channel['base'] . '/' . $meta['file'];
+        $url = $channel['base'] . '/' . $file;
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION)) ?: 'html';
 
         $cache_key = 'uc_harness_frag_' . $id;
         if (!$force) {
@@ -329,7 +350,7 @@ class UltraCardWebsiteHarness {
         }
 
         // Prefer on-disk file for this sha.
-        $disk = $this->disk_path($id, $sha);
+        $disk = $this->disk_path($id, $sha, $ext);
         if (!$force && file_exists($disk)) {
             $html = file_get_contents($disk);
             if ($html !== false && $html !== '') {
@@ -343,7 +364,7 @@ class UltraCardWebsiteHarness {
             'headers' => array('User-Agent' => 'UltraCardWebsiteHarness'),
         ));
         if (is_wp_error($response)) {
-            $fallback = $this->last_good_disk($id);
+            $fallback = $this->last_good_disk($id, $ext);
             return array(
                 'html' => $fallback['html'],
                 'sha' => $fallback['sha'] ?: $sha,
@@ -356,7 +377,7 @@ class UltraCardWebsiteHarness {
         $code = wp_remote_retrieve_response_code($response);
         $html = (string) wp_remote_retrieve_body($response);
         if ($code !== 200 || $html === '') {
-            $fallback = $this->last_good_disk($id);
+            $fallback = $this->last_good_disk($id, $ext);
             $err = 'HTTP ' . $code . ' fetching ' . $url;
             update_option(self::OPTION_LAST_ERROR, $err, false);
             return array(
@@ -384,9 +405,10 @@ class UltraCardWebsiteHarness {
         return $dir;
     }
 
-    private function disk_path($id, $sha) {
+    private function disk_path($id, $sha, $ext = 'html') {
         $safe_sha = preg_replace('/[^a-zA-Z0-9._-]/', '', (string) $sha);
-        return trailingslashit($this->uploads_dir()) . $id . '-' . $safe_sha . '.html';
+        $ext = preg_replace('/[^a-z0-9]/', '', (string) $ext) ?: 'html';
+        return trailingslashit($this->uploads_dir()) . $id . '-' . $safe_sha . '.' . $ext;
     }
 
     private function write_disk($path, $html) {
@@ -394,9 +416,10 @@ class UltraCardWebsiteHarness {
         @file_put_contents($path, $html);
     }
 
-    private function last_good_disk($id) {
+    private function last_good_disk($id, $ext = 'html') {
         $dir = $this->uploads_dir();
-        $matches = glob(trailingslashit($dir) . $id . '-*.html');
+        $ext = preg_replace('/[^a-z0-9]/', '', (string) $ext) ?: 'html';
+        $matches = glob(trailingslashit($dir) . $id . '-*.' . $ext);
         if (!$matches) {
             return array('html' => '', 'sha' => '', 'path' => null);
         }
@@ -405,7 +428,7 @@ class UltraCardWebsiteHarness {
         });
         $path = $matches[0];
         $html = file_get_contents($path);
-        $base = basename($path, '.html');
+        $base = basename($path, '.' . $ext);
         $sha = substr($base, strlen($id) + 1);
         return array('html' => $html !== false ? $html : '', 'sha' => $sha, 'path' => $path);
     }

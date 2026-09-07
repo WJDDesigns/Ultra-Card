@@ -1,0 +1,1263 @@
+{
+  "cardVersion": "3.10.0-beta5",
+  "count": 15,
+  "themes": [
+    {
+      "id": "glass",
+      "name": "Glass",
+      "version": 1,
+      "author": "Ultra Card",
+      "description": "Translucent panels with a fine border and backdrop blur. Made for wallpaper backgrounds.",
+      "icon": "mdi:blur",
+      "source": "builtin",
+      "tokens": {
+        "surface": "glass",
+        "radius": 18,
+        "radius_sm": 12,
+        "blur": 12,
+        "border_width": 1,
+        "border_color": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.12)",
+        "shadow": "0 8px 24px rgba(0, 0, 0, 0.18)",
+        "density": "regular"
+      },
+      "card": {
+        "card_background": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05)",
+        "card_border_radius": 18,
+        "card_border_color": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.12)",
+        "card_border_width": 1,
+        "card_padding": 16,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(0, 0, 0, 0.18)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 8,
+        "card_shadow_blur": 24,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "glass"
+        },
+        "bar": {
+          "bar_style": "glass",
+          "glass_blur_amount": 8
+        },
+        "slider_control": {
+          "slider_style": "glass",
+          "glass_blur_amount": 8
+        },
+        "spinbox": {
+          "button_style": "glass"
+        },
+        "popup": {
+          "trigger_button_style": "glass"
+        },
+        "grid": {
+          "grid_style": "style_16"
+        },
+        "navigation": {
+          "nav_style": "uc_ios_glass"
+        },
+        "area_summary": {
+          "style_preset": "graph_glow"
+        },
+        "auto_entity_list": {
+          "row_style": "slim"
+        },
+        "unifi": {
+          "rack_style": "glass"
+        },
+        "activity_feed": {
+          "feed_card_style": "flat"
+        }
+      },
+      "css": ".card-container { backdrop-filter: blur(var(--uc-blur, 12px)) saturate(160%); -webkit-backdrop-filter: blur(var(--uc-blur, 12px)) saturate(160%); }"
+    },
+    {
+      "id": "bold",
+      "name": "Bold",
+      "version": 1,
+      "author": "Ultra Card",
+      "description": "Large radius, deep shadow and your theme accent on every control.",
+      "icon": "mdi:palette",
+      "source": "builtin",
+      "tokens": {
+        "surface": "glossy",
+        "radius": 24,
+        "radius_sm": 14,
+        "border_width": 0,
+        "shadow": "0 10px 30px rgba(0, 0, 0, 0.16)",
+        "accent": "var(--primary-color)",
+        "density": "comfortable"
+      },
+      "card": {
+        "card_background": "var(--card-background-color, var(--ha-card-background, white))",
+        "card_border_radius": 24,
+        "card_border_width": 0,
+        "card_padding": 20,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(0, 0, 0, 0.16)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 10,
+        "card_shadow_blur": 30,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "glossy"
+        },
+        "bar": {
+          "bar_style": "gradient-overlay"
+        },
+        "slider_control": {
+          "slider_style": "glossy"
+        },
+        "spinbox": {
+          "button_style": "glossy"
+        },
+        "popup": {
+          "trigger_button_style": "glossy"
+        },
+        "grid": {
+          "grid_style": "style_17"
+        },
+        "navigation": {
+          "nav_style": "uc_gradient"
+        },
+        "area_summary": {
+          "style_preset": "graph_glow",
+          "accent_color": "var(--primary-color)"
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "dark"
+        },
+        "activity_feed": {
+          "feed_card_style": "elevated"
+        }
+      }
+    },
+    {
+      "id": "monochrome",
+      "name": "Monochrome",
+      "version": 1,
+      "author": "Ultra Card",
+      "description": "Black, white and grey only. Every module is desaturated, including ones with their own colours. Thin outlines, no shadows, text does the talking.",
+      "icon": "mdi:contrast-box",
+      "source": "builtin",
+      "tokens": {
+        "surface": "outline",
+        "radius": 6,
+        "radius_sm": 4,
+        "border_width": 1,
+        "border_color": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.35)",
+        "shadow": "none",
+        "accent": "var(--primary-text-color)",
+        "density": "compact",
+        "grayscale": 1,
+        "palette": {
+          "primary": "var(--primary-text-color)",
+          "accent": "var(--primary-text-color)",
+          "on_primary": "var(--card-background-color, var(--ha-card-background, white))",
+          "divider": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.35)"
+        }
+      },
+      "card": {
+        "card_background": "var(--card-background-color, var(--ha-card-background, white))",
+        "card_border_radius": 6,
+        "card_border_color": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.35)",
+        "card_border_width": 1,
+        "card_padding": 14,
+        "card_shadow_enabled": false
+      },
+      "modules": {
+        "button": {
+          "style": "outline"
+        },
+        "bar": {
+          "bar_style": "outline"
+        },
+        "slider_control": {
+          "slider_style": "outline"
+        },
+        "spinbox": {
+          "button_style": "outline",
+          "button_shape": "square"
+        },
+        "popup": {
+          "trigger_button_style": "outline"
+        },
+        "grid": {
+          "grid_style": "style_8"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "compact_controls",
+          "accent_color": "var(--primary-text-color)"
+        },
+        "auto_entity_list": {
+          "row_style": "slim"
+        },
+        "unifi": {
+          "rack_style": "blueprint"
+        },
+        "activity_feed": {
+          "feed_card_style": "outlined"
+        },
+        "tabs": {
+          "style": "simple"
+        }
+      }
+    },
+    {
+      "id": "material",
+      "name": "Material",
+      "version": 2,
+      "author": "Ultra Card",
+      "description": "Material Design 3 baseline: lavender-white tonal surfaces, the M3 purple, elevated 12dp cards, pill controls, Google Sans, and expressive shapes on the page.",
+      "icon": "mdi:material-design",
+      "source": "builtin",
+      "tokens": {
+        "surface": "flat",
+        "radius": 12,
+        "radius_sm": 20,
+        "border_width": 0,
+        "border_color": "transparent",
+        "shadow": "0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15)",
+        "page_background": "url(\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1000 1000%22 preserveAspectRatio=%22xMidYMid slice%22%3E%3Ccircle cx=%22840%22 cy=%22130%22 r=%22250%22 fill=%22%23eaddff%22/%3E%3Crect x=%22-80%22 y=%22720%22 width=%22540%22 height=%22210%22 rx=%22105%22 fill=%22%23ffd8e4%22 transform=%22rotate%28-18 190 825%29%22/%3E%3Cg fill=%22%23e8def8%22 transform=%22translate%28170 400%29%22%3E%3Ccircle cx=%22-58%22 cy=%22-58%22 r=%2288%22/%3E%3Ccircle cx=%2258%22 cy=%22-58%22 r=%2288%22/%3E%3Ccircle cx=%22-58%22 cy=%2258%22 r=%2288%22/%3E%3Ccircle cx=%2258%22 cy=%2258%22 r=%2288%22/%3E%3C/g%3E%3Cpath d=%22M 108.5 0.0 L 107.7 6.0 L 105.3 11.9 L 101.8 17.3 L 97.5 22.3 L 93.0 26.8 L 88.7 31.0 L 85.1 35.3 L 82.4 39.7 L 80.6 44.6 L 79.6 50.0 L 78.9 56.0 L 78.2 62.3 L 77.0 68.8 L 75.0 75.0 L 71.9 80.4 L 67.6 84.8 L 62.4 88.0 L 56.4 89.8 L 49.9 90.4 L 43.4 90.1 L 37.0 89.4 L 31.0 88.7 L 25.5 88.5 L 20.4 89.2 L 15.4 90.8 L 10.5 93.4 L 5.4 96.6 L 0.0 100.0 L -5.8 103.1 L -11.9 105.3 L -18.1 106.3 L -24.1 105.8 L -29.9 103.6 L -35.0 100.1 L -39.5 95.4 L -43.4 90.1 L -46.8 84.7 L -50.0 79.6 L -53.3 75.2 L -57.0 71.5 L -61.4 68.7 L -66.5 66.5 L -72.1 64.5 L -78.2 62.3 L -84.2 59.7 L -89.8 56.4 L -94.4 52.2 L -97.8 47.1 L -99.6 41.3 L -100.1 35.0 L -99.2 28.6 L -97.5 22.3 L -95.4 16.2 L -93.4 10.5 L -92.0 5.2 L -91.5 0.0 L -92.0 -5.2 L -93.4 -10.5 L -95.4 -16.2 L -97.5 -22.3 L -99.2 -28.6 L -100.1 -35.0 L -99.6 -41.3 L -97.8 -47.1 L -94.4 -52.2 L -89.8 -56.4 L -84.2 -59.7 L -78.2 -62.3 L -72.1 -64.5 L -66.5 -66.5 L -61.4 -68.7 L -57.0 -71.5 L -53.3 -75.2 L -50.0 -79.6 L -46.8 -84.7 L -43.4 -90.1 L -39.5 -95.4 L -35.0 -100.1 L -29.9 -103.6 L -24.1 -105.8 L -18.1 -106.3 L -11.9 -105.3 L -5.8 -103.1 L -0.0 -100.0 L 5.4 -96.6 L 10.5 -93.4 L 15.4 -90.8 L 20.4 -89.2 L 25.5 -88.5 L 31.0 -88.7 L 37.0 -89.4 L 43.4 -90.1 L 49.9 -90.4 L 56.4 -89.8 L 62.4 -88.0 L 67.6 -84.8 L 71.9 -80.4 L 75.0 -75.0 L 77.0 -68.8 L 78.2 -62.3 L 78.9 -56.0 L 79.6 -50.0 L 80.6 -44.6 L 82.4 -39.7 L 85.1 -35.3 L 88.7 -31.0 L 93.0 -26.8 L 97.5 -22.3 L 101.8 -17.3 L 105.3 -11.9 L 107.7 -6.0 Z%22 fill=%22%236750a4%22 transform=%22translate%28760 790%29 scale%281.15%29%22/%3E%3Ccircle cx=%22560%22 cy=%22560%22 r=%2260%22 fill=%22%23ffd8e4%22/%3E%3C/svg%3E\") center / cover no-repeat fixed, #fef7ff",
+        "pane_background": "#ece6f0",
+        "pane_border": "none",
+        "pane_shadow": "none",
+        "density": "regular",
+        "font_family": "\"Google Sans Text\", \"Google Sans\", Roboto, \"Roboto Flex\", system-ui, sans-serif",
+        "palette": {
+          "primary": "#6750a4",
+          "on_primary": "#ffffff",
+          "accent": "#6750a4",
+          "card_bg": "#f7f2fa",
+          "text": "#1d1b20",
+          "text_secondary": "#49454f",
+          "divider": "#cac4d0"
+        }
+      },
+      "card": {
+        "card_background": "#f7f2fa",
+        "card_border_radius": 12,
+        "card_border_color": "transparent",
+        "card_border_width": 0,
+        "card_padding": 16,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(0, 0, 0, 0.3)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 1,
+        "card_shadow_blur": 2,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "flat"
+        },
+        "bar": {
+          "bar_style": "flat"
+        },
+        "slider_control": {
+          "slider_style": "flat"
+        },
+        "spinbox": {
+          "button_style": "flat",
+          "button_shape": "circle"
+        },
+        "popup": {
+          "trigger_button_style": "flat"
+        },
+        "grid": {
+          "grid_style": "style_14"
+        },
+        "navigation": {
+          "nav_style": "uc_material"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "tile_border_radius": 12
+        },
+        "auto_entity_list": {
+          "row_style": "detailed"
+        },
+        "unifi": {
+          "rack_style": "light"
+        },
+        "activity_feed": {
+          "feed_card_style": "elevated"
+        },
+        "tabs": {
+          "style": "simple"
+        }
+      },
+      "css": ".card-container {\n  --secondary-background-color: #ece6f0;\n  --primary-background-color: #f3edf7;\n  --input-fill-color: #ece6f0;\n  --mdc-select-fill-color: #ece6f0;\n  --mdc-text-field-fill-color: #ece6f0;\n  --mdc-theme-surface: #f7f2fa;\n  background-color: #f7f2fa !important;\n  background-image: none !important;\n  border: none !important;\n  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15) !important;\n  /* MD3 body-medium tracking. */\n  letter-spacing: 0.25px;\n}\n/* Nested surfaces read as surface-container-high. */\n[style*=\"--uc-design-surface\"] {\n  background-color: #ece6f0;\n  background-image: none;\n  border: none;\n  box-shadow: none;\n}"
+    },
+    {
+      "id": "neumorphic-light",
+      "name": "Neumorphic Light",
+      "version": 1,
+      "author": "Ultra Card",
+      "description": "Soft UI in a pale grey: one material lit from the top-left, raised cards and controls, recessed panels, no lines anywhere.",
+      "icon": "mdi:white-balance-sunny",
+      "source": "builtin",
+      "tokens": {
+        "surface": "neumorphic",
+        "radius": 22,
+        "radius_sm": 16,
+        "border_width": 0,
+        "border_color": "transparent",
+        "shadow": "inset 1px 1px 0 rgba(255, 255, 255, 0.9), inset -1px -1px 0 rgba(0, 0, 0, 0.08), 10px 10px 22px #b8c2d3, -10px -10px 22px #ffffff",
+        "page_background": "#e4e8ef",
+        "pane_background": "#e4e8ef",
+        "pane_border": "none",
+        "pane_shadow": "inset 5px 5px 10px #b8c2d3, inset -5px -5px 10px #ffffff",
+        "density": "comfortable",
+        "accent": "#4f63d2",
+        "font_family": "'Nunito', 'Poppins', 'Quicksand', 'Varela Round', system-ui, sans-serif",
+        "palette": {
+          "primary": "#4f63d2",
+          "on_primary": "#ffffff",
+          "accent": "#4f63d2",
+          "card_bg": "#e4e8ef",
+          "text": "#3b4656",
+          "text_secondary": "#56637a",
+          "divider": "transparent"
+        }
+      },
+      "card": {
+        "card_background": "#e4e8ef",
+        "card_border_radius": 22,
+        "card_border_color": "transparent",
+        "card_border_width": 0,
+        "card_padding": 22,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "#b8c2d3",
+        "card_shadow_horizontal": 10,
+        "card_shadow_vertical": 10,
+        "card_shadow_blur": 22,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "neumorphic"
+        },
+        "bar": {
+          "bar_style": "neumorphic"
+        },
+        "slider_control": {
+          "slider_style": "neumorphic"
+        },
+        "spinbox": {
+          "button_style": "neumorphic",
+          "button_shape": "circle"
+        },
+        "popup": {
+          "trigger_button_style": "neumorphic"
+        },
+        "grid": {
+          "grid_style": "style_19"
+        },
+        "navigation": {
+          "nav_style": "uc_neumorphic"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "accent_color": "#4f63d2",
+          "tile_border_radius": 18
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "light"
+        },
+        "activity_feed": {
+          "feed_card_style": "flat"
+        },
+        "tabs": {
+          "style": "switch_2"
+        }
+      },
+      "css": ".card-container {\n  --secondary-background-color: #e4e8ef;\n  --primary-background-color: #e4e8ef;\n  --input-fill-color: #e4e8ef;\n  --mdc-select-fill-color: #e4e8ef;\n  --mdc-text-field-fill-color: #e4e8ef;\n  --divider-color: transparent;\n  background-color: #e4e8ef !important;\n  /* A barely-there sheen toward the light so the slab reads as a solid, not a flat fill. */\n  background-image: linear-gradient(145deg, #ffffff22 0%, #e4e8ef00 45%, #b8c2d31f 100%) !important;\n  border: none !important;\n  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.9), inset -1px -1px 0 rgba(0, 0, 0, 0.08), 10px 10px 22px #b8c2d3, -10px -10px 22px #ffffff !important;\n}\n/* Nested surfaces are the same material, recessed into the slab. */\n[style*=\"--uc-design-surface\"] {\n  background-image: linear-gradient(#e4e8ef, #e4e8ef);\n  border: none;\n  box-shadow: inset 5px 5px 10px #b8c2d3, inset -5px -5px 10px #ffffff;\n}\n/* Hairlines vanish: neumorphism draws edges with light, not lines. */\n.card-container hr,\n.card-container [class*=\"divider\"],\n.card-container [class*=\"separator\"] {\n  border-color: transparent;\n  background: transparent;\n  box-shadow: 5px 5px 12px #b8c2d3, -5px -5px 12px #ffffff;\n}"
+    },
+    {
+      "id": "neumorphic-dark",
+      "name": "Neumorphic Dark",
+      "version": 1,
+      "author": "Ultra Card",
+      "description": "Soft UI in charcoal: one material lit from the top-left, raised cards and controls, recessed panels, no lines anywhere.",
+      "icon": "mdi:weather-night",
+      "source": "builtin",
+      "tokens": {
+        "surface": "neumorphic",
+        "radius": 22,
+        "radius_sm": 16,
+        "border_width": 0,
+        "border_color": "transparent",
+        "shadow": "inset 1px 1px 0 rgba(255, 255, 255, 0.06), inset -1px -1px 0 rgba(0, 0, 0, 0.3), 10px 10px 22px #131519, -10px -10px 22px #3c424c",
+        "page_background": "#2a2e35",
+        "pane_background": "#2a2e35",
+        "pane_border": "none",
+        "pane_shadow": "inset 5px 5px 10px #131519, inset -5px -5px 10px #3c424c",
+        "density": "comfortable",
+        "accent": "#8b9cff",
+        "font_family": "'Nunito', 'Poppins', 'Quicksand', 'Varela Round', system-ui, sans-serif",
+        "palette": {
+          "primary": "#8b9cff",
+          "on_primary": "#10142a",
+          "accent": "#8b9cff",
+          "card_bg": "#2a2e35",
+          "text": "#e8ecf2",
+          "text_secondary": "#aab3c2",
+          "divider": "transparent"
+        }
+      },
+      "card": {
+        "card_background": "#2a2e35",
+        "card_border_radius": 22,
+        "card_border_color": "transparent",
+        "card_border_width": 0,
+        "card_padding": 22,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "#131519",
+        "card_shadow_horizontal": 10,
+        "card_shadow_vertical": 10,
+        "card_shadow_blur": 22,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "neumorphic"
+        },
+        "bar": {
+          "bar_style": "neumorphic"
+        },
+        "slider_control": {
+          "slider_style": "neumorphic"
+        },
+        "spinbox": {
+          "button_style": "neumorphic",
+          "button_shape": "circle"
+        },
+        "popup": {
+          "trigger_button_style": "neumorphic"
+        },
+        "grid": {
+          "grid_style": "style_19"
+        },
+        "navigation": {
+          "nav_style": "uc_neumorphic"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "accent_color": "#8b9cff",
+          "tile_border_radius": 18
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "dark"
+        },
+        "activity_feed": {
+          "feed_card_style": "flat"
+        },
+        "tabs": {
+          "style": "switch_2"
+        }
+      },
+      "css": ".card-container {\n  --secondary-background-color: #2a2e35;\n  --primary-background-color: #2a2e35;\n  --input-fill-color: #2a2e35;\n  --mdc-select-fill-color: #2a2e35;\n  --mdc-text-field-fill-color: #2a2e35;\n  --divider-color: transparent;\n  background-color: #2a2e35 !important;\n  /* A barely-there sheen toward the light so the slab reads as a solid, not a flat fill. */\n  background-image: linear-gradient(145deg, #3c424c22 0%, #2a2e3500 45%, #1315191f 100%) !important;\n  border: none !important;\n  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.06), inset -1px -1px 0 rgba(0, 0, 0, 0.3), 10px 10px 22px #131519, -10px -10px 22px #3c424c !important;\n}\n/* Nested surfaces are the same material, recessed into the slab. */\n[style*=\"--uc-design-surface\"] {\n  background-image: linear-gradient(#2a2e35, #2a2e35);\n  border: none;\n  box-shadow: inset 5px 5px 10px #131519, inset -5px -5px 10px #3c424c;\n}\n/* Hairlines vanish: neumorphism draws edges with light, not lines. */\n.card-container hr,\n.card-container [class*=\"divider\"],\n.card-container [class*=\"separator\"] {\n  border-color: transparent;\n  background: transparent;\n  box-shadow: 5px 5px 12px #131519, -5px -5px 12px #3c424c;\n}"
+    },
+    {
+      "id": "liquid_glass",
+      "name": "Liquid Glass",
+      "version": 5,
+      "author": "Ultra Card",
+      "description": "Apple Liquid Glass: clear glass over a pale blue-to-pink wallpaper that bends what is behind it at the edge. Blur, refraction, rim light, capsule controls.",
+      "icon": "mdi:water-opacity",
+      "source": "builtin",
+      "tokens": {
+        "surface": "glass",
+        "radius": 32,
+        "radius_sm": 22,
+        "blur": 10,
+        "border_width": 0,
+        "border_color": "transparent",
+        "shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.14), inset 0 0 18px rgba(255, 255, 255, 0.05), 0 14px 36px rgba(30, 60, 140, 0.22), 0 2px 6px rgba(30, 60, 140, 0.12)",
+        "page_background": "url(\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1000 1000%22 preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3ClinearGradient id=%22fa%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%220.3%22/%3E%3Cstop offset=%220.45%22 stop-color=%22%23fff%22 stop-opacity=%220.08%22/%3E%3Cstop offset=%221%22 stop-color=%22%23fff%22 stop-opacity=%220.2%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22fb%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%220.38%22/%3E%3Cstop offset=%221%22 stop-color=%22%23fff%22 stop-opacity=%220.08%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22rim%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%220.95%22/%3E%3Cstop offset=%220.6%22 stop-color=%22%23fff%22 stop-opacity=%220.5%22/%3E%3Cstop offset=%221%22 stop-color=%22%23fff%22 stop-opacity=%220.85%22/%3E%3C/linearGradient%3E%3Cfilter id=%22s%22 x=%22-20%25%22 y=%22-300%25%22 width=%22140%25%22 height=%22700%25%22%3E%3CfeGaussianBlur stdDeviation=%226%22/%3E%3C/filter%3E%3Cfilter id=%22r%22 x=%22-10%25%22 y=%22-100%25%22 width=%22120%25%22 height=%22300%25%22%3E%3CfeGaussianBlur stdDeviation=%225%22/%3E%3C/filter%3E%3CclipPath id=%22ca%22%3E%3Crect x=%2220%22 y=%22380%22 width=%22960%22 height=%22580%22 rx=%22330%22/%3E%3C/clipPath%3E%3CclipPath id=%22cb%22%3E%3Cellipse cx=%22500%22 cy=%22420%22 rx=%22520%22 ry=%22110%22/%3E%3C/clipPath%3E%3CclipPath id=%22cc%22%3E%3Ccircle cx=%22500%22 cy=%22-300%22 r=%22730%22/%3E%3C/clipPath%3E%3C/defs%3E%3Ccircle cx=%22500%22 cy=%22-300%22 r=%22730%22 fill=%22%23fff%22 fill-opacity=%220.12%22 stroke=%22%23fff%22 stroke-opacity=%220.65%22 stroke-width=%222.5%22 vector-effect=%22non-scaling-stroke%22/%3E%3Cpath d=%22M 40 300 Q 500 480 960 300%22 fill=%22none%22 stroke=%22%233f6fe0%22 stroke-opacity=%220.3%22 stroke-width=%229%22 filter=%22url%28%23r%29%22 clip-path=%22url%28%23cc%29%22/%3E%3Crect x=%2220%22 y=%22380%22 width=%22960%22 height=%22580%22 rx=%22330%22 fill=%22url%28%23fa%29%22 stroke=%22url%28%23rim%29%22 stroke-width=%222.5%22 vector-effect=%22non-scaling-stroke%22/%3E%3Cpath d=%22M 60 930 Q 500 1000 940 930%22 fill=%22none%22 stroke=%22%233f6fe0%22 stroke-opacity=%220.35%22 stroke-width=%2210%22 filter=%22url%28%23r%29%22 clip-path=%22url%28%23ca%29%22/%3E%3Cpath d=%22M 250 386 Q 500 374 750 386%22 fill=%22none%22 stroke=%22%23fff%22 stroke-opacity=%220.95%22 stroke-width=%225%22 filter=%22url%28%23s%29%22 clip-path=%22url%28%23ca%29%22/%3E%3Cellipse cx=%22500%22 cy=%22420%22 rx=%22520%22 ry=%22110%22 fill=%22url%28%23fb%29%22 stroke=%22url%28%23rim%29%22 stroke-width=%222.5%22 vector-effect=%22non-scaling-stroke%22/%3E%3Cpath d=%22M 20 440 Q 500 560 980 440%22 fill=%22none%22 stroke=%22%233f6fe0%22 stroke-opacity=%220.4%22 stroke-width=%229%22 filter=%22url%28%23r%29%22 clip-path=%22url%28%23cb%29%22/%3E%3Cpath d=%22M 120 340 Q 500 296 880 340%22 fill=%22none%22 stroke=%22%23fff%22 stroke-opacity=%220.95%22 stroke-width=%225%22 filter=%22url%28%23s%29%22 clip-path=%22url%28%23cb%29%22/%3E%3C/svg%3E\") center / 100% 100% no-repeat fixed, radial-gradient(60% 28% at 50% 100%, rgba(150, 225, 245, 0.55) 0%, rgba(150, 225, 245, 0) 70%) fixed, radial-gradient(70% 32% at 50% 80%, rgba(242, 200, 230, 0.8) 0%, rgba(242, 200, 230, 0) 70%) fixed, linear-gradient(180deg, #5e9bf3 0%, #86b5ff 28%, #b3c6fb 52%, #d6c8f2 74%, #e8cfe9 100%) fixed",
+        "pane_background": "rgba(255, 255, 255, 0.1)",
+        "pane_border": "none",
+        "pane_shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(30, 60, 140, 0.12)",
+        "density": "comfortable",
+        "accent": "#3d8bff",
+        "font_family": "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Inter, system-ui, sans-serif",
+        "palette": {
+          "primary": "#1b5fd6",
+          "on_primary": "#ffffff",
+          "accent": "#3d8bff",
+          "card_bg": "rgba(255, 255, 255, 0.08)",
+          "text": "#10224d",
+          "text_secondary": "rgba(16, 34, 77, 0.7)",
+          "divider": "rgba(16, 34, 77, 0.12)"
+        }
+      },
+      "card": {
+        "card_background": "rgba(255, 255, 255, 0.08)",
+        "card_border_radius": 32,
+        "card_border_color": "transparent",
+        "card_border_width": 0,
+        "card_padding": 18
+      },
+      "modules": {
+        "button": {
+          "style": "glass"
+        },
+        "bar": {
+          "bar_style": "glass",
+          "glass_blur_amount": 16
+        },
+        "slider_control": {
+          "slider_style": "glass",
+          "glass_blur_amount": 16
+        },
+        "spinbox": {
+          "button_style": "glass",
+          "button_shape": "circle"
+        },
+        "popup": {
+          "trigger_button_style": "glass"
+        },
+        "grid": {
+          "grid_style": "style_16"
+        },
+        "navigation": {
+          "nav_style": "uc_ios_glass"
+        },
+        "area_summary": {
+          "style_preset": "graph_glow",
+          "accent_color": "#3d8bff",
+          "tile_border_radius": 22
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "glass"
+        },
+        "activity_feed": {
+          "feed_card_style": "flat"
+        },
+        "tabs": {
+          "style": "switch_2"
+        }
+      },
+      "css": ".card-container {\n  position: relative;\n  isolation: isolate;\n  --secondary-background-color: rgba(255, 255, 255, 0.1);\n  --primary-background-color: rgba(255, 255, 255, 0.06);\n  --input-fill-color: rgba(255, 255, 255, 0.1);\n  --mdc-select-fill-color: rgba(255, 255, 255, 0.1);\n  --mdc-text-field-fill-color: rgba(255, 255, 255, 0.1);\n  --rgb-card-background-color: 255, 255, 255;\n  --rgb-primary-text-color: 16, 34, 77;\n  color: #10224d;\n  background-color: rgba(255, 255, 255, 0.08) !important;\n  /* Specular top-left, a fainter lens light bottom-right, the rest clear. */\n  background-image:\n    radial-gradient(120% 70% at 8% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 48%),\n    radial-gradient(80% 50% at 96% 100%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 55%) !important;\n  /* See-through: a moderate blur keeps the wallpaper's shapes legible through the pane. */\n  backdrop-filter: blur(var(--uc-blur, 10px)) saturate(150%);\n  -webkit-backdrop-filter: blur(var(--uc-blur, 10px)) saturate(150%);\n  border: none !important;\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.14), inset 0 0 18px rgba(255, 255, 255, 0.05), 0 14px 36px rgba(30, 60, 140, 0.22), 0 2px 6px rgba(30, 60, 140, 0.12) !important;\n}\n/* Chromium accepts an SVG filter as backdrop-filter: blur, then bend the\n   backdrop at the bezel. Other engines keep the blur above. */\n@supports (-webkit-app-region: no-drag) {\n  .card-container {\n    backdrop-filter: saturate(150%) url(\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22card%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2226%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-26%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2226%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-26%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%2212%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%2212%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%2212%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%225%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2240%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3Cfilter id=%22pane%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2212%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-12%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2212%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-12%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%225%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%225%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%225%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%223%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2220%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3C/svg%3E#card\");\n    -webkit-backdrop-filter: saturate(150%) url(\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22card%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2226%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-26%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2226%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-26%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%2212%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%2212%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%2212%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%225%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2240%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3Cfilter id=%22pane%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2212%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-12%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2212%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-12%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%225%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%225%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%225%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%223%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2220%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3C/svg%3E#card\");\n  }\n  [style*=\"--uc-design-surface\"] {\n    backdrop-filter: saturate(130%) url(\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22card%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2226%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-26%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2226%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-26%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%2212%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%2212%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%2212%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%225%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2240%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3Cfilter id=%22pane%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2212%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-12%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2212%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-12%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%225%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%225%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%225%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%223%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2220%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3C/svg%3E#pane\");\n    -webkit-backdrop-filter: saturate(130%) url(\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22card%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2226%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-26%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2226%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-26%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%2212%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%2212%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%2212%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%225%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2240%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3Cfilter id=%22pane%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 color-interpolation-filters=%22sRGB%22%3E%3CfeFlood flood-color=%22%23808080%22 result=%22mid%22/%3E%3CfeFlood flood-color=%22%23ffffff%22 result=%22box%22/%3E%3CfeFlood flood-color=%22%23ff8080%22 result=%22cl%22/%3E%3CfeFlood flood-color=%22%23008080%22 result=%22cr%22/%3E%3CfeFlood flood-color=%22%2380ff80%22 result=%22ct%22/%3E%3CfeFlood flood-color=%22%23800080%22 result=%22cb%22/%3E%3CfeOffset in=%22box%22 dx=%2212%22 dy=%220%22 result=%22bxp%22/%3E%3CfeOffset in=%22box%22 dx=%22-12%22 dy=%220%22 result=%22bxm%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%2212%22 result=%22byp%22/%3E%3CfeOffset in=%22box%22 dx=%220%22 dy=%22-12%22 result=%22bym%22/%3E%3CfeComposite in=%22cl%22 in2=%22bxp%22 operator=%22out%22 result=%22l%22/%3E%3CfeComposite in=%22cr%22 in2=%22bxm%22 operator=%22out%22 result=%22r%22/%3E%3CfeComposite in=%22ct%22 in2=%22byp%22 operator=%22out%22 result=%22t%22/%3E%3CfeComposite in=%22cb%22 in2=%22bym%22 operator=%22out%22 result=%22b%22/%3E%3CfeMerge result=%22mx%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22r%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22mx%22 stdDeviation=%225%22 result=%22mxs%22/%3E%3CfeColorMatrix in=%22mxs%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22mxo%22/%3E%3CfeMerge result=%22my%22%3E%3CfeMergeNode in=%22mid%22/%3E%3CfeMergeNode in=%22t%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3CfeGaussianBlur in=%22my%22 stdDeviation=%225%22 result=%22mys%22/%3E%3CfeColorMatrix in=%22mys%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1%22 result=%22myo%22/%3E%3CfeComposite in=%22mxo%22 in2=%22myo%22 operator=%22arithmetic%22 k1=%220%22 k2=%221%22 k3=%221%22 k4=%22-0.5%22 result=%22map%22/%3E%3CfeComposite in=%22bxp%22 in2=%22bxm%22 operator=%22in%22 result=%22ix%22/%3E%3CfeComposite in=%22byp%22 in2=%22bym%22 operator=%22in%22 result=%22iy%22/%3E%3CfeComposite in=%22ix%22 in2=%22iy%22 operator=%22in%22 result=%22inset%22/%3E%3CfeGaussianBlur in=%22inset%22 stdDeviation=%225%22 result=%22interior%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%223%22 result=%22frost%22/%3E%3CfeComposite in=%22frost%22 in2=%22interior%22 operator=%22in%22 result=%22frostIn%22/%3E%3CfeGaussianBlur in=%22SourceGraphic%22 stdDeviation=%221%22 result=%22clear%22/%3E%3CfeMerge result=%22glass%22%3E%3CfeMergeNode in=%22clear%22/%3E%3CfeMergeNode in=%22frostIn%22/%3E%3C/feMerge%3E%3CfeDisplacementMap in=%22glass%22 in2=%22map%22 scale=%2220%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22/%3E%3C/filter%3E%3C/svg%3E#pane\");\n  }\n}\n/* The refraction rim: a 1.5px ring painted with the lensing gradient,\n   masked to the border zone so it is an edge, not a fill. */\n.card-container::before {\n  content: '';\n  position: absolute;\n  inset: 0;\n  z-index: 1;\n  border-radius: inherit;\n  padding: 1.5px;\n  pointer-events: none;\n  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.4) 84%, rgba(255, 255, 255, 0.85) 100%);\n  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);\n  -webkit-mask-composite: xor;\n  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);\n  mask-composite: exclude;\n}\n/* Nested surfaces are smaller lenses of the same glass. */\n[style*=\"--uc-design-surface\"] {\n  background-color: rgba(255, 255, 255, 0.1);\n  background-image: radial-gradient(120% 80% at 10% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 50%);\n  border: none;\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(30, 60, 140, 0.12);\n  backdrop-filter: blur(6px) saturate(130%);\n  -webkit-backdrop-filter: blur(6px) saturate(130%);\n}\n/* Hairlines are ink at low opacity, never solid. */\n.card-container hr,\n.card-container [class*=\"divider\"],\n.card-container [class*=\"separator\"] {\n  border-color: rgba(16, 34, 77, 0.12);\n  background-color: rgba(16, 34, 77, 0.12);\n}"
+    },
+    {
+      "id": "hillary",
+      "name": "Hillary",
+      "version": 2,
+      "author": "Ultra Card",
+      "description": "Linen, pine ink and taupe with gold accents, a hydrangea tucked into the odd corner. A Nancy Meyers palette in Ralph Lauren tailoring: warm, elevated, unhurried.",
+      "icon": "mdi:flower-tulip-outline",
+      "source": "builtin",
+      "tokens": {
+        "surface": "flat",
+        "radius": 14,
+        "radius_sm": 10,
+        "border_width": 1,
+        "border_color": "rgba(139, 115, 85, 0.35)",
+        "shadow": "0 8px 24px rgba(30, 47, 75, 0.14), 0 1px 2px rgba(30, 47, 75, 0.06)",
+        "page_background": "#f5f0e8",
+        "pane_background": "#e1d8c9",
+        "pane_border": "1px solid rgba(139, 115, 85, 0.35)",
+        "pane_shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.5)",
+        "density": "comfortable",
+        "accent": "#d4af6c",
+        "font_family": "'Playfair Display', 'Didot', 'Bodoni 72', 'Cormorant Garamond', 'Libre Baskerville', Georgia, 'Times New Roman', serif",
+        "palette": {
+          "primary": "#1f3b2e",
+          "accent": "#d4af6c",
+          "card_bg": "#eae2d6",
+          "text": "#1f3b2e",
+          "text_secondary": "#6f5a40",
+          "divider": "rgba(139, 115, 85, 0.35)"
+        }
+      },
+      "card": {
+        "card_background": "#eae2d6",
+        "card_border_radius": 14,
+        "card_border_color": "rgba(139, 115, 85, 0.35)",
+        "card_border_width": 1,
+        "card_padding": 20,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(30, 47, 75, 0.14)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 8,
+        "card_shadow_blur": 24,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "outline"
+        },
+        "bar": {
+          "bar_style": "flat"
+        },
+        "slider_control": {
+          "slider_style": "flat"
+        },
+        "spinbox": {
+          "button_style": "outline",
+          "button_shape": "rounded"
+        },
+        "popup": {
+          "trigger_button_style": "outline"
+        },
+        "grid": {
+          "grid_style": "style_20"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "accent_color": "#d4af6c",
+          "tile_border_radius": 12
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "light"
+        },
+        "activity_feed": {
+          "feed_card_style": "elevated"
+        },
+        "tabs": {
+          "style": "simple_2"
+        }
+      },
+      "css": ".card-container {\n  /* Which corners get a bloom, from the card's seeds. */\n  --h-s1: var(--uc-card-seed-1, 0.5);\n  --h-s2: var(--uc-card-seed-2, 0.5);\n  --h-s3: var(--uc-card-seed-3, 0.5);\n  --h-size: calc(96px + var(--h-s3) * 40px);\n  /* 0 or 1: the blue head sits top-right or bottom-right; the blush head keeps to the bottom-left, clear of titles. */\n  --h-side: clamp(0, (var(--h-s2) - 0.5) * 100, 1);\n  /* Each head shows only when its seed clears the bar; otherwise its size collapses to 0. */\n  --h-blue: calc(clamp(0, (var(--h-s1) - 0.35) * 20, 1) * var(--h-size));\n  --h-blush: calc(clamp(0, (var(--h-s3) - 0.55) * 20, 1) * var(--h-size) * 0.85);\n  background-color: #eae2d6 !important;\n  /* Blue head off the right edge, blush head off the bottom-left, each cropped by the corner. */\n  background-image: url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 120%27%3E%3Cg fill=%27%238a9a7b%27%3E%3Cpath d=%27M14 98 C30 70 62 78 78 100 C56 116 28 116 14 98Z%27/%3E%3Cpath d=%27M70 104 C80 84 106 84 114 100 C102 112 82 114 70 104Z%27 fill=%27%237c8d6e%27/%3E%3C/g%3E%3Cg stroke=%27%236c7c5f%27 stroke-width=%271%27 fill=%27none%27 stroke-linecap=%27round%27%3E%3Cpath d=%27M18 99 C40 92 58 92 76 100 M74 104 C86 96 100 96 112 100%27/%3E%3C/g%3E%3Cg transform=%27translate%2860 34%29%27 fill=%27%23a7bad6%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2844 40%29%27 fill=%27%23a7bad6%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2876 40%29%27 fill=%27%238fa5c4%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2830 52%29%27 fill=%27%238fa5c4%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2858 50%29%27 fill=%27%23a7bad6%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-6.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%276.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%27-6.2%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%276.2%27 r=%276.2%27/%3E%3Ccircle r=%272.5%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2888 54%29%27 fill=%27%238fa5c4%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2840 64%29%27 fill=%27%238fa5c4%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-6.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%276.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%27-6.2%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%276.2%27 r=%276.2%27/%3E%3Ccircle r=%272.5%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2870 64%29%27 fill=%27%23a7bad6%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-6.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%276.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%27-6.2%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%276.2%27 r=%276.2%27/%3E%3Ccircle r=%272.5%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2826 74%29%27 fill=%27%237489a8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-4.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%274.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%27-4.96%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%274.96%27 r=%274.96%27/%3E%3Ccircle r=%272.0%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2852 76%29%27 fill=%27%238fa5c4%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2882 76%29%27 fill=%27%237489a8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2838 86%29%27 fill=%27%237489a8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-4.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%274.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%27-4.96%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%274.96%27 r=%274.96%27/%3E%3Ccircle r=%272.0%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2864 88%29%27 fill=%27%237489a8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2892 66%29%27 fill=%27%237489a8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-4.34%27 cy=%270%27 r=%274.34%27/%3E%3Ccircle cx=%274.34%27 cy=%270%27 r=%274.34%27/%3E%3Ccircle cx=%270%27 cy=%27-4.34%27 r=%274.34%27/%3E%3Ccircle cx=%270%27 cy=%274.34%27 r=%274.34%27/%3E%3Ccircle r=%271.7%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2848 28%29%27 fill=%27%23a7bad6%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-3.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%273.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%27-3.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%273.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle r=%271.5%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2874 28%29%27 fill=%27%23a7bad6%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-3.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%273.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%27-3.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%273.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle r=%271.5%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3Cg transform=%27translate%2820 62%29%27 fill=%27%237489a8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-3.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%273.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%27-3.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%273.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle r=%271.5%27 fill=%27%23e4ebf5%27/%3E%3C/g%3E%3C/svg%3E\"), url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 120%27%3E%3Cg fill=%27%238a9a7b%27%3E%3Cpath d=%27M14 98 C30 70 62 78 78 100 C56 116 28 116 14 98Z%27/%3E%3Cpath d=%27M70 104 C80 84 106 84 114 100 C102 112 82 114 70 104Z%27 fill=%27%237c8d6e%27/%3E%3C/g%3E%3Cg stroke=%27%236c7c5f%27 stroke-width=%271%27 fill=%27none%27 stroke-linecap=%27round%27%3E%3Cpath d=%27M18 99 C40 92 58 92 76 100 M74 104 C86 96 100 96 112 100%27/%3E%3C/g%3E%3Cg transform=%27translate%2860 34%29%27 fill=%27%23e6c9cc%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2844 40%29%27 fill=%27%23e6c9cc%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2876 40%29%27 fill=%27%23d9b3b8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2830 52%29%27 fill=%27%23d9b3b8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2858 50%29%27 fill=%27%23e6c9cc%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-6.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%276.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%27-6.2%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%276.2%27 r=%276.2%27/%3E%3Ccircle r=%272.5%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2888 54%29%27 fill=%27%23d9b3b8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2840 64%29%27 fill=%27%23d9b3b8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-6.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%276.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%27-6.2%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%276.2%27 r=%276.2%27/%3E%3Ccircle r=%272.5%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2870 64%29%27 fill=%27%23e6c9cc%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-6.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%276.2%27 cy=%270%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%27-6.2%27 r=%276.2%27/%3E%3Ccircle cx=%270%27 cy=%276.2%27 r=%276.2%27/%3E%3Ccircle r=%272.5%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2826 74%29%27 fill=%27%23c497a0%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-4.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%274.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%27-4.96%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%274.96%27 r=%274.96%27/%3E%3Ccircle r=%272.0%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2852 76%29%27 fill=%27%23d9b3b8%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2882 76%29%27 fill=%27%23c497a0%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2838 86%29%27 fill=%27%23c497a0%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-4.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%274.96%27 cy=%270%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%27-4.96%27 r=%274.96%27/%3E%3Ccircle cx=%270%27 cy=%274.96%27 r=%274.96%27/%3E%3Ccircle r=%272.0%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2864 88%29%27 fill=%27%23c497a0%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-5.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%275.58%27 cy=%270%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%27-5.58%27 r=%275.58%27/%3E%3Ccircle cx=%270%27 cy=%275.58%27 r=%275.58%27/%3E%3Ccircle r=%272.2%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2892 66%29%27 fill=%27%23c497a0%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-4.34%27 cy=%270%27 r=%274.34%27/%3E%3Ccircle cx=%274.34%27 cy=%270%27 r=%274.34%27/%3E%3Ccircle cx=%270%27 cy=%27-4.34%27 r=%274.34%27/%3E%3Ccircle cx=%270%27 cy=%274.34%27 r=%274.34%27/%3E%3Ccircle r=%271.7%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2848 28%29%27 fill=%27%23e6c9cc%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-3.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%273.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%27-3.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%273.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle r=%271.5%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2874 28%29%27 fill=%27%23e6c9cc%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-3.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%273.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%27-3.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%273.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle r=%271.5%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3Cg transform=%27translate%2820 62%29%27 fill=%27%23c497a0%27 fill-opacity=%27.92%27%3E%3Ccircle cx=%27-3.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%273.7199999999999998%27 cy=%270%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%27-3.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle cx=%270%27 cy=%273.7199999999999998%27 r=%273.7199999999999998%27/%3E%3Ccircle r=%271.5%27 fill=%27%23f7ecec%27/%3E%3C/g%3E%3C/svg%3E\") !important;\n  background-repeat: no-repeat !important;\n  background-size: var(--h-blue) var(--h-blue), var(--h-blush) var(--h-blush) !important;\n  background-position:\n    calc(100% + var(--h-size) * 0.3 - var(--h-s2) * 12px) calc(var(--h-size) * -0.3 + var(--h-side) * (100% + var(--h-size) * 0.55)),\n    calc(var(--h-size) * -0.3 + var(--h-s1) * 10px) calc(100% + var(--h-size) * 0.22) !important;\n  /* Gold piping along the top edge, then the navy-tinted shadow. */\n  box-shadow:\n    inset 0 2px 0 #d4af6c,\n    0 8px 24px rgba(30, 47, 75, 0.14),\n    0 1px 2px rgba(30, 47, 75, 0.06) !important;\n  letter-spacing: 0.01em;\n}"
+    },
+    {
+      "id": "moose",
+      "name": "Moose",
+      "version": 1,
+      "author": "Ultra Card",
+      "description": "All browns, like a moose: dark cocoa hide, antler-cream text, saddle-brown controls and a warm tan accent.",
+      "icon": "mdi:pine-tree",
+      "source": "builtin",
+      "tokens": {
+        "surface": "flat",
+        "radius": 18,
+        "radius_sm": 12,
+        "border_width": 1,
+        "border_color": "rgba(194, 163, 124, 0.22)",
+        "shadow": "0 10px 28px rgba(12, 7, 3, 0.45), 0 1px 2px rgba(12, 7, 3, 0.3)",
+        "page_background": "#1a110b",
+        "density": "regular",
+        "accent": "#c2a37c",
+        "font_family": "'Bitter', 'Merriweather', 'Source Serif 4', 'Roboto Slab', Georgia, serif",
+        "palette": {
+          "primary": "#8b5a2b",
+          "accent": "#c2a37c",
+          "card_bg": "#2b1d14",
+          "text": "#e8d9c3",
+          "text_secondary": "#b89a74",
+          "divider": "rgba(194, 163, 124, 0.22)"
+        }
+      },
+      "card": {
+        "card_background": "#2b1d14",
+        "card_border_radius": 18,
+        "card_border_color": "rgba(194, 163, 124, 0.22)",
+        "card_border_width": 1,
+        "card_padding": 18,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(12, 7, 3, 0.45)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 10,
+        "card_shadow_blur": 28,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "flat"
+        },
+        "bar": {
+          "bar_style": "flat"
+        },
+        "slider_control": {
+          "slider_style": "flat"
+        },
+        "spinbox": {
+          "button_style": "flat",
+          "button_shape": "rounded"
+        },
+        "popup": {
+          "trigger_button_style": "flat"
+        },
+        "grid": {
+          "grid_style": "style_20"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "accent_color": "#c2a37c",
+          "tile_border_radius": 14
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "dark"
+        },
+        "activity_feed": {
+          "feed_card_style": "elevated"
+        },
+        "tabs": {
+          "style": "simple_2"
+        }
+      },
+      "css": ".card-container {\n  /* A faint antler highlight on the top edge over a warm hide gradient. */\n  background-image: linear-gradient(180deg, rgba(232, 217, 195, 0.05) 0%, rgba(232, 217, 195, 0) 40%) !important;\n  box-shadow:\n    inset 0 1px 0 rgba(232, 217, 195, 0.1),\n    0 10px 28px rgba(12, 7, 3, 0.45),\n    0 1px 2px rgba(12, 7, 3, 0.3) !important;\n}"
+    },
+    {
+      "id": "metallic",
+      "name": "Metallic",
+      "version": 3,
+      "author": "Ultra Card",
+      "description": "A polished chrome bezel around a deep black recessed panel, like a real switch plate. Chrome controls with dark type, cool steel accents.",
+      "icon": "mdi:anvil",
+      "source": "builtin",
+      "tokens": {
+        "surface": "glossy",
+        "radius": 28,
+        "radius_sm": 16,
+        "border_width": 1,
+        "border_color": "#7f8790",
+        "shadow": "inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.45)",
+        "page_background": "radial-gradient(ellipse at 50% 0%, #3a4047 0%, #191c20 65%, #111316 100%)",
+        "pane_background": "linear-gradient(180deg, #14171a, #1c2024)",
+        "pane_border": "none",
+        "pane_shadow": "inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08)",
+        "density": "regular",
+        "accent": "#8fb3d9",
+        "recipes": {
+          "control": "metallic",
+          "track": "metallic",
+          "fill": "metallic",
+          "pane": "inset"
+        },
+        "font_family": "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
+        "palette": {
+          "primary": "#cfd4da",
+          "on_primary": "#14171a",
+          "accent": "#8fb3d9",
+          "card_bg": "#1e2226",
+          "text": "#eef1f4",
+          "text_secondary": "#aeb6bf",
+          "divider": "rgba(255, 255, 255, 0.12)"
+        }
+      },
+      "card": {
+        "card_background": "#1e2226",
+        "card_border_radius": 28,
+        "card_border_color": "#7f8790",
+        "card_border_width": 1,
+        "card_padding": 26,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(0, 0, 0, 0.4)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 12,
+        "card_shadow_blur": 28,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "metallic"
+        },
+        "bar": {
+          "bar_style": "metallic"
+        },
+        "slider_control": {
+          "slider_style": "metallic"
+        },
+        "spinbox": {
+          "button_style": "metallic",
+          "button_shape": "circle"
+        },
+        "popup": {
+          "trigger_button_style": "metallic"
+        },
+        "grid": {
+          "grid_style": "style_12"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "compact_controls",
+          "accent_color": "#8fb3d9",
+          "tile_border_radius": 14
+        },
+        "auto_entity_list": {
+          "row_style": "detailed"
+        },
+        "unifi": {
+          "rack_style": "dark"
+        },
+        "activity_feed": {
+          "feed_card_style": "outlined"
+        },
+        "tabs": {
+          "style": "switch_1"
+        }
+      },
+      "css": ".card-container {\n  position: relative;\n  isolation: isolate;\n  /* The bezel. */\n  background-color: #c9ced4 !important;\n  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0.06) 62%, rgba(255, 255, 255, 0.28) 86%, rgba(255, 255, 255, 0) 100%), linear-gradient(180deg, #f7f9fb 0%, #cfd5db 14%, #a9b1b9 50%, #bfc6cd 80%, #eef1f4 100%) !important;\n  border: 1px solid #7f8790 !important;\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.45) !important;\n  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);\n  letter-spacing: 0.02em;\n}\n/* The recess: inset by the bezel width, concentric with the bezel's corner. */\n.card-container::before {\n  content: '';\n  position: absolute;\n  inset: 12px;\n  z-index: -1;\n  border-radius: calc(var(--uc-radius, 28px) - 12px);\n  pointer-events: none;\n  background-color: #1e2226;\n  background-image:\n    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 30%),\n    linear-gradient(180deg, #15181b 0%, #21252a 45%, #2a2f35 100%);\n  box-shadow:\n    inset 0 3px 8px rgba(0, 0, 0, 0.85),\n    inset 0 1px 0 rgba(0, 0, 0, 0.9),\n    inset 0 -1px 0 rgba(255, 255, 255, 0.07),\n    0 1px 0 rgba(255, 255, 255, 0.75),\n    0 0 0 1px rgba(0, 0, 0, 0.35);\n}\n/* Nested surfaces are deeper wells sunk into the panel. */\n[style*=\"--uc-design-surface\"] {\n  background-image: linear-gradient(180deg, #14171a, #1c2024);\n  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08);\n}"
+    },
+    {
+      "id": "beach",
+      "name": "Beach",
+      "version": 2,
+      "author": "Ultra Card",
+      "description": "Sand cards with waves lapping the bottom edge, a sun glow, sand grain and a rope hairline. Every card scatters its own shells, crabs and starfish. Deep-water text, ocean controls, coral accents.",
+      "icon": "mdi:beach",
+      "source": "builtin",
+      "tokens": {
+        "surface": "flat",
+        "radius": 22,
+        "radius_sm": 14,
+        "border_width": 1,
+        "border_color": "rgba(107, 93, 74, 0.28)",
+        "shadow": "0 10px 26px rgba(31, 58, 77, 0.14), 0 1px 2px rgba(31, 58, 77, 0.08)",
+        "page_background": "linear-gradient(180deg, #c8e1ee 0%, #eaf2f4 55%, #e6dbc3 100%)",
+        "pane_background": "rgba(255, 255, 255, 0.42)",
+        "pane_border": "1px solid rgba(107, 93, 74, 0.22)",
+        "pane_shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.7)",
+        "density": "comfortable",
+        "accent": "#c9543a",
+        "font_family": "'Nunito', 'Quicksand', 'Varela Round', 'Avenir Next Rounded', system-ui, sans-serif",
+        "palette": {
+          "primary": "#186a7a",
+          "accent": "#c9543a",
+          "card_bg": "#f3e9d2",
+          "text": "#1f3a4d",
+          "text_secondary": "#6b5d4a",
+          "divider": "rgba(107, 93, 74, 0.28)"
+        }
+      },
+      "card": {
+        "card_background": "#f3e9d2",
+        "card_border_radius": 22,
+        "card_border_color": "rgba(107, 93, 74, 0.28)",
+        "card_border_width": 1,
+        "card_padding": 22,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(31, 58, 77, 0.14)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 10,
+        "card_shadow_blur": 26,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "flat"
+        },
+        "bar": {
+          "bar_style": "flat"
+        },
+        "slider_control": {
+          "slider_style": "flat"
+        },
+        "spinbox": {
+          "button_style": "flat",
+          "button_shape": "circle"
+        },
+        "popup": {
+          "trigger_button_style": "flat"
+        },
+        "grid": {
+          "grid_style": "style_14"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "accent_color": "#c9543a",
+          "tile_border_radius": 16
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "light"
+        },
+        "activity_feed": {
+          "feed_card_style": "elevated"
+        },
+        "tabs": {
+          "style": "simple"
+        }
+      },
+      "css": ".card-container {\n  /* This card's stretch of beach, from its seeds. */\n  --b-s1: var(--uc-card-seed-1, 0.5);\n  --b-s2: var(--uc-card-seed-2, 0.5);\n  --b-s3: var(--uc-card-seed-3, 0.5);\n  --b-tide: calc(16px + var(--b-s3) * 12px);\n  --b-sun-x: calc(60% + var(--b-s1) * 40%);\n  /* Each find is on the sand only when its seed clears the bar; otherwise its size collapses to 0. */\n  --b-crab: calc(clamp(0, (var(--b-s1) - 0.45) * 20, 1) * 44px);\n  --b-shell: calc(clamp(0, (var(--b-s2) - 0.4) * 20, 1) * 34px);\n  --b-star: calc(clamp(0, (var(--b-s3) - 0.5) * 20, 1) * 32px);\n  --b-dollar: calc(clamp(0, (0.5 - (var(--b-s1) + var(--b-s2)) / 2) * 20, 1) * 22px);\n  --b-sand-line: calc(100% - var(--b-tide) - 4px);\n  background-color: #f3e9d2 !important;\n  /* Layers, top to bottom: the finds on the sand, waves at the foot, rope under the top edge, sun glow, sand grain, sky wash. */\n  background-image:\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 40 28%27%3E%3Cg stroke=%27%23c9543a%27 stroke-width=%272%27 stroke-linecap=%27round%27 fill=%27none%27%3E%3Cpath d=%27M11 20 L5 25 M14 22 L10 27 M26 22 L30 27 M29 20 L35 25 M14 11 L12 4 M26 11 L28 4%27/%3E%3C/g%3E%3Cg fill=%27%23c9543a%27%3E%3Cellipse cx=%2720%27 cy=%2716%27 rx=%2711%27 ry=%277%27/%3E%3Ccircle cx=%278%27 cy=%279%27 r=%274.5%27/%3E%3Ccircle cx=%2732%27 cy=%279%27 r=%274.5%27/%3E%3C/g%3E%3Cg fill=%27%23f3e9d2%27%3E%3Cpath d=%27M8 4.5 L10.5 9 L5.5 9 Z%27/%3E%3Cpath d=%27M32 4.5 L34.5 9 L29.5 9 Z%27/%3E%3C/g%3E%3Ccircle cx=%2712%27 cy=%274%27 r=%271.8%27 fill=%27%231f3a4d%27/%3E%3Ccircle cx=%2728%27 cy=%274%27 r=%271.8%27 fill=%27%231f3a4d%27/%3E%3Ccircle cx=%2712.5%27 cy=%273.5%27 r=%27.6%27 fill=%27%23fff%27/%3E%3Ccircle cx=%2728.5%27 cy=%273.5%27 r=%27.6%27 fill=%27%23fff%27/%3E%3Cpath d=%27M16 18 Q20 21 24 18%27 stroke=%27%231f3a4d%27 stroke-width=%271.2%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E\"),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 36 32%27%3E%3Cpath d=%27M18 30 L3 13 A15 15 0 0 1 33 13 Z%27 fill=%27%23ead1b8%27 stroke=%27%23b98c72%27 stroke-width=%271.2%27 stroke-linejoin=%27round%27/%3E%3Cpath d=%27M18 30 L7 8.5 M18 30 L12.5 3.5 M18 30 L18 2.5 M18 30 L23.5 3.5 M18 30 L29 8.5%27 stroke=%27%23b98c72%27 stroke-width=%271%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M3 13 Q7 9 9 12 Q13 5 15 10 Q18 3 21 10 Q23 5 27 12 Q29 9 33 13%27 fill=%27none%27 stroke=%27%23b98c72%27 stroke-width=%271%27/%3E%3Cpath d=%27M13 30 L23 30 L21 26.5 L15 26.5 Z%27 fill=%27%23b98c72%27/%3E%3C/svg%3E\"),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cpath d=%27M16 2 L19.6 12 L30 12.5 L21.8 19 L24.7 29.5 L16 23.6 L7.3 29.5 L10.2 19 L2 12.5 L12.4 12 Z%27 fill=%27%23e9a25b%27 stroke=%27%23c77f3a%27 stroke-width=%271.2%27 stroke-linejoin=%27round%27/%3E%3Cg fill=%27%23c77f3a%27%3E%3Ccircle cx=%2716%27 cy=%278%27 r=%271%27/%3E%3Ccircle cx=%2716%27 cy=%2713%27 r=%271%27/%3E%3Ccircle cx=%2724%27 cy=%2714.5%27 r=%271%27/%3E%3Ccircle cx=%278%27 cy=%2714.5%27 r=%271%27/%3E%3Ccircle cx=%2720.5%27 cy=%2722.5%27 r=%271%27/%3E%3Ccircle cx=%2711.5%27 cy=%2722.5%27 r=%271%27/%3E%3Ccircle cx=%2716%27 cy=%2717.5%27 r=%271.2%27/%3E%3C/g%3E%3C/svg%3E\"),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%2711%27 fill=%27%23efe3cc%27 stroke=%27%23c8b797%27 stroke-width=%271%27/%3E%3Cg fill=%27none%27 stroke=%27%23c8b797%27 stroke-width=%271%27%3E%3Cellipse cx=%2712%27 cy=%277%27 rx=%272%27 ry=%274.5%27/%3E%3Cellipse cx=%2712%27 cy=%277%27 rx=%272%27 ry=%274.5%27 transform=%27rotate%2872 12 12%29%27/%3E%3Cellipse cx=%2712%27 cy=%277%27 rx=%272%27 ry=%274.5%27 transform=%27rotate%28144 12 12%29%27/%3E%3Cellipse cx=%2712%27 cy=%277%27 rx=%272%27 ry=%274.5%27 transform=%27rotate%28216 12 12%29%27/%3E%3Cellipse cx=%2712%27 cy=%277%27 rx=%272%27 ry=%274.5%27 transform=%27rotate%28288 12 12%29%27/%3E%3C/g%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%271.2%27 fill=%27%23c8b797%27/%3E%3C/svg%3E\"),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 240 24%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27M0 11 C30 3 50 19 80 11 S130 3 160 11 S210 19 240 11 V24 H0Z%27 fill=%27%23186a7a%27 fill-opacity=%27.18%27/%3E%3Cpath d=%27M0 16 C30 8 50 24 80 16 S130 8 160 16 S210 24 240 16 V24 H0Z%27 fill=%27%23186a7a%27 fill-opacity=%27.3%27/%3E%3Cpath d=%27M0 11 C30 3 50 19 80 11 S130 3 160 11 S210 19 240 11%27 fill=%27none%27 stroke=%27%23ffffff%27 stroke-opacity=%27.75%27 stroke-width=%271.5%27/%3E%3C/svg%3E\"),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%276%27%3E%3Cpath d=%27M0 3 Q3 0 6 3 T12 3%27 fill=%27none%27 stroke=%27%236b5d4a%27 stroke-opacity=%27.45%27 stroke-width=%271.4%27/%3E%3C/svg%3E\"),\n    radial-gradient(circle at var(--b-sun-x) -8%, rgba(255, 196, 110, 0.55) 0%, rgba(255, 196, 110, 0.18) 18%, rgba(255, 196, 110, 0) 42%),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2756%27 height=%2756%27%3E%3Cg fill=%27%236b5d4a%27 fill-opacity=%27.14%27%3E%3Ccircle cx=%276%27 cy=%279%27 r=%271%27/%3E%3Ccircle cx=%2723%27 cy=%274%27 r=%27.8%27/%3E%3Ccircle cx=%2741%27 cy=%2712%27 r=%271%27/%3E%3Ccircle cx=%2714%27 cy=%2726%27 r=%27.8%27/%3E%3Ccircle cx=%2733%27 cy=%2730%27 r=%271.1%27/%3E%3Ccircle cx=%2750%27 cy=%2727%27 r=%27.7%27/%3E%3Ccircle cx=%278%27 cy=%2745%27 r=%271%27/%3E%3Ccircle cx=%2727%27 cy=%2749%27 r=%27.8%27/%3E%3Ccircle cx=%2745%27 cy=%2744%27 r=%271%27/%3E%3Ccircle cx=%2752%27 cy=%2752%27 r=%27.7%27/%3E%3C/g%3E%3C/svg%3E\"),\n    linear-gradient(180deg, rgba(24, 106, 122, 0.06) 0%, rgba(24, 106, 122, 0) 45%) !important;\n  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat-x, no-repeat, repeat, no-repeat !important;\n  background-size:\n    var(--b-crab) calc(var(--b-crab) * 0.7),\n    var(--b-shell) calc(var(--b-shell) * 0.9),\n    var(--b-star) var(--b-star),\n    var(--b-dollar) var(--b-dollar),\n    100% var(--b-tide), 12px 6px, auto, 56px 56px, auto !important;\n  background-position:\n    calc(64% + var(--b-s2) * 34%) var(--b-sand-line),\n    calc(3% + var(--b-s3) * 24%) var(--b-sand-line),\n    calc(30% + var(--b-s1) * 22%) calc(var(--b-sand-line) - 4px),\n    calc(50% + var(--b-s3) * 18%) var(--b-sand-line),\n    bottom center, left 9px, 0 0, 0 0, 0 0 !important;\n  box-shadow:\n    inset 0 1px 0 rgba(255, 255, 255, 0.7),\n    0 10px 26px rgba(31, 58, 77, 0.14),\n    0 1px 2px rgba(31, 58, 77, 0.08) !important;\n}"
+    },
+    {
+      "id": "vapor",
+      "name": "Vapor",
+      "version": 2,
+      "author": "Ultra Card",
+      "description": "Vaporwave: midnight purple, a striped sunset sun, a cyan perspective grid, VHS scanlines and a hot-pink neon rim. Every card is a different frame.",
+      "icon": "mdi:weather-sunset",
+      "source": "builtin",
+      "tokens": {
+        "surface": "glass",
+        "radius": 14,
+        "radius_sm": 10,
+        "blur": 10,
+        "border_width": 1,
+        "border_color": "rgba(255, 79, 216, 0.55)",
+        "shadow": "0 0 0 1px rgba(255, 79, 216, 0.55), 0 0 22px rgba(255, 79, 216, 0.28), 0 0 44px rgba(79, 240, 255, 0.14), 0 12px 30px rgba(0, 0, 0, 0.5)",
+        "page_background": "linear-gradient(180deg, #08041a 0%, #180b3a 55%, #2d1058 100%)",
+        "pane_background": "rgba(255, 79, 216, 0.08)",
+        "pane_border": "1px solid rgba(255, 79, 216, 0.35)",
+        "pane_shadow": "0 0 10px rgba(255, 79, 216, 0.15), inset 0 0 12px rgba(79, 240, 255, 0.06)",
+        "density": "regular",
+        "accent": "#4ff0ff",
+        "font_family": "'Orbitron', 'Exo 2', 'Michroma', 'Audiowide', 'Trebuchet MS', system-ui, sans-serif",
+        "palette": {
+          "primary": "#ff4fd8",
+          "accent": "#4ff0ff",
+          "card_bg": "#160b2b",
+          "text": "#f3e8ff",
+          "text_secondary": "#b8a3dc",
+          "divider": "rgba(255, 79, 216, 0.3)"
+        }
+      },
+      "card": {
+        "card_background": "#160b2b",
+        "card_border_radius": 14,
+        "card_border_color": "rgba(255, 79, 216, 0.55)",
+        "card_border_width": 1,
+        "card_padding": 18,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(255, 79, 216, 0.28)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 0,
+        "card_shadow_blur": 22,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "neon-glow"
+        },
+        "bar": {
+          "bar_style": "neon-glow"
+        },
+        "slider_control": {
+          "slider_style": "neon-glow"
+        },
+        "spinbox": {
+          "button_style": "neon-glow",
+          "button_shape": "rounded"
+        },
+        "popup": {
+          "trigger_button_style": "neon-glow"
+        },
+        "grid": {
+          "grid_style": "style_17"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "graph_glow",
+          "accent_color": "#4ff0ff",
+          "tile_border_radius": 12
+        },
+        "auto_entity_list": {
+          "row_style": "slim"
+        },
+        "unifi": {
+          "rack_style": "blueprint"
+        },
+        "activity_feed": {
+          "feed_card_style": "flat"
+        },
+        "tabs": {
+          "style": "modern"
+        }
+      },
+      "css": ".card-container {\n  /* This card's frame, from its seeds. */\n  --v-s1: var(--uc-card-seed-1, 0.5);\n  --v-s2: var(--uc-card-seed-2, 0.5);\n  --v-s3: var(--uc-card-seed-3, 0.5);\n  --v-sun: calc(88px + var(--v-s3) * 64px);\n  --v-sun-x: calc(30% + var(--v-s1) * 70%);\n  --v-sun-y: calc(-24px + var(--v-s2) * 18px);\n  --v-haze: calc(190 + var(--v-s2) * 130); /* cyan .. violet .. pink */\n  --v-haze-x: calc(10% + var(--v-s3) * 80%);\n  --v-horizon: calc(48px + var(--v-s2) * 40px);\n  --v-sky: hsl(calc(250 + var(--v-s1) * 40) 62% 15%);\n  background-color: #160b2b !important;\n  /* Layers, top to bottom: grid at the foot, sun, three stars, haze, scanlines, night gradient. */\n  background-image:\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 400 90%27 preserveAspectRatio=%27none%27%3E%3Cdefs%3E%3ClinearGradient id=%27f%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%234ff0ff%27 stop-opacity=%270%27/%3E%3Cstop offset=%271%27 stop-color=%27%234ff0ff%27 stop-opacity=%27.5%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill=%27none%27 stroke=%27url%28%23f%29%27 stroke-width=%271%27 d=%27M-160 90 L200 -70 M-80 90 L200 -70 M0 90 L200 -70 M60 90 L200 -70 M120 90 L200 -70 M160 90 L200 -70 M200 90 L200 -70 M240 90 L200 -70 M280 90 L200 -70 M340 90 L200 -70 M400 90 L200 -70 M480 90 L200 -70 M560 90 L200 -70 M0 6 H400 M0 14 H400 M0 24 H400 M0 36 H400 M0 50 H400 M0 67 H400 M0 88 H400%27/%3E%3C/svg%3E\"),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 120%27%3E%3Cdefs%3E%3ClinearGradient id=%27g%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%23ff4fd8%27/%3E%3Cstop offset=%27.55%27 stop-color=%27%23ff7ac8%27/%3E%3Cstop offset=%271%27 stop-color=%27%23ffb347%27/%3E%3C/linearGradient%3E%3CclipPath id=%27c%27%3E%3Crect x=%270%27 y=%270%27 width=%27120%27 height=%2762%27/%3E%3Crect x=%270%27 y=%2766%27 width=%27120%27 height=%2710%27/%3E%3Crect x=%270%27 y=%2780%27 width=%27120%27 height=%278%27/%3E%3Crect x=%270%27 y=%2792%27 width=%27120%27 height=%276%27/%3E%3Crect x=%270%27 y=%27102%27 width=%27120%27 height=%274%27/%3E%3Crect x=%270%27 y=%27110%27 width=%27120%27 height=%273%27/%3E%3C/clipPath%3E%3C/defs%3E%3Ccircle cx=%2760%27 cy=%2760%27 r=%2754%27 fill=%27url%28%23g%29%27 clip-path=%27url%28%23c%29%27 opacity=%27.6%27/%3E%3C/svg%3E\"),\n    radial-gradient(circle 1.2px at calc(var(--v-s2) * 100%) calc(6% + var(--v-s1) * 30%), rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 100%),\n    radial-gradient(circle 1px at calc(var(--v-s3) * 100%) calc(4% + var(--v-s2) * 34%), rgba(255, 255, 255, 0.8) 0, rgba(255, 255, 255, 0) 100%),\n    radial-gradient(circle 1.5px at calc(100% - var(--v-s1) * 100%) calc(8% + var(--v-s3) * 26%), rgba(79, 240, 255, 0.9) 0, rgba(79, 240, 255, 0) 100%),\n    radial-gradient(ellipse at var(--v-haze-x) 110%, hsl(var(--v-haze) 100% 65% / 0.3) 0%, hsl(var(--v-haze) 100% 65% / 0) 55%),\n    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, rgba(0, 0, 0, 0) 1px 3px),\n    linear-gradient(180deg, var(--v-sky) 0%, #160b2b 55%, #0e0821 100%) !important;\n  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;\n  background-size: 100% var(--v-horizon), var(--v-sun) var(--v-sun), auto, auto, auto, auto, auto, auto !important;\n  background-position: bottom center, var(--v-sun-x) var(--v-sun-y), 0 0, 0 0, 0 0, 0 0, 0 0, 0 0 !important;\n  box-shadow: 0 0 0 1px rgba(255, 79, 216, 0.55), 0 0 22px rgba(255, 79, 216, 0.28), 0 0 44px rgba(79, 240, 255, 0.14), 0 12px 30px rgba(0, 0, 0, 0.5) !important;\n  text-shadow: 0 0 8px rgba(255, 79, 216, 0.25);\n  letter-spacing: 0.03em;\n}"
+    },
+    {
+      "id": "gummy",
+      "name": "Gummy",
+      "version": 4,
+      "author": "Ultra Card",
+      "description": "Gummy-bear cards: every card its own candy colour, rendered as translucent jelly that catches the light differently on each card. Dark-plum ink, liquorice controls.",
+      "icon": "mdi:candy",
+      "source": "builtin",
+      "tokens": {
+        "surface": "glossy",
+        "radius": 26,
+        "radius_sm": 18,
+        "border_width": 0,
+        "border_color": "transparent",
+        "shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 3px hsl(var(--uc-card-hue, 340) 92% 56% / 0.42), inset 0 0 36px hsl(var(--uc-card-hue, 340) 96% 46% / 0.62), inset 0 -16px 22px hsl(var(--uc-card-hue, 340) 96% 44% / 0.5), 0 12px 26px hsl(var(--uc-card-hue, 340) 80% 40% / 0.42), 0 2px 6px hsl(var(--uc-card-hue, 340) 80% 35% / 0.35)",
+        "page_background": "#f7f3ec",
+        "pane_background": "linear-gradient(180deg, hsl(var(--uc-card-hue, 340) 90% 88%), hsl(var(--uc-card-hue, 340) 92% 78%))",
+        "pane_border": "none",
+        "pane_shadow": "inset 0 -1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 2px hsl(var(--uc-card-hue, 340) 90% 66% / 0.3), inset 0 0 12px hsl(var(--uc-card-hue, 340) 95% 55% / 0.45), inset 0 -6px 10px hsl(var(--uc-card-hue, 340) 95% 50% / 0.4), 0 3px 8px hsl(var(--uc-card-hue, 340) 80% 40% / 0.25)",
+        "density": "comfortable",
+        "accent": "hsl(calc(var(--uc-card-hue, 340) + 40) 90% 52%)",
+        "font_family": "'Baloo 2', 'Fredoka', 'Nunito', 'Varela Round', 'Quicksand', system-ui, sans-serif",
+        "palette": {
+          "primary": "#3a2350",
+          "on_primary": "#ffffff",
+          "accent": "hsl(calc(var(--uc-card-hue, 340) + 40) 90% 52%)",
+          "card_bg": "hsl(var(--uc-card-hue, 340) 88% 72%)",
+          "text": "#2a1838",
+          "text_secondary": "#35243f",
+          "divider": "rgba(42, 24, 56, 0.18)"
+        }
+      },
+      "card": {
+        "card_background": "hsl(var(--uc-card-hue, 340) 88% 72%)",
+        "card_border_radius": 26,
+        "card_border_color": "transparent",
+        "card_border_width": 0,
+        "card_padding": 20,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "hsl(var(--uc-card-hue, 340) 80% 40% / 0.42)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 12,
+        "card_shadow_blur": 26,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "glossy"
+        },
+        "bar": {
+          "bar_style": "glossy"
+        },
+        "slider_control": {
+          "slider_style": "glossy"
+        },
+        "spinbox": {
+          "button_style": "glossy",
+          "button_shape": "circle"
+        },
+        "popup": {
+          "trigger_button_style": "glossy"
+        },
+        "grid": {
+          "grid_style": "style_14"
+        },
+        "navigation": {
+          "nav_style": "uc_ios_glass"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "tile_border_radius": 20
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "light"
+        },
+        "activity_feed": {
+          "feed_card_style": "elevated"
+        },
+        "tabs": {
+          "style": "switch_2"
+        }
+      },
+      "css": ".card-container {\n  /* Companions that must follow the per-card hue rather than a fixed palette. */\n  --secondary-background-color: hsl(var(--uc-card-hue, 340) 90% 86%);\n  --primary-background-color: hsl(var(--uc-card-hue, 340) 90% 82%);\n  --input-fill-color: hsl(var(--uc-card-hue, 340) 90% 86%);\n  --mdc-select-fill-color: hsl(var(--uc-card-hue, 340) 90% 86%);\n  --mdc-text-field-fill-color: hsl(var(--uc-card-hue, 340) 90% 86%);\n  --mdc-theme-surface: hsl(var(--uc-card-hue, 340) 88% 72%);\n  /* Where this card catches the light, from its own seeds. */\n  --g-s1: var(--uc-card-seed-1, 0.5);\n  --g-s2: var(--uc-card-seed-2, 0.5);\n  --g-s3: var(--uc-card-seed-3, 0.5);\n  --g-x: calc(14% + var(--g-s1) * 56%);\n  --g-y: calc(3% + var(--g-s2) * 14%);\n  --g-w: calc(22% + var(--g-s3) * 26%);\n  --g-h: calc(9% + var(--g-s2) * 10%);\n  --g-a: calc(96deg + var(--g-s3) * 48deg);\n  --g-p: calc(28% + var(--g-s1) * 30%);\n  background-color: hsl(var(--uc-card-hue, 340) 88% 72%) !important;\n  /* Layers, top to bottom: hot core, specular bloom, sheen band, floor reflection, saturated pool, jelly body. */\n  background-image:\n    radial-gradient(ellipse calc(var(--g-w) * 0.32) calc(var(--g-h) * 0.42) at calc(var(--g-x) - var(--g-w) * 0.14) calc(var(--g-y) + 1%), rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 45%, rgba(255, 255, 255, 0) 100%),\n    radial-gradient(ellipse var(--g-w) var(--g-h) at var(--g-x) var(--g-y), rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 45%, rgba(255, 255, 255, 0) 100%),\n    linear-gradient(var(--g-a), rgba(255, 255, 255, 0) calc(var(--g-p) - 14%), rgba(255, 255, 255, 0.2) var(--g-p), rgba(255, 255, 255, 0) calc(var(--g-p) + 12%)),\n    radial-gradient(ellipse calc(18% + var(--g-s2) * 16%) 8% at calc(56% + var(--g-s3) * 34%) 95%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 100%),\n    radial-gradient(ellipse 70% 45% at calc(30% + var(--g-s1) * 40%) 108%, hsl(var(--uc-card-hue, 340) 95% 58% / 0.9) 0%, hsl(var(--uc-card-hue, 340) 95% 58% / 0) 70%),\n    radial-gradient(ellipse 110% 75% at calc(35% + var(--g-s2) * 30%) 45%, hsl(var(--uc-card-hue, 340) 86% 80%) 0%, hsl(var(--uc-card-hue, 340) 90% 72%) 60%, hsl(var(--uc-card-hue, 340) 94% 62%) 100%) !important;\n  border: none !important;\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 3px hsl(var(--uc-card-hue, 340) 92% 56% / 0.42), inset 0 0 36px hsl(var(--uc-card-hue, 340) 96% 46% / 0.62), inset 0 -16px 22px hsl(var(--uc-card-hue, 340) 96% 44% / 0.5), 0 12px 26px hsl(var(--uc-card-hue, 340) 80% 40% / 0.42), 0 2px 6px hsl(var(--uc-card-hue, 340) 80% 35% / 0.35) !important;\n}\n/* Nested surfaces are smaller gummies: lighter body, their own bloom and sheen, the same glowing rim. */\n[style*=\"--uc-design-surface\"] {\n  background-color: hsl(var(--uc-card-hue, 340) 90% 84%);\n  background-image:\n    radial-gradient(ellipse calc(14% + var(--g-s3) * 14%) 45% at calc(10% + var(--g-s2) * 30%) 0%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 100%),\n    linear-gradient(calc(100deg + var(--g-s1) * 40deg), rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0) 62%),\n    linear-gradient(180deg, hsl(var(--uc-card-hue, 340) 90% 88%), hsl(var(--uc-card-hue, 340) 92% 78%));\n  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 2px hsl(var(--uc-card-hue, 340) 90% 66% / 0.3), inset 0 0 12px hsl(var(--uc-card-hue, 340) 95% 55% / 0.45), inset 0 -6px 10px hsl(var(--uc-card-hue, 340) 95% 50% / 0.4), 0 3px 8px hsl(var(--uc-card-hue, 340) 80% 40% / 0.25);\n}"
+    },
+    {
+      "id": "wood",
+      "name": "Wood",
+      "version": 2,
+      "author": "Ultra Card",
+      "description": "Varnished mahogany planks with real grain, seams and knots, offset per card. Pale maple controls, amber indicators, routed recesses.",
+      "icon": "mdi:tree",
+      "source": "builtin",
+      "tokens": {
+        "surface": "neumorphic",
+        "radius": 12,
+        "radius_sm": 10,
+        "border_width": 1,
+        "border_color": "#2a160a",
+        "shadow": "inset 0 1px 0 rgba(255, 200, 140, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 10px 24px rgba(20, 8, 2, 0.55)",
+        "page_background": "#1f120a",
+        "pane_background": "linear-gradient(180deg, #24120a 0%, #3b2010 100%)",
+        "pane_border": "1px solid #2a160a",
+        "pane_shadow": "inset 0 2px 6px rgba(0, 0, 0, 0.75), inset 0 -1px 0 rgba(255, 200, 140, 0.12), 0 1px 0 rgba(255, 200, 140, 0.16)",
+        "density": "regular",
+        "accent": "#e0953f",
+        "font_family": "'Lora', 'Merriweather', 'Source Serif 4', Georgia, 'Times New Roman', serif",
+        "palette": {
+          "primary": "#e6c08f",
+          "on_primary": "#3a2210",
+          "accent": "#e0953f",
+          "card_bg": "#5a3218",
+          "text": "#f3e4c8",
+          "text_secondary": "#d9bd97",
+          "divider": "rgba(243, 228, 200, 0.16)"
+        }
+      },
+      "card": {
+        "card_background": "#5a3218",
+        "card_border_radius": 12,
+        "card_border_color": "#2a160a",
+        "card_border_width": 1,
+        "card_padding": 18,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(20, 8, 2, 0.55)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 10,
+        "card_shadow_blur": 24,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "embossed"
+        },
+        "bar": {
+          "bar_style": "embossed"
+        },
+        "slider_control": {
+          "slider_style": "embossed"
+        },
+        "spinbox": {
+          "button_style": "embossed",
+          "button_shape": "rounded"
+        },
+        "popup": {
+          "trigger_button_style": "embossed"
+        },
+        "grid": {
+          "grid_style": "style_12"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "iconic_soft",
+          "accent_color": "#e0953f",
+          "tile_border_radius": 10
+        },
+        "auto_entity_list": {
+          "row_style": "card"
+        },
+        "unifi": {
+          "rack_style": "dark"
+        },
+        "activity_feed": {
+          "feed_card_style": "elevated"
+        },
+        "tabs": {
+          "style": "simple_3"
+        }
+      },
+      "css": ".card-container {\n  /* Which stretch of the wall this card shows. */\n  --w-s1: var(--uc-card-seed-1, 0.5);\n  --w-s2: var(--uc-card-seed-2, 0.5);\n  background-color: #5a3218 !important;\n  /* Layers, top to bottom: vignette, varnish sheen, planks. */\n  background-image:\n    radial-gradient(ellipse 120% 95% at 50% 40%, rgba(0, 0, 0, 0) 55%, rgba(20, 8, 2, 0.5) 100%),\n    linear-gradient(180deg, rgba(255, 210, 150, 0.14) 0%, rgba(255, 210, 150, 0) 40%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.16) 100%),\n    url(\"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27208%27 height=%27600%27%3E%3Cdefs%3E%3Cfilter id=%27d%27 x=%270%27 y=%270%27 width=%27100%25%27 height=%27100%25%27 color-interpolation-filters=%27sRGB%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.16 0.0035%27 numOctaves=%274%27 seed=%275%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 0.12 0 0 0 0 0.05 0 0 0 0 0.01 1.7 0 0 0 -0.7%27/%3E%3C/filter%3E%3Cfilter id=%27l%27 x=%270%27 y=%270%27 width=%27100%25%27 height=%27100%25%27 color-interpolation-filters=%27sRGB%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.09 0.005%27 numOctaves=%273%27 seed=%2713%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 0.85 0 0 0 0 0.55 0 0 0 0 0.3 1.4 0 0 0 -0.9%27/%3E%3C/filter%3E%3Cfilter id=%27p%27 x=%270%27 y=%270%27 width=%27100%25%27 height=%27100%25%27 color-interpolation-filters=%27sRGB%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9 0.9%27 numOctaves=%271%27 seed=%272%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0 0 0 -0.08%27/%3E%3C/filter%3E%3C/defs%3E%3Crect width=%27100%25%27 height=%27100%25%27 fill=%27%235a3218%27/%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23l%29%27/%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23d%29%27/%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23p%29%27/%3E%3Cg fill=%27none%27 stroke-width=%271%27%3E%3Cellipse cx=%2778%27 cy=%27140%27 rx=%275%27 ry=%2711%27 stroke=%27%232a160a%27 stroke-opacity=%27.7%27/%3E%3Cellipse cx=%2778%27 cy=%27140%27 rx=%279%27 ry=%2719%27 stroke=%27%232a160a%27 stroke-opacity=%27.35%27/%3E%3Cellipse cx=%2778%27 cy=%27140%27 rx=%272%27 ry=%275%27 fill=%27%232a160a%27 fill-opacity=%27.6%27/%3E%3Cellipse cx=%27182%27 cy=%27420%27 rx=%274%27 ry=%279%27 stroke=%27%232a160a%27 stroke-opacity=%27.7%27/%3E%3Cellipse cx=%27182%27 cy=%27420%27 rx=%278%27 ry=%2716%27 stroke=%27%232a160a%27 stroke-opacity=%27.35%27/%3E%3Cellipse cx=%27182%27 cy=%27420%27 rx=%271.6%27 ry=%274%27 fill=%27%232a160a%27 fill-opacity=%27.6%27/%3E%3C/g%3E%3Cg%3E%3Crect x=%270%27 y=%270%27 width=%272%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.85%27/%3E%3Crect x=%272%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%23c48a55%27 fill-opacity=%27.3%27/%3E%3Crect x=%2752%27 y=%270%27 width=%272%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.85%27/%3E%3Crect x=%2754%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%23c48a55%27 fill-opacity=%27.3%27/%3E%3Crect x=%27104%27 y=%270%27 width=%272%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.85%27/%3E%3Crect x=%27106%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%23c48a55%27 fill-opacity=%27.3%27/%3E%3Crect x=%27156%27 y=%270%27 width=%272%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.85%27/%3E%3Crect x=%27158%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%23c48a55%27 fill-opacity=%27.3%27/%3E%3Crect x=%2751%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.35%27/%3E%3Crect x=%27103%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.35%27/%3E%3Crect x=%27155%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.35%27/%3E%3Crect x=%27207%27 y=%270%27 width=%271%27 height=%27100%25%27 fill=%27%231a0d05%27 fill-opacity=%27.35%27/%3E%3C/g%3E%3C/svg%3E\") !important;\n  background-repeat: no-repeat, no-repeat, repeat !important;\n  background-size: auto, auto, 208px 600px !important;\n  background-position: 0 0, 0 0, calc(var(--w-s1) * 208px) calc(var(--w-s2) * 600px) !important;\n  border: 1px solid #2a160a !important;\n  box-shadow:\n    inset 0 1px 0 rgba(255, 200, 140, 0.18),\n    inset 0 -1px 0 rgba(0, 0, 0, 0.5),\n    inset 1px 0 0 rgba(255, 200, 140, 0.06),\n    inset -1px 0 0 rgba(0, 0, 0, 0.3),\n    0 10px 24px rgba(20, 8, 2, 0.55) !important;\n  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);\n}\n/* Nested surfaces are routed recesses: dark, with a lit lower lip like the slider tracks. */\n[style*=\"--uc-design-surface\"] {\n  background-image: linear-gradient(180deg, #24120a 0%, #3b2010 100%);\n  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.75), inset 0 -1px 0 rgba(255, 200, 140, 0.12), 0 1px 0 rgba(255, 200, 140, 0.16);\n}"
+    },
+    {
+      "id": "green_terminal",
+      "name": "Green Terminal",
+      "version": 1,
+      "author": "Ultra Card",
+      "description": "Green phosphor on black. Monospace type, square corners, hairline borders and a glow. Everything on the card is tinted green.",
+      "icon": "mdi:console",
+      "source": "builtin",
+      "tokens": {
+        "surface": "outline",
+        "radius": 0,
+        "radius_sm": 0,
+        "border_width": 1,
+        "border_color": "rgba(51, 255, 102, 0.35)",
+        "shadow": "0 0 14px rgba(51, 255, 102, 0.18)",
+        "page_background": "#020503",
+        "accent": "#33ff66",
+        "density": "compact",
+        "font_family": "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, Consolas, 'Courier New', monospace",
+        "palette": {
+          "primary": "#33ff66",
+          "accent": "#33ff66",
+          "card_bg": "#050a06",
+          "text": "#33ff66",
+          "text_secondary": "rgba(51, 255, 102, 0.6)",
+          "divider": "rgba(51, 255, 102, 0.35)"
+        },
+        "color_filter": "grayscale(1) sepia(1) hue-rotate(80deg) saturate(2.5) brightness(1.05)"
+      },
+      "card": {
+        "card_background": "#050a06",
+        "card_border_radius": 0,
+        "card_border_color": "rgba(51, 255, 102, 0.35)",
+        "card_border_width": 1,
+        "card_padding": 14,
+        "card_shadow_enabled": true,
+        "card_shadow_color": "rgba(51, 255, 102, 0.18)",
+        "card_shadow_horizontal": 0,
+        "card_shadow_vertical": 0,
+        "card_shadow_blur": 14,
+        "card_shadow_spread": 0
+      },
+      "modules": {
+        "button": {
+          "style": "outline"
+        },
+        "bar": {
+          "bar_style": "outline"
+        },
+        "slider_control": {
+          "slider_style": "outline"
+        },
+        "spinbox": {
+          "button_style": "outline",
+          "button_shape": "square"
+        },
+        "popup": {
+          "trigger_button_style": "outline"
+        },
+        "grid": {
+          "grid_style": "style_8"
+        },
+        "navigation": {
+          "nav_style": "uc_minimal"
+        },
+        "area_summary": {
+          "style_preset": "compact_controls",
+          "accent_color": "#33ff66",
+          "tile_border_radius": 0
+        },
+        "auto_entity_list": {
+          "row_style": "slim"
+        },
+        "unifi": {
+          "rack_style": "blueprint"
+        },
+        "activity_feed": {
+          "feed_card_style": "outlined"
+        },
+        "tabs": {
+          "style": "simple"
+        }
+      },
+      "css": ".card-container {\n  text-shadow: 0 0 6px rgba(51, 255, 102, 0.45);\n  letter-spacing: 0.02em;\n}"
+    }
+  ]
+}

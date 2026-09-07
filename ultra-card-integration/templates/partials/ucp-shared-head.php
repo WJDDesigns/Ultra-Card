@@ -20,6 +20,40 @@ body.admin-bar .ucp{--ucp-header-offset:172px}
 @media (max-width:782px){body.admin-bar .ucp{--ucp-header-offset:186px}}
 @media (max-width:600px){.ucp{--ucp-header-offset:120px}body.admin-bar .ucp{--ucp-header-offset:166px}}
 </style>
+<script>
+/* The fixed site header is a different height per breakpoint (three stacked
+   rows on phones), so the static offsets above are only a first paint;
+   measure the real header and hand it to every .ucp page as --ucp-header-offset. */
+(function () {
+  var last = -1;
+  function sync() {
+    var roots = document.querySelectorAll('.ucp');
+    if (!roots.length) return;
+    var header = document.querySelector('.l-header, #page-header, header.l-header, .w-header, #masthead');
+    if (!header) return;
+    var pos = getComputedStyle(header).position;
+    var overlaps = pos === 'fixed' || pos === 'absolute' || pos === 'sticky' || header.classList.contains('pos_fixed');
+    if (!overlaps) { apply(0); return; }
+    // Sticky headers shrink once scrolled; only trust a measurement taken at the top.
+    if ((window.scrollY || window.pageYOffset || 0) > 4 && last >= 0) return;
+    var h = Math.max(header.getBoundingClientRect().height || 0, header.offsetHeight || 0);
+    var admin = document.getElementById('wpadminbar');
+    if (admin && getComputedStyle(admin).position === 'fixed') h += admin.offsetHeight || 0;
+    if (h > 40) apply(Math.round(h));
+    function apply(v) {
+      if (v === last) return;
+      last = v;
+      for (var i = 0; i < roots.length; i++) roots[i].style.setProperty('--ucp-header-offset', v + 'px');
+    }
+  }
+  sync();
+  document.addEventListener('DOMContentLoaded', sync);
+  window.addEventListener('load', sync);
+  window.addEventListener('orientationchange', function () { setTimeout(sync, 150); });
+  var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(sync, 120); });
+  setTimeout(sync, 400);
+})();
+</script>
 <style id="ucp-shared-css">
 @import url("https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css");
 .ucp{--uc-blue:#29b6f6;--uc-purple:#8017A2;--uc-pink:#ff2d78;--uc-gold:#ffc233;

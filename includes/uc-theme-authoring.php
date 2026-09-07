@@ -214,6 +214,30 @@ function uc_theme_sanitize_definition($raw) {
     if (!empty($raw['tokens']['surface']) && !in_array($raw['tokens']['surface'], array('flat', 'glass', 'neumorphic', 'glossy', 'outline', 'minimal'), true)) {
         return new WP_Error('invalid_theme', 'Unknown surface "' . sanitize_text_field($raw['tokens']['surface']) . '"', array('status' => 400));
     }
+    // tokens.recipes: recipe per role (mirrors uc-surface-recipes.ts). Unknown
+    // entries are dropped rather than rejected, as the card's validator does.
+    if (isset($raw['tokens']['recipes'])) {
+        $recipes = array();
+        $known = array('flat', 'glossy', 'embossed', 'inset', 'gradient-overlay', 'neon-glow', 'outline', 'glass', 'metallic', 'neumorphic', 'dashed', 'dots', 'minimal');
+        $bar_only = array('dashed', 'dots', 'minimal');
+        if (is_array($raw['tokens']['recipes'])) {
+            foreach (array('control', 'track', 'fill', 'pane') as $role) {
+                $v = isset($raw['tokens']['recipes'][$role]) ? $raw['tokens']['recipes'][$role] : null;
+                if (!is_string($v) || !in_array($v, $known, true)) {
+                    continue;
+                }
+                if (($role === 'control' || $role === 'pane') && in_array($v, $bar_only, true)) {
+                    continue;
+                }
+                $recipes[$role] = $v;
+            }
+        }
+        if ($recipes) {
+            $raw['tokens']['recipes'] = $recipes;
+        } else {
+            unset($raw['tokens']['recipes']);
+        }
+    }
     if (isset($raw['css'])) {
         $problems = uc_theme_css_problems($raw['css']);
         if ($problems) {
@@ -504,6 +528,8 @@ class UltraCardThemeAuthoring {
                 $back = add_query_arg('id', (int) $_GET['id'], $back);
             } elseif (!empty($_GET['fork'])) {
                 $back = add_query_arg('fork', (int) $_GET['fork'], $back);
+            } elseif (isset($_GET['import']) && $_GET['import'] === 'session') {
+                $back = add_query_arg('import', 'session', $back);
             }
             wp_safe_redirect(wp_login_url($back));
             exit;
@@ -586,6 +612,11 @@ class UltraCardThemeAuthoring {
             'callback'            => array($this, 'moderation_queue'),
             'permission_callback' => array($this, 'check_moderator'),
         ));
+        register_rest_route($ns, '/themes/builtin', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'list_builtin_themes'),
+            'permission_callback' => '__return_true',
+        ));
         register_rest_route($ns, '/themes/(?P<id>\d+)', array(
             array(
                 'methods'             => 'GET',
@@ -630,6 +661,84 @@ class UltraCardThemeAuthoring {
             'callback'            => array($this, 'track_download'),
             'permission_callback' => '__return_true',
         ));
+    }
+
+    /**
+     * GET /themes/builtin — the themes that ship inside the card, exported by
+     * the card build to website/builtin-themes.json and delivered through the
+     * website harness (same channel/ref as the page fragments). They are not
+     * posts, so there are no ratings or download counts; the gallery lists
+     * them under Default next to the official catalog entries.
+     */
+    public function list_builtin_themes($request) {
+        $force = (bool) $request->get_param('refresh') && current_user_can('manage_options');
+        $body = null;
+        $origin = '';
+        $sha = '';
+        $error = '';
+
+        // 1. The repo copy through the harness (follows the configured channel).
+        if (class_exists('UltraCardWebsiteHarness')) {
+            $asset = UltraCardWebsiteHarness::instance()->fetch_asset('builtin-themes', 'website/builtin-themes.json', $force);
+            $decoded = is_array($asset) && $asset['html'] !== '' ? json_decode($asset['html'], true) : null;
+            if (is_array($decoded) && isset($decoded['themes']) && is_array($decoded['themes'])) {
+                $body = $decoded;
+                $origin = 'harness';
+                $sha = (string) $asset['sha'];
+            } elseif (is_array($asset) && !empty($asset['error'])) {
+                $error = (string) $asset['error'];
+            }
+        }
+
+        // 2. The copy packaged with this plugin release (data/builtin-themes.json).
+        if ($body === null) {
+            $bundled = ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'data/builtin-themes.json';
+            if (file_exists($bundled)) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+                $decoded = json_decode((string) file_get_contents($bundled), true);
+                if (is_array($decoded) && isset($decoded['themes']) && is_array($decoded['themes'])) {
+                    $body = $decoded;
+                    $origin = 'bundled';
+                    $sha = defined('ULTRA_CARD_INTEGRATION_VERSION') ? 'plugin-' . ULTRA_CARD_INTEGRATION_VERSION : 'plugin';
+                }
+            }
+        }
+
+        if ($body === null) {
+            return new WP_Error(
+                'uc_builtin_unavailable',
+                $error ? 'Could not load built-in themes: ' . $error : 'Built-in themes are not available.',
+                array('status' => 502)
+            );
+        }
+        $themes = array();
+        foreach ($body['themes'] as $def) {
+            if (!is_array($def) || empty($def['id']) || empty($def['tokens'])) {
+                continue;
+            }
+            $def['source'] = 'builtin';
+            $themes[] = array(
+                'id'          => 'builtin-' . sanitize_title($def['id']),
+                'catalog_id'  => (string) $def['id'],
+                'name'        => isset($def['name']) ? (string) $def['name'] : (string) $def['id'],
+                'description' => isset($def['description']) ? (string) $def['description'] : '',
+                'tags'        => isset($def['tags']) && is_array($def['tags']) ? array_values(array_map('strval', $def['tags'])) : array(),
+                'preview'     => isset($def['preview']) ? (string) $def['preview'] : '',
+                'version'     => isset($def['version']) ? (int) $def['version'] : 1,
+                'author'      => isset($def['author']) && $def['author'] !== '' ? (string) $def['author'] : 'Ultra Card',
+                'source'      => 'builtin',
+                'definition'  => $def,
+            );
+        }
+        $response = rest_ensure_response(array(
+            'themes'       => $themes,
+            'total'        => count($themes),
+            'card_version' => isset($body['cardVersion']) ? (string) $body['cardVersion'] : '',
+            'origin'       => $origin,
+            'sha'          => $sha,
+        ));
+        $response->header('Cache-Control', 'public, max-age=600');
+        return $response;
     }
 
     /**

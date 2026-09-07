@@ -46,10 +46,18 @@ const themes = BUILTIN_THEMES.filter(t => t.id !== 'ha_native').map(t =>
 
 const manifest = { cardVersion, count: themes.length, themes };
 const json = JSON.stringify(manifest, null, 2) + '\n';
-const prev = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
-if (prev !== json) {
-  fs.writeFileSync(OUT, json);
-  console.log(`✅ website/builtin-themes.json: ${themes.length} themes, ${(json.length / 1024).toFixed(0)} KB`);
-} else {
-  console.log(`✅ website/builtin-themes.json unchanged (${themes.length} themes)`);
+// Two copies: the repo file the harness fetches from GitHub, and a copy that
+// ships inside the plugin zip so the gallery has the Default themes even when
+// the harness channel points at a ref without the file.
+const targets = [OUT, path.join(ROOT, 'ultra-card-integration', 'data', 'builtin-themes.json')];
+for (const target of targets) {
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const rel = path.relative(ROOT, target);
+  const prev = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : '';
+  if (prev !== json) {
+    fs.writeFileSync(target, json);
+    console.log(`✅ ${rel}: ${themes.length} themes, ${(json.length / 1024).toFixed(0)} KB`);
+  } else {
+    console.log(`✅ ${rel} unchanged (${themes.length} themes)`);
+  }
 }
