@@ -455,7 +455,7 @@ describe('host vars', () => {
 
   it('honours an explicit on_primary and derives nothing from var() palettes', () => {
     const mono = ucThemeService.getHostVars(MONOCHROME_THEME);
-    expect(mono['--text-primary-color']).toMatch(/^var\(--card-background-color/);
+    expect(mono['--text-primary-color']).toMatch(/^var\(--ha-card-background/);
     expect(mono['--secondary-background-color']).toBeUndefined();
     // Translucent card backgrounds (Glass) are not a readable surface to derive from.
     const glass = BUILTIN_THEMES.find(t => t.id === 'glass')!;
