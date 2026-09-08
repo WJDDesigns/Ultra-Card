@@ -85,4 +85,17 @@ describe('pane role adoption', () => {
       expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
     }
   });
+
+  it('batch-2 solid wrappers (vampire, toggle, alert, calendar) use pane tokens + role', () => {
+    for (const rel of [
+      'vampire-power-module.ts',
+      'toggle-module.ts',
+      'alert-center-module.ts',
+      'calendar-module.ts',
+    ]) {
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      expect(src, rel).toMatch(/--uc-pane-bg/);
+      expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
+    }
+  });
 });

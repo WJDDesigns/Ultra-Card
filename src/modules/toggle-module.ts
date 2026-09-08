@@ -2094,7 +2094,9 @@ export class UltraToggleModule extends BaseUltraModule {
         .segmented-control {
           display: flex;
           flex-direction: ${isHorizontal ? 'row' : 'column'};
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
+          border: var(--uc-pane-border, none);
+          box-shadow: var(--uc-pane-shadow, none);
           border-radius: var(--uc-r-8, 8px);
           padding: 4px;
           gap: ${module.spacing || 0}px;
@@ -2140,7 +2142,7 @@ export class UltraToggleModule extends BaseUltraModule {
         ${module.show_title && module.title
           ? html`<div class="segmented-title">${module.title}</div>`
           : ''}
-        <div class="segmented-control" role="group" aria-label="${module.title || 'Toggle'}">
+        <div class="segmented-control" data-uc-role="pane" role="group" aria-label="${module.title || 'Toggle'}">
           ${module.toggle_points.map(
             point => html`
               <button
