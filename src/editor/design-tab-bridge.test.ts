@@ -17,6 +17,31 @@ describe('design-tab-bridge', () => {
     expect(props.color).toBe('#fff');
   });
 
+  it('extracts text shadow and 3D transform values stored in design', () => {
+    const props = extractModuleDesignProperties({
+      id: 't1',
+      type: 'text',
+      design: {
+        text_shadow_h: '1px',
+        text_shadow_v: '2px',
+        text_shadow_blur: '3px',
+        text_shadow_color: '#000',
+        transform_perspective: '800px',
+        transform_rotate_x: '10deg',
+        transform_rotate_y: '20deg',
+        transform_rotate_z: '30deg',
+      },
+    } as any);
+    expect(props.text_shadow_h).toBe('1px');
+    expect(props.text_shadow_v).toBe('2px');
+    expect(props.text_shadow_blur).toBe('3px');
+    expect(props.text_shadow_color).toBe('#000');
+    expect(props.transform_perspective).toBe('800px');
+    expect(props.transform_rotate_x).toBe('10deg');
+    expect(props.transform_rotate_y).toBe('20deg');
+    expect(props.transform_rotate_z).toBe('30deg');
+  });
+
   it('merges flat updates into design', () => {
     const module = {
       id: 't1',

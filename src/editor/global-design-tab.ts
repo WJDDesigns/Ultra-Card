@@ -1,11 +1,10 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import '../components/ultra-color-picker';
 import '../components/uc-device-selector';
 import '../components/ultra-file-picker';
 import { UcFormUtils } from '../utils/uc-form-utils';
-import { uploadImage } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { DeviceBreakpoint, DEVICE_BREAKPOINTS, ResponsiveDesignProperties } from '../types';
@@ -269,7 +268,185 @@ export interface DesignProperties {
   css_variable_prefix?: string | undefined;
 }
 
+type DesignKey = keyof DesignProperties;
 type GlobalDesignOnUpdate = (properties: Partial<DesignProperties>) => void;
+
+/**
+ * Single source of truth for which properties belong to which Design section.
+ * Drives the "has edits" indicator, per-section reset, responsive override
+ * badges and Reset All, so a property can never be editable but un-resettable.
+ */
+export const DESIGN_SECTION_PROPERTIES = {
+  text: [
+    'color',
+    'text_align',
+    'font_size',
+    'line_height',
+    'letter_spacing',
+    'font_family',
+    'font_weight',
+    'text_transform',
+    'font_style',
+    'white_space',
+  ],
+  background: [
+    'background_color',
+    'background_image',
+    'background_image_type',
+    'background_image_entity',
+    'background_size',
+    'background_repeat',
+    'background_position',
+    'backdrop_filter',
+    'background_filter',
+  ],
+  sizes: ['width', 'height', 'max_width', 'max_height', 'min_width', 'min_height'],
+  spacing: [
+    'margin_top',
+    'margin_bottom',
+    'margin_left',
+    'margin_right',
+    'padding_top',
+    'padding_bottom',
+    'padding_left',
+    'padding_right',
+  ],
+  border: ['border_radius', 'border_style', 'border_width', 'border_color'],
+  position: ['position', 'top', 'bottom', 'left', 'right', 'z_index'],
+  'text-shadow': ['text_shadow_h', 'text_shadow_v', 'text_shadow_blur', 'text_shadow_color'],
+  'box-shadow': [
+    'box_shadow_h',
+    'box_shadow_v',
+    'box_shadow_blur',
+    'box_shadow_spread',
+    'box_shadow_color',
+  ],
+  overflow: ['overflow', 'clip_path'],
+  'transform-3d': [
+    'transform_perspective',
+    'transform_rotate_x',
+    'transform_rotate_y',
+    'transform_rotate_z',
+  ],
+  animations: [
+    'animation_type',
+    'animation_entity',
+    'animation_trigger_type',
+    'animation_attribute',
+    'animation_state',
+    'animation_duration',
+    'animation_delay',
+    'animation_timing',
+    'intro_animation',
+    'outro_animation',
+    'intro_animation_duration',
+    'intro_animation_delay',
+    'intro_animation_timing',
+  ],
+  custom_targeting: ['css_variable_prefix', 'extra_class', 'element_id'],
+} as const satisfies Record<string, readonly DesignKey[]>;
+
+export type DesignSectionId = keyof typeof DESIGN_SECTION_PROPERTIES;
+
+/** Section order as rendered in the tab. */
+const SECTION_ORDER: readonly DesignSectionId[] = [
+  'text',
+  'background',
+  'sizes',
+  'spacing',
+  'border',
+  'position',
+  'text-shadow',
+  'box-shadow',
+  'overflow',
+  'transform-3d',
+  'animations',
+  'custom_targeting',
+];
+
+/**
+ * "Reset All" clears every visual section. Custom Targeting (ids / classes /
+ * CSS variable prefix) is a hook for card-mod and themes, not a visual
+ * setting, so it keeps its values and has its own section reset instead.
+ */
+const RESET_ALL_SECTIONS: readonly DesignSectionId[] = SECTION_ORDER.filter(
+  s => s !== 'custom_targeting'
+);
+
+/** Surface chrome cleared by "Reset to Theme" so `--uc-*` theme fallbacks apply again. */
+const THEME_SURFACE_PROPERTIES: readonly DesignKey[] = [
+  'background_color',
+  'background_image',
+  'background_image_type',
+  'background_image_entity',
+  'background_size',
+  'background_repeat',
+  'background_position',
+  'background_filter',
+  'backdrop_filter',
+  'border_radius',
+  'border_style',
+  'border_width',
+  'border_color',
+  'box_shadow_h',
+  'box_shadow_v',
+  'box_shadow_blur',
+  'box_shadow_spread',
+  'box_shadow_color',
+];
+
+/**
+ * Values that mean "nothing set" for enum selects whose first option is not
+ * an empty string. Stored as-is for compatibility, but not counted as an edit.
+ */
+const NEUTRAL_VALUES: Partial<Record<DesignKey, string>> = {
+  background_image_type: 'none',
+  animation_type: 'none',
+  intro_animation: 'none',
+  outro_animation: 'none',
+};
+
+/** Properties copied between elements. `element_id` must stay unique per page. */
+const NON_COPYABLE_PROPERTIES: ReadonlySet<DesignKey> = new Set<DesignKey>(['element_id']);
+
+const RESPONSIVE_KEYS: readonly (keyof ResponsiveDesignProperties)[] = [
+  'base',
+  'desktop',
+  'laptop',
+  'tablet',
+  'mobile',
+];
+
+function hasValue(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'string') return value.trim() !== '';
+  return true;
+}
+
+function isSet(property: DesignKey, value: unknown): boolean {
+  return hasValue(value) && value !== NEUTRAL_VALUES[property];
+}
+
+type SpacingType = 'margin' | 'padding';
+type Side = 'top' | 'right' | 'bottom' | 'left';
+const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left'];
+
+/** Stand-in value for the "– Default –" select option (ha-select can't show ''). */
+const DEFAULT_OPTION_SENTINEL = '__uc_default__';
+
+interface TextFieldOptions {
+  property: DesignKey;
+  label: string;
+  value: string | undefined;
+  placeholder?: string;
+  /** Enables arrow-key stepping for CSS lengths (px/rem/em/%). */
+  numeric?: boolean;
+  /** Unit appended when stepping an empty field (default px; '' for unitless). */
+  unit?: string;
+  hint?: string | TemplateResult;
+  /** Hide the per-field reset button (for grouped inputs that share one). */
+  compact?: boolean;
+}
 
 @customElement('ultra-global-design-tab')
 export class GlobalDesignTab extends LitElement {
@@ -283,83 +460,76 @@ export class GlobalDesignTab extends LitElement {
   @state() private _marginLocked: boolean = false;
   @state() private _paddingLocked: boolean = false;
   @state() private _clipboardProperties: DesignProperties | null = null;
-  @state() private _selectedDevice: DeviceBreakpoint = 'desktop'; // Default to desktop
-  @state() private _responsiveEnabled: boolean = false; // Toggle for responsive overrides
+  @state() private _selectedDevice: DeviceBreakpoint = 'desktop';
+  @state() private _responsiveEnabled: boolean = false;
 
   // localStorage key for cross-card clipboard functionality
   private static readonly CLIPBOARD_KEY = 'ultra-card-design-clipboard';
 
-  // Static property to track animation trigger type across renders
-  private static _lastAnimationTriggerType: 'state' | 'attribute' | null = null;
+  private _storageEventListener: ((event: StorageEvent) => void) | undefined;
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
 
   override connectedCallback(): void {
     super.connectedCallback();
-
-    // Ensure lock states are always false by default (prevent auto-fill behavior)
     this._marginLocked = false;
     this._paddingLocked = false;
 
-    // Ensure proper initialization
-    // Lock states are now properly managed
-
-    // Load clipboard state from localStorage when component initializes
     this._loadClipboardFromStorage();
-
-    // Listen for storage events to sync clipboard across different card instances
     const storageListener = this._handleStorageEvent.bind(this);
     this._storageEventListener = storageListener;
     window.addEventListener('storage', storageListener);
 
-    // Auto-enable responsive toggle if there are existing device overrides
     this._checkAndEnableResponsiveMode();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._storageEventListener) {
+      window.removeEventListener('storage', this._storageEventListener);
+    }
   }
 
   override updated(changedProperties: Map<string, unknown>): void {
     super.updated(changedProperties);
-
-    // When responsiveDesign property changes, check if we should auto-enable responsive mode
     if (changedProperties.has('responsiveDesign')) {
       this._checkAndEnableResponsiveMode();
     }
   }
 
-  /**
-   * Auto-enable responsive mode toggle if there are existing device overrides
-   */
+  /** Auto-enable the responsive toggle when device overrides already exist. */
   private _checkAndEnableResponsiveMode(): void {
     if (
+      !this._responsiveEnabled &&
       this.responsiveDesign &&
       responsiveDesignService.hasAnyResponsiveOverrides(this.responsiveDesign)
     ) {
-      if (!this._responsiveEnabled) {
-        this._responsiveEnabled = true;
-        this.requestUpdate();
+      this._responsiveEnabled = true;
+    }
+  }
+
+  private get _lang(): string {
+    return this.hass?.locale?.language || 'en';
+  }
+
+  private _t(key: string, fallback: string, vars?: Record<string, string | number>): string {
+    let text = localize(`editor.design.${key}`, this._lang, fallback);
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
       }
     }
+    return text;
   }
 
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    // Clean up storage event listener
-    if (this._storageEventListener) {
-      window.removeEventListener('storage', this._storageEventListener);
-    }
-
-    // Clean up any session storage if needed
-    // Uncomment this if you want to clear on component removal
-    // try {
-    //   sessionStorage.removeItem(GlobalDesignTab.ANIMATION_TRIGGER_TYPE_KEY);
-    // } catch (e) {
-    //   console.warn('Failed to clear animation trigger type from session storage:', e);
-    // }
-  }
-
-  private _storageEventListener: ((event: StorageEvent) => void) | undefined;
+  // ---------------------------------------------------------------------------
+  // Clipboard (cross-card, via localStorage)
+  // ---------------------------------------------------------------------------
 
   private _handleStorageEvent(event: StorageEvent): void {
-    // Only react to changes to our specific clipboard key
     if (event.key === GlobalDesignTab.CLIPBOARD_KEY) {
-      // Reload clipboard state when another card instance updates it
       this._loadClipboardFromStorage();
     }
   }
@@ -367,14 +537,13 @@ export class GlobalDesignTab extends LitElement {
   private _loadClipboardFromStorage(): void {
     try {
       const stored = localStorage.getItem(GlobalDesignTab.CLIPBOARD_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Validate that it's a valid DesignProperties object
-        if (parsed && typeof parsed === 'object') {
-          this._clipboardProperties = parsed;
-          this.requestUpdate();
-        }
+      if (!stored) {
+        this._clipboardProperties = null;
+        return;
       }
+      const parsed = JSON.parse(stored);
+      this._clipboardProperties =
+        parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0 ? parsed : null;
     } catch (error) {
       console.warn('Failed to load design clipboard from localStorage:', error);
       this._clipboardProperties = null;
@@ -389,882 +558,199 @@ export class GlobalDesignTab extends LitElement {
     }
   }
 
-  private _clearClipboardFromStorage(): void {
-    try {
-      localStorage.removeItem(GlobalDesignTab.CLIPBOARD_KEY);
-    } catch (error) {
-      console.warn('Failed to clear design clipboard from localStorage:', error);
-    }
-  }
-
-  private _toggleSection(section: string): void {
-    if (this._expandedSections.has(section)) {
-      this._expandedSections.delete(section);
-    } else {
-      // Close all other sections and open this one (exclusive behavior)
-      this._expandedSections.clear();
-      this._expandedSections.add(section);
-    }
-    this.requestUpdate();
-  }
-
-  /**
-   * HA-native select via UcFormUtils (replaces raw <select> in Design tab).
-   */
-  private _renderDesignSelect(
-    property: keyof DesignProperties,
-    value: string | undefined,
-    options: readonly DesignSelectOption[],
-    onAfterChange?: (value: string) => void
-  ): TemplateResult {
-    const key = String(property);
-    return html`
-      <div class="design-ha-select">
-        ${UcFormUtils.renderForm(
-          this.hass!,
-          { [key]: value ?? '' },
-          [UcFormUtils.select(key, options)],
-          (e: CustomEvent) => {
-            const next = e.detail?.value?.[key] ?? '';
-            if (onAfterChange) {
-              onAfterChange(next);
-            } else {
-              this._updateProperty(property, next);
-            }
-          },
-          false
-        )}
-      </div>
-    `;
-  }
-
-  private _updateProperty(property: keyof DesignProperties, value: any): void {
-    // Handle empty strings as property deletion for proper reset behavior
-    const processedValue =
-      value === '' || value === null || (typeof value === 'string' && value.trim() === '')
-        ? undefined
-        : value;
-
-    // Check if we're in responsive mode with a non-desktop device selected
-    const isResponsiveUpdate = this._responsiveEnabled && this._selectedDevice !== 'desktop';
-
-    if (isResponsiveUpdate) {
-      // Device-specific update - build the full design object with responsive structure
-      const currentDesign = this.responsiveDesign || { base: { ...this.designProperties } };
-      const deviceDesign = { ...(currentDesign[this._selectedDevice] || {}) };
-
-      if (processedValue === undefined) {
-        delete (deviceDesign as any)[property];
-      } else {
-        (deviceDesign as any)[property] = processedValue;
-      }
-
-      // Build updated responsive design object
-      const updatedResponsiveDesign = {
-        ...currentDesign,
-        [this._selectedDevice]: deviceDesign,
-      };
-
-      // Update local state for immediate UI feedback
-      this.responsiveDesign = updatedResponsiveDesign;
-      this.requestUpdate();
-
-      // Send the design update through the standard channels
-      // The parent needs to save this to module.design
-      const designUpdate = { design: updatedResponsiveDesign };
-
-      if (this.onUpdate) {
-        this.onUpdate(designUpdate as any);
-      } else {
-        this.dispatchEvent(
-          new CustomEvent('design-changed', {
-            detail: designUpdate,
-            bubbles: true,
-            composed: true,
-          })
-        );
-      }
-      return;
-    }
-
-    // Standard update (desktop or responsive disabled) - updates base/desktop design
-    const updates: Partial<DesignProperties> = { [property]: processedValue } as any;
-
-    // Update local state immediately so UI reflects the change
-    const newDesignProperties = { ...(this.designProperties || {}) };
-    if (processedValue === undefined) {
-      delete (newDesignProperties as any)[property];
-    } else {
-      (newDesignProperties as any)[property] = processedValue;
-    }
-    this.designProperties = newDesignProperties as any;
-    this.requestUpdate();
-
-    // Debug logging for font_size updates
-    if (property === 'font_size') {
-      console.log('🔧 EditorGlobalDesignTab: Font size update', {
-        property,
-        originalValue: value,
-        processedValue,
-        updates,
-        newDesignProperties: this.designProperties,
-      });
-    }
-
-    // If responsive mode is enabled but we're on desktop, also update the base design structure
-    if (this._responsiveEnabled) {
-      const currentDesign = this.responsiveDesign || { base: {} };
-      const baseDesign = { ...(currentDesign.base || {}), ...updates };
-      const updatedResponsiveDesign = {
-        ...currentDesign,
-        base: baseDesign,
-      };
-      this.responsiveDesign = updatedResponsiveDesign;
-
-      // Include both flat updates AND the design structure
-      const combinedUpdates = { ...updates, design: updatedResponsiveDesign };
-
-      if (this.onUpdate) {
-        this.onUpdate(combinedUpdates as any);
-      } else {
-        this.dispatchEvent(
-          new CustomEvent('design-changed', {
-            detail: combinedUpdates,
-            bubbles: true,
-            composed: true,
-          })
-        );
-      }
-      return;
-    }
-
-    // Use callback if provided (module integration), otherwise use event (row/column integration)
-    if (this.onUpdate) {
-      this.onUpdate(updates);
-    } else {
-      // Dispatch event for event-listener based integrations
-      const event = new CustomEvent('design-changed', {
-        detail: updates,
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    }
-  }
-
-  private _updateSpacing(
-    type: 'margin' | 'padding',
-    side: 'top' | 'bottom' | 'left' | 'right',
-    value: string
-  ): void {
-    // Get current lock state and ensure it's boolean
-    const isSpacingLocked =
-      type === 'margin' ? Boolean(this._marginLocked) : Boolean(this._paddingLocked);
-
-    // Spacing update logic with proper lock handling
-
-    // When locked, only allow updates from the top field (prevent disabled field updates)
-    if (isSpacingLocked && side !== 'top') {
-      return;
-    }
-
-    // Normalize empty strings to undefined for proper deletion
-    const normalizeValue = (val: string): any => {
-      if (val === '' || val === null || (typeof val === 'string' && val.trim() === '')) {
-        return undefined;
-      }
-      return val;
-    };
-
-    const normalizedValue = normalizeValue(value);
-
-    let updates: Partial<DesignProperties>;
-
-    if (isSpacingLocked) {
-      // When locked, apply to all sides (user expects mirrored behavior)
-      // This should only happen when updating from the top field
-      updates = {
-        [`${type}_top`]: normalizedValue,
-        [`${type}_bottom`]: normalizedValue,
-        [`${type}_left`]: normalizedValue,
-        [`${type}_right`]: normalizedValue,
-      };
-    } else {
-      // When unlocked, apply to specific side only (default behavior)
-      updates = { [`${type}_${side}`]: normalizedValue };
-    }
-
-    // Update local designProperties immediately, removing properties set to undefined
-    const newDesignProperties = { ...(this.designProperties || {}) };
-    for (const [key, val] of Object.entries(updates)) {
-      if (val === undefined) {
-        delete (newDesignProperties as any)[key];
-      } else {
-        (newDesignProperties as any)[key] = val;
-      }
-    }
-    this.designProperties = newDesignProperties as any;
-
-    // For locked spacing fields, force immediate UI update to sync all fields
-    const isSpacingUpdate = Object.keys(updates).some(
-      key => key.startsWith('margin_') || key.startsWith('padding_')
-    );
-    const isCurrentlyLocked =
-      (type === 'margin' && this._marginLocked) || (type === 'padding' && this._paddingLocked);
-
-    if (isSpacingUpdate && isCurrentlyLocked) {
-      // Immediate update for locked fields to ensure synchronization
-      this.requestUpdate();
-    } else {
-      // Delay the UI update to prevent input value override for unlocked fields
-      setTimeout(() => {
-        this.requestUpdate();
-      }, 0);
-    }
-
-    // Check if we're in responsive mode with a non-desktop device selected
-    const isResponsiveUpdate = this._responsiveEnabled && this._selectedDevice !== 'desktop';
-
-    if (isResponsiveUpdate) {
-      // Device-specific spacing update - build the full design object
-      const currentDesign = this.responsiveDesign || { base: { ...this.designProperties } };
-      const deviceDesign = { ...(currentDesign[this._selectedDevice] || {}), ...updates };
-
-      // Remove undefined values
-      for (const [key, val] of Object.entries(updates)) {
-        if (val === undefined) {
-          delete (deviceDesign as any)[key];
-        }
-      }
-
-      const updatedResponsiveDesign = {
-        ...currentDesign,
-        [this._selectedDevice]: deviceDesign,
-      };
-
-      this.responsiveDesign = updatedResponsiveDesign;
-
-      const designUpdate = { design: updatedResponsiveDesign };
-
-      if (this.onUpdate) {
-        this.onUpdate(designUpdate as any);
-      } else {
-        this.dispatchEvent(
-          new CustomEvent('design-changed', {
-            detail: designUpdate,
-            bubbles: true,
-            composed: true,
-          })
-        );
-      }
-      return;
-    }
-
-    // If responsive mode is enabled but we're on desktop, also update the base design structure
-    if (this._responsiveEnabled) {
-      const currentDesign = this.responsiveDesign || { base: {} };
-      const baseDesign = { ...(currentDesign.base || {}), ...updates };
-
-      // Remove undefined values
-      for (const [key, val] of Object.entries(updates)) {
-        if (val === undefined) {
-          delete (baseDesign as any)[key];
-        }
-      }
-
-      const updatedResponsiveDesign = {
-        ...currentDesign,
-        base: baseDesign,
-      };
-      this.responsiveDesign = updatedResponsiveDesign;
-
-      const combinedUpdates = { ...updates, design: updatedResponsiveDesign };
-
-      if (this.onUpdate) {
-        this.onUpdate(combinedUpdates as any);
-      } else {
-        this.dispatchEvent(
-          new CustomEvent('design-changed', {
-            detail: combinedUpdates,
-            bubbles: true,
-            composed: true,
-          })
-        );
-      }
-      return;
-    }
-
-    // Use callback if provided (module integration), otherwise use event (row/column integration)
-    if (this.onUpdate) {
-      this.onUpdate(updates);
-    } else {
-      // Dispatch event for event-listener based integrations
-      const event = new CustomEvent('design-changed', {
-        detail: updates,
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    }
-  }
-
-  private _createSpacingInputHandler(
-    type: 'margin' | 'padding',
-    side: 'top' | 'bottom' | 'left' | 'right'
-  ): (e: Event) => void {
-    return (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const value = target.value;
-      // Store cursor position
-      const cursorPosition = target.selectionStart;
-      const cursorEnd = target.selectionEnd;
-
-      // Update property
-      this._updateSpacing(type, side, value);
-
-      // Preserve user input and cursor position - use multiple attempts to ensure it works
-      const preserveValueAndCursor = () => {
-        if (target) {
-          // If the input value was reset by reactive update, restore user input
-          if (target.value !== value) {
-            target.value = value;
-          }
-          // Restore cursor position
-          if (typeof cursorPosition === 'number') {
-            target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-          }
-        }
-      };
-
-      // Try multiple times to catch delayed re-renders
-      requestAnimationFrame(preserveValueAndCursor);
-      setTimeout(preserveValueAndCursor, 0);
-      setTimeout(preserveValueAndCursor, 10);
-    };
-  }
-
-  private _createRobustInputHandler(
-    property: string,
-    updateCallback: (value: string) => void
-  ): (e: Event) => void {
-    return (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const value = target.value;
-
-      // Store cursor position before any processing
-      const cursorPosition = target.selectionStart;
-      const cursorEnd = target.selectionEnd;
-
-      // Prevent event bubbling but allow normal input behavior
-      e.stopPropagation();
-
-      // Update the value first
-      updateCallback(value);
-
-      // For locked fields, don't fight the reactive updates - let them sync naturally
-      const isSpacingField = property.includes('margin_') || property.includes('padding_');
-      const isFieldLocked =
-        isSpacingField &&
-        ((property.includes('margin_') && this._marginLocked) ||
-          (property.includes('padding_') && this._paddingLocked));
-
-      if (!isFieldLocked) {
-        // Only preserve values for unlocked fields to avoid fighting reactive updates
-        const preserveValue = () => {
-          if (target && target.value !== value) {
-            // Value was reset by reactive update, restore user input
-            target.value = value;
-            if (typeof cursorPosition === 'number') {
-              target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-            }
-          }
-        };
-
-        // Try multiple times to preserve the value
-        requestAnimationFrame(preserveValue);
-        setTimeout(preserveValue, 0);
-        setTimeout(preserveValue, 10);
-      } else {
-        // For locked fields, just restore cursor position
-        requestAnimationFrame(() => {
-          if (target && typeof cursorPosition === 'number') {
-            target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-          }
-        });
-      }
-    };
-  }
-
-  private _createProtectedKeydownHandler(
-    property: string,
-    getCurrentValue: () => string,
-    updateCallback: (newValue: string) => void
-  ): (e: KeyboardEvent) => void {
-    return (e: KeyboardEvent) => {
-      const target = e.target as HTMLInputElement;
-
-      // Only handle arrow keys for numeric stepping, let everything else pass through
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        this._handleNumericKeydown(e, getCurrentValue(), updateCallback);
-        return;
-      }
-
-      // For any other key, just let it pass through naturally
-      // This prevents interference with normal typing, including adding negative signs
-    };
-  }
-
-  private _handleNumericKeydown(
-    event: KeyboardEvent,
-    currentValue: string,
-    updateCallback: (newValue: string) => void
-  ): void {
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
-
-    event.preventDefault();
-
-    // Parse current value to extract number and unit
-    const match = currentValue.match(/^(-?\d*\.?\d*)(.*)$/);
-    if (!match) return;
-
-    const numStr = match[1];
-    const unit = match[2].trim() || 'px';
-    let num = parseFloat(numStr) || 0;
-
-    // Determine step size based on unit
-    let step = 1;
-    if (unit === 'rem' || unit === 'em') {
-      step = 0.1;
-    } else if (unit === '%') {
-      step = 5;
-    } else if (unit === 'px') {
-      step = 1;
-    }
-
-    // Hold Shift for larger steps, Hold Alt/Option for smaller steps
-    if (event.shiftKey) {
-      step *= 10;
-    } else if (event.altKey) {
-      step /= 10;
-    }
-
-    // Increment or decrement
-    if (event.key === 'ArrowUp') {
-      num += step;
-    } else {
-      num -= step;
-    }
-
-    // Round to appropriate decimal places
-    let decimalPlaces = 0;
-    if (unit === 'rem' || unit === 'em') {
-      decimalPlaces = event.altKey ? 3 : 1;
-    } else if (unit === '%' && event.altKey) {
-      decimalPlaces = 1;
-    }
-
-    const roundedNum = parseFloat(num.toFixed(decimalPlaces));
-    const newValue = `${roundedNum}${unit}`;
-
-    updateCallback(newValue);
-  }
-
-  private _toggleSpacingLock(type: 'margin' | 'padding'): void {
-    if (type === 'margin') {
-      const wasLocked = this._marginLocked;
-      this._marginLocked = !this._marginLocked;
-
-      // When locking (only when explicitly toggled by user), sync all sides to the top value
-      if (!wasLocked && this._marginLocked === true) {
-        const topValue = this.designProperties.margin_top || '';
-        this._updateProperty('margin_right', topValue);
-        this._updateProperty('margin_bottom', topValue);
-        this._updateProperty('margin_left', topValue);
-      }
-    } else {
-      const wasLocked = this._paddingLocked;
-      this._paddingLocked = !this._paddingLocked;
-
-      // When locking (only when explicitly toggled by user), sync all sides to the top value
-      if (!wasLocked && this._paddingLocked === true) {
-        const topValue = this.designProperties.padding_top || '';
-        this._updateProperty('padding_right', topValue);
-        this._updateProperty('padding_bottom', topValue);
-        this._updateProperty('padding_left', topValue);
-      }
-    }
-    this.requestUpdate();
-  }
-
-  private _resetSection(section: string): void {
-    // Create a reset object that explicitly removes properties
-    const resetProperties: Record<string, undefined> = {};
-
-    switch (section) {
-      case 'text':
-        resetProperties.color = undefined;
-        resetProperties.text_align = undefined;
-        resetProperties.font_size = undefined;
-        resetProperties.line_height = undefined;
-        resetProperties.letter_spacing = undefined;
-        resetProperties.font_family = undefined;
-        resetProperties.font_weight = undefined;
-        resetProperties.text_transform = undefined;
-        resetProperties.font_style = undefined;
-        resetProperties.white_space = undefined;
-        break;
-      case 'background':
-        resetProperties.background_color = undefined;
-        resetProperties.background_image = undefined;
-        resetProperties.background_image_type = undefined;
-        resetProperties.background_image_entity = undefined;
-        resetProperties.background_size = undefined;
-        resetProperties.background_repeat = undefined;
-        resetProperties.background_position = undefined;
-        resetProperties.backdrop_filter = undefined;
-        break;
-      case 'sizes':
-        resetProperties.width = undefined;
-        resetProperties.height = undefined;
-        resetProperties.max_width = undefined;
-        resetProperties.max_height = undefined;
-        resetProperties.min_width = undefined;
-        resetProperties.min_height = undefined;
-        break;
-      case 'spacing':
-        resetProperties.margin_top = undefined;
-        resetProperties.margin_bottom = undefined;
-        resetProperties.margin_left = undefined;
-        resetProperties.margin_right = undefined;
-        resetProperties.padding_top = undefined;
-        resetProperties.padding_bottom = undefined;
-        resetProperties.padding_left = undefined;
-        resetProperties.padding_right = undefined;
-        break;
-      case 'border':
-        resetProperties.border_radius = undefined;
-        resetProperties.border_style = undefined;
-        resetProperties.border_width = undefined;
-        resetProperties.border_color = undefined;
-        break;
-      case 'position':
-        resetProperties.position = undefined;
-        resetProperties.top = undefined;
-        resetProperties.bottom = undefined;
-        resetProperties.left = undefined;
-        resetProperties.right = undefined;
-        resetProperties.z_index = undefined;
-        break;
-      case 'text-shadow':
-        resetProperties.text_shadow_h = undefined;
-        resetProperties.text_shadow_v = undefined;
-        resetProperties.text_shadow_blur = undefined;
-        resetProperties.text_shadow_color = undefined;
-        break;
-      case 'box-shadow':
-        resetProperties.box_shadow_h = undefined;
-        resetProperties.box_shadow_v = undefined;
-        resetProperties.box_shadow_blur = undefined;
-        resetProperties.box_shadow_spread = undefined;
-        resetProperties.box_shadow_color = undefined;
-        break;
-      case 'overflow':
-        resetProperties.overflow = undefined;
-        resetProperties.clip_path = undefined;
-        break;
-      case 'transform-3d':
-        resetProperties.transform_perspective = undefined;
-        resetProperties.transform_rotate_x = undefined;
-        resetProperties.transform_rotate_y = undefined;
-        resetProperties.transform_rotate_z = undefined;
-        break;
-      case 'animations':
-        resetProperties.animation_type = undefined;
-        resetProperties.animation_entity = undefined;
-        resetProperties.animation_trigger_type = undefined;
-        resetProperties.animation_attribute = undefined;
-        resetProperties.animation_state = undefined;
-        resetProperties.animation_duration = undefined;
-        resetProperties.animation_delay = undefined;
-        resetProperties.animation_timing = undefined;
-        // Intro/outro animation properties
-        resetProperties.intro_animation = undefined;
-        resetProperties.outro_animation = undefined;
-        resetProperties.intro_animation_duration = undefined;
-        resetProperties.intro_animation_delay = undefined;
-        resetProperties.intro_animation_timing = undefined;
-        break;
-      case 'custom_targeting':
-        resetProperties.css_variable_prefix = undefined;
-        resetProperties.extra_class = undefined;
-        resetProperties.element_id = undefined;
-        break;
-    }
-
-    // Update local state immediately so UI reflects the reset
-    // IMPORTANT: Delete properties rather than setting to undefined for proper Lit change detection
-    const newDesignProperties = { ...(this.designProperties || {}) };
-    Object.keys(resetProperties).forEach(key => {
-      delete (newDesignProperties as any)[key];
-    });
-    this.designProperties = newDesignProperties as any;
-    this.requestUpdate();
-
-    // Use callback if provided (module integration), otherwise use event (row/column integration)
-    if (this.onUpdate) {
-      try {
-        this.onUpdate(resetProperties);
-      } catch (error) {
-        console.error(`🔄 GlobalDesignTab: Callback error for ${section}:`, error);
-      }
-    } else {
-      // Dispatch event for event-listener based integrations
-      const event = new CustomEvent('design-changed', {
-        detail: resetProperties,
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    }
-
-    // Force component re-render to update UI indicators after a small delay
-    this.requestUpdate();
-
-    // Schedule another update to ensure UI indicators refresh after parent updates designProperties
-    setTimeout(() => {
-      this.requestUpdate();
-    }, 50);
-  }
-
   private _copyDesign(): void {
-    // Copy all current design properties to clipboard (both local state and localStorage)
-    this._clipboardProperties = { ...this.designProperties };
-    this._saveClipboardToStorage(this._clipboardProperties);
+    // Copy what the user is looking at (effective values for the selected device),
+    // dropping empty values and per-element identifiers.
+    const effective = this._getEffectiveDesign();
+    const copy: DesignProperties = {};
+    for (const [key, value] of Object.entries(effective)) {
+      const k = key as DesignKey;
+      if (NON_COPYABLE_PROPERTIES.has(k)) continue;
+      if (isSet(k, value)) (copy as any)[k] = value;
+    }
 
-    // Count non-empty properties for better feedback
-    const propertyCount = Object.keys(this._clipboardProperties).filter(
-      key => this._clipboardProperties![key as keyof DesignProperties]
-    ).length;
+    const count = Object.keys(copy).length;
+    if (count === 0) {
+      ucToastService.info(this._t('copy_nothing', 'No design settings to copy'));
+      return;
+    }
 
-    // Show feedback to user
-
-    // Trigger a visual feedback
-    this.requestUpdate();
+    this._clipboardProperties = copy;
+    this._saveClipboardToStorage(copy);
+    ucToastService.success(this._t('copied', 'Design copied ({count} settings)', { count }));
   }
 
   private _pasteDesign(): void {
-    // First try local state, then reload from localStorage if needed
     if (!this._clipboardProperties) {
       this._loadClipboardFromStorage();
     }
+    if (!this._clipboardProperties) {
+      ucToastService.info(this._t('paste_tooltip_none', 'No design settings in cross-card clipboard'));
+      return;
+    }
+    this._applyUpdates(this._clipboardProperties);
+    ucToastService.success(this._t('pasted', 'Design pasted'));
+  }
 
-    if (this._clipboardProperties) {
-      // Use callback if provided (module integration), otherwise use event (row/column integration)
-      if (this.onUpdate) {
-        this.onUpdate(this._clipboardProperties);
-      } else {
-        // Dispatch event for event-listener based integrations
-        this.dispatchEvent(
-          new CustomEvent('design-changed', {
-            detail: this._clipboardProperties,
-            bubbles: true,
-            composed: true,
-          })
-        );
+  // ---------------------------------------------------------------------------
+  // Update pipeline
+  //
+  // Every change funnels through _applyUpdates so responsive routing, empty
+  // value normalisation and the parent payload shape are identical whether the
+  // change came from a text field, a select, a lock toggle or a reset button.
+  //
+  // Payload shapes (kept stable for layout-tab / bridge consumers):
+  //   * responsive off ............ flat { prop: value | undefined }
+  //   * responsive on, desktop .... flat props + { design: { ...design, base } }
+  //   * responsive on, device ..... { design: { ...design, [device]: overrides } }
+  // Keys being cleared are sent as explicit `undefined` so the parent's deep
+  // merge deletes them instead of keeping the old value.
+  // ---------------------------------------------------------------------------
+
+  private _emit(payload: Record<string, unknown>): void {
+    if (this.onUpdate) {
+      try {
+        this.onUpdate(payload as Partial<DesignProperties>);
+      } catch (error) {
+        console.error('GlobalDesignTab: onUpdate callback error', error);
       }
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent('design-changed', { detail: payload, bubbles: true, composed: true })
+    );
+  }
+
+  private _applyUpdates(updates: Partial<DesignProperties>): void {
+    const normalized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates || {})) {
+      if (key === 'design') continue;
+      normalized[key] = hasValue(value) ? value : undefined;
+    }
+    if (Object.keys(normalized).length === 0) return;
+
+    const asRecord = (obj: unknown): Record<string, unknown> =>
+      (obj && typeof obj === 'object' ? obj : {}) as Record<string, unknown>;
+
+    /** Apply `normalized` to a copy of `target`, deleting cleared keys. */
+    const applyTo = (target: unknown): Record<string, unknown> => {
+      const next = { ...asRecord(target) };
+      for (const [key, value] of Object.entries(normalized)) {
+        if (value === undefined) delete next[key];
+        else next[key] = value;
+      }
+      return next;
+    };
+
+    /** Same as applyTo but keeps cleared keys as explicit `undefined` for the parent merge. */
+    const withExplicitClears = (obj: Record<string, unknown>): Record<string, unknown> => {
+      const out = { ...obj };
+      for (const [key, value] of Object.entries(normalized)) {
+        if (value === undefined) out[key] = undefined;
+      }
+      return out;
+    };
+
+    if (this._isDeviceMode) {
+      const device = this._selectedDevice;
+      const current: ResponsiveDesignProperties = this.responsiveDesign || {
+        base: { ...this.designProperties },
+      };
+      const deviceDesign = applyTo(current[device]);
+
+      // Local state: keep the object clean for effective-value computation.
+      this.responsiveDesign = { ...current, [device]: deviceDesign } as ResponsiveDesignProperties;
+      this._emit({ design: { ...current, [device]: withExplicitClears(deviceDesign) } });
+      return;
+    }
+
+    // Base (desktop) update: reflect immediately in local state.
+    this.designProperties = applyTo(this.designProperties) as DesignProperties;
+
+    if (this._responsiveEnabled) {
+      const current: ResponsiveDesignProperties = this.responsiveDesign || { base: {} };
+      const base = applyTo(current.base);
+      this.responsiveDesign = { ...current, base } as ResponsiveDesignProperties;
+      this._emit({ ...normalized, design: { ...current, base: withExplicitClears(base) } });
+      return;
+    }
+
+    this._emit(normalized);
+  }
+
+  private _updateProperty(property: DesignKey, value: unknown): void {
+    this._applyUpdates({ [property]: value } as Partial<DesignProperties>);
+  }
+
+  private _clearProperties(properties: readonly DesignKey[]): void {
+    const updates: Record<string, undefined> = {};
+    for (const key of properties) updates[key] = undefined;
+    this._applyUpdates(updates as Partial<DesignProperties>);
+  }
+
+  private _updateSpacing(type: SpacingType, side: Side, value: string): void {
+    const locked = type === 'margin' ? this._marginLocked : this._paddingLocked;
+    if (locked && side !== 'top') return; // other sides are disabled while locked
+
+    const updates: Record<string, string> = {};
+    if (locked) {
+      for (const s of SIDES) updates[`${type}_${s}`] = value;
     } else {
+      updates[`${type}_${side}`] = value;
+    }
+    this._applyUpdates(updates as Partial<DesignProperties>);
+  }
+
+  private _toggleSpacingLock(type: SpacingType): void {
+    const wasLocked = type === 'margin' ? this._marginLocked : this._paddingLocked;
+    const locked = !wasLocked;
+    if (type === 'margin') this._marginLocked = locked;
+    else this._paddingLocked = locked;
+
+    // Locking mirrors the Top value onto the other sides in a single update.
+    if (locked) {
+      const effective = this._getEffectiveDesign();
+      const topValue = (effective as any)[`${type}_top`] ?? '';
+      const updates: Record<string, string> = {};
+      for (const s of SIDES) updates[`${type}_${s}`] = topValue;
+      this._applyUpdates(updates as Partial<DesignProperties>);
     }
   }
 
-  /**
-   * Clear only the surface chrome (background, border, radius, shadow, blur) so
-   * the active Ultra Card theme's `--uc-*` fallbacks take over again. Text,
-   * spacing, sizing, position and animations are left alone.
-   */
+  private _resetSection(section: DesignSectionId): void {
+    this._clearProperties(DESIGN_SECTION_PROPERTIES[section]);
+  }
+
   private _resetToTheme(): void {
-    const resetProperties: Record<string, undefined> = {
-      background_color: undefined,
-      background_image: undefined,
-      background_image_type: undefined,
-      background_image_entity: undefined,
-      background_size: undefined,
-      background_repeat: undefined,
-      background_position: undefined,
-      background_filter: undefined,
-      backdrop_filter: undefined,
-      border_radius: undefined,
-      border_style: undefined,
-      border_width: undefined,
-      border_color: undefined,
-      box_shadow_h: undefined,
-      box_shadow_v: undefined,
-      box_shadow_blur: undefined,
-      box_shadow_spread: undefined,
-      box_shadow_color: undefined,
-    };
-
-    const next = { ...(this.designProperties || {}) } as Record<string, unknown>;
-    for (const key of Object.keys(resetProperties)) delete next[key];
-    this.designProperties = next as any;
-    this.requestUpdate();
-
-    if (this.onUpdate) {
-      try {
-        this.onUpdate(resetProperties);
-      } catch (error) {
-        console.error('🔄 GlobalDesignTab: Reset to theme callback error:', error);
-      }
-    } else {
-      this.dispatchEvent(
-        new CustomEvent('design-changed', { detail: resetProperties, bubbles: true, composed: true })
-      );
-    }
-
-    setTimeout(() => this.requestUpdate(), 50);
+    this._clearProperties(THEME_SURFACE_PROPERTIES);
   }
 
   private _resetAllDesign(): void {
-    // Reset all design properties to undefined values
-
-    const resetProperties: Record<string, undefined> = {
-      // Text properties
-      color: undefined,
-      text_align: undefined,
-      font_size: undefined,
-      line_height: undefined,
-      letter_spacing: undefined,
-      font_family: undefined,
-      font_weight: undefined,
-      text_transform: undefined,
-      font_style: undefined,
-      white_space: undefined,
-      // Background properties
-      background_color: undefined,
-      background_image: undefined,
-      background_image_type: undefined,
-      background_image_entity: undefined,
-      backdrop_filter: undefined,
-      // Size properties
-      width: undefined,
-      height: undefined,
-      max_width: undefined,
-      max_height: undefined,
-      min_width: undefined,
-      min_height: undefined,
-      // Spacing properties
-      margin_top: undefined,
-      margin_bottom: undefined,
-      margin_left: undefined,
-      margin_right: undefined,
-      padding_top: undefined,
-      padding_bottom: undefined,
-      padding_left: undefined,
-      padding_right: undefined,
-      // Border properties
-      border_radius: undefined,
-      border_style: undefined,
-      border_width: undefined,
-      border_color: undefined,
-      // Position properties
-      position: undefined,
-      top: undefined,
-      bottom: undefined,
-      left: undefined,
-      right: undefined,
-      z_index: undefined,
-      // Shadow properties
-      text_shadow_h: undefined,
-      text_shadow_v: undefined,
-      text_shadow_blur: undefined,
-      text_shadow_color: undefined,
-      box_shadow_h: undefined,
-      box_shadow_v: undefined,
-      box_shadow_blur: undefined,
-      box_shadow_spread: undefined,
-      box_shadow_color: undefined,
-      // Other properties
-      overflow: undefined,
-      clip_path: undefined,
-      // Animation properties
-      animation_type: undefined,
-      animation_entity: undefined,
-      animation_trigger_type: undefined,
-      animation_attribute: undefined,
-      animation_state: undefined,
-      animation_duration: undefined,
-      animation_delay: undefined,
-      animation_timing: undefined,
-      // Intro/outro animation properties
-      intro_animation: undefined,
-      outro_animation: undefined,
-      intro_animation_duration: undefined,
-      intro_animation_delay: undefined,
-      intro_animation_timing: undefined,
-    };
-
-    // Update local state immediately so UI reflects the reset
-    // IMPORTANT: Create a clean empty object rather than setting properties to undefined
-    this.designProperties = {} as any;
-    this.requestUpdate();
-
-    // Use callback if provided (module integration), otherwise use event (row/column integration)
-    if (this.onUpdate) {
-      try {
-        this.onUpdate(resetProperties);
-      } catch (error) {
-        console.error('🔄 GlobalDesignTab: Reset all callback error:', error);
-      }
-    } else {
-      // Dispatch event for event-listener based integrations
-      const event = new CustomEvent('design-changed', {
-        detail: resetProperties,
-        bubbles: true,
-        composed: true,
-      });
-      const dispatched = this.dispatchEvent(event);
-    }
-
-    // Force component re-render to update UI indicators after a small delay
-    this.requestUpdate();
-
-    // Schedule another update to ensure UI indicators refresh after parent updates designProperties
-    setTimeout(() => {
-      this.requestUpdate();
-    }, 50);
+    const keys: DesignKey[] = [];
+    for (const section of RESET_ALL_SECTIONS) keys.push(...DESIGN_SECTION_PROPERTIES[section]);
+    this._clearProperties(keys);
   }
 
-  /**
-   * Toggle responsive overrides mode
-   */
-  private _toggleResponsiveMode(e: Event): void {
-    const target = e.target as HTMLInputElement;
-    this._responsiveEnabled = target.checked;
+  // ---------------------------------------------------------------------------
+  // Responsive mode
+  // ---------------------------------------------------------------------------
 
-    // Default to desktop when enabling
-    if (this._responsiveEnabled) {
-      this._selectedDevice = 'desktop';
-    }
+  private _setResponsiveEnabled(enabled: boolean): void {
+    if (enabled === this._responsiveEnabled) return;
+    this._responsiveEnabled = enabled;
+    if (enabled) this._selectedDevice = 'desktop';
 
-    this.requestUpdate();
-
-    // Dispatch event to notify parent
     this.dispatchEvent(
       new CustomEvent('responsive-mode-changed', {
-        detail: { enabled: this._responsiveEnabled },
+        detail: { enabled },
         bubbles: true,
         composed: true,
       })
     );
   }
 
-  /**
-   * Handle device selection change from the device selector
-   */
   private _handleDeviceChange(e: CustomEvent): void {
     this._selectedDevice = e.detail.device;
-    this.requestUpdate();
-
-    // Dispatch event to notify parent of device change
     this.dispatchEvent(
       new CustomEvent('device-changed', {
         detail: { device: this._selectedDevice },
@@ -1274,48 +760,23 @@ export class GlobalDesignTab extends LitElement {
     );
   }
 
-  /**
-   * Reset overrides for the current device
-   */
+  /** Clear every override for the selected (non-desktop) device. */
   private _resetCurrentDeviceOverrides(): void {
-    if (this._selectedDevice === 'desktop') return; // Can't reset desktop (it's the base)
+    if (this._selectedDevice === 'desktop') return;
 
-    // Get the base design without the device overrides
     const clearedDesign = responsiveDesignService.clearDeviceOverrides(
       this.responsiveDesign,
       this._selectedDevice
     );
 
-    // IMPORTANT: The parent handler merges by iterating Object.entries(incomingDesign).
-    // If the device key is simply missing, it won't be removed from existing design.
-    // We must explicitly set the device key to undefined so the parent deletes it.
-    const designUpdate: { design: ResponsiveDesignProperties } = {
-      design: {
-        ...clearedDesign,
-        [this._selectedDevice]: undefined,
-      } as ResponsiveDesignProperties,
-    };
-
-    // OPTIMISTIC UPDATE: Update local responsiveDesign immediately so the
-    // device selector icons update instantly, before the async config update completes.
-    // This provides immediate visual feedback to the user.
+    // Optimistic local update so the device selector badges refresh instantly.
     this.responsiveDesign = clearedDesign as ResponsiveDesignProperties;
-    this.requestUpdate();
 
-    // Update using the same pattern as other update methods
-    if (this.onUpdate) {
-      this.onUpdate(designUpdate as any);
-    } else {
-      this.dispatchEvent(
-        new CustomEvent('design-changed', {
-          detail: designUpdate,
-          bubbles: true,
-          composed: true,
-        })
-      );
-    }
+    // The parent merges by key; the device key must be explicitly undefined to be removed.
+    this._emit({
+      design: { ...clearedDesign, [this._selectedDevice]: undefined },
+    });
 
-    // Dispatch device-changed event to notify parent components for UI sync
     this.dispatchEvent(
       new CustomEvent('device-changed', {
         detail: { device: this._selectedDevice, reset: true },
@@ -1325,3009 +786,1585 @@ export class GlobalDesignTab extends LitElement {
     );
   }
 
-  /**
-   * Check if a section has device-specific overrides for the current device
-   */
-  private _sectionHasDeviceOverrides(properties: string[]): boolean {
-    if (!this._responsiveEnabled || this._selectedDevice === 'desktop') return false;
-    if (!this.responsiveDesign) return false;
+  private get _isDeviceMode(): boolean {
+    return this._responsiveEnabled && this._selectedDevice !== 'desktop';
+  }
 
-    const deviceDesign = this.responsiveDesign[this._selectedDevice];
+  private _deviceHasOverrides(device: DeviceBreakpoint, properties: readonly DesignKey[]): boolean {
+    const deviceDesign = this.responsiveDesign?.[device];
     if (!deviceDesign) return false;
-
-    return properties.some(prop => {
-      const value = (deviceDesign as any)[prop];
-      return value !== undefined && value !== null && value !== '';
-    });
+    return properties.some(prop => hasValue((deviceDesign as any)[prop]));
   }
 
-  /**
-   * Check if ANY section has device overrides for non-desktop devices
-   */
-  private _hasAnyDeviceOverridesForSection(properties: string[]): boolean {
-    if (!this.responsiveDesign) return false;
-
-    const devices: DeviceBreakpoint[] = ['laptop', 'tablet', 'mobile'];
-    return devices.some(device => {
-      const deviceDesign = this.responsiveDesign?.[device];
-      if (!deviceDesign) return false;
-      return properties.some(prop => {
-        const value = (deviceDesign as any)[prop];
-        return value !== undefined && value !== null && value !== '';
-      });
-    });
+  /** True when any non-desktop device overrides one of `properties`. */
+  private _anyDeviceHasOverrides(properties: readonly DesignKey[]): boolean {
+    return (['laptop', 'tablet', 'mobile'] as DeviceBreakpoint[]).some(device =>
+      this._deviceHasOverrides(device, properties)
+    );
   }
 
-  /**
-   * Get informational text about the current device selection
-   */
-  private _getDeviceInfoText(): string {
-    switch (this._selectedDevice) {
-      case 'desktop':
-        return `Desktop (≥${DEVICE_BREAKPOINTS.desktop.minWidth}px) - Base styles for all devices.`;
-      case 'laptop':
-        return `Laptop (${DEVICE_BREAKPOINTS.laptop.minWidth}px - ${DEVICE_BREAKPOINTS.laptop.maxWidth}px) - Overrides desktop styles.`;
-      case 'tablet':
-        return `Tablet (${DEVICE_BREAKPOINTS.tablet.minWidth}px - ${DEVICE_BREAKPOINTS.tablet.maxWidth}px) - Overrides desktop styles.`;
-      case 'mobile':
-        return `Mobile (≤${DEVICE_BREAKPOINTS.mobile.maxWidth}px) - Overrides desktop styles.`;
-      default:
-        return '';
-    }
-  }
+  /** Base (desktop) values merged with the selected device's overrides. */
+  private _getEffectiveDesign(): DesignProperties {
+    if (!this._responsiveEnabled) return this.designProperties;
 
-  /**
-   * Get the effective design value for a property based on current device.
-   * For desktop (base), returns the base value.
-   * For other devices, returns device-specific override if exists, otherwise base value.
-   */
-  private _getEffectiveValue(property: keyof DesignProperties): any {
-    // If not in responsive mode, just use designProperties
-    if (!this._responsiveEnabled) {
-      return this.designProperties[property];
-    }
-
-    // Get base/desktop value
-    const baseValue = this.responsiveDesign?.base?.[property] ?? this.designProperties[property];
-
-    // For desktop, return base value
-    if (this._selectedDevice === 'desktop') {
-      return baseValue;
-    }
-
-    // For other devices, check for device-specific override
-    const deviceValue = this.responsiveDesign?.[this._selectedDevice]?.[property];
-
-    // Return device value if it exists (including empty string which means "cleared")
-    // Only fall back to base if truly undefined
-    if (deviceValue !== undefined) {
-      return deviceValue;
-    }
-
-    // Show base value as placeholder/inherited (return empty to show inheritance)
-    // Actually, for better UX, show the inherited value
-    return baseValue;
-  }
-
-  /**
-   * Get the device-specific value only (not merged with base).
-   * Used to check if a device has an override for a property.
-   */
-  private _getDeviceOnlyValue(property: keyof DesignProperties): any {
-    if (!this._responsiveEnabled || this._selectedDevice === 'desktop') {
-      return undefined;
-    }
-    return this.responsiveDesign?.[this._selectedDevice]?.[property];
-  }
-
-  /**
-   * Get effective design properties for the currently selected device.
-   * Merges base (desktop) values with device-specific overrides.
-   */
-  private _getEffectiveDesignForCurrentDevice(): DesignProperties {
-    // Start with the flat designProperties as base
-    const base = { ...this.designProperties };
-
-    // If we have responsive design data, merge in the base values
+    const base: Record<string, unknown> = { ...this.designProperties };
     if (this.responsiveDesign?.base) {
-      Object.assign(base, this.responsiveDesign.base);
-    }
-
-    // For desktop, just return the base
-    if (this._selectedDevice === 'desktop') {
-      return base;
-    }
-
-    // For other devices, merge in device-specific overrides
-    const deviceOverrides = this.responsiveDesign?.[this._selectedDevice];
-    if (deviceOverrides) {
-      // Only merge non-undefined values (so cleared values show as empty)
-      for (const [key, value] of Object.entries(deviceOverrides)) {
-        if (value !== undefined) {
-          (base as any)[key] = value;
-        }
+      for (const [key, value] of Object.entries(this.responsiveDesign.base)) {
+        if (RESPONSIVE_KEYS.includes(key as any)) continue;
+        if (value !== undefined) base[key] = value;
       }
     }
+    if (this._selectedDevice === 'desktop') return base as DesignProperties;
 
-    return base;
-  }
-
-  private _clearClipboard(): void {
-    this._clipboardProperties = null;
-    this._clearClipboardFromStorage();
-    this.requestUpdate();
-  }
-
-  private async _handleBackgroundImageUpload(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !this.hass) return;
-
-    try {
-      const imagePath = await uploadImage(this.hass, file);
-      const updates = {
-        background_image: imagePath,
-        background_image_type: 'upload' as const,
-      };
-
-      // Update local state immediately so UI reflects the change (matches _updateProperty behavior)
-      this.designProperties = { ...(this.designProperties || {}), ...updates } as any;
-      this.requestUpdate();
-
-      // Use callback if provided (module integration), otherwise use event (row/column integration)
-      if (this.onUpdate) {
-        this.onUpdate(updates);
-      } else {
-        // Dispatch event for event-listener based integrations
-        this.dispatchEvent(
-          new CustomEvent('design-changed', {
-            detail: updates,
-            bubbles: true,
-            composed: true,
-          })
-        );
+    const overrides = this.responsiveDesign?.[this._selectedDevice];
+    if (overrides) {
+      for (const [key, value] of Object.entries(overrides)) {
+        if (value !== undefined) base[key] = value;
       }
-    } catch (error) {
-      console.error('Background image upload failed:', error);
-      ucToastService.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+    return base as DesignProperties;
   }
 
-  private _truncatePath(path: string): string {
-    if (!path) return '';
-    const maxLength = 30;
-    if (path.length <= maxLength) return path;
-    return '...' + path.slice(-maxLength + 3);
+  private _deviceLabel(device: DeviceBreakpoint): string {
+    return this._t(`device_${device}`, DEVICE_BREAKPOINTS[device].label);
   }
 
-  private _getStateValueHint(entityId: string): string {
-    if (!this.hass || !entityId) {
-      return 'Enter the state value to trigger animation';
+  private _getDeviceInfoText(): string {
+    const device = this._selectedDevice;
+    if (device === 'desktop') {
+      return this._t(
+        'device_desktop_info',
+        'Desktop is the base. Changes here apply to all devices unless overridden.'
+      );
     }
-
-    const entity = this.hass.states[entityId];
-    if (!entity) {
-      return 'Entity not found';
-    }
-
-    if (entity.state && entity.state !== 'unknown' && entity.state !== 'unavailable') {
-      return `Current state: ${entity.state}`;
-    }
-
-    return 'Enter the state value to trigger animation';
+    const bp = DEVICE_BREAKPOINTS[device] as { minWidth?: number; maxWidth?: number };
+    const range =
+      bp.minWidth !== undefined && bp.maxWidth !== undefined
+        ? `${bp.minWidth}–${bp.maxWidth}px`
+        : bp.maxWidth !== undefined
+          ? `≤${bp.maxWidth}px`
+          : `≥${bp.minWidth}px`;
+    return this._t('device_override_info', '{device} ({range}) overrides the desktop styles.', {
+      device: this._deviceLabel(device),
+      range,
+    });
   }
 
-  private _getAttributeNameHint(entityId: string): string {
-    if (!this.hass || !entityId) {
-      return 'Enter the attribute name to monitor';
-    }
+  // ---------------------------------------------------------------------------
+  // Section state helpers
+  // ---------------------------------------------------------------------------
 
-    const entity = this.hass.states[entityId];
-    if (!entity || !entity.attributes) {
-      return 'Entity not found or has no attributes';
-    }
-
-    const availableAttributes = Object.keys(entity.attributes)
-      .filter(key => !key.startsWith('_') && typeof entity.attributes[key] !== 'object')
-      .slice(0, 3);
-
-    if (availableAttributes.length > 0) {
-      return `Available attributes: ${availableAttributes.join(', ')}${
-        Object.keys(entity.attributes).length > 3 ? ', ...' : ''
-      }`;
-    }
-
-    return 'Enter the attribute name to monitor';
+  /** Base design has at least one real value in this section. */
+  private _hasModifiedProperties(section: DesignSectionId): boolean {
+    const props = this.designProperties || {};
+    return DESIGN_SECTION_PROPERTIES[section].some(key => isSet(key, (props as any)[key]));
   }
 
-  private _getAttributeValueHint(entityId: string, attributeName: string): string {
-    if (!this.hass || !entityId) {
-      return 'Enter the attribute value to trigger animation';
-    }
-
-    if (!attributeName) {
-      return 'Select an attribute first';
-    }
-
-    const entity = this.hass.states[entityId];
-    if (!entity || !entity.attributes) {
-      return 'Entity not found or has no attributes';
-    }
-
-    const attributeValue = entity.attributes[attributeName];
-    if (attributeValue !== null && attributeValue !== undefined) {
-      const valueStr = String(attributeValue);
-      const displayValue = valueStr.length > 30 ? `${valueStr.slice(0, 27)}...` : valueStr;
-      return `Current value: ${displayValue}`;
-    }
-
-    return 'Attribute not found - check the attribute name';
-  }
-
-  private _hasModifiedProperties(section: string): boolean {
-    const props = this.designProperties;
-
-    // Helper function to check if a value is actually set (not undefined, null, or empty string)
-    const hasValue = (value: any): boolean => {
-      return value !== undefined && value !== null && value !== '';
-    };
-
-    switch (section) {
-      case 'text':
-        return !!(
-          hasValue(props.color) ||
-          hasValue(props.text_align) ||
-          hasValue(props.font_size) ||
-          hasValue(props.line_height) ||
-          hasValue(props.letter_spacing) ||
-          hasValue(props.font_family) ||
-          hasValue(props.font_weight) ||
-          hasValue(props.text_transform) ||
-          hasValue(props.font_style) ||
-          hasValue(props.white_space)
-        );
-      case 'background':
-        return !!(
-          hasValue(props.background_color) ||
-          hasValue(props.background_image) ||
-          hasValue(props.background_image_type) ||
-          hasValue(props.background_image_entity) ||
-          hasValue(props.background_size) ||
-          hasValue(props.background_repeat) ||
-          hasValue(props.background_position) ||
-          hasValue(props.backdrop_filter)
-        );
-      case 'sizes':
-        return !!(
-          hasValue(props.width) ||
-          hasValue(props.height) ||
-          hasValue(props.max_width) ||
-          hasValue(props.max_height) ||
-          hasValue(props.min_width) ||
-          hasValue(props.min_height)
-        );
-      case 'spacing':
-        return !!(
-          hasValue(props.margin_top) ||
-          hasValue(props.margin_bottom) ||
-          hasValue(props.margin_left) ||
-          hasValue(props.margin_right) ||
-          hasValue(props.padding_top) ||
-          hasValue(props.padding_bottom) ||
-          hasValue(props.padding_left) ||
-          hasValue(props.padding_right)
-        );
-      case 'border':
-        return !!(
-          hasValue(props.border_radius) ||
-          hasValue(props.border_style) ||
-          hasValue(props.border_width) ||
-          hasValue(props.border_color)
-        );
-      case 'position':
-        return !!(
-          hasValue(props.position) ||
-          hasValue(props.top) ||
-          hasValue(props.bottom) ||
-          hasValue(props.left) ||
-          hasValue(props.right) ||
-          hasValue(props.z_index)
-        );
-      case 'shadows':
-        return !!(
-          hasValue(props.text_shadow_h) ||
-          hasValue(props.text_shadow_v) ||
-          hasValue(props.text_shadow_blur) ||
-          hasValue(props.text_shadow_color) ||
-          hasValue(props.box_shadow_h) ||
-          hasValue(props.box_shadow_v) ||
-          hasValue(props.box_shadow_blur) ||
-          hasValue(props.box_shadow_spread) ||
-          hasValue(props.box_shadow_color)
-        );
-      case 'effects':
-        return !!(hasValue(props.overflow) || hasValue(props.clip_path));
-      case 'overflow':
-        return !!(hasValue(props.overflow) || hasValue(props.clip_path));
-      case 'transform-3d':
-        return !!(
-          hasValue(props.transform_perspective) ||
-          hasValue(props.transform_rotate_x) ||
-          hasValue(props.transform_rotate_y) ||
-          hasValue(props.transform_rotate_z)
-        );
-      case 'animations':
-        return !!(
-          hasValue(props.animation_type) ||
-          hasValue(props.animation_entity) ||
-          hasValue(props.animation_trigger_type) ||
-          hasValue(props.animation_attribute) ||
-          hasValue(props.animation_state) ||
-          hasValue(props.animation_duration) ||
-          hasValue(props.animation_delay) ||
-          hasValue(props.animation_timing) ||
-          hasValue(props.intro_animation) ||
-          hasValue(props.outro_animation) ||
-          hasValue(props.intro_animation_duration) ||
-          hasValue(props.intro_animation_delay) ||
-          hasValue(props.intro_animation_timing)
-        );
-      case 'custom_targeting':
-        return !!(
-          hasValue(props.css_variable_prefix) ||
-          hasValue(props.extra_class) ||
-          hasValue(props.element_id)
-        );
-      default:
-        return false;
-    }
+  private _toggleSection(section: string): void {
+    const next = new Set<string>();
+    // Exclusive accordion: opening a section closes the others.
+    if (!this._expandedSections.has(section)) next.add(section);
+    this._expandedSections = next;
   }
 
   private _loadGoogleFont(fontFamily?: string): void {
-    if (!fontFamily || fontFamily === '') {
-      return; // Don't load fonts for default/empty selection
-    }
+    if (!fontFamily) return;
+    if (WEB_SAFE_FONTS.some(font => font.value === fontFamily)) return;
 
-    // Check if it's a web-safe font (contains comma)
-    if (WEB_SAFE_FONTS.some(font => font.value === fontFamily)) {
-      return; // Don't load Google Fonts for web-safe fonts
-    }
+    const family = fontFamily.replace(/\s+/g, '+');
+    if (document.querySelector(`link[href*="${family}"]`)) return;
 
-    // Check if font is already loaded
-    const existingLink = document.querySelector(`link[href*="${fontFamily.replace(/\s+/g, '+')}"]`);
-    if (existingLink) {
-      return;
-    }
-
-    // Create and append Google Fonts link
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, '+')}:wght@300;400;500;600;700&display=swap`;
+    link.href = `https://fonts.googleapis.com/css2?family=${family}:wght@300;400;500;600;700&display=swap`;
     document.head.appendChild(link);
   }
 
-  private _renderAccordion(
+  // ---------------------------------------------------------------------------
+  // Input helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Text input handler that pushes the value through `apply` and keeps the
+   * caret where the user left it across the re-render.
+   */
+  private _inputHandler(apply: (value: string) => void): (e: Event) => void {
+    return (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const value = target.value;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+
+      apply(value);
+
+      requestAnimationFrame(() => {
+        if (!target.isConnected) return;
+        if (target.value !== value) target.value = value;
+        if (typeof start === 'number') {
+          target.setSelectionRange(start, end ?? start);
+        }
+      });
+    };
+  }
+
+  /**
+   * Arrow-key stepping for CSS values: Shift = ×10, Alt/Option = ÷10.
+   * Keeps whatever unit the user typed; `fallbackUnit` is only used when the
+   * field is empty (unitless values such as `line-height: 1.5` stay unitless).
+   */
+  private _handleNumericKeydown(
+    event: KeyboardEvent,
+    currentValue: string,
+    updateCallback: (newValue: string) => void,
+    fallbackUnit: string = 'px'
+  ): void {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+
+    const match = (currentValue || '').trim().match(/^(-?\d*\.?\d*)(.*)$/);
+    if (!match) return;
+    event.preventDefault();
+
+    const numStr = match[1];
+    const unit = match[2].trim() || (numStr === '' ? fallbackUnit : '');
+    let num = parseFloat(numStr) || 0;
+
+    let step = 1;
+    if (unit === 'rem' || unit === 'em') step = 0.1;
+    else if (unit === '%') step = 5;
+
+    if (event.shiftKey) step *= 10;
+    else if (event.altKey) step /= 10;
+
+    num += event.key === 'ArrowUp' ? step : -step;
+
+    // Keep at least as many decimals as the user typed (e.g. line-height 1.5 -> 2.5)
+    // and enough to represent the step itself (0.1, 0.01 ...).
+    const typedDecimals = (numStr.split('.')[1] || '').length;
+    const stepDecimals = (String(step).split('.')[1] || '').length;
+    const decimalPlaces = Math.min(4, Math.max(typedDecimals, stepDecimals));
+
+    updateCallback(`${parseFloat(num.toFixed(decimalPlaces))}${unit}`);
+  }
+
+  private _renderResetButton(
+    onClick: () => void,
     title: string,
-    content: TemplateResult,
-    section: string,
-    sectionProperties?: string[] // Optional: properties to check for device overrides
+    enabled: boolean = true
   ): TemplateResult {
+    return html`
+      <button
+        type="button"
+        class="reset-btn"
+        ?disabled=${!enabled}
+        @click=${onClick}
+        title=${title}
+        aria-label=${title}
+      >
+        <ha-icon icon="mdi:refresh"></ha-icon>
+      </button>
+    `;
+  }
+
+  /** Label + text input + reset button. Used for every free-form CSS value. */
+  private _renderTextField(opts: TextFieldOptions): TemplateResult {
+    const { property, label, value, placeholder, numeric, unit, hint, compact } = opts;
+    const current = value || '';
+    const resetTitle = this._t('reset_field', 'Reset {field}', { field: label });
+
+    return html`
+      <div class="property-group">
+        <label>${label}</label>
+        <div class="input-with-reset">
+          <input
+            type="text"
+            class="property-input"
+            .value=${current}
+            placeholder=${placeholder ?? ''}
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label=${label}
+            @input=${this._inputHandler(v => this._updateProperty(property, v))}
+            @keydown=${numeric
+              ? (e: KeyboardEvent) =>
+                  this._handleNumericKeydown(
+                    e,
+                    current,
+                    v => this._updateProperty(property, v),
+                    unit
+                  )
+              : nothing}
+          />
+          ${compact
+            ? nothing
+            : this._renderResetButton(
+                () => this._updateProperty(property, ''),
+                resetTitle,
+                current !== ''
+              )}
+        </div>
+        ${hint ? html`<div class="property-hint">${hint}</div>` : nothing}
+      </div>
+    `;
+  }
+
+  /** HA-native select via UcFormUtils. */
+  private _renderDesignSelect(
+    property: DesignKey,
+    value: string | undefined,
+    options: readonly DesignSelectOption[],
+    onAfterChange?: (value: string) => void
+  ): TemplateResult {
+    const key = String(property);
+    // ha-select never displays an option whose value is '' as selected, so the
+    // "– Default –" choice would render as a blank box. Swap '' for a sentinel
+    // on the way in and back to '' on the way out.
+    const haOptions = options.map(o =>
+      o.value === '' || o.value === undefined ? { ...o, value: DEFAULT_OPTION_SENTINEL } : o
+    );
+    const haValue = value ? value : DEFAULT_OPTION_SENTINEL;
+    return html`
+      <div class="design-ha-select">
+        ${UcFormUtils.renderForm(
+          this.hass!,
+          { [key]: haValue },
+          // Every design select has a neutral first option (Default/None), so
+          // mark it required to hide HA's redundant "clear" (X) button.
+          [{ ...UcFormUtils.select(key, haOptions), required: true }],
+          (e: CustomEvent) => {
+            const raw = e.detail?.value?.[key] ?? '';
+            const next = raw === DEFAULT_OPTION_SENTINEL ? '' : raw;
+            if (onAfterChange) onAfterChange(next);
+            else this._updateProperty(property, next);
+          },
+          false
+        )}
+      </div>
+    `;
+  }
+
+  private _renderSelectField(
+    property: DesignKey,
+    label: string,
+    value: string | undefined,
+    options: readonly DesignSelectOption[],
+    onAfterChange?: (value: string) => void
+  ): TemplateResult {
+    return html`
+      <div class="property-group">
+        <label>${label}</label>
+        ${this._renderDesignSelect(property, value, options, onAfterChange)}
+      </div>
+    `;
+  }
+
+  private _renderColorField(
+    property: DesignKey,
+    label: string,
+    value: string | undefined,
+    defaultValue: string
+  ): TemplateResult {
+    return html`
+      <div class="property-group">
+        <ultra-color-picker
+          .label=${label}
+          .value=${value || ''}
+          .defaultValue=${defaultValue}
+          .hass=${this.hass}
+          @value-changed=${(e: CustomEvent) => this._updateProperty(property, e.detail.value)}
+        ></ultra-color-picker>
+      </div>
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Accordion
+  // ---------------------------------------------------------------------------
+
+  private _renderAccordion(
+    section: DesignSectionId,
+    title: string,
+    content: () => TemplateResult
+  ): TemplateResult {
+    const properties = DESIGN_SECTION_PROPERTIES[section];
     const isExpanded = this._expandedSections.has(section);
     const hasEdits = this._hasModifiedProperties(section);
 
-    // Determine if we should show the device override indicator:
-    // - If on DESKTOP or responsive disabled: show if ANY device has overrides (indicates responsive settings exist)
-    // - If on LAPTOP/TABLET/MOBILE: show only if THIS device has overrides
+    // Desktop / responsive off: flag if any device overrides this section.
+    // Device selected: flag only if THIS device overrides it.
     let hasDeviceOverrides = false;
-    if (sectionProperties && this._responsiveEnabled) {
-      if (this._selectedDevice === 'desktop') {
-        // On desktop, show if any device has overrides for this section
-        hasDeviceOverrides = this._hasAnyDeviceOverridesForSection(sectionProperties);
-      } else {
-        // On other devices, only show if THIS device has overrides
-        hasDeviceOverrides = this._sectionHasDeviceOverrides(sectionProperties);
-      }
+    if (this._responsiveEnabled) {
+      hasDeviceOverrides =
+        this._selectedDevice === 'desktop'
+          ? this._anyDeviceHasOverrides(properties)
+          : this._deviceHasOverrides(this._selectedDevice, properties);
     }
+
+    // The reset button clears what the user is looking at: base values on
+    // desktop, this device's overrides when a device is selected.
+    const deviceMode = this._isDeviceMode;
+    const showReset = deviceMode ? hasDeviceOverrides : hasEdits;
+    const resetTitle = deviceMode
+      ? this._t('clear_section_device_overrides', 'Clear {device} overrides for {section}', {
+          device: this._deviceLabel(this._selectedDevice),
+          section: title,
+        })
+      : this._t('reset_section', 'Reset {section} to default', { section: title });
 
     return html`
       <div class="accordion-section ${hasDeviceOverrides ? 'has-device-overrides' : ''}">
         <div class="accordion-header ${isExpanded ? 'expanded' : ''}">
-          <button class="accordion-toggle" @click=${() => this._toggleSection(section)}>
+          <button
+            type="button"
+            class="accordion-toggle"
+            aria-expanded=${isExpanded ? 'true' : 'false'}
+            @click=${() => this._toggleSection(section)}
+          >
             <span class="accordion-title">
               ${title}
               ${hasEdits
-                ? html`<span class="edit-indicator" title="Has modifications"></span>`
-                : ''}
+                ? html`<span
+                    class="edit-indicator"
+                    title=${this._t('has_modifications', 'Has modifications')}
+                  ></span>`
+                : nothing}
               ${hasDeviceOverrides
-                ? html`<span class="device-override-indicator" title="Has responsive overrides"
+                ? html`<span
+                    class="device-override-indicator"
+                    title=${this._t('has_responsive_overrides', 'Has responsive overrides')}
                     ><ha-icon icon="mdi:cellphone-link"></ha-icon
                   ></span>`
-                : ''}
+                : nothing}
             </span>
           </button>
           <div class="accordion-actions">
-            ${hasEdits
+            ${showReset
               ? html`
                   <button
+                    type="button"
                     class="reset-button"
+                    title=${resetTitle}
+                    aria-label=${resetTitle}
                     @click=${(e: Event) => {
                       e.stopPropagation();
                       this._resetSection(section);
                     }}
-                    title="Reset ${title} settings to default"
                   >
                     <ha-icon icon="mdi:refresh"></ha-icon>
                   </button>
                 `
-              : ''}
-            <button class="expand-button" @click=${() => this._toggleSection(section)}>
+              : nothing}
+            <button
+              type="button"
+              class="expand-button"
+              tabindex="-1"
+              aria-hidden="true"
+              @click=${() => this._toggleSection(section)}
+            >
               <ha-icon icon="mdi:chevron-${isExpanded ? 'up' : 'down'}"></ha-icon>
             </button>
           </div>
         </div>
-        ${isExpanded ? html`<div class="accordion-content">${content}</div>` : ''}
+        ${isExpanded ? html`<div class="accordion-content">${content()}</div>` : nothing}
       </div>
     `;
   }
 
-  protected override render(): TemplateResult {
-    const lang = this.hass?.locale?.language || 'en';
-    const designSelectOptions = getDesignSelectOptions(lang);
-    const hasAnyDeviceOverrides =
-      this.responsiveDesign &&
-      responsiveDesignService.hasAnyResponsiveOverrides(this.responsiveDesign);
-    const hasCurrentDeviceOverrides =
-      this._responsiveEnabled &&
-      this._selectedDevice !== 'desktop' &&
-      this.responsiveDesign &&
-      responsiveDesignService.hasDeviceOverrides(this.responsiveDesign, this._selectedDevice);
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
-    // Compute effective design values for the current device
-    // This ensures inputs show the correct values when switching devices
-    const effectiveDesign: DesignProperties = this._responsiveEnabled
-      ? this._getEffectiveDesignForCurrentDevice()
-      : this.designProperties;
+  protected override render(): TemplateResult {
+    const d = this._getEffectiveDesign();
+    const options = getDesignSelectOptions(this._lang);
+
+    const sections: Record<DesignSectionId, { title: string; render: () => TemplateResult }> = {
+      text: {
+        title: this._t('text_section', 'Text'),
+        render: () => this._renderTextSection(d, options),
+      },
+      background: {
+        title: this._t('background_section', 'Background'),
+        render: () => this._renderBackgroundSection(d, options),
+      },
+      sizes: {
+        title: this._t('sizes_section', 'Sizes'),
+        render: () => this._renderSizesSection(d),
+      },
+      spacing: {
+        title: this._t('spacing_section', 'Spacing'),
+        render: () => this._renderSpacingSection(d),
+      },
+      border: {
+        title: this._t('border_section', 'Border'),
+        render: () => this._renderBorderSection(d, options),
+      },
+      position: {
+        title: this._t('position_section', 'Position'),
+        render: () => this._renderPositionSection(d, options),
+      },
+      'text-shadow': {
+        title: this._t('text_shadow_section', 'Text Shadow'),
+        render: () => this._renderTextShadowSection(d),
+      },
+      'box-shadow': {
+        title: this._t('box_shadow_section', 'Box Shadow'),
+        render: () => this._renderBoxShadowSection(d),
+      },
+      overflow: {
+        title: this._t('overflow_section', 'Overflow'),
+        render: () => this._renderOverflowSection(d, options),
+      },
+      'transform-3d': {
+        title: this._t('transform_3d_section', '3D Transform'),
+        render: () => this._renderTransformSection(d),
+      },
+      animations: {
+        title: this._t('animations_section', 'Animations'),
+        render: () => this._renderAnimationsSection(d, options),
+      },
+      custom_targeting: {
+        title: this._t('custom_targeting_section', 'Custom Targeting'),
+        render: () => this._renderCustomTargetingSection(d),
+      },
+    };
 
     return html`
       <div class="global-design-tab">
-        <!-- Design Actions Toolbar -->
-        <div class="design-toolbar">
-          <button
-            class="toolbar-button copy-button"
-            @click=${this._copyDesign}
-            title="${localize(
-              'editor.design.copy_tooltip',
-              lang,
-              'Copy current design settings (works across all Ultra Cards)'
-            )}"
-          >
-            <ha-icon icon="mdi:content-copy"></ha-icon>
-            <span>${localize('editor.design.copy', lang, 'Copy')}</span>
-          </button>
+        ${this._renderToolbar()} ${this._renderResponsiveSection()}
+        ${SECTION_ORDER.map(id => this._renderAccordion(id, sections[id].title, sections[id].render))}
+      </div>
+    `;
+  }
 
-          <button
-            class="toolbar-button paste-button ${this._clipboardProperties ? 'has-content' : ''}"
-            @click=${this._pasteDesign}
-            ?disabled=${!this._clipboardProperties}
-            title="${this._clipboardProperties
-              ? localize(
-                  'editor.design.paste_tooltip_has',
-                  lang,
-                  'Paste copied design settings (from cross-card clipboard)'
-                )
-              : localize(
-                  'editor.design.paste_tooltip_none',
-                  lang,
-                  'No design settings in cross-card clipboard'
-                )}"
-          >
-            <ha-icon icon="mdi:content-paste"></ha-icon>
-            <span>${localize('editor.design.paste', lang, 'Paste')}</span>
-          </button>
+  private _renderToolbar(): TemplateResult {
+    const hasClipboard = !!this._clipboardProperties;
+    return html`
+      <div class="design-toolbar" role="toolbar">
+        <button
+          type="button"
+          class="toolbar-button copy-button"
+          @click=${this._copyDesign}
+          title=${this._t('copy_tooltip', 'Copy current design settings (works across all Ultra Cards)')}
+        >
+          <ha-icon icon="mdi:content-copy"></ha-icon>
+          <span>${this._t('copy', 'Copy')}</span>
+        </button>
 
-          <button
-            class="toolbar-button reset-theme-button"
-            @click=${this._resetToTheme}
-            title="${localize(
-              'editor.design.reset_to_theme_tooltip',
-              lang,
-              'Clear background, border, radius and shadow so this element follows the active Ultra Card theme'
-            )}"
-          >
-            <ha-icon icon="mdi:palette-swatch-outline"></ha-icon>
-            <span>${localize('editor.design.reset_to_theme', lang, 'Reset to Theme')}</span>
-          </button>
+        <button
+          type="button"
+          class="toolbar-button paste-button ${hasClipboard ? 'has-content' : ''}"
+          @click=${this._pasteDesign}
+          ?disabled=${!hasClipboard}
+          title=${hasClipboard
+            ? this._t('paste_tooltip_has', 'Paste copied design settings (from cross-card clipboard)')
+            : this._t('paste_tooltip_none', 'No design settings in cross-card clipboard')}
+        >
+          <ha-icon icon="mdi:content-paste"></ha-icon>
+          <span>${this._t('paste', 'Paste')}</span>
+        </button>
 
-          <button
-            class="toolbar-button reset-all-button"
-            @click=${this._resetAllDesign}
-            title="${localize(
-              'editor.design.reset_all_tooltip',
-              lang,
-              'Reset all design settings to default'
-            )}"
-          >
-            <ha-icon icon="mdi:refresh"></ha-icon>
-            <span>${localize('editor.design.reset_all', lang, 'Reset All')}</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          class="toolbar-button reset-theme-button"
+          @click=${this._resetToTheme}
+          title=${this._t(
+            'reset_to_theme_tooltip',
+            'Clear background, border, radius and shadow so this element follows the active Ultra Card theme'
+          )}
+        >
+          <ha-icon icon="mdi:palette-swatch-outline"></ha-icon>
+          <span>${this._t('reset_to_theme', 'Reset to Theme')}</span>
+        </button>
 
-        <!-- Responsive Design Toggle & Device Selector -->
-        <div class="responsive-design-section ${this._responsiveEnabled ? 'enabled' : ''}">
-          <div class="responsive-header">
-            <div class="responsive-title">
-              <ha-icon icon="mdi:responsive"></ha-icon>
-              <span>${localize('editor.design.responsive_overrides', lang, 'Responsive Overrides')}</span>
-              ${hasAnyDeviceOverrides
-                ? html`<span class="has-overrides-badge" title="Has device-specific overrides"
-                    >●</span
-                  >`
-                : ''}
-            </div>
-            <div class="responsive-toggle">
-              ${UcFormUtils.renderForm(
-                this.hass!,
-                { _responsive_enabled: this._responsiveEnabled },
-                [UcFormUtils.boolean('_responsive_enabled')],
-                (e: CustomEvent) => {
-                  const checked = !!e.detail.value._responsive_enabled;
-                  // Mirror the original handler shape: toggle by current state.
-                  // _toggleResponsiveMode doesn't read the event so passing the
-                  // synthetic checked value through a no-op event is fine.
-                  if (checked !== this._responsiveEnabled) {
-                    this._toggleResponsiveMode(new Event('change'));
-                  }
-                },
-                false
-              )}
-            </div>
+        <button
+          type="button"
+          class="toolbar-button reset-all-button"
+          @click=${this._resetAllDesign}
+          title=${this._t(
+            'reset_all_tooltip',
+            'Reset all design settings to default (Custom Targeting is kept)'
+          )}
+        >
+          <ha-icon icon="mdi:refresh"></ha-icon>
+          <span>${this._t('reset_all', 'Reset All')}</span>
+        </button>
+      </div>
+    `;
+  }
+
+  private _renderResponsiveSection(): TemplateResult {
+    const hasAnyOverrides =
+      !!this.responsiveDesign &&
+      responsiveDesignService.hasAnyResponsiveOverrides(this.responsiveDesign);
+    const hasCurrentDeviceOverrides =
+      this._isDeviceMode &&
+      !!this.responsiveDesign &&
+      responsiveDesignService.hasDeviceOverrides(this.responsiveDesign, this._selectedDevice);
+
+    return html`
+      <div class="responsive-design-section ${this._responsiveEnabled ? 'enabled' : ''}">
+        <div class="responsive-header">
+          <div class="responsive-title">
+            <ha-icon icon="mdi:responsive"></ha-icon>
+            <span>${this._t('responsive_overrides', 'Responsive Overrides')}</span>
+            ${hasAnyOverrides
+              ? html`<span
+                  class="has-overrides-badge"
+                  title=${this._t('has_responsive_overrides', 'Has responsive overrides')}
+                  >●</span
+                >`
+              : nothing}
           </div>
-
-          ${this._responsiveEnabled
-            ? html`
-                <div class="responsive-content">
-                  <uc-device-selector
-                    .selectedDevice=${this._selectedDevice}
-                    .design=${this.responsiveDesign}
-                    .showBaseOption=${false}
-                    @device-changed=${this._handleDeviceChange}
-                  ></uc-device-selector>
-                  <div class="responsive-info">
-                    ${this._selectedDevice === 'desktop'
-                      ? 'Desktop is the default. Changes here apply to all devices unless overridden.'
-                      : this._getDeviceInfoText()}
-                  </div>
-                  ${hasCurrentDeviceOverrides
-                    ? html`
-                        <button
-                          class="reset-device-button"
-                          @click=${this._resetCurrentDeviceOverrides}
-                          title="Clear all overrides for ${this._selectedDevice}"
-                        >
-                          <ha-icon icon="mdi:delete-outline"></ha-icon>
-                          ${localize('editor.design.clear_device_overrides', lang, 'Clear {device} overrides').replace('{device}', this._selectedDevice)}
-                        </button>
-                      `
-                    : ''}
-                </div>
-              `
-            : html`
-                <div class="responsive-disabled-info">
-                  ${localize('editor.design.responsive_hint', lang, 'Enable to set different styles for laptop, tablet, and mobile devices.')}
-                </div>
-              `}
+          <div class="responsive-toggle">
+            ${UcFormUtils.renderForm(
+              this.hass!,
+              { _responsive_enabled: this._responsiveEnabled },
+              [UcFormUtils.boolean('_responsive_enabled')],
+              (e: CustomEvent) => this._setResponsiveEnabled(!!e.detail.value._responsive_enabled),
+              false
+            )}
+          </div>
         </div>
 
-        ${this._renderAccordion(
-          localize('editor.design.text_section', lang, 'Text'),
-          html`
+        ${this._responsiveEnabled
+          ? html`
+              <div class="responsive-content">
+                <uc-device-selector
+                  .selectedDevice=${this._selectedDevice}
+                  .design=${this.responsiveDesign}
+                  .showBaseOption=${false}
+                  @device-changed=${this._handleDeviceChange}
+                ></uc-device-selector>
+                <div class="responsive-info">${this._getDeviceInfoText()}</div>
+                ${hasCurrentDeviceOverrides
+                  ? html`
+                      <button
+                        type="button"
+                        class="reset-device-button"
+                        @click=${this._resetCurrentDeviceOverrides}
+                      >
+                        <ha-icon icon="mdi:delete-outline"></ha-icon>
+                        ${this._t('clear_device_overrides', 'Clear {device} overrides', {
+                          device: this._deviceLabel(this._selectedDevice),
+                        })}
+                      </button>
+                    `
+                  : nothing}
+              </div>
+            `
+          : html`
+              <div class="responsive-disabled-info">
+                ${hasAnyOverrides
+                  ? this._t(
+                      'overrides_active_hidden',
+                      'Device overrides exist and stay active while this is off.'
+                    )
+                  : this._t(
+                      'responsive_hint',
+                      'Enable to set different styles for laptop, tablet, and mobile devices.'
+                    )}
+              </div>
+            `}
+      </div>
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sections
+  // ---------------------------------------------------------------------------
+
+  private _renderTextSection(
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>
+  ): TemplateResult {
+    const alignments = [
+      { value: 'inherit', icon: 'mdi:circle-off-outline' },
+      { value: 'left', icon: 'mdi:format-align-left' },
+      { value: 'center', icon: 'mdi:format-align-center' },
+      { value: 'right', icon: 'mdi:format-align-right' },
+      { value: 'justify', icon: 'mdi:format-align-justify' },
+    ];
+    const currentAlign = d.text_align || 'inherit';
+    const currentFont = d.font_family || '';
+    const isGoogleFont = GOOGLE_FONTS.some(font => font.value === currentFont);
+
+    return html`
+      ${this._renderColorField(
+        'color',
+        this._t('text_color', 'Text Color'),
+        d.color,
+        'var(--primary-text-color)'
+      )}
+
+      <div class="property-group">
+        <label>${this._t('alignment', 'Alignment')}</label>
+        <div class="button-group" role="group" aria-label=${this._t('alignment', 'Alignment')}>
+          ${alignments.map(
+            opt => html`
+              <button
+                type="button"
+                class="property-btn ${currentAlign === opt.value ? 'active' : ''}"
+                aria-pressed=${currentAlign === opt.value ? 'true' : 'false'}
+                title=${opt.value === 'inherit'
+                  ? this._t('inherit_alignment', 'Inherit (no alignment)')
+                  : opt.value}
+                @click=${() =>
+                  this._updateProperty('text_align', opt.value === 'inherit' ? undefined : opt.value)}
+              >
+                <ha-icon icon=${opt.icon}></ha-icon>
+              </button>
+            `
+          )}
+        </div>
+      </div>
+
+      ${this._renderTextField({
+        property: 'font_size',
+        label: this._t('font_size', 'Font Size'),
+        value: d.font_size,
+        numeric: true,
+        placeholder: this._t('font_size_placeholder', '16px (default), 1.2rem, max(1rem, 1.5vw)'),
+      })}
+      ${this._renderTextField({
+        property: 'line_height',
+        label: this._t('line_height', 'Line Height'),
+        value: d.line_height,
+        numeric: true,
+        placeholder: this._t('line_height_placeholder', '0 (default), 28px, 1.7'),
+      })}
+      ${this._renderTextField({
+        property: 'letter_spacing',
+        label: this._t('letter_spacing', 'Letter Spacing'),
+        value: d.letter_spacing,
+        numeric: true,
+        placeholder: this._t('letter_spacing_placeholder', 'auto (default), 1px, -0.04em'),
+      })}
+
+      <div class="property-group">
+        <label>${this._t('font', 'Font')}</label>
+        <select
+          class="property-select"
+          aria-label=${this._t('font', 'Font')}
+          @change=${(e: Event) => {
+            const value = (e.target as HTMLSelectElement).value;
+            this._updateProperty('font_family', value);
+            this._loadGoogleFont(value);
+          }}
+        >
+          <option value="" ?selected=${currentFont === ''}>
+            ${this._t('default_option', '– Default –')}
+          </option>
+          <optgroup label=${this._t('web_safe_fonts', 'Web-safe Fonts')}>
+            ${WEB_SAFE_FONTS.map(
+              font =>
+                html`<option value=${font.value} ?selected=${font.value === currentFont}>
+                  ${font.label}
+                </option>`
+            )}
+          </optgroup>
+          <optgroup label=${this._t('google_fonts', 'Google Fonts')}>
+            ${GOOGLE_FONTS.map(
+              font =>
+                html`<option value=${font.value} ?selected=${font.value === currentFont}>
+                  ${font.label}
+                </option>`
+            )}
+          </optgroup>
+        </select>
+        ${isGoogleFont
+          ? html`
+              <div class="info-box">
+                <ha-icon icon="mdi:information-outline"></ha-icon>
+                <span>
+                  ${this._t(
+                    'google_fonts_warning',
+                    "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations."
+                  )}
+                </span>
+              </div>
+            `
+          : nothing}
+      </div>
+
+      ${this._renderSelectField(
+        'font_weight',
+        this._t('font_weight', 'Font Weight'),
+        d.font_weight || '',
+        options.fontWeight
+      )}
+      ${this._renderSelectField(
+        'text_transform',
+        this._t('text_transform', 'Text Transform'),
+        d.text_transform || '',
+        options.textTransform
+      )}
+      ${this._renderSelectField(
+        'font_style',
+        this._t('font_style', 'Font Style'),
+        d.font_style || '',
+        options.fontStyle
+      )}
+      ${this._renderSelectField(
+        'white_space',
+        this._t('white_space', 'White Space'),
+        d.white_space || '',
+        options.whiteSpace
+      )}
+    `;
+  }
+
+  private _renderBackgroundSection(
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>
+  ): TemplateResult {
+    const imageType = d.background_image_type || 'none';
+    const hasImage = imageType !== 'none';
+    const sizeMode = this._getBackgroundSizeDropdownValue(d.background_size);
+
+    return html`
+      ${this._renderColorField(
+        'background_color',
+        this._t('background_color', 'Background Color'),
+        d.background_color,
+        'transparent'
+      )}
+
+      ${this._renderSelectField(
+        'background_image_type',
+        this._t('background_image_type', 'Background Image Type'),
+        imageType,
+        options.backgroundImageType,
+        (next: string) => {
+          // Switching source clears the previous source's value so stale paths
+          // never leak into the new input.
+          this._applyUpdates({
+            background_image_type: next === 'none' ? undefined : (next as any),
+            background_image: undefined,
+            background_image_entity: undefined,
+          });
+        }
+      )}
+
+      ${imageType === 'upload'
+        ? html`
             <div class="property-group">
-              <ultra-color-picker
-                .label=${localize('editor.design.text_color', lang, 'Text Color')}
-                .value=${effectiveDesign.color || ''}
-                .defaultValue=${'var(--primary-text-color)'}
+              <ultra-file-picker
                 .hass=${this.hass}
-                @value-changed=${(e: CustomEvent) => this._updateProperty('color', e.detail.value)}
-              ></ultra-color-picker>
+                .accept=${'image/*'}
+                .label=${this._t('upload_bg_image', 'Upload Background Image')}
+                .value=${d.background_image || ''}
+                .chooseFileLabel=${this._t('choose_file', 'Choose File')}
+                .clearLabel=${this._t('remove_file', 'Remove file')}
+                @value-changed=${(e: CustomEvent<{ value: string }>) =>
+                  this._updateProperty('background_image', e.detail?.value ?? '')}
+              ></ultra-file-picker>
             </div>
-
+          `
+        : nothing}
+      ${imageType === 'entity'
+        ? html`
             <div class="property-group">
-              <label>${localize('editor.design.alignment', lang, 'Alignment')}:</label>
-              <div class="button-group">
-                ${[
-                  { value: 'inherit', icon: 'mdi:circle-off-outline' },
-                  { value: 'left', icon: 'mdi:format-align-left' },
-                  { value: 'center', icon: 'mdi:format-align-center' },
-                  { value: 'right', icon: 'mdi:format-align-right' },
-                  { value: 'justify', icon: 'mdi:format-align-justify' },
-                ].map(
-                  opt => html`
-                    <button
-                      class="property-btn ${(effectiveDesign.text_align || 'inherit') === opt.value
-                        ? 'active'
-                        : ''}"
-                      @click=${() =>
-                        this._updateProperty(
-                          'text_align',
-                          opt.value === 'inherit' ? undefined : (opt.value as any)
-                        )}
-                      title=${opt.value === 'inherit'
-                        ? localize(
-                            'editor.design.inherit_alignment',
-                            lang,
-                            'Inherit (no alignment)'
-                          )
-                        : opt.value}
-                    >
-                      <ha-icon icon="${opt.icon}"></ha-icon>
-                    </button>
-                  `
-                )}
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.font_size', lang, 'Font Size:')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.font_size || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('font_size', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, effectiveDesign.font_size || '', value =>
-                      this._updateProperty('font_size', value)
-                    )}
-                  placeholder="${localize(
-                    'editor.design.font_size_placeholder',
-                    lang,
-                    '16px (default), 1.2rem, max(1rem, 1.5vw)'
-                  )}"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('font_size', '')}
-                  title="${localize(
-                    'editor.design.reset_font_size',
-                    lang,
-                    'Reset font size to default'
-                  )}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.line_height', lang, 'Line Height:')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.line_height || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('line_height', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  placeholder="${localize(
-                    'editor.design.line_height_placeholder',
-                    lang,
-                    '0 (default), 28px, 1.7'
-                  )}"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('line_height', '')}
-                  title="${localize(
-                    'editor.design.reset_line_height',
-                    lang,
-                    'Reset line height to default'
-                  )}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.letter_spacing', lang, 'Letter Spacing:')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.letter_spacing || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('letter_spacing', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  placeholder="${localize(
-                    'editor.design.letter_spacing_placeholder',
-                    lang,
-                    'auto (default), 1px, -0.04em'
-                  )}"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('letter_spacing', '')}
-                  title="${localize(
-                    'editor.design.reset_letter_spacing',
-                    lang,
-                    'Reset letter spacing to default'
-                  )}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.font', lang, 'Font')}:</label>
-              <div class="input-with-reset">
-                <select
-                  .value=${effectiveDesign.font_family || ''}
-                  @change=${(e: Event) => {
-                    const value = (e.target as HTMLSelectElement).value;
-                    this._updateProperty('font_family', value);
-                    this._loadGoogleFont(value);
-                  }}
-                  class="property-select"
-                >
-                  <option value="">
-                    ${localize('editor.design.default_option', lang, '– Default –')}
-                  </option>
-                  <optgroup label="Web-safe Fonts">
-                    ${WEB_SAFE_FONTS.map(
-                      font => html` <option value="${font.value}">${font.label}</option> `
-                    )}
-                  </optgroup>
-                  <optgroup label="Google Fonts">
-                    ${GOOGLE_FONTS.map(
-                      font => html` <option value="${font.value}">${font.label}</option> `
-                    )}
-                  </optgroup>
-                </select>
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('font_family', '')}
-                  title="${localize('editor.design.reset_font', lang, 'Reset font to default')}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-              ${this.designProperties.font_family &&
-              GOOGLE_FONTS.some(font => font.value === this.designProperties.font_family)
-                ? html`
-                    <div class="google-fonts-info-box">
-                      <ha-icon icon="mdi:information-outline"></ha-icon>
-                      <span>
-                        ${localize(
-                          'editor.design.google_fonts_warning',
-                          lang,
-                          "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations."
-                        )}
-                      </span>
-                    </div>
-                  `
-                : ''}
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.font_weight', lang, 'Font Weight')}:</label>
-              <div class="input-with-reset">
-                ${this._renderDesignSelect(
-                  'font_weight',
-                  effectiveDesign.font_weight || '',
-                  designSelectOptions.fontWeight
-                )}
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('font_weight', '')}
-                  title="${localize(
-                    'editor.design.reset_font_weight',
-                    lang,
-                    'Reset font weight to default'
-                  )}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.text_transform', lang, 'Text Transform')}:</label>
-              <div class="input-with-reset">
-                ${this._renderDesignSelect(
-                  'text_transform',
-                  effectiveDesign.text_transform || '',
-                  designSelectOptions.textTransform
-                )}
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('text_transform', '')}
-                  title="${localize(
-                    'editor.design.reset_text_transform',
-                    lang,
-                    'Reset text transform to default'
-                  )}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.font_style', lang, 'Font Style')}:</label>
-              <div class="input-with-reset">
-                ${this._renderDesignSelect(
-                  'font_style',
-                  effectiveDesign.font_style || '',
-                  designSelectOptions.fontStyle
-                )}
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('font_style', '')}
-                  title="${localize(
-                    'editor.design.reset_font_style',
-                    lang,
-                    'Reset font style to default'
-                  )}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.white_space', lang, 'White Space')}:</label>
-              <div class="input-with-reset">
-                ${this._renderDesignSelect(
-                  'white_space',
-                  effectiveDesign.white_space || '',
-                  designSelectOptions.whiteSpace
-                )}
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('white_space', '')}
-                  title="${localize(
-                    'editor.design.reset_white_space',
-                    lang,
-                    'Reset white space to default'
-                  )}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-          `,
-          'text',
-          [
-            'color',
-            'text_align',
-            'font_size',
-            'line_height',
-            'letter_spacing',
-            'font_family',
-            'font_weight',
-            'text_transform',
-            'font_style',
-            'white_space',
-          ]
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.background_section', lang, 'Background'),
-          html`
-            <div class="property-group">
-              <ultra-color-picker
-                .label=${localize('editor.design.background_color', lang, 'Background Color')}
-                .value=${effectiveDesign.background_color || ''}
-                .defaultValue=${'transparent'}
+              <label>${this._t('bg_image_entity', 'Background Image Entity')}</label>
+              <ha-entity-picker
                 .hass=${this.hass}
+                .value=${d.background_image_entity || ''}
+                .label=${this._t('bg_image_entity_hint', 'Entity with an image attribute')}
+                allow-custom-entity
                 @value-changed=${(e: CustomEvent) =>
-                  this._updateProperty('background_color', e.detail.value)}
-              ></ultra-color-picker>
+                  this._updateProperty('background_image_entity', e.detail.value)}
+              ></ha-entity-picker>
             </div>
+          `
+        : nothing}
+      ${imageType === 'url'
+        ? this._renderTextField({
+            property: 'background_image',
+            label: this._t('bg_image_url', 'Background Image URL'),
+            value: d.background_image,
+            placeholder: 'https://example.com/image.jpg',
+          })
+        : nothing}
 
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.background_image_type',
-                  lang,
-                  'Background Image Type'
-                )}:</label
-              >
-              ${this._renderDesignSelect(
-                  'background_image_type',
-                  effectiveDesign.background_image_type || 'none',
-                  designSelectOptions.backgroundImageType
-                )}
-            </div>
-
-            ${this.designProperties.background_image_type === 'upload'
+      ${hasImage
+        ? html`
+            ${this._renderSelectField(
+              'background_size',
+              this._t('background_size', 'Background Size'),
+              sizeMode,
+              options.backgroundSize,
+              (next: string) =>
+                this._updateProperty('background_size', next === 'custom' ? 'auto auto' : next)
+            )}
+            ${sizeMode === 'custom'
               ? html`
-                  <div class="property-group">
-                    <ultra-file-picker
-                      .hass=${this.hass}
-                      .accept=${'image/*'}
-                      .label=${localize(
-                        'editor.design.upload_bg_image',
-                        lang,
-                        'Upload Background Image'
-                      )}
-                      .value=${this.designProperties.background_image || ''}
-                      .chooseFileLabel=${localize(
-                        'editor.design.choose_file',
-                        lang,
-                        'Choose File'
-                      )}
-                      .clearLabel=${localize(
-                        'editor.design.remove_file',
-                        lang,
-                        'Remove file'
-                      )}
-                      @value-changed=${(e: CustomEvent<{ value: string }>) => {
-                        this._updateProperty('background_image', e.detail?.value ?? '');
-                      }}
-                    ></ultra-file-picker>
+                  <div class="two-column-grid">
+                    ${this._renderCustomBackgroundSize(d, 'width')}
+                    ${this._renderCustomBackgroundSize(d, 'height')}
                   </div>
                 `
-              : ''}
-            ${this.designProperties.background_image_type === 'entity'
-              ? html`
-                  <div class="property-group">
-                    <label
-                      >${localize(
-                        'editor.design.bg_image_entity',
-                        lang,
-                        'Background Image Entity'
-                      )}:</label
-                    >
-                    <ha-entity-picker
-                      .hass=${this.hass}
-                      .value=${effectiveDesign.background_image_entity || ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        this._updateProperty('background_image_entity', e.detail.value)}
-                      .label=${'Select entity with image attribute'}
-                      allow-custom-entity
-                    ></ha-entity-picker>
-                  </div>
-                `
-              : ''}
-            ${this.designProperties.background_image_type === 'url'
-              ? html`
-                  <div class="property-group">
-                    <label
-                      >${localize(
-                        'editor.design.bg_image_url',
-                        lang,
-                        'Background Image URL'
-                      )}:</label
-                    >
-                    <input
-                      type="text"
-                      .value=${effectiveDesign.background_image || ''}
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const cursorPos = target.selectionStart;
-                        const cursorEnd = target.selectionEnd;
-                        this._updateProperty('background_image', target.value);
-                        requestAnimationFrame(() => {
-                          if (target && typeof cursorPos === 'number') {
-                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                          }
-                        });
-                      }}
-                      placeholder="https://example.com/image.jpg"
-                      autocomplete="off"
-                      class="property-input"
-                    />
-                  </div>
-                `
-              : ''}
-            ${this.designProperties.background_image_type &&
-            this.designProperties.background_image_type !== 'none'
-              ? html`
-                  <div class="property-group">
-                    <label>Background Size:</label>
-                    ${this._renderDesignSelect(
-                      'background_size',
-                      this._getBackgroundSizeDropdownValue(this.designProperties.background_size),
-                      designSelectOptions.backgroundSize
-                    )}
-                  </div>
-
-                  ${this._getBackgroundSizeDropdownValue(this.designProperties.background_size) ===
-                  'custom'
-                    ? html`
-                        <div class="property-group">
-                          <label>Custom Width:</label>
-                          <input
-                            type="text"
-                            .value=${this._getCustomSizeValue(
-                              this.designProperties.background_size,
-                              'width'
-                            )}
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              const cursorPos = target.selectionStart;
-                              const cursorEnd = target.selectionEnd;
-                              const width = target.value;
-                              const height = this._getCustomSizeValue(
-                                this.designProperties.background_size,
-                                'height'
-                              );
-                              const customSize =
-                                width && height ? `${width} ${height}` : width || height || 'auto';
-                              this._updateProperty('background_size', customSize);
-                              requestAnimationFrame(() => {
-                                if (target && typeof cursorPos === 'number') {
-                                  target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                                }
-                              });
-                            }}
-                            placeholder="100px, 50%, auto"
-                            autocomplete="off"
-                            class="property-input"
-                          />
-                        </div>
-                        <div class="property-group">
-                          <label>Custom Height:</label>
-                          <input
-                            type="text"
-                            .value=${this._getCustomSizeValue(
-                              this.designProperties.background_size,
-                              'height'
-                            )}
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              const cursorPos = target.selectionStart;
-                              const cursorEnd = target.selectionEnd;
-                              const height = target.value;
-                              const width = this._getCustomSizeValue(
-                                this.designProperties.background_size,
-                                'width'
-                              );
-                              const customSize =
-                                width && height ? `${width} ${height}` : width || height || 'auto';
-                              this._updateProperty('background_size', customSize);
-                              requestAnimationFrame(() => {
-                                if (target && typeof cursorPos === 'number') {
-                                  target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                                }
-                              });
-                            }}
-                            placeholder="100px, 50%, auto"
-                            autocomplete="off"
-                            class="property-input"
-                          />
-                        </div>
-                      `
-                    : ''}
-
-                  <div class="property-group">
-                    <label>Background Repeat:</label>
-                    ${this._renderDesignSelect(
-                  'background_repeat',
-                  effectiveDesign.background_repeat || 'no-repeat',
-                  designSelectOptions.backgroundRepeat
-                )}
-                  </div>
-
-                  <div class="property-group">
-                    <label>Background Position:</label>
-                    ${this._renderDesignSelect(
-                  'background_position',
-                  effectiveDesign.background_position || 'center center',
-                  designSelectOptions.backgroundPosition
-                )}
-                  </div>
-                `
-              : ''}
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.backdrop_filter',
-                  this.hass?.locale?.language || 'en',
-                  'Backdrop Filter'
-                )}:</label
-              >
-              <input
-                type="text"
-                .value=${effectiveDesign.backdrop_filter || ''}
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = target.value;
-                  const cursorPosition = target.selectionStart;
-                  const cursorEnd = target.selectionEnd;
-
-                  this._updateProperty('backdrop_filter', value);
-
-                  requestAnimationFrame(() => {
-                    if (target && typeof cursorPosition === 'number') {
-                      target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                    }
-                  });
-                }}
-                placeholder="blur(10px), grayscale(100%), invert(75%)"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="off"
-                spellcheck="false"
-                class="property-input"
-              />
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.background_filter',
-                  this.hass?.locale?.language || 'en',
-                  'Background Filter'
-                )}:</label
-              >
-              <input
-                type="text"
-                .value=${effectiveDesign.background_filter || ''}
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = target.value;
-                  const cursorPosition = target.selectionStart;
-                  const cursorEnd = target.selectionEnd;
-
-                  this._updateProperty('background_filter', value);
-
-                  requestAnimationFrame(() => {
-                    if (target && typeof cursorPosition === 'number') {
-                      target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                    }
-                  });
-                }}
-                placeholder="grayscale(100%), blur(10px), brightness(0.5)"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="off"
-                spellcheck="false"
-                class="property-input"
-              />
-            </div>
-          `,
-          'background',
-          [
-            'background_color',
-            'background_image',
-            'background_image_type',
-            'background_image_entity',
-            'backdrop_filter',
-            'background_filter',
-          ]
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.sizes_section', lang, 'Sizes'),
-          html`
-            <div class="property-group">
-              <label>${localize('editor.design.width', lang, 'Width')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.width || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('width', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, effectiveDesign.width || '', value =>
-                      this._updateProperty('width', value)
-                    )}
-                  placeholder="auto (default), 200px, 100%, 14rem, 10vw"
-                  autocomplete="off"
-                  autocorrect="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('width', '')}
-                  title="Reset width to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.height', lang, 'Height')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.height || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('height', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, effectiveDesign.height || '', value =>
-                      this._updateProperty('height', value)
-                    )}
-                  placeholder="auto (default), 200px, 15rem, 10vh"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('height', '')}
-                  title="Reset height to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.max_width', lang, 'Max Width')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.max_width || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('max_width', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, effectiveDesign.max_width || '', value =>
-                      this._updateProperty('max_width', value)
-                    )}
-                  placeholder="200px, 100%, 14rem, 10vw"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('max_width', '')}
-                  title="Reset max width to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.max_height', lang, 'Max Height')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.max_height || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('max_height', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  placeholder="200px, 15rem, 10vh"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('max_height', '')}
-                  title="Reset max height to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.min_width', lang, 'Min Width')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.min_width || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('min_width', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  placeholder="200px, 100%, 14rem, 10vw"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('min_width', '')}
-                  title="Reset min width to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.min_height', lang, 'Min Height')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.min_height || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('min_height', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  placeholder="200px, 15rem, 10vh"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('min_height', '')}
-                  title="Reset min height to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-          `,
-          'sizes',
-          ['width', 'height', 'max_width', 'max_height', 'min_width', 'min_height']
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.spacing_section', lang, 'Spacing'),
-          html`
-            <div class="spacing-group">
-              <div class="spacing-header">
-                <h4>
-                  ${localize('editor.design.margin', this.hass?.locale?.language || 'en', 'Margin')}
-                </h4>
-                <button
-                  type="button"
-                  class="lock-button ${this._marginLocked ? 'locked' : ''}"
-                  @click=${() => this._toggleSpacingLock('margin')}
-                  title="${this._marginLocked
-                    ? 'Unlock to edit sides independently'
-                    : 'Lock to edit all sides together'}"
-                >
-                  <ha-icon icon="${this._marginLocked ? 'mdi:lock' : 'mdi:lock-open'}"></ha-icon>
-                </button>
-              </div>
-              <div class="spacing-fields-desktop">
-                <div class="spacing-field">
-                  <label>Top</label>
-                  <input
-                    type="text"
-                    placeholder="8px, auto, 1rem"
-                    .value=${effectiveDesign.margin_top || ''}
-                    @input=${this._createSpacingInputHandler('margin', 'top')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'margin_top',
-                      () => effectiveDesign.margin_top || '',
-                      (value: string) => this._updateSpacing('margin', 'top', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input"
-                  />
-                </div>
-                <div class="spacing-field">
-                  <label>Right</label>
-                  <input
-                    type="text"
-                    placeholder="0px, auto, 1rem"
-                    .value=${this._marginLocked
-                      ? effectiveDesign.margin_top || ''
-                      : effectiveDesign.margin_right || ''}
-                    .disabled=${this._marginLocked}
-                    @input=${this._createSpacingInputHandler('margin', 'right')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'margin_right',
-                      () => effectiveDesign.margin_right || '',
-                      (value: string) => this._updateSpacing('margin', 'right', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input ${this._marginLocked ? 'locked' : ''}"
-                  />
-                </div>
-                <div class="spacing-field">
-                  <label>Bottom</label>
-                  <input
-                    type="text"
-                    placeholder="8px, auto, 1rem"
-                    .value=${this._marginLocked
-                      ? effectiveDesign.margin_top || ''
-                      : effectiveDesign.margin_bottom || ''}
-                    .disabled=${this._marginLocked}
-                    @input=${this._createSpacingInputHandler('margin', 'bottom')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'margin_bottom',
-                      () => effectiveDesign.margin_bottom || '',
-                      (value: string) => this._updateSpacing('margin', 'bottom', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input ${this._marginLocked ? 'locked' : ''}"
-                  />
-                </div>
-                <div class="spacing-field">
-                  <label>Left</label>
-                  <input
-                    type="text"
-                    placeholder="0px, auto, 1rem"
-                    .value=${this._marginLocked
-                      ? effectiveDesign.margin_top || ''
-                      : effectiveDesign.margin_left || ''}
-                    .disabled=${this._marginLocked}
-                    @input=${this._createSpacingInputHandler('margin', 'left')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'margin_left',
-                      () => effectiveDesign.margin_left || '',
-                      (value: string) => this._updateSpacing('margin', 'left', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input ${this._marginLocked ? 'locked' : ''}"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="spacing-group">
-              <div class="spacing-header">
-                <h4>Padding</h4>
-                <button
-                  type="button"
-                  class="lock-button ${this._paddingLocked ? 'locked' : ''}"
-                  @click=${() => this._toggleSpacingLock('padding')}
-                  title="${this._paddingLocked
-                    ? 'Unlock to edit sides independently'
-                    : 'Lock to edit all sides together'}"
-                >
-                  <ha-icon icon="${this._paddingLocked ? 'mdi:lock' : 'mdi:lock-open'}"></ha-icon>
-                </button>
-              </div>
-              <div class="spacing-fields-desktop">
-                <div class="spacing-field">
-                  <label>Top</label>
-                  <input
-                    type="text"
-                    placeholder="0px, 1rem, 5%"
-                    .value=${effectiveDesign.padding_top || ''}
-                    @input=${this._createSpacingInputHandler('padding', 'top')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'padding_top',
-                      () => effectiveDesign.padding_top || '',
-                      (value: string) => this._updateSpacing('padding', 'top', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input"
-                  />
-                </div>
-                <div class="spacing-field">
-                  <label>Right</label>
-                  <input
-                    type="text"
-                    placeholder="0px, 1rem, 5%"
-                    .value=${this._paddingLocked
-                      ? effectiveDesign.padding_top || ''
-                      : effectiveDesign.padding_right || ''}
-                    .disabled=${this._paddingLocked}
-                    @input=${this._createSpacingInputHandler('padding', 'right')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'padding_right',
-                      () => effectiveDesign.padding_right || '',
-                      (value: string) => this._updateSpacing('padding', 'right', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input ${this._paddingLocked ? 'locked' : ''}"
-                  />
-                </div>
-                <div class="spacing-field">
-                  <label>Bottom</label>
-                  <input
-                    type="text"
-                    placeholder="0px, 1rem, 5%"
-                    .value=${this._paddingLocked
-                      ? effectiveDesign.padding_top || ''
-                      : effectiveDesign.padding_bottom || ''}
-                    .disabled=${this._paddingLocked}
-                    @input=${this._createSpacingInputHandler('padding', 'bottom')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'padding_bottom',
-                      () => effectiveDesign.padding_bottom || '',
-                      (value: string) => this._updateSpacing('padding', 'bottom', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input ${this._paddingLocked ? 'locked' : ''}"
-                  />
-                </div>
-                <div class="spacing-field">
-                  <label>Left</label>
-                  <input
-                    type="text"
-                    placeholder="0px, 1rem, 5%"
-                    .value=${this._paddingLocked
-                      ? effectiveDesign.padding_top || ''
-                      : effectiveDesign.padding_left || ''}
-                    .disabled=${this._paddingLocked}
-                    @input=${this._createSpacingInputHandler('padding', 'left')}
-                    @keydown=${this._createProtectedKeydownHandler(
-                      'padding_left',
-                      () => effectiveDesign.padding_left || '',
-                      (value: string) => this._updateSpacing('padding', 'left', value)
-                    )}
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="spacing-input ${this._paddingLocked ? 'locked' : ''}"
-                  />
-                </div>
-              </div>
-            </div>
-          `,
-          'spacing',
-          [
-            'margin_top',
-            'margin_bottom',
-            'margin_left',
-            'margin_right',
-            'padding_top',
-            'padding_bottom',
-            'padding_left',
-            'padding_right',
-          ]
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.border_section', lang, 'Border'),
-          html`
-            <div class="property-group">
-              <label>${localize('editor.design.border_radius', lang, 'Border Radius')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.border_radius || ''}
-                  @input=${this._createRobustInputHandler('border_radius', (value: string) =>
-                    this._updateProperty('border_radius', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, effectiveDesign.border_radius || '', value =>
-                      this._updateProperty('border_radius', value)
-                    )}
-                  placeholder="5px, 50%, 0.3em, 12px 0"
-                  class="property-input"
-                  autocomplete="off"
-                  autocorrect="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('border_radius', '')}
-                  title="Reset border radius to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.border_style', lang, 'Border Style')}:</label>
-              ${this._renderDesignSelect(
-                  'border_style',
-                  effectiveDesign.border_style || '',
-                  designSelectOptions.borderStyle
-                )}
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.border_width', lang, 'Border Width')}:</label>
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.border_width || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('border_width', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, effectiveDesign.border_width || '', value =>
-                      this._updateProperty('border_width', value)
-                    )}
-                  placeholder="1px, 2px, 0.125rem"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('border_width', '')}
-                  title="Reset border width to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <ultra-color-picker
-                .label=${localize('editor.design.border_color', lang, 'Border Color')}
-                .value=${effectiveDesign.border_color || ''}
-                .defaultValue=${'var(--divider-color)'}
-                .hass=${this.hass}
-                @value-changed=${(e: CustomEvent) =>
-                  this._updateProperty('border_color', e.detail.value)}
-              ></ultra-color-picker>
-            </div>
-          `,
-          'border',
-          ['border_radius', 'border_style', 'border_width', 'border_color']
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.position_section', lang, 'Position'),
-          html`
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.position',
-                  this.hass?.locale?.language || 'en',
-                  'Position'
-                )}:</label
-              >
-              ${this._renderDesignSelect(
-                  'position',
-                  effectiveDesign.position || '',
-                  designSelectOptions.position
-                )}
-            </div>
-
-            ${this.designProperties.position && this.designProperties.position !== 'static'
-              ? html`
-                  <div class="position-grid">
-                    <input
-                      type="text"
-                      placeholder="Top"
-                      .value=${effectiveDesign.top || ''}
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const cursorPos = target.selectionStart;
-                        const cursorEnd = target.selectionEnd;
-                        this._updateProperty('top', target.value);
-                        requestAnimationFrame(() => {
-                          if (target && typeof cursorPos === 'number') {
-                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                          }
-                        });
-                      }}
-                      @keydown=${(e: KeyboardEvent) =>
-                        this._handleNumericKeydown(e, this.designProperties.top || '', value =>
-                          this._updateProperty('top', value)
-                        )}
-                      autocomplete="off"
-                    />
-                    <div class="position-row">
-                      <input
-                        type="text"
-                        placeholder="Left"
-                        .value=${effectiveDesign.left || ''}
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const cursorPos = target.selectionStart;
-                          const cursorEnd = target.selectionEnd;
-                          this._updateProperty('left', target.value);
-                          requestAnimationFrame(() => {
-                            if (target && typeof cursorPos === 'number') {
-                              target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                            }
-                          });
-                        }}
-                        @keydown=${(e: KeyboardEvent) =>
-                          this._handleNumericKeydown(e, this.designProperties.left || '', value =>
-                            this._updateProperty('left', value)
-                          )}
-                        autocomplete="off"
-                      />
-                      <div class="position-center">POS</div>
-                      <input
-                        type="text"
-                        placeholder="Right"
-                        .value=${effectiveDesign.right || ''}
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const cursorPos = target.selectionStart;
-                          const cursorEnd = target.selectionEnd;
-                          this._updateProperty('right', target.value);
-                          requestAnimationFrame(() => {
-                            if (target && typeof cursorPos === 'number') {
-                              target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                            }
-                          });
-                        }}
-                        @keydown=${(e: KeyboardEvent) =>
-                          this._handleNumericKeydown(e, this.designProperties.right || '', value =>
-                            this._updateProperty('right', value)
-                          )}
-                        autocomplete="off"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Bottom"
-                      .value=${effectiveDesign.bottom || ''}
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const cursorPos = target.selectionStart;
-                        const cursorEnd = target.selectionEnd;
-                        this._updateProperty('bottom', target.value);
-                        requestAnimationFrame(() => {
-                          if (target && typeof cursorPos === 'number') {
-                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                          }
-                        });
-                      }}
-                      @keydown=${(e: KeyboardEvent) =>
-                        this._handleNumericKeydown(e, this.designProperties.bottom || '', value =>
-                          this._updateProperty('bottom', value)
-                        )}
-                      autocomplete="off"
-                    />
-                  </div>
-
-                  <div class="property-group">
-                    <label>Z-Index:</label>
-                    <input
-                      type="text"
-                      .value=${effectiveDesign.z_index || ''}
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const cursorPos = target.selectionStart;
-                        const cursorEnd = target.selectionEnd;
-                        this._updateProperty('z_index', target.value);
-                        requestAnimationFrame(() => {
-                          if (target && typeof cursorPos === 'number') {
-                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                          }
-                        });
-                      }}
-                      @keydown=${(e: KeyboardEvent) =>
-                        this._handleNumericKeydown(e, this.designProperties.z_index || '', value =>
-                          this._updateProperty('z_index', value)
-                        )}
-                      placeholder="-1, 1, 3, 50"
-                      autocomplete="off"
-                      class="property-input"
-                    />
-                  </div>
-                `
-              : ''}
-          `,
-          'position',
-          ['position', 'top', 'bottom', 'left', 'right', 'z_index']
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.text_shadow_section', lang, 'Text Shadow'),
-          html`
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.horizontal_shift',
-                  this.hass?.locale?.language || 'en',
-                  'Horizontal Shift'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.text_shadow_h || ''}
-                  @input=${this._createRobustInputHandler('text_shadow_h', (value: string) =>
-                    this._updateProperty('text_shadow_h', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.text_shadow_h || '',
-                      value => this._updateProperty('text_shadow_h', value)
-                    )}
-                  placeholder="0, 3px, 0.05em, 2rem"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('text_shadow_h', '')}
-                  title="Reset horizontal shadow to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.vertical_shift',
-                  this.hass?.locale?.language || 'en',
-                  'Vertical Shift'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.text_shadow_v || ''}
-                  @input=${this._createRobustInputHandler('text_shadow_v', (value: string) =>
-                    this._updateProperty('text_shadow_v', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.text_shadow_v || '',
-                      value => this._updateProperty('text_shadow_v', value)
-                    )}
-                  placeholder="0, 3px, 0.05em, 2rem"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('text_shadow_v', '')}
-                  title="Reset vertical shadow to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.blur',
-                  this.hass?.locale?.language || 'en',
-                  'Blur'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.text_shadow_blur || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const cursorPos = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-                    this._updateProperty('text_shadow_blur', target.value);
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPos === 'number') {
-                        target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                      }
-                    });
-                  }}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.text_shadow_blur || '',
-                      value => this._updateProperty('text_shadow_blur', value)
-                    )}
-                  placeholder="0, 3px, 0.05em, 2rem"
-                  autocomplete="off"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('text_shadow_blur', '')}
-                  title="Reset shadow blur to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <ultra-color-picker
-                .label=${localize('editor.design.text_shadow_color', lang, 'Text Shadow Color')}
-                .value=${effectiveDesign.text_shadow_color || ''}
-                .defaultValue=${'rgba(0,0,0,0.5)'}
-                .hass=${this.hass}
-                @value-changed=${(e: CustomEvent) =>
-                  this._updateProperty('text_shadow_color', e.detail.value)}
-              ></ultra-color-picker>
-            </div>
-          `,
-          'text-shadow',
-          ['text_shadow_h', 'text_shadow_v', 'text_shadow_blur', 'text_shadow_color']
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.box_shadow_section', lang, 'Box Shadow'),
-          html`
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.horizontal_shift',
-                  this.hass?.locale?.language || 'en',
-                  'Horizontal Shift'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.box_shadow_h || ''}
-                  @input=${this._createRobustInputHandler('box_shadow_h', (value: string) =>
-                    this._updateProperty('box_shadow_h', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, this.designProperties.box_shadow_h || '', value =>
-                      this._updateProperty('box_shadow_h', value)
-                    )}
-                  placeholder="0, 3px, 0.05em, 2rem"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('box_shadow_h', '')}
-                  title="Reset horizontal box shadow to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.vertical_shift',
-                  this.hass?.locale?.language || 'en',
-                  'Vertical Shift'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.box_shadow_v || ''}
-                  @input=${this._createRobustInputHandler('box_shadow_v', (value: string) =>
-                    this._updateProperty('box_shadow_v', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(e, this.designProperties.box_shadow_v || '', value =>
-                      this._updateProperty('box_shadow_v', value)
-                    )}
-                  placeholder="0, 3px, 0.05em, 2rem"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('box_shadow_v', '')}
-                  title="Reset vertical box shadow to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.blur',
-                  this.hass?.locale?.language || 'en',
-                  'Blur'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.box_shadow_blur || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const cursorPos = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-                    this._updateProperty('box_shadow_blur', target.value);
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPos === 'number') {
-                        target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                      }
-                    });
-                  }}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.box_shadow_blur || '',
-                      value => this._updateProperty('box_shadow_blur', value)
-                    )}
-                  placeholder="0, 3px, 0.05em, 2rem"
-                  autocomplete="off"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('box_shadow_blur', '')}
-                  title="Reset box shadow blur to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.spread',
-                  this.hass?.locale?.language || 'en',
-                  'Spread'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.box_shadow_spread || ''}
-                  @input=${this._createRobustInputHandler('box_shadow_spread', (value: string) =>
-                    this._updateProperty('box_shadow_spread', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.box_shadow_spread || '',
-                      value => this._updateProperty('box_shadow_spread', value)
-                    )}
-                  placeholder="0, 3px, 0.05em, 2rem"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('box_shadow_spread', '')}
-                  title="Reset box shadow spread to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <ultra-color-picker
-                .label=${localize('editor.design.box_shadow_color', lang, 'Box Shadow Color')}
-                .value=${effectiveDesign.box_shadow_color || ''}
-                .defaultValue=${'rgba(0,0,0,0.1)'}
-                .hass=${this.hass}
-                @value-changed=${(e: CustomEvent) =>
-                  this._updateProperty('box_shadow_color', e.detail.value)}
-              ></ultra-color-picker>
-            </div>
-          `,
-          'box-shadow',
-          [
-            'box_shadow_h',
-            'box_shadow_v',
-            'box_shadow_blur',
-            'box_shadow_spread',
-            'box_shadow_color',
-          ]
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.overflow_section', lang, 'Overflow'),
-          html`
-            <div class="property-group">
-              <label>${localize('editor.design.overflow', lang, 'Overflow')}:</label>
-              ${this._renderDesignSelect(
-                  'overflow',
-                  effectiveDesign.overflow || 'visible',
-                  designSelectOptions.overflow
-                )}
-            </div>
-
-            <div class="property-group">
-              <label>${localize('editor.design.clip_path', lang, 'Clip-path')}:</label>
-              <input
-                type="text"
-                .value=${effectiveDesign.clip_path || ''}
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const cursorPos = target.selectionStart;
-                  const cursorEnd = target.selectionEnd;
-                  this._updateProperty('clip_path', target.value);
-                  requestAnimationFrame(() => {
-                    if (target && typeof cursorPos === 'number') {
-                      target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                    }
-                  });
-                }}
-                placeholder="ellipse(75% 100% at bottom)"
-                autocomplete="off"
-                class="property-input"
-              />
-              <small class="property-hint"
-                >Examples:<br />
-                ellipse(75% 100% at bottom)<br />
-                polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)<br />
-                polygon(100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%, 25% 6.7%, 75% 6.7%)
-              </small>
-            </div>
-          `,
-          'overflow',
-          ['overflow', 'clip_path']
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.transform_3d_section', lang, '3D Transform'),
-          html`
-            <div class="property-hint" style="margin-bottom: 12px;">
-              ${localize(
-                'editor.design.transform_3d_desc',
-                lang,
-                'Tilt or rotate the module in 3D space. Set perspective for depth, then rotate on X (tilt forward/back), Y (turn left/right), or Z (spin).'
-              )}
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.transform_3d_perspective',
-                  lang,
-                  'Perspective'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.transform_perspective || ''}
-                  @input=${this._createRobustInputHandler(
-                    'transform_perspective',
-                    (value: string) => this._updateProperty('transform_perspective', value)
-                  )}
-                  placeholder=${localize(
-                    'editor.design.transform_3d_perspective_placeholder',
-                    lang,
-                    'none, 400px, 1000px'
-                  )}
-                  autocomplete="off"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('transform_perspective', '')}
-                  title="Reset perspective to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.transform_3d_rotate_x',
-                  lang,
-                  'Rotate X'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.transform_rotate_x || ''}
-                  @input=${this._createRobustInputHandler(
-                    'transform_rotate_x',
-                    (value: string) => this._updateProperty('transform_rotate_x', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.transform_rotate_x || '',
-                      value => this._updateProperty('transform_rotate_x', value)
-                    )}
-                  placeholder=${localize(
-                    'editor.design.transform_3d_rotate_placeholder',
-                    lang,
-                    'Degrees (-180 to 180)'
-                  )}
-                  autocomplete="off"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('transform_rotate_x', '')}
-                  title="Reset rotate X to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.transform_3d_rotate_y',
-                  lang,
-                  'Rotate Y'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.transform_rotate_y || ''}
-                  @input=${this._createRobustInputHandler(
-                    'transform_rotate_y',
-                    (value: string) => this._updateProperty('transform_rotate_y', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.transform_rotate_y || '',
-                      value => this._updateProperty('transform_rotate_y', value)
-                    )}
-                  placeholder=${localize(
-                    'editor.design.transform_3d_rotate_placeholder',
-                    lang,
-                    'Degrees (-180 to 180)'
-                  )}
-                  autocomplete="off"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('transform_rotate_y', '')}
-                  title="Reset rotate Y to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize(
-                  'editor.design.transform_3d_rotate_z',
-                  lang,
-                  'Rotate Z'
-                )}:</label
-              >
-              <div class="input-with-reset">
-                <input
-                  type="text"
-                  .value=${effectiveDesign.transform_rotate_z || ''}
-                  @input=${this._createRobustInputHandler(
-                    'transform_rotate_z',
-                    (value: string) => this._updateProperty('transform_rotate_z', value)
-                  )}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      this.designProperties.transform_rotate_z || '',
-                      value => this._updateProperty('transform_rotate_z', value)
-                    )}
-                  placeholder=${localize(
-                    'editor.design.transform_3d_rotate_placeholder',
-                    lang,
-                    'Degrees (-180 to 180)'
-                  )}
-                  autocomplete="off"
-                  class="property-input"
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => this._updateProperty('transform_rotate_z', '')}
-                  title="Reset rotate Z to default"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
-          `,
-          'transform-3d',
-          [
-            'transform_perspective',
-            'transform_rotate_x',
-            'transform_rotate_y',
-            'transform_rotate_z',
-          ]
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.animations_section', lang, 'Animations'),
-          html`
-            <!-- State-based Animation -->
-            <div class="property-section">
-              <h5>
-                ${localize(
-                  'editor.design.state_based_animation',
-                  this.hass?.locale?.language || 'en',
-                  'State-based Animation'
-                )}
-              </h5>
-              <div class="property-group">
-                <label
-                  >${localize(
-                    'editor.design.animation_type',
-                    this.hass?.locale?.language || 'en',
-                    'Animation Type'
-                  )}:</label
-                >
-                ${this._renderDesignSelect(
-                  'animation_type',
-                  effectiveDesign.animation_type || 'none',
-                  designSelectOptions.animationType
-                )}
-              </div>
-
-              <div class="property-group">
-                <label
-                  >${localize(
-                    'editor.design.animation_duration',
-                    this.hass?.locale?.language || 'en',
-                    'Animation Duration'
-                  )}:</label
-                >
-                <input
-                  type="text"
-                  .value=${effectiveDesign.animation_duration || '2s'}
-                  @change=${(e: Event) =>
-                    this._updateProperty(
-                      'animation_duration',
-                      (e.target as HTMLInputElement).value
-                    )}
-                  placeholder="2s, 500ms, 1.5s"
-                  class="property-input"
-                />
-                <small class="property-hint">
-                  ${localize(
-                    'editor.design.animation_duration_desc',
-                    this.hass?.locale?.language || 'en',
-                    'Duration for the animation (e.g., 2s, 500ms, 1.5s)'
-                  )}
-                </small>
-              </div>
-
-              ${this.designProperties.animation_type &&
-              this.designProperties.animation_type !== 'none'
-                ? html`
-                    <div class="property-group">
-                      <label>Entity to Monitor:</label>
-                      <ha-form
-                        .hass=${this.hass}
-                        .data=${{ entity: this.designProperties.animation_entity || '' }}
-                        .schema=${[
-                          {
-                            name: 'entity',
-                            selector: { entity: {} },
-                            label: 'Entity',
-                          },
-                        ]}
-                        @value-changed=${(e: CustomEvent) =>
-                          this._updateProperty('animation_entity', e.detail.value.entity)}
-                      ></ha-form>
-                    </div>
-
-                    ${this.designProperties.animation_entity
-                      ? html`
-                          <div class="property-group">
-                            <label>Animation Trigger Type:</label>
-                            ${this._renderDesignSelect(
-                              'animation_trigger_type',
-                              effectiveDesign.animation_trigger_type || 'state',
-                              designSelectOptions.animationTriggerType,
-                              (triggerType: string) => {
-                                const updates: Partial<DesignProperties> = {
-                                  animation_trigger_type: triggerType as 'state' | 'attribute',
-                                  animation_state: '',
-                                  animation_attribute: '',
-                                };
-                                if (this.onUpdate) {
-                                  this.onUpdate(updates);
-                                } else {
-                                  this.dispatchEvent(
-                                    new CustomEvent('design-changed', {
-                                      detail: updates,
-                                      bubbles: true,
-                                      composed: true,
-                                    })
-                                  );
-                                }
-                                this.designProperties = {
-                                  ...this.designProperties,
-                                  ...updates,
-                                };
-                                this.requestUpdate();
-                              }
-                            )}
-                            <div
-                              class="trigger-type-indicator ${this.designProperties
-                                .animation_trigger_type === 'attribute'
-                                ? 'attribute-mode-indicator'
-                                : 'state-mode-indicator'}"
-                            >
-                              <ha-icon
-                                icon="${this.designProperties.animation_trigger_type === 'attribute'
-                                  ? 'mdi:format-list-checks'
-                                  : 'mdi:state-machine'}"
-                              ></ha-icon>
-                              <span
-                                >${this.designProperties.animation_trigger_type === 'attribute'
-                                  ? 'Attribute mode: select an attribute and its value to trigger the animation'
-                                  : 'State mode: enter a state value to trigger the animation'}</span
-                              >
-                            </div>
-                          </div>
-
-                          ${(() => {
-                            // SIMPLIFIED TRIGGER TYPE DETECTION:
-                            // Use component properties as the primary source of truth
-                            const currentTriggerType =
-                              this.designProperties.animation_trigger_type || 'state';
-                            const isAttributeMode = currentTriggerType === 'attribute';
-
-                            // Render attribute mode UI when trigger type is 'attribute'
-                            if (isAttributeMode) {
-                              return html`
-                                <div class="property-group attribute-mode-container">
-                                  <div class="property-group">
-                                    <label>
-                                      <ha-icon icon="mdi:format-list-checks"></ha-icon>
-                                      Attribute Name:
-                                    </label>
-                                    <input
-                                      type="text"
-                                      .value=${effectiveDesign.animation_attribute || ''}
-                                      @input=${(e: Event) => {
-                                        const inputElement = e.target as HTMLInputElement;
-                                        const attribute = inputElement.value;
-                                        const cursorPos = inputElement.selectionStart;
-                                        const cursorEnd = inputElement.selectionEnd;
-
-                                        // Visual feedback - temporarily add a success class
-                                        inputElement.classList.add('change-success');
-
-                                        // Create a batch of updates to ensure UI consistency
-                                        const updates = {
-                                          animation_attribute: attribute,
-                                          animation_state: '', // Reset the state value when changing attributes
-                                        };
-
-                                        // Apply updates using the appropriate method
-                                        if (this.onUpdate) {
-                                          this.onUpdate(updates);
-                                        } else {
-                                          this.dispatchEvent(
-                                            new CustomEvent('design-changed', {
-                                              detail: updates,
-                                              bubbles: true,
-                                              composed: true,
-                                            })
-                                          );
-                                        }
-
-                                        // Restore cursor position
-                                        requestAnimationFrame(() => {
-                                          if (inputElement && typeof cursorPos === 'number') {
-                                            inputElement.setSelectionRange(
-                                              cursorPos,
-                                              cursorEnd || cursorPos
-                                            );
-                                          }
-                                        });
-
-                                        // Progressive UI refresh strategy with cascading timeouts
-                                        setTimeout(() => {
-                                          this.requestUpdate();
-                                        }, 50);
-
-                                        setTimeout(() => {
-                                          this.requestUpdate();
-                                        }, 150);
-
-                                        setTimeout(() => {
-                                          this.requestUpdate();
-                                        }, 300);
-
-                                        setTimeout(() => {
-                                          this.requestUpdate();
-
-                                          // Remove the success class after animation completes
-                                          inputElement.classList.remove('change-success');
-                                        }, 500);
-                                      }}
-                                      placeholder="friendly_name, device_class, state, etc."
-                                      autocomplete="off"
-                                      class="property-input attribute-mode-input"
-                                    />
-                                    <small class="property-hint">
-                                      Enter the attribute name manually (e.g., friendly_name,
-                                      device_class, state, battery_level)
-                                    </small>
-                                  </div>
-
-                                  <div class="property-group">
-                                    <label>
-                                      <ha-icon icon="mdi:format-text"></ha-icon>
-                                      Attribute Value:
-                                    </label>
-                                    <input
-                                      type="text"
-                                      .value=${effectiveDesign.animation_state || ''}
-                                      @input=${(e: Event) => {
-                                        const target = e.target as HTMLInputElement;
-                                        const cursorPos = target.selectionStart;
-                                        const cursorEnd = target.selectionEnd;
-                                        this._updateProperty('animation_state', target.value);
-                                        requestAnimationFrame(() => {
-                                          if (target && typeof cursorPos === 'number') {
-                                            target.setSelectionRange(
-                                              cursorPos,
-                                              cursorEnd || cursorPos
-                                            );
-                                          }
-                                        });
-                                      }}
-                                      placeholder="blue, 255, heating, on, off, etc."
-                                      autocomplete="off"
-                                      class="property-input attribute-value-input"
-                                    />
-                                    <small class="property-hint">
-                                      Enter the attribute value that will trigger the animation
-                                    </small>
-                                  </div>
-                                </div>
-                              `;
-                            } else {
-                              return html`
-                                <div
-                                  class="property-group state-value-container"
-                                  style="display: ${String(
-                                    this.designProperties.animation_trigger_type
-                                  ) !== 'attribute'
-                                    ? 'block !important'
-                                    : 'none !important'}"
-                                  data-mode="state"
-                                >
-                                  <label>
-                                    <ha-icon icon="mdi:state-machine"></ha-icon>
-                                    State Value:
-                                  </label>
-                                  <input
-                                    type="text"
-                                    .value=${effectiveDesign.animation_state || ''}
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const cursorPos = target.selectionStart;
-                                      const cursorEnd = target.selectionEnd;
-                                      this._updateProperty('animation_state', target.value);
-                                      requestAnimationFrame(() => {
-                                        if (target && typeof cursorPos === 'number') {
-                                          target.setSelectionRange(
-                                            cursorPos,
-                                            cursorEnd || cursorPos
-                                          );
-                                        }
-                                      });
-                                    }}
-                                    placeholder="on, off, playing, idle, etc."
-                                    autocomplete="off"
-                                    class="property-input state-value-input"
-                                  />
-                                  <small class="property-hint">
-                                    Enter the exact state value that will trigger the animation
-                                  </small>
-                                  <div class="property-hint state-value-hint">
-                                    <ha-icon icon="mdi:information-outline"></ha-icon>
-                                    <span>
-                                      ${this._getStateValueHint(
-                                        this.designProperties.animation_entity
-                                      )}
-                                    </span>
-                                  </div>
-                                </div>
-                              `;
-                            }
-                          })()}
-                        `
-                      : html`
-                          <div class="property-group">
-                            <label>Trigger Type:</label>
-                            <select disabled class="property-select">
-                              <option>Select an entity first</option>
-                            </select>
-                            <small class="property-hint">
-                              Select an entity first to configure trigger conditions
-                            </small>
-                          </div>
-                        `}
-                  `
-                : ''}
-            </div>
-
-            <!-- Intro/Outro Animations -->
-            <div class="property-section">
-              <h5>
-                ${localize(
-                  'editor.design.intro_outro_animations',
-                  this.hass?.locale?.language || 'en',
-                  'Intro & Outro Animations'
-                )}
-              </h5>
-              <div class="two-column-grid">
-                <div class="property-group">
-                  <label
-                    >${localize(
-                      'editor.design.intro_animation',
-                      this.hass?.locale?.language || 'en',
-                      'Intro Animation'
-                    )}:</label
-                  >
-                  ${this._renderDesignSelect(
-                  'intro_animation',
-                  effectiveDesign.intro_animation || 'none',
-                  designSelectOptions.introAnimation
-                )}
-                </div>
-
-                <div class="property-group">
-                  <label
-                    >${localize(
-                      'editor.design.outro_animation',
-                      this.hass?.locale?.language || 'en',
-                      'Outro Animation'
-                    )}:</label
-                  >
-                  ${this._renderDesignSelect(
-                  'outro_animation',
-                  effectiveDesign.outro_animation || 'none',
-                  designSelectOptions.outroAnimation
-                )}
-                </div>
-              </div>
-
-              <!-- Intro/Outro Animation Settings (separate from continuous animation) -->
-              <div class="three-column-grid">
-                <div class="property-group">
-                  <label
-                    >${localize(
-                      'editor.design.duration',
-                      this.hass?.locale?.language || 'en',
-                      'Duration'
-                    )}:</label
-                  >
-                  <input
-                    type="text"
-                    .value=${effectiveDesign.intro_animation_duration || ''}
-                    @change=${(e: Event) =>
-                      this._updateProperty(
-                        'intro_animation_duration',
-                        (e.target as HTMLInputElement).value
-                      )}
-                    placeholder="0.3s, 500ms"
-                    class="property-input"
-                  />
-                </div>
-
-                <div class="property-group">
-                  <label
-                    >${localize(
-                      'editor.design.delay',
-                      this.hass?.locale?.language || 'en',
-                      'Delay'
-                    )}:</label
-                  >
-                  <input
-                    type="text"
-                    .value=${effectiveDesign.intro_animation_delay || ''}
-                    @change=${(e: Event) =>
-                      this._updateProperty(
-                        'intro_animation_delay',
-                        (e.target as HTMLInputElement).value
-                      )}
-                    placeholder="0s, 100ms"
-                    class="property-input"
-                  />
-                </div>
-
-                <div class="property-group">
-                  <label
-                    >${localize(
-                      'editor.design.timing',
-                      this.hass?.locale?.language || 'en',
-                      'Timing'
-                    )}:</label
-                  >
-                  ${this._renderDesignSelect(
-                  'intro_animation_timing',
-                  effectiveDesign.intro_animation_timing || 'ease',
-                  designSelectOptions.animationTiming
-                )}
-                </div>
-              </div>
-            </div>
-          `,
-          'animations',
-          [
-            'animation_type',
-            'animation_entity',
-            'animation_trigger_type',
-            'animation_attribute',
-            'animation_state',
-            'animation_duration',
-            'animation_delay',
-            'animation_timing',
-            'intro_animation',
-            'outro_animation',
-            'intro_animation_duration',
-            'intro_animation_delay',
-            'intro_animation_timing',
-          ]
-        )}
-        ${this._renderAccordion(
-          localize('editor.design.custom_targeting_section', lang, 'Custom Targeting'),
-          html`
-            <div class="property-group">
-              <label
-                >${localize('editor.design.css_var_prefix', lang, 'CSS Variable Prefix')}:</label
-              >
-              <input
-                type="text"
-                .value=${effectiveDesign.css_variable_prefix || ''}
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const cursorPos = target.selectionStart;
-                  const cursorEnd = target.selectionEnd;
-                  this._updateProperty('css_variable_prefix', target.value);
-                  requestAnimationFrame(() => {
-                    if (target && typeof cursorPos === 'number') {
-                      target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
-                    }
-                  });
-                }}
-                placeholder="my-row"
-                autocomplete="off"
-                class="property-input"
-              />
-              <div class="field-description">
-                ${localize(
-                  'editor.design.css_var_prefix_desc',
-                  lang,
-                  'Prefix for CSS variables (e.g., "my-row" creates --my-row-bg-color, --my-row-text-color). Override with card-mod: style: | :host { --my-row-bg-color: red; }'
-                )}
-              </div>
-            </div>
-            <div class="property-group">
-              <label>${localize('editor.design.extra_class', lang, 'Extra CSS classes')}:</label>
-              <input
-                type="text"
-                .value=${effectiveDesign.extra_class || ''}
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  this._updateProperty('extra_class', target.value);
-                }}
-                placeholder="my-class another-class"
-                autocomplete="off"
-                class="property-input"
-              />
-              <div class="field-description">
-                ${localize(
-                  'editor.design.extra_class_desc',
-                  lang,
-                  'Space-separated class names applied to the module container (for card-mod or themes).'
-                )}
-              </div>
-            </div>
-            <div class="property-group">
-              <label>${localize('editor.design.element_id', lang, 'Element ID')}:</label>
-              <input
-                type="text"
-                .value=${effectiveDesign.element_id || ''}
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  this._updateProperty('element_id', target.value);
-                }}
-                placeholder="my-unique-id"
-                autocomplete="off"
-                class="property-input"
-              />
-              <div class="field-description">
-                ${localize(
-                  'editor.design.element_id_desc',
-                  lang,
-                  'Optional HTML id on the module root (use sparingly; must be unique on the page).'
-                )}
-              </div>
-            </div>
-          `,
-          'custom_targeting',
-          ['css_variable_prefix', 'extra_class', 'element_id']
+              : nothing}
+            ${this._renderSelectField(
+              'background_repeat',
+              this._t('background_repeat', 'Background Repeat'),
+              d.background_repeat || 'no-repeat',
+              options.backgroundRepeat
+            )}
+            ${this._renderSelectField(
+              'background_position',
+              this._t('background_position', 'Background Position'),
+              d.background_position || 'center center',
+              options.backgroundPosition
+            )}
+          `
+        : nothing}
+
+      ${this._renderTextField({
+        property: 'backdrop_filter',
+        label: this._t('backdrop_filter', 'Backdrop Filter'),
+        value: d.backdrop_filter,
+        placeholder: 'blur(10px), grayscale(100%), invert(75%)',
+        hint: this._t('backdrop_filter_desc', 'Filters what is behind this element (e.g. frosted glass).'),
+      })}
+      ${this._renderTextField({
+        property: 'background_filter',
+        label: this._t('background_filter', 'Background Filter'),
+        value: d.background_filter,
+        placeholder: 'grayscale(100%), blur(10px), brightness(0.5)',
+        hint: this._t('background_filter_desc', 'Filters the background image only; content stays sharp.'),
+      })}
+    `;
+  }
+
+  private _renderCustomBackgroundSize(
+    d: DesignProperties,
+    dimension: 'width' | 'height'
+  ): TemplateResult {
+    const label =
+      dimension === 'width'
+        ? this._t('custom_width', 'Custom Width')
+        : this._t('custom_height', 'Custom Height');
+    const current = this._getCustomSizeValue(d.background_size, dimension);
+    const apply = (value: string) => {
+      const width = dimension === 'width' ? value : this._getCustomSizeValue(d.background_size, 'width');
+      const height =
+        dimension === 'height' ? value : this._getCustomSizeValue(d.background_size, 'height');
+      this._updateProperty('background_size', `${width || 'auto'} ${height || 'auto'}`);
+    };
+
+    return html`
+      <div class="property-group">
+        <label>${label}</label>
+        <input
+          type="text"
+          class="property-input"
+          .value=${current}
+          placeholder="auto, 100px, 50%"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label=${label}
+          @input=${this._inputHandler(apply)}
+          @keydown=${(e: KeyboardEvent) => this._handleNumericKeydown(e, current, apply)}
+        />
+      </div>
+    `;
+  }
+
+  private _renderSizesSection(d: DesignProperties): TemplateResult {
+    const fields: Array<{ key: DesignKey; label: string; placeholder: string }> = [
+      { key: 'width', label: this._t('width', 'Width'), placeholder: 'auto, 200px, 100%' },
+      { key: 'height', label: this._t('height', 'Height'), placeholder: 'auto, 200px, 15rem' },
+      { key: 'max_width', label: this._t('max_width', 'Max Width'), placeholder: 'none, 600px, 100%' },
+      { key: 'max_height', label: this._t('max_height', 'Max Height'), placeholder: 'none, 300px, 50vh' },
+      { key: 'min_width', label: this._t('min_width', 'Min Width'), placeholder: '0, 200px, 50%' },
+      { key: 'min_height', label: this._t('min_height', 'Min Height'), placeholder: '0, 120px, 10rem' },
+    ];
+    return html`
+      <div class="two-column-grid">
+        ${fields.map(f =>
+          this._renderTextField({
+            property: f.key,
+            label: f.label,
+            value: (d as any)[f.key],
+            placeholder: f.placeholder,
+            numeric: true,
+          })
         )}
       </div>
     `;
   }
 
+  private _renderSpacingSection(d: DesignProperties): TemplateResult {
+    return html`
+      ${this._renderSpacingGroup('margin', d)} ${this._renderSpacingGroup('padding', d)}
+      <div class="property-hint">
+        ${this._t(
+          'spacing_units_hint',
+          'Accepts any CSS length: 8 or 8px, 1rem, 0.5em, 5%, 2vw, auto, calc(). Bare numbers are treated as px.'
+        )}
+      </div>
+    `;
+  }
+
+  private _renderSpacingGroup(type: SpacingType, d: DesignProperties): TemplateResult {
+    const locked = type === 'margin' ? this._marginLocked : this._paddingLocked;
+    const title = type === 'margin' ? this._t('margin', 'Margin') : this._t('padding', 'Padding');
+    const topValue = (d as any)[`${type}_top`] || '';
+    // Four narrow inputs: a long "0px, auto, 1rem" hint just gets clipped, so
+    // show a neutral default and explain accepted units once under the section.
+    const placeholder = '0';
+    const sideLabel = (side: Side) => this._t(side, side.charAt(0).toUpperCase() + side.slice(1));
+
+    return html`
+      <div class="spacing-group">
+        <div class="spacing-header">
+          <h4>${title}</h4>
+          <button
+            type="button"
+            class="lock-button ${locked ? 'locked' : ''}"
+            aria-pressed=${locked ? 'true' : 'false'}
+            title=${locked
+              ? this._t('unlock_sides', 'Unlock to edit sides independently')
+              : this._t('lock_sides', 'Lock to edit all sides together')}
+            @click=${() => this._toggleSpacingLock(type)}
+          >
+            <ha-icon icon=${locked ? 'mdi:lock' : 'mdi:lock-open-variant-outline'}></ha-icon>
+          </button>
+        </div>
+        <div class="spacing-fields">
+          ${SIDES.map(side => {
+            const isTop = side === 'top';
+            const value = locked ? topValue : (d as any)[`${type}_${side}`] || '';
+            const disabled = locked && !isTop;
+            return html`
+              <div class="spacing-field">
+                <label>${sideLabel(side)}</label>
+                <input
+                  type="text"
+                  class="spacing-input ${disabled ? 'locked' : ''}"
+                  .value=${value}
+                  .disabled=${disabled}
+                  placeholder=${placeholder}
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  aria-label="${title} ${sideLabel(side)}"
+                  @input=${this._inputHandler(v => this._updateSpacing(type, side, v))}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, value, v => this._updateSpacing(type, side, v))}
+                />
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderBorderSection(
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>
+  ): TemplateResult {
+    return html`
+      ${this._renderSelectField(
+        'border_style',
+        this._t('border_style', 'Border Style'),
+        d.border_style || '',
+        options.borderStyle
+      )}
+      <div class="two-column-grid">
+        ${this._renderTextField({
+          property: 'border_width',
+          label: this._t('border_width', 'Border Width'),
+          value: d.border_width,
+          numeric: true,
+          placeholder: '0, 1px, 0.125rem',
+        })}
+        ${this._renderTextField({
+          property: 'border_radius',
+          label: this._t('border_radius', 'Border Radius'),
+          value: d.border_radius,
+          numeric: true,
+          placeholder: '0, 8px, 50%',
+        })}
+      </div>
+      ${this._renderColorField(
+        'border_color',
+        this._t('border_color', 'Border Color'),
+        d.border_color,
+        'var(--divider-color)'
+      )}
+    `;
+  }
+
+  private _renderPositionSection(
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>
+  ): TemplateResult {
+    const positioned = !!d.position && d.position !== 'static';
+    const offset = (side: Side) => {
+      const label = this._t(side, side.charAt(0).toUpperCase() + side.slice(1));
+      const value = (d as any)[side] || '';
+      return html`
+        <input
+          type="text"
+          class="position-input"
+          .value=${value}
+          placeholder=${label}
+          aria-label=${label}
+          autocomplete="off"
+          spellcheck="false"
+          @input=${this._inputHandler(v => this._updateProperty(side, v))}
+          @keydown=${(e: KeyboardEvent) =>
+            this._handleNumericKeydown(e, value, v => this._updateProperty(side, v))}
+        />
+      `;
+    };
+
+    return html`
+      ${this._renderSelectField(
+        'position',
+        this._t('position', 'Position'),
+        d.position || '',
+        options.position
+      )}
+      ${positioned
+        ? html`
+            <div class="property-group">
+              <label>${this._t('offsets', 'Offsets')}</label>
+              <div class="position-grid" role="group" aria-label=${this._t('offsets', 'Offsets')}>
+                ${offset('top')}
+                <div class="position-row">
+                  ${offset('left')}
+                  <div class="position-center" aria-hidden="true">
+                    <ha-icon icon="mdi:arrow-all"></ha-icon>
+                  </div>
+                  ${offset('right')}
+                </div>
+                ${offset('bottom')}
+              </div>
+            </div>
+            ${this._renderTextField({
+              property: 'z_index',
+              label: this._t('z_index', 'Z-Index'),
+              value: d.z_index,
+              numeric: true,
+              unit: '',
+              placeholder: '-1, 1, 3, 50',
+            })}
+          `
+        : nothing}
+    `;
+  }
+
+  private _renderTextShadowSection(d: DesignProperties): TemplateResult {
+    return html`
+      <div class="three-column-grid">
+        ${this._renderTextField({
+          property: 'text_shadow_h',
+          label: this._t('horizontal_shift', 'Horizontal Shift'),
+          value: d.text_shadow_h,
+          numeric: true,
+          placeholder: '0, 3px',
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: 'text_shadow_v',
+          label: this._t('vertical_shift', 'Vertical Shift'),
+          value: d.text_shadow_v,
+          numeric: true,
+          placeholder: '0, 3px',
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: 'text_shadow_blur',
+          label: this._t('blur', 'Blur'),
+          value: d.text_shadow_blur,
+          numeric: true,
+          placeholder: '0, 3px',
+          compact: true,
+        })}
+      </div>
+      ${this._renderColorField(
+        'text_shadow_color',
+        this._t('text_shadow_color', 'Text Shadow Color'),
+        d.text_shadow_color,
+        'rgba(0,0,0,0.5)'
+      )}
+      <div class="property-hint">
+        ${this._t(
+          'text_shadow_hint',
+          'Both horizontal and vertical shift are required for the shadow to render.'
+        )}
+      </div>
+    `;
+  }
+
+  private _renderBoxShadowSection(d: DesignProperties): TemplateResult {
+    return html`
+      <div class="two-column-grid">
+        ${this._renderTextField({
+          property: 'box_shadow_h',
+          label: this._t('horizontal_shift', 'Horizontal Shift'),
+          value: d.box_shadow_h,
+          numeric: true,
+          placeholder: '0, 3px',
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: 'box_shadow_v',
+          label: this._t('vertical_shift', 'Vertical Shift'),
+          value: d.box_shadow_v,
+          numeric: true,
+          placeholder: '0, 3px',
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: 'box_shadow_blur',
+          label: this._t('blur', 'Blur'),
+          value: d.box_shadow_blur,
+          numeric: true,
+          placeholder: '0, 8px',
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: 'box_shadow_spread',
+          label: this._t('spread', 'Spread'),
+          value: d.box_shadow_spread,
+          numeric: true,
+          placeholder: '0, -4px',
+          compact: true,
+        })}
+      </div>
+      ${this._renderColorField(
+        'box_shadow_color',
+        this._t('box_shadow_color', 'Box Shadow Color'),
+        d.box_shadow_color,
+        'rgba(0,0,0,0.1)'
+      )}
+    `;
+  }
+
+  private _renderOverflowSection(
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>
+  ): TemplateResult {
+    return html`
+      ${this._renderSelectField(
+        'overflow',
+        this._t('overflow', 'Overflow'),
+        d.overflow || 'visible',
+        options.overflow
+      )}
+      ${this._renderTextField({
+        property: 'clip_path',
+        label: this._t('clip_path', 'Clip-path'),
+        value: d.clip_path,
+        placeholder: 'ellipse(75% 100% at bottom)',
+        hint: html`${this._t('examples', 'Examples')}:
+          <code>ellipse(75% 100% at bottom)</code>,
+          <code>polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)</code>`,
+      })}
+    `;
+  }
+
+  private _renderTransformSection(d: DesignProperties): TemplateResult {
+    // Three narrow inputs: keep the placeholder short, explain the range in the intro.
+    const rotatePlaceholder = '0deg';
+    return html`
+      <div class="property-hint section-intro">
+        ${this._t(
+          'transform_3d_desc',
+          'Tilt or rotate the module in 3D space. Set perspective for depth, then rotate on X (tilt forward/back), Y (turn left/right), or Z (spin).'
+        )}
+        ${this._t('transform_3d_rotate_hint', 'Rotation values are in degrees (-180 to 180).')}
+      </div>
+      ${this._renderTextField({
+        property: 'transform_perspective',
+        label: this._t('transform_3d_perspective', 'Perspective'),
+        value: d.transform_perspective,
+        numeric: true,
+        placeholder: this._t('transform_3d_perspective_placeholder', 'none, 400px, 1000px'),
+      })}
+      <div class="three-column-grid">
+        ${this._renderTextField({
+          property: 'transform_rotate_x',
+          label: this._t('transform_3d_rotate_x', 'Rotate X'),
+          value: d.transform_rotate_x,
+          numeric: true,
+          unit: 'deg',
+          placeholder: rotatePlaceholder,
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: 'transform_rotate_y',
+          label: this._t('transform_3d_rotate_y', 'Rotate Y'),
+          value: d.transform_rotate_y,
+          numeric: true,
+          unit: 'deg',
+          placeholder: rotatePlaceholder,
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: 'transform_rotate_z',
+          label: this._t('transform_3d_rotate_z', 'Rotate Z'),
+          value: d.transform_rotate_z,
+          numeric: true,
+          unit: 'deg',
+          placeholder: rotatePlaceholder,
+          compact: true,
+        })}
+      </div>
+    `;
+  }
+
+  private _renderAnimationsSection(
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>
+  ): TemplateResult {
+    const animationType = d.animation_type || 'none';
+    const hasStateAnimation = animationType !== 'none';
+    const hasIntroOutro =
+      (d.intro_animation && d.intro_animation !== 'none') ||
+      (d.outro_animation && d.outro_animation !== 'none');
+
+    return html`
+      <div class="property-section">
+        <h5>${this._t('state_based_animation', 'State-based Animation')}</h5>
+        ${this._renderSelectField(
+          'animation_type',
+          this._t('animation_type', 'Animation Type'),
+          animationType,
+          options.animationType,
+          (next: string) =>
+            this._updateProperty('animation_type', next === 'none' ? undefined : next)
+        )}
+        ${hasStateAnimation
+          ? html`
+              ${this._renderAnimationTrigger(d, options)}
+              ${this._renderTimingRow(
+                'animation_duration',
+                'animation_delay',
+                'animation_timing',
+                d,
+                options,
+                '2s'
+              )}
+            `
+          : nothing}
+      </div>
+
+      <div class="property-section">
+        <h5>${this._t('intro_outro_animations', 'Intro & Outro Animations')}</h5>
+        <div class="two-column-grid">
+          ${this._renderSelectField(
+            'intro_animation',
+            this._t('intro_animation', 'Intro Animation'),
+            d.intro_animation || 'none',
+            options.introAnimation,
+            (next: string) =>
+              this._updateProperty('intro_animation', next === 'none' ? undefined : next)
+          )}
+          ${this._renderSelectField(
+            'outro_animation',
+            this._t('outro_animation', 'Outro Animation'),
+            d.outro_animation || 'none',
+            options.outroAnimation,
+            (next: string) =>
+              this._updateProperty('outro_animation', next === 'none' ? undefined : next)
+          )}
+        </div>
+        ${hasIntroOutro
+          ? this._renderTimingRow(
+              'intro_animation_duration',
+              'intro_animation_delay',
+              'intro_animation_timing',
+              d,
+              options,
+              '0.5s'
+            )
+          : nothing}
+      </div>
+    `;
+  }
+
+  private _renderTimingRow(
+    durationKey: DesignKey,
+    delayKey: DesignKey,
+    timingKey: DesignKey,
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>,
+    defaultDuration: string
+  ): TemplateResult {
+    return html`
+      <div class="three-column-grid">
+        ${this._renderTextField({
+          property: durationKey,
+          label: this._t('duration', 'Duration'),
+          value: (d as any)[durationKey],
+          placeholder: `${defaultDuration}, 500ms`,
+          compact: true,
+        })}
+        ${this._renderTextField({
+          property: delayKey,
+          label: this._t('delay', 'Delay'),
+          value: (d as any)[delayKey],
+          placeholder: '0s, 100ms',
+          compact: true,
+        })}
+        ${this._renderSelectField(
+          timingKey,
+          this._t('timing', 'Timing'),
+          ((d as any)[timingKey] as string) || 'ease',
+          options.animationTiming
+        )}
+      </div>
+    `;
+  }
+
+  private _renderAnimationTrigger(
+    d: DesignProperties,
+    options: ReturnType<typeof getDesignSelectOptions>
+  ): TemplateResult {
+    const entity = d.animation_entity || '';
+    const triggerType = d.animation_trigger_type || 'state';
+
+    return html`
+      <div class="property-group">
+        <label>${this._t('entity_to_monitor', 'Entity to Monitor')}</label>
+        <ha-form
+          .hass=${this.hass}
+          .data=${{ entity }}
+          .schema=${[{ name: 'entity', selector: { entity: {} }, label: '' }]}
+          .computeLabel=${() => ''}
+          @value-changed=${(e: CustomEvent) =>
+            this._updateProperty('animation_entity', e.detail.value?.entity)}
+        ></ha-form>
+        ${entity
+          ? nothing
+          : html`<div class="property-hint">
+              ${this._t(
+                'select_entity_first',
+                'Choose an entity, then set the state or attribute that triggers the animation.'
+              )}
+            </div>`}
+      </div>
+
+      ${entity
+        ? html`
+            ${this._renderSelectField(
+              'animation_trigger_type',
+              this._t('animation_trigger_type', 'Trigger Type'),
+              triggerType,
+              options.animationTriggerType,
+              (next: string) =>
+                this._applyUpdates({
+                  animation_trigger_type: next as 'state' | 'attribute',
+                  animation_state: undefined,
+                  animation_attribute: undefined,
+                })
+            )}
+            ${triggerType === 'attribute'
+              ? html`
+                  <div class="two-column-grid">
+                    ${this._renderTextField({
+                      property: 'animation_attribute',
+                      label: this._t('attribute_name', 'Attribute Name'),
+                      value: d.animation_attribute,
+                      placeholder: 'battery_level, hvac_action',
+                      compact: true,
+                      hint: this._getAttributeNameHint(entity),
+                    })}
+                    ${this._renderTextField({
+                      property: 'animation_state',
+                      label: this._t('attribute_value', 'Attribute Value'),
+                      value: d.animation_state,
+                      placeholder: 'heating, 20, on',
+                      compact: true,
+                      hint: this._getAttributeValueHint(entity, d.animation_attribute || ''),
+                    })}
+                  </div>
+                `
+              : this._renderTextField({
+                  property: 'animation_state',
+                  label: this._t('state_value', 'State Value'),
+                  value: d.animation_state,
+                  placeholder: 'on, off, playing, idle',
+                  hint: this._getStateValueHint(entity),
+                })}
+          `
+        : nothing}
+    `;
+  }
+
+  private _renderCustomTargetingSection(d: DesignProperties): TemplateResult {
+    return html`
+      ${this._renderTextField({
+        property: 'css_variable_prefix',
+        label: this._t('css_var_prefix', 'CSS Variable Prefix'),
+        value: d.css_variable_prefix,
+        placeholder: 'my-row',
+        hint: this._t(
+          'css_var_prefix_desc',
+          'Prefix for CSS variables (e.g., "my-row" creates --my-row-bg-color, --my-row-text-color). Override with card-mod: style: | :host { --my-row-bg-color: red; }'
+        ),
+      })}
+      ${this._renderTextField({
+        property: 'extra_class',
+        label: this._t('extra_class', 'Extra CSS classes'),
+        value: d.extra_class,
+        placeholder: 'my-class another-class',
+        hint: this._t(
+          'extra_class_desc',
+          'Space-separated class names applied to the module container (for card-mod or themes).'
+        ),
+      })}
+      ${this._renderTextField({
+        property: 'element_id',
+        label: this._t('element_id', 'Element ID'),
+        value: d.element_id,
+        placeholder: 'my-unique-id',
+        hint: this._t(
+          'element_id_desc',
+          'Optional HTML id on the module root (use sparingly; must be unique on the page).'
+        ),
+      })}
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Entity hints for the animation trigger
+  // ---------------------------------------------------------------------------
+
+  private _getStateValueHint(entityId: string): string {
+    const entity = this.hass?.states?.[entityId];
+    if (!entity) return this._t('entity_not_found', 'Entity not found');
+    if (entity.state && entity.state !== 'unknown' && entity.state !== 'unavailable') {
+      return this._t('current_state', 'Current state: {state}', { state: entity.state });
+    }
+    return this._t('state_value_hint', 'Enter the exact state value that triggers the animation');
+  }
+
+  private _getAttributeNameHint(entityId: string): string {
+    const entity = this.hass?.states?.[entityId];
+    if (!entity?.attributes) return this._t('entity_not_found', 'Entity not found');
+    const names = Object.keys(entity.attributes).filter(
+      key => !key.startsWith('_') && typeof entity.attributes[key] !== 'object'
+    );
+    if (names.length === 0) {
+      return this._t('attribute_name_hint', 'Enter the attribute name to monitor');
+    }
+    const shown = names.slice(0, 3).join(', ');
+    return this._t('available_attributes', 'Available: {list}', {
+      list: names.length > 3 ? `${shown}, …` : shown,
+    });
+  }
+
+  private _getAttributeValueHint(entityId: string, attributeName: string): string {
+    if (!attributeName) return this._t('select_attribute_first', 'Enter an attribute name first');
+    const entity = this.hass?.states?.[entityId];
+    if (!entity?.attributes) return this._t('entity_not_found', 'Entity not found');
+    const value = entity.attributes[attributeName];
+    if (value === null || value === undefined) {
+      return this._t('attribute_not_found', 'Attribute not found on this entity');
+    }
+    const str = String(value);
+    return this._t('current_value', 'Current value: {value}', {
+      value: str.length > 30 ? `${str.slice(0, 27)}...` : str,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Background size helpers
+  // ---------------------------------------------------------------------------
+
+  private _getBackgroundSizeDropdownValue(backgroundSize: string | undefined): string {
+    if (!backgroundSize) return 'cover';
+    if (['cover', 'contain', 'auto'].includes(backgroundSize)) return backgroundSize;
+    return 'custom';
+  }
+
+  private _getCustomSizeValue(
+    backgroundSize: string | undefined,
+    dimension: 'width' | 'height'
+  ): string {
+    if (!backgroundSize || ['cover', 'contain', 'auto', 'custom'].includes(backgroundSize)) {
+      return '';
+    }
+    const parts = backgroundSize.trim().split(/\s+/);
+    const value = dimension === 'width' ? parts[0] : parts[1] ?? parts[0];
+    return value === 'auto' ? '' : value || '';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Styles
+  // ---------------------------------------------------------------------------
+
   static override get styles() {
     return css`
+      :host {
+        display: block;
+      }
+
       .global-design-tab {
         display: flex;
         flex-direction: column;
         gap: 8px;
         box-sizing: border-box;
-        overflow: hidden;
+        min-width: 0;
       }
 
+      /* ---- Toolbar ---------------------------------------------------- */
+
       .design-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
+        display: grid;
+        /* 2x2 keeps all four labels readable in the narrow HA editor pane */
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
         border-radius: 8px;
-        margin-bottom: 8px;
         box-sizing: border-box;
-        overflow: hidden;
       }
 
       .toolbar-button {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
+        min-width: 0;
+        min-height: 40px;
         padding: 8px 12px;
         border: 1px solid var(--divider-color);
         border-radius: 6px;
         background: var(--card-background-color);
         color: var(--primary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
+        font: inherit;
         font-size: 14px;
         font-weight: 500;
-        min-width: 0;
-        flex: 1;
-        justify-content: center;
+        cursor: pointer;
+        transition:
+          background-color 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease;
       }
 
       .toolbar-button:hover:not(:disabled) {
         border-color: var(--primary-color);
         background: var(--primary-color);
         color: var(--text-primary-color, white);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .toolbar-button:active:not(:disabled) {
-        transform: translateY(0);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       }
 
       .toolbar-button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
-        background: var(--disabled-background-color, var(--secondary-background-color, #f5f5f5));
-        color: var(--disabled-text-color, var(--secondary-text-color, #999));
-        border-color: var(--disabled-border-color, var(--divider-color, #ddd));
       }
 
       .toolbar-button ha-icon {
-        font-size: 16px;
+        --mdc-icon-size: 18px;
         flex-shrink: 0;
       }
 
@@ -4337,83 +2374,43 @@ export class GlobalDesignTab extends LitElement {
         text-overflow: ellipsis;
       }
 
-      /* Specific button styling */
-      .copy-button:hover:not(:disabled) {
-        border-color: var(--info-color, #2196f3);
-        background: var(--info-color, #2196f3);
-      }
-
       .paste-button.has-content {
         border-color: var(--success-color, #4caf50);
-        background: rgba(76, 175, 80, 0.1);
       }
 
       .paste-button.has-content:hover:not(:disabled) {
-        border-color: var(--success-color, #4caf50);
         background: var(--success-color, #4caf50);
+        border-color: var(--success-color, #4caf50);
         color: white;
-      }
-
-      .reset-theme-button:hover:not(:disabled) {
-        border-color: var(--primary-color);
-        background: var(--primary-color);
-        color: var(--text-primary-color, white);
       }
 
       .reset-all-button:hover:not(:disabled) {
         border-color: var(--error-color, #f44336);
         background: var(--error-color, #f44336);
+        color: white;
       }
 
-      /* Responsive design for smaller screens */
-      @media (max-width: 768px) {
-        .design-toolbar {
-          flex-direction: column;
-          gap: 8px;
-        }
+      /* ---- Responsive section ----------------------------------------- */
 
-        .toolbar-button {
-          width: 100%;
-          justify-content: center;
-        }
-      }
-
-      @media (max-width: 480px) {
-        .toolbar-button span {
-          display: none;
-        }
-
-        .toolbar-button {
-          min-width: 44px;
-          padding: 8px;
-          justify-content: center;
-        }
-
-        .design-toolbar {
-          flex-direction: row;
-          justify-content: space-around;
-        }
-      }
-
-      /* Responsive Design Section Styles */
       .responsive-design-section {
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         padding: 12px 16px;
         background: var(--secondary-background-color);
         border: 1px solid var(--divider-color);
         border-radius: 8px;
-        transition: all 0.3s ease;
+        box-sizing: border-box;
       }
 
       .responsive-design-section.enabled {
         border-left: 4px solid var(--primary-color);
-        background: rgba(var(--rgb-primary-color), 0.03);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.04);
       }
 
       .responsive-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
       }
 
       .responsive-title {
@@ -4423,6 +2420,7 @@ export class GlobalDesignTab extends LitElement {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-text-color);
+        min-width: 0;
       }
 
       .responsive-design-section.enabled .responsive-title {
@@ -4431,28 +2429,13 @@ export class GlobalDesignTab extends LitElement {
 
       .responsive-title ha-icon {
         --mdc-icon-size: 20px;
-      }
-
-      .responsive-toggle {
-        display: flex;
-        align-items: center;
+        flex-shrink: 0;
       }
 
       .has-overrides-badge {
         color: var(--warning-color, #ff9800);
-        font-size: 14px;
-        margin-left: 4px;
-        animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
+        font-size: 12px;
+        line-height: 1;
       }
 
       .responsive-content {
@@ -4462,25 +2445,37 @@ export class GlobalDesignTab extends LitElement {
       }
 
       .responsive-disabled-info {
+        margin-top: 6px;
         font-size: 12px;
         color: var(--secondary-text-color);
+      }
+
+      .responsive-info {
         margin-top: 8px;
-        font-style: italic;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.06);
+        border-left: 3px solid var(--primary-color);
+        border-radius: 6px;
       }
 
       .reset-device-button {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 6px;
+        margin-top: 12px;
+        padding: 6px 12px;
+        font: inherit;
         font-size: 12px;
         color: var(--error-color, #f44336);
         background: transparent;
         border: 1px solid var(--error-color, #f44336);
         border-radius: 4px;
-        padding: 6px 12px;
-        margin-top: 12px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition:
+          background-color 0.15s ease,
+          color 0.15s ease;
       }
 
       .reset-device-button:hover {
@@ -4492,31 +2487,7 @@ export class GlobalDesignTab extends LitElement {
         --mdc-icon-size: 16px;
       }
 
-      .responsive-info {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-top: 8px;
-        padding: 8px 12px;
-        background: rgba(var(--rgb-primary-color), 0.05);
-        border-radius: 6px;
-        border-left: 3px solid var(--primary-color);
-      }
-
-      /* Device Override Indicator on Accordion Sections */
-      .accordion-section.has-device-overrides {
-        border-left: 3px solid var(--warning-color, #ff9800);
-      }
-
-      .device-override-indicator {
-        display: inline-flex;
-        align-items: center;
-        margin-left: 6px;
-        color: var(--warning-color, #ff9800);
-      }
-
-      .device-override-indicator ha-icon {
-        --mdc-icon-size: 14px;
-      }
+      /* ---- Accordion --------------------------------------------------- */
 
       .accordion-section {
         border: 1px solid var(--divider-color);
@@ -4525,153 +2496,187 @@ export class GlobalDesignTab extends LitElement {
         box-sizing: border-box;
       }
 
+      .accordion-section.has-device-overrides {
+        border-left: 3px solid var(--warning-color, #ff9800);
+      }
+
       .accordion-header {
-        width: 100%;
-        padding: 12px 16px;
-        background: var(--secondary-background-color);
-        border: none;
-        border-radius: 8px 8px 0 0;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        font-weight: 500;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 12px 10px 16px;
+        background: var(--secondary-background-color);
         color: var(--primary-text-color);
-        transition: background-color 0.2s ease;
+        font-weight: 500;
         box-sizing: border-box;
+        transition:
+          background-color 0.15s ease,
+          color 0.15s ease;
       }
 
-      .accordion-header:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color, white);
-      }
-
+      .accordion-header:hover,
       .accordion-header.expanded {
         background: var(--primary-color);
         color: var(--text-primary-color, white);
-        border-radius: 8px 8px 0 0;
-      }
-
-      .accordion-header:not(.expanded) {
-        border-radius: 8px;
       }
 
       .accordion-toggle {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        padding: 4px 0;
         background: none;
         border: none;
+        border-radius: 4px;
         color: inherit;
         font: inherit;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        flex: 1;
         text-align: left;
-        padding: 0;
-      }
-
-      .accordion-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .reset-button,
-      .expand-button {
-        background: none;
-        border: none;
-        color: inherit;
         cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s ease;
-        min-width: 24px;
-        height: 24px;
       }
 
-      .reset-button:hover,
-      .expand-button:hover {
-        background: rgba(255, 255, 255, 0.1);
+      .accordion-toggle:focus-visible,
+      .toolbar-button:focus-visible,
+      .reset-button:focus-visible,
+      .reset-btn:focus-visible,
+      .lock-button:focus-visible,
+      .property-btn:focus-visible,
+      .reset-device-button:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
-      .accordion-header:not(.expanded) .reset-button:hover,
-      .accordion-header:not(.expanded) .expand-button:hover {
-        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1);
+      .accordion-header.expanded .accordion-toggle:focus-visible,
+      .accordion-header.expanded .reset-button:focus-visible {
+        outline-color: var(--text-primary-color, white);
       }
 
       .accordion-title {
-        position: relative;
         display: flex;
         align-items: center;
         gap: 8px;
+        min-width: 0;
       }
 
       .edit-indicator {
         width: 8px;
         height: 8px;
-        background: var(--primary-color);
         border-radius: 50%;
-        display: inline-block;
-        animation: pulse-edit-indicator 2s ease-in-out infinite;
+        background: var(--primary-color);
+        flex-shrink: 0;
       }
 
+      .accordion-header:hover .edit-indicator,
       .accordion-header.expanded .edit-indicator {
         background: var(--text-primary-color, white);
       }
 
-      @keyframes pulse-edit-indicator {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.6;
-        }
+      .device-override-indicator {
+        display: inline-flex;
+        align-items: center;
+        color: var(--warning-color, #ff9800);
+      }
+
+      .device-override-indicator ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .accordion-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .reset-button,
+      .expand-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
+        padding: 4px;
+        background: none;
+        border: none;
+        border-radius: 4px;
+        color: inherit;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+
+      .reset-button:hover,
+      .expand-button:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .accordion-header:not(.expanded):not(:hover) .reset-button:hover,
+      .accordion-header:not(.expanded):not(:hover) .expand-button:hover {
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08);
+      }
+
+      .reset-button ha-icon,
+      .expand-button ha-icon {
+        --mdc-icon-size: 20px;
       }
 
       .accordion-content {
-        padding: 20px;
+        padding: 16px;
         background: var(--card-background-color, #fff);
         border-top: 1px solid var(--divider-color);
-        border-radius: 0 0 8px 8px;
-        position: relative;
         box-sizing: border-box;
-        overflow: hidden;
       }
 
+      /* ---- Fields ------------------------------------------------------ */
+
       .property-group {
-        margin-bottom: 16px;
+        margin-bottom: 14px;
+        min-width: 0;
         box-sizing: border-box;
-        overflow: hidden;
       }
 
       .property-group:last-child {
         margin-bottom: 0;
       }
 
-      .property-group label {
+      .property-group > label {
         display: block;
-        font-weight: 500;
         margin-bottom: 4px;
+        font-size: 13px;
+        font-weight: 500;
         color: var(--primary-text-color);
       }
 
       .property-input,
-      .property-select {
+      .property-select,
+      .position-input {
         width: 100%;
-        padding: 8px;
+        min-width: 0;
+        padding: 8px 10px;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
         background: var(--card-background-color);
         color: var(--primary-text-color);
+        font: inherit;
         font-size: 14px;
         box-sizing: border-box;
-        max-width: 100%;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      .property-input::placeholder,
+      .spacing-input::placeholder,
+      .position-input::placeholder {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
       }
 
       .property-input:focus,
-      .property-select:focus {
+      .property-select:focus,
+      .spacing-input:focus,
+      .position-input:focus {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 1px var(--primary-color);
@@ -4679,1012 +2684,52 @@ export class GlobalDesignTab extends LitElement {
 
       .property-hint {
         display: block;
-        font-size: 11px;
-        color: var(--secondary-text-color);
         margin-top: 4px;
-        line-height: 1.3;
-      }
-
-      .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-      }
-
-      .button-group {
-        display: flex;
-        gap: 4px;
-      }
-
-      .property-btn {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .property-btn:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-      }
-
-      .property-btn.active {
-        background: var(--primary-color);
-        color: var(--text-primary-color, white);
-        border-color: var(--primary-color);
-      }
-
-      .spacing-group {
-        margin-bottom: 20px;
-      }
-
-      .spacing-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-
-      .spacing-group h4 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-
-      .lock-button {
-        padding: 6px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 32px;
-        height: 32px;
-      }
-
-      .lock-button:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-      }
-
-      .lock-button.locked {
-        background: var(--primary-color);
-        color: var(--text-primary-color, white);
-        border-color: var(--primary-color);
-      }
-
-      .spacing-fields-desktop {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-      }
-
-      .spacing-field {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .spacing-field label {
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--secondary-text-color);
-        margin-bottom: 4px;
-        text-align: center;
-      }
-
-      .spacing-input {
-        width: 100%;
-        padding: 6px 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 12px;
-        text-align: center;
-        box-sizing: border-box;
-        max-width: 100%;
-      }
-
-      .spacing-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 1px var(--primary-color);
-      }
-
-      .spacing-input.locked {
-        background: var(--disabled-color);
-        color: var(--secondary-text-color);
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .spacing-input.locked:focus {
-        border-color: var(--divider-color);
-        box-shadow: none;
-      }
-
-      @media (max-width: 768px) {
-        .spacing-fields-desktop {
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-        }
-      }
-
-      .google-fonts-info-box {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        margin-top: 8px;
-        padding: 12px;
-        background: linear-gradient(
-          135deg,
-          rgba(var(--rgb-primary-color, 3, 169, 244), 0.1),
-          rgba(var(--rgb-primary-color, 3, 169, 244), 0.05)
-        );
-        border-left: 3px solid var(--primary-color);
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        animation: fadeIn 0.3s ease-in-out;
-      }
-
-      .google-fonts-info-box ha-icon {
-        color: var(--primary-color);
-        flex-shrink: 0;
-        margin-top: 2px;
-        --mdc-icon-size: 20px;
-      }
-
-      .google-fonts-info-box span {
-        font-size: 13px;
-        line-height: 1.5;
-        color: var(--primary-text-color);
-        opacity: 0.9;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-4px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .spacing-grid,
-      .position-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 8px;
-        align-items: center;
-        max-width: 150px;
-        margin: 0 auto;
-      }
-
-      .spacing-row,
-      .position-row {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .spacing-center,
-      .position-center {
-        width: 40px;
-        height: 32px;
-        background: var(--primary-color);
-        color: var(--text-primary-color, white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        font-weight: bold;
         font-size: 11px;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
       }
 
-      .spacing-grid input,
-      .position-grid input {
-        width: 100%;
-        text-align: center;
-        padding: 4px 8px;
-        font-size: 12px;
-      }
-
-      /* Property sections */
-      .property-section {
-        margin-bottom: 24px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid var(--divider-color);
-      }
-
-      .property-section:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-      }
-
-      .property-section h5 {
-        margin: 0 0 16px 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--primary-text-color);
-        padding-bottom: 8px;
-        border-bottom: 1px solid var(--primary-color);
-        display: inline-block;
-      }
-
-      /* Grid layouts */
-      .two-column-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        margin-bottom: 16px;
-      }
-
-      .three-column-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-
-      @media (max-width: 768px) {
-        .two-column-grid,
-        .three-column-grid {
-          grid-template-columns: 1fr;
-          gap: 12px;
-        }
-      }
-
-      /* Animation keyframes for intro/outro animations */
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      @keyframes fadeOut {
-        from {
-          opacity: 1;
-        }
-        to {
-          opacity: 0;
-        }
-      }
-
-      @keyframes slideInUp {
-        from {
-          transform: translateY(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      @keyframes slideOutUp {
-        from {
-          transform: translateY(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateY(-100%);
-          opacity: 0;
-        }
-      }
-
-      @keyframes slideInDown {
-        from {
-          transform: translateY(-100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      @keyframes slideOutDown {
-        from {
-          transform: translateY(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateY(100%);
-          opacity: 0;
-        }
-      }
-
-      @keyframes slideInLeft {
-        from {
-          transform: translateX(-100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-
-      @keyframes slideOutLeft {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(-100%);
-          opacity: 0;
-        }
-      }
-
-      @keyframes slideInRight {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-
-      @keyframes slideOutRight {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-      }
-
-      @keyframes zoomIn {
-        from {
-          transform: scale(0.3);
-          opacity: 0;
-        }
-        to {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      @keyframes zoomOut {
-        from {
-          transform: scale(1);
-          opacity: 1;
-        }
-        to {
-          transform: scale(0.3);
-          opacity: 0;
-        }
-      }
-
-      @keyframes bounceIn {
-        0% {
-          transform: scale(0.3);
-          opacity: 0;
-        }
-        50% {
-          transform: scale(1.05);
-        }
-        70% {
-          transform: scale(0.9);
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      @keyframes bounceOut {
-        20% {
-          transform: scale(0.9);
-        }
-        50%,
-        55% {
-          transform: scale(1.05);
-          opacity: 1;
-        }
-        100% {
-          transform: scale(0.3);
-          opacity: 0;
-        }
-      }
-
-      @keyframes flipInX {
-        from {
-          transform: perspective(400px) rotateX(90deg);
-          opacity: 0;
-        }
-        40% {
-          transform: perspective(400px) rotateX(-20deg);
-        }
-        60% {
-          transform: perspective(400px) rotateX(10deg);
-        }
-        80% {
-          transform: perspective(400px) rotateX(-5deg);
-        }
-        to {
-          transform: perspective(400px) rotateX(0deg);
-          opacity: 1;
-        }
-      }
-
-      @keyframes flipOutX {
-        from {
-          transform: perspective(400px) rotateX(0deg);
-          opacity: 1;
-        }
-        to {
-          transform: perspective(400px) rotateX(90deg);
-          opacity: 0;
-        }
-      }
-
-      @keyframes flipInY {
-        from {
-          transform: perspective(400px) rotateY(90deg);
-          opacity: 0;
-        }
-        40% {
-          transform: perspective(400px) rotateY(-20deg);
-        }
-        60% {
-          transform: perspective(400px) rotateY(10deg);
-        }
-        80% {
-          transform: perspective(400px) rotateY(-5deg);
-        }
-        to {
-          transform: perspective(400px) rotateY(0deg);
-          opacity: 1;
-        }
-      }
-
-      @keyframes flipOutY {
-        from {
-          transform: perspective(400px) rotateY(0deg);
-          opacity: 1;
-        }
-        to {
-          transform: perspective(400px) rotateY(90deg);
-          opacity: 0;
-        }
-      }
-
-      @keyframes rotateIn {
-        from {
-          transform: rotate(-200deg);
-          opacity: 0;
-        }
-        to {
-          transform: rotate(0deg);
-          opacity: 1;
-        }
-      }
-
-      @keyframes rotateOut {
-        from {
-          transform: rotate(0deg);
-          opacity: 1;
-        }
-        to {
-          transform: rotate(200deg);
-          opacity: 0;
-        }
-      }
-
-      /* Color picker z-index fix - ensure above editor UI */
-      ultra-color-picker {
-        position: relative;
-        z-index: ${Z_INDEX.COLOR_PICKER_CONTAINER};
-      }
-
-      /* Upload button styling */
-      .upload-container {
-        width: 100%;
-      }
-
-      .file-upload-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-      }
-
-      .file-upload-button {
-        display: flex;
-        align-items: center;
-        padding: 8px 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        min-width: 120px;
-      }
-
-      .file-upload-button:hover {
-        border-color: var(--primary-color);
-        background: var(--primary-color);
-        color: var(--text-primary-color, white);
-      }
-
-      .button-content {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .button-label {
-        font-size: 14px;
-        font-weight: 500;
-      }
-
-      .path-display {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .uploaded-path {
-        color: var(--primary-text-color);
-        font-size: 12px;
+      .property-hint code {
+        font-size: 11px;
         word-break: break-all;
       }
 
-      .no-file {
-        color: var(--secondary-text-color);
+      .property-hint.section-intro {
+        margin: 0 0 12px;
         font-size: 12px;
-        font-style: italic;
       }
 
-      /* Attribute value selection styling */
-      .attribute-value-selection {
+      .info-box {
         display: flex;
-        flex-direction: column;
-        gap: 8px;
-        position: relative;
-        margin-bottom: 8px;
-      }
-
-      .attribute-value-select {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid var(--primary-color);
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 8px;
+        padding: 10px 12px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border-left: 3px solid var(--primary-color);
         border-radius: 4px;
-        background: var(--card-background-color);
+        font-size: 12px;
+        line-height: 1.5;
         color: var(--primary-text-color);
-        font-size: 14px;
-        box-sizing: border-box;
-        appearance: menulist;
-        cursor: pointer;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        transition: all 0.2s ease;
-        max-height: 200px;
-        overflow-y: auto;
       }
 
-      .attribute-value-select:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .attribute-value-select option {
-        padding: 8px;
-      }
-
-      /* Enhanced attribute mode styling */
-      .attribute-mode {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 1px var(--primary-color);
-      }
-
-      .attribute-mode-container {
-        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
-        padding: 12px;
-        border-radius: 4px;
-        border-left: 3px solid var(--primary-color);
-        margin-bottom: 16px;
-      }
-
-      .trigger-type-indicator {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        margin: 8px 0;
-        border-radius: 4px;
-        font-weight: 500;
-      }
-
-      .attribute-mode-indicator {
-        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.1);
-        border-left: 3px solid var(--primary-color);
+      .info-box ha-icon {
+        --mdc-icon-size: 18px;
         color: var(--primary-color);
-      }
-
-      .state-mode-indicator {
-        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
-        border-left: 3px solid var(--info-color, #03a9f4);
-        color: var(--info-color, #03a9f4);
-      }
-
-      .attribute-mode-select {
-        border-color: var(--primary-color);
-      }
-
-      .attribute-value-container {
-        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
-        padding: 16px;
-        border-radius: 8px;
-        border-left: 3px solid var(--primary-color);
-        margin-top: 16px;
-      }
-
-      .attribute-value-container label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--primary-color);
-        font-weight: 600;
-        margin-bottom: 8px;
-      }
-
-      .attribute-value-selection {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 12px;
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
-        margin-top: 8px;
-      }
-
-      .attribute-value-input {
-        border-color: var(--primary-color);
-        border-width: 2px;
-      }
-
-      .attribute-value-dropdown-container {
-        background: var(--card-background-color, white);
-        padding: 12px;
-        border-radius: 4px;
-        border: 1px dashed var(--primary-color);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .attribute-value-label {
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--primary-color);
-        margin-bottom: 4px;
-      }
-
-      .attribute-value-hint {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-top: 8px;
-        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
-        padding: 8px;
-        border-radius: 4px;
-      }
-
-      /* State mode styling */
-      .state-value-container {
-        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.05);
-        padding: 16px;
-        border-radius: 8px;
-        border-left: 3px solid var(--info-color, #03a9f4);
-        margin-top: 16px;
-      }
-
-      .state-value-container label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--info-color, #03a9f4);
-        font-weight: 600;
-        margin-bottom: 8px;
-      }
-
-      .state-value-selection {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 12px;
-        border: 1px solid var(--info-color, #03a9f4);
-        border-radius: 4px;
-        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.05);
-        margin-top: 8px;
-      }
-
-      .state-value-input {
-        border-color: var(--info-color, #03a9f4);
-        border-width: 2px;
-      }
-
-      .state-value-dropdown-container {
-        background: var(--card-background-color, white);
-        padding: 12px;
-        border-radius: 4px;
-        border: 1px dashed var(--info-color, #03a9f4);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .state-value-label {
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--info-color, #03a9f4);
-        margin-bottom: 4px;
-      }
-
-      .state-value-hint {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-top: 8px;
-        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.05);
-        padding: 8px;
-        border-radius: 4px;
-      }
-
-      .state-value-hint ha-icon {
-        color: var(--info-color, #03a9f4);
         flex-shrink: 0;
+        margin-top: 1px;
       }
 
-      .attribute-value-hint ha-icon,
-      .state-value-hint ha-icon {
-        color: currentColor;
-        flex-shrink: 0;
-      }
-
-      /* Visual feedback animations */
-      @keyframes success-pulse {
-        0% {
-          box-shadow: 0 0 0 0 rgba(var(--rgb-success-color, 76, 175, 80), 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 10px rgba(var(--rgb-success-color, 76, 175, 80), 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(var(--rgb-success-color, 76, 175, 80), 0);
-        }
-      }
-
-      .change-success {
-        animation: success-pulse 0.5s ease-in-out;
-        border-color: var(--success-color, #4caf50) !important;
-        box-shadow: 0 0 0 1px var(--success-color, #4caf50);
-        transition: all 0.3s ease;
-      }
-
-      .attribute-mode-select.change-success,
-      .state-mode-select.change-success {
-        border-width: 2px;
-      }
-
-      .select-attribute-first {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px;
-        color: var(--warning-color, #ff9800);
-        font-style: italic;
-        text-align: center;
-        background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.05);
-        border: 1px dashed var(--warning-color, #ff9800);
-        border-radius: 4px;
-      }
-
-      /* Mode switch animation */
-      @keyframes highlight-fade {
-        0% {
-          background-color: rgba(var(--rgb-success-color, 76, 175, 80), 0.2);
-        }
-        100% {
-          background-color: transparent;
-        }
-      }
-
-      .trigger-type-indicator {
-        animation: highlight-fade 1.5s ease-out;
-      }
-
-      /* Additional highlight animation for mode switches */
-      @keyframes border-pulse {
-        0% {
-          border-left-width: 3px;
-        }
-        50% {
-          border-left-width: 6px;
-        }
-        100% {
-          border-left-width: 3px;
-        }
-      }
-
-      .attribute-mode-indicator {
-        animation: border-pulse 1s ease-in-out;
-      }
-
-      .state-mode-indicator {
-        animation: border-pulse 1s ease-in-out;
-      }
-
-      /* Visual transitions for UI state changes */
-      .property-select,
-      .property-input,
-      .attribute-value-select,
-      .state-value-select {
-        transition:
-          border-color 0.3s ease,
-          box-shadow 0.3s ease,
-          background-color 0.3s ease;
-      }
-
-      /* Value selection feedback */
-      .attribute-value-select:focus,
-      .state-value-select:focus {
-        border-width: 2px;
-        transform: translateY(-1px);
-      }
-
-      /* Attribute mode specific animations */
-      .attribute-mode-select::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.1);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-
-      .attribute-mode-select:focus::after {
-        opacity: 1;
-      }
-
-      /* State mode specific animations */
-      .state-value-select::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-
-      .state-value-select:focus::after {
-        opacity: 1;
-      }
-
-      /* Animation classes */
-      .fadeIn {
-        animation: fadeIn var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .fadeOut {
-        animation: fadeOut var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideInUp {
-        animation: slideInUp var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideOutUp {
-        animation: slideOutUp var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideInDown {
-        animation: slideInDown var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideOutDown {
-        animation: slideOutDown var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideInLeft {
-        animation: slideInLeft var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideOutLeft {
-        animation: slideOutLeft var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideInRight {
-        animation: slideInRight var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .slideOutRight {
-        animation: slideOutRight var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .zoomIn {
-        animation: zoomIn var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .zoomOut {
-        animation: zoomOut var(--animation-duration, 0.3s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .bounceIn {
-        animation: bounceIn var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .bounceOut {
-        animation: bounceOut var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .flipInX {
-        animation: flipInX var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .flipOutX {
-        animation: flipOutX var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .flipInY {
-        animation: flipInY var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .flipOutY {
-        animation: flipOutY var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .rotateIn {
-        animation: rotateIn var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-      .rotateOut {
-        animation: rotateOut var(--animation-duration, 0.6s) var(--animation-timing, ease)
-          var(--animation-delay, 0s) both;
-      }
-
-      /* Input with reset button styles */
       .input-with-reset {
         display: flex;
         align-items: center;
         gap: 8px;
         width: 100%;
+        min-width: 0;
       }
 
-      .input-with-reset .property-input,
-      .input-with-reset .property-select {
+      .input-with-reset .property-input {
         flex: 1;
       }
 
@@ -5698,80 +2743,275 @@ export class GlobalDesignTab extends LitElement {
       }
 
       .reset-btn {
-        width: 32px;
-        height: 32px;
-        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        min-width: 36px;
+        height: 36px;
         padding: 0;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
         flex-shrink: 0;
+        transition:
+          background-color 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease;
       }
 
-      .reset-btn:hover {
+      .reset-btn:hover:not(:disabled) {
         background: var(--primary-color);
-        color: var(--text-primary-color, white);
         border-color: var(--primary-color);
+        color: var(--text-primary-color, white);
+      }
+
+      .reset-btn:disabled {
+        opacity: 0.35;
+        cursor: default;
       }
 
       .reset-btn ha-icon {
-        font-size: 16px;
+        --mdc-icon-size: 18px;
       }
 
-      /* Field description styling */
-      .field-description {
-        margin-top: 12px;
-        padding: 12px;
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
-        border-left: 3px solid var(--primary-color, #03a9f4);
+      /* Alignment button group */
+      .button-group {
+        display: flex;
+        gap: 4px;
+      }
+
+      .property-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        padding: 6px;
+        border: 1px solid var(--divider-color);
         border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition:
+          background-color 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .property-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .property-btn.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: var(--text-primary-color, white);
+      }
+
+      /* Grids (container-friendly: wrap by available width, not viewport) */
+      .two-column-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .three-column-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .two-column-grid:last-child,
+      .three-column-grid:last-child {
+        margin-bottom: 0;
+      }
+
+      .two-column-grid .property-group,
+      .three-column-grid .property-group {
+        margin-bottom: 0;
+        /* Mixed control heights (text input next to ha-select): keep labels
+           on one line at the top and controls flush along the bottom. */
+        display: flex;
+        flex-direction: column;
+      }
+
+      .two-column-grid .property-group > label,
+      .three-column-grid .property-group > label {
+        margin-bottom: auto;
+        padding-bottom: 4px;
+      }
+
+      /* ---- Spacing ----------------------------------------------------- */
+
+      .spacing-group {
+        margin-bottom: 20px;
+      }
+
+      .spacing-group:last-of-type {
+        margin-bottom: 8px;
+      }
+
+      .spacing-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .spacing-group h4 {
+        margin: 0;
         font-size: 13px;
-        line-height: 1.5;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+
+      .lock-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        padding: 6px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition:
+          background-color 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .lock-button ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .lock-button:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .lock-button.locked {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: var(--text-primary-color, white);
+      }
+
+      .spacing-fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+        gap: 8px;
+      }
+
+      .spacing-field {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .spacing-field label {
+        margin-bottom: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        text-align: center;
+      }
+
+      .spacing-input {
+        width: 100%;
+        min-width: 0;
+        padding: 6px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font: inherit;
+        font-size: 13px;
+        text-align: center;
+        box-sizing: border-box;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      .spacing-input.locked {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      /* ---- Position ---------------------------------------------------- */
+
+      .position-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-items: center;
+        max-width: 240px;
+        margin: 0 auto;
+      }
+
+      .position-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .position-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 4px;
+        background: var(--secondary-background-color);
         color: var(--secondary-text-color);
       }
+
+      .position-center ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .position-input {
+        text-align: center;
+        font-size: 13px;
+      }
+
+      /* ---- Sub-sections (animations) ----------------------------------- */
+
+      .property-section {
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .property-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .property-section h5 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--secondary-text-color);
+      }
+
+      /* Color picker popover must sit above the editor chrome */
+      ultra-color-picker {
+        position: relative;
+        z-index: ${Z_INDEX.COLOR_PICKER_CONTAINER};
+      }
     `;
-  }
-
-  private _getBackgroundSizeDropdownValue(backgroundSize: string | undefined): string {
-    if (!backgroundSize) {
-      return 'cover';
-    }
-
-    // If it's one of the preset values, return it as-is
-    if (['cover', 'contain', 'auto'].includes(backgroundSize)) {
-      return backgroundSize;
-    }
-
-    // If it's 'custom' or any other custom value, return 'custom'
-    return 'custom';
-  }
-
-  private _getCustomSizeValue(
-    backgroundSize: string | undefined,
-    dimension: 'width' | 'height'
-  ): string {
-    if (!backgroundSize || ['cover', 'contain', 'auto'].includes(backgroundSize)) {
-      return '';
-    }
-
-    // If it's just 'custom' without actual values, return empty
-    if (backgroundSize === 'custom') {
-      return '';
-    }
-
-    // Parse custom size value like "100px 200px" or "50% auto"
-    const parts = backgroundSize.split(' ');
-    if (dimension === 'width') {
-      return parts[0] || '';
-    } else if (dimension === 'height') {
-      return parts[1] || parts[0] || '';
-    }
-    return '';
   }
 }
