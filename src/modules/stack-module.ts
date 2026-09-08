@@ -1340,6 +1340,30 @@ export class UltraStackModule extends BaseUltraModule {
         max-width: 100% !important;
         max-height: 100% !important;
       }
+      /* Button modules hardcode several intermediate wrappers. Force the full
+         chain (animation wrapper → container → preview → button) to fill the
+         layer so height:100% on a layer/design size resolves against the
+         Stack Overlay's definite height (#132). */
+      .stack-layer-child .module-animation-wrapper,
+      .stack-layer-child .button-module-container,
+      .stack-layer-child .button-module-preview {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        min-height: 0 !important;
+        box-sizing: border-box;
+      }
+      .stack-layer-child .button-module-preview {
+        display: flex !important;
+        align-items: stretch !important;
+      }
+      .stack-layer-child .ultra-button {
+        width: 100% !important;
+        height: 100% !important;
+        align-self: stretch;
+        box-sizing: border-box;
+      }
     `;
   }
 

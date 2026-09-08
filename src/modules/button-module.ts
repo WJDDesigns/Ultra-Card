@@ -242,11 +242,37 @@ export class UltraButtonModule extends BaseUltraModule {
       mergedButtonStyle.width = '100%';
     }
 
+    // Prefer design / module size fields (same pattern as image-module). Hardcoding
+    // height:auto here previously broke percentage heights inside Stack Overlay —
+    // the container interrupted the definite-height chain so the <button>'s
+    // height:100% resolved to content size (#132).
+    const resolvedWidth =
+      this.addPixelUnit(designProperties.width ?? moduleWithDesign.width) || '100%';
+    const resolvedHeight = this.addPixelUnit(
+      designProperties.height ?? moduleWithDesign.height
+    );
+    const resolvedMaxWidth = this.addPixelUnit(
+      designProperties.max_width ?? moduleWithDesign.max_width
+    );
+    const resolvedMaxHeight = this.addPixelUnit(
+      designProperties.max_height ?? moduleWithDesign.max_height
+    );
+    const resolvedMinWidth = this.addPixelUnit(
+      designProperties.min_width ?? moduleWithDesign.min_width
+    );
+    const resolvedMinHeight = this.addPixelUnit(
+      designProperties.min_height ?? moduleWithDesign.min_height
+    );
+    const hasExplicitHeight = !!resolvedHeight;
+
     const alignmentStyles: Record<string, string> = {
       display: 'flex',
       justifyContent: containerJustify,
-      alignItems: 'center',
+      // Stretch when filling a definite height so the button can grow; otherwise
+      // keep content vertically centered for natural-sized buttons.
+      alignItems: hasExplicitHeight ? 'stretch' : 'center',
       width: '100%',
+      ...(hasExplicitHeight ? { height: '100%', alignSelf: 'stretch' } : {}),
     };
 
     const paddingTop = this.addPixelUnit(
@@ -276,12 +302,14 @@ export class UltraButtonModule extends BaseUltraModule {
     const hasMargin = marginTop || marginRight || marginBottom || marginLeft;
 
     const containerStyles = {
-      width: '100%',
-      height: 'auto',
-      maxWidth: 'none',
-      maxHeight: 'none',
-      minWidth: 'auto',
-      minHeight: 'auto',
+      width: resolvedWidth,
+      // Omit height when unset so Stack Overlay's `.stack-layer-child > *`
+      // height:100% stylesheet rule can apply for full-tile hit targets.
+      ...(hasExplicitHeight && resolvedHeight ? { height: resolvedHeight } : {}),
+      maxWidth: resolvedMaxWidth || 'none',
+      maxHeight: resolvedMaxHeight || 'none',
+      minWidth: resolvedMinWidth || 'auto',
+      minHeight: resolvedMinHeight || 'auto',
       padding: hasPadding
         ? `${paddingTop || '0'} ${paddingRight || '0'} ${paddingBottom || '0'} ${paddingLeft || '0'}`
         : '0',
