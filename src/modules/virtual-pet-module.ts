@@ -1337,7 +1337,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
 
     const content = html`
       <style>${this._previewStyles()}</style>
-      <div class="vp-device">
+      <div class="vp-device" data-uc-role="pane">
         <div class="vp-screen ${lcdOn ? 'lcd-on' : ''}">
           ${pet.show_speech_bubble && speechMsg
             ? html`
@@ -1523,7 +1523,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         padding: 14px 8px;
         border: 2px solid var(--divider-color);
         border-radius: var(--uc-r-12, 12px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         cursor: pointer;
         text-align: center;
         transition: all 0.2s ease;
@@ -1549,7 +1549,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         align-items: center;
         gap: 8px;
         padding: 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         border: 1px solid var(--divider-color);

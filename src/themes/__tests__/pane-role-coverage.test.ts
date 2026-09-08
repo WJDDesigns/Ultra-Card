@@ -145,4 +145,34 @@ describe('pane role adoption', () => {
     }
   });
 
+  it('batch-6 final editor surfaces (bar, gauge, navigation, slider-control, virtual-pet) use pane tokens + role', () => {
+    for (const rel of [
+      'bar-module.ts',
+      'gauge-module.ts',
+      'navigation-module.ts',
+      'slider-control-module.ts',
+      'virtual-pet-module.ts',
+    ]) {
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      expect(src, rel).toMatch(/--uc-pane-bg/);
+      expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
+    }
+  });
+
+  it('no non-carve-out module paints card-background without a pane fallback', () => {
+    const offenders: string[] = [];
+    for (const rel of files) {
+      if (PANE_ROLE_CARVE_OUTS[rel]) continue;
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      const lines = src.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (/background\s*:/.test(line) && /--card-background-color/.test(line) && !/--uc-pane-bg/.test(line)) {
+          offenders.push(`${rel}:${i + 1}`);
+        }
+      }
+    }
+    expect(offenders, `Raw card-background paints: ${offenders.join(', ')}`).toEqual([]);
+  });
+
 });

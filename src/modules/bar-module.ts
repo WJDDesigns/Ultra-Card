@@ -2169,7 +2169,7 @@ export class UltraBarModule extends BaseUltraModule {
         ${this.getStyles()}
       </style>
       <div
-        class="bar-module-preview"
+        class="bar-module-preview" data-uc-role="pane"
         data-layout-grow="${shouldGrow ? 'true' : 'false'}"
         style="${this.buildStyleString(containerStyles)}"
         ${ref((el?: Element) => {
@@ -2477,7 +2477,7 @@ export class UltraBarModule extends BaseUltraModule {
                                 width: ${dotSize}px;
                                 height: ${dotSize}px;
                                 background: ${dotColor};
-                                border: 2px solid var(--card-background-color);
+                                border: 2px solid var(--uc-pane-bg, var(--card-background-color));
                                 border-radius: 50%;
                                 transform: translate(-50%, -50%);
                                 box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -2518,7 +2518,7 @@ export class UltraBarModule extends BaseUltraModule {
                                 width: ${dotSize}px;
                                 height: ${dotSize}px;
                                 background: ${dotColor};
-                                border: 2px solid var(--card-background-color);
+                                border: 2px solid var(--uc-pane-bg, var(--card-background-color));
                                 border-radius: 50%;
                                 transform: translate(-50%, -50%);
                                 box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -3359,7 +3359,7 @@ export class UltraBarModule extends BaseUltraModule {
         padding: 8px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-4, 4px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         font-size: 14px;
         box-sizing: border-box;
@@ -3546,15 +3546,15 @@ export class UltraBarModule extends BaseUltraModule {
       }
       /* Give selects a consistent card background (scoped to bar module sections only) */
       .bar-module-preview .settings-section ha-select {
-        background: var(--card-background-color) !important;
+        background: var(--uc-pane-bg, var(--card-background-color)) !important;
         border: 1px solid var(--divider-color) !important;
         border-radius: var(--uc-r-6, 6px) !important;
         padding: 4px 0 !important;
         /* MWC menu and text field surfaces */
-        --mdc-theme-surface: var(--card-background-color);
-        --mdc-text-field-fill-color: var(--card-background-color);
-        --mdc-select-fill-color: var(--card-background-color);
-        --mdc-menu-surface-fill-color: var(--card-background-color);
+        --mdc-theme-surface: var(--uc-pane-bg, var(--card-background-color));
+        --mdc-text-field-fill-color: var(--uc-pane-bg, var(--card-background-color));
+        --mdc-select-fill-color: var(--uc-pane-bg, var(--card-background-color));
+        --mdc-menu-surface-fill-color: var(--uc-pane-bg, var(--card-background-color));
         --mdc-text-field-ink-color: var(--primary-text-color);
         --mdc-text-field-outline-color: var(--divider-color);
         --mdc-select-dropdown-icon-color: var(--secondary-text-color);
@@ -3564,10 +3564,10 @@ export class UltraBarModule extends BaseUltraModule {
 
       /* Ensure ha-form selects inherit same surface in all contexts */
       .bar-module-preview .settings-section ha-form ha-select {
-        --mdc-theme-surface: var(--card-background-color);
-        --mdc-text-field-fill-color: var(--card-background-color);
-        --mdc-select-fill-color: var(--card-background-color);
-        --mdc-menu-surface-fill-color: var(--card-background-color);
+        --mdc-theme-surface: var(--uc-pane-bg, var(--card-background-color));
+        --mdc-text-field-fill-color: var(--uc-pane-bg, var(--card-background-color));
+        --mdc-select-fill-color: var(--uc-pane-bg, var(--card-background-color));
+        --mdc-menu-surface-fill-color: var(--uc-pane-bg, var(--card-background-color));
         --mdc-text-field-ink-color: var(--primary-text-color);
         --mdc-text-field-outline-color: var(--divider-color);
         --mdc-select-dropdown-icon-color: var(--secondary-text-color);
@@ -3578,14 +3578,14 @@ export class UltraBarModule extends BaseUltraModule {
       /* Give animation selects a proper background */
       .settings-section[data-animation] ha-select,
       .animation-select-group ha-select {
-        background: var(--card-background-color) !important;
+        background: var(--uc-pane-bg, var(--card-background-color)) !important;
         border: 1px solid var(--divider-color) !important;
         border-radius: var(--uc-r-6, 6px) !important;
         padding: 4px 0 !important;
       }
       /* Ensure percentage type dropdown has standard background container */
       .percentage-type-group ha-select {
-        background: var(--card-background-color) !important;
+        background: var(--uc-pane-bg, var(--card-background-color)) !important;
         border: 1px solid var(--divider-color) !important;
         border-radius: var(--uc-r-6, 6px) !important;
         padding: 4px 0 !important;
