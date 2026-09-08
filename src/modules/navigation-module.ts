@@ -2005,7 +2005,7 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     return html`
       <div
-        class="entity-row special-item ${isExpanded ? 'expanded' : ''}"
+        class="entity-row special-item ${isExpanded ? 'expanded' : ''}" data-uc-role="pane"
         draggable="true"
         @dragstart=${onDragStart}
         @dragend=${onDragEnd}
@@ -3645,7 +3645,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       .entity-row {
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-10, 10px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         overflow: hidden;
         transition: all 0.2s;
       }
@@ -3826,7 +3826,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
       }
       .color-field {
         margin-bottom: 16px;

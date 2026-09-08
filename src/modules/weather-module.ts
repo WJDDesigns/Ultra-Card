@@ -361,6 +361,7 @@ export class UltraWeatherModule extends BaseUltraModule {
     return html`
       <div
         class="uc-weather-wrapper ${hoverClass}"
+        data-uc-role="pane"
         style="padding:16px;border-radius:var(--uc-r-12, 12px);background:${cardBg};${designStyles}"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}

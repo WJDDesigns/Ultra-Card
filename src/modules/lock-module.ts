@@ -276,7 +276,11 @@ export class UltraLockModule extends BaseUltraModule {
     if (!entityId || !hass?.states?.[entityId]) {
       return html`
         ${this.injectLockStyles()}
-        <div class="uc-lock-wrapper" style="border-radius: var(--uc-r-16, 16px); overflow: hidden;">
+        <div
+          class="uc-lock-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.lock.config_needed', lang, 'Select a lock'),
             localize('editor.lock.config_needed_desc', lang, 'Choose a lock entity in the General tab'),
@@ -500,7 +504,8 @@ export class UltraLockModule extends BaseUltraModule {
       ${this.injectLockStyles()}
       <div
         class="uc-lock-wrapper ${hoverClass} ${isJammed ? 'uc-lock-wrapper--jammed' : ''}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
@@ -648,7 +653,7 @@ export class UltraLockModule extends BaseUltraModule {
         border-radius: 999px;
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 75%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-text-color);
         white-space: nowrap;
         transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -660,7 +665,7 @@ export class UltraLockModule extends BaseUltraModule {
       }
       .uc-lock-chip-btn--active {
         border-color: color-mix(in srgb, var(--primary-color) 50%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-color);
       }
 
@@ -671,7 +676,7 @@ export class UltraLockModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--divider-color) 55%, transparent);
         transition: box-shadow 0.2s ease, border-color 0.2s ease;
       }
@@ -715,17 +720,17 @@ export class UltraLockModule extends BaseUltraModule {
         font-weight: 700;
         letter-spacing: 0.03em;
         text-transform: uppercase;
-        background: color-mix(in srgb, var(--divider-color) 15%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 15%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
         border: 1px solid color-mix(in srgb, var(--divider-color) 35%, transparent);
       }
       .uc-lock-badge--locked {
-        background: color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 12%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-color);
         border-color: color-mix(in srgb, var(--primary-color) 25%, transparent);
       }
       .uc-lock-badge--jammed {
-        background: color-mix(in srgb, var(--error-color, #db4437) 12%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--error-color, #db4437) 12%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--error-color, #db4437);
         border-color: color-mix(in srgb, var(--error-color, #db4437) 25%, transparent);
       }
@@ -760,7 +765,7 @@ export class UltraLockModule extends BaseUltraModule {
         border-radius: var(--uc-r-14, 14px);
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 6%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-text-color);
         white-space: nowrap;
         transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
@@ -769,7 +774,7 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       .uc-lock-btn--active {
         border-color: color-mix(in srgb, var(--primary-color) 50%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-color);
       }
       .uc-lock-btn:hover:not(:disabled) {

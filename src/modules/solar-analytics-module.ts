@@ -257,7 +257,11 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
     if (!solarEntityId || !hass?.states?.[solarEntityId]) {
       return html`
         <style>${this.getStyles()}</style>
-        <div class="uc-solar-wrapper">
+        <div
+          class="uc-solar-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.solar_analytics.config_needed', lang, 'Select a solar sensor'),
             localize('editor.solar_analytics.config_needed_desc', lang, 'Choose a solar power sensor in the General tab'),
@@ -323,7 +327,8 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-solar-wrapper ${hoverClass}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-solar uc-solar--compact">
               <div class="uc-solar-compact__kpi">
@@ -359,7 +364,8 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
     return html`
       <style>${this.getStyles()}</style>
       <div class="uc-solar-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(html`
           <div class="uc-solar uc-solar--full">
 
@@ -586,7 +592,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
         gap: 6px;
         padding: 8px 12px;
         border-radius: var(--uc-r-10, 10px);
-        background: color-mix(in srgb, var(--grid-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--grid-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--grid-color) 25%, transparent);
       }
       .uc-solar__grid-label {
@@ -629,7 +635,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
         gap: 3px;
         padding: 10px 6px;
         border-radius: var(--uc-r-10, 10px);
-        background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 6%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--divider-color) 30%, transparent);
         font-size: 0.875rem;
         font-weight: 700;

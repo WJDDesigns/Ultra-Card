@@ -840,7 +840,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
       // minimal dismiss control so the user can end it from the dashboard too.
       return html`
         <style>${this.getStyles()}</style>
-        <div class="uc-ss-card-footer uc-ss-card-footer--standalone">
+        <div class="uc-ss-card-footer uc-ss-card-footer--standalone" data-uc-role="pane">
           <span class="uc-ss-card-footer__label">
             ${localize('editor.screensaver.active_label', lang, 'Screensaver active')}
           </span>
@@ -858,7 +858,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
       <div class="uc-ss-card ${hoverClass}">
         ${this._buildPreviewBox(m, hass, config, lang)}
         ${this._active ? html`
-          <div class="uc-ss-card-footer">
+          <div class="uc-ss-card-footer" data-uc-role="pane">
             <span class="uc-ss-card-footer__label">
               ${localize('editor.screensaver.active_label', lang, 'Screensaver active')}
             </span>
@@ -1219,7 +1219,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
         align-items: center;
         gap: 10px;
         padding: 8px 14px;
-        background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none);
         border-top: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
       }
       .uc-ss-card-footer__label {

@@ -198,7 +198,7 @@ export class UltraToggleModule extends BaseUltraModule {
           align-items: center;
           gap: 8px;
           padding: 12px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           border-radius: var(--uc-r-8, 8px);
           margin-bottom: 8px;
           cursor: move;
@@ -987,7 +987,7 @@ export class UltraToggleModule extends BaseUltraModule {
                   }
                 )}
                 <div
-                  style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; padding: 8px; background: var(--card-background-color); border-radius: var(--uc-r-4, 4px);"
+                  style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; padding: 8px; background: var(--uc-pane-bg, var(--card-background-color)); border-radius: var(--uc-r-4, 4px);"
                 >
                   <strong>Tip:</strong> Use comma-separated values to match multiple states (e.g.,
                   "on, open")
@@ -2094,7 +2094,9 @@ export class UltraToggleModule extends BaseUltraModule {
         .segmented-control {
           display: flex;
           flex-direction: ${isHorizontal ? 'row' : 'column'};
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
+          border: var(--uc-pane-border, none);
+          box-shadow: var(--uc-pane-shadow, none);
           border-radius: var(--uc-r-8, 8px);
           padding: 4px;
           gap: ${module.spacing || 0}px;
@@ -2140,7 +2142,7 @@ export class UltraToggleModule extends BaseUltraModule {
         ${module.show_title && module.title
           ? html`<div class="segmented-title">${module.title}</div>`
           : ''}
-        <div class="segmented-control" role="group" aria-label="${module.title || 'Toggle'}">
+        <div class="segmented-control" data-uc-role="pane" role="group" aria-label="${module.title || 'Toggle'}">
           ${module.toggle_points.map(
             point => html`
               <button
@@ -2516,7 +2518,7 @@ export class UltraToggleModule extends BaseUltraModule {
           height: ${size.dotSize};
           border-radius: 50%;
           border: ${size.lineThickness} solid var(--primary-color);
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           transition: all 0.3s ease;
           flex-shrink: 0;
           position: relative;

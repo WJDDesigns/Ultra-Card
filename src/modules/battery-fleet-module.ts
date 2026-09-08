@@ -309,7 +309,7 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
 
     if (auto.length === 0) {
       return html`
-        <div class="uc-bf-panel uc-bf-panel--empty">
+        <div class="uc-bf-panel uc-bf-panel--empty" data-uc-role="pane">
           <div class="uc-bf-panel-head">
             <ha-icon icon="mdi:battery-off-outline"></ha-icon>
             <span
@@ -332,7 +332,7 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
     }
 
     return html`
-      <div class="uc-bf-panel">
+      <div class="uc-bf-panel" data-uc-role="pane">
         <div class="uc-bf-panel-head">
           <ha-icon icon="mdi:battery-heart-variant"></ha-icon>
           <span
@@ -533,7 +533,7 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
 
       ${rows.length === 0
         ? html`
-            <div class="uc-bf-panel uc-bf-panel--empty">
+            <div class="uc-bf-panel uc-bf-panel--empty" data-uc-role="pane">
               <div class="uc-bf-panel-body">
                 ${localize(
                   'editor.battery_fleet.manual_empty',
@@ -595,7 +595,7 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
     };
 
     return html`
-      <div class="entity-row">
+      <div class="entity-row" data-uc-role="pane">
         <ha-icon class="uc-bf-row-icon" icon=${row.icon || 'mdi:battery-outline'}></ha-icon>
         <div class="entity-info ${row.entity ? '' : 'empty'}">
           <div class="uc-bf-row-title">
@@ -2778,7 +2778,9 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
         justify-content: center;
         border: none;
         border-radius: 50%;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         color: var(--error-color);
         cursor: pointer;
         opacity: 0;

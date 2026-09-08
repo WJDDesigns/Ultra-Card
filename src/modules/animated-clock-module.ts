@@ -63,7 +63,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       // Styling
       clock_size: 100,
       clock_color: 'var(--primary-text-color)',
-      clock_background: 'var(--card-background-color)',
+      clock_background: 'var(--uc-pane-bg, var(--card-background-color))',
 
       // Flip Clock options
       flip_tile_color: 'rgba(0, 0, 0, 0.5)',
@@ -1253,6 +1253,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       <div class="material-clock">
         <div
           class="material-card"
+          data-uc-role="pane"
           style="gap: calc(${verticalGap}px * var(--clock-scale)); background: ${backgroundColor};"
         >
           <div class="material-time">
@@ -1317,7 +1318,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     const secondsStr = String(seconds).padStart(2, '0');
 
     return html`
-      <div class="terminal-clock" style="background: ${backgroundColor};">
+      <div class="terminal-clock" data-uc-role="pane" style="background: ${backgroundColor};">
         ${showPrompt
           ? html`<div
               class="terminal-prompt"

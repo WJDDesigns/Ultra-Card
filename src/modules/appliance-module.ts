@@ -2165,6 +2165,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       <style>${this.getStyles()}</style>
       <div
         class="uc-appl-wrapper ${hoverClass}"
+        data-uc-role="pane"
         style="background: ${cardBg};${designStyles}"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}
@@ -2211,7 +2212,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         padding: 10px 12px;
         background:
           radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 9%, transparent), transparent 70%),
-          color-mix(in srgb, var(--primary-text-color) 3%, var(--card-background-color, var(--ha-card-background)));
+          color-mix(in srgb, var(--primary-text-color) 3%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--divider-color) 50%, transparent);
         transition: box-shadow 0.25s ease, border-color 0.25s ease;
       }
@@ -2319,7 +2320,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         border-radius: 999px;
         cursor: pointer;
         border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
         transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
         white-space: nowrap;
@@ -2330,7 +2331,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       .uc-appl-btn ha-icon { --mdc-icon-size: 17px; }
       .uc-appl-btn.is-active {
         border-color: color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 55%, transparent);
-        background: color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 14%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--uc-appl-accent, var(--primary-color));
         box-shadow: 0 2px 12px color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 12%, transparent);
       }
@@ -2352,7 +2353,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         justify-content: center;
         cursor: pointer;
         border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
         flex-shrink: 0;
         transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -2447,7 +2448,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         cursor: pointer;
         color: var(--primary-text-color);
         border: 1px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         appearance: none;
         -webkit-appearance: none;
         outline: none;
@@ -2459,7 +2460,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       }
       .uc-appl-setting__select:disabled { opacity: 0.4; cursor: not-allowed; }
       .uc-appl-setting__select option {
-        background: var(--card-background-color, #1f1f1f);
+        background: var(--uc-pane-bg, var(--card-background-color, #1f1f1f));
         color: var(--primary-text-color);
       }
 
@@ -2474,14 +2475,14 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         border-radius: 999px;
         cursor: pointer;
         border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 7%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 7%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
         transition: background 0.14s, border-color 0.14s, color 0.14s, box-shadow 0.14s;
         white-space: nowrap;
       }
       .uc-appl-feature.is-active {
         border-color: color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 55%, transparent);
-        background: color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 13%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 13%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--uc-appl-accent, var(--primary-color));
         font-weight: 700;
         box-shadow: 0 2px 10px color-mix(in srgb, var(--uc-appl-accent, var(--primary-color)) 10%, transparent);
@@ -2588,7 +2589,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         justify-content: center;
         cursor: pointer;
         border: 1px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
         flex-shrink: 0;
         transition: border-color 0.14s, color 0.14s;

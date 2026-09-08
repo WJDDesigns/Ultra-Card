@@ -66,7 +66,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
           padding: 8px 10px;
           border: 1px solid var(--divider-color);
           border-radius: 6px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           color: var(--primary-text-color);
           cursor: pointer;
           font-size: 12px;
@@ -79,7 +79,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
           background: color-mix(in srgb, var(--primary-color) 12%, transparent);
         }
       </style>
-      <div class="module-general-settings">
+      <div class="module-general-settings" data-uc-role="pane">
         <!-- Entity Configuration -->
         <div
           class="settings-section"
@@ -1288,3 +1288,5 @@ export function renderInfoGeneralTab(
     updateModule
   );
 }
+
+/* data-uc-role="pane" required for pane-token settings chrome */

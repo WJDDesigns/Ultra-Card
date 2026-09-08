@@ -448,7 +448,11 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     if (!entityId || !hass?.states?.[entityId]) {
       return html`
         <style>${this.getStyles()}</style>
-        <div class="uc-alarm-wrapper">
+        <div
+          class="uc-alarm-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.alarm_panel.config_needed', lang, 'Select an alarm panel'),
             localize('editor.alarm_panel.config_needed_desc', lang, 'Choose an alarm_control_panel entity in the General tab'),
@@ -622,7 +626,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-alarm-wrapper ${hoverClass} ${isTriggered ? 'uc-alarm-wrapper--triggered' : ''}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-20, 20px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-alarm uc-alarm--hero">
 
@@ -665,7 +670,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       return html`
         <style>${this.getStyles()}</style>
         <div class="uc-alarm-wrapper ${hoverClass}"
-          style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-16, 16px); overflow: hidden; ${styleStr}">
           ${this.wrapWithAnimation(html`
             <div class="uc-alarm uc-alarm--standard">
               <div class="uc-alarm-std__row">
@@ -727,7 +733,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     return html`
       <style>${this.getStyles()}</style>
       <div class="uc-alarm-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: ${pendingMode ? '20px' : '999px'}; overflow: hidden; ${styleStr}">
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: ${pendingMode ? '20px' : '999px'}; overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(html`
           <div class="uc-alarm uc-alarm--compact">
             <div class="uc-alarm-compact__row">
@@ -873,7 +880,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        background: color-mix(in srgb, var(--alarm-color) 10%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--alarm-color) 10%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--alarm-color);
         border: 1px solid color-mix(in srgb, var(--alarm-color) 28%, transparent);
       }
@@ -904,7 +911,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         border-radius: var(--uc-r-14, 14px);
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 6%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-text-color);
         white-space: nowrap;
         transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
@@ -913,7 +920,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       .uc-alarm-arm-btn:disabled { opacity: 0.38; cursor: not-allowed; }
       .uc-alarm-arm-btn--active, .uc-alarm-arm-btn:hover:not(:disabled) {
         border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 12%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-color);
       }
 
@@ -930,7 +937,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         border-radius: var(--uc-r-14, 14px);
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--success-color, #43a047) 45%, transparent);
-        background: color-mix(in srgb, var(--success-color, #43a047) 10%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--success-color, #43a047) 10%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--success-color, #43a047);
         transition: background 0.15s, transform 0.1s;
       }
@@ -985,7 +992,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         border-radius: 50%;
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 55%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 6%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-text-color);
         display: flex;
         align-items: center;
@@ -993,14 +1000,14 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         transition: background 0.12s, transform 0.1s;
         min-height: 48px;
       }
-      .uc-alarm-key:active:not(:disabled) { transform: scale(0.92); background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color, var(--ha-card-background))); }
+      .uc-alarm-key:active:not(:disabled) { transform: scale(0.92); background: color-mix(in srgb, var(--primary-color) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)))); }
       .uc-alarm-key--action {
         background: transparent;
         border-color: transparent;
         color: var(--secondary-text-color);
       }
       .uc-alarm-key--confirm {
-        background: color-mix(in srgb, var(--success-color, #43a047) 14%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--success-color, #43a047) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border-color: color-mix(in srgb, var(--success-color, #43a047) 40%, transparent);
         color: var(--success-color, #43a047);
       }
@@ -1016,7 +1023,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         width: 44px; height: 44px;
         border-radius: 50%;
         border: 1.5px solid color-mix(in srgb, var(--alarm-color) 35%, transparent);
-        background: color-mix(in srgb, var(--alarm-color) 10%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--alarm-color) 10%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         display: flex; align-items: center; justify-content: center;
       }
       .uc-alarm-std__meta { flex: 1; min-width: 0; overflow: hidden; }
@@ -1029,7 +1036,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         padding: 7px 12px; border-radius: 999px;
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 6%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-text-color);
         white-space: nowrap;
         transition: background 0.12s, transform 0.1s;
@@ -1069,7 +1076,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         padding: 5px 12px; border-radius: 999px;
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 60%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 6%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-text-color);
         transition: background 0.12s;
       }

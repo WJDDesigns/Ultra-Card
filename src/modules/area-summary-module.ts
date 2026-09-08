@@ -1370,7 +1370,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       }
       .uc-ar--skeleton {
         padding: 18px 16px;
-        background: linear-gradient(135deg, var(--secondary-background-color), var(--card-background-color));
+        background: linear-gradient(135deg, var(--secondary-background-color), var(--uc-pane-bg, var(--card-background-color)));
       }
       .uc-ar-skel-line {
         height: 14px;
@@ -1444,7 +1444,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         width: 72px;
         height: 72px;
         border-radius: 50%;
-        background: color-mix(in srgb, var(--uc-ar-accent) 22%, var(--card-background-color));
+        background: color-mix(in srgb, var(--uc-ar-accent) 22%, var(--uc-pane-bg, var(--card-background-color)));
         display: grid;
         place-items: center;
         color: var(--uc-ar-accent);
@@ -1569,7 +1569,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       /* Graph glow */
       .uc-ar--graph {
         padding: 14px 14px 12px 14px;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--uc-ar-accent) 8%, var(--card-background-color)), var(--card-background-color));
+        background: linear-gradient(180deg, color-mix(in srgb, var(--uc-ar-accent) 8%, var(--uc-pane-bg, var(--card-background-color))), var(--card-background-color));
       }
       .uc-ar-wave {
         position: absolute;

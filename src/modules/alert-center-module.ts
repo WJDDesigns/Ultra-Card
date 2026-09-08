@@ -604,7 +604,7 @@ export class UltraAlertCenterModule extends BaseUltraModule {
 
     return html`
       ${this.injectModuleStyles()}
-      <div class="uc-ac" style="--uc-ac-accent: ${accent}; --uc-ac-radius: ${radius}px;">
+      <div class="uc-ac" data-uc-role="pane" style="--uc-ac-accent: ${accent}; --uc-ac-radius: ${radius}px;">
         ${showTitle ? html`<div class="uc-ac-title">${title}</div>` : nothing}
         ${alerts.length
           ? html`
@@ -659,12 +659,12 @@ export class UltraAlertCenterModule extends BaseUltraModule {
         overflow: hidden;
         background: linear-gradient(
           180deg,
-          color-mix(in srgb, var(--uc-ac-accent) 7%, var(--card-background-color)),
-          var(--card-background-color)
+          color-mix(in srgb, var(--uc-ac-accent) 7%, var(--uc-pane-bg, var(--card-background-color))),
+          var(--uc-pane-bg, var(--card-background-color))
         );
-        border: 1px solid color-mix(in srgb, var(--uc-ac-accent) 26%, var(--divider-color));
+        border: var(--uc-pane-border, 1px solid color-mix(in srgb, var(--uc-ac-accent) 26%, var(--divider-color)));
         padding: 12px;
-        box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+        box-shadow: var(--uc-pane-shadow, 0 8px 22px rgba(0,0,0,0.12));
       }
       .uc-ac-title {
         font-size: 0.98rem;

@@ -760,7 +760,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                               <!-- Inactive Icon Section -->
                               <div style="margin-top: 16px;">
                                 <details
-                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                  data-uc-role="pane" style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--uc-pane-bg, var(--card-background-color));"
                                   @toggle=${(e: Event) => {
                                     const details = e.target as HTMLDetailsElement;
                                     const icon = details.querySelector('ha-icon') as HTMLElement;
@@ -1032,7 +1032,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                               <!-- Active Icon Section -->
                               <div style="margin-top: 16px;">
                                 <details
-                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--uc-pane-bg, var(--card-background-color));"
                                   @toggle=${(e: Event) => {
                                     const details = e.target as HTMLDetailsElement;
                                     const icon = details.querySelector('ha-icon') as HTMLElement;
@@ -1290,7 +1290,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                               <!-- Inactive Name Section -->
                               <div style="margin-top: 16px;">
                                 <details
-                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--uc-pane-bg, var(--card-background-color));"
                                   @toggle=${(e: Event) => {
                                     const details = e.target as HTMLDetailsElement;
                                     const icon = details.querySelector('ha-icon') as HTMLElement;
@@ -1417,7 +1417,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                               <!-- Active Name Section -->
                               <div style="margin-top: 16px;">
                                 <details
-                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--uc-pane-bg, var(--card-background-color));"
                                   @toggle=${(e: Event) => {
                                     const details = e.target as HTMLDetailsElement;
                                     const icon = details.querySelector('ha-icon') as HTMLElement;
@@ -1563,7 +1563,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                               <!-- Inactive State Section -->
                               <div style="margin-top: 16px;">
                                 <details
-                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--uc-pane-bg, var(--card-background-color));"
                                   @toggle=${(e: Event) => {
                                     const details = e.target as HTMLDetailsElement;
                                     const icon = details.querySelector('ha-icon') as HTMLElement;
@@ -1694,7 +1694,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                               <!-- Active State Section -->
                               <div style="margin-top: 16px;">
                                 <details
-                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                  style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--uc-pane-bg, var(--card-background-color));"
                                   @toggle=${(e: Event) => {
                                     const details = e.target as HTMLDetailsElement;
                                     const icon = details.querySelector('ha-icon') as HTMLElement;

@@ -590,7 +590,7 @@ export class UltraCoverModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
 
     return html`
-      <div class="uc-cover-wrapper ${hoverClass}" style="background: var(--uc-pane-bg, var(--card-background-color)); border-radius: var(--uc-r-12, 12px); overflow: hidden; ${styleStr}">
+      <div class="uc-cover-wrapper ${hoverClass}" data-uc-role="pane" style="background: var(--uc-pane-bg, var(--card-background-color)); border-radius: var(--uc-r-12, 12px); overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
     `;

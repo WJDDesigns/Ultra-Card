@@ -2552,7 +2552,7 @@ export class UltraPopupModule extends BaseUltraModule {
     return html`
       <div
         class="uc-condition-item"
-        style="border:1px solid var(--divider-color); border-radius: var(--uc-r-8, 8px); background: var(--card-background-color); overflow: hidden;"
+        style="border:1px solid var(--divider-color); border-radius: var(--uc-r-8, 8px); background: var(--uc-pane-bg, var(--card-background-color)); overflow: hidden;"
       >
         <div
           class="uc-condition-header"
@@ -3925,6 +3925,7 @@ export class UltraPopupModule extends BaseUltraModule {
         >
           <div
             class="ultra-popup-container ${popupLayoutClass} ${getAnimationClass()}"
+            data-uc-role="pane"
             tabindex="-1"
             @click=${(e: Event) => e.stopPropagation()}
             style="
@@ -3936,10 +3937,11 @@ export class UltraPopupModule extends BaseUltraModule {
               overflow-y: auto;
               background: ${popupModule.popup_background_color || 'var(--uc-pane-bg, var(--card-background-color))'};
               color: ${popupModule.popup_text_color || 'var(--primary-text-color)'};
+              border: var(--uc-pane-border, none);
               border-radius: ${layout === 'default'
               ? popupModule.popup_border_radius || '8px'
               : '0'};
-              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+              box-shadow: var(--uc-pane-shadow, 0 10px 40px rgba(0, 0, 0, 0.3));
               animation-duration: ${animationDurationMs}ms;
               animation-fill-mode: both;
               animation-timing-function: ${animationEasing};

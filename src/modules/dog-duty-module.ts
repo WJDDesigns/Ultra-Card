@@ -1874,7 +1874,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         : localize('editor.dog_duty.list_week_title', lang, 'This week');
 
     return html`
-      <div class="dog-duty-list-panel" @click=${(e: Event) => e.stopPropagation()}>
+      <div class="dog-duty-list-panel" data-uc-role="pane" @click=${(e: Event) => e.stopPropagation()}>
         <div class="dog-duty-list-header">
           <strong>${title}</strong>
           <button
@@ -1930,6 +1930,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
                 return html`
                   <button
                     class="dog-duty-list-row ${ev.cleaned ? 'cleaned' : ''} ${st.selectedUid === ev.uid ? 'selected' : ''}"
+                    data-uc-role="pane"
                     @click=${() => {
                       st.selectedUid = ev.uid;
                       st.listPanel = null;
@@ -2491,6 +2492,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
     return html`
       <div
         class="pro-lock-container"
+        data-uc-role="pane"
         style="
           display: flex;
           flex-direction: column;
@@ -2965,7 +2967,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         max-height: calc(100% - 16px);
         overflow-y: auto;
         box-sizing: border-box;
-        background: var(--card-background-color, #1c1c1c);
+        background: var(--uc-pane-bg, var(--card-background-color, #1c1c1c));
         color: var(--primary-text-color);
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-12, 12px);
@@ -3053,7 +3055,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         gap: 0;
         padding: 10px 12px;
         border-radius: var(--uc-r-12, 12px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border: 1px solid var(--divider-color);
         transition: border-color 0.2s ease;
       }

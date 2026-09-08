@@ -1055,6 +1055,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     return html`
       <div
         class="settings-section data-items-section"
+        data-uc-role="pane"
         style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
       >
         <div
@@ -3063,7 +3064,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         padding: 6px 8px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-4, 4px);
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
         color: var(--primary-text-color);
         font-size: 13px;
         text-align: center;
@@ -3154,7 +3155,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
       }
 
       .people-avatar img {

@@ -3209,6 +3209,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       
       <div 
         class="vacuum-module-container ${hoverEffectClass} layout-${layoutMode} ${mapDisplayMode === 'swipe' ? 'swipe-mode' : ''}"
+        data-uc-role="pane"
         style="${designStyles}"
         @touchstart=${(e: TouchEvent) => this.handleTouchStart(e, vacuumModule.id)}
         @touchmove=${(e: TouchEvent) => this.handleTouchMove(e, !!hasMap && mapDisplayMode === 'swipe', vacuumModule.id)}
@@ -4202,7 +4203,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     
     // Default mode
     return html`
-      <div class="vacuum-fan-speed-row">
+      <div class="vacuum-fan-speed-row" data-uc-role="pane">
         <div class="fan-speed-left">
           <ha-icon icon="mdi:fan" style="color: ${color};"></ha-icon>
           <span>Speed</span>
@@ -4321,7 +4322,9 @@ export class UltraVacuumModule extends BaseUltraModule {
       
       .vacuum-module-container {
         padding: 12px 16px 16px 16px;
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         border-radius: var(--uc-r-12, 12px);
         position: relative;
         overflow: hidden;
@@ -4957,7 +4960,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         outline-offset: 2px;
       }
       .fan-speed-select option {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         padding: 8px 12px;
       }
@@ -4989,7 +4992,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       }
       .fan-speed-btn {
         padding: 6px 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-16, 16px);
         font-size: 12px;

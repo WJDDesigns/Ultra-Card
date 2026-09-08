@@ -365,7 +365,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
       over: m.overdue_color || 'var(--error-color, #e53935)',
       text: m.text_color || 'var(--primary-text-color)',
       secondary: m.secondary_text_color || 'var(--secondary-text-color)',
-      cardBg: m.card_background_color || 'var(--card-background-color)',
+      cardBg: m.card_background_color || 'var(--uc-pane-bg, var(--card-background-color))',
     };
   }
 
@@ -1200,6 +1200,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
       <button
         type="button"
         class="vm-preset-card"
+        data-uc-role="pane"
         title=${name}
         @click=${() => this._addPreset(m, preset, lang, updateModule)}
       >
@@ -1232,6 +1233,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
     return html`
       <ha-expansion-panel
         class="vm-service-panel"
+        data-uc-role="pane"
         .expanded=${expanded}
         @expanded-changed=${(e: CustomEvent) => {
           if (e.detail?.expanded) es.expandedRows.add(item.id);
@@ -2614,7 +2616,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
         padding: 0 14px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-8, 8px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         font-size: 13px;
         font-weight: 600;

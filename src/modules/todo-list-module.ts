@@ -265,6 +265,7 @@ export class UltraTodoListModule extends BaseUltraModule {
     return html`
       <div
         class="uc-todo-wrapper ${hoverClass}"
+        data-uc-role="pane"
         style="padding:16px;border-radius:var(--uc-r-12, 12px);background:${cardBg};${designStyles}"
       >
         ${this.wrapWithAnimation(

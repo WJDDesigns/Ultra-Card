@@ -320,6 +320,7 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
               : ''}
             <div
               class="uc-calendar-day-cell ${isToday ? 'today' : ''} ${dayInfo.currentMonth ? '' : 'other-month'}"
+              data-uc-role="pane"
               @click=${() => context.onEventClick(dayEvents[0])}
             >
               <div class="uc-calendar-day-cell-num">${dayInfo.date.getDate()}</div>
@@ -382,7 +383,7 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
   return html`
     <div class="uc-calendar-week-view">
       <!-- Week Header -->
-      <div class="uc-calendar-week-header">
+      <div class="uc-calendar-week-header" data-uc-role="pane">
         <div class="uc-calendar-week-time-col"></div>
         ${weekDays.map(day => {
           const isToday = CalendarService.isToday(day);
@@ -700,6 +701,7 @@ export function renderGridView(context: CalendarViewContext): TemplateResult {
         event => html`
           <div
             class="uc-calendar-grid-card"
+            data-uc-role="pane"
             style="border-top: 3px solid ${event.calendarColor}; ${module.grid_card_height !== 'auto' ? `height: ${module.grid_card_height};` : ''}"
             @click=${() => onEventClick(event)}
           >

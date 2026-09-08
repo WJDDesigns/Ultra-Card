@@ -265,6 +265,7 @@ export class UltraScrollRowModule extends BaseUltraModule {
                 <button
                   type="button"
                   class="scroll-row-arrow scroll-row-arrow-left"
+                  data-uc-role="pane"
                   aria-label="Scroll left"
                   @click=${(e: Event) => scrollByAmount(e, -1)}
                 >
@@ -273,6 +274,7 @@ export class UltraScrollRowModule extends BaseUltraModule {
                 <button
                   type="button"
                   class="scroll-row-arrow scroll-row-arrow-right"
+                  data-uc-role="pane"
                   aria-label="Scroll right"
                   @click=${(e: Event) => scrollByAmount(e, 1)}
                 >
@@ -339,11 +341,11 @@ export class UltraScrollRowModule extends BaseUltraModule {
         transform: translateY(-50%);
         width: 32px;
         height: 32px;
-        border: none;
+        border: var(--uc-pane-border, none);
         border-radius: 50%;
-        background: var(--card-background-color, #fff);
+        background: var(--uc-pane-bg, var(--card-background-color, #fff));
         color: var(--primary-text-color);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        box-shadow: var(--uc-pane-shadow, 0 2px 8px rgba(0, 0, 0, 0.25));
         cursor: pointer;
         display: flex;
         align-items: center;

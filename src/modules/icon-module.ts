@@ -1342,6 +1342,7 @@ export class UltraIconModule extends BaseUltraModule {
         >
           <!-- Inactive Preview -->
           <div
+            data-uc-role="pane"
             style="
                  background: var(--uc-pane-bg, var(--card-background-color));
                  border-right: 1px solid var(--divider-color);
@@ -1356,6 +1357,7 @@ export class UltraIconModule extends BaseUltraModule {
 
           <!-- Active Preview -->
           <div
+            data-uc-role="pane"
             style="
                  background: var(--uc-pane-bg, var(--card-background-color));
                  padding: 16px;
@@ -3930,7 +3932,7 @@ export class UltraIconModule extends BaseUltraModule {
 
       /* Template Section Styles */
       .template-section {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         border: 1px solid var(--divider-color);
@@ -4064,7 +4066,7 @@ export class UltraIconModule extends BaseUltraModule {
         padding: 12px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-8, 8px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         outline: none;
         transition: border-color 0.2s ease;

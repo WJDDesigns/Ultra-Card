@@ -290,7 +290,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       localize('editor.laundry_tracker.row_no_entity', lang, 'No sensor selected');
 
     return html`
-      <div class="uc-lt-row ${expanded ? 'expanded' : ''}">
+      <div class="uc-lt-row ${expanded ? 'expanded' : ''}" data-uc-role="pane">
         <div class="uc-lt-row-head">
           <ha-icon
             class="uc-lt-row-icon"
@@ -693,7 +693,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
 
   private _renderHelperStat(label: string, value: string): TemplateResult {
     return html`
-      <div class="uc-lt-helper-stat">
+      <div class="uc-lt-helper-stat" data-uc-role="pane">
         <div class="uc-lt-helper-stat-label">${label}</div>
         <div class="uc-lt-helper-stat-value">${value}</div>
       </div>

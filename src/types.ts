@@ -3540,8 +3540,8 @@ export interface LightModule extends BaseModule {
     use_light_color_for_button?: boolean | undefined; // Use current light color for button
     use_icon_color_for_text?: boolean | undefined; // Use icon color for text
     smart_color?: boolean | undefined; // Auto-contrast text based on button background
-    // Per-preset styling
-    button_style?: 'filled' | 'outlined' | 'text' | undefined; // Button visual style for this preset
+    // Per-preset styling (recipes + legacy filled/outlined/text + 'theme')
+    button_style?: string | undefined;
     show_label?: boolean | undefined; // Show preset name for this preset
     border_radius?: number | undefined; // Button border radius (0-50)
   }>;
@@ -3560,7 +3560,8 @@ export interface LightModule extends BaseModule {
   button_gap?: number | undefined; // Gap between buttons in rem
   columns?: number | undefined; // Number of columns for grid layout
   show_labels?: boolean | undefined; // Show preset names (global fallback)
-  button_style?: 'filled' | 'outlined' | 'text' | undefined; // Button visual style (global fallback)
+  // Global fallback: surface recipes + legacy filled/outlined/text + 'theme'
+  button_style?: string | undefined;
 
   // Global Settings
   default_transition_time?: number | undefined; // Default transition time for all presets
@@ -5119,7 +5120,8 @@ export interface ButtonInputModule extends BaseModule {
   entity?: string | undefined;
   button_label?: string | undefined;
   button_icon?: string | undefined;
-  button_style?: 'filled' | 'outlined' | 'text' | undefined;
+  // Surface recipes + legacy filled/outlined/text + 'theme'
+  button_style?: string | undefined;
   font_size?: number | undefined;
   text_color?: string | undefined;
   button_color?: string | undefined;

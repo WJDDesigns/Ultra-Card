@@ -1330,7 +1330,7 @@ export class UltraClimateModule extends BaseUltraModule {
             ${climateModule.show_mode_switcher !== false && hvacModes.length > 0
               ? html`
                   <div class="climate-mode-popup">
-                    <div class="climate-mode-popup-content">
+                    <div class="climate-mode-popup-content" data-uc-role="pane">
                       ${hvacModes.map(
                         (mode: string) => html`
                           <button
@@ -1361,7 +1361,7 @@ export class UltraClimateModule extends BaseUltraModule {
             ${climateModule.show_fan_controls && hasFanMode && fanModes.length > 0
               ? html`
                   <div class="climate-fan-popup climate-mode-popup">
-                    <div class="climate-mode-popup-content">
+                    <div class="climate-mode-popup-content" data-uc-role="pane">
                       ${fanModes.map(
                         mode => html`
                           <button
@@ -1390,7 +1390,7 @@ export class UltraClimateModule extends BaseUltraModule {
             ${climateModule.show_preset_modes && hasPresetMode && presetModes.length > 0
               ? html`
                   <div class="climate-preset-popup climate-mode-popup">
-                    <div class="climate-mode-popup-content">
+                    <div class="climate-mode-popup-content" data-uc-role="pane">
                       ${presetModes.map(
                         mode => html`
                           <button
@@ -1417,7 +1417,7 @@ export class UltraClimateModule extends BaseUltraModule {
 
             <!-- Temperature Info Popup -->
             <div class="climate-info-popup climate-temp-info-popup">
-              <div class="climate-info-popup-content">
+              <div class="climate-info-popup-content" data-uc-role="pane">
                 <div class="climate-info-popup-title">Current Temperature</div>
                 <div class="climate-info-popup-value">${Math.round(currentTemp)}${tempUnit}</div>
                 <div class="climate-info-popup-detail">Min: ${Math.round(minTemp)}${tempUnit}</div>
@@ -1427,7 +1427,7 @@ export class UltraClimateModule extends BaseUltraModule {
 
             <!-- Target Temperature Info Popup -->
             <div class="climate-info-popup climate-target-info-popup">
-              <div class="climate-info-popup-content">
+              <div class="climate-info-popup-content" data-uc-role="pane">
                 <div class="climate-info-popup-title">Target Temperature</div>
                 <div class="climate-info-popup-value">
                   ${useRangeSlider && displayLow !== undefined && displayHigh !== undefined
@@ -1444,7 +1444,7 @@ export class UltraClimateModule extends BaseUltraModule {
             ${hasHumidity && humidity !== undefined
               ? html`
                   <div class="climate-info-popup climate-humidity-info-popup">
-                    <div class="climate-info-popup-content">
+                    <div class="climate-info-popup-content" data-uc-role="pane">
                       <div class="climate-info-popup-title">Humidity</div>
                       <div class="climate-info-popup-value">${Math.round(humidity)}%</div>
                       <div class="climate-info-popup-detail">Relative Humidity</div>
@@ -1836,11 +1836,11 @@ export class UltraClimateModule extends BaseUltraModule {
       }
 
       .climate-mode-popup-content {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-12, 12px);
         padding: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        border: 2px solid var(--divider-color);
+        box-shadow: var(--uc-pane-shadow, 0 4px 20px rgba(0, 0, 0, 0.3));
+        border: var(--uc-pane-border, 2px solid var(--divider-color));
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -1851,7 +1851,7 @@ export class UltraClimateModule extends BaseUltraModule {
         padding: 12px 16px;
         border-radius: var(--uc-r-8, 8px);
         border: none;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         display: flex;
         align-items: center;
@@ -1902,11 +1902,11 @@ export class UltraClimateModule extends BaseUltraModule {
       }
 
       .climate-info-popup-content {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-12, 12px);
         padding: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        border: 2px solid var(--divider-color);
+        box-shadow: var(--uc-pane-shadow, 0 4px 20px rgba(0, 0, 0, 0.3));
+        border: var(--uc-pane-border, 2px solid var(--divider-color));
         display: flex;
         flex-direction: column;
         gap: 8px;

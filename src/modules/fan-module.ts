@@ -385,7 +385,11 @@ export class UltraFanModule extends BaseUltraModule {
     if (!entityId || !hass?.states?.[entityId]) {
       return html`
         ${this.injectFanStyles()}
-        <div class="uc-fan-wrapper" style="border-radius: var(--uc-r-16, 16px); overflow: hidden;">
+        <div
+          class="uc-fan-wrapper"
+          data-uc-role="pane"
+          style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border-radius: var(--uc-r-16, 16px); overflow: hidden;"
+        >
           ${this.renderGradientErrorState(
             localize('editor.fan.config_needed', lang, 'Select a fan'),
             localize('editor.fan.config_needed_desc', lang, 'Choose a fan entity in the General tab'),
@@ -796,7 +800,8 @@ export class UltraFanModule extends BaseUltraModule {
       ${this.injectFanStyles()}
       <div
         class="uc-fan-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
+        data-uc-role="pane"
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
@@ -899,7 +904,7 @@ export class UltraFanModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--divider-color) 55%, transparent);
         transition: box-shadow 0.2s ease, border-color 0.2s ease;
       }
@@ -989,7 +994,7 @@ export class UltraFanModule extends BaseUltraModule {
       .uc-fan-track {
         height: 7px;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--divider-color) 38%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 38%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         overflow: hidden;
       }
       .uc-fan-track--hero { height: 11px; }
@@ -1022,7 +1027,7 @@ export class UltraFanModule extends BaseUltraModule {
         padding: 0;
         border-radius: 50%;
         border: 1px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
         cursor: pointer;
         display: flex;
@@ -1096,7 +1101,7 @@ export class UltraFanModule extends BaseUltraModule {
         height: 20px;
         margin-top: -7px;
         border-radius: 50%;
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
         border: 2.5px solid var(--primary-color);
         box-shadow: 0 2px 8px rgba(0,0,0,0.14);
         cursor: pointer;
@@ -1112,7 +1117,7 @@ export class UltraFanModule extends BaseUltraModule {
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
         border: 2.5px solid var(--primary-color);
         cursor: pointer;
       }
@@ -1145,7 +1150,7 @@ export class UltraFanModule extends BaseUltraModule {
         padding: 7px 15px;
         border-radius: 999px;
         border: 1px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
         cursor: pointer;
         transition: background 0.14s, border-color 0.14s, color 0.14s, box-shadow 0.14s;
@@ -1173,7 +1178,7 @@ export class UltraFanModule extends BaseUltraModule {
         pointer-events: none;
         color: var(--primary-color);
         border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 10%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         font-weight: 700;
         font-variant-numeric: tabular-nums;
       }
@@ -1187,19 +1192,19 @@ export class UltraFanModule extends BaseUltraModule {
         border-radius: 999px;
         cursor: pointer;
         border: 1.5px solid color-mix(in srgb, var(--primary-color) 50%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 12%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--primary-color);
         white-space: nowrap;
         transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
         flex-shrink: 0;
       }
       .uc-fan-power-btn:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--primary-color) 20%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--primary-color) 20%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         box-shadow: 0 4px 14px color-mix(in srgb, var(--primary-color) 14%, transparent);
       }
       .uc-fan-power-btn--off {
         border-color: color-mix(in srgb, var(--divider-color) 80%, transparent);
-        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         color: var(--secondary-text-color);
       }
       .uc-fan-power-btn--sm { font-size: 0.75rem; padding: 7px 14px; }

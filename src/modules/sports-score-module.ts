@@ -275,7 +275,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
   private renderProLockUI(lang: string): TemplateResult {
     return html`
-      <div class="pro-lock-container" style="
+      <div class="pro-lock-container" data-uc-role="pane" style="
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -1145,7 +1145,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           ? `${this.addPixelUnit(designProperties.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left) || '0px'}`
           : '0',
       // When background filter is present, set background on pseudo-element via CSS variables
-      background: hasBackgroundFilter ? 'transparent' : (designProperties.background_color || 'var(--card-background-color, var(--ha-card-background))'),
+      background: hasBackgroundFilter ? 'transparent' : (designProperties.background_color || 'var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)))'),
       backgroundImage: hasBackgroundFilter ? 'none' : bgImageCSS,
       backgroundSize: hasBackgroundFilter ? 'auto' : (designProperties.background_size || 'cover'),
       backgroundPosition: hasBackgroundFilter ? 'center' : (designProperties.background_position || 'center'),
@@ -1172,7 +1172,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     // Add CSS variables for pseudo-element when background filter is present
     if (hasBackgroundFilter) {
       containerStyles['--bg-image'] = bgImageCSS;
-      containerStyles['--bg-color'] = designProperties.background_color || 'var(--card-background-color, var(--ha-card-background))';
+      containerStyles['--bg-color'] = designProperties.background_color || 'var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)))';
       containerStyles['--bg-size'] = designProperties.background_size || 'cover';
       containerStyles['--bg-position'] = designProperties.background_position || 'center';
       containerStyles['--bg-repeat'] = designProperties.background_repeat || 'no-repeat';
@@ -1324,7 +1324,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
   private renderLockedPreview(): TemplateResult {
     return html`
-      <div style="
+      <div data-uc-role="pane" style="
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -1491,7 +1491,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         }
       </style>
 
-      <div class="sports-scorecard">
+      <div class="sports-scorecard" data-uc-role="pane">
         <div class="teams-container">
           <!-- Away Team -->
           <div class="team">
@@ -2222,7 +2222,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       : this._currentError || 'No game data available';
 
     return html`
-      <div style="
+      <div data-uc-role="pane" style="
         display: flex;
         flex-direction: column;
         align-items: center;

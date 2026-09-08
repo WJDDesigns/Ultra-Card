@@ -1458,7 +1458,7 @@ export class UltraCalendarModule extends BaseUltraModule {
       }
 
       .calendar-item {
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
         border-radius: var(--uc-r-8, 8px);
         overflow: hidden;
         border: 1px solid var(--divider-color);
@@ -2284,12 +2284,15 @@ export class UltraCalendarModule extends BaseUltraModule {
         gap: 2px;
       }
 
+      /* Painted calendar surfaces announce data-uc-role="pane" in calendar-module-views.ts */
+      .uc-calendar-day-cell[data-uc-role="pane"],
       .uc-calendar-day-cell {
         min-height: 60px;
         padding: 4px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-4, 4px);
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
+        box-shadow: var(--uc-pane-shadow, none);
         cursor: pointer;
         transition: background 0.2s ease;
       }
@@ -2373,9 +2376,10 @@ export class UltraCalendarModule extends BaseUltraModule {
       }
 
       .uc-calendar-grid-card {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
-        border: 1px solid var(--divider-color);
+        border: var(--uc-pane-border, 1px solid var(--divider-color));
+        box-shadow: var(--uc-pane-shadow, none);
         overflow: hidden;
         cursor: pointer;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -2490,7 +2494,9 @@ export class UltraCalendarModule extends BaseUltraModule {
         margin-bottom: 8px;
         position: sticky;
         top: 0;
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         z-index: 1;
       }
 

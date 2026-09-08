@@ -719,6 +719,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       </style>
       <div
         class="media-player-container media-player-compact ${mp.dynamic_colors ? 'mp-dynamic-colors' : ''}"
+        data-uc-role="pane"
       >
         <!-- Blurred Background -->
         ${mp.blurred_background !== false && entityPicture
@@ -800,7 +801,10 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         ${this.getStyles()}
         ${dynamicStyles}
       </style>
-      <div class="media-player-container media-player-card ${mp.dynamic_colors ? 'mp-dynamic-colors' : ''}">
+      <div
+        class="media-player-container media-player-card ${mp.dynamic_colors ? 'mp-dynamic-colors' : ''}"
+        data-uc-role="pane"
+      >
         <!-- Blurred Background -->
         ${mp.blurred_background !== false && entityPicture
           ? html`<div class="mp-blurred-bg ${mp.blur_expand !== false ? 'mp-blur-expand' : 'mp-blur-contained'}" style="background-image: url('${entityPicture}'); filter: blur(${mp.blur_amount || 10}px); opacity: ${mp.blur_opacity || 0.4};"></div>`
@@ -911,7 +915,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       <style>
         ${this.getStyles()}
       </style>
-      <div class="media-player-container media-player-mini">
+      <div class="media-player-container media-player-mini" data-uc-role="pane">
         ${mp.show_album_art !== false ? this.renderAlbumArt(mp, hass, stateObj, 24) : ''}
         <div class="mp-mini-text" title="${nowPlaying}">${nowPlaying}</div>
         ${mp.show_controls !== false ? this.renderPlayPauseButton(mp, hass, stateObj) : ''}
@@ -1747,7 +1751,9 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         position: relative;
         padding: 16px;
         border-radius: var(--uc-r-12, 12px);
-        background: var(--card-background-color, var(--secondary-background-color));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--secondary-background-color)));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         opacity: 0.9;
         transition: all 0.3s ease;
         overflow: visible;

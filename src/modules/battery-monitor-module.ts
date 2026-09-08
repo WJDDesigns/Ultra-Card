@@ -200,7 +200,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           padding: 12px 8px;
           border: 2px solid var(--divider-color);
           border-radius: var(--uc-r-12, 12px);
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           cursor: pointer;
           text-align: center;
           transition: all 0.2s ease;
@@ -301,7 +301,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           align-items: center;
           gap: 8px;
           padding: 12px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           border-radius: var(--uc-r-8, 8px);
           margin-bottom: 8px;
           border: 1px solid var(--divider-color);
@@ -1186,6 +1186,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'list');
           return html`
             <div
+              data-uc-role="pane"
               style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
@@ -1254,6 +1255,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'bar');
           return html`
             <div
+              data-uc-role="pane"
               style="padding:10px;border-radius:var(--uc-r-10, 10px);background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
@@ -1382,6 +1384,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'ring');
           return html`
             <div
+              data-uc-role="pane"
               style="text-align:center;padding:10px;border-radius:var(--uc-r-12, 12px);background:${o.cardBg};${itemBorder}position:relative;"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}

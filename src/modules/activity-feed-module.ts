@@ -167,7 +167,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           padding: 16px 12px;
           border: 2px solid var(--divider-color);
           border-radius: var(--uc-r-12, 12px);
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           cursor: pointer;
           text-align: center;
           transition: all 0.2s ease;
@@ -274,7 +274,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           align-items: center;
           gap: 8px;
           padding: 12px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           border-radius: var(--uc-r-8, 8px);
           margin-bottom: 8px;
           border: 1px solid var(--divider-color);

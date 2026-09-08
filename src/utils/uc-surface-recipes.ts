@@ -111,6 +111,10 @@ export const UC_SURFACE_FIELD_ROLES: Readonly<Record<string, Readonly<Record<str
   spinbox: { button_style: 'control' },
   bar: { bar_style: 'track' },
   slider_control: { slider_style: 'track' },
+  // Same control recipe cascade as Button — themes that set recipes.control
+  // once restyle these without a per-module override.
+  button_input: { button_style: 'control' },
+  light: { button_style: 'control' },
 };
 
 export function surfaceRoleFor(moduleType: string, key: string): UcSurfaceRole | undefined {

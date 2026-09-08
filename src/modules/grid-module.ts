@@ -3222,7 +3222,7 @@ export class UltraGridModule extends BaseUltraModule {
         align-items: center;
         gap: 8px;
         padding: 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         cursor: move;
@@ -3338,7 +3338,7 @@ export class UltraGridModule extends BaseUltraModule {
         padding: 10px 12px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-8, 8px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         font-size: 14px;
         cursor: pointer;
@@ -3351,7 +3351,7 @@ export class UltraGridModule extends BaseUltraModule {
         padding: 10px 12px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-8, 8px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         font-size: 14px;
         box-sizing: border-box;
@@ -3475,7 +3475,7 @@ export class UltraGridModule extends BaseUltraModule {
         border-radius: var(--uc-r-6, 6px);
         padding: 12px;
         margin-bottom: 8px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         transition: all 0.2s ease;
       }
       .entity-condition-item:hover {
@@ -3843,7 +3843,7 @@ export class UltraGridModule extends BaseUltraModule {
         height: 36px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-8, 8px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         cursor: pointer;
         transition: all 0.2s ease;
@@ -3870,7 +3870,7 @@ export class UltraGridModule extends BaseUltraModule {
         height: 32px;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-6, 6px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         cursor: pointer;
         font-size: 13px;

@@ -133,7 +133,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         align-items: center;
         justify-content: space-between;
         padding: 10px 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         cursor: pointer;
@@ -252,6 +252,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     return html`
       <div
         class="pro-lock-container"
+        data-uc-role="pane"
         style="
           display: flex;
           flex-direction: column;
@@ -669,6 +670,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     return html`
       <div
         class="entity-row ${this._draggedDevice?.id === dev.id ? 'dragging' : ''}"
+        data-uc-role="pane"
         draggable="true"
         @dragstart=${(e: DragEvent) => this._onDeviceDragStart(e, dev)}
         @dragend=${() => this._onDeviceDragEnd()}

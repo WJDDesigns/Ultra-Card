@@ -501,7 +501,7 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
     const interval = zoneIntervalDays(zone, defaultInterval);
 
     return html`
-      <div class="uc-cz-row ${expanded ? 'expanded' : ''}">
+      <div class="uc-cz-row ${expanded ? 'expanded' : ''}" data-uc-role="pane">
         <div class="uc-cz-row-head">
           <div class="uc-cz-row-icon">
             <ha-icon icon=${zone.icon || 'mdi:broom'}></ha-icon>

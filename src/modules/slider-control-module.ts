@@ -711,7 +711,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             padding: 16px;
           }
           .bar-item {
-            background: var(--card-background-color);
+            background: var(--uc-pane-bg, var(--card-background-color));
             border-radius: var(--uc-r-8, 8px);
             border: 1px solid var(--divider-color);
             margin-bottom: 12px;
@@ -4169,7 +4169,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
     return this.wrapWithAnimation(html`
       <div
-        class="slider-control-container ${baseLayoutClass} ${hoverClass}"
+        class="slider-control-container ${baseLayoutClass} ${hoverClass}" data-uc-role="pane"
         style="${designStyles}; padding: 16px; position: relative; ${backgroundStyle} ${isVertical
           ? `display: flex; justify-content: center; align-items: center; min-height: ${verticalSliderHeight}px;`
           : ''} ${overflowStyle}"

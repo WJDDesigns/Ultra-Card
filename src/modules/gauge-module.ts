@@ -1710,7 +1710,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return this.wrapWithAnimation(html`
       <div
-        class="uc-gauge-container ${hoverClass}"
+        class="uc-gauge-container ${hoverClass}" data-uc-role="pane"
         style="${designStyles}; ${containerStyleStr}; touch-action: manipulation; cursor: pointer;"
         @pointerdown=${gestureHandlers.onPointerDown}
         @pointermove=${gestureHandlers.onPointerMove}
@@ -4805,7 +4805,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         gap: 8px;
         align-items: center;
         padding: 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         border: 1px solid var(--divider-color);
       }
@@ -4849,7 +4849,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
       .segment-item {
         padding: 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         border: 1px solid var(--divider-color);
       }
@@ -4862,7 +4862,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       }
 
       .template-section {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         padding: 16px;
         border: 1px solid var(--divider-color);
