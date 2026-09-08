@@ -218,6 +218,8 @@ export interface BaseModule {
     | 'update_monitor'
     | 'clock'
     | 'humidifier'
+    | 'boiler'
+    | 'train'
     | 'washer'
     | 'dryer'
     | 'dishwasher'
@@ -5518,6 +5520,8 @@ export type CardModule =
   | UpdateMonitorModule
   | ClockModule
   | HumidifierModule
+  | BoilerModule
+  | TrainModule
   | ApplianceModule
   | TodoListModule
   | WeatherModule
@@ -5679,6 +5683,162 @@ export interface HumidifierModule extends BaseModule {
   show_power_button?: boolean | undefined;
 
   active_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// ============================================
+// BOILER MODULE TYPES (Pro)
+// ============================================
+
+export type BoilerLayout = 'standard' | 'compact';
+
+// Boiler (Pro) — animated boiler card with temperature-driven colors, flame /
+// pipe-flow animations, pressure, modulation, and target temperature control
+export interface BoilerModule extends BaseModule {
+  type: 'boiler';
+
+  /**
+   * Main entity: a water_heater or climate entity (current/target temperature,
+   * modes, and on/off come from it automatically), or any temperature sensor.
+   */
+  entity: string;
+  name?: string | undefined;
+  icon?: string | undefined;
+  layout?: BoilerLayout | undefined;
+
+  // ── Linked entities (all optional; override or extend the main entity) ──
+  /** Flow / supply water temperature sensor */
+  water_temp_entity?: string | undefined;
+  /** Return water temperature sensor */
+  return_temp_entity?: string | undefined;
+  /** Target setpoint number/input_number (used over the main entity's target) */
+  target_temp_entity?: string | undefined;
+  /** System water pressure sensor (bar) */
+  pressure_entity?: string | undefined;
+  /** Burner modulation percentage sensor */
+  modulation_entity?: string | undefined;
+  /** Flame / burner active binary_sensor */
+  flame_entity?: string | undefined;
+  /** Central heating active binary_sensor */
+  heating_entity?: string | undefined;
+  /** Domestic hot water active binary_sensor */
+  dhw_entity?: string | undefined;
+  /** Master power switch */
+  power_switch_entity?: string | undefined;
+
+  // ── Display toggles ──
+  show_name?: boolean | undefined;
+  show_status?: boolean | undefined;
+  show_boiler_graphic?: boolean | undefined;
+  show_water_temp?: boolean | undefined;
+  show_return_temp?: boolean | undefined;
+  show_pressure?: boolean | undefined;
+  show_modulation?: boolean | undefined;
+  show_target_control?: boolean | undefined;
+  show_modes?: boolean | undefined;
+  show_power_button?: boolean | undefined;
+  enable_animations?: boolean | undefined;
+
+  // ── Temperature → color mapping ──
+  /** At or below this temperature the cold color is used (default 30) */
+  cold_temp?: number | undefined;
+  /** At or above this temperature the hot color is used (default 60) */
+  hot_temp?: number | undefined;
+  cold_color?: string | undefined;
+  warm_color?: string | undefined;
+  hot_color?: string | undefined;
+
+  // ── Pressure healthy range (bar) for the warning highlight ──
+  min_pressure?: number | undefined;
+  max_pressure?: number | undefined;
+
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// ============================================
+// TRAIN MODULE TYPES (Pro)
+// ============================================
+
+export type TrainLayout = 'standard' | 'compact';
+export type TrainBoardStyle = 'modern' | 'led';
+export type TrainSource = 'entities' | 'template';
+export type TrainTimeFormat = 'auto' | '12' | '24';
+
+// Train (Pro) — animated departure board: the next trains on a route as
+// status-colored train icons with departure times and a live countdown.
+export interface TrainModule extends BaseModule {
+  type: 'train';
+
+  /**
+   * Where the departures come from.
+   * - `entities`: one sensor per departure (Trafikverket, NS, Entur, ...), or a
+   *   single sensor whose attributes carry a list of departures (UK Transport,
+   *   HVV, Deutsche Bahn, GTFS, ...). Attribute names are auto-detected.
+   * - `template`: a Jinja template that returns a JSON array of departures.
+   */
+  source?: TrainSource | undefined;
+  /** Ordered departure sensors. The first is the next train. */
+  departure_entities?: string[] | undefined;
+  /** Jinja template returning `[{ "time", "expected", "delay", "status", "destination", "line", "platform", "note", "color" }]` */
+  template?: string | undefined;
+
+  /** Route name, e.g. "Triangeln – Trelleborg C". Falls back to the first entity's name. */
+  name?: string | undefined;
+  icon?: string | undefined;
+  layout?: TrainLayout | undefined;
+  /** `modern` is a clean card; `led` is an amber dot-matrix departure board. */
+  board_style?: TrainBoardStyle | undefined;
+
+  // ── Realtime for the next departure (all optional) ──
+  /** Sensor with on_time / delayed / cancelled (e.g. Trafikverket departure state) */
+  status_entity?: string | undefined;
+  /** Delay sensor in minutes or seconds (unit-aware) */
+  delay_entity?: string | undefined;
+  /** Binary sensor / boolean that is on when the next train is cancelled */
+  cancelled_entity?: string | undefined;
+  /** Free-text sensor with deviations / other information, shown as a ticker */
+  info_entity?: string | undefined;
+
+  // ── Behaviour ──
+  /** How many departures to show (1–6, default 3) */
+  max_departures?: number | undefined;
+  /** Delays below this many minutes still count as on time (default 1) */
+  delay_threshold?: number | undefined;
+  /** Within this many minutes of departure the next train lights up (default 5) */
+  imminent_minutes?: number | undefined;
+  time_format?: TrainTimeFormat | undefined;
+
+  // ── Display toggles ──
+  show_name?: boolean | undefined;
+  show_countdown?: boolean | undefined;
+  show_times?: boolean | undefined;
+  show_status?: boolean | undefined;
+  /** Line · platform · destination row under the countdown */
+  show_details?: boolean | undefined;
+  /** Deviation / info ticker */
+  show_info?: boolean | undefined;
+  /** Track connecting the train icons */
+  show_track?: boolean | undefined;
+  enable_animations?: boolean | undefined;
+
+  // ── Colors ──
+  on_time_color?: string | undefined;
+  delayed_color?: string | undefined;
+  cancelled_color?: string | undefined;
+  /** Dot color of the LED board style */
+  led_color?: string | undefined;
   text_color?: string | undefined;
   secondary_text_color?: string | undefined;
   card_background_color?: string | undefined;

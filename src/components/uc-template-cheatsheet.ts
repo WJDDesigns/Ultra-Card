@@ -29,6 +29,7 @@ export class UcTemplateCheatsheet extends LitElement {
     | 'toggle'
     | 'qr'
     | 'status_summary'
+    | 'train'
     | 'layout'
     | 'card'
     | 'actions' = 'info';
