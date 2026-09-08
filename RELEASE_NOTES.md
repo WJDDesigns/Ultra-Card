@@ -1,5 +1,30 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta6
+
+The sixth 3.10.0 beta finishes what beta5 started: **every module style surface now speaks Theme Engine.** Light and Button Input follow theme control recipes, painted panes across the card announce themselves so glass and neumorphic backdrops actually apply, and coverage gates keep that from drifting. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+**Themes still do nothing until you pick one.** Cards keep their current look. Per-module styles you set by hand still win; modules left on "Theme" now pick up control and pane recipes consistently.
+
+### 🚀 New Features
+
+- **Light and Button Input now follow Theme Engine control recipes** - Their button style setting resolves through the same themed control pipeline as other controls. New modules default to **Theme** so they inherit `recipes.control`; older `filled` / `outlined` / `text` values still map cleanly to the matching recipe
+- **Theme glass and neumorphic panes apply across modules** - Modules that paint a card-like surface now use `--uc-pane-*` tokens and announce `data-uc-role="pane"`, so theme backdrop-filter, border and shadow recipes reach popups, entity wrappers, calendars, maps, media players, gauges, navigation chrome and the rest of the painted UI — not just a handful of early adopters
+
+### 🔧 Improvements
+
+- **Theme module style coverage is gated at 100%** - Allow-listed style keys, Hub fields and surface-role registration stay in lockstep, and every `--uc-pane-*` consumer must declare the pane role (with a short, documented carve-out list for templates, full-bleed backgrounds and dead CSS)
+- **Residual card backgrounds fall back through pane tokens** - Live `color-mix` and solid card-background paints across entity and layout modules now prefer `--uc-pane-bg`, so a theme's pane surface wins without each module inventing its own chrome
+- **Built-in themes ship inside the website plugin as a fallback** - Plugin 1.3.37 embeds `data/builtin-themes.json` so the Theme Builder / harness still has the default catalog when the channel copy is missing, and phone hero offsets are measured from the real fixed header so content no longer sits under the three-row header
+
+### 🐛 Bug Fixes
+
+- **Fixed theme glass not applying on modules that already used pane colours** - Several modules referenced pane CSS variables but never set `data-uc-role="pane"`, so backdrop recipes from the theme base CSS never attached. Those surfaces now announce the role
+
+---
+
 ## Version 3.10.0-beta5
 
 The fifth 3.10.0 beta adds **Themes**: one setting that restyles every Ultra Card on a dashboard at once — surface, corners, colours, shadows, wallpaper and the way each module draws its buttons, bars and panels. Fifteen themes ship with the card, from Liquid Glass and Material 3 to Green Terminal, Neumorphic and Wood, and you can build your own in the Hub or in the new Theme Builder on ultracard.io, then share it with the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
