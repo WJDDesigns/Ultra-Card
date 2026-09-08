@@ -4960,7 +4960,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         outline-offset: 2px;
       }
       .fan-speed-select option {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         padding: 8px 12px;
       }
@@ -4992,7 +4992,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       }
       .fan-speed-btn {
         padding: 6px 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-16, 16px);
         font-size: 12px;

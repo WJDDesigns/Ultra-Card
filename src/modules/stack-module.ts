@@ -959,7 +959,7 @@ export class UltraStackModule extends BaseUltraModule {
           align-items: center;
           gap: 8px;
           padding: 32px 16px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           border: 1px dashed var(--divider-color);
           border-radius: var(--uc-r-8, 8px);
           margin-bottom: 16px;

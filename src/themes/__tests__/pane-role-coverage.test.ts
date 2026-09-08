@@ -129,4 +129,20 @@ describe('pane role adoption', () => {
     }
   });
 
+  it('batch-5 residual color-mix/solid surfaces keep pane tokens + role', () => {
+    for (const rel of [
+      'fan-module.ts',
+      'lock-module.ts',
+      'alarm-panel-module.ts',
+      'solar-analytics-module.ts',
+      'separator-module.ts',
+      'tabs-module.ts',
+      'stack-module.ts',
+    ]) {
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      expect(src, rel).toMatch(/--uc-pane-bg/);
+      expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
+    }
+  });
+
 });

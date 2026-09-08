@@ -100,7 +100,7 @@ export class UltraTabsModule extends BaseUltraModule {
           padding: 12px;
           border: 1px solid var(--divider-color);
           border-radius: var(--uc-r-8, 8px);
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           margin-bottom: 8px;
           transition: all 0.2s ease;
           overflow: visible;
@@ -209,7 +209,7 @@ export class UltraTabsModule extends BaseUltraModule {
           padding: 12px;
           border: 1px solid var(--divider-color);
           border-radius: var(--uc-r-4, 4px);
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
           color: var(--primary-text-color);
           cursor: pointer;
           transition: all 0.2s;

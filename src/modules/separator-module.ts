@@ -360,6 +360,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                       class="separator-title ${separatorModule.orientation === 'vertical'
                         ? 'vertical'
                         : ''}"
+                      data-uc-role="pane"
                       style="${this.getTitleStyles(
                         separatorModule,
                         (separatorModule as any).design || {}
@@ -514,7 +515,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
       .separator-title {
         margin: 0;
         line-height: 1.2;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         padding: 0 8px;
         position: relative;
         z-index: 1;

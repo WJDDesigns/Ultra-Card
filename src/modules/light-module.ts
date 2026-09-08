@@ -3250,7 +3250,7 @@ export class UltraLightModule extends BaseUltraModule {
       }
 
       .color-field {
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-6, 6px);
         padding: 12px;
         border: 1px solid var(--divider-color);

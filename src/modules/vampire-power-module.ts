@@ -407,7 +407,7 @@ export class UltraVampirePowerModule extends BaseUltraModule {
             type="button"
             class="uc-vp-restore"
             ?disabled=${hiddenCount === 0}
-            style="display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 10px 16px; border-radius: var(--uc-r-8, 8px); border: 1px solid var(--divider-color); background: var(--card-background-color); color: ${hiddenCount ===
+            style="display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 10px 16px; border-radius: var(--uc-r-8, 8px); border: 1px solid var(--divider-color); background: var(--uc-pane-bg, var(--card-background-color)); color: ${hiddenCount ===
             0
               ? 'var(--disabled-text-color)'
               : 'var(--primary-text-color)'}; font-size: 14px; font-weight: 600; cursor: ${hiddenCount ===

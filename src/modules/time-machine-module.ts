@@ -995,7 +995,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         box-sizing: border-box;
         padding: 12px 16px;
         border-radius: var(--uc-r-12, 12px);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border: 1px solid var(--divider-color);
         transition: border-color 0.2s ease;
       }
@@ -1086,7 +1086,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
         top: 0;
         bottom: 0;
         right: 0;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         opacity: 0.55;
         pointer-events: none;
       }

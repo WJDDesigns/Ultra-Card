@@ -592,7 +592,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
         gap: 6px;
         padding: 8px 12px;
         border-radius: var(--uc-r-10, 10px);
-        background: color-mix(in srgb, var(--grid-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--grid-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--grid-color) 25%, transparent);
       }
       .uc-solar__grid-label {
@@ -635,7 +635,7 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
         gap: 3px;
         padding: 10px 6px;
         border-radius: var(--uc-r-10, 10px);
-        background: color-mix(in srgb, var(--divider-color) 6%, var(--card-background-color, var(--ha-card-background)));
+        background: color-mix(in srgb, var(--divider-color) 6%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--divider-color) 30%, transparent);
         font-size: 0.875rem;
         font-weight: 700;

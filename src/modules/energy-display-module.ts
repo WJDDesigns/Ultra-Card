@@ -133,7 +133,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         align-items: center;
         justify-content: space-between;
         padding: 10px 12px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         border-radius: var(--uc-r-8, 8px);
         margin-bottom: 8px;
         cursor: pointer;

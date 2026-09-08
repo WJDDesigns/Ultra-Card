@@ -1458,7 +1458,7 @@ export class UltraCalendarModule extends BaseUltraModule {
       }
 
       .calendar-item {
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
         border-radius: var(--uc-r-8, 8px);
         overflow: hidden;
         border: 1px solid var(--divider-color);

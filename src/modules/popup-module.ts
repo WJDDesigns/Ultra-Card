@@ -2552,7 +2552,7 @@ export class UltraPopupModule extends BaseUltraModule {
     return html`
       <div
         class="uc-condition-item"
-        style="border:1px solid var(--divider-color); border-radius: var(--uc-r-8, 8px); background: var(--card-background-color); overflow: hidden;"
+        style="border:1px solid var(--divider-color); border-radius: var(--uc-r-8, 8px); background: var(--uc-pane-bg, var(--card-background-color)); overflow: hidden;"
       >
         <div
           class="uc-condition-header"

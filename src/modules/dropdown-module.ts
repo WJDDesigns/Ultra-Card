@@ -3727,7 +3727,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       .dropdown-options {
         position: fixed !important;
         z-index: ${Z_INDEX.DROPDOWN_MENU} !important;
-        background: var(--card-background-color) !important;
+        background: var(--uc-pane-bg, var(--card-background-color)) !important;
         border: 1px solid var(--divider-color) !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
         border-radius: inherit;
