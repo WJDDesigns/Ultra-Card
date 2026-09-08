@@ -1,5 +1,34 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta7
+
+The seventh 3.10.0 beta is a polish release. The **Design tab** — the panel that styles every row, column and module — has been gone over from top to bottom so it is consistent, predictable and a little smarter, and a handful of long-standing quirks in it are fixed. The **Metallic**, **Vapor** and **Beach** themes have been refined, and bar values stay readable on light themes. It includes everything from beta6. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **A cleaner, more consistent Design tab** - Every section (Text, Background, Sizes, Spacing, Border, Position, shadows, Overflow, 3D Transform, Animations, Custom Targeting) now uses the same field layout, labels, hints and reset buttons. The Copy / Paste / Reset to Theme / Reset All buttons sit in a tidy 2×2 grid so no label is cut off, the per-field reset arrow only lights up when there is something to reset, dropdowns show their "Default" or "None" choice instead of an empty box and no longer carry a redundant clear button, and example hints are short enough to fit their fields
+- **Spacing accepts any unit, and says so** - Margin and padding fields explain that they take px, rem, em, %, vw, auto or calc(), and that a bare number means pixels
+- **Arrow keys respect the unit you typed** - Pressing Up/Down in a size, spacing, border or shadow field nudges the value in its own unit (1rem → 1.1rem, 5% → 10%, 1.5 → 2.5) instead of forcing pixels. Hold Shift to step ten times faster, Alt/Option for ten times finer. Empty fields start at 1px, rotations at 1deg
+- **Reset All is thorough, but leaves your targeting alone** - It now clears every visual setting including background filters, 3D transform and animations, while keeping the CSS variable prefix, extra classes and element ID you set under Custom Targeting
+- **Copy Design no longer carries the Element ID** - IDs have to be unique, so pasting a copied design onto another module will not duplicate one
+- **Duration, Delay and Timing line up** - Mixed rows of text fields and dropdowns now share a baseline instead of sitting at different heights
+- **Metallic theme reworked** - The card is a brushed-aluminium plate with spun-metal controls and sunk tracks; inner panes are a lighter alloy raised off the plate, and module backdrops become a faint glaze so the metal shows through instead of flat grey slabs
+- **Vapor and Beach themes vary more** - Vapor cards now draw a sun, a moon or a bare sky and show or skip the grid from their own seed so neighbouring cards stop repeating; the Beach shell that was clipped at the dome is gone
+- **Bar values readable on light themes** - The value text drawn across a bar flips to dark text with a light halo when the card is light. The module's default look is unchanged
+- **ultracard.io Theme Builder** - The preview's brightness label stays readable on tinted themes like Terminal
+
+### 🐛 Bug Fixes
+
+- **Fixed Text Shadow and 3D Transform values disappearing from the editor** - Values were saved and rendered correctly but came back blank when you reopened the module's Design tab
+- **Fixed section reset wiping the desktop design while editing a device** - Resetting a section on Laptop, Tablet or Mobile now clears only that device's overrides
+- **Fixed the Font dropdown showing blank** - The font you had picked was not shown as selected when the Design tab first opened
+- **Fixed the animation Duration field pretending a value was set** - It showed "2s" as if you had typed it; it now shows the default as a hint and stays empty until you set one
+- **Fixed locked spacing saving three times** - Locking margin or padding to edit all sides together now saves in a single step
+
+---
+
 ## Version 3.10.0-beta6
 
 The sixth 3.10.0 beta finishes what beta5 started: **every module style surface now speaks Theme Engine.** Light and Button Input follow theme control recipes, painted panes across the card announce themselves so glass and neumorphic backdrops actually apply, and coverage gates keep that from drifting. This is a pre-release for testing — please report anything odd on GitHub or Discord.
