@@ -118,11 +118,20 @@ jobs:
           cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Releases created below with the default GITHUB_TOKEN do NOT fire the
-      # `release: published` event (GitHub suppresses events from GITHUB_TOKEN
-      # to prevent workflow loops), so announce-release.yml never runs for
-      # tag-push releases. Record whether the release already exists so we can
-      # dispatch the announcement manually only when this workflow creates it.
+      # A release must never be visible to HACS without its assets. With
+      # content_in_root=false HACS looks for ultra-card.js among the release
+      # assets; when the release exists but the upload has not happened yet it
+      # falls back to the repo root, where ultra-card.js is committed but the
+      # uc-*.js chunks are gitignored. Users then get a new entry file with no
+      # chunks: no editor, modules stuck loading, and a permanent "Ultra Card
+      # was updated, reload" toast (3.10.0-beta8 and the first minutes of
+      # beta9). So: create the release as a DRAFT, attach every asset, and only
+      # then publish. HACS ignores drafts. `scripts/release.js` no longer
+      # creates the release itself for the same reason.
+      #
+      # Record whether a release already existed (e.g. created by hand) so the
+      # Discord announcement is only dispatched for releases this workflow
+      # publishes; a hand-made publish already fired `release: published`.
       - name: Check if release already exists
         id: existing_release
         env:
@@ -134,15 +143,16 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create GitHub Release
+      - name: Create draft release and upload assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: What's New in ${{ steps.version.outputs.VERSION }}
-          draft: false
+          draft: true
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           generate_release_notes: false
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+          fail_on_unmatched_files: true
           # Every asset listed here is downloaded flat into each user's
           # www/community/Ultra-Card/ by HACS (content_in_root=false ->
           # release mode). Ship only files the browser needs; no zip.
@@ -154,13 +164,29 @@ jobs:
             uc-*.js
             uc-*.js.LICENSE.txt
 
+      # Belt and braces: refuse to publish unless the entry file and at least
+      # one chunk are actually attached. A draft that fails here stays a draft
+      # (invisible to HACS) and can be inspected on the Releases page.
+      - name: Verify release assets before publishing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ASSETS=$(gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" --json assets -q '.assets[].name')
+          echo "$ASSETS"
+          echo "$ASSETS" | grep -qx 'ultra-card.js' || { echo "::error::ultra-card.js is not attached to the release"; exit 1; }
+          echo "$ASSETS" | grep -q '^uc-.*\.js$' || { echo "::error::no uc-*.js chunks attached to the release"; exit 1; }
+          echo "Attached assets: $(echo "$ASSETS" | wc -l)"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.ref_name }}" --repo "${{ github.repository }}" --draft=false
+
       # `announce-release.yml` is the single source of truth for the Discord
-      # announcement. When the release was created by the local release script
-      # (user credentials), the `release: published` event fires and announces
-      # on its own; this workflow only updates that release, so we must NOT
-      # dispatch here or Discord would get a duplicate. When the release is
-      # created by THIS workflow (plain tag push), GITHUB_TOKEN suppresses the
-      # event, so we dispatch the announcement manually.
+      # announcement. Publishing with GITHUB_TOKEN does not fire the
+      # `release: published` event (GitHub suppresses events from GITHUB_TOKEN
+      # to prevent workflow loops), so dispatch it manually. Skip when the
+      # release pre-existed: that publish already announced itself.
       - name: Announce release to Discord
         if: steps.existing_release.outputs.exists == 'false'
         env:

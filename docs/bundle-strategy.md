@@ -153,6 +153,16 @@ even though `uc-283.js` / `uc-437.js` were release assets.
 5. Default-branch installs (`remote = ""`) copy root `.js` files from the git
    tree; root `uc-*.js` are gitignored, so `hide_default_branch: true` keeps
    releases the only channel. `zip_release` is integrations-only.
+6. **A published release with no assets is the worst case**, not a no-op: step
+   1 finds no `ultra-card.js` asset, falls back to the repo root, and installs
+   the committed root `ultra-card.js` with none of its chunks. Every lazy
+   `import()` then 404s for good (no editor, modules stuck on skeletons, a
+   permanent "Ultra Card was updated, reload" toast that no reload fixes).
+   3.10.0-beta8 shipped that way because `scripts/release.js` created the
+   release before the tag workflow uploaded the files, and the workflow then
+   failed a test; beta9 exposed the same two-minute window. Since then only
+   `.github/workflows/release.yml` creates releases: as a **draft**, assets
+   attached and verified, then published. HACS never sees drafts.
 
 HACS serves `www/community/` at `/hacsfiles/` with `Cache-Control: max-age=2678400`
 (31 days) when Lovelace is in storage mode. The `?hacstag=` query on the main

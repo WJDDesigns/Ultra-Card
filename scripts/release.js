@@ -10,7 +10,14 @@
  * - Enhances and categorizes changelog
  * - Updates RELEASE_NOTES.md
  * - Creates git tag and pushes
- * - Creates GitHub release with changelog
+ * - Waits for the GitHub "Release" workflow, which builds, attaches every
+ *   asset to a DRAFT release and only then publishes it
+ *
+ * The script deliberately does NOT create the GitHub release itself. A
+ * published release with no assets makes HACS fall back to the repo root,
+ * where ultra-card.js is committed but the uc-*.js chunks are gitignored, so
+ * users get an entry file with no chunks (3.10.0-beta8). Only the workflow
+ * publishes, and only after the files are attached.
  *
  * Usage:
  *   npm run build:release      - Creates a stable release
@@ -673,33 +680,52 @@ function pushToGitHub(tag, alreadyOnRemote = false) {
 }
 
 /**
- * Create GitHub release
+ * Wait for the tag-triggered "Release" workflow to finish and report whether
+ * the release was published with its assets. Never creates the release here:
+ * see the header comment. Returns true when the release is published.
  */
-function createGitHubRelease(version, changelog, isPrerelease) {
-  const tag = `v${version}`;
-  const title = `What's New in ${version}`;
+function waitForReleaseWorkflow(tag) {
+  log.step('Waiting for the GitHub "Release" workflow to build and publish...');
+  log.info(`Runs: ${CONFIG.repoUrl}/actions/workflows/release.yml`);
 
-  log.step(`Creating GitHub ${isPrerelease ? 'pre-release' : 'release'}...`);
-
-  // Write changelog to temp file to handle special characters
-  const tempFile = path.resolve(__dirname, '../.release-notes-temp.md');
-  fs.writeFileSync(tempFile, changelog);
-
-  try {
-    const prereleaseFlag = isPrerelease ? '--prerelease' : '';
-
-    // Create the release using gh CLI
-    const command = `gh release create ${tag} --title "${title}" --notes-file "${tempFile}" ${prereleaseFlag}`;
-    run(command);
-
-    log.success(`Created GitHub ${isPrerelease ? 'pre-release' : 'release'}: ${tag}`);
-    log.info(`View at: ${CONFIG.repoUrl}/releases/tag/${tag}`);
-  } finally {
-    // Clean up temp file
-    if (fs.existsSync(tempFile)) {
-      fs.unlinkSync(tempFile);
-    }
+  // The run appears a few seconds after the tag push.
+  let runId = '';
+  for (let attempt = 0; attempt < 12 && !runId; attempt++) {
+    const out = run(
+      `gh run list --workflow release.yml --branch ${tag} --event push --limit 1 --json databaseId -q ".[0].databaseId"`,
+      { silent: true, ignoreError: true }
+    ).trim();
+    if (out) runId = out;
+    else spawnSync('sleep', ['5']);
   }
+
+  if (!runId) {
+    log.warn('Could not find the workflow run yet. Check the Actions tab; the release publishes when it succeeds.');
+    return false;
+  }
+
+  const watch = spawnSync('gh', ['run', 'watch', runId, '--exit-status', '--interval', '15'], {
+    stdio: 'inherit',
+    cwd: path.resolve(__dirname, '..'),
+  });
+
+  if (watch.status !== 0) {
+    log.error(`Release workflow failed: ${CONFIG.repoUrl}/actions/runs/${runId}`);
+    log.info('Nothing was published (the release stays a draft or does not exist). Fix, re-tag, push again.');
+    return false;
+  }
+
+  const assets = run(`gh release view ${tag} --json assets,isDraft -q "(.isDraft|tostring) + \\" \\" + (.assets|length|tostring)"`, {
+    silent: true,
+    ignoreError: true,
+  }).trim();
+  const [isDraft, assetCount] = assets.split(' ');
+  if (isDraft === 'false' && Number(assetCount) > 0) {
+    log.success(`Published ${tag} with ${assetCount} assets`);
+    return true;
+  }
+  log.warn(`Workflow finished but the release looks incomplete (draft=${isDraft}, assets=${assetCount}). Check it before announcing.`);
+  return false;
 }
 
 /**
@@ -856,28 +882,18 @@ async function main() {
   // Create git tag
   const { tag, alreadyOnRemote } = createGitTag(version);
 
-  // Push to GitHub
+  // Push to GitHub. The tag push triggers .github/workflows/release.yml, which
+  // is the ONLY thing that creates the GitHub release: it builds, attaches all
+  // assets to a draft, verifies them, then publishes. Creating the release
+  // here would expose an asset-less release to HACS for ~2 minutes.
+  let published = false;
   if (!skipPush) {
     pushToGitHub(tag, alreadyOnRemote);
-
-    // Create GitHub release (only if tag wasn't already on remote, or force it)
-    // Extract just the changelog content for the release (without the header)
-    const releaseChangelog = changelog.replace(/^## Version .+\n\n/, '');
-
     if (alreadyOnRemote) {
-      log.warn(`Tag ${tag} already exists on remote - checking if release exists...`);
-      // Check if release already exists
-      try {
-        run(`gh release view ${tag}`, { silent: true });
-        log.warn(`Release ${tag} already exists on GitHub - skipping release creation`);
-        log.info(`To update the release, delete it first: gh release delete ${tag}`);
-      } catch {
-        // Release doesn't exist, create it
-        log.info('Release does not exist yet - creating it...');
-        createGitHubRelease(version, releaseChangelog, isPrerelease);
-      }
+      log.warn(`Tag ${tag} was already on the remote, so no new workflow run was triggered.`);
+      log.info('If the release is missing or incomplete: delete the tag and release, then re-run.');
     } else {
-      createGitHubRelease(version, releaseChangelog, isPrerelease);
+      published = waitForReleaseWorkflow(tag);
     }
   } else {
     log.warn('Skipping push (--skip-push flag)');
@@ -885,14 +901,19 @@ async function main() {
   }
 
   // Done!
-  log.header('Release Complete!');
-  log.success(`Version ${version} has been released!`);
+  if (published) {
+    log.header('Release Complete!');
+    log.success(`Version ${version} has been released!`);
+  } else {
+    log.header('Tag pushed');
+    log.warn(`Version ${version} is not published yet. It goes live when the Release workflow succeeds.`);
+  }
   log.info(`Release URL: ${CONFIG.repoUrl}/releases/tag/${tag}`);
 
   console.log(`\n${colors.dim}Next steps:${colors.reset}`);
-  console.log(`${colors.dim}  1. Verify the release on GitHub${colors.reset}`);
-  console.log(`${colors.dim}  2. Update HACS if needed${colors.reset}`);
-  console.log(`${colors.dim}  3. Announce on Discord${colors.reset}\n`);
+  console.log(`${colors.dim}  1. Verify the release and its asset count on GitHub${colors.reset}`);
+  console.log(`${colors.dim}  2. Install through HACS on a test instance${colors.reset}`);
+  console.log(`${colors.dim}  3. Discord is announced by the workflow${colors.reset}\n`);
 }
 
 // Run the script
