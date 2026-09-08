@@ -98,4 +98,19 @@ describe('pane role adoption', () => {
       expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
     }
   });
+
+  it('batch-3 surfaces (map, external-card, scroll-row, lunar, sports, vehicle) use pane tokens + role', () => {
+    for (const rel of [
+      'map-module.ts',
+      'external-card-module.ts',
+      'scroll-row-module.ts',
+      'lunar-phase-module.ts',
+      'sports-score-module.ts',
+      'vehicle-maintenance-module.ts',
+    ]) {
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      expect(src, rel).toMatch(/--uc-pane-bg/);
+      expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
+    }
+  });
 });

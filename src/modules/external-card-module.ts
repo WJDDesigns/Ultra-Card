@@ -967,7 +967,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
       
       return html`
         <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
-          <div class="external-card-placeholder">
+          <div class="external-card-placeholder" data-uc-role="pane">
             <div class="ultra-card-logo">
               <ha-icon
                 icon="${isCustomYamlCard ? 'mdi:code-braces' : 'mdi:card-multiple'}"
@@ -1003,7 +1003,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
       return html`
         <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
-          <div class="external-card-placeholder">
+          <div class="external-card-placeholder" data-uc-role="pane">
             <div class="ultra-card-logo">
               <ha-icon
                 icon="mdi:card-multiple"
@@ -1557,9 +1557,10 @@ export class UltraExternalCardModule extends BaseUltraModule {
         padding: 32px 24px;
         text-align: center;
         color: var(--secondary-text-color);
-        background: var(--card-background-color, var(--ha-card-background));
+        background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background)));
         border-radius: var(--ha-card-border-radius, 12px);
-        border: 1px dashed var(--divider-color);
+        border: var(--uc-pane-border, 1px dashed var(--divider-color));
+        box-shadow: var(--uc-pane-shadow, none);
         min-height: 180px;
         gap: 12px;
       }

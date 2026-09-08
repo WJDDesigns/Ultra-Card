@@ -1495,11 +1495,13 @@ export class UltraMapModule extends BaseUltraModule {
           font-family: var(--primary-font-family, inherit);
         }
         .leaflet-popup-content-wrapper {
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
+          border: var(--uc-pane-border, none);
+          box-shadow: var(--uc-pane-shadow, none);
           color: var(--primary-text-color);
         }
         .leaflet-popup-tip {
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color));
         }
         .custom-marker-icon {
           display: flex;
@@ -1569,6 +1571,7 @@ export class UltraMapModule extends BaseUltraModule {
       </style>
       <div
         class="map-container ${hoverClass}"
+        data-uc-role="pane"
         style="${containerStyle} ${designStyles} box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: box-shadow 0.2s ease;"
         @mouseenter=${(e: Event) => {
           const target = e.currentTarget as HTMLElement;

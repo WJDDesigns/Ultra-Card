@@ -888,7 +888,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
       bgCss =
         'background: linear-gradient(165deg, #070b1d 0%, #101633 45%, #1b2447 78%, #232f59 100%);';
     } else if (bgStyle === 'theme') {
-      bgCss = 'background: var(--card-background-color, var(--ha-card-background));';
+      bgCss = 'background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none);';
     } else if (bgStyle === 'custom' && m.custom_background) {
       bgCss = `background-image: linear-gradient(rgba(7,10,25,0.45), rgba(7,10,25,0.65)), url("${m.custom_background}"); background-size: cover; background-position: center;`;
     }
@@ -922,6 +922,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
       <style>${this.getStyles()}</style>
       <div
         class="uc-lunar-wrapper ${hoverClass}"
+        data-uc-role="pane"
         style="${bgCss} ${varStr}; ${designStyles}"
         @pointerdown=${gestures.onPointerDown}
         @pointerup=${gestures.onPointerUp}

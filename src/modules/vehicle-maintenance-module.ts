@@ -365,7 +365,7 @@ export class UltraVehicleMaintenanceModule extends BaseUltraModule {
       over: m.overdue_color || 'var(--error-color, #e53935)',
       text: m.text_color || 'var(--primary-text-color)',
       secondary: m.secondary_text_color || 'var(--secondary-text-color)',
-      cardBg: m.card_background_color || 'var(--card-background-color)',
+      cardBg: m.card_background_color || 'var(--uc-pane-bg, var(--card-background-color))',
     };
   }
 

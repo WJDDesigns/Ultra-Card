@@ -1851,7 +1851,7 @@ export class UltraClimateModule extends BaseUltraModule {
         padding: 12px 16px;
         border-radius: var(--uc-r-8, 8px);
         border: none;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         display: flex;
         align-items: center;
