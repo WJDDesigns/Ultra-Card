@@ -113,4 +113,20 @@ describe('pane role adoption', () => {
       expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
     }
   });
+  it('batch-4 residuals (screensaver, status-summary, area-summary, appliance, dog-duty, battery-fleet) use pane tokens + role', () => {
+    for (const rel of [
+      'screensaver-module.ts',
+      'status-summary-module.ts',
+      'area-summary-module.ts',
+      'appliance-module.ts',
+      'dog-duty-module.ts',
+      'battery-fleet-module.ts',
+      'animated-clock-module.ts',
+    ]) {
+      const src = fs.readFileSync(path.join(MODULES_DIR, rel), 'utf8');
+      expect(src, rel).toMatch(/--uc-pane-bg/);
+      expect(src, rel).toMatch(/data-uc-role=["']pane["']/);
+    }
+  });
+
 });

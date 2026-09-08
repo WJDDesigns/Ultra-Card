@@ -63,7 +63,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       // Styling
       clock_size: 100,
       clock_color: 'var(--primary-text-color)',
-      clock_background: 'var(--card-background-color)',
+      clock_background: 'var(--uc-pane-bg, var(--card-background-color))',
 
       // Flip Clock options
       flip_tile_color: 'rgba(0, 0, 0, 0.5)',

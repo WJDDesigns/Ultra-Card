@@ -229,7 +229,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
           align-items: center;
           gap: 8px;
           padding: 12px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color)); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none);
           border-radius: var(--uc-r-8, 8px);
           margin-bottom: 8px;
           cursor: move;
@@ -350,7 +350,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
         .state-color-editor {
           margin-top: 12px;
           padding: 12px;
-          background: var(--card-background-color);
+          background: var(--uc-pane-bg, var(--card-background-color)); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none);
           border-radius: var(--uc-r-4, 4px);
         }
 

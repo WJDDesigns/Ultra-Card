@@ -2778,7 +2778,9 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
         justify-content: center;
         border: none;
         border-radius: 50%;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
+        border: var(--uc-pane-border, none);
+        box-shadow: var(--uc-pane-shadow, none);
         color: var(--error-color);
         cursor: pointer;
         opacity: 0;
