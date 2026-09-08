@@ -908,17 +908,17 @@ export const MOOSE_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-// Metallic: a brushed-aluminium plate, the way a hi-fi front panel is built.
+// Metallic: a spun-aluminium plate, the way a hi-fi front panel is built.
 // The plate is the darker metal; everything mounted on it is lighter.
 const METAL_PLATE = '#b3b8be'; // the plate: palette base (content sits on it)
-const METAL_INK = '#1f2327'; // 7.9:1 on the plate, 6.8:1 on its darkest sweep
-const METAL_INK_SOFT = '#363e47'; // 5.3:1 on the plate, 4.6:1 on its darkest sweep
+const METAL_INK = '#1f2327'; // 7.9:1 on the plate, 6.7:1 on its darkest ray
+const METAL_INK_SOFT = '#363e47'; // 5.3:1 on the plate, 4.6:1 on its darkest ray
 const METAL_BLUE = '#1f6aa8'; // primary and accent: the lit blue (white on it 5.7:1)
 const METAL_TRACK = '#2a2e32'; // sunk track behind fills (white on it 13.7:1)
 const METAL_EDGE = '#858c93'; // plate edge
-/** Fine diagonal brushing over a soft vertical sheen. Darker than the parts on it. */
+/** The plate: the same spun sweep as the controls, in the darkest alloy, with a soft highlight up top. */
 const METAL_BRUSH =
-  'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0 1px, rgba(255, 255, 255, 0) 1px 3px, rgba(0, 0, 0, 0.05) 3px 4px), linear-gradient(180deg, #c3c8cd 0%, #b3b8be 45%, #a6abb1 100%)';
+  'radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 60%), conic-gradient(from 20deg, #c9ced3, #a3a9af 12%, #d5d9dc 24%, #a9afb5 38%, #d1d5d9 50%, #a3a9af 63%, #d3d7db 76%, #abb1b7 88%, #c9ced3)';
 const METAL_PLATE_SHADOW =
   'inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(0, 0, 0, 0.28), 0 10px 24px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.3)';
 /** Spun metal: a conic sweep of light and dark rays with a soft highlight up top. Controls. */
@@ -926,20 +926,19 @@ const METAL_SPUN =
   'radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 60%), conic-gradient(from 20deg, #e6e9ec, #b9bfc4 12%, #f2f4f6 24%, #c0c6cb 38%, #eef0f2 50%, #b7bdc2 63%, #f0f2f4 76%, #c2c8cd 88%, #e6e9ec)';
 const METAL_SPUN_SHADOW =
   'inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(0, 0, 0, 0.28), 0 2px 3px rgba(0, 0, 0, 0.35), 0 6px 10px rgba(0, 0, 0, 0.16)';
-/** Panes: the same brushing as the plate, in a lighter alloy, raised off it with a bright top lip. */
+/** Panes: the same spun sweep in a lighter alloy, raised off the plate with a bright top lip. */
 const METAL_BRUSH_PANE =
-  'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0 1px, rgba(255, 255, 255, 0) 1px 3px, rgba(0, 0, 0, 0.03) 3px 4px), linear-gradient(180deg, #eef0f2 0%, #dfe2e5 50%, #d3d7da 100%)';
+  'radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 60%), conic-gradient(from 20deg, #eef0f2, #c8ccd0 12%, #f4f5f7 24%, #cdd1d5 38%, #f0f2f4 50%, #c8ccd0 63%, #f2f4f6 76%, #cfd3d7 88%, #eef0f2)';
 const METAL_BRUSH_PANE_SHADOW =
   'inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 2px 3px rgba(0, 0, 0, 0.28), 0 5px 10px rgba(0, 0, 0, 0.14)';
 
 /**
- * "Metallic": a brushed-aluminium plate with spun-metal controls, like a
- * hi-fi front panel. The card is the plate (fine diagonal brushing, a bright
- * top lip, a soft drop shadow) in a darker alloy, with dark engraved type.
- * Everything mounted on it is lighter metal: panes carry the same brushing
- * raised off the plate, controls are spun aluminium (a conic sweep of light
- * and dark rays), bar tracks are sunk near-black with a lit blue fill. The
- * one colour is the lit blue of an indicator.
+ * "Metallic": spun aluminium all the way down, like a hi-fi front panel.
+ * The card is the plate (a conic sweep of light and dark rays, a bright top
+ * lip, a soft drop shadow) in the darkest alloy, with dark engraved type.
+ * Everything mounted on it is lighter metal with the same spun finish: panes
+ * raised off the plate, controls on top, bar tracks sunk near-black with a
+ * lit blue fill. The one colour is the lit blue of an indicator.
  */
 export const METALLIC_THEME: UcThemeDefinition = {
   id: 'metallic',
@@ -947,7 +946,7 @@ export const METALLIC_THEME: UcThemeDefinition = {
   version: 4,
   author: 'Ultra Card',
   description:
-    'A dark brushed-aluminium plate with lighter brushed panes and spun-metal controls mounted on it, like a hi-fi front panel. Dark engraved type, near-black tracks with a lit blue fill.',
+    'Spun aluminium all the way down, like a hi-fi front panel: a dark spun plate with lighter spun panes and controls mounted on it. Dark engraved type, near-black tracks with a lit blue fill.',
   icon: 'mdi:anvil',
   source: 'builtin',
   tokens: {
@@ -957,8 +956,7 @@ export const METALLIC_THEME: UcThemeDefinition = {
     border_width: 1,
     border_color: METAL_EDGE,
     shadow: METAL_PLATE_SHADOW,
-    page_background:
-      'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 1px, rgba(255, 255, 255, 0) 1px 4px), linear-gradient(180deg, #e3e6e9 0%, #d3d7db 60%, #c6cbd0 100%)',
+    page_background: 'linear-gradient(180deg, #e3e6e9 0%, #d3d7db 60%, #c6cbd0 100%)',
     pane_background: METAL_BRUSH_PANE,
     pane_border: '1px solid #8f969d',
     pane_shadow: METAL_BRUSH_PANE_SHADOW,
