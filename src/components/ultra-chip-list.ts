@@ -60,10 +60,16 @@ export class UltraChipList extends LitElement {
 
   @state() private _entityPickerKey = 0;
 
-  private _entityFilter = (entityId: string): boolean => {
+  /**
+   * HA's `ha-entity-picker` used to call `entityFilter` with an entity ID string;
+   * newer frontends pass the full state object. Accept both — throwing here makes
+   * the picker render as an empty box.
+   */
+  private _entityFilter = (item: string | { entity_id?: string } | null | undefined): boolean => {
     const doms = this.entityDomains;
     if (!doms?.length) return true;
-    const prefix = entityId.split('.')[0] || '';
+    const id = typeof item === 'string' ? item : item?.entity_id || '';
+    const prefix = id.split('.')[0] || '';
     return doms.includes(prefix);
   };
 

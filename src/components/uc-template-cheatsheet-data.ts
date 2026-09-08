@@ -223,6 +223,70 @@ export const RETURN_PROPERTIES: CheatsheetEntry[] = [
     snippet: '"qr_content": "{{ states(\'input_text.guest_wifi\') }}"',
     modules: ['qr'],
   },
+  // Train departures: the template returns an ARRAY of departure objects (next train first).
+  {
+    key: 'time',
+    type: 'string | number',
+    description: 'Timetabled departure: ISO timestamp, "HH:MM", or minutes from now',
+    snippet: '"time": "{{ states(\'sensor.departure_time\') }}"',
+    modules: ['train'],
+  },
+  {
+    key: 'expected',
+    type: 'string',
+    description: 'Realtime departure when it differs from the timetable',
+    snippet: '"expected": "11:16"',
+    modules: ['train'],
+  },
+  {
+    key: 'delay',
+    type: 'number',
+    description: 'Minutes late. Marks the train delayed and shifts its time',
+    snippet: '"delay": 5',
+    modules: ['train'],
+  },
+  {
+    key: 'status',
+    type: 'string',
+    description: 'on_time, delayed, or cancelled',
+    snippet: '"status": "delayed"',
+    modules: ['train'],
+  },
+  {
+    key: 'destination',
+    type: 'string',
+    description: 'Where the train is headed (shown in the details row)',
+    snippet: '"destination": "Trelleborg C"',
+    modules: ['train'],
+  },
+  {
+    key: 'line',
+    type: 'string',
+    description: 'Line or product name',
+    snippet: '"line": "Pågatåg"',
+    modules: ['train'],
+  },
+  {
+    key: 'platform',
+    type: 'string',
+    description: 'Platform or track',
+    snippet: '"platform": "3"',
+    modules: ['train'],
+  },
+  {
+    key: 'note',
+    type: 'string',
+    description: 'Deviation text shown in the ticker under the board',
+    snippet: '"note": "Replacement bus from Malmö C"',
+    modules: ['train'],
+  },
+  {
+    key: 'color',
+    type: 'string',
+    description: 'Override the status color for this train',
+    snippet: '"color": "#7c3aed"',
+    modules: ['train'],
+  },
 ];
 
 /** Full example templates by module */
@@ -487,6 +551,40 @@ export const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]
     {
       label: 'Plain URL string',
       code: "{{ 'https://' + states('sensor.door_url_suffix') }}",
+    },
+  ],
+  train: [
+    {
+      label: 'Departures from a list attribute',
+      code: `[
+  {% for t in state_attr('sensor.my_station', 'departures') %}
+  {
+    "time": "{{ t.scheduled }}",
+    "expected": "{{ t.estimated }}",
+    "status": "{{ 'cancelled' if t.cancelled else ('delayed' if t.delay | int > 0 else 'on_time') }}",
+    "destination": "{{ t.destination }}",
+    "platform": "{{ t.platform }}"
+  }{{ "," if not loop.last }}
+  {% endfor %}
+]`,
+    },
+    {
+      label: 'Three timestamp sensors with a delay',
+      code: `{% set delay = states('sensor.commute_delayed_time') | int(0) // 60 %}
+[
+  { "time": "{{ states('sensor.commute_departure_time') }}", "delay": {{ delay }},
+    "status": "{{ states('sensor.commute_departure_state') }}", "line": "Pågatåg" },
+  { "time": "{{ states('sensor.commute_departure_time_next') }}" },
+  { "time": "{{ states('sensor.commute_departure_time_next_next') }}" }
+]`,
+    },
+    {
+      label: 'Custom color per train',
+      code: `[
+  { "time": "11:11", "status": "on_time", "color": "#22c55e" },
+  { "time": "11:41", "delay": 6, "color": "#f59e0b" },
+  { "time": "12:11", "status": "cancelled", "color": "#ef4444" }
+]`,
     },
   ],
   status_summary: [

@@ -10,6 +10,9 @@ type Listener = () => void;
 
 const now = () => new Date().toISOString();
 
+/** ISO timestamp `minutes` from now (train departures are always relative to "now"). */
+export const trainTime = (minutes: number) => new Date(Date.now() + minutes * 60000).toISOString();
+
 function st(entity_id: string, state: string, attributes: Record<string, any> = {}) {
   return {
     entity_id,
@@ -217,6 +220,96 @@ export function createDemoStates(): Record<string, any> {
       available_modes: ['normal', 'auto', 'boost'],
       device_class: 'humidifier',
       supported_features: 1,
+    }),
+
+    // ---- boiler ----
+    'water_heater.boiler': st('water_heater.boiler', 'gas', {
+      friendly_name: 'Boiler',
+      current_temperature: 54,
+      temperature: 60,
+      min_temp: 30,
+      max_temp: 80,
+      target_temp_step: 1,
+      operation_list: ['off', 'eco', 'gas'],
+      supported_features: 3,
+    }),
+    'sensor.boiler_water_temp': st('sensor.boiler_water_temp', '54.5', {
+      friendly_name: 'Boiler Flow Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+      state_class: 'measurement',
+    }),
+    'sensor.boiler_return_temp': st('sensor.boiler_return_temp', '42.1', {
+      friendly_name: 'Boiler Return Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+      state_class: 'measurement',
+    }),
+    'sensor.boiler_pressure': st('sensor.boiler_pressure', '1.6', {
+      friendly_name: 'Boiler Pressure',
+      unit_of_measurement: 'bar',
+      device_class: 'pressure',
+      state_class: 'measurement',
+    }),
+    'sensor.boiler_modulation': st('sensor.boiler_modulation', '62', {
+      friendly_name: 'Burner Modulation',
+      unit_of_measurement: '%',
+      state_class: 'measurement',
+      icon: 'mdi:fire',
+    }),
+    'binary_sensor.boiler_flame': st('binary_sensor.boiler_flame', 'on', {
+      friendly_name: 'Boiler Flame',
+      device_class: 'heat',
+    }),
+    'binary_sensor.boiler_heating': st('binary_sensor.boiler_heating', 'on', {
+      friendly_name: 'Central Heating Active',
+      device_class: 'running',
+    }),
+    'binary_sensor.boiler_dhw': st('binary_sensor.boiler_dhw', 'off', {
+      friendly_name: 'Hot Water Active',
+      device_class: 'running',
+    }),
+
+    // ---- train departures (Trafikverket-style: one timestamp sensor per train) ----
+    'sensor.commute_departure_time': st('sensor.commute_departure_time', trainTime(23), {
+      friendly_name: 'Triangeln - Trelleborg C Departure time',
+      device_class: 'timestamp',
+      product_filter: 'Pågatåg',
+      icon: 'mdi:train',
+    }),
+    'sensor.commute_departure_time_next': st('sensor.commute_departure_time_next', trainTime(53), {
+      friendly_name: 'Triangeln - Trelleborg C Departure time next',
+      device_class: 'timestamp',
+      icon: 'mdi:train',
+    }),
+    'sensor.commute_departure_time_next_next': st('sensor.commute_departure_time_next_next', trainTime(83), {
+      friendly_name: 'Triangeln - Trelleborg C Departure time next after',
+      device_class: 'timestamp',
+      icon: 'mdi:train',
+    }),
+    'sensor.commute_departure_state': st('sensor.commute_departure_state', 'delayed', {
+      friendly_name: 'Triangeln - Trelleborg C Departure state',
+      device_class: 'enum',
+      options: ['on_time', 'delayed', 'canceled'],
+    }),
+    'sensor.commute_delayed_time': st('sensor.commute_delayed_time', '360', {
+      friendly_name: 'Triangeln - Trelleborg C Delayed time',
+      device_class: 'duration',
+      unit_of_measurement: 's',
+    }),
+    'sensor.commute_other_info': st('sensor.commute_other_info', 'Track change: departs from platform 3', {
+      friendly_name: 'Triangeln - Trelleborg C Other information',
+    }),
+    // A single sensor carrying the whole board in one attribute (UK Transport / DB style)
+    'sensor.station_departures': st('sensor.station_departures', '23', {
+      friendly_name: 'Triangeln departures',
+      unit_of_measurement: 'min',
+      icon: 'mdi:train',
+      departures: [
+        { scheduled: trainTime(23), estimated: trainTime(23), status: 'ON TIME', destination_name: 'Trelleborg C', platform: '2', line: 'Pågatåg' },
+        { scheduled: trainTime(53), estimated: trainTime(59), status: 'LATE', destination_name: 'Trelleborg C', platform: '2', line: 'Pågatåg' },
+        { scheduled: trainTime(83), status: 'CANCELLED', destination_name: 'Trelleborg C', platform: '2', line: 'Pågatåg' },
+      ],
     }),
 
     // ---- media player ----
@@ -1456,6 +1549,18 @@ export function createDemoHass() {
           break;
         case 'humidifier.set_humidity':
           if (entity) setState(id, entity.state, { humidity: data.humidity });
+          break;
+        case 'water_heater.set_temperature':
+          if (entity) setState(id, entity.state, { temperature: data.temperature });
+          break;
+        case 'water_heater.set_operation_mode':
+          if (entity) setState(id, data.operation_mode);
+          break;
+        case 'water_heater.turn_on':
+          if (entity) setState(id, 'gas');
+          break;
+        case 'water_heater.turn_off':
+          if (entity) setState(id, 'off');
           break;
         case 'humidifier.turn_on':
           if (entity) setState(id, 'on');

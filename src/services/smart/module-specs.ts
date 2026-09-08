@@ -80,6 +80,8 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   update_monitor: ['pending updates', 'firmware updates', 'update list'],
   clock: ['digital clock', 'current time'],
   humidifier: ['dehumidifier', 'humidity control'],
+  boiler: ['boiler', 'water heater', 'central heating', 'opentherm', 'hot water', 'dhw', 'furnace'],
+  train: ['train', 'trains', 'departures', 'departure board', 'commute', 'public transport', 'transit', 'timetable', 'station', 'metro', 'tram', 'bus departures'],
   washer: ['washer', 'washing machine', 'laundry'],
   dryer: ['dryer', 'tumble dryer', 'laundry'],
   dishwasher: ['dishwasher', 'dish washer'],
@@ -348,6 +350,15 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
     purpose: 'Humidifier and dehumidifier control with target humidity and modes.',
     fields: ['entity', 'name'],
   },
+  boiler: {
+    purpose: 'Animated boiler card with water temperature, flame and pipe animations, pressure, and target control.',
+    fields: ['entity', 'name', 'layout'],
+  },
+  train: {
+    purpose: 'Departure board for a train route: the next departures as status-colored train icons with times and a live countdown.',
+    fields: ['departure_entities', 'name', 'layout', 'board_style', 'max_departures'],
+    example: { type: 'train', departure_entities: ['sensor.commute_departure_time', 'sensor.commute_departure_time_next'], name: 'Triangeln – Trelleborg C', layout: 'standard', board_style: 'modern', max_departures: 3 },
+  },
   washer: {
     purpose: 'Animated washing machine card with cycle status, remaining time, controls, and metrics.',
     fields: ['entity', 'layout', 'show_title', 'show_status', 'show_controls', 'show_metrics', 'enable_animations'],
@@ -519,6 +530,8 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   update_monitor: ['update'],
   clock: ['*'],
   humidifier: ['humidifier'],
+  boiler: ['water_heater', 'climate', 'sensor'],
+  train: ['sensor'],
   washer: ['select', 'input_select', 'sensor', 'switch', 'binary_sensor', 'number'],
   dryer: ['select', 'input_select', 'sensor', 'switch', 'binary_sensor', 'number'],
   dishwasher: ['select', 'input_select', 'sensor', 'switch', 'binary_sensor', 'number'],

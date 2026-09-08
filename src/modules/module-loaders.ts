@@ -285,6 +285,14 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-humidifier" */ './humidifier-module').then(
       m => new m.UltraHumidifierModule()
     ),
+  boiler: () =>
+    import(/* webpackChunkName: "m-boiler" */ './boiler-module').then(
+      m => new m.UltraBoilerModule()
+    ),
+  train: () =>
+    import(/* webpackChunkName: "m-train" */ './train-module').then(
+      m => new m.UltraTrainModule()
+    ),
   washer: () =>
     import(/* webpackChunkName: "m-appliance" */ './appliance-module').then(
       m => new m.UltraWasherModule()

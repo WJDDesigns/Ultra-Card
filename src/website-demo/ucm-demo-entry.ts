@@ -11,7 +11,7 @@
 import { render, html, TemplateResult } from 'lit';
 import { getMdiSheet } from './ha-shims';
 import { getModuleRegistry, MODULE_CATEGORIES, isProModule } from '../modules';
-import { createDemoHass } from './demo-hass';
+import { createDemoHass, trainTime } from './demo-hass';
 import { renderTemplate as renderDemoTemplate } from './demo-jinja';
 import { buildEntityContext } from '../utils/template-context';
 import {
@@ -420,6 +420,31 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   },
   climate: c => (c.entity = c.entity || 'climate.downstairs'),
   humidifier: c => (c.entity = c.entity || 'humidifier.bedroom'),
+  boiler: c => {
+    c.entity = c.entity || 'water_heater.boiler';
+    c.water_temp_entity = 'sensor.boiler_water_temp';
+    c.return_temp_entity = 'sensor.boiler_return_temp';
+    c.pressure_entity = 'sensor.boiler_pressure';
+    c.modulation_entity = 'sensor.boiler_modulation';
+    c.flame_entity = 'binary_sensor.boiler_flame';
+    c.heating_entity = 'binary_sensor.boiler_heating';
+    c.dhw_entity = 'binary_sensor.boiler_dhw';
+  },
+  train: c => {
+    c.source = 'entities';
+    c.departure_entities = c.departure_entities?.length
+      ? c.departure_entities
+      : [
+          'sensor.commute_departure_time',
+          'sensor.commute_departure_time_next',
+          'sensor.commute_departure_time_next_next',
+        ];
+    c.name = c.name || 'Triangeln – Trelleborg C';
+    c.time_format = c.time_format && c.time_format !== 'auto' ? c.time_format : '24';
+    c.status_entity = 'sensor.commute_departure_state';
+    c.delay_entity = 'sensor.commute_delayed_time';
+    c.info_entity = 'sensor.commute_other_info';
+  },
   media_player: c => {
     c.entity = c.entity || 'media_player.kitchen_speaker';
     c.card_size = 150;
@@ -772,6 +797,8 @@ function startDemoLoop() {
     tween('light.living_room', { attr: 'brightness', from: up ? 178 : 70, to: up ? 70 : 178, ms: 2600 });
     tween('input_number.ev_charge_limit', { from: up ? 80 : 60, to: up ? 60 : 80, ms: 2600 });
     tween('humidifier.bedroom', { attr: 'humidity', from: up ? 45 : 55, to: up ? 55 : 45, ms: 2600 });
+    tween('sensor.boiler_water_temp', { from: up ? 54.5 : 58.2, to: up ? 58.2 : 54.5, ms: 2600, decimals: 1 });
+    tween('sensor.boiler_modulation', { from: up ? 62 : 38, to: up ? 38 : 62, ms: 2600 });
     tween('cover.living_room_blinds', { attr: 'current_position', from: up ? 40 : 80, to: up ? 80 : 40, ms: 2600 });
     tween('fan.ceiling_fan', { attr: 'percentage', from: up ? 66 : 33, to: up ? 33 : 66, ms: 2600 });
     tween('sensor.home_battery_soc', { from: up ? 84 : 64, to: up ? 64 : 84, ms: 2600 });
@@ -803,6 +830,16 @@ function startDemoLoop() {
       const lk = demoHass.states['lock.front_door'];
       if (lk) demoHass.__setState('lock.front_door', lk.state === 'locked' ? 'unlocked' : 'locked');
     }
+
+    // Train board: keep the departures pinned relative to "now" so the countdown
+    // never runs out while a visitor lingers, and let the next train slip in and
+    // out of the "leaving soon" window so its headlights get to come on.
+    const soon = phase % 4 === 3;
+    demoHass.__setState('sensor.commute_departure_time', trainTime(soon ? 4 : 23));
+    demoHass.__setState('sensor.commute_departure_time_next', trainTime(soon ? 34 : 53));
+    demoHass.__setState('sensor.commute_departure_time_next_next', trainTime(soon ? 64 : 83));
+    demoHass.__setState('sensor.commute_departure_state', soon ? 'on_time' : 'delayed');
+    demoHass.__setState('sensor.commute_delayed_time', soon ? '0' : '360');
 
     // People move between home and away.
     const per = demoHass.states['person.tony'];

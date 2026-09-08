@@ -123,6 +123,8 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'update-monitor-module.ts',
   'clock-module.ts',
   'humidifier-module.ts',
+  'boiler-module.ts',
+  'train-module.ts',
   'appliance-module.ts',
   'todo-list-module.ts',
   'weather-module.ts',

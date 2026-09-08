@@ -1,8 +1,8 @@
 # Ultra Card module gallery
 
-_Generated from v3.10.0-beta3 on 2026-09-05 — do not edit by hand._
+_Generated from v3.10.0-beta9 on 2026-09-08 — do not edit by hand._
 
-**94 modules** · 66 free · 28 PRO
+**96 modules** · 66 free · 30 PRO
 
 ## content
 
@@ -49,6 +49,7 @@ _Generated from v3.10.0-beta3 on 2026-09-05 — do not edit by hand._
 <tr><td width="220"><img src="previews/status_summary.png" width="200" alt="Status Summary"></td><td><b>Status Summary</b><br>Display entity activity with timestamps and customizable color coding</td></tr>
 <tr><td width="220"><img src="previews/time_machine.png" width="200" alt="Time Machine"></td><td><b>Time Machine</b> · <sub>PRO</sub><br>Rewind the entire card with a draggable history timeline</td></tr>
 <tr><td width="220"><img src="previews/todo_list.png" width="200" alt="To-Do List"></td><td><b>To-Do List</b><br>Show, check off, and add items on Home Assistant to-do lists</td></tr>
+<tr><td width="220"><img src="previews/train.png" width="200" alt="Train Departures"></td><td><b>Train Departures</b> · <sub>PRO</sub><br>Animated departure board with the next trains as status-colored icons, live countdown, delays, and an LED dot-matrix style</td></tr>
 <tr><td width="220"><img src="previews/unifi.png" width="200" alt="UniFi Network"></td><td><b>UniFi Network</b> · <sub>PRO</sub><br>Virtual rack, live ports, topology and clients for UniFi gear</td></tr>
 <tr><td width="220"><img src="previews/update_monitor.png" width="200" alt="Update Monitor"></td><td><b>Update Monitor</b><br>Auto-discover update entities and surface pending updates with install actions</td></tr>
 <tr><td width="220"><img src="previews/vampire_power.png" width="200" alt="Vampire Power"></td><td><b>Vampire Power</b> · <sub>PRO</sub><br>Finds always-on standby loads and ranks them by what they cost you</td></tr>
@@ -75,6 +76,7 @@ _Generated from v3.10.0-beta3 on 2026-09-05 — do not edit by hand._
 <table>
 <tr><td width="220"><img src="previews/external_card.png" width="200" alt="3rd Party Card"></td><td><b>3rd Party Card</b><br>Embed any 3rd party Home Assistant card</td></tr>
 <tr><td width="220"><img src="previews/alarm_panel.png" width="200" alt="Alarm Panel"></td><td><b>Alarm Panel</b> · <sub>PRO</sub><br>Arm, disarm, and monitor your security alarm with a PIN pad and status ring</td></tr>
+<tr><td width="220"><img src="previews/boiler.png" width="200" alt="Boiler"></td><td><b>Boiler</b> · <sub>PRO</sub><br>Animated boiler card with temperature-driven colors, flame and pipe animations, pressure, and target control</td></tr>
 <tr><td width="220"><img src="previews/button.png" width="200" alt="Button"></td><td><b>Button</b><br>Interactive buttons with actions</td></tr>
 <tr><td width="220"><img src="previews/climate.png" width="200" alt="Climate Control"></td><td><b>Climate Control</b> · <sub>PRO</sub><br>Interactive circular thermostat control for climate entities</td></tr>
 <tr><td width="220"><img src="previews/cover.png" width="200" alt="Cover Control"></td><td><b>Cover Control</b><br>Control blinds, garage doors, and shutters</td></tr>

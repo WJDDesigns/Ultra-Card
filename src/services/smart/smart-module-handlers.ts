@@ -222,6 +222,32 @@ function sanitizePeopleModule(module: SmartModule, hass: SmartSanitizeHass, id: 
   return { id, type: 'people', entities, layout: oneOf(module.layout, ['card', 'compact', 'list'], 'card') };
 }
 
+function sanitizeTrainModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const rawEntities = Array.isArray(module.departure_entities)
+    ? module.departure_entities
+    : Array.isArray(module.entities)
+      ? module.entities
+      : module.entity
+        ? [module.entity]
+        : [];
+  const departure_entities = rawEntities
+    .map(item => (typeof item === 'string' ? item : String((item as SmartModule).entity || '')))
+    .filter(entityId => entityExists(hass, entityId) && entityId.startsWith('sensor.'))
+    .slice(0, 6);
+  if (!departure_entities.length) return null;
+  return {
+    id,
+    type: 'train',
+    source: 'entities',
+    departure_entities,
+    name: String(module.name || '').slice(0, 60),
+    layout: oneOf(module.layout, ['standard', 'compact'], 'standard'),
+    board_style: oneOf(module.board_style, ['modern', 'led'], 'modern'),
+    max_departures: numberInRange(module.max_departures, 1, 6, 3),
+    ...defaultDisplayActions(),
+  };
+}
+
 function sanitizeCalendarModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
   const rawEntities = Array.isArray(module.entities) ? module.entities : module.entity ? [module.entity] : [];
   const entities = rawEntities
@@ -1141,6 +1167,31 @@ export const supplementalSmartModuleHandlers = {
       sanitizeEntityModule('humidifier', 'humidifier', module, hass, id)
     ),
     defaultBuilder: createEntityDefaultBuilder('humidifier'),
+  },
+  boiler: {
+    sanitize: wrapSanitize((module, hass, id) =>
+      sanitizeEntityModule('boiler', ['water_heater', 'climate', 'sensor'], module, hass, id)
+    ),
+    defaultBuilder: createEntityDefaultBuilder('boiler'),
+  },
+  train: {
+    sanitize: wrapSanitize(sanitizeTrainModule),
+    defaultBuilder: (ctx: SmartBuildContext): SmartModule | null => {
+      const entities = ctx.entities?.length ? ctx.entities : ctx.entity ? [ctx.entity] : [];
+      const sensors = entities.filter(entity => entity.entityId.startsWith('sensor.')).slice(0, 6);
+      if (!sensors.length) return null;
+      return {
+        id: ctx.id,
+        type: 'train',
+        source: 'entities',
+        departure_entities: sensors.map(entity => entity.entityId),
+        name: '',
+        layout: 'standard',
+        board_style: 'modern',
+        max_departures: 3,
+        ...defaultDisplayActions(),
+      };
+    },
   },
   ...Object.fromEntries(
     (['washer', 'dryer', 'dishwasher', 'fridge', 'range'] as const).map(applianceType => [

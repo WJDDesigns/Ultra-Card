@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-05T23:08:15.108Z",
-  "ultraCardVersion": "3.10.0-beta3",
+  "generatedAt": "2026-09-08T21:42:34.331Z",
+  "ultraCardVersion": "3.10.0-beta9",
   "counts": {
-    "total": 94,
+    "total": 96,
     "free": 66,
-    "pro": 28
+    "pro": 30
   },
   "modules": [
     {
@@ -272,6 +272,27 @@
         "auto"
       ],
       "preview": "previews/battery_monitor.png",
+      "status": "ok"
+    },
+    {
+      "type": "boiler",
+      "title": "Boiler",
+      "description": "Animated boiler card with temperature-driven colors, flame and pipe animations, pressure, and target control",
+      "category": "interactive",
+      "icon": "mdi:water-boiler",
+      "pro": true,
+      "tags": [
+        "boiler",
+        "heating",
+        "water-heater",
+        "temperature",
+        "pressure",
+        "flame",
+        "animated",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/boiler.png",
       "status": "ok"
     },
     {
@@ -1533,6 +1554,28 @@
         "interactive"
       ],
       "preview": "previews/toggle.png",
+      "status": "ok"
+    },
+    {
+      "type": "train",
+      "title": "Train Departures",
+      "description": "Animated departure board with the next trains as status-colored icons, live countdown, delays, and an LED dot-matrix style",
+      "category": "data",
+      "icon": "mdi:train",
+      "pro": true,
+      "tags": [
+        "train",
+        "departures",
+        "transit",
+        "public transport",
+        "commute",
+        "timetable",
+        "station",
+        "animated",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/train.png",
       "status": "ok"
     },
     {

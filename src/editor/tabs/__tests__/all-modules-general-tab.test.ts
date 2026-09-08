@@ -54,6 +54,8 @@ const EMPTY_GENERAL_TAB = new Set([
   'drawer',
   // Pro-gated general tabs. `mockHass` has no Ultra Card Connect sensor, so these
   // render the upgrade lock card, which intentionally has no config controls.
+  'boiler',
+  'train',
   'dog_duty',
   'cleaning_zones',
   'battery_fleet',
