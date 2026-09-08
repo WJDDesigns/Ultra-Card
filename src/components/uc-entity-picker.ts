@@ -49,11 +49,13 @@ export class UcEntityPicker extends LitElement {
   /**
    * Filter entities by domain if specified
    */
-  private _entityFilter(entityId: string): boolean {
+  private _entityFilter(item: string | { entity_id?: string } | null | undefined): boolean {
     if (!this.domain) {
       return true;
     }
 
+    // Older HA passes the entity ID; newer frontends pass the state object.
+    const entityId = typeof item === 'string' ? item : item?.entity_id || '';
     const entityDomain = entityId.split('.')[0];
     return entityDomain === this.domain;
   }

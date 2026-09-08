@@ -885,7 +885,10 @@ export abstract class BaseUltraModule implements UltraModule {
           .selectOptions=${options.selectOptions}
           .selectAddLabel=${options.selectAddLabel}
           @value-changed=${(e: CustomEvent<{ value: string[] }>) => {
-            onChange(e.detail?.value ?? []);
+            // Only the chip list's own events carry an array. Anything else is a
+            // stray event from a nested HA control and must not clobber the list.
+            if (!Array.isArray(e.detail?.value)) return;
+            onChange(e.detail.value);
             setTimeout(() => this.triggerPreviewUpdate(), 50);
           }}
         ></ultra-chip-list>
