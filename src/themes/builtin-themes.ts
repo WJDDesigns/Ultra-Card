@@ -908,80 +908,81 @@ export const MOOSE_THEME: UcThemeDefinition = {
 `.trim(),
 };
 
-// Metallic: a polished chrome bezel around a deep black recessed panel, the
-// way a skeuomorphic switch plate is built. Content sits in the recess.
-const METAL_PANEL = '#1e2226'; // the recess: palette base (content sits here)
-const METAL_INK = '#eef1f4'; // 14:1 on the panel
-const METAL_INK_SOFT = '#aeb6bf'; // 7.6:1 on the panel
-const METAL_CHROME = '#cfd4da'; // primary: chrome knobs and buttons
-const METAL_ON_CHROME = '#14171a'; // 12:1 on chrome
-const METAL_STEEL_BLUE = '#8fb3d9'; // accent: cool steel, 7.4:1 on the panel
-const METAL_BEZEL = '#c9ced4'; // bezel base
-const METAL_EDGE = '#7f8790'; // bezel edge
-/** Polished bezel: a vertical light-to-dark-to-light sweep with two soft horizontal reflections. */
-const METAL_BEZEL_SHEEN =
-  'linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0.06) 62%, rgba(255, 255, 255, 0.28) 86%, rgba(255, 255, 255, 0) 100%), linear-gradient(180deg, #f7f9fb 0%, #cfd5db 14%, #a9b1b9 50%, #bfc6cd 80%, #eef1f4 100%)';
-const METAL_BEZEL_SHADOW =
-  'inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 2px rgba(255, 255, 255, 0.35), 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.45)';
-const METAL_BEZEL_WIDTH = 12;
+// Metallic: a brushed-aluminium plate, the way a hi-fi front panel is built.
+// Spun-metal controls sit on it, dark tracks are sunk into it.
+const METAL_PLATE = '#d5d8db'; // the plate: palette base (content sits on it)
+const METAL_INK = '#2a2e33'; // 9.6:1 on the plate
+const METAL_INK_SOFT = '#4d5663'; // 5.2:1 on the plate, 4.7:1 in a trough
+const METAL_BLUE = '#2273b8'; // primary and accent: the lit blue (white on it 5:1)
+const METAL_TRACK = '#2a2e32'; // sunk track behind fills (white on it 13.7:1)
+const METAL_EDGE = '#a4aab0'; // plate edge
+/** Fine diagonal brushing over a soft vertical sheen. */
+const METAL_BRUSH =
+  'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 1px, rgba(255, 255, 255, 0) 1px 3px, rgba(0, 0, 0, 0.035) 3px 4px), linear-gradient(180deg, #e4e7ea 0%, #d3d6d9 40%, #cbcfd3 100%)';
+const METAL_PLATE_SHADOW =
+  'inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 10px 24px rgba(0, 0, 0, 0.26), 0 1px 2px rgba(0, 0, 0, 0.28)';
+/** Spun metal: a conic sweep of light and dark rays with a soft highlight up top. */
+const METAL_SPUN =
+  'radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 60%), conic-gradient(from 20deg, #dfe3e6, #aab0b6 12%, #eef0f2 24%, #b3b9be 38%, #e9ecee 50%, #a9afb5 63%, #eaedf0 76%, #b6bcc1 88%, #dfe3e6)';
+const METAL_SPUN_SHADOW =
+  'inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(0, 0, 0, 0.28), 0 2px 3px rgba(0, 0, 0, 0.35), 0 6px 10px rgba(0, 0, 0, 0.14)';
 
 /**
- * "Metallic": a polished chrome bezel around a deep black recessed panel,
- * like a skeuomorphic switch plate. The card itself is the bezel (vertical
- * polish sweep, bright top lip, dark bottom lip); a pseudo-element paints
- * the recess inset by the bezel width, with a heavy inner shadow at its top
- * edge and a light lip below it. Content lives in the recess on light text.
- * Controls are chrome with dark type, nested surfaces are deeper wells in
- * the panel, the accent is cool steel. Pill radii throughout.
+ * "Metallic": a brushed-aluminium plate with spun-metal controls, like a
+ * hi-fi front panel. The card is the plate (fine diagonal brushing, a bright
+ * top lip, a soft drop shadow) with dark engraved type. Nested surfaces are
+ * shallow troughs milled into the plate with a white lip below; bar tracks
+ * are sunk near-black with a lit blue fill. Every metallic control is spun
+ * aluminium (a conic sweep of light and dark rays) with dark type. The one
+ * colour is the lit blue of an indicator.
  */
 export const METALLIC_THEME: UcThemeDefinition = {
   id: 'metallic',
   name: 'Metallic',
-  version: 3,
+  version: 4,
   author: 'Ultra Card',
   description:
-    'A polished chrome bezel around a deep black recessed panel, like a real switch plate. Chrome controls with dark type, cool steel accents.',
+    'A brushed-aluminium plate with spun-metal controls, like a hi-fi front panel. Dark engraved type, troughs milled into the plate, near-black tracks with a lit blue fill.',
   icon: 'mdi:anvil',
   source: 'builtin',
   tokens: {
     surface: 'glossy',
-    radius: 28,
-    radius_sm: 16,
+    radius: 18,
+    radius_sm: 12,
     border_width: 1,
     border_color: METAL_EDGE,
-    shadow: METAL_BEZEL_SHADOW,
-    page_background: 'radial-gradient(ellipse at 50% 0%, #3a4047 0%, #191c20 65%, #111316 100%)',
-    pane_background: 'linear-gradient(180deg, #14171a, #1c2024)',
-    pane_border: 'none',
+    shadow: METAL_PLATE_SHADOW,
+    page_background:
+      'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 1px, rgba(255, 255, 255, 0) 1px 4px), linear-gradient(180deg, #eceef0 0%, #dcdfe2 60%, #cfd3d7 100%)',
+    pane_background: 'linear-gradient(180deg, #c3c7cb 0%, #d2d5d9 100%)',
+    pane_border: '1px solid rgba(0, 0, 0, 0.14)',
     pane_shadow:
-      'inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08)',
+      'inset 0 2px 4px rgba(0, 0, 0, 0.26), inset 0 1px 1px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.95)',
     density: 'regular',
-    accent: METAL_STEEL_BLUE,
-    // The chrome bezel is glossy, but every control inside is brushed steel.
+    accent: METAL_BLUE,
     recipes: { control: 'metallic', track: 'metallic', fill: 'metallic', pane: 'inset' },
     font_family:
       "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
     palette: {
-      primary: METAL_CHROME,
-      on_primary: METAL_ON_CHROME,
-      accent: METAL_STEEL_BLUE,
-      card_bg: METAL_PANEL,
+      primary: METAL_BLUE,
+      accent: METAL_BLUE,
+      card_bg: METAL_PLATE,
       text: METAL_INK,
       text_secondary: METAL_INK_SOFT,
-      divider: 'rgba(255, 255, 255, 0.12)',
+      divider: 'rgba(0, 0, 0, 0.14)',
     },
   },
   card: {
-    card_background: METAL_PANEL,
-    card_border_radius: 28,
+    card_background: METAL_PLATE,
+    card_border_radius: 18,
     card_border_color: METAL_EDGE,
     card_border_width: 1,
-    card_padding: METAL_BEZEL_WIDTH + 14,
+    card_padding: 18,
     card_shadow_enabled: true,
-    card_shadow_color: 'rgba(0, 0, 0, 0.4)',
+    card_shadow_color: 'rgba(0, 0, 0, 0.26)',
     card_shadow_horizontal: 0,
-    card_shadow_vertical: 12,
-    card_shadow_blur: 28,
+    card_shadow_vertical: 10,
+    card_shadow_blur: 24,
     card_shadow_spread: 0,
   },
   modules: {
@@ -994,49 +995,42 @@ export const METALLIC_THEME: UcThemeDefinition = {
     navigation: { nav_style: 'uc_minimal' },
     area_summary: {
       style_preset: 'compact_controls',
-      accent_color: METAL_STEEL_BLUE,
-      tile_border_radius: 14,
+      accent_color: METAL_BLUE,
+      tile_border_radius: 12,
     },
     auto_entity_list: { row_style: 'detailed' },
-    unifi: { rack_style: 'dark' },
+    unifi: { rack_style: 'light' },
     activity_feed: { feed_card_style: 'outlined' },
     tabs: { style: 'switch_1' },
   },
   css: `
 .card-container {
-  position: relative;
-  isolation: isolate;
-  /* The bezel. */
-  background-color: ${METAL_BEZEL} !important;
-  background-image: ${METAL_BEZEL_SHEEN} !important;
+  /* The plate. */
+  background-color: ${METAL_PLATE} !important;
+  background-image: ${METAL_BRUSH} !important;
   border: 1px solid ${METAL_EDGE} !important;
-  box-shadow: ${METAL_BEZEL_SHADOW} !important;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+  box-shadow: ${METAL_PLATE_SHADOW} !important;
+  /* Engraved type: a hairline of light under each glyph. */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
   letter-spacing: 0.02em;
+  /* Bar value text sits on the dark well and the lit fill, so it stays white here. */
+  --uc-bar-text: #ffffff;
+  --uc-bar-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
-/* The recess: inset by the bezel width, concentric with the bezel's corner. */
-.card-container::before {
-  content: '';
-  position: absolute;
-  inset: ${METAL_BEZEL_WIDTH}px;
-  z-index: -1;
-  border-radius: calc(var(--uc-radius, 28px) - ${METAL_BEZEL_WIDTH}px);
-  pointer-events: none;
-  background-color: ${METAL_PANEL};
-  background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 30%),
-    linear-gradient(180deg, #15181b 0%, #21252a 45%, #2a2f35 100%);
-  box-shadow:
-    inset 0 3px 8px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(0, 0, 0, 0.9),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.07),
-    0 1px 0 rgba(255, 255, 255, 0.75),
-    0 0 0 1px rgba(0, 0, 0, 0.35);
+/* Every metallic control is spun aluminium with dark type. Only the metallic
+   recipe is touched, so a control a user has switched to another style keeps it. */
+[data-uc-surface="metallic"][data-uc-role="control"] {
+  background: ${METAL_SPUN} !important;
+  border: 1px solid #8e959c !important;
+  box-shadow: ${METAL_SPUN_SHADOW} !important;
+  color: ${METAL_INK} !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
-/* Nested surfaces are deeper wells sunk into the panel. */
-[style*="--uc-design-surface"] {
-  background-image: linear-gradient(180deg, #14171a, #1c2024);
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08);
+/* Tracks are sunk into the plate: a near-black well with a white lip below it.
+   The bar's white value text reads on the well and on the lit fill alike. */
+[data-uc-surface="metallic"][data-uc-role="track"] {
+  background: linear-gradient(180deg, #202428, ${METAL_TRACK} 40%, #383d42) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 `.trim(),
 };
@@ -1085,13 +1079,6 @@ const BEACH_CRAB = svgDataUrl(`
   <circle cx='12.5' cy='3.5' r='.6' fill='#fff'/><circle cx='28.5' cy='3.5' r='.6' fill='#fff'/>
   <path d='M16 18 Q20 21 24 18' stroke='${BEACH_SEA}' stroke-width='1.2' fill='none' stroke-linecap='round'/>
 </svg>`);
-const BEACH_SHELL = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 -3 36 35'>
-  <path d='M18 30 L3 13 A15 15 0 0 1 33 13 Z' fill='#ead1b8' stroke='#b98c72' stroke-width='1.2' stroke-linejoin='round'/>
-  <path d='M18 30 L7 8.5 M18 30 L12.5 3.5 M18 30 L18 2.5 M18 30 L23.5 3.5 M18 30 L29 8.5' stroke='#b98c72' stroke-width='1' stroke-linecap='round'/>
-  <path d='M3 13 Q7 9 9 12 Q13 5 15 10 Q18 3 21 10 Q23 5 27 12 Q29 9 33 13' fill='none' stroke='#b98c72' stroke-width='1'/>
-  <path d='M13 30 L23 30 L21 26.5 L15 26.5 Z' fill='#b98c72'/>
-</svg>`);
 const BEACH_STARFISH = svgDataUrl(`
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>
   <path d='M16 2 L19.6 12 L30 12.5 L21.8 19 L24.7 29.5 L16 23.6 L7.3 29.5 L10.2 19 L2 12.5 L12.4 12 Z' fill='#e9a25b' stroke='#c77f3a' stroke-width='1.2' stroke-linejoin='round'/>
@@ -1117,8 +1104,7 @@ const BEACH_SAND_DOLLAR = svgDataUrl(`
  * "Beach": a sand card with water lapping along the bottom edge, a sun glow
  * near the top-right, fine sand grain across the surface and a rope hairline
  * under the top edge. Each card scatters its own handful of beach finds along
- * the sand from its random seeds (a crab, a scallop shell, a starfish, a sand
- * dollar, each present or not and placed differently per card), and the tide
+ * the sand from its random seeds (a crab, a starfish, a sand dollar, each present or not and placed differently per card), and the tide
  * line and sun sit at different heights. All artwork is inline SVG, so nothing
  * is fetched. Deep-water text on sand, an ocean primary, a coral accent, and a
  * soft rounded sans.
@@ -1129,7 +1115,7 @@ export const BEACH_THEME: UcThemeDefinition = {
   version: 2,
   author: 'Ultra Card',
   description:
-    'Sand cards with waves lapping the bottom edge, a sun glow, sand grain and a rope hairline. Every card scatters its own shells, crabs and starfish. Deep-water text, ocean controls, coral accents.',
+    'Sand cards with waves lapping the bottom edge, a sun glow, sand grain and a rope hairline. Every card scatters its own crabs, starfish and sand dollars. Deep-water text, ocean controls, coral accents.',
   icon: 'mdi:beach',
   source: 'builtin',
   tokens: {
@@ -1197,7 +1183,6 @@ export const BEACH_THEME: UcThemeDefinition = {
   --b-sun-x: calc(60% + var(--b-s1) * 40%);
   /* Each find is on the sand only when its seed clears the bar; otherwise its size collapses to 0. */
   --b-crab: calc(clamp(0, (var(--b-s1) - 0.45) * 20, 1) * 44px);
-  --b-shell: calc(clamp(0, (var(--b-s2) - 0.4) * 20, 1) * 34px);
   --b-star: calc(clamp(0, (var(--b-s3) - 0.5) * 20, 1) * 32px);
   --b-dollar: calc(clamp(0, (0.5 - (var(--b-s1) + var(--b-s2)) / 2) * 20, 1) * 22px);
   --b-sand-line: calc(100% - var(--b-tide) - 4px);
@@ -1205,7 +1190,6 @@ export const BEACH_THEME: UcThemeDefinition = {
   /* Layers, top to bottom: the finds on the sand, waves at the foot, rope under the top edge, sun glow, sand grain, sky wash. */
   background-image:
     ${BEACH_CRAB},
-    ${BEACH_SHELL},
     ${BEACH_STARFISH},
     ${BEACH_SAND_DOLLAR},
     ${BEACH_WAVES},
@@ -1213,16 +1197,14 @@ export const BEACH_THEME: UcThemeDefinition = {
     radial-gradient(circle at var(--b-sun-x) -8%, rgba(255, 196, 110, 0.55) 0%, rgba(255, 196, 110, 0.18) 18%, rgba(255, 196, 110, 0) 42%),
     ${BEACH_GRAIN},
     linear-gradient(180deg, rgba(24, 106, 122, 0.06) 0%, rgba(24, 106, 122, 0) 45%) !important;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat-x, no-repeat, repeat, no-repeat !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat-x, no-repeat, repeat, no-repeat !important;
   background-size:
     var(--b-crab) calc(var(--b-crab) * 0.7),
-    var(--b-shell) calc(var(--b-shell) * 0.97),
     var(--b-star) var(--b-star),
     var(--b-dollar) var(--b-dollar),
     100% var(--b-tide), 12px 6px, auto, 56px 56px, auto !important;
   background-position:
     calc(64% + var(--b-s2) * 34%) var(--b-sand-line),
-    calc(3% + var(--b-s3) * 24%) var(--b-sand-line),
     calc(30% + var(--b-s1) * 22%) calc(var(--b-sand-line) - 4px),
     calc(50% + var(--b-s3) * 18%) var(--b-sand-line),
     bottom center, left 9px, 0 0, 0 0, 0 0 !important;
@@ -1255,23 +1237,6 @@ const VAPOR_SUN = svgDataUrl(`
   </defs>
   <circle cx='60' cy='60' r='54' fill='url(#g)' clip-path='url(#c)' opacity='.6'/>
 </svg>`);
-// The night-side frame: a pale striped moon in the same cut as the sun.
-const VAPOR_MOON = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>
-  <defs>
-    <linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>
-      <stop offset='0' stop-color='#f3e8ff'/><stop offset='.6' stop-color='#b9c9ff'/><stop offset='1' stop-color='${VAPOR_CYAN}'/>
-    </linearGradient>
-    <clipPath id='c'>
-      <rect x='0' y='0' width='120' height='62'/><rect x='0' y='66' width='120' height='10'/><rect x='0' y='80' width='120' height='8'/>
-      <rect x='0' y='92' width='120' height='6'/><rect x='0' y='102' width='120' height='4'/><rect x='0' y='110' width='120' height='3'/>
-    </clipPath>
-  </defs>
-  <circle cx='60' cy='60' r='54' fill='url(#g)' clip-path='url(#c)' opacity='.5'/>
-  <g fill='#160b2b' fill-opacity='.22'>
-    <circle cx='42' cy='38' r='7'/><circle cx='70' cy='28' r='4.5'/><circle cx='78' cy='50' r='5.5'/><circle cx='52' cy='56' r='3'/>
-  </g>
-</svg>`);
 const VAPOR_GRID = svgDataUrl(`
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 90' preserveAspectRatio='none'>
   <defs>
@@ -1287,9 +1252,9 @@ const VAPOR_GRID = svgDataUrl(`
  * "Vapor": vaporwave. A midnight-purple card with a striped sunset sun, a
  * cyan perspective grid running off the bottom edge, a faint VHS scanline, a
  * few stars and a pink neon rim. No two cards are the same frame: the card's
- * random seeds decide whether it gets a sun, a moon or a bare sky and whether
- * the grid shows at all, then place and size them, tint and place the haze
- * and scatter the stars. Hot-pink primary with dark text on it, cyan accent,
+ * random seeds decide whether it gets a sun at all and whether the grid
+ * shows, then put the sun anywhere from a corner to setting behind the grid
+ * at any size, tint and place the haze and scatter the stars. Hot-pink primary with dark text on it, cyan accent,
  * neon-glow controls, a wide techno sans.
  */
 export const VAPOR_THEME: UcThemeDefinition = {
@@ -1298,7 +1263,7 @@ export const VAPOR_THEME: UcThemeDefinition = {
   version: 3,
   author: 'Ultra Card',
   description:
-    'Vaporwave: midnight purple, a striped sun or moon, a cyan perspective grid, VHS scanlines and a hot-pink neon rim. Every card is a different frame; some get the sun, some the moon, some just stars.',
+    'Vaporwave: midnight purple, a striped sunset sun, a cyan perspective grid, VHS scanlines and a hot-pink neon rim. Every card is a different frame: some get the sun, some the grid, some both, some just stars.',
   icon: 'mdi:weather-sunset',
   source: 'builtin',
   tokens: {
@@ -1359,32 +1324,31 @@ export const VAPOR_THEME: UcThemeDefinition = {
   --v-s1: var(--uc-card-seed-1, 0.5);
   --v-s2: var(--uc-card-seed-2, 0.5);
   --v-s3: var(--uc-card-seed-3, 0.5);
-  /* Sky: a sun on roughly half the cards, a moon on a quarter, the rest just stars.
-     Each collapses to 0 size when its seed misses, so neighbours differ. */
-  --v-sun: calc(clamp(0, (var(--v-s3) - 0.5) * 20, 1) * (88px + var(--v-s3) * 64px));
-  --v-moon: calc(clamp(0, (0.28 - var(--v-s3)) * 20, 1) * (72px + var(--v-s2) * 48px));
-  --v-sun-x: calc(30% + var(--v-s1) * 70%);
-  --v-sun-y: calc(-24px + var(--v-s2) * 18px);
+  /* Sky: a sun on about two cards in five (size collapses to 0 when the seed
+     misses), anywhere from high in one corner to setting low behind the grid,
+     at anything from a small distant disc to a huge close one. */
+  --v-sun: calc(clamp(0, (var(--v-s3) - 0.6) * 20, 1) * (64px + (1 - var(--v-s3)) * 300px));
+  --v-sun-x: calc(-6% + var(--v-s1) * 112%);
+  --v-sun-y: calc(-14% + var(--v-s2) * 84%);
   --v-haze: calc(190 + var(--v-s2) * 130); /* cyan .. violet .. pink */
   --v-haze-x: calc(10% + var(--v-s3) * 80%);
   /* The grid runs off the foot of about two cards in three; the others end in haze. */
   --v-horizon: calc(clamp(0, (var(--v-s1) - 0.34) * 20, 1) * (48px + var(--v-s2) * 40px));
   --v-sky: hsl(calc(250 + var(--v-s1) * 40) 62% 15%);
   background-color: ${VAPOR_NIGHT} !important;
-  /* Layers, top to bottom: grid at the foot, sun, moon, three stars, haze, scanlines, night gradient. */
+  /* Layers, top to bottom: grid at the foot, sun, three stars, haze, scanlines, night gradient. */
   background-image:
     ${VAPOR_GRID},
     ${VAPOR_SUN},
-    ${VAPOR_MOON},
     radial-gradient(circle 1.2px at calc(var(--v-s2) * 100%) calc(6% + var(--v-s1) * 30%), rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 100%),
     radial-gradient(circle 1px at calc(var(--v-s3) * 100%) calc(4% + var(--v-s2) * 34%), rgba(255, 255, 255, 0.8) 0, rgba(255, 255, 255, 0) 100%),
     radial-gradient(circle 1.5px at calc(100% - var(--v-s1) * 100%) calc(8% + var(--v-s3) * 26%), rgba(79, 240, 255, 0.9) 0, rgba(79, 240, 255, 0) 100%),
     radial-gradient(ellipse at var(--v-haze-x) 110%, hsl(var(--v-haze) 100% 65% / 0.3) 0%, hsl(var(--v-haze) 100% 65% / 0) 55%),
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
     linear-gradient(180deg, var(--v-sky) 0%, ${VAPOR_NIGHT} 55%, #0e0821 100%) !important;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
-  background-size: 100% var(--v-horizon), var(--v-sun) var(--v-sun), var(--v-moon) var(--v-moon), auto, auto, auto, auto, auto, auto !important;
-  background-position: bottom center, var(--v-sun-x) var(--v-sun-y), var(--v-sun-x) var(--v-sun-y), 0 0, 0 0, 0 0, 0 0, 0 0, 0 0 !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
+  background-size: 100% var(--v-horizon), var(--v-sun) var(--v-sun), auto, auto, auto, auto, auto, auto !important;
+  background-position: bottom center, var(--v-sun-x) var(--v-sun-y), 0 0, 0 0, 0 0, 0 0, 0 0, 0 0 !important;
   box-shadow: ${VAPOR_GLOW} !important;
   text-shadow: 0 0 8px rgba(255, 79, 216, 0.25);
   letter-spacing: 0.03em;

@@ -8,6 +8,7 @@ import type {
 } from '../themes/uc-theme-types';
 import {
   contrastText,
+  isLight,
   parseColor,
   step,
   toCss,
@@ -386,6 +387,15 @@ function deriveCompanionVars(
     setColor('--text-primary-color', onPrimary);
     set('--mdc-theme-primary', toCss(primary));
     set('--mdc-theme-on-primary', toCss(onPrimary));
+  }
+
+  // Value text drawn across a bar sits half on the fill and half on the
+  // track. The module's own default (white, dark halo) is right for dark
+  // cards; on a light card the track is pale too, so the text flips to the
+  // card's ink with a light halo. Themes can pin either in their CSS.
+  if (bg && bg.a >= 0.5 && isLight(bg)) {
+    set('--uc-bar-text', toCss(text ?? contrastText(bg)));
+    set('--uc-bar-text-shadow', '0 1px 0 rgba(255, 255, 255, 0.6)');
   }
 }
 

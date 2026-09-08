@@ -6,7 +6,7 @@ exports[`surface goldens > bar dashed gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); border-radius: 0 10px 10px 0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -16,7 +16,7 @@ exports[`surface goldens > bar dashed gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); mask-composite: intersect; -webkit-mask-composite: source-in; border-radius: 0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -26,7 +26,7 @@ exports[`surface goldens > bar dashed gradient=true sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ); border-radius: 0 10px 10px 0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -36,7 +36,7 @@ exports[`surface goldens > bar dashed gradient=true sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); -webkit-mask-image: repeating-linear-gradient( 90deg, black 0px, black 12px, transparent 12px, transparent 16px ), linear-gradient( 90deg, black 0%, black calc(100% - 6px), transparent calc(100% - 6px), transparent 100% ); mask-composite: intersect; -webkit-mask-composite: source-in; border-radius: 0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -66,7 +66,7 @@ exports[`surface goldens > bar dots gradient=false sensor.full 1`] = `
   "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:#2196f3;flex-shrink:0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -96,7 +96,7 @@ exports[`surface goldens > bar dots gradient=false sensor.level 1`] = `
   "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -126,7 +126,7 @@ exports[`surface goldens > bar dots gradient=true sensor.full 1`] = `
   "div {width:12px;height:12px;border-radius:50%;background:rgba(36, 219, 0, 1.000);flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:rgba(26, 230, 0, 1.000);flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:rgba(13, 242, 0, 1.000);flex-shrink:0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -156,7 +156,7 @@ exports[`surface goldens > bar dots gradient=true sensor.level 1`] = `
   "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
   "div {width:12px;height:12px;border-radius:50%;background:#eeeeee;flex-shrink:0;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -166,7 +166,7 @@ exports[`surface goldens > bar embossed gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -176,7 +176,7 @@ exports[`surface goldens > bar embossed gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -186,7 +186,7 @@ exports[`surface goldens > bar embossed gradient=true sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -196,7 +196,7 @@ exports[`surface goldens > bar embossed gradient=true sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -206,7 +206,7 @@ exports[`surface goldens > bar flat gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -216,7 +216,7 @@ exports[`surface goldens > bar flat gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -226,7 +226,7 @@ exports[`surface goldens > bar flat gradient=true sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -236,7 +236,7 @@ exports[`surface goldens > bar flat gradient=true sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: none;; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -246,7 +246,7 @@ exports[`surface goldens > bar glass gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border-radius: 8px; position: relative;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -256,7 +256,7 @@ exports[`surface goldens > bar glass gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border-radius: 8px; position: relative;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -267,7 +267,7 @@ exports[`surface goldens > bar glass gradient=true sensor.full 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border-radius: 8px;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -278,7 +278,7 @@ exports[`surface goldens > bar glass gradient=true sensor.level 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); backdrop-filter: blur(8px) saturate(180%); background: linear-gradient( 135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.15) 100% ); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1); position: relative; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border-radius: 8px;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -288,7 +288,7 @@ exports[`surface goldens > bar glossy gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3, #2196f3 50%, rgba(0,0,0,0.1) 51%, #2196f3); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -298,7 +298,7 @@ exports[`surface goldens > bar glossy gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3, #2196f3 50%, rgba(0,0,0,0.1) 51%, #2196f3); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -309,7 +309,7 @@ exports[`surface goldens > bar glossy gradient=true sensor.full 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.1) 51%, rgba(0,0,0,0.05) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -320,7 +320,7 @@ exports[`surface goldens > bar glossy gradient=true sensor.level 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.1) 51%, rgba(0,0,0,0.05) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -330,7 +330,7 @@ exports[`surface goldens > bar gradient-overlay gradient=false sensor.full 1`] =
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3 0%, rgba(255,255,255,0) 100% );}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -340,7 +340,7 @@ exports[`surface goldens > bar gradient-overlay gradient=false sensor.level 1`] 
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, #2196f3 0%, rgba(255,255,255,0) 100% );}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -351,7 +351,7 @@ exports[`surface goldens > bar gradient-overlay gradient=true sensor.full 1`] = 
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -362,7 +362,7 @@ exports[`surface goldens > bar gradient-overlay gradient=true sensor.level 1`] =
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -372,7 +372,7 @@ exports[`surface goldens > bar inset gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -382,7 +382,7 @@ exports[`surface goldens > bar inset gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -392,7 +392,7 @@ exports[`surface goldens > bar inset gradient=true sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -402,7 +402,7 @@ exports[`surface goldens > bar inset gradient=true sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.2); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -412,7 +412,7 @@ exports[`surface goldens > bar metallic gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, #2196f3 20%, #2196f3 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -422,7 +422,7 @@ exports[`surface goldens > bar metallic gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, #2196f3 20%, #2196f3 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -433,7 +433,7 @@ exports[`surface goldens > bar metallic gradient=true sensor.full 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -444,7 +444,7 @@ exports[`surface goldens > bar metallic gradient=true sensor.level 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden;}",
   ".bar-fill-overlay {position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background-image: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 80%, rgba(0,0,0,0.2) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -455,7 +455,7 @@ exports[`surface goldens > bar minimal gradient=false sensor.full 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
   ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: #2196f3; transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
   ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 100%, calc(100% - 12px)); width: 24px; height: 24px; background: #2196f3; border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -466,7 +466,7 @@ exports[`surface goldens > bar minimal gradient=false sensor.level 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
   ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: #2196f3; transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
   ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 55.00000000000001%, calc(100% - 12px)); width: 24px; height: 24px; background: #2196f3; border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -477,7 +477,7 @@ exports[`surface goldens > bar minimal gradient=true sensor.full 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
   ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
   ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 100%, calc(100% - 12px)); width: 24px; height: 24px; background: #00ff00; border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -488,7 +488,7 @@ exports[`surface goldens > bar minimal gradient=true sensor.level 1`] = `
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 32px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); background: transparent; border: none; box-shadow: none; ; cursor: default; z-index: 1;}",
   ".minimal-track {position: absolute; top: 50%; left: 0; right: 0; height: 6px; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transform: translateY(-50%); border-radius: 3px; opacity: 0.8; transition: all 0.3s ease;}",
   ".minimal-dot {position: absolute; top: 50%; left: clamp(12px, 55.00000000000001%, calc(100% - 12px)); width: 24px; height: 24px; background: rgba(115, 140, 0, 1.000); border: 2px solid var(--card-background-color); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: left 0.3s ease, background 0.3s ease; z-index: 3; will-change: left, background;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -498,7 +498,7 @@ exports[`surface goldens > bar neon-glow gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #2196f3 70%, transparent), 0 0 14px 6px color-mix(in srgb, #2196f3 50%, transparent), 0 0 20px 10px color-mix(in srgb, #2196f3 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -508,7 +508,7 @@ exports[`surface goldens > bar neon-glow gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #2196f3 70%, transparent), 0 0 14px 6px color-mix(in srgb, #2196f3 50%, transparent), 0 0 20px 10px color-mix(in srgb, #2196f3 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -518,7 +518,7 @@ exports[`surface goldens > bar neon-glow gradient=true sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #00ff00 70%, transparent), 0 0 14px 6px color-mix(in srgb, #00ff00 50%, transparent), 0 0 20px 10px color-mix(in srgb, #00ff00 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -528,7 +528,7 @@ exports[`surface goldens > bar neon-glow gradient=true sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); overflow: hidden; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; filter: brightness(1.2); box-shadow: 0 0 7px 2px color-mix(in srgb, #00ff00 70%, transparent), 0 0 14px 6px color-mix(in srgb, #00ff00 50%, transparent), 0 0 20px 10px color-mix(in srgb, #00ff00 30%, transparent), inset 0 0 10px rgba(255, 255, 255, 0.8);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -538,7 +538,7 @@ exports[`surface goldens > bar neumorphic gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -548,7 +548,7 @@ exports[`surface goldens > bar neumorphic gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -558,7 +558,7 @@ exports[`surface goldens > bar neumorphic gradient=true sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -568,7 +568,7 @@ exports[`surface goldens > bar neumorphic gradient=true sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: 1px solid var(--divider-color); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1); ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -578,7 +578,7 @@ exports[`surface goldens > bar outline gradient=false sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border: none; box-sizing: border-box; position: relative; margin: 0; width: 100%; transition: width 0.3s ease;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -588,7 +588,7 @@ exports[`surface goldens > bar outline gradient=false sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: #2196f3; transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: #2196f3; border: none; box-sizing: border-box; position: relative; margin: 0; width: 55.00000000000001%; transition: width 0.3s ease;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -598,7 +598,7 @@ exports[`surface goldens > bar outline gradient=true sensor.full 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 100%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border: none; box-sizing: border-box; position: relative; margin: 0; width: 100%; transition: width 0.3s ease;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 
@@ -608,7 +608,7 @@ exports[`surface goldens > bar outline gradient=true sensor.level 1`] = `
   ".bar-flex-wrapper {display: flex; justify-content: center; width: 100%; min-height: 20px; align-items: center; min-width: 0; overflow: visible;}",
   ".bar-container {width: 100%; max-width: 100%; flex: 1 1 0; height: 20px; background: #eeeeee; min-width: 0; border-radius: 10px; overflow: visible; position: relative; transition: all 0.3s ease; border: none; border: 2px solid #2196f3; border-radius: 10px; background: #eeeeee; padding: 4px; ; cursor: default; z-index: 1;}",
   ".bar-fill {width: 55.00000000000001%; height: 100%; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); transition: width 0.3s ease, left 0.3s ease; border-radius: 10px 0 0 10px; position: absolute; left: 0; top: 0; bottom: 0; will-change: width; backface-visibility: hidden; background: linear-gradient(to right, #ff0000 0%, #00ff00 100%); border: none; box-sizing: border-box; position: relative; margin: 0; width: 55.00000000000001%; transition: width 0.3s ease;}",
-  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: white;}",
+  ".percentage-text {display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 14px; font-weight: 600; font-style: normal; text-decoration: none; z-index: 10; text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--uc-bar-text, white);}",
 ]
 `;
 

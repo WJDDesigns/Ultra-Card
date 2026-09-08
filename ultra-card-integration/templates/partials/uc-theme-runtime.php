@@ -211,6 +211,8 @@ window.UcTheme = (function () {
       if (!p.divider) setColor('--divider-color', withAlpha(text, 0.12));
     }
     if (primary) { var on = contrastText(primary); setColor('--text-primary-color', on); set('--mdc-theme-primary', toCss(primary)); }
+    // Bar value text flips to the card's ink on light cards (mirrors uc-theme-service).
+    if (bg && bg.a >= 0.5 && isLight(bg)) { set('--uc-bar-text', toCss(text || contrastText(bg))); set('--uc-bar-text-shadow', '0 1px 0 rgba(255, 255, 255, 0.6)'); }
   }
 
   // ---------------------------------------------------------- recipes
@@ -516,7 +518,7 @@ window.UcTheme = (function () {
     var c3 = '<div class="card-container uc-prev-card" style="' + card + host + seedVarsNext() + 'display:flex;flex-direction:column;gap:' + gap + '">' +
       '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:15px;font-weight:600">Thermostat</div><span style="font-size:12px;padding:4px 10px;border-radius:var(--uc-r-12);' + PANE + 'color:var(--secondary-text-color)">Heating</span></div>' +
       '<div style="display:flex;align-items:center;gap:12px"><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[ctl] || BTN_SURFACE.flat) + '">−</button><div style="flex:1;text-align:center;font-size:30px;font-weight:300;letter-spacing:-.02em">21.5<span style="font-size:14px;color:var(--secondary-text-color)"> °C</span></div><button type="button" style="width:36px;height:36px;border-radius:50%;font:inherit;font-size:18px;cursor:default;' + (BTN_SURFACE[ctl] || BTN_SURFACE.flat) + '">+</button></div>' +
-      '<div data-uc-role="track" style="position:relative;height:28px;border-radius:var(--uc-radius-sm);overflow:hidden;' + TRACK + '"><div data-uc-role="fill" style="position:absolute;inset:0 45% 0 0;opacity:.85;' + FILL + '"></div><span style="position:absolute;inset:0;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)">Brightness 55%</span></div>' +
+      '<div data-uc-role="track" style="position:relative;height:28px;border-radius:var(--uc-radius-sm);overflow:hidden;' + TRACK + '"><div data-uc-role="fill" style="position:absolute;inset:0 45% 0 0;opacity:.85;' + FILL + '"></div><span style="position:absolute;inset:0;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:var(--uc-bar-text,#fff);text-shadow:var(--uc-bar-text-shadow,0 1px 2px rgba(0,0,0,.5))">Brightness 55%</span></div>' +
       '<div style="display:flex;gap:8px"><button type="button" style="flex:1;' + ghost + 'text-align:center">Eco</button><button type="button" style="flex:1;' + btn + 'text-align:center">Comfort</button><button type="button" style="flex:1;' + ghost + 'text-align:center">Away</button></div></div>';
     return [c1, c2, c3];
   }
