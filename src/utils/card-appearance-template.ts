@@ -327,7 +327,7 @@ export function buildCardContainerStyleFromAppearance(
   if (appearance.card_background) {
     styles.push(`background: ${appearance.card_background}`);
   } else if (includeDefaultBackground) {
-    styles.push(`background: var(--card-background-color, var(--ha-card-background, white))`);
+    styles.push(`background: var(--ha-card-background, var(--card-background-color, white))`);
   }
 
   if (appearance.card_border_radius !== undefined) {

@@ -1,5 +1,23 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta8
+
+The eighth 3.10.0 beta makes Ultra Card's outer shell behave like a built-in Home Assistant card. Cards now render as a real `ha-card`, so HA themes and card-mod themes (including unusual ones like TET-49) apply border, radius, shadow and decoration the same way they do for every other card. New cards also stop freezing default chrome into their YAML so they can inherit the active theme. It includes everything from beta7. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Ultra Cards follow Home Assistant themes like built-in cards** - The card shell is now a real `ha-card`, so theme variables for background, border width and colour, corner radius, shadow and backdrop filter apply automatically. card-mod theme rules that target `ha-card` (corner brackets, sharp frames, custom fonts, glow) also reach Ultra Cards the same way they reach every other card
+- **New cards inherit theme chrome instead of baking it in** - Fresh cards from the picker no longer write a fixed 12px radius, divider-colour border or background into their YAML. Those fields stay unset so the Home Assistant theme (or an Ultra Card theme) can supply them. Existing cards keep whatever you already saved
+- **Border settings can inherit from the theme** - In Card Settings → Border & Shadow, clearing radius, width or colour hands control back to the Home Assistant theme, and empty fields show "Inherit from theme" so that is obvious
+
+### 🐛 Bug Fixes
+
+- **Fixed Ultra Cards ignoring theme border and corner styles** - Themes that set `--ha-card-border-width`, `--ha-card-border-color` or a tight `--ha-card-border-radius` were not reflected on Ultra Cards because the shell was a plain `div` that never read those variables. They now match neighbouring built-in cards
+
+---
+
 ## Version 3.10.0-beta7
 
 The seventh 3.10.0 beta is a polish release. The **Design tab** — the panel that styles every row, column and module — has been gone over from top to bottom so it is consistent, predictable and a little smarter, and a handful of long-standing quirks in it are fixed. The **Metallic**, **Vapor** and **Beach** themes have been refined, and bar values stay readable on light themes. It includes everything from beta6. This is a pre-release for testing — please report anything odd on GitHub or Discord.

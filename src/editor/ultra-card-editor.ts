@@ -1838,7 +1838,7 @@ export class UltraCardEditor extends LitElement {
                       ${localize(
                         'editor.fields.border_radius_desc',
                         lang,
-                        'Rounded corners for the card (in pixels)'
+                        'Rounded corners for the card (in pixels). Leave empty to inherit from the Home Assistant theme.'
                       )}
                     </div>
                     <div class="input-with-unit">
@@ -1847,7 +1847,7 @@ export class UltraCardEditor extends LitElement {
                         min="0"
                         max="50"
                         .value=${this.config.card_border_radius ?? ''}
-                        placeholder="12"
+                        placeholder=${localize('editor.theme.inherit', lang, 'Inherit from theme')}
                         @input=${(e: Event) => {
                           const target = e.target as HTMLInputElement;
                           const value = target.value.trim();
@@ -1860,11 +1860,7 @@ export class UltraCardEditor extends LitElement {
                       <button
                         class="reset-btn"
                         @click=${() => this._updateConfig({ card_border_radius: undefined })}
-                        title=${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '12px')}
+                        title=${localize('editor.theme.inherit', lang, 'Inherit from theme')}
                       >
                         ↺
                       </button>
@@ -1875,13 +1871,22 @@ export class UltraCardEditor extends LitElement {
                     <label>
                       ${localize('editor.fields.card_border_color', lang, 'Border Color')}
                     </label>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.fields.card_border_color_desc',
+                        lang,
+                        'The border color of the card. Reset to inherit from the Home Assistant theme.'
+                      )}
+                    </div>
                     <ultra-color-picker
                       .label=${'Card Border Color'}
-                      .value=${this.config.card_border_color || 'var(--divider-color)'}
-                      .defaultValue=${'var(--divider-color)'}
+                      .value=${this.config.card_border_color || ''}
+                      .defaultValue=${''}
                       .hass=${this.hass}
                       @value-changed=${(e: CustomEvent) =>
-                        this._updateConfig({ card_border_color: e.detail.value })}
+                        this._updateConfig({
+                          card_border_color: e.detail.value || undefined,
+                        })}
                     ></ultra-color-picker>
                   </div>
 
@@ -1889,13 +1894,20 @@ export class UltraCardEditor extends LitElement {
                     <label>
                       ${localize('editor.fields.card_border_width', lang, 'Border Width')}
                     </label>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.fields.card_border_width_desc',
+                        lang,
+                        'The thickness of the card border (in pixels). Leave empty to inherit from the Home Assistant theme.'
+                      )}
+                    </div>
                     <div class="input-with-unit">
                       <input
                         type="number"
                         min="0"
                         max="10"
                         .value=${this.config.card_border_width ?? ''}
-                        placeholder="1"
+                        placeholder=${localize('editor.theme.inherit', lang, 'Inherit from theme')}
                         @input=${(e: Event) => {
                           const target = e.target as HTMLInputElement;
                           const value = target.value.trim();
@@ -1908,11 +1920,7 @@ export class UltraCardEditor extends LitElement {
                       <button
                         class="reset-btn"
                         @click=${() => this._updateConfig({ card_border_width: undefined })}
-                        title=${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '1px')}
+                        title=${localize('editor.theme.inherit', lang, 'Inherit from theme')}
                       >
                         ↺
                       </button>

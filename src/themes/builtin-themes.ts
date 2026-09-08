@@ -8,7 +8,7 @@ import { svgDataUrl, svgFilterUrl } from './uc-theme-artwork';
  * full palette and are "the room" regardless of HA light or dark mode.
  */
 
-const HA_CARD_BG = 'var(--card-background-color, var(--ha-card-background, white))';
+const HA_CARD_BG = 'var(--ha-card-background, var(--card-background-color, white))';
 
 /**
  * No-op theme. Reproduces exactly what Ultra Card rendered before the theme
@@ -142,7 +142,7 @@ export const MONOCHROME_THEME: UcThemeDefinition = {
       primary: 'var(--primary-text-color)',
       accent: 'var(--primary-text-color)',
       // Primary is the ink colour, so anything drawn on primary must be paper.
-      on_primary: 'var(--card-background-color, var(--ha-card-background, white))',
+      on_primary: 'var(--ha-card-background, var(--card-background-color, white))',
       divider: 'rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.35)',
     },
   },

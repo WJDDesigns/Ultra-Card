@@ -1,5 +1,5 @@
 {
-  "cardVersion": "3.10.0-beta7",
+  "cardVersion": "3.10.0-beta8",
   "count": 15,
   "themes": [
     {
@@ -90,7 +90,7 @@
         "density": "comfortable"
       },
       "card": {
-        "card_background": "var(--card-background-color, var(--ha-card-background, white))",
+        "card_background": "var(--ha-card-background, var(--card-background-color, white))",
         "card_border_radius": 24,
         "card_border_width": 0,
         "card_padding": 20,
@@ -159,12 +159,12 @@
         "palette": {
           "primary": "var(--primary-text-color)",
           "accent": "var(--primary-text-color)",
-          "on_primary": "var(--card-background-color, var(--ha-card-background, white))",
+          "on_primary": "var(--ha-card-background, var(--card-background-color, white))",
           "divider": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.35)"
         }
       },
       "card": {
-        "card_background": "var(--card-background-color, var(--ha-card-background, white))",
+        "card_background": "var(--ha-card-background, var(--card-background-color, white))",
         "card_border_radius": 6,
         "card_border_color": "rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.35)",
         "card_border_width": 1,

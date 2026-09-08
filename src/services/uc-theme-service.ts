@@ -106,10 +106,10 @@ export const UC_THEME_BASE_CSS = `
   box-shadow: var(--uc-pane-shadow, none);
 }
 .card-container {
-  background: var(--uc-surface-bg, var(--card-background-color, var(--ha-card-background, white)));
+  background: var(--uc-surface-bg, var(--ha-card-background, var(--card-background-color, white)));
   box-shadow: var(--uc-shadow, var(--ha-card-box-shadow, none));
-  backdrop-filter: var(--uc-surface-backdrop, none);
-  -webkit-backdrop-filter: var(--uc-surface-backdrop, none);
+  backdrop-filter: var(--uc-surface-backdrop, var(--ha-card-backdrop-filter, none));
+  -webkit-backdrop-filter: var(--uc-surface-backdrop, var(--ha-card-backdrop-filter, none));
   filter: var(--uc-color-filter, none);
 ${MODULE_RADIUS_VARS}
 }

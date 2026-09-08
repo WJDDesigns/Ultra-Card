@@ -1465,10 +1465,9 @@ export class UltraCard extends LitElement {
     return {
       type: 'custom:ultra-card',
       _config_version: 2,
-      card_background: 'var(--card-background-color, var(--ha-card-background, white))',
-      card_border_radius: 12,
-      card_border_color: 'var(--divider-color)',
-      card_border_width: 1,
+      // Chrome (background, radius, border) inherits from the HA theme via
+      // ha-card / --ha-card-* vars. Only padding is baked in: HA has no card
+      // padding var and modules assume a non-zero default.
       card_padding: 16,
       layout: {
         rows: [
@@ -1646,14 +1645,14 @@ export class UltraCard extends LitElement {
     }
 
     return html`
-      <div
+      <ha-card
         class="card-container"
         style="${cardStyle}"
         role="region"
         aria-label="Ultra Card"
       >
         ${repeat(this.config.layout.rows, (row) => row.id, (row, ri) => this._renderRow(row, renderCtx, ri))}
-      </div>
+      </ha-card>
     `;
   }
 
@@ -4033,9 +4032,15 @@ export class UltraCard extends LitElement {
       }
 
       .card-container {
-        background: var(--card-background-color, var(--ha-card-background, white));
-        border-radius: var(--ha-card-border-radius, 8px);
-        box-shadow: var(--ha-card-box-shadow, 0 2px 4px rgba(0, 0, 0, 0.1));
+        /* Match ha-card's own HA theme var set so the shell follows any theme
+           (and the demo/test ha-card shim stays visually consistent). */
+        background: var(--ha-card-background, var(--card-background-color, white));
+        border-radius: var(--ha-card-border-radius, 12px);
+        border: var(--ha-card-border-width, 1px)
+          solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+        box-shadow: var(--ha-card-box-shadow, none);
+        backdrop-filter: var(--ha-card-backdrop-filter, none);
+        -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
         padding: 16px;
         transition: all 0.3s ease;
         /* Responsive sizing for sections view */
