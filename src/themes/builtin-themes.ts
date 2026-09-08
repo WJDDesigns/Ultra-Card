@@ -912,7 +912,7 @@ export const MOOSE_THEME: UcThemeDefinition = {
 // Spun-metal controls sit on it, dark tracks are sunk into it.
 const METAL_PLATE = '#d5d8db'; // the plate: palette base (content sits on it)
 const METAL_INK = '#2a2e33'; // 9.6:1 on the plate
-const METAL_INK_SOFT = '#4d5663'; // 5.2:1 on the plate, 4.7:1 in a trough
+const METAL_INK_SOFT = '#454d59'; // 5.7:1 on the plate, 5.3:1 on the darkest pane ray
 const METAL_BLUE = '#2273b8'; // primary and accent: the lit blue (white on it 5:1)
 const METAL_TRACK = '#2a2e32'; // sunk track behind fills (white on it 13.7:1)
 const METAL_EDGE = '#a4aab0'; // plate edge
@@ -926,15 +926,20 @@ const METAL_SPUN =
   'radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 60%), conic-gradient(from 20deg, #dfe3e6, #aab0b6 12%, #eef0f2 24%, #b3b9be 38%, #e9ecee 50%, #a9afb5 63%, #eaedf0 76%, #b6bcc1 88%, #dfe3e6)';
 const METAL_SPUN_SHADOW =
   'inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(0, 0, 0, 0.28), 0 2px 3px rgba(0, 0, 0, 0.35), 0 6px 10px rgba(0, 0, 0, 0.14)';
+/** The same spun finish a shade lighter for panes, so the type on them keeps AA (secondary ink 5.3:1 on the darkest ray). */
+const METAL_SPUN_PANE =
+  'radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 60%), conic-gradient(from 20deg, #eef0f2, #c8ccd0 12%, #f4f5f7 24%, #cdd1d5 38%, #f0f2f4 50%, #c8ccd0 63%, #f2f4f6 76%, #cfd3d7 88%, #eef0f2)';
+const METAL_SPUN_PANE_SHADOW =
+  'inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 2px 3px rgba(0, 0, 0, 0.28), 0 5px 10px rgba(0, 0, 0, 0.12)';
 
 /**
  * "Metallic": a brushed-aluminium plate with spun-metal controls, like a
  * hi-fi front panel. The card is the plate (fine diagonal brushing, a bright
- * top lip, a soft drop shadow) with dark engraved type. Nested surfaces are
- * shallow troughs milled into the plate with a white lip below; bar tracks
- * are sunk near-black with a lit blue fill. Every metallic control is spun
- * aluminium (a conic sweep of light and dark rays) with dark type. The one
- * colour is the lit blue of an indicator.
+ * top lip, a soft drop shadow) with dark engraved type. Controls and nested
+ * panes alike are spun aluminium (a conic sweep of light and dark rays)
+ * raised off the plate, the panes a shade lighter so type on them keeps AA;
+ * bar tracks are sunk near-black with a lit blue fill. The one colour is the
+ * lit blue of an indicator.
  */
 export const METALLIC_THEME: UcThemeDefinition = {
   id: 'metallic',
@@ -942,7 +947,7 @@ export const METALLIC_THEME: UcThemeDefinition = {
   version: 4,
   author: 'Ultra Card',
   description:
-    'A brushed-aluminium plate with spun-metal controls, like a hi-fi front panel. Dark engraved type, troughs milled into the plate, near-black tracks with a lit blue fill.',
+    'A brushed-aluminium plate with spun-metal controls and panes, like a hi-fi front panel. Dark engraved type, near-black tracks with a lit blue fill.',
   icon: 'mdi:anvil',
   source: 'builtin',
   tokens: {
@@ -954,13 +959,12 @@ export const METALLIC_THEME: UcThemeDefinition = {
     shadow: METAL_PLATE_SHADOW,
     page_background:
       'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 1px, rgba(255, 255, 255, 0) 1px 4px), linear-gradient(180deg, #eceef0 0%, #dcdfe2 60%, #cfd3d7 100%)',
-    pane_background: 'linear-gradient(180deg, #c3c7cb 0%, #d2d5d9 100%)',
-    pane_border: '1px solid rgba(0, 0, 0, 0.14)',
-    pane_shadow:
-      'inset 0 2px 4px rgba(0, 0, 0, 0.26), inset 0 1px 1px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.95)',
+    pane_background: METAL_SPUN_PANE,
+    pane_border: '1px solid #9aa1a8',
+    pane_shadow: METAL_SPUN_PANE_SHADOW,
     density: 'regular',
     accent: METAL_BLUE,
-    recipes: { control: 'metallic', track: 'metallic', fill: 'metallic', pane: 'inset' },
+    recipes: { control: 'metallic', track: 'metallic', fill: 'metallic', pane: 'metallic' },
     font_family:
       "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
     palette: {

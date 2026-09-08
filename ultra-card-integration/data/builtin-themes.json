@@ -735,7 +735,7 @@
       "name": "Metallic",
       "version": 4,
       "author": "Ultra Card",
-      "description": "A brushed-aluminium plate with spun-metal controls, like a hi-fi front panel. Dark engraved type, troughs milled into the plate, near-black tracks with a lit blue fill.",
+      "description": "A brushed-aluminium plate with spun-metal controls and panes, like a hi-fi front panel. Dark engraved type, near-black tracks with a lit blue fill.",
       "icon": "mdi:anvil",
       "source": "builtin",
       "tokens": {
@@ -746,16 +746,16 @@
         "border_color": "#a4aab0",
         "shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 10px 24px rgba(0, 0, 0, 0.26), 0 1px 2px rgba(0, 0, 0, 0.28)",
         "page_background": "repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 1px, rgba(255, 255, 255, 0) 1px 4px), linear-gradient(180deg, #eceef0 0%, #dcdfe2 60%, #cfd3d7 100%)",
-        "pane_background": "linear-gradient(180deg, #c3c7cb 0%, #d2d5d9 100%)",
-        "pane_border": "1px solid rgba(0, 0, 0, 0.14)",
-        "pane_shadow": "inset 0 2px 4px rgba(0, 0, 0, 0.26), inset 0 1px 1px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.95)",
+        "pane_background": "radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 60%), conic-gradient(from 20deg, #eef0f2, #c8ccd0 12%, #f4f5f7 24%, #cdd1d5 38%, #f0f2f4 50%, #c8ccd0 63%, #f2f4f6 76%, #cfd3d7 88%, #eef0f2)",
+        "pane_border": "1px solid #9aa1a8",
+        "pane_shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 2px 3px rgba(0, 0, 0, 0.28), 0 5px 10px rgba(0, 0, 0, 0.12)",
         "density": "regular",
         "accent": "#2273b8",
         "recipes": {
           "control": "metallic",
           "track": "metallic",
           "fill": "metallic",
-          "pane": "inset"
+          "pane": "metallic"
         },
         "font_family": "'Rajdhani', 'Barlow Semi Condensed', 'Roboto Condensed', 'Oswald', system-ui, sans-serif",
         "palette": {
@@ -763,7 +763,7 @@
           "accent": "#2273b8",
           "card_bg": "#d5d8db",
           "text": "#2a2e33",
-          "text_secondary": "#4d5663",
+          "text_secondary": "#454d59",
           "divider": "rgba(0, 0, 0, 0.14)"
         }
       },
