@@ -1086,7 +1086,7 @@ const BEACH_CRAB = svgDataUrl(`
   <path d='M16 18 Q20 21 24 18' stroke='${BEACH_SEA}' stroke-width='1.2' fill='none' stroke-linecap='round'/>
 </svg>`);
 const BEACH_SHELL = svgDataUrl(`
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 32'>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 -3 36 35'>
   <path d='M18 30 L3 13 A15 15 0 0 1 33 13 Z' fill='#ead1b8' stroke='#b98c72' stroke-width='1.2' stroke-linejoin='round'/>
   <path d='M18 30 L7 8.5 M18 30 L12.5 3.5 M18 30 L18 2.5 M18 30 L23.5 3.5 M18 30 L29 8.5' stroke='#b98c72' stroke-width='1' stroke-linecap='round'/>
   <path d='M3 13 Q7 9 9 12 Q13 5 15 10 Q18 3 21 10 Q23 5 27 12 Q29 9 33 13' fill='none' stroke='#b98c72' stroke-width='1'/>
@@ -1216,7 +1216,7 @@ export const BEACH_THEME: UcThemeDefinition = {
   background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat-x, no-repeat, repeat, no-repeat !important;
   background-size:
     var(--b-crab) calc(var(--b-crab) * 0.7),
-    var(--b-shell) calc(var(--b-shell) * 0.9),
+    var(--b-shell) calc(var(--b-shell) * 0.97),
     var(--b-star) var(--b-star),
     var(--b-dollar) var(--b-dollar),
     100% var(--b-tide), 12px 6px, auto, 56px 56px, auto !important;
@@ -1255,6 +1255,23 @@ const VAPOR_SUN = svgDataUrl(`
   </defs>
   <circle cx='60' cy='60' r='54' fill='url(#g)' clip-path='url(#c)' opacity='.6'/>
 </svg>`);
+// The night-side frame: a pale striped moon in the same cut as the sun.
+const VAPOR_MOON = svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>
+  <defs>
+    <linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0' stop-color='#f3e8ff'/><stop offset='.6' stop-color='#b9c9ff'/><stop offset='1' stop-color='${VAPOR_CYAN}'/>
+    </linearGradient>
+    <clipPath id='c'>
+      <rect x='0' y='0' width='120' height='62'/><rect x='0' y='66' width='120' height='10'/><rect x='0' y='80' width='120' height='8'/>
+      <rect x='0' y='92' width='120' height='6'/><rect x='0' y='102' width='120' height='4'/><rect x='0' y='110' width='120' height='3'/>
+    </clipPath>
+  </defs>
+  <circle cx='60' cy='60' r='54' fill='url(#g)' clip-path='url(#c)' opacity='.5'/>
+  <g fill='#160b2b' fill-opacity='.22'>
+    <circle cx='42' cy='38' r='7'/><circle cx='70' cy='28' r='4.5'/><circle cx='78' cy='50' r='5.5'/><circle cx='52' cy='56' r='3'/>
+  </g>
+</svg>`);
 const VAPOR_GRID = svgDataUrl(`
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 90' preserveAspectRatio='none'>
   <defs>
@@ -1270,17 +1287,18 @@ const VAPOR_GRID = svgDataUrl(`
  * "Vapor": vaporwave. A midnight-purple card with a striped sunset sun, a
  * cyan perspective grid running off the bottom edge, a faint VHS scanline, a
  * few stars and a pink neon rim. No two cards are the same frame: the card's
- * random seeds place and size the sun, tint and place the haze, set the
- * grid's horizon and scatter the stars. Hot-pink primary with dark text on
- * it, cyan accent, neon-glow controls, a wide techno sans.
+ * random seeds decide whether it gets a sun, a moon or a bare sky and whether
+ * the grid shows at all, then place and size them, tint and place the haze
+ * and scatter the stars. Hot-pink primary with dark text on it, cyan accent,
+ * neon-glow controls, a wide techno sans.
  */
 export const VAPOR_THEME: UcThemeDefinition = {
   id: 'vapor',
   name: 'Vapor',
-  version: 2,
+  version: 3,
   author: 'Ultra Card',
   description:
-    'Vaporwave: midnight purple, a striped sunset sun, a cyan perspective grid, VHS scanlines and a hot-pink neon rim. Every card is a different frame.',
+    'Vaporwave: midnight purple, a striped sun or moon, a cyan perspective grid, VHS scanlines and a hot-pink neon rim. Every card is a different frame; some get the sun, some the moon, some just stars.',
   icon: 'mdi:weather-sunset',
   source: 'builtin',
   tokens: {
@@ -1341,27 +1359,32 @@ export const VAPOR_THEME: UcThemeDefinition = {
   --v-s1: var(--uc-card-seed-1, 0.5);
   --v-s2: var(--uc-card-seed-2, 0.5);
   --v-s3: var(--uc-card-seed-3, 0.5);
-  --v-sun: calc(88px + var(--v-s3) * 64px);
+  /* Sky: a sun on roughly half the cards, a moon on a quarter, the rest just stars.
+     Each collapses to 0 size when its seed misses, so neighbours differ. */
+  --v-sun: calc(clamp(0, (var(--v-s3) - 0.5) * 20, 1) * (88px + var(--v-s3) * 64px));
+  --v-moon: calc(clamp(0, (0.28 - var(--v-s3)) * 20, 1) * (72px + var(--v-s2) * 48px));
   --v-sun-x: calc(30% + var(--v-s1) * 70%);
   --v-sun-y: calc(-24px + var(--v-s2) * 18px);
   --v-haze: calc(190 + var(--v-s2) * 130); /* cyan .. violet .. pink */
   --v-haze-x: calc(10% + var(--v-s3) * 80%);
-  --v-horizon: calc(48px + var(--v-s2) * 40px);
+  /* The grid runs off the foot of about two cards in three; the others end in haze. */
+  --v-horizon: calc(clamp(0, (var(--v-s1) - 0.34) * 20, 1) * (48px + var(--v-s2) * 40px));
   --v-sky: hsl(calc(250 + var(--v-s1) * 40) 62% 15%);
   background-color: ${VAPOR_NIGHT} !important;
-  /* Layers, top to bottom: grid at the foot, sun, three stars, haze, scanlines, night gradient. */
+  /* Layers, top to bottom: grid at the foot, sun, moon, three stars, haze, scanlines, night gradient. */
   background-image:
     ${VAPOR_GRID},
     ${VAPOR_SUN},
+    ${VAPOR_MOON},
     radial-gradient(circle 1.2px at calc(var(--v-s2) * 100%) calc(6% + var(--v-s1) * 30%), rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 100%),
     radial-gradient(circle 1px at calc(var(--v-s3) * 100%) calc(4% + var(--v-s2) * 34%), rgba(255, 255, 255, 0.8) 0, rgba(255, 255, 255, 0) 100%),
     radial-gradient(circle 1.5px at calc(100% - var(--v-s1) * 100%) calc(8% + var(--v-s3) * 26%), rgba(79, 240, 255, 0.9) 0, rgba(79, 240, 255, 0) 100%),
     radial-gradient(ellipse at var(--v-haze-x) 110%, hsl(var(--v-haze) 100% 65% / 0.3) 0%, hsl(var(--v-haze) 100% 65% / 0) 55%),
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
     linear-gradient(180deg, var(--v-sky) 0%, ${VAPOR_NIGHT} 55%, #0e0821 100%) !important;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
-  background-size: 100% var(--v-horizon), var(--v-sun) var(--v-sun), auto, auto, auto, auto, auto, auto !important;
-  background-position: bottom center, var(--v-sun-x) var(--v-sun-y), 0 0, 0 0, 0 0, 0 0, 0 0, 0 0 !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat !important;
+  background-size: 100% var(--v-horizon), var(--v-sun) var(--v-sun), var(--v-moon) var(--v-moon), auto, auto, auto, auto, auto, auto !important;
+  background-position: bottom center, var(--v-sun-x) var(--v-sun-y), var(--v-sun-x) var(--v-sun-y), 0 0, 0 0, 0 0, 0 0, 0 0, 0 0 !important;
   box-shadow: ${VAPOR_GLOW} !important;
   text-shadow: 0 0 8px rgba(255, 79, 216, 0.25);
   letter-spacing: 0.03em;
