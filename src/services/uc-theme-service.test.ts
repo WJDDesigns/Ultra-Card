@@ -298,7 +298,7 @@ describe('resolution order', () => {
   it('host vars expose the recipe per role', () => {
     const vars = ucThemeService.getHostVars(METALLIC_THEME);
     expect(vars['--uc-recipe-control']).toBe('metallic');
-    expect(vars['--uc-recipe-pane']).toBe('inset');
+    expect(vars['--uc-recipe-pane']).toBe('metallic');
     expect(ucThemeService.getHostVars(GLASS_THEME)['--uc-recipe-track']).toBe('glass');
   });
 });
