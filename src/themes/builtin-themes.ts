@@ -1018,6 +1018,11 @@ export const METALLIC_THEME: UcThemeDefinition = {
   /* Bar value text sits on the dark well and the lit fill, so it stays white here. */
   --uc-bar-text: #ffffff;
   --uc-bar-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  /* Module backdrops (the flat grey wells many modules draw with HA's
+     secondary background) would sit as dull slabs on the spun plate; make
+     them a faint glaze so the metal shows through. */
+  --secondary-background-color: rgba(255, 255, 255, 0.12);
+  --primary-background-color: rgba(255, 255, 255, 0.08);
 }
 /* Every metallic control is spun aluminium with dark type. Only the metallic
    recipe is touched, so a control a user has switched to another style keeps it. */
