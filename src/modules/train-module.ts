@@ -35,6 +35,8 @@ const DEFAULT_ON_TIME_COLOR = '#22c55e';
 const DEFAULT_DELAYED_COLOR = '#f59e0b';
 const DEFAULT_CANCELLED_COLOR = '#ef4444';
 const DEFAULT_LED_COLOR = '#ffb300';
+/** Height, in SVG units under the 64-unit train, of the receding track. */
+const TRACK_H = 18;
 
 /*
  * Attribute names used by the common public-transport integrations. Matching is
@@ -714,7 +716,7 @@ export class UltraTrainModule extends BaseUltraModule {
             toggleRow('show_status', localize('editor.train.show_status', lang, 'Show status'), localize('editor.train.show_status_desc', lang, 'On time, delayed by, or cancelled')),
             toggleRow('show_details', localize('editor.train.show_details', lang, 'Show details'), localize('editor.train.show_details_desc', lang, 'Line, destination, and platform when the sensor provides them')),
             toggleRow('show_times', localize('editor.train.show_times', lang, 'Show departure times')),
-            toggleRow('show_track', localize('editor.train.show_track', lang, 'Show track'), localize('editor.train.show_track_desc', lang, 'Rail connecting the train icons')),
+            toggleRow('show_track', localize('editor.train.show_track', lang, 'Show track'), localize('editor.train.show_track_desc', lang, 'Railway track under the trains')),
             toggleRow('show_info', localize('editor.train.show_info', lang, 'Show deviations ticker')),
             toggleRow('enable_animations', localize('editor.train.animations', lang, 'Enable animations'), localize('editor.train.animations_desc', lang, 'Headlights, rolling track, and the imminent-departure pulse')),
           ]
@@ -929,7 +931,7 @@ export class UltraTrainModule extends BaseUltraModule {
       <div
         class="uc-train ${isLed ? 'uc-train--led' : ''} ${isCompact ? 'uc-train--compact' : ''} ${hoverClass}"
         data-uc-role="pane"
-        style="--uc-train-led:${led};--uc-train-text:${text};--uc-train-secondary:${secondary};background:${cardBg};${designStyles}"
+        style="--uc-train-led:${led};--uc-train-text:${text};--uc-train-secondary:${secondary};--uc-train-bg:${cardBg};background:${cardBg};${designStyles}"
         @pointerdown=${g.onPointerDown}
         @pointermove=${g.onPointerMove}
         @pointerup=${g.onPointerUp}
@@ -1031,6 +1033,7 @@ export class UltraTrainModule extends BaseUltraModule {
     // cannot push its neighbours out of line.
     const baseSize = isCompact ? 34 : 56;
     const sizeAt = (i: number) => Math.round(baseSize * Math.max(0.58, 1 - i * 0.19));
+    const showTrack = m.show_track !== false;
     const trainsRow = html`
       <div class="uc-train__row">
         ${departures.map((d, i) => {
@@ -1039,32 +1042,22 @@ export class UltraTrainModule extends BaseUltraModule {
           const isNext = d === hero;
           const lit = isNext && imminent;
           const cancelled = d.status === 'cancelled';
+          // The SVG is 64 wide; with the track it runs 64 + TRACK_H tall.
+          const iconHeight = Math.round((size * (showTrack ? 64 + TRACK_H : 64)) / 64);
           const timeLabel = fmtTime(d.expected ?? d.planned);
           const plannedLabel =
             d.status === 'delayed' && d.planned && d.expected && d.planned.getTime() !== d.expected.getTime()
               ? fmtTime(d.planned)
               : null;
-          const col = i * 2 + 1;
+          const col = i + 1;
           const title = `${statusText(d)}${d.destination ? ` · ${d.destination}` : ''}${d.platform ? ` · ${d.platform}` : ''}`;
           return html`
-            ${i > 0 && m.show_track !== false
-              ? html`
-                  <div
-                    class="uc-train__rail ${animate && !cancelled ? 'uc-train__rail--flow' : ''}"
-                    style="grid-column:${col - 1};--uc-rail:${isLed ? led : color};margin-bottom:${Math.round(size * 0.2)}px;"
-                  >
-                    <svg viewBox="0 0 24 4" preserveAspectRatio="none" aria-hidden="true">
-                      <line x1="0" y1="2" x2="24" y2="2" />
-                    </svg>
-                  </div>
-                `
-              : nothing}
             <div
               class="uc-train__icon ${lit && animate ? 'uc-train__icon--imminent' : ''} ${cancelled ? 'uc-train__icon--cancelled' : ''}"
-              style="grid-column:${col};width:${size}px;height:${size}px;"
+              style="grid-column:${col};width:${size}px;height:${iconHeight}px;color:${color};"
               title="${title}"
             >
-              ${this._trainSvg(m.id, i, size, color, isLed, lit, cancelled, d.status === 'delayed' && d.delayMin >= 1 && size >= 44 ? `+${Math.round(d.delayMin)}` : null)}
+              ${this._trainSvg(m.id, i, size, color, isLed, lit, cancelled, d.status === 'delayed' && d.delayMin >= 1 && size >= 44 ? `+${Math.round(d.delayMin)}` : null, showTrack, animate && !cancelled)}
             </div>
             ${m.show_times !== false
               ? html`
@@ -1155,8 +1148,10 @@ export class UltraTrainModule extends BaseUltraModule {
 
   /**
    * Front view of a train, like a station pictogram: rounded body, two windows,
-   * headlights, bumper and wheels. In LED mode the whole thing is masked with a
-   * dot pattern so it reads as pixels on the board.
+   * headlights, bumper, and a head-on bogie with a wheel at each side. Below it
+   * the track runs away from the viewer: two rails converging toward the
+   * horizon over sleepers that roll toward you. In LED mode the whole thing is
+   * masked with a dot pattern so it reads as pixels on the board.
    */
   private _trainSvg(
     moduleId: string,
@@ -1166,49 +1161,98 @@ export class UltraTrainModule extends BaseUltraModule {
     led: boolean,
     lit: boolean,
     cancelled: boolean,
-    badge: string | null
+    badge: string | null,
+    track: boolean,
+    rolling: boolean
   ): TemplateResult {
     const p = `uct-${String(moduleId).replace(/[^a-zA-Z0-9_-]/g, '')}-${index}`;
-    const glass = led ? 'transparent' : 'color-mix(in srgb, #0b1020 82%, var(--card-background-color))';
-    const lamp = lit ? '#fff7cc' : led ? 'transparent' : `color-mix(in srgb, #fff 55%, ${color})`;
-    // Keep the LED pitch constant on screen (~2.6px) whatever the icon size, so
-    // small trains stay dotted instead of collapsing into a solid blob.
-    const pitch = (64 / Math.max(16, size)) * 2.6;
+    // The board colour. On the LED board every "off" pixel is this colour, so
+    // windows, the door seam and the lamp rings are carved out of the body with
+    // it; that is what keeps the train from reading as one solid dotted blob.
+    const bg = 'var(--uc-train-bg, var(--card-background-color))';
+    const glass = led ? bg : 'color-mix(in srgb, #0b1020 82%, var(--card-background-color))';
+    const lampOn = '#fff7cc';
+    const lamp = lit ? lampOn : led ? 'rgba(255,247,204,0.7)' : `color-mix(in srgb, #fff 55%, ${color})`;
+    // Running gear is a darker shade of the livery so it sits back from the body.
+    const gear = led ? color : `color-mix(in srgb, ${color} 62%, #000)`;
+    const height = track ? 64 + TRACK_H : 64;
+    // Keep the LED pitch constant on screen (~3px) whatever the icon size, so
+    // small trains stay dotted and large ones still look like a pixel matrix.
+    const pitch = (64 / Math.max(16, size)) * 3;
     return svg`
-      <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true" class="uc-train-svg ${cancelled ? 'uc-train-svg--cancelled' : ''}">
+      <svg viewBox="0 0 64 ${height}" width="100%" height="100%" aria-hidden="true" class="uc-train-svg ${cancelled ? 'uc-train-svg--cancelled' : ''}">
         <defs>
           <pattern id="${p}-dots" width="${pitch}" height="${pitch}" patternUnits="userSpaceOnUse">
-            <circle cx="${pitch / 2}" cy="${pitch / 2}" r="${pitch * 0.36}" fill="#fff" />
+            <circle cx="${pitch / 2}" cy="${pitch / 2}" r="${pitch * 0.34}" fill="#fff" />
           </pattern>
           <mask id="${p}-mask">
-            <rect width="64" height="64" fill="url(#${p}-dots)" />
+            <rect width="64" height="${height}" fill="url(#${p}-dots)" />
           </mask>
           <linearGradient id="${p}-body" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#fff" stop-opacity="0.22" />
             <stop offset="0.5" stop-color="#fff" stop-opacity="0" />
             <stop offset="1" stop-color="#000" stop-opacity="0.18" />
           </linearGradient>
+          <!-- The strip of ground between (and just outside) the two rails. -->
+          <clipPath id="${p}-bed">
+            <polygon points="8,62 56,62 47,${64 + TRACK_H} 17,${64 + TRACK_H}" />
+          </clipPath>
         </defs>
         <g mask="${led ? `url(#${p}-mask)` : 'none'}">
-          <!-- wheels / bogie -->
-          <rect x="14" y="53" width="11" height="7" rx="3" fill="${color}" />
-          <rect x="39" y="53" width="11" height="7" rx="3" fill="${color}" />
+          ${track
+            ? svg`
+              <!-- track running away beneath the train: rails converge downward, sleepers roll away -->
+              <g clip-path="url(#${p}-bed)">
+                <g class="uc-train-ties ${rolling ? 'uc-train-ties--roll' : ''}" style="stroke:var(--uc-track-tie);stroke-width:1.8;stroke-linecap:round;">
+                  <line x1="0" y1="58" x2="64" y2="58" />
+                  <line x1="0" y1="62.5" x2="64" y2="62.5" />
+                  <line x1="0" y1="67" x2="64" y2="67" />
+                  <line x1="0" y1="71.5" x2="64" y2="71.5" />
+                  <line x1="0" y1="76" x2="64" y2="76" />
+                  <line x1="0" y1="80.5" x2="64" y2="80.5" />
+                  <line x1="0" y1="85" x2="64" y2="85" />
+                </g>
+              </g>
+              <g style="stroke:var(--uc-track-rail);stroke-width:2.2;stroke-linecap:round;">
+                <line x1="15" y1="62" x2="22" y2="${64 + TRACK_H - 1}" />
+                <line x1="49" y1="62" x2="42" y2="${64 + TRACK_H - 1}" />
+              </g>
+            `
+            : nothing}
+          <!-- bogie seen head-on: a dark frame with a wheel tread showing at each side -->
+          <rect x="13" y="54" width="38" height="6" rx="2" fill="${gear}" />
+          <rect x="11" y="53" width="8" height="11" rx="2.5" fill="${gear}" style="${led ? `stroke:${bg};stroke-width:1.4` : ''}" />
+          <rect x="45" y="53" width="8" height="11" rx="2.5" fill="${gear}" style="${led ? `stroke:${bg};stroke-width:1.4` : ''}" />
           <!-- bumper -->
-          <rect x="7" y="47" width="50" height="7" rx="3.5" fill="${color}" />
+          <rect x="7" y="48" width="50" height="7" rx="3.5" fill="${color}" />
           <!-- body -->
-          <rect x="10" y="4" width="44" height="46" rx="13" fill="${color}" />
-          ${led ? nothing : svg`<rect x="10" y="4" width="44" height="46" rx="13" fill="url(#${p}-body)" />`}
+          <rect x="10" y="4" width="44" height="45" rx="13" fill="${color}" />
+          ${led
+            ? svg`<rect x="7" y="48.2" width="50" height="1.6" style="fill:${bg}" />`
+            : svg`<rect x="10" y="4" width="44" height="45" rx="13" fill="url(#${p}-body)" />`}
           <!-- roof marker light -->
-          <rect x="28" y="7" width="8" height="3" rx="1.5" fill="${led ? 'transparent' : 'rgba(255,255,255,0.35)'}" />
+          <rect x="28" y="7" width="8" height="3" rx="1.5" fill="${led ? 'rgba(255,247,204,0.6)' : 'rgba(255,255,255,0.35)'}" />
           <!-- windows -->
-          <rect x="15" y="13" width="15" height="15" rx="4" fill="${glass}" />
-          <rect x="34" y="13" width="15" height="15" rx="4" fill="${glass}" />
-          ${led ? nothing : svg`
-            <rect x="17" y="15" width="5" height="4" rx="1.5" fill="rgba(255,255,255,0.18)" />
-            <rect x="36" y="15" width="5" height="4" rx="1.5" fill="rgba(255,255,255,0.18)" />
-          `}
-          <!-- door line + headlights -->
-          <rect x="31" y="31" width="2" height="12" rx="1" fill="${led ? 'transparent' : 'rgba(0,0,0,0.22)'}" />
+          <rect x="15" y="13" width="15" height="15" rx="4" style="fill:${glass}" />
+          <rect x="34" y="13" width="15" height="15" rx="4" style="fill:${glass}" />
+          ${led
+            ? svg`
+              <!-- lit panes: dim pixels inside the dark frames -->
+              <rect x="18" y="16" width="9" height="9" rx="2" fill="rgba(255,247,204,0.16)" />
+              <rect x="37" y="16" width="9" height="9" rx="2" fill="rgba(255,247,204,0.16)" />
+            `
+            : svg`
+              <rect x="17" y="15" width="5" height="4" rx="1.5" fill="rgba(255,255,255,0.18)" />
+              <rect x="36" y="15" width="5" height="4" rx="1.5" fill="rgba(255,255,255,0.18)" />
+            `}
+          <!-- door seam + headlights -->
+          <rect x="31" y="31" width="2" height="13" rx="1" style="fill:${led ? bg : 'rgba(0,0,0,0.22)'}" />
+          ${led
+            ? svg`
+              <circle cx="21" cy="38" r="5.4" style="fill:${bg}" />
+              <circle cx="43" cy="38" r="5.4" style="fill:${bg}" />
+            `
+            : nothing}
           <circle cx="21" cy="38" r="4" fill="${lamp}" class="uc-train-lamp" />
           <circle cx="43" cy="38" r="4" fill="${lamp}" class="uc-train-lamp" />
         </g>
@@ -1295,21 +1339,27 @@ export class UltraTrainModule extends BaseUltraModule {
          cap height) that the letterforms survive, and the glow fills the gaps. */
       .uc-train--led .uc-train__led-text {
         color: transparent !important;
-        background-image: radial-gradient(circle, var(--uc-led-dot, var(--uc-train-led)) 40%, transparent 46%);
+        /* Fat dots on a fine pitch: the letterforms stay connected enough to read
+           at 16px while the gaps still give the dot-matrix texture. */
+        background-image: radial-gradient(circle, var(--uc-led-dot, var(--uc-train-led)) 47%, transparent 55%);
         background-size: 2.4px 2.4px;
         -webkit-background-clip: text;
         background-clip: text;
         filter: drop-shadow(0 0 2px var(--uc-led-dot, var(--uc-train-led)));
         font-weight: 800;
+        letter-spacing: 0.02em;
       }
       /* Small text stays solid so it is legible, with the same glow. */
       .uc-train--led .uc-train__led-solid {
         text-shadow: 0 0 4px currentColor;
         font-weight: 700;
       }
-      .uc-train--led .uc-train__name { font-size: 15px; }
-      .uc-train--led .uc-train__countdown-text { font-size: 15px; }
-      .uc-train--led .uc-train__icon { filter: drop-shadow(0 0 3px currentColor); }
+      .uc-train--led .uc-train__name { font-size: 16px; }
+      .uc-train--led .uc-train__countdown-text { font-size: 16px; }
+      /* A tight bloom in the train's own colour (the icon carries it as its color);
+         a wide glow bled into the window gaps and flattened the shape. */
+      .uc-train--led .uc-train__icon { filter: drop-shadow(0 0 1.5px currentColor); }
+      .uc-train:not(.uc-train--led) .uc-train__icon { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.32)); }
       .uc-train--led .uc-train__badge--led {
         background: transparent;
         color: var(--uc-badge);
@@ -1352,6 +1402,7 @@ export class UltraTrainModule extends BaseUltraModule {
         align-items: center;
         gap: 8px;
         margin-top: 2px;
+        min-width: 0;
       }
       .uc-train__badge {
         display: inline-flex;
@@ -1368,6 +1419,9 @@ export class UltraTrainModule extends BaseUltraModule {
         font-size: 15px;
         font-weight: 600;
         white-space: nowrap;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .uc-train__meta {
         font-size: 12px;
@@ -1383,17 +1437,31 @@ export class UltraTrainModule extends BaseUltraModule {
         grid-template-rows: auto auto;
         grid-auto-flow: column;
         grid-auto-columns: auto;
-        column-gap: 4px;
+        column-gap: 14px;
         row-gap: 4px;
         align-items: end;
         justify-items: center;
         flex-shrink: 0;
         margin-left: auto;
+        --uc-track-rail: color-mix(in srgb, var(--uc-train-secondary) 80%, transparent);
+        --uc-track-tie: color-mix(in srgb, var(--uc-train-secondary) 42%, transparent);
+      }
+      .uc-train--led .uc-train__row {
+        --uc-track-rail: color-mix(in srgb, var(--uc-train-led) 70%, transparent);
+        --uc-track-tie: color-mix(in srgb, var(--uc-train-led) 38%, transparent);
       }
       .uc-train__icon {
         grid-row: 1;
         position: relative;
         align-self: end;
+        z-index: 1;
+      }
+      /* Sleepers slide away from the viewer one pitch (4.5 units) per loop, so the
+         track appears to run out from under the train. */
+      .uc-train-ties--roll { animation: uc-train-ties 0.7s linear infinite; }
+      @keyframes uc-train-ties {
+        from { transform: translateY(0); }
+        to { transform: translateY(-4.5px); }
       }
       .uc-train__icon--cancelled { opacity: 0.55; }
       .uc-train__stop-time {
@@ -1422,28 +1490,6 @@ export class UltraTrainModule extends BaseUltraModule {
       }
       .uc-train--led .uc-train__planned { text-decoration: none; opacity: 0.5; }
 
-      .uc-train__rail {
-        grid-row: 1;
-        width: 18px;
-        height: 4px;
-        align-self: end;
-        color: var(--uc-rail);
-      }
-      .uc-train__rail svg { display: block; width: 100%; height: 100%; overflow: visible; }
-      .uc-train__rail line {
-        stroke: var(--uc-rail);
-        stroke-width: 2.5;
-        stroke-linecap: round;
-        stroke-dasharray: 3 4;
-        opacity: 0.45;
-      }
-      .uc-train--led .uc-train__rail line { stroke-dasharray: 0.1 3.2; stroke-width: 2.4; opacity: 0.7; }
-      .uc-train__rail--flow line { animation: uc-train-flow 1.1s linear infinite; }
-      @keyframes uc-train-flow {
-        from { stroke-dashoffset: 0; }
-        to { stroke-dashoffset: -7; }
-      }
-
       /* ── Compact ── */
       .uc-train--compact { padding: 10px 14px; }
       .uc-train__compact {
@@ -1466,8 +1512,7 @@ export class UltraTrainModule extends BaseUltraModule {
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .uc-train--compact .uc-train__row { column-gap: 3px; row-gap: 2px; }
-      .uc-train--compact .uc-train__rail { width: 10px; }
+      .uc-train--compact .uc-train__row { column-gap: 9px; row-gap: 2px; }
 
       /* ── Info ticker ── */
       .uc-train__info {
@@ -1530,7 +1575,7 @@ export class UltraTrainModule extends BaseUltraModule {
       @keyframes uc-train-spin { to { transform: rotate(360deg); } }
 
       @media (prefers-reduced-motion: reduce) {
-        .uc-train__rail--flow line,
+        .uc-train-ties--roll,
         .uc-train__icon--imminent,
         .uc-train__icon--imminent .uc-train-lamp,
         .uc-train__countdown--soon .uc-train__countdown-text,
