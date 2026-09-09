@@ -1042,8 +1042,8 @@ export class UltraTrainModule extends BaseUltraModule {
           const isNext = d === hero;
           const lit = isNext && imminent;
           const cancelled = d.status === 'cancelled';
-          // The SVG is 64 wide; with the track it runs 64 + TRACK_H tall.
-          const iconHeight = Math.round((size * (showTrack ? 64 + TRACK_H : 64)) / 64);
+          // Track bed height, in proportion to the 64-unit train drawn above it.
+          const trackH = showTrack ? Math.round((size * TRACK_H) / 64) : 0;
           const timeLabel = fmtTime(d.expected ?? d.planned);
           const plannedLabel =
             d.status === 'delayed' && d.planned && d.expected && d.planned.getTime() !== d.expected.getTime()
@@ -1054,10 +1054,18 @@ export class UltraTrainModule extends BaseUltraModule {
           return html`
             <div
               class="uc-train__icon ${lit && animate ? 'uc-train__icon--imminent' : ''} ${cancelled ? 'uc-train__icon--cancelled' : ''}"
-              style="grid-column:${col};width:${size}px;height:${iconHeight}px;color:${color};"
+              style="grid-column:${col};width:${size}px;height:${size + trackH}px;color:${color};--uc-tsz:${size}px;"
               title="${title}"
             >
-              ${this._trainSvg(m.id, i, size, color, isLed, lit, cancelled, d.status === 'delayed' && d.delayMin >= 1 && size >= 44 ? `+${Math.round(d.delayMin)}` : null, showTrack, animate && !cancelled)}
+              ${this._trainSvg(m.id, i, size, color, isLed, lit, cancelled, d.status === 'delayed' && d.delayMin >= 1 && size >= 44 ? `+${Math.round(d.delayMin)}` : null)}
+              ${showTrack
+                ? html`
+                    <!-- Track as a tilted plane: near edge (bottom) wide, far edge (under the wheels) narrow. -->
+                    <div class="uc-train__bed" style="height:${trackH}px;" aria-hidden="true">
+                      <div class="uc-train__rails ${animate && !cancelled ? 'uc-train__rails--roll' : ''}"></div>
+                    </div>
+                  `
+                : nothing}
             </div>
             ${m.show_times !== false
               ? html`
@@ -1148,10 +1156,9 @@ export class UltraTrainModule extends BaseUltraModule {
 
   /**
    * Front view of a train, like a station pictogram: rounded body, two windows,
-   * headlights, bumper, and a head-on bogie with a wheel at each side. Below it
-   * the track runs away from the viewer: two rails converging toward the
-   * horizon over sleepers that roll toward you. In LED mode the whole thing is
-   * masked with a dot pattern so it reads as pixels on the board.
+   * headlights, bumper, and a head-on bogie with a wheel at each side. The track
+   * is a separate 3D-tilted element below (see `.uc-train__bed`). In LED mode
+   * the train is masked with a dot pattern so it reads as pixels on the board.
    */
   private _trainSvg(
     moduleId: string,
@@ -1161,9 +1168,7 @@ export class UltraTrainModule extends BaseUltraModule {
     led: boolean,
     lit: boolean,
     cancelled: boolean,
-    badge: string | null,
-    track: boolean,
-    rolling: boolean
+    badge: string | null
   ): TemplateResult {
     const p = `uct-${String(moduleId).replace(/[^a-zA-Z0-9_-]/g, '')}-${index}`;
     // The board colour. On the LED board every "off" pixel is this colour, so
@@ -1175,50 +1180,25 @@ export class UltraTrainModule extends BaseUltraModule {
     const lamp = lit ? lampOn : led ? 'rgba(255,247,204,0.7)' : `color-mix(in srgb, #fff 55%, ${color})`;
     // Running gear is a darker shade of the livery so it sits back from the body.
     const gear = led ? color : `color-mix(in srgb, ${color} 62%, #000)`;
-    const height = track ? 64 + TRACK_H : 64;
     // Keep the LED pitch constant on screen (~3px) whatever the icon size, so
     // small trains stay dotted and large ones still look like a pixel matrix.
     const pitch = (64 / Math.max(16, size)) * 3;
     return svg`
-      <svg viewBox="0 0 64 ${height}" width="100%" height="100%" aria-hidden="true" class="uc-train-svg ${cancelled ? 'uc-train-svg--cancelled' : ''}">
+      <svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" class="uc-train-svg ${cancelled ? 'uc-train-svg--cancelled' : ''}">
         <defs>
           <pattern id="${p}-dots" width="${pitch}" height="${pitch}" patternUnits="userSpaceOnUse">
             <circle cx="${pitch / 2}" cy="${pitch / 2}" r="${pitch * 0.34}" fill="#fff" />
           </pattern>
           <mask id="${p}-mask">
-            <rect width="64" height="${height}" fill="url(#${p}-dots)" />
+            <rect width="64" height="64" fill="url(#${p}-dots)" />
           </mask>
           <linearGradient id="${p}-body" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#fff" stop-opacity="0.22" />
             <stop offset="0.5" stop-color="#fff" stop-opacity="0" />
             <stop offset="1" stop-color="#000" stop-opacity="0.18" />
           </linearGradient>
-          <!-- The strip of ground between (and just outside) the two rails. -->
-          <clipPath id="${p}-bed">
-            <polygon points="8,62 56,62 47,${64 + TRACK_H} 17,${64 + TRACK_H}" />
-          </clipPath>
         </defs>
         <g mask="${led ? `url(#${p}-mask)` : 'none'}">
-          ${track
-            ? svg`
-              <!-- track running away beneath the train: rails converge downward, sleepers roll away -->
-              <g clip-path="url(#${p}-bed)">
-                <g class="uc-train-ties ${rolling ? 'uc-train-ties--roll' : ''}" style="stroke:var(--uc-track-tie);stroke-width:1.8;stroke-linecap:round;">
-                  <line x1="0" y1="58" x2="64" y2="58" />
-                  <line x1="0" y1="62.5" x2="64" y2="62.5" />
-                  <line x1="0" y1="67" x2="64" y2="67" />
-                  <line x1="0" y1="71.5" x2="64" y2="71.5" />
-                  <line x1="0" y1="76" x2="64" y2="76" />
-                  <line x1="0" y1="80.5" x2="64" y2="80.5" />
-                  <line x1="0" y1="85" x2="64" y2="85" />
-                </g>
-              </g>
-              <g style="stroke:var(--uc-track-rail);stroke-width:2.2;stroke-linecap:round;">
-                <line x1="15" y1="62" x2="22" y2="${64 + TRACK_H - 1}" />
-                <line x1="49" y1="62" x2="42" y2="${64 + TRACK_H - 1}" />
-              </g>
-            `
-            : nothing}
           <!-- bogie seen head-on: a dark frame with a wheel tread showing at each side -->
           <rect x="13" y="54" width="38" height="6" rx="2" fill="${gear}" />
           <rect x="11" y="53" width="8" height="11" rx="2.5" fill="${gear}" style="${led ? `stroke:${bg};stroke-width:1.4` : ''}" />
@@ -1455,13 +1435,62 @@ export class UltraTrainModule extends BaseUltraModule {
         position: relative;
         align-self: end;
         z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
-      /* Sleepers slide away from the viewer one pitch (4.5 units) per loop, so the
-         track appears to run out from under the train. */
-      .uc-train-ties--roll { animation: uc-train-ties 0.7s linear infinite; }
+      /*
+       * The track is a plane lying on the ground, seen from slightly above: its
+       * far edge sits under the wheels and its near edge comes toward the viewer,
+       * so the rails fan out and the sleepers spread apart as they get closer.
+       * Real perspective (rotateX under a perspective container) does that for
+       * free, including foreshortening of the rolling animation.
+       */
+      .uc-train__bed {
+        position: relative;
+        width: 100%;
+        perspective: calc(var(--uc-tsz, 56px) * 1.4);
+        perspective-origin: 50% 0;
+      }
+      .uc-train__rails {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 150%;
+        transform-origin: 50% 0;
+        transform: rotateX(60deg);
+        /* Two rails, centred on the wheel treads (x = 15/64 and 49/64 of the train). */
+        background: linear-gradient(
+          90deg,
+          transparent 21.6%,
+          var(--uc-track-rail) 21.6% 25.2%,
+          transparent 25.2% 74.8%,
+          var(--uc-track-rail) 74.8% 78.4%,
+          transparent 78.4%
+        );
+      }
+      .uc-train__rails::before {
+        content: '';
+        position: absolute;
+        inset: 0 11%;
+        background: repeating-linear-gradient(180deg, var(--uc-track-tie) 0 2px, transparent 2px 7px);
+        background-size: 100% 7px;
+        background-position: 0 0;
+      }
+      /* The train is heading toward the viewer, so the ground ahead of it (near
+         edge) runs up under the wheels: sleepers move one pitch away per loop. */
+      .uc-train__rails--roll::before { animation: uc-train-ties 0.6s linear infinite; }
       @keyframes uc-train-ties {
-        from { transform: translateY(0); }
-        to { transform: translateY(-4.5px); }
+        from { background-position: 0 0; }
+        to { background-position: 0 -7px; }
+      }
+      /* On the LED board the track is punched into the same dot grid as the train. */
+      .uc-train--led .uc-train__bed {
+        -webkit-mask-image: radial-gradient(circle, #000 34%, transparent 42%);
+        mask-image: radial-gradient(circle, #000 34%, transparent 42%);
+        -webkit-mask-size: 3px 3px;
+        mask-size: 3px 3px;
       }
       .uc-train__icon--cancelled { opacity: 0.55; }
       .uc-train__stop-time {
@@ -1472,7 +1501,7 @@ export class UltraTrainModule extends BaseUltraModule {
         align-self: start;
         min-width: 0;
       }
-      .uc-train-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+      .uc-train-svg { display: block; flex: 0 0 auto; overflow: visible; }
       .uc-train__time {
         font-weight: 700;
         font-variant-numeric: tabular-nums;
@@ -1575,7 +1604,7 @@ export class UltraTrainModule extends BaseUltraModule {
       @keyframes uc-train-spin { to { transform: rotate(360deg); } }
 
       @media (prefers-reduced-motion: reduce) {
-        .uc-train-ties--roll,
+        .uc-train__rails--roll::before,
         .uc-train__icon--imminent,
         .uc-train__icon--imminent .uc-train-lamp,
         .uc-train__countdown--soon .uc-train__countdown-text,
