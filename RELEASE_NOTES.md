@@ -1,5 +1,44 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0
+
+The stable 3.10.0 release. Ultra Card loads much faster, you can generate a whole dashboard in one click, and Themes restyle every card at once. Two new PRO modules land as well: Boiler and Train Departures. Your existing cards keep their look until you pick a theme. Thanks to everyone who tested the betas and reported issues.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🚀 New Features
+
+- **Added Ultra Dashboard** - Create a full dashboard from your areas and floors in one click (Settings → Dashboards → Add dashboard). Pick a style, then take control and edit every card in the visual editor. Needs Home Assistant 2026.5 or newer, and only uses free modules
+- **Added Themes** - One setting restyles every Ultra Card: colours, corners, shadows, wallpaper, and how buttons, bars, and panels look. Fifteen themes ship with the card. Build your own in the Hub or at ultracard.io/theme-builder, share it with the community, or turn any Home Assistant theme into an Ultra theme
+- **Added the Boiler module (PRO)** - An animated boiler for OpenTherm, water heater, and central heating. Point it at your boiler and it shows temperature, flame, pressure, and a target you can adjust
+- **Added the Train Departures module (PRO)** - A live departure board for your commute. Modern or LED style, with times, delays, and a minutes-to-go countdown
+- **Added layout controls to the Icon module** - Put each icon left, right, above, or below its name and state, and choose how the item sits in its cell
+- **Added more ways to style the Popup trigger and its animation** - Background shape and colour on the trigger, plus speed, easing, and slide-in-from-the-edge on the open animation
+- **Ultra Cards follow Home Assistant themes** - Border, radius, shadow, and card-mod rules that target `ha-card` now apply the same way they do on built-in cards. New cards inherit the theme instead of baking in a fixed look
+
+### 🔧 Improvements
+
+- **Made Ultra Card much smaller and faster** - The file every dashboard loads is about 93% smaller than in 3.9.0. Modules, the editor, translations, and heavy libraries load only when needed, so dashboards open quicker on phones, tablets, and wall panels
+- **Ultra Card tells you when a reload is needed after an update** - After updating, a Reload button appears if the page is still running old files
+- **A cleaner Design tab** - Consistent fields, labels, and reset buttons. Arrow keys nudge values in the unit you typed. Copy Design no longer duplicates an Element ID
+- **Themes apply more consistently** - Glass and similar pane styles reach more modules. Light and Button Input follow the theme. Metallic, Vapor, and Beach look better, and bar values stay readable on light cards
+
+### 🐛 Bug Fixes
+
+- **Fixed Dynamic Weather effects falling back to the slower path** - The background helper now starts correctly on HACS installs
+- **Fixed Dynamic Lists not updating, and getting stuck on placeholders after a reload**
+- **Fixed the editor hanging on deeply nested layouts**
+- **Fixed drag and drop into empty columns and layouts**
+- **Fixed CSS variables with a fallback being cut off**
+- **Fixed entity pickers dropping the entity you just chose** - Happened on newer Home Assistant frontends
+- **Fixed Buttons not filling a Stack Overlay layer**
+- **Fixed Ultra Cards ignoring theme border and corner styles**
+- **Fixed Text Shadow and 3D Transform values disappearing from the editor**
+- **Fixed several Design tab quirks** - Font dropdown showing blank, section reset wiping the wrong device, animation duration pretending a value was set, and locked spacing saving three times
+- **Fixed drag and drop and keyboard reordering in the layout tree**
+
+---
+
 ## Version 3.10.0-beta10
 
 The tenth 3.10.0 beta adds two new PRO modules: **Boiler**, an animated boiler card for OpenTherm, water heater and central-heating setups, and **Train Departures**, a live departure board for your commute with a modern look or an LED dot-matrix style. It also fixes an entity picker bug on newer Home Assistant frontends that dropped the entity you had just picked, and lets Buttons fill a Stack Overlay layer edge to edge. It includes everything from beta9. This is a pre-release for testing — please report anything odd on GitHub or Discord.

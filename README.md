@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 
 **Ultra Dashboard** - A complete dashboard from your areas in one click (Settings → Dashboards → Add dashboard → Community dashboards). Pick a style, take control, and every card opens in the visual editor. [Read more](docs/ultra-dashboard.md).
 
-**94 modules** - Layouts, gauges, graphs, controls, media, and more. Drag-and-drop columns with nesting so you can build the layout you want.
+**96 modules** - Layouts, gauges, graphs, controls, media, and more. Drag-and-drop columns with nesting so you can build the layout you want.
 
 **Template Mode** - Jinja2 templates that change how a module looks as your entities change. Free for everyone.
 
@@ -35,7 +35,7 @@ https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 
 The site runs the real card, not mockups. Use it when you want to explore before installing, or when you need a deeper reference than this README.
 
-- **[Modules](https://ultracard.io/modules/)** - Live previews of every free and PRO module (66 free, 28 PRO)
+- **[Modules](https://ultracard.io/modules/)** - Live previews of every free and PRO module (66 free, 30 PRO)
 - **[Template Mode](https://ultracard.io/template-mode/)** - Interactive playground, property reference, and field notes
 - **[Preset Gallery](https://ultracard.io/presets/)** - Community layouts you can browse and install
 - **[FAQs](https://ultracard.io/faqs/)** - Common questions and troubleshooting
