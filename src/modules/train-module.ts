@@ -1199,8 +1199,7 @@ export class UltraTrainModule extends BaseUltraModule {
           </linearGradient>
         </defs>
         <g mask="${led ? `url(#${p}-mask)` : 'none'}">
-          <!-- bogie seen head-on: a dark frame with a wheel tread showing at each side -->
-          <rect x="13" y="54" width="38" height="6" rx="2" fill="${gear}" />
+          <!-- wheels seen head-on: a tread showing under each side of the bumper -->
           <rect x="11" y="53" width="8" height="11" rx="2.5" fill="${gear}" style="${led ? `stroke:${bg};stroke-width:1.4` : ''}" />
           <rect x="45" y="53" width="8" height="11" rx="2.5" fill="${gear}" style="${led ? `stroke:${bg};stroke-width:1.4` : ''}" />
           <!-- bumper -->
