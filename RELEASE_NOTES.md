@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta10
+
+The tenth 3.10.0 beta adds two new PRO modules: **Boiler**, an animated boiler card for OpenTherm, water heater and central-heating setups, and **Train Departures**, a live departure board for your commute with a modern look or an LED dot-matrix style. It also fixes an entity picker bug on newer Home Assistant frontends that dropped the entity you had just picked, and lets Buttons fill a Stack Overlay layer edge to edge. It includes everything from beta9. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the Boiler module (PRO)** - An animated boiler card for OpenTherm, water heater and central-heating systems. Point it at a boiler or water heater entity and optionally at flow, return and target temperature, pressure, modulation, flame, heating, hot-water and power switch entities. The boiler graphic changes colour with the water temperature (cold, warm and hot thresholds and colours are yours to set), the flame and pipes animate while it is firing, a pressure readout with your own safe range is shown, and the target temperature can be adjusted from the card. Standard and Compact layouts, with every readout, the mode chips and the power button individually switchable
+- **Added the Train Departures module (PRO)** - A departure board for one route. Feed it departure timestamp sensors from your public-transport integration (planned, expected, delay, platform and destination attributes from the common integrations are picked up automatically) or hand it a template for anything else, and it shows the next departures as train icons coloured by status (on time, delayed, cancelled), the planned and expected times, a live minutes-to-go countdown and any delay or cancellation. Choose **Modern** or **LED** board style, Standard or Compact layout, how many departures to show, the delay threshold, an "imminent" window, and 12 or 24-hour times. Three ready-made templates for it are in the template cheatsheet
+- **Front-view trains on a receding track** - Each train in the board is drawn head-on: a bogie with a wheel at each side sitting on two rails that fan out toward you over sleepers that roll forward while the train is approaching. The LED style carves the windows, door seam and lamp rings out of the dot grid in the board colour with dim lit panes and headlights on, so the train shape reads clearly instead of collapsing into a glowing blob
+
+### 🔧 Improvements
+
+- **Boiler and Train Departures show up everywhere the other modules do** - Both have screenshots and hover animations in the Add Module gallery, entries in the module directory, and are understood by the Smart Card composer, so asking for a "boiler" or "train departures" card picks them and fills in sensible fields
+- **Releases can no longer ship without their files** - The GitHub release is created as a draft and only published after `ultra-card.js` and its `uc-*.js` chunks are attached and verified, so HACS never sees an asset-less release like 3.10.0-beta8 again
+
+### 🐛 Bug Fixes
+
+- **Fixed entity pickers dropping the entity you just chose** - On newer Home Assistant frontends, picking an entity in a multi-entity field (the Train Departures sensors, and other chip-list pickers) would add it and immediately wipe it again, and the picker itself sometimes rendered as an empty box. The picker's own change event was escaping the chip list and hitting the module with the wrong payload, and newer frontends now pass a state object rather than an id to the filter. Both are handled
+- **Fixed Buttons not filling a Stack Overlay layer** - A Button with height set to 100% inside a Stack Overlay layer used to collapse to its content height, so a full-tile tap target was not possible ([#132](https://github.com/WJDDesigns/Ultra-Card/issues/132)). Button containers now respect the design height and the percentage carries through the layer like it does for Images
+
+---
+
 ## Version 3.10.0-beta9
 
 The ninth 3.10.0 beta makes Ultra Card's outer shell behave like a built-in Home Assistant card. Cards now render as a real `ha-card`, so HA themes and card-mod themes (including unusual ones like TET-49) apply border, radius, shadow and decoration the same way they do for every other card. New cards also stop freezing default chrome into their YAML so they can inherit the active theme. It includes everything from beta7. This is a pre-release for testing — please report anything odd on GitHub or Discord.
