@@ -1,0 +1,17 @@
+{
+  "name": "Ultra Card",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "demo-server",
+      "command": "python3 -m http.server 8765 --bind 0.0.0.0",
+      "description": "Static server for the standalone card demo. Open http://localhost:8765/website/_local-preview.html?p=modules-page-embed.html (also template-mode-page-embed.html and presets-page-embed.html). Run 'npm run build:demo' to refresh dist-demo/ultra-card-demo.js after changing source."
+    }
+  ],
+  "ports": [
+    {
+      "name": "demo server",
+      "port": 8765
+    }
+  ]
+}

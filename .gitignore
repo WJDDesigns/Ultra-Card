@@ -37,7 +37,10 @@ yarn-error.log*
 .idea
 
 # Cursor IDE
-.cursor/
+.cursor/*
+# Track the Cloud Agent dev environment config
+!.cursor/environment.json
+!.cursor/install.sh
 
 # Planning and implementation documents
 *_PLAN.md
