@@ -614,7 +614,7 @@ exports[`surface goldens > bar outline gradient=true sensor.level 1`] = `
 
 exports[`surface goldens > button embossed 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.embossed {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)}",
 ]
@@ -622,7 +622,7 @@ exports[`surface goldens > button embossed 1`] = `
 
 exports[`surface goldens > button flat 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.flat {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: none}",
 ]
@@ -630,7 +630,7 @@ exports[`surface goldens > button flat 1`] = `
 
 exports[`surface goldens > button glass 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.glass {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25)}",
 ]
@@ -638,7 +638,7 @@ exports[`surface goldens > button glass 1`] = `
 
 exports[`surface goldens > button glossy 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.glossy {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), #2196f3; border: none}",
 ]
@@ -646,7 +646,7 @@ exports[`surface goldens > button glossy 1`] = `
 
 exports[`surface goldens > button gradient-overlay 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.gradient-overlay {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), #2196f3; border: none}",
 ]
@@ -654,7 +654,7 @@ exports[`surface goldens > button gradient-overlay 1`] = `
 
 exports[`surface goldens > button inset 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.inset {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: inset 0 2px 6px rgba(0,0,0,0.35)}",
 ]
@@ -662,7 +662,7 @@ exports[`surface goldens > button inset 1`] = `
 
 exports[`surface goldens > button metallic 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.metallic {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); border: 1px solid #bbb}",
 ]
@@ -670,7 +670,7 @@ exports[`surface goldens > button metallic 1`] = `
 
 exports[`surface goldens > button neon-glow 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.neon-glow {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: 0 0 10px #2196f3, 0 0 20px #2196f3}",
 ]
@@ -678,7 +678,7 @@ exports[`surface goldens > button neon-glow 1`] = `
 
 exports[`surface goldens > button neumorphic 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.neumorphic {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: #2196f3; border: none; box-shadow: 4px 4px 10px rgba(0,0,0,0.18), -4px -4px 10px rgba(255,255,255,0.12)}",
 ]
@@ -686,7 +686,7 @@ exports[`surface goldens > button neumorphic 1`] = `
 
 exports[`surface goldens > button outline 1`] = `
 [
-  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; height: auto; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
+  ".button-module-container {background: #2196f3; background-color: #2196f3; --uc-design-surface: 1; width: 100%; max-width: none; max-height: none; min-width: auto; min-height: auto; padding: 0; margin: 0; background: transparent; background-image: none; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 8px; border: none; box-shadow: none; box-sizing: border-box}",
   ".button-module-preview {display: flex; justify-content: center; align-items: center; width: 100%}",
   ".ultra-button.outline {color: white; padding: 12px 24px; font-size: 14px; font-weight: 500; font-family: inherit; font-style: normal; text-transform: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; text-shadow: none; background: transparent; border: 2px solid #2196f3}",
 ]
