@@ -586,6 +586,11 @@ export class HubPresetsTab extends LitElement {
 
       /* Loading */
       .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
         text-align: center;
         padding: 40px;
         color: var(--secondary-text-color);
@@ -595,8 +600,6 @@ export class HubPresetsTab extends LitElement {
       .loading-state ha-icon {
         --mdc-icon-size: 32px;
         color: var(--primary-color);
-        margin-bottom: 12px;
-        display: block;
       }
 
       /* Error */
@@ -1366,7 +1369,9 @@ export class HubPresetsTab extends LitElement {
       <!-- Status bar -->
       <div class="status-bar">
         <span class="count">
-          Showing <strong>${filtered.length}</strong> of ${this._presets.length} presets
+          ${this._loading && this._presets.length === 0
+            ? 'Loading presets…'
+            : html`Showing <strong>${filtered.length}</strong> of ${this._presets.length} presets`}
         </span>
       </div>
 

@@ -204,6 +204,15 @@ class UcFavoriteColorsService {
   }
 
   /**
+   * True once favorite colors have been loaded from (and are being saved to)
+   * the Ultra Card Connect store on the Home Assistant server. False while
+   * they only live in this browser's localStorage.
+   */
+  isStoredInHomeAssistant(): boolean {
+    return this._haLoaded && !this._integrationMissing;
+  }
+
+  /**
    * Check hass.config.components for the Ultra Card Pro Cloud integration.
    * Returns undefined when the components list is unavailable, in which case
    * callers fall back to probing the API (pre-existing behavior).

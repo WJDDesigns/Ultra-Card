@@ -5206,6 +5206,7 @@
       "about": "About"
     },
     "loading": "Loading…",
+    "subtitle": "Hub",
     "themes": {
       "blurb": "Themes set the look of every Ultra Card at once: surface (glass, soft, flat), corner radius, shadows and the default style of each module. Pick a global default here, override per card in Card Settings > Appearance, and override per module with any explicit style.",
       "global_title": "Global default",

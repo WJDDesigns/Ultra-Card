@@ -6,6 +6,7 @@ import { panelStyles } from '../panel-styles';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 import { dispatchHubNavigate } from '../hub-navigation';
+import { formatRelativeTime, formatShortDate } from '../hub-format';
 import { copyTextToClipboard } from '../../utils/uc-clipboard';
 
 @customElement('hub-favorites-tab')
@@ -29,49 +30,7 @@ export class HubFavoritesTab extends LitElement {
         animation: fadeSlideIn 0.3s ease-out;
       }
 
-      /* Toolbar */
-      .favorites-toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-
-      .search-box {
-        flex: 1;
-        min-width: 180px;
-        max-width: 320px;
-        position: relative;
-      }
-
-      .search-box input {
-        width: 100%;
-        padding: 10px 16px 10px 40px;
-        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-        border-radius: 10px;
-        background: var(--ha-card-background, var(--card-background-color));
-        color: var(--primary-text-color);
-        font-size: 14px;
-        outline: none;
-        transition: border-color 0.2s;
-        box-sizing: border-box;
-      }
-
-      .search-box input:focus {
-        border-color: var(--primary-color);
-      }
-
-      .search-box ha-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        --mdc-icon-size: 20px;
-        color: var(--secondary-text-color);
-        pointer-events: none;
-      }
-
+      /* Toolbar uses shared .hub-toolbar / .hub-search from panelStyles */
       .favorites-count {
         font-size: 13px;
         color: var(--secondary-text-color);
@@ -253,81 +212,7 @@ export class HubFavoritesTab extends LitElement {
         --mdc-icon-size: 14px;
       }
 
-      /* Sync Banner */
-      .sync-banner {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: 10px;
-        margin-bottom: 16px;
-        font-size: 13px;
-      }
-
-      .sync-banner ha-icon {
-        --mdc-icon-size: 20px;
-        flex-shrink: 0;
-      }
-
-      .sync-banner-guest {
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
-        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
-      }
-
-      .sync-banner-guest ha-icon {
-        color: var(--primary-color);
-      }
-
-      .sync-banner-active {
-        background: rgba(var(--rgb-accent-color, 0, 150, 136), 0.07);
-        border: 1px solid rgba(var(--rgb-accent-color, 0, 150, 136), 0.18);
-      }
-
-      .sync-banner-active ha-icon {
-        color: var(--success-color, #4caf50);
-      }
-
-      .sync-banner-body {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        min-width: 0;
-      }
-
-      .sync-banner-body strong {
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-
-      .sync-banner-body span {
-        color: var(--secondary-text-color);
-        font-size: 12px;
-      }
-
-      .sync-banner-btn {
-        flex-shrink: 0;
-        padding: 5px 12px;
-        border-radius: 6px;
-        border: 1px solid var(--primary-color);
-        background: none;
-        color: var(--primary-color);
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        white-space: nowrap;
-      }
-
-      .sync-banner-btn:hover:not(:disabled) {
-        background: var(--primary-color);
-        color: white;
-      }
-
-      .sync-banner-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
+      /* Sync banner styles are shared via panelStyles (.sync-banner*) */
     `,
   ];
 
@@ -375,13 +260,7 @@ export class HubFavoritesTab extends LitElement {
   }
 
   private _formatDate(ts?: number | string): string {
-    if (!ts) return '';
-    try {
-      const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
-      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return '';
-    }
+    return formatShortDate(ts);
   }
 
   private _goToAccount(): void {
@@ -389,20 +268,7 @@ export class HubFavoritesTab extends LitElement {
   }
 
   private _formatSyncTime(date: Date | null | undefined): string {
-    if (!date) return 'Never';
-    try {
-      const d = new Date(date);
-      const now = new Date();
-      const diffMs = now.getTime() - d.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      if (diffMins < 1) return 'Just now';
-      if (diffMins < 60) return `${diffMins}m ago`;
-      const diffHrs = Math.floor(diffMins / 60);
-      if (diffHrs < 24) return `${diffHrs}h ago`;
-      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return 'Unknown';
-    }
+    return formatRelativeTime(date);
   }
 
   private async _syncNow(): Promise<void> {
@@ -485,14 +351,15 @@ export class HubFavoritesTab extends LitElement {
       </div>
       ${this._renderSyncBanner()}
       <!-- Toolbar -->
-      <div class="favorites-toolbar">
+      <div class="hub-toolbar">
         ${this._favorites.length > 3
           ? html`
-              <div class="search-box">
+              <div class="hub-search">
                 <ha-icon icon="mdi:magnify"></ha-icon>
                 <input
-                  type="text"
+                  type="search"
                   placeholder="Search favorites…"
+                  aria-label="Search favorites"
                   .value=${this._search}
                   @input=${(e: InputEvent) => (this._search = (e.target as HTMLInputElement).value)}
                 />

@@ -70,7 +70,16 @@ export async function fetchBillingSummary(): Promise<BillingSummary> {
   ]);
 
   if (!subRes.ok) {
-    throw new Error(`Could not load subscription (HTTP ${subRes.status})`);
+    // Status 0 means the request never reached ultracard.io (offline, proxy
+    // unavailable, blocked); anything else is a real HTTP response.
+    const status = subRes.status;
+    const reason =
+      status === 0
+        ? 'Billing details are unavailable right now'
+        : status === 401 || status === 403
+          ? 'Billing details require a Home Assistant administrator'
+          : `Billing details could not be loaded (HTTP ${status})`;
+    throw new Error(reason);
   }
 
   const sub = (await subRes.json()) as {

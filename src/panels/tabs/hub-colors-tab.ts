@@ -6,6 +6,7 @@ import { panelStyles } from '../panel-styles';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 import { dispatchHubNavigate } from '../hub-navigation';
+import { formatRelativeTime } from '../hub-format';
 import { copyTextToClipboard } from '../../utils/uc-clipboard';
 
 @customElement('hub-colors-tab')
@@ -394,45 +395,7 @@ export class HubColorsTab extends LitElement {
         flex-shrink: 0;
       }
 
-      /* Sync Banner */
-      .sync-banner {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: 10px;
-        margin-bottom: 16px;
-        font-size: 13px;
-      }
-      .sync-banner ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
-      .sync-banner-guest {
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
-        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
-      }
-      .sync-banner-guest ha-icon { color: var(--primary-color); }
-      .sync-banner-active {
-        background: rgba(var(--rgb-accent-color, 0, 150, 136), 0.07);
-        border: 1px solid rgba(var(--rgb-accent-color, 0, 150, 136), 0.18);
-      }
-      .sync-banner-active ha-icon { color: var(--success-color, #4caf50); }
-      .sync-banner-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-      .sync-banner-body strong { font-weight: 600; color: var(--primary-text-color); }
-      .sync-banner-body span { color: var(--secondary-text-color); font-size: 12px; }
-      .sync-banner-btn {
-        flex-shrink: 0;
-        padding: 5px 12px;
-        border-radius: 6px;
-        border: 1px solid var(--primary-color);
-        background: none;
-        color: var(--primary-color);
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        white-space: nowrap;
-      }
-      .sync-banner-btn:hover:not(:disabled) { background: var(--primary-color); color: white; }
-      .sync-banner-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      /* Sync banner styles are shared via panelStyles (.sync-banner*) */
     `,
   ];
 
@@ -440,7 +403,15 @@ export class HubColorsTab extends LitElement {
     super.connectedCallback();
     // Ensure we have latest from localStorage (sync with favorites added in card settings)
     ucFavoriteColorsService.refreshFromStorage();
-    if (this.hass) ucFavoriteColorsService.setHass(this.hass);
+    if (this.hass) {
+      ucFavoriteColorsService.setHass(this.hass);
+      // The storage banner depends on whether HA answered; re-render once it has.
+      if (!ucFavoriteColorsService.isStoredInHomeAssistant()) {
+        void Promise.resolve(ucFavoriteColorsService.loadFromHA(this.hass))
+          .catch(() => undefined)
+          .then(() => this.requestUpdate());
+      }
+    }
     this._colors = ucFavoriteColorsService.getFavorites();
     this._unsub = ucFavoriteColorsService.subscribe(list => {
       this._colors = list;
@@ -472,16 +443,7 @@ export class HubColorsTab extends LitElement {
   }
 
   private _formatSyncTime(date: Date | null | undefined): string {
-    if (!date) return 'Never';
-    try {
-      const d = new Date(date);
-      const diffMins = Math.floor((Date.now() - d.getTime()) / 60000);
-      if (diffMins < 1) return 'Just now';
-      if (diffMins < 60) return `${diffMins}m ago`;
-      const diffHrs = Math.floor(diffMins / 60);
-      if (diffHrs < 24) return `${diffHrs}h ago`;
-      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    } catch { return 'Unknown'; }
+    return formatRelativeTime(date);
   }
 
   private async _syncNow(): Promise<void> {
@@ -507,12 +469,17 @@ export class HubColorsTab extends LitElement {
     // Until colour sync exists, say where colours actually live rather than
     // offering a backup or a last-synced time for data that never left the device.
     if (!ucCloudSyncService.isColorSyncAvailable()) {
+      const inHA = ucFavoriteColorsService.isStoredInHomeAssistant();
       return html`
-        <div class="sync-banner sync-banner-guest">
-          <ha-icon icon="mdi:content-save-outline"></ha-icon>
+        <div class="sync-banner ${inHA ? 'sync-banner-active' : 'sync-banner-guest'}">
+          <ha-icon icon=${inHA ? 'mdi:home-assistant' : 'mdi:content-save-outline'}></ha-icon>
           <div class="sync-banner-body">
-            <strong>Saved on this device</strong>
-            <span>Cloud sync for colors is coming — export your card to carry them over.</span>
+            <strong>${inHA ? 'Saved in Home Assistant' : 'Saved in this browser'}</strong>
+            <span>
+              ${inHA
+                ? 'Ultra Card Connect stores your palette on this Home Assistant server, so it follows you to every browser and device that signs in here.'
+                : 'Install Ultra Card Connect to keep colors on your Home Assistant server instead of a single browser. Cloud sync for colors is coming.'}
+            </span>
           </div>
         </div>
       `;

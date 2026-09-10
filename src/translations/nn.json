@@ -5549,6 +5549,7 @@
       "success_edit_review": "Update submitted for review. Your live theme stays online until the update is approved.",
       "success_edit_saved": "Saved.",
       "got_it": "Got it"
-    }
+    },
+    "subtitle": "Hub"
   }
 }

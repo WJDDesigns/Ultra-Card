@@ -94,13 +94,16 @@ export class UltraCardPanel extends LitElement {
         flex-direction: column;
         gap: 0;
         flex-shrink: 0;
-        border-bottom: 2px solid var(--divider-color, rgba(0, 0, 0, 0.08));
-        background: var(--ha-card-background, var(--card-background-color));
+        border-bottom: 1px solid var(--uc-hub-border);
+        background: var(--uc-hub-surface);
+        box-shadow: var(--uc-hub-shadow-sm);
+        position: relative;
+        z-index: 1;
       }
 
       .tab-strip {
         display: flex;
-        gap: 0;
+        gap: 2px;
         padding: 0 16px;
         overflow-x: auto;
         scrollbar-width: none;
@@ -111,30 +114,65 @@ export class UltraCardPanel extends LitElement {
       }
 
       .tab-strip button {
+        position: relative;
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 12px 16px;
+        padding: 12px 14px;
         border: none;
         background: none;
         color: var(--secondary-text-color);
         font: inherit;
         font-size: 14px;
-        font-weight: 600;
+        font-weight: 500;
         cursor: pointer;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -2px;
         white-space: nowrap;
         flex-shrink: 0;
+        border-radius: 8px 8px 0 0;
+        transition: color 0.15s ease, background 0.15s ease;
+      }
+
+      .tab-strip button::after {
+        content: '';
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 0;
+        height: 2px;
+        border-radius: 2px 2px 0 0;
+        background: var(--primary-color);
+        opacity: 0;
+        transform: scaleX(0.6);
+        transition: opacity 0.15s ease, transform 0.2s ease;
+      }
+
+      .tab-strip button:hover {
+        color: var(--primary-text-color);
+        background: var(--uc-hub-surface-2);
       }
 
       .tab-strip button.active {
         color: var(--primary-color);
-        border-bottom-color: var(--primary-color);
+        font-weight: 600;
+      }
+
+      .tab-strip button.active::after {
+        opacity: 1;
+        transform: scaleX(1);
       }
 
       .tab-strip button ha-icon {
         --mdc-icon-size: 18px;
+      }
+
+      @media (max-width: 870px) {
+        .tab-strip {
+          padding: 0 8px;
+        }
+        .tab-strip button {
+          padding: 10px 12px;
+          font-size: 13px;
+        }
       }
 
       .mobile-menu-btn {
@@ -154,13 +192,8 @@ export class UltraCardPanel extends LitElement {
       }
 
       .hub-header--narrow {
-        padding: 8px 16px 8px 8px;
+        padding: 8px 12px 8px 8px;
         gap: 8px;
-      }
-
-      .hub-header--narrow h1 {
-        font-size: 20px;
-        flex: 1;
       }
 
       .tab-loading {
@@ -373,6 +406,13 @@ export class UltraCardPanel extends LitElement {
     if (changed.has('hass')) {
       this._updateProState();
     }
+    if (changed.has('_activeTab')) {
+      // Keep the active tab visible when the strip scrolls horizontally (mobile, deep links).
+      const btn = this.renderRoot?.querySelector<HTMLButtonElement>(
+        `#hub-tab-${this._activeTab}`
+      );
+      btn?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
   }
 
   private _updateProState(): void {
@@ -405,6 +445,27 @@ export class UltraCardPanel extends LitElement {
   private _toggleSidebar(): void {
     this.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true }));
   }
+
+  /** Roving-tabindex keyboard navigation for the tab strip (WAI-ARIA tabs pattern). */
+  private _onTabStripKeydown = (e: KeyboardEvent): void => {
+    const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    if (!keys.includes(e.key)) return;
+    const idx = HUB_TABS.findIndex(t => t.key === this._activeTab);
+    if (idx < 0) return;
+    let next = idx;
+    if (e.key === 'ArrowLeft') next = (idx - 1 + HUB_TABS.length) % HUB_TABS.length;
+    else if (e.key === 'ArrowRight') next = (idx + 1) % HUB_TABS.length;
+    else if (e.key === 'Home') next = 0;
+    else next = HUB_TABS.length - 1;
+    e.preventDefault();
+    const key = HUB_TABS[next].key;
+    this._selectTab(key);
+    void this.updateComplete.then(() => {
+      const btn = this.renderRoot?.querySelector<HTMLButtonElement>(`#hub-tab-${key}`);
+      btn?.focus();
+      btn?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+  };
 
   private _renderAccountChip(): unknown {
     const user = this._proAuth?.authenticated
@@ -544,17 +605,28 @@ export class UltraCardPanel extends LitElement {
                 </button>
               `
             : ''}
-          <h1>Ultra Card</h1>
+          <div class="hub-brand">
+            <div class="hub-brand-mark" aria-hidden="true">
+              <ha-icon icon="mdi:cards"></ha-icon>
+            </div>
+            <div class="hub-brand-text">
+              <h1>Ultra Card</h1>
+              <span class="hub-brand-sub">${localize('hub.subtitle', lang, 'Hub')}</span>
+            </div>
+          </div>
           ${this._renderAccountChip()}
         </header>
 
         <nav class="hub-nav" aria-label="Hub navigation">
-          <div class="tab-strip" role="tablist">
+          <div class="tab-strip" role="tablist" @keydown=${this._onTabStripKeydown}>
             ${HUB_TABS.map(
               tab => html`
                 <button
                   role="tab"
+                  id="hub-tab-${tab.key}"
                   aria-selected=${this._activeTab === tab.key ? 'true' : 'false'}
+                  aria-controls="hub-tabpanel-${tab.key}"
+                  tabindex=${this._activeTab === tab.key ? '0' : '-1'}
                   class=${this._activeTab === tab.key ? 'active' : ''}
                   @click=${() => this._selectTab(tab.key)}
                 >
@@ -572,7 +644,7 @@ export class UltraCardPanel extends LitElement {
           id="hub-tabpanel-${this._activeTab}"
           aria-labelledby="hub-tab-${this._activeTab}"
         >
-          ${this._renderTabContent()}
+          <div class="hub-page">${this._renderTabContent()}</div>
         </div>
       </div>
 

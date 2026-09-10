@@ -3,6 +3,7 @@
  */
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from '../panel-styles';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
@@ -10,6 +11,7 @@ import { ucCloudAuthService, type CloudUser } from '../../services/uc-cloud-auth
 import { ucPresetAuthorService, type AuthorPreset } from '../../services/uc-preset-author-service';
 import { VERSION } from '../../version';
 import { dispatchHubNavigate } from '../hub-navigation';
+import { formatRelativeTime } from '../hub-format';
 import { localize } from '../../localize/localize';
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
@@ -28,6 +30,9 @@ export class HubDashboardTab extends LitElement {
   @state() private _statsLoading = true;
   @state() private _statsError = '';
   @state() private _changelogBody = '';
+  @state() private _changelogHtml = '';
+  @state() private _changelogUrl = '';
+  @state() private _changelogExpanded = false;
   @state() private _changelogLoading = true;
   @state() private _changelogError = '';
   @state() private _changelogTitle = '';
@@ -43,42 +48,126 @@ export class HubDashboardTab extends LitElement {
         animation: fadeSlideIn 0.3s ease-out;
       }
 
+      /* Hero */
       .welcome-hero {
-        text-align: center;
-        padding: 32px 24px 28px;
-        margin-bottom: 24px;
-        background: linear-gradient(135deg, rgba(var(--rgb-primary-color, 3, 169, 244), 0.08), rgba(var(--rgb-primary-color, 3, 169, 244), 0.02));
-        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
-        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 28px 28px;
+        margin-bottom: 20px;
+        background:
+          radial-gradient(
+            120% 140% at 100% 0%,
+            rgba(var(--uc-hub-primary-rgb), 0.16),
+            transparent 55%
+          ),
+          var(--uc-hub-surface);
+        border: 1px solid var(--uc-hub-border);
+        border-radius: var(--uc-hub-radius-lg);
+        box-shadow: var(--uc-hub-shadow-sm);
+        overflow: hidden;
+      }
+
+      .hero-mark {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--accent-color, var(--primary-color))
+        );
+        box-shadow: 0 6px 18px rgba(var(--uc-hub-primary-rgb), 0.35);
+      }
+
+      .hero-mark ha-icon {
+        --mdc-icon-size: 34px;
+      }
+
+      .hero-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .hero-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(var(--uc-hub-primary-rgb), 0.12);
+        color: var(--primary-color);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      .hero-eyebrow ha-icon {
+        --mdc-icon-size: 14px;
       }
 
       .welcome-hero h2 {
-        margin: 0 0 8px 0;
+        margin: 0 0 6px 0;
         font-size: 24px;
         font-weight: 700;
+        letter-spacing: -0.01em;
         color: var(--primary-text-color);
       }
 
       .welcome-hero p {
         margin: 0;
-        font-size: 15px;
+        font-size: 14px;
         color: var(--secondary-text-color);
-        line-height: 1.5;
-        max-width: 520px;
-        margin-left: auto;
-        margin-right: auto;
+        line-height: 1.55;
+        max-width: 620px;
       }
 
-      .stats-card {
-        background: var(--ha-card-background, var(--card-background-color));
-        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
-        border-radius: 14px;
-        padding: 20px 24px;
-        margin-bottom: 24px;
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
       }
 
-      .stats-card h3 {
-        margin: 0 0 16px 0;
+      @media (max-width: 700px) {
+        .welcome-hero {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 20px;
+          gap: 16px;
+        }
+        .hero-mark {
+          width: 52px;
+          height: 52px;
+          border-radius: 14px;
+        }
+        .hero-mark ha-icon {
+          --mdc-icon-size: 28px;
+        }
+        .welcome-hero h2 {
+          font-size: 21px;
+        }
+      }
+
+      /* Cards */
+      .dash-card {
+        background: var(--uc-hub-surface);
+        border: 1px solid var(--uc-hub-border);
+        border-radius: var(--uc-hub-radius-lg);
+        box-shadow: var(--uc-hub-shadow-sm);
+        padding: 20px 22px;
+        margin-bottom: 20px;
+        min-width: 0;
+      }
+
+      .dash-card h3 {
+        margin: 0 0 14px 0;
         font-size: 15px;
         font-weight: 600;
         color: var(--primary-text-color);
@@ -87,102 +176,156 @@ export class HubDashboardTab extends LitElement {
         gap: 8px;
       }
 
-      .stats-card h3 ha-icon {
+      .dash-card h3 ha-icon {
         --mdc-icon-size: 20px;
         color: var(--primary-color);
       }
 
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 16px;
+      .dash-card h3 .h3-spacer {
+        flex: 1;
       }
 
-      .stat-item {
-        padding: 12px 16px;
-        background: var(--secondary-background-color, rgba(0, 0, 0, 0.03));
-        border-radius: 10px;
-        text-align: center;
-      }
-
-      .stat-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--primary-color);
-        line-height: 1.2;
-      }
-
-      .stat-label {
+      .dash-card h3 a {
         font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-top: 4px;
+        font-weight: 500;
+        color: var(--primary-color);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .dash-card h3 a ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .dash-card h3 a:hover {
+        text-decoration: underline;
       }
 
       .stats-loading,
       .stats-error {
-        padding: 16px;
-        text-align: center;
+        padding: 12px 0;
         color: var(--secondary-text-color);
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .stats-error {
         color: var(--error-color, #f44336);
       }
 
-      .changelog-card {
-        background: var(--ha-card-background, var(--card-background-color));
-        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
-        border-radius: 14px;
-        padding: 24px;
-        margin-bottom: 24px;
-      }
-
-      .changelog-card h3 {
-        margin: 0 0 16px 0;
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--primary-text-color);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .changelog-card h3 ha-icon {
-        --mdc-icon-size: 20px;
+      .stat-tile-value {
         color: var(--primary-color);
       }
 
-      .changelog-list {
-        margin: 0;
-        padding-left: 20px;
-        font-size: 14px;
-        color: var(--secondary-text-color);
-        line-height: 1.7;
-      }
-
-      .changelog-list li {
-        margin-bottom: 6px;
-      }
-
+      /* Changelog */
       .changelog-body {
-        margin-top: 12px;
-        padding: 16px;
-        background: var(--secondary-background-color, rgba(0, 0, 0, 0.03));
-        border-radius: 10px;
+        font-size: 13.5px;
+        color: var(--primary-text-color);
+        line-height: 1.6;
+        word-break: break-word;
+        max-height: 360px;
+        overflow: hidden;
+        position: relative;
+        transition: max-height 0.2s ease;
+      }
+
+      .changelog-body.expanded {
+        max-height: none;
+      }
+
+      .changelog-body:not(.expanded)::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 72px;
+        background: linear-gradient(to bottom, transparent, var(--uc-hub-surface));
+        pointer-events: none;
+      }
+
+      .changelog-body :is(h1, h2, h3, h4) {
+        margin: 18px 0 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .changelog-body :is(h1, h2, h3, h4):first-child {
+        margin-top: 0;
+      }
+
+      .changelog-body p {
+        margin: 0 0 10px;
+      }
+
+      .changelog-body ul,
+      .changelog-body ol {
+        margin: 0 0 10px;
+        padding-left: 22px;
+      }
+
+      .changelog-body li {
+        margin-bottom: 4px;
+      }
+
+      .changelog-body code {
+        font-family: var(--code-font-family, 'SF Mono', 'Fira Code', monospace);
+        font-size: 12px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: var(--uc-hub-surface-2);
+        border: 1px solid var(--uc-hub-border);
+      }
+
+      .changelog-body pre {
+        padding: 12px;
+        border-radius: var(--uc-hub-radius-sm);
+        background: var(--uc-hub-surface-2);
+        border: 1px solid var(--uc-hub-border);
+        overflow-x: auto;
+      }
+
+      .changelog-body pre code {
+        border: none;
+        background: none;
+        padding: 0;
+      }
+
+      .changelog-body a {
+        color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .changelog-body a:hover {
+        text-decoration: underline;
+      }
+
+      .changelog-body img {
+        max-width: 100%;
+        border-radius: var(--uc-hub-radius-sm);
+      }
+
+      .changelog-body hr {
+        border: none;
+        border-top: 1px solid var(--uc-hub-border);
+        margin: 14px 0;
+      }
+
+      .changelog-toggle {
+        margin-top: 10px;
+      }
+
+      .changelog-plain {
+        white-space: pre-wrap;
         font-size: 13px;
         color: var(--secondary-text-color);
-        line-height: 1.6;
-        white-space: pre-wrap;
-        word-break: break-word;
-        max-height: 320px;
-        overflow-y: auto;
       }
 
       .changelog-body-loading,
       .changelog-body-error {
-        padding: 16px;
-        text-align: center;
+        padding: 12px 0;
         color: var(--secondary-text-color);
         font-size: 13px;
       }
@@ -191,52 +334,30 @@ export class HubDashboardTab extends LitElement {
         color: var(--error-color, #f44336);
       }
 
-      .version-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-top: 8px;
-      }
-
-      .version-badge ha-icon {
-        --mdc-icon-size: 16px;
-      }
-
+      /* Command centre */
       .command-center {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
       }
 
-      .command-card {
-        background: var(--ha-card-background, var(--card-background-color));
-        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
-        border-radius: 14px;
-        padding: 18px 20px;
+      .command-center .dash-card {
+        margin-bottom: 0;
       }
 
-      .command-card h3 {
-        margin: 0 0 10px;
-        font-size: 14px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--primary-text-color);
-      }
-
-      .command-card p {
+      .dash-card p {
         margin: 0 0 12px;
         font-size: 13px;
         color: var(--secondary-text-color);
         line-height: 1.5;
+      }
+
+      .status-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
       }
 
       .status-pill {
@@ -244,19 +365,27 @@ export class HubDashboardTab extends LitElement {
         align-items: center;
         gap: 6px;
         padding: 4px 10px;
-        border-radius: 16px;
+        border-radius: 999px;
         font-size: 12px;
         font-weight: 600;
       }
 
+      .status-pill::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
       .status-pill.connected {
-        background: rgba(76, 175, 80, 0.15);
-        color: #4caf50;
+        background: rgba(76, 175, 80, 0.14);
+        color: var(--success-color, #4caf50);
       }
 
       .status-pill.disconnected {
         background: rgba(244, 67, 54, 0.12);
-        color: #f44336;
+        color: var(--error-color, #f44336);
       }
 
       .status-pill.unknown {
@@ -266,31 +395,13 @@ export class HubDashboardTab extends LitElement {
 
       .status-pill.warning {
         background: rgba(255, 152, 0, 0.15);
-        color: #ff9800;
+        color: var(--warning-color, #ff9800);
       }
 
       .quick-links {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-      }
-
-      .quick-links button {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 12px;
-        border-radius: 20px;
-        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-        background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-        color: var(--primary-text-color);
-        font-size: 12px;
-        cursor: pointer;
-      }
-
-      .quick-links button:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
       }
 
       .author-prompt {
@@ -439,11 +550,11 @@ export class HubDashboardTab extends LitElement {
       const tier = (attrs.subscription_tier as string) || 'free';
       const tierLabel = tier === 'pro' ? 'Pro' : 'Free';
       const statusPart = subStatus && subStatus !== 'active' ? ` · ${subStatus}` : '';
-      const pollPart = lastPoll ? ` Last sync: ${this._formatIso(lastPoll)}.` : '';
+      const pollPart = lastPoll ? ` Last checked ${formatRelativeTime(lastPoll)}.` : '';
       return {
         label: 'Connected',
         className: 'connected',
-        detail: `Signed in via Ultra Card Connect · ${tierLabel} tier${statusPart}.${pollPart}`,
+        detail: `Signed in through Ultra Card Connect · ${tierLabel} plan${statusPart}.${pollPart}`,
         needsReauth: false,
         lastPoll,
         subStatus,
@@ -459,16 +570,10 @@ export class HubDashboardTab extends LitElement {
     };
   }
 
-  private _formatIso(iso: string): string {
-    if (!iso) return 'Never';
-    try {
-      return new Date(iso).toLocaleString();
-    } catch {
-      return iso;
-    }
-  }
-
-  private _nav(tab: 'presets' | 'themes' | 'colors' | 'docs' | 'account', slug?: string): void {
+  private _nav(
+    tab: 'presets' | 'themes' | 'colors' | 'favorites' | 'variables' | 'docs' | 'account',
+    slug?: string
+  ): void {
     if (slug) {
       dispatchHubNavigate(this, { tab, slug });
     } else {
@@ -480,6 +585,8 @@ export class HubDashboardTab extends LitElement {
     this._changelogLoading = true;
     this._changelogError = '';
     this._changelogBody = '';
+    this._changelogHtml = '';
+    this._changelogUrl = '';
     this._changelogTitle = '';
     const isBeta = /beta|alpha/i.test(VERSION);
     try {
@@ -488,13 +595,21 @@ export class HubDashboardTab extends LitElement {
         { headers: { Accept: 'application/vnd.github.v3+json' } }
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const releases: Array<{ prerelease: boolean; body: string | null; name: string; tag_name: string }> = await res.json();
+      const releases: Array<{
+        prerelease: boolean;
+        body: string | null;
+        name: string;
+        tag_name: string;
+        html_url?: string;
+      }> = await res.json();
       const target = isBeta
         ? releases.find(r => r.prerelease)
         : releases.find(r => !r.prerelease);
       if (target?.body) {
         this._changelogTitle = target.name || target.tag_name || 'Changelog';
+        this._changelogUrl = target.html_url || '';
         this._changelogBody = target.body;
+        this._changelogHtml = await this._renderMarkdown(target.body);
       } else {
         this._changelogBody = isBeta
           ? 'No beta release notes found.'
@@ -502,9 +617,29 @@ export class HubDashboardTab extends LitElement {
       }
     } catch (e: any) {
       console.warn('Changelog fetch failed:', e);
-      this._changelogError = 'Could not load changelog from GitHub.';
+      this._changelogError = 'Could not load release notes from GitHub.';
     } finally {
       this._changelogLoading = false;
+    }
+  }
+
+  /**
+   * Release notes arrive as GitHub-flavoured markdown. Render + sanitise them so
+   * headings and bullet lists read properly instead of showing raw `###`/`**`.
+   * Falls back to plain text if the renderer chunk fails to load.
+   */
+  private async _renderMarkdown(markdown: string): Promise<string> {
+    try {
+      const [{ marked }, { sanitizeMarkdownHtml }] = await Promise.all([
+        import('marked'),
+        import('../../utils/html-sanitizer'),
+      ]);
+      const raw = marked.parse(markdown, { gfm: true, breaks: true, async: false }) as string;
+      // Downloaded content: keep cosmetic markup, drop anything that could fetch a URL.
+      return sanitizeMarkdownHtml(raw, false, { trusted: false });
+    } catch (err) {
+      console.warn('Changelog markdown render failed:', err);
+      return '';
     }
   }
 
@@ -552,16 +687,37 @@ export class HubDashboardTab extends LitElement {
     const showAuthorPrompt =
       this._authorPresetsLoaded && (attention.awaiting > 0 || attention.changes > 0);
 
+    const isBeta = /beta|alpha/i.test(VERSION);
+
     return html`
       <div class="welcome-hero">
-        <h2>Welcome to Ultra Card</h2>
-        <p>
-          Build beautiful, modular dashboards with the layout builder. Use presets, favorites,
-          variables, and templates to create cards that fit your Home Assistant setup.
-        </p>
-        <div class="version-badge">
-          <ha-icon icon="mdi:tag-outline"></ha-icon>
-          Version ${VERSION}
+        <div class="hero-mark" aria-hidden="true">
+          <ha-icon icon="mdi:cards"></ha-icon>
+        </div>
+        <div class="hero-body">
+          <span class="hero-eyebrow">
+            <ha-icon icon="mdi:tag-outline"></ha-icon>
+            Version ${VERSION}${isBeta ? ' · Beta' : ''}
+          </span>
+          <h2>Welcome to Ultra Card</h2>
+          <p>
+            Build beautiful, modular dashboards with the layout builder. Use presets, favorites,
+            variables, and templates to create cards that fit your Home Assistant setup.
+          </p>
+          <div class="hero-actions">
+            <button class="hub-btn hub-btn--primary" @click=${() => this._nav('presets')}>
+              <ha-icon icon="mdi:palette"></ha-icon>
+              Browse presets
+            </button>
+            <button class="hub-btn" @click=${() => this._nav('themes')}>
+              <ha-icon icon="mdi:palette-swatch"></ha-icon>
+              Themes
+            </button>
+            <button class="hub-btn" @click=${() => this._nav('docs', 'quick-start')}>
+              <ha-icon icon="mdi:rocket-launch-outline"></ha-icon>
+              Quick start
+            </button>
+          </div>
         </div>
       </div>
 
@@ -595,21 +751,24 @@ export class HubDashboardTab extends LitElement {
         : nothing}
 
       <div class="command-center">
-        <div class="command-card">
+        <div class="dash-card">
           <h3><ha-icon icon="mdi:cloud-sync"></ha-icon> Cloud connection</h3>
           ${(() => {
             const status = this._connectionStatus();
             return html`
-              <span class="status-pill ${status.className}">${status.label}</span>
+              <div class="status-row">
+                <span class="status-pill ${status.className}">${status.label}</span>
+              </div>
               <p>${status.detail}</p>
               <div class="quick-links">
-                <button @click=${() => this._nav('account')}>
+                <button class="hub-btn hub-btn--sm" @click=${() => this._nav('account')}>
                   <ha-icon icon="mdi:account-cog"></ha-icon>
                   Account
                 </button>
                 ${status.needsReauth
                   ? html`
                       <button
+                        class="hub-btn hub-btn--sm hub-btn--outline"
                         @click=${() => {
                           window.location.href =
                             '/config/integrations/integration/ultra_card_pro_cloud';
@@ -625,27 +784,27 @@ export class HubDashboardTab extends LitElement {
           })()}
         </div>
 
-        <div class="command-card">
+        <div class="dash-card">
           <h3><ha-icon icon="mdi:lightning-bolt"></ha-icon> Quick actions</h3>
           <p>Jump to library tools and documentation.</p>
           <div class="quick-links">
-            <button @click=${() => this._nav('presets')}>
-              <ha-icon icon="mdi:palette"></ha-icon>
-              Presets
+            <button class="hub-btn hub-btn--sm" @click=${() => this._nav('favorites')}>
+              <ha-icon icon="mdi:heart"></ha-icon>
+              Favorites
             </button>
-            <button @click=${() => this._nav('themes')}>
-              <ha-icon icon="mdi:palette-swatch"></ha-icon>
-              Themes
-            </button>
-            <button @click=${() => this._nav('colors')}>
+            <button class="hub-btn hub-btn--sm" @click=${() => this._nav('colors')}>
               <ha-icon icon="mdi:eyedropper-variant"></ha-icon>
               Colors
             </button>
-            <button @click=${() => this._nav('docs', 'layout-system')}>
+            <button class="hub-btn hub-btn--sm" @click=${() => this._nav('variables')}>
+              <ha-icon icon="mdi:variable"></ha-icon>
+              Variables
+            </button>
+            <button class="hub-btn hub-btn--sm" @click=${() => this._nav('docs', 'layout-system')}>
               <ha-icon icon="mdi:book-open-page-variant"></ha-icon>
               Layout docs
             </button>
-            <button @click=${() => this._nav('docs', 'installation')}>
+            <button class="hub-btn hub-btn--sm" @click=${() => this._nav('docs', 'installation')}>
               <ha-icon icon="mdi:download"></ha-icon>
               Install guide
             </button>
@@ -653,7 +812,7 @@ export class HubDashboardTab extends LitElement {
         </div>
       </div>
 
-      <div class="stats-card">
+      <div class="dash-card">
         <h3><ha-icon icon="mdi:view-dashboard"></ha-icon> Your Home Assistant</h3>
         ${this._statsLoading
           ? html`<div class="stats-loading">Scanning all dashboards…</div>`
@@ -661,31 +820,65 @@ export class HubDashboardTab extends LitElement {
             ? html`<div class="stats-error">${this._statsError}</div>`
             : this._stats
               ? html`
-                  <div class="stats-grid">
-                    <div class="stat-item">
-                      <div class="stat-value">${this._stats.dashboardCount}</div>
-                      <div class="stat-label">Lovelace Dashboard${this._stats.dashboardCount !== 1 ? 's' : ''}</div>
+                  <div class="stat-tiles">
+                    <div class="stat-tile">
+                      <div class="stat-tile-value">${this._stats.dashboardCount}</div>
+                      <div class="stat-tile-label">
+                        Dashboard${this._stats.dashboardCount !== 1 ? 's' : ''}
+                      </div>
                     </div>
-                    <div class="stat-item">
-                      <div class="stat-value">${this._stats.viewCount}</div>
-                      <div class="stat-label">View${this._stats.viewCount !== 1 ? 's' : ''}</div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-value">${this._stats.viewCount}</div>
+                      <div class="stat-tile-label">View${this._stats.viewCount !== 1 ? 's' : ''}</div>
                     </div>
-                    <div class="stat-item">
-                      <div class="stat-value">${this._stats.cardCount}</div>
-                      <div class="stat-label">Ultra Card${this._stats.cardCount !== 1 ? 's' : ''}</div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-value">${this._stats.cardCount}</div>
+                      <div class="stat-tile-label">
+                        Ultra Card${this._stats.cardCount !== 1 ? 's' : ''}
+                      </div>
                     </div>
                   </div>
                 `
               : html`<div class="stats-loading">No data</div>`}
       </div>
 
-      <div class="changelog-card">
-        <h3><ha-icon icon="mdi:new-box"></ha-icon> ${this._changelogTitle || 'Recent updates'}</h3>
+      <div class="dash-card">
+        <h3>
+          <ha-icon icon="mdi:new-box"></ha-icon>
+          ${this._changelogTitle
+            ? /what'?s new/i.test(this._changelogTitle)
+              ? this._changelogTitle
+              : `What's new · ${this._changelogTitle}`
+            : "What's new"}
+          <span class="h3-spacer"></span>
+          ${this._changelogUrl
+            ? html`<a href=${this._changelogUrl} target="_blank" rel="noopener noreferrer">
+                View on GitHub <ha-icon icon="mdi:open-in-new"></ha-icon>
+              </a>`
+            : nothing}
+        </h3>
         ${this._changelogLoading
-          ? html`<div class="changelog-body-loading">Loading changelog…</div>`
+          ? html`<div class="changelog-body-loading">Loading release notes…</div>`
           : this._changelogError
             ? html`<div class="changelog-body-error">${this._changelogError}</div>`
-            : html`<div class="changelog-body">${this._changelogBody}</div>`}
+            : this._changelogHtml
+              ? html`
+                  <div class="changelog-body ${this._changelogExpanded ? 'expanded' : ''}">
+                    ${unsafeHTML(this._changelogHtml)}
+                  </div>
+                  <button
+                    class="hub-btn hub-btn--ghost hub-btn--sm changelog-toggle"
+                    @click=${() => {
+                      this._changelogExpanded = !this._changelogExpanded;
+                    }}
+                  >
+                    <ha-icon
+                      icon=${this._changelogExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                    ></ha-icon>
+                    ${this._changelogExpanded ? 'Show less' : 'Show full release notes'}
+                  </button>
+                `
+              : html`<div class="changelog-plain">${this._changelogBody}</div>`}
       </div>
     `;
   }

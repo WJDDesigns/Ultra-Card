@@ -171,11 +171,17 @@ export class HubAccountTab extends LitElement {
         border-radius: 8px;
         border: none;
         background: var(--primary-color);
-        color: var(--primary-text-color);
+        color: var(--text-primary-color, #fff);
+        font: inherit;
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
         margin-top: 4px;
+        transition: filter 0.15s ease;
+      }
+
+      .form-submit:hover:not(:disabled) {
+        filter: brightness(1.08);
       }
 
       .form-submit:disabled {
@@ -238,22 +244,25 @@ export class HubAccountTab extends LitElement {
       .tier-badge {
         display: inline-flex;
         align-items: center;
+        align-self: flex-start;
         gap: 4px;
-        padding: 6px 12px;
+        padding: 5px 12px;
         border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
         margin-top: 8px;
       }
 
       .tier-badge.pro {
-        background: linear-gradient(135deg, rgba(245, 87, 108, 0.2), rgba(240, 147, 251, 0.2));
-        color: var(--primary-text-color);
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff;
       }
 
       .tier-badge.free {
         background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
-        color: var(--primary-text-color);
+        color: var(--primary-color);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
       }
 
       .upgrade-section {
@@ -470,8 +479,128 @@ export class HubAccountTab extends LitElement {
       }
 
       .logout-btn:hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
         color: var(--primary-text-color);
+      }
+
+      /* Card description under an h3 */
+      .card-lead {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        line-height: 1.55;
+        margin: 0 0 16px;
+      }
+
+      /* Diagnostics tiles */
+      .diag-tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .diag-tile {
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: var(--secondary-background-color, transparent);
+        min-width: 0;
+      }
+
+      .diag-tile-label {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+
+      .diag-tile-value {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        overflow-wrap: anywhere;
+      }
+
+      .diag-tile-value ha-icon {
+        --mdc-icon-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .diag-tile-value.ok {
+        color: var(--success-color, #4caf50);
+      }
+
+      .diag-tile-value.bad {
+        color: var(--error-color, #f44336);
+      }
+
+      .diag-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .diag-actions .sync-now-btn {
+        width: auto;
+        padding: 8px 14px;
+      }
+
+      .diag-error {
+        margin-bottom: 12px;
+      }
+
+      /* Setup guide */
+      .setup-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .setup-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .setup-step ha-icon {
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-top: 1px;
+        --mdc-icon-size: 20px;
+      }
+
+      .setup-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 20px;
+        padding: 9px 16px;
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: filter 0.15s ease;
+      }
+
+      .setup-cta:hover {
+        filter: brightness(1.08);
+      }
+
+      .setup-cta ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .form-lead {
+        margin: 0 0 16px 0;
       }
 
       /* ── Sync Stats ─────────────────────────────────────────────────────── */
@@ -526,7 +655,7 @@ export class HubAccountTab extends LitElement {
 
       .sync-stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
         gap: 8px;
         margin-bottom: 12px;
       }
@@ -644,6 +773,11 @@ export class HubAccountTab extends LitElement {
 
       .account-subnav button ha-icon {
         --mdc-icon-size: 16px;
+      }
+
+      .account-subnav button:hover {
+        border-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.4);
+        color: var(--primary-text-color);
       }
 
       .account-subnav button.active {
@@ -1080,14 +1214,32 @@ export class HubAccountTab extends LitElement {
             ? 'Managed by Connect'
             : 'Missing';
 
-    const tiles: Array<{ label: string; value: string; ok?: boolean }> = [
+    // Reachability is only known once a live test has run; before that it is
+    // neutral rather than red so an untested state never reads as a failure.
+    const reachTested =
+      connectivity.api === true ||
+      connectivity.bot_challenge === true ||
+      (Array.isArray(connectivity.errors) && connectivity.errors.length > 0);
+    const reachValue = connectivity.api
+      ? 'OK'
+      : connectivity.bot_challenge
+        ? 'Temporarily unavailable'
+        : connectivity.errors?.length
+          ? 'Failed'
+          : this._diagReport?.source === 'api'
+            ? 'Not tested'
+            : this._diagReport
+              ? 'Unavailable (update Connect)'
+              : 'Not tested yet';
+
+    const tiles: Array<{ label: string; value: string; ok?: boolean | undefined }> = [
       {
         label: 'Connect version',
         value:
           info.integrationVersion ||
           (this._diagReport?.integration_version as string) ||
           (info.installed ? 'pre-1.6.0 (update required)' : 'not installed'),
-        ok: info.installed && !info.outdated,
+        ok: info.installed ? !info.outdated : undefined,
       },
       {
         label: 'Card version',
@@ -1096,27 +1248,17 @@ export class HubAccountTab extends LitElement {
       {
         label: 'Signed in',
         value: signedIn ? 'Yes' : 'No',
-        ok: signedIn,
+        ok: signedIn ? true : undefined,
       },
       {
         label: 'Token',
         value: tokenLabel,
-        ok: signedIn ? true : false,
+        ok: signedIn ? true : undefined,
       },
       {
         label: 'Cloud reachability',
-        value: connectivity.api
-          ? 'OK'
-          : connectivity.bot_challenge
-            ? 'Temporarily unavailable'
-            : connectivity.errors?.length
-              ? 'Failed'
-              : this._diagReport?.source === 'api'
-                ? 'Not tested'
-                : this._diagReport
-                  ? 'Unavailable (update Connect)'
-                  : 'Run diagnostics',
-        ok: connectivity.api === true,
+        value: reachValue,
+        ok: reachTested ? connectivity.api === true : undefined,
       },
       {
         label: 'Last success',
@@ -1127,41 +1269,42 @@ export class HubAccountTab extends LitElement {
       },
     ];
 
+    const isAdmin = this._isHaAdmin();
+
     return html`
       <div class="account-card">
         <h3>
           <ha-icon icon="mdi:stethoscope"></ha-icon>
           Connect diagnostics
         </h3>
-        <p style="font-size:13px;color:var(--secondary-text-color);line-height:1.5;margin:0 0 16px;">
+        <p class="card-lead">
           Check authentication, cloud reachability, and integration version. Downloads never include
           passwords or JWT tokens.
         </p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">
+        <div class="diag-tiles">
           ${tiles.map(
             t => html`
-              <div
-                style="border:1px solid var(--divider-color);border-radius:10px;padding:10px 12px;background:var(--secondary-background-color, transparent);"
-              >
-                <div style="font-size:11px;color:var(--secondary-text-color);margin-bottom:4px;">
-                  ${t.label}
-                </div>
-                <div style="font-size:13px;font-weight:600;color:${t.ok === false
-                  ? 'var(--error-color, #f44336)'
-                  : t.ok === true
-                    ? 'var(--success-color, #4caf50)'
-                    : 'var(--primary-text-color)'};">
-                  ${t.value}
+              <div class="diag-tile">
+                <div class="diag-tile-label">${t.label}</div>
+                <div class="diag-tile-value ${t.ok === true ? 'ok' : t.ok === false ? 'bad' : ''}">
+                  ${t.ok === true
+                    ? html`<ha-icon icon="mdi:check-circle"></ha-icon>`
+                    : t.ok === false
+                      ? html`<ha-icon icon="mdi:alert-circle"></ha-icon>`
+                      : nothing}
+                  <span>${t.value}</span>
                 </div>
               </div>
             `
           )}
         </div>
         ${this._diagError
-          ? html`<div class="error-message" style="margin-bottom:12px;">${userFacingCloudError(this._diagError, this._diagError)}</div>`
+          ? html`<div class="error-message diag-error">
+              ${userFacingCloudError(this._diagError, this._diagError)}
+            </div>`
           : ''}
         ${connectivity.bot_challenge || coord.last_error
-          ? html`<div class="error-message" style="margin-bottom:12px;">
+          ? html`<div class="error-message diag-error">
               ${userFacingCloudError(
                 connectivity.bot_challenge
                   ? (connectivity.errors || []).join(' ')
@@ -1170,11 +1313,11 @@ export class HubAccountTab extends LitElement {
               )}
             </div>`
           : ''}
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="diag-actions">
           <button
             class="sync-now-btn"
-            style="width:auto;padding:8px 14px;"
-            ?disabled=${this._diagLoading || !this._isHaAdmin()}
+            ?disabled=${this._diagLoading || !isAdmin}
+            title=${isAdmin ? '' : 'Only Home Assistant administrators can run diagnostics'}
             @click=${() => this._runDiagnostics(false)}
           >
             <ha-icon
@@ -1185,8 +1328,8 @@ export class HubAccountTab extends LitElement {
           </button>
           <button
             class="sync-now-btn"
-            style="width:auto;padding:8px 14px;"
-            ?disabled=${this._diagLoading || !this._isHaAdmin()}
+            ?disabled=${this._diagLoading || !isAdmin}
+            title=${isAdmin ? '' : 'Only Home Assistant administrators can download diagnostics'}
             @click=${() => this._runDiagnostics(true)}
           >
             <ha-icon icon="mdi:download"></ha-icon>
@@ -1241,32 +1384,27 @@ export class HubAccountTab extends LitElement {
           <ha-icon icon="mdi:connection"></ha-icon>
           Connect Ultra Card
         </h3>
-        <p style="font-size:13px;color:var(--secondary-text-color);line-height:1.6;margin:0 0 20px;">
+        <p class="card-lead">
           Ultra Card uses the <strong>Ultra Card Connect</strong> integration to securely
           store your account credentials in Home Assistant — so your login persists across
           any device and browser, with no local storage needed.
         </p>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
-            <ha-icon icon="mdi:numeric-1-circle" style="color:var(--primary-color);flex-shrink:0;margin-top:1px;"></ha-icon>
+        <div class="setup-steps">
+          <div class="setup-step">
+            <ha-icon icon="mdi:numeric-1-circle"></ha-icon>
             <span>Install <strong>Ultra Card Connect</strong> via HACS → Integrations</span>
           </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
-            <ha-icon icon="mdi:numeric-2-circle" style="color:var(--primary-color);flex-shrink:0;margin-top:1px;"></ha-icon>
+          <div class="setup-step">
+            <ha-icon icon="mdi:numeric-2-circle"></ha-icon>
             <span>Add it under <strong>Settings → Integrations → Add Integration</strong>, or click below</span>
           </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
-            <ha-icon icon="mdi:numeric-3-circle" style="color:var(--primary-color);flex-shrink:0;margin-top:1px;"></ha-icon>
-            <span>Come back here to sign in — your account stays logged in permanently</span>
+          <div class="setup-step">
+            <ha-icon icon="mdi:numeric-3-circle"></ha-icon>
+            <span>Come back here to sign in — your account stays signed in until you sign out</span>
           </div>
         </div>
-        <a
-          href="/config/integrations/integration/ultra_card_pro_cloud"
-          style="display:inline-flex;align-items:center;gap:6px;margin-top:20px;padding:9px 16px;
-                 background:var(--primary-color);color:white;border-radius:8px;font-size:13px;
-                 font-weight:500;text-decoration:none;"
-        >
-          <ha-icon icon="mdi:plus-circle" style="--mdc-icon-size:16px;"></ha-icon>
+        <a class="setup-cta" href="/config/integrations/integration/ultra_card_pro_cloud">
+          <ha-icon icon="mdi:plus-circle"></ha-icon>
           Set Up Integration
         </a>
       </div>
@@ -1451,7 +1589,7 @@ export class HubAccountTab extends LitElement {
           <ha-icon icon="mdi:login"></ha-icon>
           Sign in or create an account
         </h3>
-        <p class="form-note" style="margin: 0 0 16px 0;">
+        <p class="form-note form-lead">
           Sign in to cloud-save favorites and presets. Upgrade to Pro for full features.
         </p>
 

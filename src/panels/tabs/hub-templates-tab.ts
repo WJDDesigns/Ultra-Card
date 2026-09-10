@@ -44,15 +44,16 @@ export class HubTemplatesTab extends LitElement {
       }
 
       .templates-intro {
-        padding: 20px 0 24px;
-        margin-bottom: 24px;
-        border-bottom: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
+        padding: 8px 0 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--uc-hub-border);
       }
 
       .templates-intro h2 {
-        margin: 0 0 12px 0;
-        font-size: 20px;
+        margin: 0 0 10px 0;
+        font-size: 22px;
         font-weight: 700;
+        letter-spacing: -0.01em;
         color: var(--primary-text-color);
       }
 
@@ -61,14 +62,16 @@ export class HubTemplatesTab extends LitElement {
         font-size: 14px;
         color: var(--secondary-text-color);
         line-height: 1.6;
+        max-width: 760px;
       }
 
       .section {
-        background: var(--ha-card-background, var(--card-background-color));
-        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
-        border-radius: 14px;
-        padding: 24px;
-        margin-bottom: 24px;
+        background: var(--uc-hub-surface);
+        border: 1px solid var(--uc-hub-border);
+        border-radius: var(--uc-hub-radius-lg);
+        box-shadow: var(--uc-hub-shadow-sm);
+        padding: 22px 24px;
+        margin-bottom: 20px;
       }
 
       .section h3 {
