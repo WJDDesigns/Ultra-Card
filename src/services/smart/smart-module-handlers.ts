@@ -105,37 +105,44 @@ export function buildBarModuleFromContext(ctx: SmartBuildContext): SmartModule |
   return buildBarModule(ctx.id, entity.entityId, entity.name, label);
 }
 
+const SEPARATOR_STYLES = ['line', 'double_line', 'dotted', 'double_dotted', 'shadow', 'blank'];
+const SEPARATOR_STYLE_ALIASES: Record<string, string> = { space: 'blank', gradient: 'shadow', dots: 'dotted' };
+
 function sanitizeSeparatorModule(module: SmartModule, id: string): SmartModule | null {
+  const requested = String(module.separator_style || module.style || '');
   return {
     id,
     type: 'separator',
-    style: oneOf(module.style, ['line', 'space', 'gradient', 'dots'], 'line'),
+    separator_style: oneOf(SEPARATOR_STYLE_ALIASES[requested] || requested, SEPARATOR_STYLES, 'line'),
     thickness: numberInRange(module.thickness, 1, 12, 1),
-    margin: numberInRange(module.margin, 0, 48, 8),
+    ...defaultDisplayActions(),
   };
 }
 
 function sanitizeImageModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const entityId = String(module.entity || '');
+  const entityId = String(module.image_entity || module.entity || '');
   const imageUrl = String(module.image_url || module.url || '');
+  const objectFit = oneOf(module.object_fit || module.fit, ['cover', 'contain', 'fill', 'none', 'scale-down'], 'cover');
   if (entityId && entityExists(hass, entityId)) {
     return {
       id,
       type: 'image',
-      entity: entityId,
-      fit: oneOf(module.fit, ['cover', 'contain', 'fill', 'none'], 'cover'),
-      tap_action: sanitizeAction(module.tap_action, hass),
+      image_type: 'entity',
+      image_entity: entityId,
+      object_fit: objectFit,
       ...defaultDisplayActions(),
+      tap_action: sanitizeAction(module.tap_action, hass),
     };
   }
-  if (imageUrl) {
+  if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('/')) {
     return {
       id,
       type: 'image',
+      image_type: 'url',
       image_url: imageUrl.slice(0, 2048),
-      fit: oneOf(module.fit, ['cover', 'contain', 'fill', 'none'], 'cover'),
-      tap_action: sanitizeAction(module.tap_action, hass),
+      object_fit: objectFit,
       ...defaultDisplayActions(),
+      tap_action: sanitizeAction(module.tap_action, hass),
     };
   }
   return null;
@@ -148,78 +155,226 @@ function sanitizeCameraModule(module: SmartModule, hass: SmartSanitizeHass, id: 
   });
 }
 
+function entityAttributes(hass: SmartSanitizeHass, entityId: string): Record<string, unknown> {
+  const state = (hass.states || {})[entityId] as { attributes?: Record<string, unknown> } | undefined;
+  return state?.attributes || {};
+}
+
 function sanitizeSpinboxModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const entityId = String(module.entity || '');
+  const attrs = entityAttributes(hass, entityId);
   return sanitizeEntityModule('spinbox', ['number', 'input_number'], module, hass, id, {
-    min: numberInRange(module.min, -100000, 100000, 0),
-    max: numberInRange(module.max, -100000, 100000, 100),
-    step: numberInRange(module.step, 0.01, 1000, 1),
+    min_value: numberInRange(module.min_value ?? module.min ?? attrs.min, -100000, 100000, 0),
+    max_value: numberInRange(module.max_value ?? module.max ?? attrs.max, -100000, 100000, 100),
+    step: numberInRange(module.step ?? attrs.step, 0.01, 1000, 1),
   });
 }
 
+/** slider_control renders `bars`; one bar per entity (brightness for lights, numeric otherwise). */
 function sanitizeSliderControlModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  return sanitizeEntityModule(
-    'slider_control',
-    ['light', 'cover', 'fan', 'number', 'input_number'],
-    module,
-    hass,
-    id,
-    {
-      min: numberInRange(module.min, 0, 1000, 0),
-      max: numberInRange(module.max, 1, 1000, 100),
-    }
+  const fromBars = Array.isArray(module.bars)
+    ? (module.bars as SmartModule[]).map(bar => String(bar?.entity || ''))
+    : [];
+  const entityIds = collectEntityIds({ ...module, bars: fromBars }, hass, 'bars').filter(entityId =>
+    ['light', 'cover', 'fan', 'number', 'input_number'].some(domain => entityId.startsWith(`${domain}.`))
   );
-}
-
-function sanitizeDropdownModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const entityId = String(module.entity || '');
-  const options = Array.isArray(module.options) ? module.options : [];
-  if (entityId && entityExists(hass, entityId)) {
-    return sanitizeEntityModule('dropdown', ['input_select', 'select'], module, hass, id);
-  }
-  if (options.length) {
-    return {
-      id,
-      type: 'dropdown',
-      options: options.slice(0, 20),
-      ...defaultDisplayActions(),
-    };
-  }
-  return null;
-}
-
-function sanitizeToggleModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const entityId = String(module.entity || '');
-  if (entityExists(hass, entityId)) {
-    return sanitizeEntityModule('toggle', '*', module, hass, id);
-  }
-  const states = Array.isArray(module.states) ? module.states : [];
-  if (!states.length) return null;
-  return { id, type: 'toggle', states: states.slice(0, 8), ...defaultDisplayActions() };
-}
-
-function sanitizeTimerModule(module: SmartModule, id: string): SmartModule | null {
-  const duration = numberInRange(module.duration, 1, 86400, 300);
+  if (!entityIds.length) return null;
   return {
     id,
-    type: 'timer',
-    duration,
-    name: String(module.name || 'Timer').slice(0, 40),
+    type: 'slider_control',
+    bars: entityIds.slice(0, 6).map((entityId, index) => {
+      const attrs = entityAttributes(hass, entityId);
+      const isLight = entityId.startsWith('light.');
+      return {
+        id: `${id}-bar-${index}`,
+        type: isLight ? 'brightness' : 'numeric',
+        entity: entityId,
+        name: entityName(hass, entityId),
+        min_value: numberInRange(module.min_value ?? module.min ?? attrs.min, -100000, 100000, 0),
+        max_value: numberInRange(module.max_value ?? module.max ?? attrs.max, -100000, 100000, 100),
+        step: numberInRange(module.step ?? attrs.step, 0.01, 1000, 1),
+        show_icon: true,
+        show_name: true,
+        show_value: true,
+      };
+    }),
     ...defaultDisplayActions(),
   };
 }
 
-function sanitizePeopleModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const rawEntities = Array.isArray(module.entities) ? module.entities : module.entity ? [module.entity] : [];
-  const entities = rawEntities
-    .map((item, index) => {
-      const entityId = typeof item === 'string' ? item : String((item as SmartModule).entity || '');
-      if (!entityExists(hass, entityId)) return null;
-      if (!entityId.startsWith('person.') && !entityId.startsWith('device_tracker.')) return null;
-      return { id: `${id}-person-${index}`, entity: entityId, name: entityName(hass, entityId) };
+function sanitizeDropdownModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const entityId = String(module.source_entity || module.entity || '');
+  if (
+    entityId &&
+    entityExists(hass, entityId) &&
+    (entityId.startsWith('input_select.') || entityId.startsWith('select.'))
+  ) {
+    return {
+      id,
+      type: 'dropdown',
+      source_mode: 'entity',
+      source_entity: entityId,
+      placeholder: String(module.placeholder || entityName(hass, entityId)).slice(0, 60),
+      ...defaultDisplayActions(),
+    };
+  }
+  const rawOptions = Array.isArray(module.options) ? (module.options as unknown[]) : [];
+  const options = rawOptions
+    .map((option, index) => {
+      if (!option || typeof option !== 'object') return null;
+      const record = option as SmartModule;
+      const label = String(record.label || record.name || '').trim();
+      if (!label) return null;
+      const action = sanitizeAction(record.action || record.tap_action, hass);
+      return { id: `${id}-option-${index}`, label: label.slice(0, 60), action };
     })
-    .filter(Boolean);
-  if (!entities.length) return null;
-  return { id, type: 'people', entities, layout: oneOf(module.layout, ['card', 'compact', 'list'], 'card') };
+    .filter(Boolean)
+    .slice(0, 20);
+  if (!options.length) return null;
+  return { id, type: 'dropdown', source_mode: 'manual', options, ...defaultDisplayActions() };
+}
+
+/** toggle renders `toggle_points`; an entity becomes Off/On points that track its state. */
+function sanitizeToggleModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const entityId = String(module.tracking_entity || module.entity || '');
+  const rawPoints = Array.isArray(module.toggle_points)
+    ? (module.toggle_points as unknown[])
+    : Array.isArray(module.states)
+      ? (module.states as unknown[])
+      : [];
+  const points = rawPoints
+    .map((point, index) => {
+      if (typeof point === 'string') return { id: `${id}-point-${index}`, label: point.slice(0, 40) };
+      if (!point || typeof point !== 'object') return null;
+      const record = point as SmartModule;
+      const label = String(record.label || record.name || record.state || '').trim();
+      if (!label) return null;
+      return {
+        id: `${id}-point-${index}`,
+        label: label.slice(0, 40),
+        ...(record.icon ? { icon: String(record.icon) } : {}),
+        ...(record.tap_action ? { tap_action: sanitizeAction(record.tap_action, hass) } : {}),
+        ...(record.match_state ? { match_state: record.match_state } : {}),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 8);
+
+  if (points.length >= 2) {
+    return {
+      id,
+      type: 'toggle',
+      toggle_points: points,
+      ...(entityExists(hass, entityId) ? { tracking_entity: entityId } : {}),
+      ...defaultDisplayActions(),
+    };
+  }
+  if (!entityExists(hass, entityId)) return null;
+  const name = entityName(hass, entityId);
+  return {
+    id,
+    type: 'toggle',
+    title: name,
+    show_title: true,
+    tracking_entity: entityId,
+    toggle_points: [
+      {
+        id: `${id}-point-off`,
+        label: 'Off',
+        icon: 'mdi:power-off',
+        match_entity: entityId,
+        match_state: ['off', 'closed', 'locked', 'not_home', 'idle', 'docked'],
+        tap_action: { action: 'perform-action', service: 'homeassistant.turn_off', service_data: { entity_id: entityId } },
+      },
+      {
+        id: `${id}-point-on`,
+        label: 'On',
+        icon: 'mdi:power-on',
+        match_entity: entityId,
+        match_state: ['on', 'open', 'unlocked', 'home', 'playing', 'cleaning'],
+        tap_action: { action: 'perform-action', service: 'homeassistant.turn_on', service_data: { entity_id: entityId } },
+      },
+    ],
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizeTimerModule(module: SmartModule, id: string): SmartModule | null {
+  const durationSeconds = numberInRange(module.duration_seconds ?? module.duration, 1, 86400, 300);
+  return {
+    id,
+    type: 'timer',
+    duration_seconds: durationSeconds,
+    title: String(module.title || module.name || 'Timer').slice(0, 40),
+    style: oneOf(module.style, ['circle', 'progress_bar', 'digital', 'background_fill'], 'circle'),
+    ...defaultDisplayActions(),
+  };
+}
+
+const PEOPLE_LAYOUTS = ['compact', 'banner', 'horizontal_compact', 'horizontal_detailed', 'header', 'music_overlay'];
+
+/** One real `people` module: the module shows a single `person_entity`. */
+function buildPeopleModule(id: string, entityId: string, layoutStyle: string): SmartModule {
+  return {
+    id,
+    type: 'people',
+    person_entity: entityId,
+    layout_style: layoutStyle,
+    show_avatar: true,
+    show_location_badge: true,
+    ...defaultDisplayActions(),
+  };
+}
+
+/**
+ * The people module is per-person, so several people become a row (up to 4) or a column of
+ * horizontal person cards. Accepts the AI's `person_entity`, `entity`, or `entities` forms.
+ */
+/** "who is home", "the family", "everyone", "home occupancy"... — the whole household, not one person. */
+export const HOUSEHOLD_PROMPT =
+  /\b(who(?:'s| is| are)\s+(?:at\s+)?home|who(?:'s| is)\s+away|(?:whether|if)\s+anyone|anyone(?:'s| is)?\s+(?:at\s+)?home|everyone|everybody|family|household|people|persons|presence|home occupancy|occupants?)\b/i;
+
+export function allPersonEntityIds(hass: SmartSanitizeHass): string[] {
+  return Object.keys(hass.states || {}).filter(entityId => entityId.startsWith('person.'));
+}
+
+/** True when the prompt names one of the given people (by friendly name or object id). */
+export function promptNamesAPerson(prompt: string, hass: SmartSanitizeHass, entityIds: string[]): boolean {
+  const text = ` ${prompt.toLowerCase().replace(/[^a-z0-9]+/g, ' ')} `;
+  return entityIds.some(entityId => {
+    const names = [entityName(hass, entityId), entityId.split('.')[1] || '']
+      .map(name => name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim())
+      .filter(name => name.length >= 3);
+    return names.some(name => text.includes(` ${name} `));
+  });
+}
+
+function sanitizePeopleModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const raw = Array.isArray(module.entities)
+    ? module.entities
+    : module.person_entity || module.entity
+      ? [module.person_entity || module.entity]
+      : [];
+  let entityIds = raw
+    .map(item => (typeof item === 'string' ? item : String((item as SmartModule).entity || '')))
+    .filter(entityId => entityExists(hass, entityId))
+    .filter(entityId => entityId.startsWith('person.') || entityId.startsWith('device_tracker.'));
+  if (!entityIds.length) {
+    // The AI asked for people but named none (or named badly): every person in the home.
+    entityIds = allPersonEntityIds(hass);
+  }
+  if (!entityIds.length) return null;
+
+  const requestedLayout = String(module.layout_style || module.layout || '');
+  if (entityIds.length === 1) {
+    return buildPeopleModule(id, entityIds[0], oneOf(requestedLayout, PEOPLE_LAYOUTS, 'horizontal_compact'));
+  }
+  const inRow = entityIds.length <= 4;
+  const layoutStyle = oneOf(requestedLayout, PEOPLE_LAYOUTS, inRow ? 'compact' : 'horizontal_compact');
+  const people = entityIds.slice(0, 8).map((entityId, index) => buildPeopleModule(`${id}-person-${index}`, entityId, layoutStyle));
+  return inRow
+    ? { id, type: 'horizontal', gap: 12, gap_unit: 'px', alignment: 'space-around', vertical_alignment: 'top', modules: people }
+    : { id, type: 'vertical', gap: 8, gap_unit: 'px', horizontal_alignment: 'stretch', modules: people };
 }
 
 function sanitizeTrainModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
@@ -248,99 +403,105 @@ function sanitizeTrainModule(module: SmartModule, hass: SmartSanitizeHass, id: s
   };
 }
 
-function sanitizeCalendarModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const rawEntities = Array.isArray(module.entities) ? module.entities : module.entity ? [module.entity] : [];
-  const entities = rawEntities
-    .map((item, index) => {
-      const entityId = typeof item === 'string' ? item : String((item as SmartModule).entity || '');
-      if (!entityExists(hass, entityId) || !entityId.startsWith('calendar.')) return null;
-      return entityId;
-    })
-    .filter(Boolean);
-  if (!entities.length) {
-    const fallback = Object.keys(hass.states || {}).find(entityId => entityId.startsWith('calendar.'));
-    if (!fallback) return null;
-    entities.push(fallback);
+/** Entity ids from the AI's `entities` (strings or `{entity}` objects), `entity`, or a named list field. */
+function collectEntityIds(module: SmartModule, hass: SmartSanitizeHass, ...keys: string[]): string[] {
+  const seen = new Set<string>();
+  for (const key of [...keys, 'entities', 'entity']) {
+    const raw = module[key];
+    const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    for (const item of list) {
+      const entityId = typeof item === 'string' ? item : String((item as SmartModule)?.entity || '');
+      if (entityId && entityExists(hass, entityId)) seen.add(entityId);
+    }
   }
+  return Array.from(seen);
+}
+
+const CALENDAR_VIEWS = ['compact_list', 'month', 'week', 'day', 'table', 'grid'];
+const CALENDAR_VIEW_ALIASES: Record<string, string> = { list: 'compact_list', agenda: 'compact_list', compact: 'compact_list' };
+
+function sanitizeCalendarModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  let entityIds = collectEntityIds(module, hass, 'calendars').filter(entityId => entityId.startsWith('calendar.'));
+  if (!entityIds.length) {
+    entityIds = Object.keys(hass.states || {}).filter(entityId => entityId.startsWith('calendar.')).slice(0, 4);
+  }
+  if (!entityIds.length) return null;
+  const requestedView = String(module.view_type || module.view || '');
   return {
     id,
     type: 'calendar',
-    entities,
-    days_to_show: numberInRange(module.days_to_show, 1, 14, 5),
-    view: oneOf(module.view, ['list', 'grid', 'agenda'], 'list'),
+    calendars: entityIds.map((entityId, index) => ({
+      id: `${id}-calendar-${index}`,
+      entity: entityId,
+      name: entityName(hass, entityId),
+      visible: true,
+    })),
+    view_type: oneOf(CALENDAR_VIEW_ALIASES[requestedView] || requestedView, CALENDAR_VIEWS, 'compact_list'),
+    days_to_show: numberInRange(module.days_to_show, 1, 31, 7),
     ...defaultDisplayActions(),
   };
 }
 
 function sanitizeAreaSummaryModule(module: SmartModule, id: string): SmartModule | null {
-  const area = String(module.area || module.area_id || '').trim();
-  if (!area) return null;
+  const areaId = String(module.area_id || module.area || '').trim();
+  if (!areaId) return null;
   return {
     id,
     type: 'area_summary',
-    area,
-    show_climate: module.show_climate !== false,
-    show_lights: module.show_lights !== false,
+    area_id: areaId,
     ...defaultDisplayActions(),
   };
 }
 
 function sanitizeAlertCenterModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const rawEntities = Array.isArray(module.entities) ? module.entities : [];
-  const entities = rawEntities
-    .map((item, index) => {
-      const entityId = typeof item === 'string' ? item : String((item as SmartModule).entity || '');
-      if (!entityExists(hass, entityId)) return null;
-      return { id: `${id}-alert-${index}`, entity: entityId, name: entityName(hass, entityId) };
-    })
-    .filter(Boolean);
+  const includeEntities = collectEntityIds(module, hass, 'include_entities');
   return {
     id,
     type: 'alert_center',
-    entities,
-    max_items: numberInRange(module.max_items, 1, 50, Math.max(entities.length, 8)),
+    include_entities: includeEntities,
+    max_alerts: numberInRange(module.max_alerts ?? module.max_items, 1, 30, Math.max(includeEntities.length, 6)),
     ...defaultDisplayActions(),
   };
 }
 
+const BATTERY_STYLE_ALIASES: Record<string, string> = { compact: 'list', minimal: 'strip', bars: 'bars', cards: 'cards', rings: 'rings', list: 'list', strip: 'strip' };
+
 function sanitizeBatteryMonitorModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const rawEntities = Array.isArray(module.entities) ? module.entities : [];
-  let entities = rawEntities
-    .map((item, index) => {
-      const entityId = typeof item === 'string' ? item : String((item as SmartModule).entity || '');
-      if (!entityExists(hass, entityId)) return null;
-      return { id: `${id}-battery-${index}`, entity: entityId, name: entityName(hass, entityId) };
-    })
-    .filter(Boolean);
-  if (!entities.length) {
-    entities = Object.keys(hass.states || {})
-      .filter(entityId => entityId.includes('battery'))
-      .slice(0, 12)
-      .map((entityId, index) => ({
-        id: `${id}-battery-${index}`,
-        entity: entityId,
-        name: entityName(hass, entityId),
-      }));
+  let entityIds = collectEntityIds(module, hass);
+  if (!entityIds.length) {
+    entityIds = Object.keys(hass.states || {})
+      .filter(entityId => {
+        const state = (hass.states || {})[entityId] as { attributes?: Record<string, unknown> } | undefined;
+        return state?.attributes?.device_class === 'battery' || /battery/.test(entityId);
+      })
+      .slice(0, 12);
   }
+  const requestedStyle = String(module.style || module.style_preset || '');
   return {
     id,
     type: 'battery_monitor',
-    entities,
-    style_preset: oneOf(module.style_preset, ['compact', 'cards', 'list', 'minimal', 'rings'], 'compact'),
+    // Manual entities when the AI/planner picked some; otherwise let the module discover them.
+    discovery_mode: entityIds.length ? 'manual' : 'auto',
+    entities: entityIds.map((entityId, index) => ({
+      id: `${id}-battery-${index}`,
+      entity: entityId,
+      label: entityName(hass, entityId),
+    })),
+    style: BATTERY_STYLE_ALIASES[requestedStyle] || (entityIds.length > 6 ? 'list' : 'cards'),
     low_threshold: numberInRange(module.low_threshold, 1, 50, 20),
     ...defaultDisplayActions(),
   };
 }
 
 function sanitizeQrCodeModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const text = String(module.text || module.content || '').trim();
-  const entityId = String(module.entity || '');
+  const text = String(module.content_static || module.text || module.content || '').trim();
+  const entityId = String(module.content_entity || module.entity || '');
   if (text) {
     return {
       id,
       type: 'qr_code',
-      content_source: 'text',
-      text: text.slice(0, 500),
+      content_mode: 'static',
+      content_static: text.slice(0, 500),
       ...defaultDisplayActions(),
     };
   }
@@ -348,8 +509,8 @@ function sanitizeQrCodeModule(module: SmartModule, hass: SmartSanitizeHass, id: 
     return {
       id,
       type: 'qr_code',
-      content_source: 'entity',
-      entity: entityId,
+      content_mode: 'entity',
+      content_entity: entityId,
       ...defaultDisplayActions(),
     };
   }
@@ -369,46 +530,103 @@ function sanitizeAnimatedForecastModule(module: SmartModule, hass: SmartSanitize
     id,
     type: 'animated_forecast',
     weather_entity: entityId,
-    days: numberInRange(module.days, 1, 7, 5),
+    forecast_days: numberInRange(module.forecast_days ?? module.days, 1, 7, 5),
     ...defaultDisplayActions(),
   };
 }
 
 function sanitizeAnimatedClockModule(module: SmartModule, id: string): SmartModule | null {
+  const requested = String(module.time_format || module.format || '').replace(/h$/i, '');
   return {
     id,
     type: 'animated_clock',
-    format: oneOf(module.format, ['12h', '24h'], '12h'),
+    time_format: oneOf(requested, ['12', '24'], '12'),
     show_seconds: module.show_seconds !== false,
     ...defaultDisplayActions(),
   };
 }
 
+const GRAPH_PERIODS = ['today', '1h', '3h', '6h', '12h', '24h', '2d', '7d', '30d', '90d', '365d'];
+const GRAPH_CHART_TYPES = ['line', 'bar', 'area', 'scatter', 'bubble', 'pie', 'donut', 'radar', 'histogram', 'heatmap', 'waterfall', 'combo'];
+
+function graphPeriodFromHours(hours: number): string {
+  if (hours <= 1) return '1h';
+  if (hours <= 3) return '3h';
+  if (hours <= 6) return '6h';
+  if (hours <= 12) return '12h';
+  if (hours <= 24) return '24h';
+  if (hours <= 48) return '2d';
+  if (hours <= 168) return '7d';
+  return '30d';
+}
+
 function sanitizeGraphsModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const rawEntities = Array.isArray(module.entities) ? module.entities : module.entity ? [module.entity] : [];
-  const entities = rawEntities
-    .map((item, index) => {
-      const entityId = typeof item === 'string' ? item : String((item as SmartModule).entity || '');
-      if (!entityExists(hass, entityId)) return null;
-      return { id: `${id}-graph-${index}`, entity: entityId, name: entityName(hass, entityId) };
-    })
-    .filter(Boolean);
-  if (!entities.length) return null;
+  const entityIds = collectEntityIds(module, hass);
+  if (!entityIds.length) return null;
+  const requestedPeriod = String(module.time_period || '');
+  const timePeriod = GRAPH_PERIODS.includes(requestedPeriod)
+    ? requestedPeriod
+    : graphPeriodFromHours(numberInRange(module.hours_to_show, 1, 720, 24));
   return {
     id,
     type: 'graphs',
-    entities,
-    hours_to_show: numberInRange(module.hours_to_show, 1, 168, 24),
+    chart_type: oneOf(String(module.chart_type || '').replace('doughnut', 'donut'), GRAPH_CHART_TYPES, 'line'),
+    entities: entityIds.slice(0, 6).map((entityId, index) => ({
+      id: `${id}-graph-${index}`,
+      entity: entityId,
+      name: entityName(hass, entityId),
+    })),
+    time_period: timePeriod,
     ...defaultDisplayActions(),
   };
 }
 
-function sanitizeEnergyDisplayModule(module: SmartModule, id: string): SmartModule | null {
-  return { id, type: 'energy_display', ...defaultDisplayActions(), ...(module.entities ? { entities: module.entities } : {}) };
+const ENERGY_NODE_TYPES = ['solar', 'grid', 'battery', 'home'];
+
+/** Energy display needs typed nodes; accept `nodes`, `<type>_entity`, or guess from entity names. */
+function sanitizeEnergyDisplayModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const nodes: SmartModule[] = [];
+  const pushNode = (nodeType: string, entityId: unknown): void => {
+    const value = String(entityId || '');
+    if (!ENERGY_NODE_TYPES.includes(nodeType) || !entityExists(hass, value)) return;
+    if (nodes.some(node => node.node_type === nodeType)) return;
+    nodes.push({
+      id: `${id}-node-${nodeType}`,
+      node_type: nodeType,
+      entity: value,
+      label: nodeType.charAt(0).toUpperCase() + nodeType.slice(1),
+      enabled: true,
+    });
+  };
+  if (Array.isArray(module.nodes)) {
+    for (const node of module.nodes as SmartModule[]) pushNode(String(node?.node_type || ''), node?.entity);
+  }
+  for (const nodeType of ENERGY_NODE_TYPES) pushNode(nodeType, module[`${nodeType}_entity`]);
+  for (const entityId of collectEntityIds(module, hass)) {
+    const guess = ENERGY_NODE_TYPES.find(nodeType => entityId.toLowerCase().includes(nodeType));
+    if (guess) pushNode(guess, entityId);
+  }
+  if (!nodes.length) return null;
+  return { id, type: 'energy_display', nodes, ...defaultDisplayActions() };
 }
 
-function sanitizeSolarAnalyticsModule(module: SmartModule, id: string): SmartModule | null {
-  return { id, type: 'solar_analytics', ...defaultDisplayActions(), ...(module.entities ? { entities: module.entities } : {}) };
+function sanitizeSolarAnalyticsModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const pick = (key: string, needle: RegExp): string => {
+    const explicit = String(module[key] || '');
+    if (entityExists(hass, explicit)) return explicit;
+    return collectEntityIds(module, hass).find(entityId => needle.test(entityId)) || '';
+  };
+  const solarEntity = pick('solar_entity', /solar|pv|inverter|production/i);
+  if (!solarEntity) return null;
+  return {
+    id,
+    type: 'solar_analytics',
+    solar_entity: solarEntity,
+    grid_entity: pick('grid_entity', /grid|import|export/i),
+    battery_entity: pick('battery_entity', /battery/i),
+    home_entity: pick('home_entity', /home|house|consumption|load/i),
+    ...defaultDisplayActions(),
+  };
 }
 
 function sanitizeLunarPhaseModule(module: SmartModule, id: string): SmartModule | null {
@@ -440,39 +658,56 @@ function sanitizeVacuumModule(module: SmartModule, hass: SmartSanitizeHass, id: 
 }
 
 function sanitizeMapModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
-  const rawEntities = Array.isArray(module.entities) ? module.entities : module.entity ? [module.entity] : [];
-  const entities = rawEntities
-    .map((item, index) => {
-      const entityId = typeof item === 'string' ? item : String((item as SmartModule).entity || '');
-      if (!entityExists(hass, entityId)) return null;
-      return { id: `${id}-map-${index}`, entity: entityId, name: entityName(hass, entityId) };
-    })
-    .filter(Boolean);
-  if (!entities.length) return null;
+  // Accept the module's own `markers` as well as the AI's `entities` / `entity`.
+  const markerEntities = Array.isArray(module.markers)
+    ? (module.markers as SmartModule[]).map(marker => marker?.entity).filter(Boolean)
+    : [];
+  let entityIds = collectEntityIds({ ...module, markers: markerEntities }, hass, 'markers');
+  if (!entityIds.length) {
+    entityIds = Object.keys(hass.states || {})
+      .filter(entityId => entityId.startsWith('person.') || entityId.startsWith('device_tracker.'))
+      .slice(0, 8);
+  }
+  if (!entityIds.length) return null;
   return {
     id,
     type: 'map',
-    entities,
-    default_zoom: numberInRange(module.default_zoom, 1, 20, 12),
+    markers: entityIds.map((entityId, index) => ({
+      id: `${id}-marker-${index}`,
+      name: entityName(hass, entityId),
+      type: 'entity',
+      entity: entityId,
+    })),
+    zoom: numberInRange(module.zoom ?? module.default_zoom, 1, 20, 12),
+    auto_zoom_entities: true,
     ...defaultDisplayActions(),
   };
 }
 
 function sanitizeAutoEntityListModule(module: SmartModule, id: string): SmartModule | null {
-  const filters = module.filters && typeof module.filters === 'object' ? module.filters : { domain: 'light' };
+  const fromFilters =
+    module.filters && typeof module.filters === 'object' ? (module.filters as SmartModule).domain : undefined;
+  const requested = Array.isArray(module.include_domains)
+    ? module.include_domains
+    : fromFilters
+      ? [fromFilters]
+      : Array.isArray(module.domains)
+        ? module.domains
+        : [];
+  const includeDomains = requested.map(domain => String(domain)).filter(domain => /^[a-z_]+$/.test(domain));
   return {
     id,
     type: 'auto_entity_list',
-    filters,
+    include_domains: includeDomains.length ? includeDomains : ['light'],
     max_items: numberInRange(module.max_items, 1, 100, 12),
     ...defaultDisplayActions(),
   };
 }
 
 function sanitizeDynamicListModule(module: SmartModule, id: string): SmartModule | null {
-  const template = String(module.template || '').trim();
+  const template = String(module.dynamic_template || module.template || '').trim();
   if (!template) return null;
-  return { id, type: 'dynamic-list', template: template.slice(0, 4000), ...defaultDisplayActions() };
+  return { id, type: 'dynamic-list', dynamic_template: template.slice(0, 4000), ...defaultDisplayActions() };
 }
 
 function sanitizeInputHelperModule(
@@ -503,24 +738,24 @@ function createEntityDefaultBuilder(
   };
 }
 
-function createEntitiesDefaultBuilder(
+/**
+ * Default builder that feeds the planner's entities through the type's own sanitizer, so the
+ * emitted shape can never drift from what the module renders.
+ */
+function createSanitizedDefaultBuilder(
   type: string,
+  sanitize: (module: SmartModule, hass: SmartSanitizeHass, id: string) => SmartModule | null,
   extras: Record<string, unknown> = {}
 ): (ctx: SmartBuildContext) => SmartModule | null {
   return ctx => {
     const entities = ctx.entities?.length ? ctx.entities : ctx.entity ? [ctx.entity] : [];
-    if (!entities.length) return null;
-    return {
-      id: ctx.id,
+    const raw: SmartModule = {
       type,
-      entities: entities.map((entity, index) => ({
-        id: `${ctx.id}-entity-${index}`,
-        entity: entity.entityId,
-        name: entity.name,
-      })),
-      ...defaultDisplayActions(),
+      ...(entities[0] ? { entity: entities[0].entityId, name: entities[0].name } : {}),
+      entities: entities.map(entity => entity.entityId),
       ...extras,
     };
+    return sanitize(raw, ctx.hass, ctx.id);
   };
 }
 
@@ -803,66 +1038,63 @@ export const supplementalSmartModuleHandlers = {
   },
   spinbox: {
     sanitize: wrapSanitize(sanitizeSpinboxModule),
-    defaultBuilder: createEntityDefaultBuilder('spinbox'),
+    defaultBuilder: createSanitizedDefaultBuilder('spinbox', sanitizeSpinboxModule),
   },
   slider_control: {
     sanitize: wrapSanitize(sanitizeSliderControlModule),
-    defaultBuilder: createEntityDefaultBuilder('slider_control'),
+    defaultBuilder: createSanitizedDefaultBuilder('slider_control', sanitizeSliderControlModule),
   },
-  dropdown: { sanitize: wrapSanitize(sanitizeDropdownModule) },
+  dropdown: {
+    sanitize: wrapSanitize(sanitizeDropdownModule),
+    defaultBuilder: createSanitizedDefaultBuilder('dropdown', sanitizeDropdownModule),
+  },
   toggle: {
     sanitize: wrapSanitize(sanitizeToggleModule),
-    defaultBuilder: createEntityDefaultBuilder('toggle'),
+    defaultBuilder: createSanitizedDefaultBuilder('toggle', sanitizeToggleModule),
   },
   timer: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeTimerModule(module, id)),
-    defaultBuilder: () => ({
-      id: 'timer',
-      type: 'timer',
-      duration: 300,
-      name: 'Timer',
-      ...defaultDisplayActions(),
-    }),
+    defaultBuilder: (ctx: SmartBuildContext) => sanitizeTimerModule({ type: 'timer' }, ctx.id),
   },
   people: {
     sanitize: wrapSanitize(sanitizePeopleModule),
-    defaultBuilder: createEntitiesDefaultBuilder('people', { layout: 'card' }),
+    defaultBuilder: createSanitizedDefaultBuilder('people', sanitizePeopleModule),
   },
   calendar: {
     sanitize: wrapSanitize(sanitizeCalendarModule),
-    defaultBuilder: createEntitiesDefaultBuilder('calendar', { days_to_show: 5, view: 'list' }),
+    defaultBuilder: createSanitizedDefaultBuilder('calendar', sanitizeCalendarModule, { days_to_show: 7 }),
   },
   area_summary: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeAreaSummaryModule(module, id)),
-    defaultBuilder: (ctx: SmartBuildContext) => ({
-      id: ctx.id,
-      type: 'area_summary',
-      area: String(ctx.prompt.match(/\b(?:room|area)\s+([a-z0-9 _-]+)/i)?.[1] || 'home').trim(),
-      show_climate: true,
-      show_lights: true,
-      ...defaultDisplayActions(),
-    }),
+    defaultBuilder: (ctx: SmartBuildContext) => {
+      // Resolve the area from the registry when the prompt names one; otherwise the first area.
+      const areas = (ctx.hass as { areas?: Record<string, { area_id?: string; name?: string }> }).areas || {};
+      const prompt = ctx.prompt.toLowerCase();
+      const match =
+        Object.values(areas).find(area => area?.name && prompt.includes(String(area.name).toLowerCase())) ||
+        Object.values(areas)[0];
+      const areaId = match?.area_id || Object.keys(areas)[0] || '';
+      return areaId ? sanitizeAreaSummaryModule({ type: 'area_summary', area_id: areaId }, ctx.id) : null;
+    },
   },
   alert_center: {
     sanitize: wrapSanitize(sanitizeAlertCenterModule),
-    defaultBuilder: createEntitiesDefaultBuilder('alert_center', { max_items: 8 }),
+    defaultBuilder: createSanitizedDefaultBuilder('alert_center', sanitizeAlertCenterModule),
   },
   battery_monitor: {
     sanitize: wrapSanitize(sanitizeBatteryMonitorModule),
-    defaultBuilder: createEntitiesDefaultBuilder('battery_monitor', {
-      style_preset: 'compact',
+    defaultBuilder: createSanitizedDefaultBuilder('battery_monitor', sanitizeBatteryMonitorModule, {
       low_threshold: 20,
     }),
   },
   qr_code: {
     sanitize: wrapSanitize(sanitizeQrCodeModule),
-    defaultBuilder: (ctx: SmartBuildContext) => ({
-      id: ctx.id,
-      type: 'qr_code',
-      content_source: ctx.entity ? 'entity' : 'text',
-      ...(ctx.entity ? { entity: ctx.entity.entityId } : { text: 'wifi-password' }),
-      ...defaultDisplayActions(),
-    }),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeQrCodeModule(
+        ctx.entity ? { type: 'qr_code', content_entity: ctx.entity.entityId } : { type: 'qr_code', content_static: 'https://www.home-assistant.io' },
+        ctx.hass,
+        ctx.id
+      ),
   },
   dog_duty: {
     sanitize: wrapSanitize((module, hass, id) => {
@@ -1023,36 +1255,24 @@ export const supplementalSmartModuleHandlers = {
     sanitize: wrapSanitize(sanitizeAnimatedForecastModule),
     defaultBuilder: (ctx: SmartBuildContext) =>
       ctx.entity
-        ? {
-            id: ctx.id,
-            type: 'animated_forecast',
-            weather_entity: ctx.entity.entityId,
-            days: 5,
-            ...defaultDisplayActions(),
-          }
+        ? sanitizeAnimatedForecastModule({ type: 'animated_forecast', weather_entity: ctx.entity.entityId }, ctx.hass, ctx.id)
         : null,
   },
   animated_clock: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeAnimatedClockModule(module, id)),
-    defaultBuilder: (ctx: SmartBuildContext) => ({
-      id: ctx.id,
-      type: 'animated_clock',
-      format: '12h',
-      show_seconds: true,
-      ...defaultDisplayActions(),
-    }),
+    defaultBuilder: (ctx: SmartBuildContext) => sanitizeAnimatedClockModule({ type: 'animated_clock' }, ctx.id),
   },
   graphs: {
     sanitize: wrapSanitize(sanitizeGraphsModule),
-    defaultBuilder: createEntitiesDefaultBuilder('graphs', { hours_to_show: 24 }),
+    defaultBuilder: createSanitizedDefaultBuilder('graphs', sanitizeGraphsModule, { time_period: '24h' }),
   },
   energy_display: {
-    sanitize: wrapSanitize((module, _hass, id) => sanitizeEnergyDisplayModule(module, id)),
-    defaultBuilder: (ctx: SmartBuildContext) => ({ id: ctx.id, type: 'energy_display', ...defaultDisplayActions() }),
+    sanitize: wrapSanitize(sanitizeEnergyDisplayModule),
+    defaultBuilder: createSanitizedDefaultBuilder('energy_display', sanitizeEnergyDisplayModule),
   },
   solar_analytics: {
-    sanitize: wrapSanitize((module, _hass, id) => sanitizeSolarAnalyticsModule(module, id)),
-    defaultBuilder: (ctx: SmartBuildContext) => ({ id: ctx.id, type: 'solar_analytics', ...defaultDisplayActions() }),
+    sanitize: wrapSanitize(sanitizeSolarAnalyticsModule),
+    defaultBuilder: createSanitizedDefaultBuilder('solar_analytics', sanitizeSolarAnalyticsModule),
   },
   lunar_phase: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeLunarPhaseModule(module, id)),
@@ -1080,26 +1300,25 @@ export const supplementalSmartModuleHandlers = {
   },
   map: {
     sanitize: wrapSanitize(sanitizeMapModule),
-    defaultBuilder: createEntitiesDefaultBuilder('map', { default_zoom: 12 }),
+    defaultBuilder: createSanitizedDefaultBuilder('map', sanitizeMapModule, { zoom: 12 }),
   },
   auto_entity_list: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeAutoEntityListModule(module, id)),
-    defaultBuilder: (ctx: SmartBuildContext) => ({
-      id: ctx.id,
-      type: 'auto_entity_list',
-      filters: { domain: ctx.entity?.domain || 'light' },
-      max_items: 12,
-      ...defaultDisplayActions(),
-    }),
+    defaultBuilder: (ctx: SmartBuildContext) => {
+      const domains = Array.from(new Set((ctx.entities || []).map(entity => entity.domain)));
+      return sanitizeAutoEntityListModule(
+        { type: 'auto_entity_list', include_domains: domains.length ? domains : [ctx.entity?.domain || 'light'] },
+        ctx.id
+      );
+    },
   },
   'dynamic-list': {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeDynamicListModule(module, id)),
-    defaultBuilder: (ctx: SmartBuildContext) => ({
-      id: ctx.id,
-      type: 'dynamic-list',
-      template: '{{ states.light | map(attribute="entity_id") | list }}',
-      ...defaultDisplayActions(),
-    }),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeDynamicListModule(
+        { type: 'dynamic-list', dynamic_template: '{{ states.light | map(attribute="entity_id") | list }}' },
+        ctx.id
+      ),
   },
   text_input: {
     sanitize: wrapSanitize((module, hass, id) => sanitizeInputHelperModule('text_input', 'input_text', module, hass, id)),

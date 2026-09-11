@@ -4018,7 +4018,11 @@
       "warnings_title": "Warnings",
       "no_results": "No Smart preset was generated. Try a different prompt.",
       "load_failed": "Failed to load Smart connectors.",
-      "generate_failed": "Smart generation failed."
+      "generate_failed": "Smart generation failed.",
+      "unlimited": "Unlimited · runs on your AI",
+      "ai_provider": "Design with",
+      "ai_task": "AI Task",
+      "conversation_agent": "Conversation agent"
     },
     "dog_duty": {
       "pro_description": "Dog Duty is a Pro feature that uses your yard camera and LLM Vision to mark where the dog went, with a scrubber and cleanup tracking.",

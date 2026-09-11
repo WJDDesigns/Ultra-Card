@@ -7,18 +7,35 @@ import {
 } from './uc-smart-composition-planner';
 import {
   inferEntityDomainsFromPrompt,
+  inferEntityTargetsFromPrompt,
   isProSmartModule,
   isSmartContainerType,
   isSmartModuleType,
   promptWantsTextContent,
+  relatedEntityTargets,
 } from './uc-smart-module-capabilities';
 import { buildBarModuleFromContext, sanitizeBarModule, supplementalSmartModuleHandlers } from './smart/smart-module-handlers';
-import { defaultDisplayActions } from './smart/smart-sanitize-utils';
+import {
+  defaultDisplayActions,
+  entityDeviceClass,
+  entityIcon,
+  iconPairForEntity,
+  promptRequestsSeparators,
+  type SmartIconPair,
+} from './smart/smart-sanitize-utils';
+import {
+  areaLabelForPrompt,
+  buildSmartEntityContext,
+  rankSmartEntities,
+} from './smart/uc-smart-entity-context';
 import type { SmartBuildContext, SmartSanitizeModuleContext } from './smart/smart-module-types';
 import {
+  findBestEntityForModuleSpec,
+  findEntitiesForModuleSpec,
   getSmartModuleSpec,
   initSmartModuleRegistry,
   isRegistrySmartModuleType,
+  MULTI_ENTITY_MODULE_TYPES,
 } from './smart/uc-smart-module-registry';
 
 export type SmartSanitizeHass = {
@@ -137,7 +154,76 @@ export function sanitizeSmartModule(
 
   const spec = getSmartModuleSpec(resolvedType);
   if (!spec?.sanitize) return null;
-  return spec.sanitize(module, { hass, context, id });
+  const sanitized = spec.sanitize(module, { hass, context, id });
+  if (sanitized) return sanitized;
+  return autoFillSmartModule(spec, module, hass, context, id);
+}
+
+const entityContextCache = new WeakMap<object, ReturnType<typeof buildSmartEntityContext>>();
+
+function cachedEntityContext(hass: SmartSanitizeHass): ReturnType<typeof buildSmartEntityContext> {
+  const key = hass.states && typeof hass.states === 'object' ? hass.states : hass;
+  let cached = entityContextCache.get(key);
+  if (!cached) {
+    cached = buildSmartEntityContext(hass as Parameters<typeof buildSmartEntityContext>[0]);
+    entityContextCache.set(key, cached);
+  }
+  return cached;
+}
+
+/**
+ * The AI asked for an entity module but named no usable entity (missing, hallucinated, or the
+ * wrong domain). Instead of dropping the module, pick the best real entities for it from the
+ * home, biased by the module's own label and the request.
+ */
+function autoFillSmartModule(
+  spec: NonNullable<ReturnType<typeof getSmartModuleSpec>>,
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  context: SmartSanitizeContext,
+  id: string
+): SmartModule | SmartModule[] | null {
+  const domains = spec.entityDomains.filter(domain => domain !== '*');
+  if (!domains.length) return null;
+
+  const hints = [module.name, module.title, module.label, module.entity, module.person_entity]
+    .filter(value => typeof value === 'string' && value.trim())
+    .join(' ');
+  const prompt = `${context.prompt} ${hints}`.trim();
+  // Ranked by the request (area + name words, per-domain narrowing) so "kitchen light" gets
+  // the kitchen light; the spec scorer below then sorts stably within that order.
+  const inventory = rankSmartEntities(cachedEntityContext(hass), prompt, {
+    targets: domains.map(domain => ({ domain })),
+  }).map(item => item.entity);
+  const entities = MULTI_ENTITY_MODULE_TYPES.has(spec.type)
+    ? findEntitiesForModuleSpec(inventory, spec, prompt)
+    : (() => {
+        const best = findBestEntityForModuleSpec(inventory, spec, prompt);
+        return best ? [best] : [];
+      })();
+  if (!entities.length) return null;
+
+  // Re-run the type's own sanitizer with real entities so every field keeps the AI's intent
+  // (layout, name, options); fall back to the default builder for types that need it.
+  const patched: SmartModule = {
+    ...module,
+    entity: entities[0].entityId,
+    entities: entities.map(entity => entity.entityId),
+  };
+  if (typeof module.weather_entity === 'string') patched.weather_entity = entities[0].entityId;
+  const viaSanitize = spec.sanitize?.(patched, { hass, context, id });
+  if (viaSanitize) return viaSanitize;
+
+  return (
+    spec.defaultBuilder?.({
+      id,
+      entity: entities[0],
+      entities,
+      prompt: context.prompt,
+      hass,
+      context,
+    }) ?? null
+  );
 }
 
 function resolveModuleTypeForTier(type: string, context: SmartSanitizeContext): string | null {
@@ -490,6 +576,29 @@ function sanitizeLightModule(module: SmartModule, hass: SmartSanitizeHass, id: s
       };
     })
     .filter(Boolean);
+  if (!presets.length) {
+    // The AI (or the auto-fill) usually says `entity` / `entities`: one toggle preset per light.
+    const direct = [module.entity, ...(Array.isArray(module.entities) ? module.entities : [])]
+      .map(item => (typeof item === 'string' ? item : String((item as SmartModule)?.entity || '')))
+      .filter((entityId, index, all) => entityId.startsWith('light.') && entityExists(hass, entityId) && all.indexOf(entityId) === index)
+      .slice(0, 6);
+    for (const [index, entityId] of direct.entries()) {
+      presets.push({
+        id: `${id}-preset-${index}`,
+        name: (direct.length === 1 && typeof module.name === 'string' && module.name.trim() ? module.name : entityName(hass, entityId)).slice(0, 40),
+        action: 'toggle',
+        icon: entityIcon(hass, entityId) || 'mdi:lightbulb',
+        entities: [entityId],
+        brightness: undefined,
+        use_light_color_for_icon: true,
+        use_light_color_for_button: false,
+        smart_color: true,
+        button_style: 'filled',
+        show_label: true,
+        border_radius: 8,
+      });
+    }
+  }
   if (!presets.length) return null;
   return {
     id,
@@ -523,7 +632,7 @@ function sanitizeCoverModule(module: SmartModule, hass: SmartSanitizeHass, id: s
     type: 'cover',
     entity: entityId,
     name: String(module.name || entityName(hass, entityId)),
-    layout: oneOf(module.layout, ['standard', 'compact', 'hero'], 'standard'),
+    layout: oneOf(module.layout === 'hero' ? 'buttons' : module.layout, ['standard', 'compact', 'buttons'], 'standard'),
     show_title: true,
     show_icon: true,
     show_state: true,
@@ -578,7 +687,7 @@ function sanitizeMediaPlayerModule(module: SmartModule, hass: SmartSanitizeHass,
     type: 'media_player',
     entity: entityId,
     name: String(module.name || entityName(hass, entityId)),
-    layout: oneOf(module.layout, ['card', 'compact', 'minimal'], 'card'),
+    layout: oneOf(module.layout === 'minimal' ? 'mini' : module.layout, ['card', 'compact', 'mini'], 'card'),
     show_name: true,
     show_album_art: true,
     show_track_info: true,
@@ -722,15 +831,16 @@ function sanitizeGridModule(module: SmartModule, hass: SmartSanitizeHass, id: st
     .map((item, index) => {
       if (typeof item === 'string') {
         if (!entityExists(hass, item)) return null;
-        return { id: `${id}-grid-${index}`, entity: item, name: entityName(hass, item) };
+        return { id: `${id}-grid-${index}`, entity: item };
       }
       if (!item || typeof item !== 'object') return null;
       const entityId = String((item as SmartModule).entity || '');
       if (!entityExists(hass, entityId)) return null;
+      const customName = String((item as SmartModule).name || (item as SmartModule).custom_name || '').trim();
       return {
         id: `${id}-grid-${index}`,
         entity: entityId,
-        name: String((item as SmartModule).name || entityName(hass, entityId)),
+        ...(customName ? { custom_name: customName } : {}),
       };
     })
     .filter(Boolean);
@@ -739,7 +849,7 @@ function sanitizeGridModule(module: SmartModule, hass: SmartSanitizeHass, id: st
     id,
     type: 'grid',
     entities,
-    style_preset: 'style_1',
+    grid_style: 'style_1',
     columns: numberInRange(module.columns, 1, 6, 3),
     tap_action: { action: 'nothing' },
     hold_action: { action: 'nothing' },
@@ -1097,7 +1207,165 @@ export function buildEntityModule(
   if (domain === 'media_player') {
     return sanitizeMediaPlayerModule({ type: 'media_player', entity: entityId, name }, hass, id) || buildInfoModule(id, entityId, name, hass);
   }
-  return buildInfoModule(id, entityId, name, hass);
+
+  const deviceClass = entityDeviceClass(hass, entityId);
+  const icons = iconPairForEntity(domain, deviceClass, entityIcon(hass, entityId));
+
+  if (domain === 'switch' || domain === 'input_boolean' || domain === 'automation') {
+    return buildToggleButtonRow(id, entityId, name, style, icons.inactive, icons.active);
+  }
+  if (domain === 'scene' || domain === 'script') {
+    return buildActivateButtonRow(id, entityId, domain, name, style, icons.active);
+  }
+
+  // Domains with a dedicated Ultra Card module: build through the registry so tier rules
+  // (Pro-only modules downgrade or drop on the free tier) are applied consistently.
+  const dedicatedType = DEDICATED_MODULE_BY_DOMAIN[domain];
+  if (dedicatedType) {
+    const built = sanitizeSmartModule(
+      dedicatedType === 'people' || dedicatedType === 'calendar'
+        ? { type: dedicatedType, entities: [entityId] }
+        : { type: dedicatedType, entity: entityId, name },
+      hass,
+      context,
+      id
+    );
+    if (built && !Array.isArray(built)) return built;
+    if (Array.isArray(built) && built.length === 1) return built[0];
+  }
+
+  return buildEntityStatusRow(id, entityId, name, style, [], icons);
+}
+
+/** Domain -> Ultra Card module that renders that domain far better than an icon + info row. */
+const DEDICATED_MODULE_BY_DOMAIN: Record<string, string> = {
+  vacuum: 'vacuum',
+  camera: 'camera',
+  humidifier: 'humidifier',
+  water_heater: 'boiler',
+  alarm_control_panel: 'alarm_panel',
+  person: 'people',
+  device_tracker: 'people',
+  calendar: 'calendar',
+  todo: 'todo_list',
+};
+
+/** Icon + "Activate" button for scenes and scripts. */
+export function buildActivateButtonRow(
+  id: string,
+  entityId: string,
+  domain: 'scene' | 'script',
+  name: string,
+  style = 'clean',
+  icon = 'mdi:play'
+): SmartModule {
+  return {
+    id,
+    type: 'horizontal',
+    gap: style === 'dense' ? 6 : 10,
+    gap_unit: 'px',
+    alignment: 'space-between',
+    vertical_alignment: 'center',
+    modules: [
+      {
+        id: `${id}-icon`,
+        type: 'icon',
+        icons: [
+          {
+            id: `${id}-icon-entity`,
+            icon_mode: 'entity',
+            entity: entityId,
+            name,
+            icon_inactive: icon,
+            icon_active: icon,
+            inactive_state: '',
+            active_state: '',
+            use_entity_color_for_icon: false,
+            show_name_when_inactive: true,
+            show_name_when_active: true,
+            show_state_when_inactive: false,
+            show_state_when_active: false,
+            show_icon_when_inactive: true,
+            show_icon_when_active: true,
+          },
+        ],
+        columns: 1,
+        alignment: 'left',
+        vertical_alignment: 'center',
+      },
+      {
+        id: `${id}-run`,
+        type: 'button',
+        label: domain === 'scene' ? 'Activate' : 'Run',
+        style: 'flat',
+        show_icon: true,
+        icon: domain === 'scene' ? 'mdi:play-circle-outline' : 'mdi:play',
+        icon_position: 'before',
+        tap_action: {
+          action: 'perform-action',
+          service: `${domain}.turn_on`,
+          service_data: { entity_id: entityId },
+        },
+        hold_action: { action: 'nothing' },
+        double_tap_action: { action: 'nothing' },
+      },
+    ],
+  };
+}
+
+/**
+ * One module for a whole group of same-domain entities when the module is designed for
+ * lists (people, calendar, battery monitor). Returns null when no grouping applies.
+ */
+function buildGroupedDomainModule(
+  id: string,
+  entities: Array<{ entityId: string; name: string; domain: string; deviceClass?: string | undefined }>,
+  hass: SmartSanitizeHass,
+  context: SmartSanitizeContext
+): SmartModule | null {
+  if (!entities.length) return null;
+  const domains = new Set(entities.map(entity => entity.domain));
+
+  if (Array.from(domains).every(domain => domain === 'person' || domain === 'device_tracker')) {
+    const built = sanitizeSmartModule(
+      { type: 'people', entities: entities.map(entity => entity.entityId) },
+      hass,
+      context,
+      id
+    );
+    return built && !Array.isArray(built) ? built : null;
+  }
+
+  if (domains.size === 1 && domains.has('calendar')) {
+    const built = sanitizeSmartModule(
+      { type: 'calendar', entities: entities.map(entity => entity.entityId), days_to_show: 7, view_type: 'compact_list' },
+      hass,
+      context,
+      id
+    );
+    return built && !Array.isArray(built) ? built : null;
+  }
+
+  if (
+    domains.size === 1 &&
+    domains.has('sensor') &&
+    entities.length > 1 &&
+    entities.every(entity => (entity.deviceClass || entityDeviceClass(hass, entity.entityId)) === 'battery')
+  ) {
+    const built = sanitizeSmartModule(
+      {
+        type: 'battery_monitor',
+        entities: entities.map(entity => ({ entity: entity.entityId, name: entity.name })),
+        style: entities.length > 6 ? 'list' : 'cards',
+      },
+      hass,
+      context,
+      id
+    );
+    return built && !Array.isArray(built) ? built : null;
+  }
+
+  return null;
 }
 
 export function buildEntityStatusRow(
@@ -1105,7 +1373,8 @@ export function buildEntityStatusRow(
   entityId: string,
   name: string,
   style = 'clean',
-  attributes: string[] = []
+  attributes: string[] = [],
+  icons: SmartIconPair = iconPairForEntity(entityId.split('.')[0] || '')
 ): SmartModule {
   const dense = style === 'dense';
   const infoEntities = attributes.length
@@ -1120,14 +1389,18 @@ export function buildEntityStatusRow(
       }))
     : [
         {
+          // The icon column already carries the name; the info column shows just the value.
           id: `${id}-state`,
           entity: entityId,
-          name,
+          name: '',
           show_icon: false,
-          show_name: true,
+          show_name: false,
           show_state: true,
         },
       ];
+  // On/off entities with attribute details keep their state next to the name
+  // ("Kitchen · on · Brightness 80%"); everything else shows the state once, in the info column.
+  const showStateOnIcon = attributes.length > 0 && !icons.stateless;
 
   return {
     id,
@@ -1146,15 +1419,15 @@ export function buildEntityStatusRow(
             icon_mode: 'entity',
             entity: entityId,
             name,
-            icon_inactive: 'mdi:circle-outline',
-            icon_active: 'mdi:circle',
-            inactive_state: 'off',
-            active_state: 'on',
-            use_entity_color_for_icon: true,
+            icon_inactive: icons.inactive,
+            icon_active: icons.active,
+            inactive_state: icons.inactiveState,
+            active_state: icons.activeState,
+            use_entity_color_for_icon: !icons.stateless,
             show_name_when_inactive: true,
             show_name_when_active: true,
-            show_state_when_inactive: true,
-            show_state_when_active: true,
+            show_state_when_inactive: showStateOnIcon,
+            show_state_when_active: showStateOnIcon,
             show_icon_when_inactive: true,
             show_icon_when_active: true,
           },
@@ -1181,7 +1454,8 @@ export function buildToggleButtonRow(
   name: string,
   style = 'clean',
   iconInactive = 'mdi:power',
-  iconActive = 'mdi:power'
+  iconActive = 'mdi:power',
+  label = 'Toggle'
 ): SmartModule {
   return {
     id,
@@ -1220,7 +1494,7 @@ export function buildToggleButtonRow(
       {
         id: `${id}-toggle`,
         type: 'button',
-        label: 'Toggle',
+        label,
         style: 'flat',
         show_icon: true,
         icon: 'mdi:toggle-switch',
@@ -1253,7 +1527,7 @@ export function buildModulesFromCompositionPlan(
     return sectionModules;
   }
 
-  const polished = polishComposedSections(id, sections, sectionModules, style);
+  const polished = polishComposedSections(id, sections, sectionModules, style, context);
   return polished;
 }
 
@@ -1261,11 +1535,14 @@ function polishComposedSections(
   id: string,
   sections: SmartCompositionSection[],
   sectionModules: SmartModule[],
-  style: string
+  style: string,
+  context: SmartSanitizeContext
 ): SmartModule[] {
   if (sections.length <= 1) return sectionModules;
 
-  const useSeparators = sections[0]?.recipe === 'moduleRow';
+  // Sections are already spaced by the design pass; dividers only when the prompt asks.
+  const useSeparators =
+    sections[0]?.recipe === 'moduleRow' && promptRequestsSeparators(context.prompt);
   const modules: SmartModule[] = [];
 
   sectionModules.forEach((module, index) => {
@@ -1315,7 +1592,14 @@ function buildModuleFromIntent(
   }
 
   const resolvedType = resolveModuleTypeForTier(moduleType, context);
-  if (!resolvedType) return [];
+  if (!resolvedType) {
+    // Pro-only module on the free tier with no downgrade: still show the entity the user
+    // asked about, as a domain-aware status row, instead of producing nothing.
+    const entity = section.entities[0];
+    return entity
+      ? [buildEntityModule(`${id}-fallback`, entity.entityId, entity.domain, entity.name, style, hass, context)]
+      : [];
+  }
   const isWeatherIntent =
     moduleType === 'weather' ||
     moduleType === 'animated_weather' ||
@@ -1374,26 +1658,15 @@ function buildWeatherModuleOrHeader(
   style: string
 ): SmartModule | null {
   if (context.tier === 'pro' && context.allowProModules) {
-    const animated = buildModuleFromIntent(
-      id,
-      'animated_weather',
-      {
-        id,
-        kind: 'header',
-        recipe: 'singleModule',
-        domains: ['weather'],
-        entities: [{ entityId, name: entityName(hass, entityId), domain: 'weather' }],
-        wantsButtons: false,
-        wantsDetails: false,
-        wantsLargeText: false,
-        layoutPreference: 'vertical',
-        detailAttributes: [],
-      },
-      style,
+    // Build the animated module directly: routing through buildModuleFromIntent
+    // would land back here (it treats animated_weather as a weather intent).
+    const animated = sanitizeSmartModule(
+      { type: 'animated_weather', weather_entity: entityId, entity: entityId },
       hass,
-      context
+      context,
+      id
     );
-    if (animated.length) return animated[0];
+    if (animated && !Array.isArray(animated)) return animated;
   }
 
   const weatherModule = sanitizeSmartModule(
@@ -1533,7 +1806,9 @@ function buildSectionModules(
       }
       return controlRows;
     }
-    case 'domainModule':
+    case 'domainModule': {
+      const grouped = buildGroupedDomainModule(`${id}-group`, section.entities, hass, context);
+      if (grouped) return [grouped];
       return section.entities.map((entity, index) =>
         buildEntityModule(
           `${id}-${entity.domain}-${index}`,
@@ -1545,8 +1820,13 @@ function buildSectionModules(
           context
         )
       );
+    }
     case 'entityList':
     default: {
+      if (!section.detailAttributes.length) {
+        const grouped = buildGroupedDomainModule(`${id}-group`, section.entities, hass, context);
+        if (grouped) return [grouped];
+      }
       const rows = section.entities.map((entity, index) =>
         buildStatusRowForEntity(`${id}-row-${index}`, entity, section, style, hass, context)
       );
@@ -1607,8 +1887,19 @@ function buildControlRowForEntity(
   if (entity.domain === 'lock') {
     return buildLockModule(id, entity.entityId, entity.name);
   }
+  if (
+    entity.domain === 'switch' ||
+    entity.domain === 'input_boolean' ||
+    entity.domain === 'automation' ||
+    entity.domain === 'scene' ||
+    entity.domain === 'script'
+  ) {
+    // These already render as icon + action button with domain-appropriate icons.
+    return buildEntityModule(id, entity.entityId, entity.domain, entity.name, style, hass, context);
+  }
   if (section.wantsButtons) {
-    return buildToggleButtonRow(id, entity.entityId, entity.name, style);
+    const icons = iconPairForEntity(entity.domain, entityDeviceClass(hass, entity.entityId), entityIcon(hass, entity.entityId));
+    return buildToggleButtonRow(id, entity.entityId, entity.name, style, icons.inactive, icons.active);
   }
   return buildEntityModule(
     id,
@@ -1638,10 +1929,15 @@ function buildStatusRowForEntity(
   if (entity.domain === 'weather') {
     return buildWeatherHeaderRow(id, entity.entityId, hass);
   }
+  const icons = iconPairForEntity(
+    entity.domain,
+    entityDeviceClass(hass, entity.entityId),
+    entityIcon(hass, entity.entityId)
+  );
   if (section.detailAttributes.length) {
-    return buildEntityStatusRow(id, entity.entityId, entity.name, style, section.detailAttributes);
+    return buildEntityStatusRow(id, entity.entityId, entity.name, style, section.detailAttributes, icons);
   }
-  return buildEntityStatusRow(id, entity.entityId, entity.name, style);
+  return buildEntityStatusRow(id, entity.entityId, entity.name, style, [], icons);
 }
 
 function sectionGap(style: string): number {
@@ -1774,18 +2070,25 @@ export function selectEntitiesForPrompt(
   hass: SmartSanitizeHass,
   prompt: string
 ): Array<{ entityId: string; name: string; domain: string }> {
+  const targets = inferEntityTargetsFromPrompt(prompt);
   const domains = inferEntityDomainsFromPrompt(prompt);
-  if (!domains.length) return [];
+  const context = buildSmartEntityContext(hass);
 
-  const matches = Object.entries(hass.states || {})
-    .filter(([entityId]) => entityId.includes('.') && !entityId.startsWith('conversation.') && !entityId.startsWith('ai_task.'))
-    .map(([entityId, state]) => ({
-      entityId,
-      name: entityName(hass, entityId, state),
-      domain: entityId.split('.')[0],
-    }))
-    .filter(entity => domains.includes(entity.domain))
-    .sort((a, b) => domains.indexOf(a.domain) - domains.indexOf(b.domain));
+  if (!targets.length) {
+    // No domain word ("kettle", "kitchen"): entities named after, or living in, what the prompt says.
+    return rankSmartEntities(context, prompt, { limit: 6 })
+      .filter(item => item.score >= 10)
+      .map(item => ({ entityId: item.entity.entityId, name: item.entity.name, domain: item.entity.domain }));
+  }
+
+  let ranked = rankSmartEntities(context, prompt, { targets });
+  if (!ranked.length) {
+    ranked = rankSmartEntities(context, prompt, { targets: targets.flatMap(relatedEntityTargets) });
+  }
+  const matches = ranked
+    .map(item => ({ entityId: item.entity.entityId, name: item.entity.name, domain: item.entity.domain }))
+    // Stable sort keeps relevance order inside each domain while following prompt order across domains.
+    .sort((a, b) => domainOrderIndex(domains, a.domain) - domainOrderIndex(domains, b.domain));
 
   if (domains.includes('weather') && domains.length > 1) {
     const firstWeather = matches.find(entity => entity.domain === 'weather');
@@ -1798,42 +2101,106 @@ export function selectEntitiesForPrompt(
   return matches.slice(0, 12);
 }
 
+function domainOrderIndex(domains: string[], domain: string): number {
+  const index = domains.indexOf(domain);
+  return index === -1 ? domains.length : index;
+}
+
+const DOMAIN_TITLES: Record<string, [string, string]> = {
+  lock: ['Lock Status', 'Lock Status Overview'],
+  light: ['Light Control', 'Light Controls'],
+  cover: ['Cover Control', 'Cover Controls'],
+  fan: ['Fan Control', 'Fan Controls'],
+  climate: ['Climate Control', 'Climate Controls'],
+  media_player: ['Media Controls', 'Media Controls'],
+  weather: ['Weather Overview', 'Weather Overview'],
+  switch: ['Switch', 'Switches'],
+  scene: ['Scene', 'Scenes'],
+  script: ['Script', 'Scripts'],
+  automation: ['Automation', 'Automations'],
+  vacuum: ['Vacuum', 'Vacuums'],
+  camera: ['Camera', 'Cameras'],
+  person: ['Presence', 'Who Is Home'],
+  device_tracker: ['Presence', 'Who Is Home'],
+  alarm_control_panel: ['Alarm', 'Alarm'],
+  humidifier: ['Humidifier', 'Humidifiers'],
+  water_heater: ['Water Heater', 'Water Heaters'],
+  calendar: ['Calendar', 'Calendars'],
+  todo: ['To-Do', 'To-Do Lists'],
+  binary_sensor: ['Sensor Status', 'Sensor Status'],
+  sensor: ['Sensor', 'Sensors'],
+};
+
 export function deriveTitleFromPrompt(
   prompt: string,
-  entities: Array<{ domain: string }>
+  entities: Array<{ domain: string; name?: string }>,
+  hass?: SmartSanitizeHass
 ): string | null {
-  if (entities.length && entities.every(entity => entity.domain === 'lock')) {
-    return entities.length === 1 ? 'Lock Status' : 'Lock Status Overview';
+  const areaLabel = hass ? areaLabelForPrompt(prompt, buildSmartEntityContext(hass)) : '';
+  const withArea = (title: string): string => (areaLabel ? `${areaLabel} ${title}` : title);
+
+  // "kettle" / "the roomba": the prompt names one thing, so the thing's name is the title.
+  if (entities.length === 1 && entities[0].name && !inferEntityDomainsFromPrompt(prompt).length) {
+    return entities[0].name;
   }
-  if (entities.length && entities.every(entity => entity.domain === 'light')) {
-    return entities.length === 1 ? 'Light Control' : 'Light Controls';
-  }
+
+  const singleDomain =
+    entities.length && entities.every(entity => entity.domain === entities[0].domain) ? entities[0].domain : '';
+  const singleDomainTitle = (): string | null => {
+    if (!singleDomain || !DOMAIN_TITLES[singleDomain]) return null;
+    const [one, many] = DOMAIN_TITLES[singleDomain];
+    return withArea(entities.length === 1 ? one : many);
+  };
+
+  // Lock and light prompts read as what they control; other clock prompts are about the clock
+  // even when a weather entity was picked for the header beside it.
+  if (singleDomain === 'lock' || singleDomain === 'light') return singleDomainTitle();
   if (/\bclock\b/i.test(prompt)) {
-    if (entities.some(entity => entity.domain === 'weather')) {
-      return 'Clock and Weather';
-    }
-    return 'Clock Card';
+    return entities.some(entity => entity.domain === 'weather') ? 'Clock and Weather' : 'Clock Card';
   }
+  const titled = singleDomainTitle();
+  if (titled) return titled;
   if (entities.some(entity => entity.domain === 'weather') && entities.some(entity => entity.domain === 'light')) {
-    return 'Weather and Light Controls';
+    return withArea('Weather and Light Controls');
   }
-  if (entities.length && entities.every(entity => entity.domain === 'weather')) {
-    return 'Weather Overview';
+
+  // Two or three known domains: "Kitchen Lights & Plugs" reads better than the raw prompt.
+  const domains = Array.from(new Set(entities.map(entity => entity.domain)));
+  const nouns = Array.from(new Set(domains.map(domain => DOMAIN_NOUNS[domain]).filter(Boolean)));
+  if (domains.length >= 2 && domains.length <= 3 && nouns.length === domains.length) {
+    const joined =
+      nouns.length === 2 ? `${nouns[0]} & ${nouns[1]}` : `${nouns.slice(0, -1).join(', ')} & ${nouns[nouns.length - 1]}`;
+    return withArea(joined);
   }
-  if (entities.length && entities.every(entity => entity.domain === 'cover')) {
-    return entities.length === 1 ? 'Cover Control' : 'Cover Controls';
-  }
-  if (entities.length && entities.every(entity => entity.domain === 'fan')) {
-    return entities.length === 1 ? 'Fan Control' : 'Fan Controls';
-  }
-  if (entities.length && entities.every(entity => entity.domain === 'climate')) {
-    return entities.length === 1 ? 'Climate Control' : 'Climate Controls';
-  }
-  if (entities.length && entities.every(entity => entity.domain === 'media_player')) {
-    return 'Media Controls';
-  }
+
   return prompt.replace(/\s+/g, ' ').trim().slice(0, 42) || null;
 }
+
+/** Short plural nouns for multi-domain titles. */
+const DOMAIN_NOUNS: Record<string, string> = {
+  light: 'Lights',
+  switch: 'Switches',
+  lock: 'Locks',
+  cover: 'Covers',
+  fan: 'Fans',
+  climate: 'Climate',
+  media_player: 'Media',
+  weather: 'Weather',
+  sensor: 'Sensors',
+  binary_sensor: 'Sensors',
+  camera: 'Cameras',
+  vacuum: 'Vacuum',
+  person: 'Presence',
+  device_tracker: 'Presence',
+  scene: 'Scenes',
+  script: 'Scripts',
+  automation: 'Automations',
+  alarm_control_panel: 'Alarm',
+  humidifier: 'Humidifier',
+  water_heater: 'Hot Water',
+  calendar: 'Calendar',
+  todo: 'To-do',
+};
 
 function promptWantsLightStatusDetails(prompt: string): boolean {
   const text = prompt.toLowerCase();

@@ -1,12 +1,23 @@
 import {
   inferEntityDomainsFromPrompt,
+  inferEntityTargetsFromPrompt,
+  relatedEntityTargets,
   suggestSmartModuleTypesForPrompt,
+  type SmartEntityTarget,
 } from './uc-smart-module-capabilities';
 import {
   findBestEntityForModuleSpec,
+  findEntitiesForModuleSpec,
   getForcedModuleTypeFromPrompt,
   getSmartModuleSpec,
+  MULTI_ENTITY_MODULE_TYPES,
 } from './smart/uc-smart-module-registry';
+import {
+  buildSmartEntityContext,
+  rankSmartEntities,
+  type SmartEntityContext,
+  type SmartEntityRecord,
+} from './smart/uc-smart-entity-context';
 
 export type SmartCompositionHass = {
   states?: Record<string, unknown>;
@@ -18,7 +29,28 @@ export type SmartEntityRef = {
   domain: string;
   deviceClass?: string | undefined;
   unit?: string | undefined;
+  areaName?: string | undefined;
 };
+
+/** Domains that have a dedicated full-width Ultra Card module worth using on their own. */
+export const DOMAIN_MODULE_DOMAINS = [
+  'lock',
+  'fan',
+  'cover',
+  'climate',
+  'media_player',
+  'vacuum',
+  'camera',
+  'humidifier',
+  'alarm_control_panel',
+  'person',
+  'device_tracker',
+  'calendar',
+  'todo',
+  'water_heater',
+  'scene',
+  'script',
+];
 
 export type SmartLayoutRecipe =
   | 'header'
@@ -39,6 +71,8 @@ export type SmartCompositionSection = {
   kind: SmartSectionKind;
   recipe: SmartLayoutRecipe;
   domains: string[];
+  /** Domain + device-class targets the section asked for (drives entity filtering). */
+  targets?: SmartEntityTarget[] | undefined;
   entities: SmartEntityRef[];
   forcedModuleType?: string | undefined;
   /** Ordered module types for moduleRow sections (e.g. clock + weather). */
@@ -64,7 +98,7 @@ export function parseSmartCompositionPlan(
   hass: SmartCompositionHass,
   tier: 'free' | 'pro' = 'pro'
 ): SmartCompositionPlan {
-  const inventory = getEntityInventory(hass);
+  const context = buildSmartEntityContext(hass);
   const mixedSections = parseMixedModulePrompt(prompt, tier);
   const sectionTexts = splitPromptIntoSections(prompt);
   const sections =
@@ -74,7 +108,7 @@ export function parseSmartCompositionPlan(
       : expandMultiDomainSinglePrompt(prompt, tier) ||
         [buildSectionFromText('section-0', prompt, prompt, undefined, tier)]);
 
-  assignEntitiesToSections(sections, inventory, prompt, tier);
+  assignEntitiesToSections(sections, context, prompt, tier);
 
   return {
     prompt,
@@ -196,20 +230,6 @@ function detectExplicitModuleSections(
   return sections.length >= 2 ? sections : [];
 }
 
-function scoreEntityForPrompt(entity: SmartEntityRef, prompt: string): number {
-  const tokens = prompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(token => token.length >= 3);
-  const haystack = `${entity.entityId} ${entity.name}`.toLowerCase();
-  let score = 0;
-  for (const token of tokens) {
-    if (haystack.includes(token)) score += 12;
-  }
-  return score;
-}
-
 function splitPromptIntoSections(prompt: string): string[] {
   const normalized = prompt.replace(/\s+/g, ' ').trim();
   if (!normalized) return [];
@@ -289,10 +309,24 @@ function extractDomainPhrase(prompt: string, domain: string): string | null {
     dishwasher: /\b(dishwasher|dish\s*washer)s?\b[^.;,]*/i,
     fridge: /\b(fridge|refrigerator|freezer)s?\b[^.;,]*/i,
     range: /\b(oven|stove|cooktop|kitchen\s*range)s?\b[^.;,]*/i,
-    cover: /\bcovers?\b[^.;,]*/i,
-    climate: /\bclimate\b|\bthermostats?\b[^.;,]*/i,
-    media_player: /\bmedia\b|\bmusic\b|\bspeakers?\b[^.;,]*/i,
-    sensor: /\bsensors?\b[^.;,]*/i,
+    cover: /\b(covers?|garage|shades?|blinds?|shutters?|curtains?)\b[^.;,]*/i,
+    climate: /\b(climate|thermostats?|hvac|heating|cooling)\b[^.;,]*/i,
+    media_player: /\b(media|music|speakers?|tv|television|sonos)\b[^.;,]*/i,
+    sensor: /\b(sensors?|temperatures?|temp|humidity|battery|batteries|power|energy|fuel)\b[^.;,]*/i,
+    switch: /\b(switch(?:es)?|plugs?|outlets?|sockets?)\b[^.;,]*/i,
+    binary_sensor: /\b(doors?|windows?|motion|occupancy|smoke|leaks?|contact sensors?)\b[^.;,]*/i,
+    vacuum: /\b(vacuums?|roomba)\b[^.;,]*/i,
+    camera: /\b(cameras?|cctv|doorbell)\b[^.;,]*/i,
+    person:
+      /\b(who(?:'s| is| are)\s+(?:at\s+)?home|who(?:'s| is)\s+away|(?:whether\s+|if\s+)?anyone(?:'s| is)?\s+(?:at\s+)?home|home occupancy|presence|people|persons?|family|household|everyone|everybody)\b[^.;,]*/i,
+    alarm_control_panel: /\b(alarm|security system)\b[^.;,]*/i,
+    humidifier: /\b(humidifiers?|dehumidifiers?)\b[^.;,]*/i,
+    water_heater: /\b(water heaters?|boiler|hot water)\b[^.;,]*/i,
+    calendar: /\b(calendar|events?|agenda)\b[^.;,]*/i,
+    todo: /\b(to-?do|shopping list|tasks?|chores)\b[^.;,]*/i,
+    scene: /\bscenes?\b[^.;,]*/i,
+    script: /\bscripts?\b[^.;,]*/i,
+    automation: /\bautomations?\b[^.;,]*/i,
   };
   const match = prompt.match(patterns[domain] || new RegExp(`\\b${domain}\\b[^.;,]*`, 'i'));
   return match ? match[0].trim() : null;
@@ -312,13 +346,22 @@ function buildSectionFromText(
   });
   const forcedModuleType = resolveForcedModuleType(sectionText, forcedDomains, tier);
   const forcedSpec = forcedModuleType ? getSmartModuleSpec(forcedModuleType) : undefined;
-  const domains = forcedSpec?.entityDomains.filter(domain => domain !== '*').length
-    ? forcedSpec.entityDomains.filter(domain => domain !== '*')
+  const inferredTargets = inferEntityTargetsFromPrompt(sectionText);
+  const targets: SmartEntityTarget[] = forcedSpec?.entityDomains.filter(domain => domain !== '*').length
+    ? forcedSpec.entityDomains.filter(domain => domain !== '*').map(domain => ({ domain }))
     : forcedDomains?.length
-      ? forcedDomains
-      : inferEntityDomainsFromPrompt(sectionText);
+      ? forcedDomains.map(domain => {
+          // Keep device-class hints from the section text when they agree with the forced domain.
+          const inferred = inferredTargets.find(target => target.domain === domain);
+          return inferred ? { ...inferred } : { domain };
+        })
+      : inferredTargets;
+  const domains = Array.from(new Set(targets.map(target => target.domain)));
   const resolvedDomains = [...domains];
-  if (/\bgrid\b/.test(text) && !resolvedDomains.length) resolvedDomains.push('sensor');
+  if (/\bgrid\b/.test(text) && !resolvedDomains.length) {
+    resolvedDomains.push('sensor');
+    targets.push({ domain: 'sensor' });
+  }
 
   if (forcedModuleType && forcedSpec?.defaultBuilder) {
     return {
@@ -326,6 +369,7 @@ function buildSectionFromText(
       kind: 'details',
       recipe: 'singleModule',
       domains: resolvedDomains.length ? resolvedDomains : forcedSpec.entityDomains,
+      targets,
       entities: [],
       forcedModuleType,
       wantsButtons: false,
@@ -399,7 +443,7 @@ function buildSectionFromText(
   } else if (
     wantsButtons ||
     (resolvedDomains.some(domain =>
-      ['light', 'lock', 'fan', 'cover', 'media_player', 'climate'].includes(domain)
+      ['light', 'lock', 'fan', 'cover', 'media_player', 'climate', 'switch', 'scene', 'script'].includes(domain)
     ) &&
       /\bcontrols?\b|\bon\/off\b|\bon and off\b|\bbuttons?\b/.test(text))
   ) {
@@ -407,15 +451,23 @@ function buildSectionFromText(
     recipe = 'controlList';
   } else if (
     resolvedDomains.length >= 1 &&
-    resolvedDomains.every(domain =>
-      ['lock', 'fan', 'cover', 'climate', 'media_player'].includes(domain)
-    ) &&
+    resolvedDomains.every(domain => DOMAIN_MODULE_DOMAINS.includes(domain)) &&
     !wantsList &&
     !wantsGrid &&
     !wantsButtons
   ) {
     kind = 'control';
     recipe = 'domainModule';
+  } else if (
+    resolvedDomains.length === 1 &&
+    ['light', 'switch', 'automation'].includes(resolvedDomains[0]) &&
+    !wantsList &&
+    !wantsGrid &&
+    !wantsDetails
+  ) {
+    // "kitchen lights" / "plugs" / "automations" are things you switch: a control row beats a status row.
+    kind = 'control';
+    recipe = 'controlList';
   } else if (wantsDetails || wantsList) {
     kind = wantsDetails ? 'details' : 'status';
     recipe = 'entityList';
@@ -431,6 +483,7 @@ function buildSectionFromText(
     kind,
     recipe,
     domains: resolvedDomains,
+    targets,
     entities: [],
     wantsButtons,
     wantsDetails: wantsDetails || detailAttributes.length > 0,
@@ -485,28 +538,58 @@ function parseEntityLimit(sectionText: string): number | undefined {
   return undefined;
 }
 
+/** Targets a section should pull entities from, including the weather header special case. */
+function resolveSectionTargets(section: SmartCompositionSection): SmartEntityTarget[] {
+  const base: SmartEntityTarget[] = section.targets?.length
+    ? section.targets
+    : section.domains.map(domain => ({ domain }));
+  if (section.recipe === 'entityGrid' && section.domains.includes('sensor')) {
+    return base.some(target => target.domain === 'binary_sensor')
+      ? base
+      : [...base, { domain: 'binary_sensor' }];
+  }
+  return base;
+}
+
+/**
+ * Ranked candidates for a section. Falls back to related domains (door sensor -> lock,
+ * person -> device_tracker) so a prompt still produces something on homes that model
+ * the concept differently.
+ */
+function rankSectionCandidates(
+  context: SmartEntityContext,
+  section: SmartCompositionSection,
+  prompt: string,
+  usedEntityIds: Set<string>
+): SmartEntityRecord[] {
+  const targets = resolveSectionTargets(section);
+  if (!targets.length) return [];
+  const primary = rankSmartEntities(context, prompt, { targets, exclude: usedEntityIds }).map(item => item.entity);
+  if (primary.length) return primary;
+
+  // Relax device-class filters before jumping to related domains: "door sensors" on a
+  // home whose contact sensors have no device_class should still find them by domain.
+  const relaxed = targets.filter(target => target.deviceClasses?.length).map(target => ({ domain: target.domain }));
+  if (relaxed.length) {
+    const byDomain = rankSmartEntities(context, prompt, { targets: relaxed, exclude: usedEntityIds }).map(item => item.entity);
+    if (byDomain.length) return byDomain;
+  }
+
+  const related = targets.flatMap(relatedEntityTargets);
+  if (!related.length) return [];
+  return rankSmartEntities(context, prompt, { targets: related, exclude: usedEntityIds }).map(item => item.entity);
+}
+
 function assignEntitiesToSections(
   sections: SmartCompositionSection[],
-  inventory: SmartEntityRef[],
+  context: SmartEntityContext,
   prompt: string,
   tier: 'free' | 'pro' = 'pro'
 ): void {
   const usedEntityIds = new Set<string>();
+  const inventory = context.entities;
 
   for (const section of sections) {
-    const domainFilter = resolveSectionDomains(section);
-    let candidates = inventory.filter(entity => domainFilter.includes(entity.domain));
-
-    if (section.recipe === 'entityGrid' && !candidates.length) {
-      candidates = inventory.filter(
-        entity => entity.domain === 'sensor' || entity.domain === 'binary_sensor'
-      );
-    }
-
-    if (section.recipe === 'header' && section.domains.includes('weather')) {
-      candidates = candidates.filter(entity => entity.domain === 'weather').slice(0, 1);
-    }
-
     if (section.recipe === 'gaugeModule') {
       section.entities = findGaugeEntities(inventory, prompt, section);
       section.entities.forEach(entity => usedEntityIds.add(entity.entityId));
@@ -519,12 +602,14 @@ function assignEntitiesToSections(
       continue;
     }
 
-    if (section.recipe === 'moduleRow' && section.domains.includes('weather')) {
-      const weatherCandidates = inventory
-        .filter(entity => entity.domain === 'weather')
-        .map(entity => ({ entity, score: scoreEntityForPrompt(entity, prompt) }))
-        .sort((a, b) => b.score - a.score);
-      const bestWeather = weatherCandidates[0]?.entity;
+    if (
+      (section.recipe === 'moduleRow' || section.recipe === 'header') &&
+      section.domains.includes('weather')
+    ) {
+      const bestWeather = rankSmartEntities(context, prompt, {
+        targets: [{ domain: 'weather' }],
+        limit: 1,
+      })[0]?.entity;
       section.entities = bestWeather ? [bestWeather] : [];
       if (bestWeather) usedEntityIds.add(bestWeather.entityId);
       continue;
@@ -533,23 +618,35 @@ function assignEntitiesToSections(
     if (section.recipe === 'singleModule' && section.forcedModuleType) {
       const spec = getSmartModuleSpec(section.forcedModuleType);
       if (spec) {
-        const entity = findBestEntityForModuleSpec(inventory, spec, `${prompt} ${sectionTextFromSection(section)}`, usedEntityIds);
-        section.entities = entity ? [entity] : [];
-        if (entity) usedEntityIds.add(entity.entityId);
+        const specPrompt = `${prompt} ${sectionTextFromSection(section)}`;
+        if (MULTI_ENTITY_MODULE_TYPES.has(spec.type)) {
+          section.entities = findEntitiesForModuleSpec(inventory, spec, specPrompt, usedEntityIds);
+        } else {
+          const entity = findBestEntityForModuleSpec(inventory, spec, specPrompt, usedEntityIds);
+          section.entities = entity ? [entity] : [];
+        }
+        section.entities.forEach(entity => usedEntityIds.add(entity.entityId));
       }
       continue;
     }
 
+    let candidates = rankSectionCandidates(context, section, prompt, usedEntityIds);
+
+    if (section.recipe === 'entityGrid' && !candidates.length) {
+      candidates = rankSmartEntities(context, prompt, {
+        targets: [{ domain: 'sensor' }, { domain: 'binary_sensor' }],
+      }).map(item => item.entity);
+    }
+
+    if (section.recipe === 'header') {
+      candidates = candidates.slice(0, 1);
+    }
+
     const entityLimit =
       section.entityLimit ??
-      (section.recipe === 'entityGrid' ? 12 : section.domains.includes('light') ? 8 : 8);
+      (section.recipe === 'entityGrid' ? 12 : section.recipe === 'domainModule' ? 6 : 8);
 
-    section.entities = candidates
-      .filter(entity => !usedEntityIds.has(entity.entityId))
-      .map(entity => ({ entity, score: scoreEntityForPrompt(entity, prompt) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, entityLimit)
-      .map(item => item.entity);
+    section.entities = candidates.slice(0, entityLimit);
 
     if (section.recipe !== 'entityGrid') {
       section.entities.forEach(entity => usedEntityIds.add(entity.entityId));
@@ -557,43 +654,35 @@ function assignEntitiesToSections(
   }
 
   if (!sections.some(section => sectionHasContent(section)) && inventory.length) {
-    const inferredDomains = inferEntityDomainsFromPrompt(prompt);
+    const inferredTargets = inferEntityTargetsFromPrompt(prompt);
+    const inferredDomains = Array.from(new Set(inferredTargets.map(target => target.domain)));
     if (inferredDomains.length) {
       const fallback = buildSectionFromText('section-fallback', prompt, prompt, inferredDomains, tier);
-      fallback.entities = inventory
-        .filter(entity => inferredDomains.includes(entity.domain))
-        .map(entity => ({ entity, score: scoreEntityForPrompt(entity, prompt) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 8)
-        .map(item => item.entity);
+      fallback.entities = rankSmartEntities(context, prompt, { targets: inferredTargets, limit: 8 }).map(
+        item => item.entity
+      );
+      if (!fallback.entities.length) {
+        fallback.entities = rankSmartEntities(context, prompt, {
+          targets: inferredTargets.flatMap(relatedEntityTargets),
+          limit: 8,
+        }).map(item => item.entity);
+      }
       if (fallback.entities.length) {
+        sections.splice(0, sections.length, fallback);
+      }
+    } else {
+      // No domain word at all ("kettle", "the roomba"): fall back to entities whose names match
+      // the prompt, and let their domain pick the recipe.
+      // A name-token hit scores 12 and an area hit 40; the small "has an area" bonus alone must not count.
+      const named = rankSmartEntities(context, prompt, { limit: 6 }).filter(item => item.score >= 10);
+      if (named.length) {
+        const domains = Array.from(new Set(named.map(item => item.entity.domain)));
+        const fallback = buildSectionFromText('section-fallback', prompt, prompt, domains, tier);
+        fallback.entities = named.map(item => item.entity);
         sections.splice(0, sections.length, fallback);
       }
     }
   }
-}
-
-function getEntityInventory(hass: SmartCompositionHass): SmartEntityRef[] {
-  return Object.entries(hass.states || {})
-    .filter(
-      ([entityId]) =>
-        entityId.includes('.') &&
-        !entityId.startsWith('conversation.') &&
-        !entityId.startsWith('ai_task.')
-    )
-    .map(([entityId, state]) => {
-      const attrs =
-        state && typeof state === 'object' && 'attributes' in state
-          ? ((state as { attributes?: Record<string, unknown> }).attributes || {})
-          : {};
-      return {
-        entityId,
-        name: resolveEntityName(hass, entityId, state),
-        domain: entityId.split('.')[0],
-        deviceClass: attrs.device_class ? String(attrs.device_class) : undefined,
-        unit: attrs.unit_of_measurement ? String(attrs.unit_of_measurement) : undefined,
-      };
-    });
 }
 
 function findBarEntities(
@@ -643,28 +732,6 @@ function scoreGaugeCandidate(entity: SmartEntityRef, context: string): number {
   }
   if (/\bgauge\b|\bfuel left\b|\bfuel level\b/.test(context) && entity.domain === 'sensor') score += 3;
   return score;
-}
-
-function resolveEntityName(hass: SmartCompositionHass, entityId: string, state?: unknown): string {
-  const stateObj = state ?? hass.states?.[entityId];
-  const attrs =
-    stateObj && typeof stateObj === 'object' && 'attributes' in stateObj
-      ? ((stateObj as { attributes?: Record<string, unknown> }).attributes || {})
-      : {};
-  if (attrs.friendly_name) return String(attrs.friendly_name);
-  const objectId = entityId.split('.')[1] || entityId;
-  return objectId
-    .split('_')
-    .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
-function resolveSectionDomains(section: SmartCompositionSection): string[] {
-  if (section.recipe === 'entityGrid' && section.domains.includes('sensor')) {
-    return Array.from(new Set([...section.domains, 'binary_sensor']));
-  }
-  return section.domains;
 }
 
 export function getCompositionCatalogLines(): string[] {

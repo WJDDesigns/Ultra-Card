@@ -4013,7 +4013,11 @@
       "warnings_title": "Warnings",
       "no_results": "No Smart preset was generated. Try a different prompt.",
       "load_failed": "Failed to load Smart connectors.",
-      "generate_failed": "Smart generation failed."
+      "generate_failed": "Smart generation failed.",
+      "unlimited": "Unlimited · runs on your AI",
+      "ai_provider": "Design with",
+      "ai_task": "AI Task",
+      "conversation_agent": "Conversation agent"
     },
     "template": {
       "unknown_keys_title": "Unrecognized template keys (they will be ignored):",

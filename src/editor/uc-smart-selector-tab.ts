@@ -11,7 +11,7 @@ import { ucSmartCardsService } from '../services/uc-smart-cards-service';
 import { localize } from '../localize/localize';
 import '../cards/ultra-card';
 
-export type SmartWizardStep = 'status' | 'compose' | 'preview' | 'apply';
+export type SmartWizardStep = 'compose' | 'preview';
 
 @customElement('uc-smart-selector-tab')
 export class UcSmartSelectorTab extends LitElement {
@@ -20,7 +20,7 @@ export class UcSmartSelectorTab extends LitElement {
   @property({ type: Boolean }) public isCloudAuthenticated = false;
 
   @state() private _prompt = '';
-  @state() private _style: 'clean' | 'minimal' | 'dense' | 'bold' = 'clean';
+  @state() private _aiProviderId: string = UcSmartSelectorTab._loadSavedAiProvider();
   @state() private _loadingStatus = true;
   @state() private _statusError: string | null = null;
   @state() private _status: SmartConnectorStatus | null = null;
@@ -29,7 +29,7 @@ export class UcSmartSelectorTab extends LitElement {
   @state() private _warnings: string[] = [];
   @state() private _connectorUsed: string | null = null;
   @state() private _results: PresetDefinition[] = [];
-  @state() private _wizardStep: SmartWizardStep = 'status';
+  @state() private _wizardStep: SmartWizardStep = 'compose';
   @state() private _selectedPreset: PresetDefinition | null = null;
 
   override connectedCallback(): void {
@@ -42,6 +42,26 @@ export class UcSmartSelectorTab extends LitElement {
       const input = this.shadowRoot?.getElementById('smart-prompt-input') as HTMLTextAreaElement;
       input?.focus();
     });
+  }
+
+  private static readonly AI_PROVIDER_STORAGE_KEY = 'ultra-card-smart-ai-provider';
+
+  private static _loadSavedAiProvider(): string {
+    try {
+      return window.localStorage?.getItem(UcSmartSelectorTab.AI_PROVIDER_STORAGE_KEY) || '';
+    } catch {
+      return '';
+    }
+  }
+
+  private _setAiProvider(id: string): void {
+    this._aiProviderId = id;
+    try {
+      if (id) window.localStorage?.setItem(UcSmartSelectorTab.AI_PROVIDER_STORAGE_KEY, id);
+      else window.localStorage?.removeItem(UcSmartSelectorTab.AI_PROVIDER_STORAGE_KEY);
+    } catch {
+      // Storage unavailable (private mode / sandbox): selection still applies for this session.
+    }
   }
 
   private async _loadConnectorStatus(): Promise<void> {
@@ -75,9 +95,9 @@ export class UcSmartSelectorTab extends LitElement {
     this._wizardStep = step;
   }
 
-  private _selectPresetForApply(preset: PresetDefinition): void {
+  private _applyPreset(preset: PresetDefinition): void {
     this._selectedPreset = preset;
-    this._setStep('apply');
+    this._emitPresetSelected(preset);
   }
 
   private _emitOpenPro(): void {
@@ -106,8 +126,8 @@ export class UcSmartSelectorTab extends LitElement {
         prompt,
         tier,
         connector_preference: 'ha_assist',
+        ...(this._aiProviderId ? { ai_provider: this._aiProviderId } : {}),
         constraints: {
-          style: this._style,
           allow_pro_modules: tier === 'pro',
         },
       };
@@ -151,28 +171,20 @@ export class UcSmartSelectorTab extends LitElement {
       !this.isPro &&
       typeof freeRemaining === 'number' &&
       freeRemaining <= 0;
-    const canGenerate =
-      assistAvailable &&
-      !this._isGenerating &&
-      !freeExhausted &&
-      this._prompt.trim().length > 0;
+    // Generation never needs an AI: without one the local composer builds the card from
+    // your entities. An AI Task / LLM agent only improves the layout.
+    const canGenerate = !this._isGenerating && !freeExhausted && this._prompt.trim().length > 0;
     const connectorUsedLabel =
       this._connectorUsed === 'ha_assist'
         ? localize('editor.smart.connector_ha_assist', lang, 'Home Assistant Assist')
         : this._connectorUsed;
-    const steps: SmartWizardStep[] = ['status', 'compose', 'preview', 'apply'];
+    const steps: SmartWizardStep[] = ['compose', 'preview'];
     const stepLabels: Record<SmartWizardStep, string> = {
-      status: localize('editor.smart.step_status', lang, 'Status'),
       compose: localize('editor.smart.step_compose', lang, 'Compose'),
       preview: localize('editor.smart.step_preview', lang, 'Preview'),
-      apply: localize('editor.smart.step_apply', lang, 'Apply'),
     };
-    const styleLabels: Record<typeof this._style, string> = {
-      clean: localize('editor.smart.style_clean', lang, 'Clean'),
-      minimal: localize('editor.smart.style_minimal', lang, 'Minimal'),
-      dense: localize('editor.smart.style_dense', lang, 'Dense'),
-      bold: localize('editor.smart.style_bold', lang, 'Bold'),
-    };
+    const aiProviders = ucSmartCardsService.listAiProviders(this.hass);
+    const activeAi = ucSmartCardsService.resolveAiProvider(this.hass, this._aiProviderId);
 
     return html`
       <div class="smart-container">
@@ -183,7 +195,7 @@ export class UcSmartSelectorTab extends LitElement {
               ${localize(
                 'editor.smart.subtitle',
                 lang,
-                "Uses your Home Assistant Assist pipeline to turn a description into a ready-to-apply Ultra Card preset."
+                'Describe a card and get a ready-to-apply Ultra Card preset built from your entities, designed by your Home Assistant AI when one is connected.'
               )}
             </p>
           </div>
@@ -208,9 +220,7 @@ export class UcSmartSelectorTab extends LitElement {
                     this._setStep(step);
                     return;
                   }
-                  if (step === 'compose' && assistAvailable) this._setStep('compose');
                   if (step === 'preview' && this._results.length) this._setStep('preview');
-                  if (step === 'apply' && this._selectedPreset) this._setStep('apply');
                 }}
               >
                 <span class="wizard-step-index">${steps.indexOf(step) + 1}</span>
@@ -220,15 +230,20 @@ export class UcSmartSelectorTab extends LitElement {
           )}
         </div>
 
-        ${this._wizardStep === 'status'
+        ${this._wizardStep === 'compose'
           ? html`
               <div class="wizard-panel">
                 <div class="status-row">
-                  <span class="chip ${assistAvailable ? 'ok' : 'warn'}">
+                  <span class="chip ${assistAvailable ? 'ok' : 'used'}">
                     ${assistAvailable
-                      ? localize('editor.smart.assist_ready', lang, 'HA Assist ready')
-                      : localize('editor.smart.assist_not_ready', lang, 'HA Assist not set up')}
+                      ? `${localize('editor.smart.assist_ready', lang, 'AI connected')}${activeAi ? ` · ${activeAi.name}` : ''}`
+                      : localize('editor.smart.assist_not_ready', lang, 'No AI connected · built-in composer')}
                   </span>
+                  ${assistAvailable
+                    ? html`<span class="chip ok">
+                        ${localize('editor.smart.unlimited', lang, 'Unlimited · runs on your AI')}
+                      </span>`
+                    : ''}
                   <span class="chip used">
                     ${this.isPro
                       ? localize('editor.smart.pro_modules', lang, 'Pro modules enabled')
@@ -244,23 +259,49 @@ export class UcSmartSelectorTab extends LitElement {
                     : ''}
                 </div>
 
+                ${aiProviders.length > 1
+                  ? html`
+                      <div class="ai-picker">
+                        <label for="smart-ai-provider">
+                          ${localize('editor.smart.ai_provider', lang, 'Design with')}
+                        </label>
+                        <select
+                          id="smart-ai-provider"
+                          .value=${activeAi?.id || ''}
+                          @change=${(e: Event) => this._setAiProvider((e.target as HTMLSelectElement).value)}
+                        >
+                          ${aiProviders.map(
+                            provider => html`
+                              <option value=${provider.id} ?selected=${provider.id === activeAi?.id}>
+                                ${provider.name}
+                                (${provider.kind === 'ai_task'
+                                  ? localize('editor.smart.ai_task', lang, 'AI Task')
+                                  : localize('editor.smart.conversation_agent', lang, 'Conversation agent')})
+                              </option>
+                            `
+                          )}
+                        </select>
+                      </div>
+                    `
+                  : ''}
+
                 ${!assistAvailable && !this._loadingStatus
                   ? html`
-                      <div class="notice warn">
+                      <div class="notice info">
                         <ha-icon icon="mdi:assistant"></ha-icon>
                         <div>
                           <div class="notice-title">
                             ${localize(
                               'editor.smart.setup_assist_title',
                               lang,
-                              'Set up Home Assistant Assist'
+                              'Optional: connect an AI for richer layouts'
                             )}
                           </div>
                           <div>
                             ${localize(
                               'editor.smart.setup_assist_body',
                               lang,
-                              "Smart Cards use Home Assistant's Assist/LLM connection. Configure an Assist pipeline in Home Assistant, then refresh this tab."
+                              "Cards are built from your entities by the built-in composer. Add an AI Task or LLM conversation agent (OpenAI, Anthropic, Google, Ollama…) in Home Assistant and refresh this tab to let it design the layout. The default Assist agent cannot do this."
                             )}
                           </div>
                         </div>
@@ -319,28 +360,12 @@ export class UcSmartSelectorTab extends LitElement {
                     `
                   : ''}
 
-                <div class="wizard-nav">
-                  <button
-                    class="generate-btn"
-                    ?disabled=${!assistAvailable || freeExhausted}
-                    @click=${() => this._setStep('compose')}
-                  >
-                    ${localize('editor.smart.continue', lang, 'Continue')}
-                  </button>
-                </div>
-              </div>
-            `
-          : ''}
-
-        ${this._wizardStep === 'compose'
-          ? html`
-              <div class="wizard-panel">
                 <div class="prompt-panel">
                   <label for="smart-prompt-input"
                     >${localize(
                       'editor.smart.prompt_label',
                       lang,
-                      'What should Assist build?'
+                      'What should the card show?'
                     )}</label
                   >
                   <textarea
@@ -348,7 +373,7 @@ export class UcSmartSelectorTab extends LitElement {
                     placeholder=${localize(
                       'editor.smart.prompt_placeholder',
                       lang,
-                      'Ask Assist to build a compact morning dashboard with weather, commute time, and coffee status...'
+                      'e.g. the weather and who is home, or the living room lights with a brightness slider...'
                     )}
                     .value=${this._prompt}
                     @input=${(e: Event) => {
@@ -356,28 +381,12 @@ export class UcSmartSelectorTab extends LitElement {
                     }}
                   ></textarea>
 
-                  <div class="controls-row">
-                    <div class="group">
-                      <span class="group-label">${localize('editor.smart.style', lang, 'Style')}</span>
-                      ${(['clean', 'minimal', 'dense', 'bold'] as const).map(
-                        style => html`
-                          <button
-                            class="pill ${this._style === style ? 'active' : ''}"
-                            @click=${() => (this._style = style)}
-                          >
-                            ${styleLabels[style]}
-                          </button>
-                        `
-                      )}
-                    </div>
-                  </div>
-
                   <button class="generate-btn" @click=${this._generate} ?disabled=${!canGenerate}>
                     <ha-icon icon="mdi:brain"></ha-icon>
                     <span
                       >${this._isGenerating
-                        ? localize('editor.smart.generating_btn', lang, 'Asking Assist...')
-                        : localize('editor.smart.generate', lang, 'Ask Assist to Generate')}</span
+                        ? localize('editor.smart.generating_btn', lang, 'Building your card...')
+                        : localize('editor.smart.generate', lang, 'Generate card')}</span
                     >
                   </button>
                 </div>
@@ -408,12 +417,6 @@ export class UcSmartSelectorTab extends LitElement {
                       </div>
                     `
                   : ''}
-
-                <div class="wizard-nav">
-                  <button class="mini-btn" @click=${() => this._setStep('status')}>
-                    ${localize('editor.smart.back', lang, 'Back')}
-                  </button>
-                </div>
               </div>
             `
           : ''}
@@ -452,18 +455,24 @@ export class UcSmartSelectorTab extends LitElement {
                             .slice(0, 4)
                             .map(tag => html`<span class="tag">${tag}</span>`)}
                         </div>
-                        <button class="add-btn" @click=${() => this._selectPresetForApply(preset)}>
-                          <ha-icon icon="mdi:check"></ha-icon>
-                          <span>${localize('editor.smart.continue', lang, 'Continue')}</span>
-                        </button>
-                        <button
-                          class="add-btn"
-                          @click=${this._generate}
-                          ?disabled=${this._isGenerating}
-                        >
-                          <ha-icon icon="mdi:refresh"></ha-icon>
-                          <span>${localize('editor.smart.regenerate', lang, 'Regenerate')}</span>
-                        </button>
+                        <div class="result-actions">
+                          <button
+                            class="generate-btn"
+                            @click=${() => this._applyPreset(preset)}
+                            ?disabled=${this._isGenerating}
+                          >
+                            <ha-icon icon="mdi:plus"></ha-icon>
+                            <span>${localize('editor.smart.apply_preset', lang, 'Apply Preset')}</span>
+                          </button>
+                          <button
+                            class="add-btn"
+                            @click=${this._generate}
+                            ?disabled=${this._isGenerating}
+                          >
+                            <ha-icon icon="mdi:refresh" class="${this._isGenerating ? 'spinning' : ''}"></ha-icon>
+                            <span>${localize('editor.smart.regenerate', lang, 'Regenerate')}</span>
+                          </button>
+                        </div>
                       </div>
                     `
                   )}
@@ -472,33 +481,6 @@ export class UcSmartSelectorTab extends LitElement {
                 <div class="wizard-nav">
                   <button class="mini-btn" @click=${() => this._setStep('compose')}>
                     ${localize('editor.smart.back', lang, 'Back')}
-                  </button>
-                </div>
-              </div>
-            `
-          : ''}
-
-        ${this._wizardStep === 'apply' && this._selectedPreset
-          ? html`
-              <div class="wizard-panel">
-                <div class="result-card">
-                  <div class="result-head">
-                    <h5>${this._selectedPreset.name}</h5>
-                    <span class="result-category">${this._selectedPreset.category}</span>
-                  </div>
-                  <p>${this._selectedPreset.description}</p>
-                  ${this._renderPresetPreview(this._selectedPreset)}
-                </div>
-                <div class="wizard-nav">
-                  <button class="mini-btn" @click=${() => this._setStep('preview')}>
-                    ${localize('editor.smart.back', lang, 'Back')}
-                  </button>
-                  <button
-                    class="generate-btn"
-                    @click=${() => this._emitPresetSelected(this._selectedPreset!)}
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.smart.apply_preset', lang, 'Apply Preset')}</span>
                   </button>
                 </div>
               </div>
@@ -552,7 +534,8 @@ export class UcSmartSelectorTab extends LitElement {
       _config_version: 2,
       ...(preset.cardSettings || {}),
       card_margin: 0,
-      card_padding: 0,
+      // Match the padding a real card gets so the preview is not edge-to-edge.
+      card_padding: preset.cardSettings?.card_padding ?? 16,
     };
   }
 
@@ -1058,34 +1041,31 @@ export class UcSmartSelectorTab extends LitElement {
       outline: 2px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.35);
       border-color: var(--primary-color);
     }
-    .controls-row {
+    .ai-picker {
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .group {
-      display: inline-flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 6px;
-    }
-    .group-label {
+      gap: 8px;
+      font-size: 12px;
       color: var(--secondary-text-color);
-      font-size: 12px;
-      margin-right: 4px;
     }
-    .pill {
+    .ai-picker label {
+      font-weight: 600;
+    }
+    .ai-picker select {
+      flex: 1 1 200px;
+      min-width: 0;
       border: 1px solid var(--divider-color);
-      border-radius: 999px;
-      background: var(--card-background-color);
-      padding: 6px 10px;
-      font-size: 12px;
-      cursor: pointer;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
     }
-    .pill.active {
+    .ai-picker select:focus {
+      outline: 2px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.35);
       border-color: var(--primary-color);
-      color: var(--primary-color);
-      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
     }
     .generate-btn {
       border: none;
@@ -1147,6 +1127,22 @@ export class UcSmartSelectorTab extends LitElement {
       display: grid;
       gap: 8px;
       background: var(--card-background-color);
+    }
+    .result-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .result-actions .generate-btn,
+    .result-actions .add-btn {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    @media (max-width: 480px) {
+      .result-actions {
+        grid-template-columns: 1fr;
+      }
     }
     .result-head {
       display: flex;

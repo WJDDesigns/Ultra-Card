@@ -7,6 +7,8 @@ vi.mock('../services/uc-smart-cards-service', () => ({
       default_connector: 'auto',
       limits: { free_remaining: 3, free_daily_generations: 5 },
     })),
+    listAiProviders: vi.fn(() => []),
+    resolveAiProvider: vi.fn(() => null),
     generatePreset: vi.fn(async () => ({
       generation: { warnings: ['trimmed unused module'], connector_used: 'ha_assist' },
       presets: [],
@@ -58,18 +60,13 @@ describe('uc-smart-selector-tab wizard', () => {
     return el;
   }
 
-  it('starts on status step and advances to compose', async () => {
+  it('starts on a single compose step with status chips and the prompt together', async () => {
     const el = await mount();
     const anyEl = el as any;
-    expect(anyEl._wizardStep).toBe('status');
-    const continueBtn = [...el.renderRoot.querySelectorAll('button')].find(b =>
-      (b.textContent || '').includes('Continue')
-    ) as HTMLButtonElement;
-    expect(continueBtn).toBeTruthy();
-    continueBtn.click();
-    await el.updateComplete;
     expect(anyEl._wizardStep).toBe('compose');
+    expect(el.renderRoot.querySelector('.status-row')).toBeTruthy();
     expect(el.renderRoot.querySelector('#smart-prompt-input')).toBeTruthy();
+    expect(el.renderRoot.querySelectorAll('.wizard-step')).toHaveLength(2);
     el.remove();
   });
 
@@ -87,29 +84,28 @@ describe('uc-smart-selector-tab wizard', () => {
     el.remove();
   });
 
-  it('apply emits preset-selected without skipEntityMapping', async () => {
+  it('applies straight from the preview card without a separate apply step', async () => {
     const el = await mount();
     const anyEl = el as any;
-    anyEl._selectedPreset = {
-      id: 'smart-1',
-      name: 'Morning Dashboard',
-      description: 'Weather and coffee',
-      category: 'layout',
-      icon: 'mdi:weather-sunny',
-      author: 'Assist',
-      version: '1.0.0',
-      tags: [],
-      layout: { rows: [] },
-    };
-    anyEl._wizardStep = 'apply';
+    anyEl._wizardStep = 'compose';
+    anyEl._prompt = 'build a morning card';
     await el.updateComplete;
+    await anyEl._generate();
+    await el.updateComplete;
+    expect(anyEl._wizardStep).toBe('preview');
 
     const events: CustomEvent[] = [];
     el.addEventListener('preset-selected', (e: Event) => events.push(e as CustomEvent));
-    anyEl._emitPresetSelected(anyEl._selectedPreset);
+    const applyBtn = [...el.renderRoot.querySelectorAll('button')].find(b =>
+      (b.textContent || '').includes('Apply Preset')
+    ) as HTMLButtonElement;
+    expect(applyBtn).toBeTruthy();
+    applyBtn.click();
+
     expect(events).toHaveLength(1);
     expect(events[0].detail.preset.id).toBe('smart-1');
     expect(events[0].detail.skipEntityMapping).toBeUndefined();
+    expect(el.renderRoot.querySelectorAll('.wizard-step')).toHaveLength(2);
     el.remove();
   });
 });

@@ -13,6 +13,20 @@ type HassLike = {
   states?: Record<string, unknown>;
 };
 
+/** Connect status when a paid cloud designer is available: the only case Connect generates. */
+const CLOUD_STATUS = {
+  available: { ha_assist: true, user_provider: false, cloud_default: true },
+  default_connector: 'auto',
+  limits: { free_daily_generations: 5, free_remaining: 3 },
+  tier_access: {
+    can_generate_free: true,
+    can_generate_pro: false,
+    is_pro_user: false,
+    free_daily_generations: 5,
+    free_remaining: 3,
+  },
+};
+
 describe('uc-smart-cards-service', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -20,7 +34,7 @@ describe('uc-smart-cards-service', () => {
 
   it('normalizes successful smart generation payloads from HA API', async () => {
     const hass = {
-      callApi: vi.fn().mockResolvedValue({
+      callApi: vi.fn(async (method: string) => method === 'GET' ? CLOUD_STATUS : {
         smart_preset: {
           id: 'smart-1',
           name: 'Morning',
@@ -58,10 +72,314 @@ describe('uc-smart-cards-service', () => {
       tier: 'free',
     });
 
+    expect(hass.callApi).toHaveBeenCalledWith('POST', expect.stringContaining('smart/generate'), expect.anything());
     expect(result.smart_preset?.id).toBe('smart-1');
     expect(result.generation?.connector_used).toBe('ha_assist');
     expect(result.limits?.free_remaining).toBe(4);
     expect(result.tier_access?.can_generate_pro).toBe(false);
+  });
+
+  it('replaces the Connect built-in Assist stub with a composed card and keeps the quota fields', async () => {
+    const hass = {
+      states: {
+        'person.wayne': { entity_id: 'person.wayne', state: 'home', attributes: { friendly_name: 'Wayne' } },
+        'person.sam': { entity_id: 'person.sam', state: 'not_home', attributes: { friendly_name: 'Sam' } },
+      },
+      callWS: vi.fn(),
+      callApi: vi.fn(async (method: string) => method === 'GET' ? CLOUD_STATUS : {
+        smart_preset: {
+          id: 'smart-local-abcd1234',
+          name: 'Make a card that shows who is home and',
+          description:
+            "Sorry, I see you're referring to the people, but I didn't understand the whole request.",
+          category: 'layouts',
+          icon: 'mdi:brain',
+          author: 'Home Assistant Assist',
+          version: '1.0.0',
+          tags: ['smart', 'assist', 'free'],
+          layout: {
+            rows: [
+              {
+                id: 'r',
+                column_layout: '1-col',
+                columns: [
+                  {
+                    id: 'c',
+                    modules: [
+                      { id: 't', type: 'text', text: 'Make a card that shows who is home and' },
+                      { id: 'm', type: 'markdown', content: 'Home Assistant Assist response' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        generation: { connector_used: 'ha_assist', tier_required: 'free', warnings: [] },
+        limits: { free_daily_generations: 5, free_remaining: 3 },
+        tier_access: {
+          can_generate_free: true,
+          can_generate_pro: false,
+          is_pro_user: false,
+          free_daily_generations: 5,
+          free_remaining: 3,
+        },
+      }),
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'Make a card that shows who is home and who is away',
+      tier: 'free',
+      connector_preference: 'ha_assist',
+    });
+    const preset = ucSmartCardsService.getPresetCandidates(result)[0];
+    const modules = preset.layout.rows[0].columns[0].modules as unknown as Array<Record<string, unknown>>;
+    const people = modules.flatMap(module =>
+      module.type === 'horizontal' ? (module.modules as Array<Record<string, unknown>>) : [module]
+    );
+
+    expect(preset.name).toBe('Who Is Home');
+    expect(preset.description).toBe('Shows Wayne and Sam.');
+    expect(people.map(module => module.type)).toEqual(['people', 'people']);
+    expect(people.map(module => module.person_entity)).toEqual(['person.wayne', 'person.sam']);
+    expect(result.limits?.free_remaining).toBe(3);
+    expect(result.tier_access?.free_remaining).toBe(3);
+    expect(hass.callWS).not.toHaveBeenCalled();
+  });
+
+  it('runs on the user\'s own AI without touching Connect or its quota', async () => {
+    const hass = {
+      states: {
+        'ai_task.openai': { entity_id: 'ai_task.openai', state: 'unknown', attributes: { friendly_name: 'OpenAI' } },
+        'lock.front_door': { entity_id: 'lock.front_door', state: 'locked', attributes: { friendly_name: 'Front Door' } },
+      },
+      callApi: vi.fn(async () => CLOUD_STATUS),
+      callWS: vi.fn().mockResolvedValue({
+        response: { data: { modules: [{ type: 'lock', entity: 'lock.front_door' }] } },
+      }),
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, { prompt: 'front door lock', tier: 'free' });
+
+    expect(hass.callApi).not.toHaveBeenCalledWith('POST', expect.anything(), expect.anything());
+    expect(result.limits).toBeUndefined();
+    expect(result.tier_access).toBeUndefined();
+    expect(result.smart_preset?.layout.rows[0].columns[0].modules[0]).toMatchObject({ type: 'lock', entity: 'lock.front_door' });
+
+    const status = await ucSmartCardsService.getConnectorStatus(hass);
+    expect(status.available.ha_assist).toBe(true);
+    expect(status.limits).toBeUndefined();
+    expect(status.tier_access).toBeUndefined();
+  });
+
+  it('uses the local composer for free when Connect has no cloud designer, ignoring its quota', async () => {
+    const hass = {
+      states: {
+        'person.wayne': { entity_id: 'person.wayne', state: 'home', attributes: { friendly_name: 'Wayne' } },
+      },
+      callApi: vi.fn(async () => ({
+        ...CLOUD_STATUS,
+        available: { ha_assist: true, user_provider: false, cloud_default: false },
+        limits: { free_daily_generations: 5, free_remaining: 0 },
+      })),
+      callWS: vi.fn(),
+    } as unknown as HassLike;
+
+    const status = await ucSmartCardsService.getConnectorStatus(hass);
+    expect(status.available.ha_assist).toBe(false);
+    expect(status.limits).toBeUndefined();
+
+    const result = await ucSmartCardsService.generatePreset(hass, { prompt: 'who is home', tier: 'free' });
+    expect(hass.callApi).not.toHaveBeenCalledWith('POST', expect.anything(), expect.anything());
+    expect(result.smart_preset?.layout.rows[0].columns[0].modules[0]).toMatchObject({
+      type: 'people',
+      person_entity: 'person.wayne',
+    });
+  });
+
+  it('lists AI providers and designs with the one the user picked', async () => {
+    const hass = {
+      states: {
+        'conversation.home_assistant': { entity_id: 'conversation.home_assistant', state: 'unknown', attributes: { friendly_name: 'Home Assistant' } },
+        'conversation.claude': { entity_id: 'conversation.claude', state: 'unknown', attributes: { friendly_name: 'Claude' } },
+        'ai_task.openai': { entity_id: 'ai_task.openai', state: 'unknown', attributes: { friendly_name: 'OpenAI' } },
+        'lock.front_door': { entity_id: 'lock.front_door', state: 'locked', attributes: { friendly_name: 'Front Door' } },
+      },
+      callWS: vi.fn().mockResolvedValue({
+        response: { response: { speech: { plain: { speech: '{"modules":[{"type":"lock","entity":"lock.front_door"}]}' } } } },
+      }),
+    } as unknown as HassLike;
+
+    expect(ucSmartCardsService.listAiProviders(hass)).toEqual([
+      { id: 'ai_task.openai', name: 'OpenAI', kind: 'ai_task' },
+      { id: 'conversation.claude', name: 'Claude', kind: 'conversation' },
+    ]);
+    expect(ucSmartCardsService.resolveAiProvider(hass, 'conversation.nope')?.id).toBe('ai_task.openai');
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'front door lock',
+      tier: 'free',
+      ai_provider: 'conversation.claude',
+    });
+
+    expect(hass.callWS).toHaveBeenCalledWith(
+      expect.objectContaining({
+        domain: 'conversation',
+        service: 'process',
+        service_data: expect.objectContaining({ agent_id: 'conversation.claude' }),
+      })
+    );
+    expect(result.smart_preset?.layout.rows[0].columns[0].modules[0]).toMatchObject({ type: 'lock', entity: 'lock.front_door' });
+  });
+
+  it('does not count the ai_task service alone as an AI when no AI Task entity exists', () => {
+    const hass = {
+      services: { ai_task: { generate_data: {} } },
+      states: { 'conversation.home_assistant': { entity_id: 'conversation.home_assistant', state: 'unknown', attributes: {} } },
+    } as unknown as HassLike;
+
+    expect(ucSmartCardsService.hasAiProvider(hass)).toBe(false);
+  });
+
+  it('hydrates generated modules with their full default config so they render', async () => {
+    const hass = {
+      states: {
+        'person.wayne': { entity_id: 'person.wayne', state: 'home', attributes: { friendly_name: 'Wayne' } },
+      },
+      callWS: vi.fn(),
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'who is home',
+      tier: 'free',
+    });
+    const preset = ucSmartCardsService.getPresetCandidates(result)[0];
+    const modules = preset.layout.rows[0].columns[0].modules as unknown as Array<Record<string, unknown>>;
+    const people = modules[0].type === 'horizontal'
+      ? (modules[0].modules as Array<Record<string, unknown>>)[0]
+      : modules[0];
+
+    expect(people.type).toBe('people');
+    expect(people.person_entity).toBe('person.wayne');
+    // Keys the people module reads unconditionally in renderPreview.
+    expect(people.name_settings).toBeTruthy();
+    expect(people.avatar_settings).toBeTruthy();
+    expect(Array.isArray(people.data_items)).toBe(true);
+    // Planner choices survive hydration.
+    expect(people.layout_style).toBe('horizontal_compact');
+  });
+
+  it('shows the whole household when the AI picked one person for a who-is-home prompt', async () => {
+    const hass = {
+      states: {
+        'person.wayne': { entity_id: 'person.wayne', state: 'home', attributes: { friendly_name: 'Wayne' } },
+        'person.gabe': { entity_id: 'person.gabe', state: 'not_home', attributes: { friendly_name: 'Gabe' } },
+        'person.sam': { entity_id: 'person.sam', state: 'home', attributes: { friendly_name: 'Sam' } },
+        'weather.home': { entity_id: 'weather.home', state: 'sunny', attributes: { friendly_name: 'Home' } },
+        'ai_task.openai': { entity_id: 'ai_task.openai', state: 'unknown', attributes: {} },
+      },
+      callWS: vi.fn().mockResolvedValue({
+        response: {
+          data: {
+            name: 'Weather & Home',
+            description: 'Current weather conditions with home occupancy status.',
+            modules: [
+              { type: 'animated_weather', weather_entity: 'weather.home' },
+              { type: 'people', person_entity: 'person.gabe', layout_style: 'banner' },
+            ],
+          },
+        },
+      }),
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'Make a card that shows the weather and who is home',
+      tier: 'pro',
+      constraints: { allow_pro_modules: true },
+    });
+    const preset = ucSmartCardsService.getPresetCandidates(result)[0];
+    const modules = preset.layout.rows[0].columns[0].modules as unknown as Array<Record<string, unknown>>;
+    const peopleRow = modules.find(module => module.type === 'horizontal') as Record<string, unknown>;
+    const people = peopleRow.modules as Array<Record<string, unknown>>;
+
+    expect(preset.name).toBe('Weather & Home');
+    expect(modules[0].type).toBe('animated_weather');
+    expect(people.map(module => module.person_entity)).toEqual(['person.wayne', 'person.gabe', 'person.sam']);
+    // Grouped rows get the panel treatment; the self-styled weather module does not.
+    expect((peopleRow.design as Record<string, string>).border_radius).toBe('14px');
+    expect(modules[0].design).toBeUndefined();
+  });
+
+  it('keeps a single person when the prompt names them', async () => {
+    const hass = {
+      states: {
+        'person.wayne': { entity_id: 'person.wayne', state: 'home', attributes: { friendly_name: 'Wayne' } },
+        'person.gabe': { entity_id: 'person.gabe', state: 'not_home', attributes: { friendly_name: 'Gabe' } },
+        'ai_task.openai': { entity_id: 'ai_task.openai', state: 'unknown', attributes: {} },
+      },
+      callWS: vi.fn().mockResolvedValue({
+        response: { data: { modules: [{ type: 'people', person_entity: 'person.gabe' }] } },
+      }),
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'is Gabe home',
+      tier: 'pro',
+    });
+    const preset = ucSmartCardsService.getPresetCandidates(result)[0];
+    const modules = preset.layout.rows[0].columns[0].modules as unknown as Array<Record<string, unknown>>;
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0].type).toBe('people');
+    expect(modules[0].person_entity).toBe('person.gabe');
+  });
+
+  it('understands occupancy wording as the household', async () => {
+    const hass = {
+      states: {
+        'person.wayne': { entity_id: 'person.wayne', state: 'home', attributes: { friendly_name: 'Wayne' } },
+        'person.gabe': { entity_id: 'person.gabe', state: 'not_home', attributes: { friendly_name: 'Gabe' } },
+        'weather.home': { entity_id: 'weather.home', state: 'sunny', attributes: { friendly_name: 'Home' } },
+      },
+      callWS: vi.fn(),
+    } as unknown as HassLike;
+
+    for (const prompt of ['weather with home occupancy', 'show the weather and whether anyone is home']) {
+      const result = await ucSmartCardsService.generatePreset(hass, { prompt, tier: 'pro' });
+      const preset = ucSmartCardsService.getPresetCandidates(result)[0];
+      const found: string[] = [];
+      const walk = (modules: Array<Record<string, unknown>>) =>
+        modules.forEach(module => {
+          if (module.type === 'people') found.push(String(module.person_entity));
+          if (Array.isArray(module.modules)) walk(module.modules as Array<Record<string, unknown>>);
+        });
+      walk(preset.layout.rows[0].columns[0].modules as unknown as Array<Record<string, unknown>>);
+      expect(found, prompt).toEqual(['person.wayne', 'person.gabe']);
+    }
+  });
+
+  it('builds an animated weather module for pro weather prompts without recursing', async () => {
+    const hass = {
+      states: {
+        'weather.home': {
+          entity_id: 'weather.home',
+          state: 'sunny',
+          attributes: { friendly_name: 'Home', temperature: 24 },
+        },
+      },
+      callWS: vi.fn(),
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'weather with forecast',
+      tier: 'pro',
+      constraints: { allow_pro_modules: true },
+    });
+    const preset = ucSmartCardsService.getPresetCandidates(result)[0];
+    const modules = preset.layout.rows[0].columns[0].modules as unknown as Array<Record<string, unknown>>;
+
+    expect(modules[0].type).toBe('animated_weather');
+    expect(modules[0].weather_entity).toBe('weather.home');
   });
 
   it('normalizes connector status including tier access and limits', async () => {
@@ -128,6 +446,108 @@ describe('uc-smart-cards-service', () => {
     );
   });
 
+  it('recomposes when the AI answers an entity prompt with a text module echoing the prompt', async () => {
+    const prompt = 'Can you make a who is home card?';
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      callWS: vi.fn().mockResolvedValue({
+        data: {
+          name: prompt,
+          description: 'Not any',
+          modules: [{ type: 'text', text: prompt }],
+        },
+      }),
+      states: {
+        'ai_task.claude': {},
+        'person.wayne': { attributes: { friendly_name: 'Wayne' }, state: 'home' },
+        'person.sam': { attributes: { friendly_name: 'Sam' }, state: 'not_home' },
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, { prompt, tier: 'pro' });
+
+    const modules = result.smart_preset?.layout.rows[0].columns[0].modules || [];
+    expect(modules).toHaveLength(1);
+    expect(modules[0]).toMatchObject({
+      type: 'horizontal',
+      modules: [
+        expect.objectContaining({ type: 'people', person_entity: 'person.wayne' }),
+        expect.objectContaining({ type: 'people', person_entity: 'person.sam' }),
+      ],
+    });
+    expect(result.smart_preset?.name).toBe('Who Is Home');
+    expect(result.smart_preset?.description).not.toBe('Not any');
+    expect(result.generation?.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('Recomposed layout')])
+    );
+  });
+
+  it('fills in the people when the AI returns an empty people module wrapped in HA response envelope', async () => {
+    const prompt = 'Can you make a "who is home" card?';
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      // Real HA `call_service` + return_response shape: { context, response: { conversation_id, data } }
+      callWS: vi.fn().mockResolvedValue({
+        context: { id: 'ctx', parent_id: null, user_id: 'u1' },
+        response: {
+          conversation_id: null,
+          data: {
+            name: prompt,
+            description: 'Not any',
+            modules: [{ type: 'people' }],
+          },
+        },
+      }),
+      states: {
+        'ai_task.claude': {},
+        'person.wayne': { attributes: { friendly_name: 'Wayne' }, state: 'home' },
+        'person.sam': { attributes: { friendly_name: 'Sam' }, state: 'not_home' },
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, { prompt, tier: 'pro' });
+
+    const modules = result.smart_preset?.layout.rows[0].columns[0].modules || [];
+    expect(modules).toHaveLength(1);
+    expect(modules[0]).toMatchObject({
+      type: 'horizontal',
+      modules: [
+        expect.objectContaining({ type: 'people', person_entity: 'person.wayne' }),
+        expect.objectContaining({ type: 'people', person_entity: 'person.sam' }),
+      ],
+    });
+    expect(result.smart_preset?.name).toBe('Who Is Home');
+    expect(result.smart_preset?.description).not.toBe('Not any');
+    expect(result.smart_preset?.description).not.toMatch(/who is home" card\?/i);
+  });
+
+  it('keeps AI text modules when the prompt asks for text', async () => {
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      callWS: vi.fn().mockResolvedValue({
+        data: {
+          name: 'House Notes',
+          description: 'A markdown note for the household.',
+          modules: [{ type: 'markdown', content: 'Remember to water the plants.' }],
+        },
+      }),
+      states: {
+        'ai_task.claude': {},
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'a markdown note reminding us to water the plants',
+      tier: 'pro',
+    });
+
+    expect(result.smart_preset?.layout.rows[0].columns[0].modules[0]).toMatchObject({ type: 'markdown' });
+    expect(result.smart_preset?.name).toBe('House Notes');
+  });
+
   it('rejects unknown AI modules and falls back to UC builders', async () => {
     const hass = {
       callApi: vi.fn().mockRejectedValue({ status: 404 }),
@@ -154,18 +574,46 @@ describe('uc-smart-cards-service', () => {
     });
   });
 
-  it('drops AI modules with unknown entities and falls back when plan is empty', async () => {
+  it('repairs AI modules that point at unknown entities using the real ones', async () => {
     const hass = {
       callApi: vi.fn().mockRejectedValue({ status: 404 }),
       callWS: vi.fn().mockResolvedValue({
         data: {
-          name: 'Missing Entities',
+          name: 'Kitchen Lights',
+          description: 'Buttons for the kitchen light.',
           modules: [
             {
               type: 'light',
               presets: [{ name: 'On', action: 'turn_on', entities: ['light.missing'] }],
             },
           ],
+        },
+      }),
+      states: {
+        'ai_task.claude': {},
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'kitchen light buttons',
+      tier: 'free',
+    });
+
+    expect(result.generation?.fallback).toBeFalsy();
+    expect(result.smart_preset?.name).toBe('Kitchen Lights');
+    const modules = result.smart_preset?.layout.rows[0].columns[0].modules || [];
+    expect(JSON.stringify(modules)).toContain('light.kitchen');
+    expect(JSON.stringify(modules)).not.toContain('light.missing');
+  });
+
+  it('falls back to the local composer when the AI plan has nothing the home can show', async () => {
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      callWS: vi.fn().mockResolvedValue({
+        data: {
+          name: 'Missing Entities',
+          modules: [{ type: 'vacuum', entity: 'vacuum.missing' }],
         },
       }),
       states: {
@@ -561,11 +1009,14 @@ describe('uc-smart-cards-service', () => {
 
   it('surfaces quota and lock errors from HA API payload', async () => {
     const hass = {
-      callApi: vi.fn().mockRejectedValue({
-        status: 429,
-        body: {
-          error: 'Daily free Smart generations reached. Upgrade to Pro for unlimited generations.',
-        },
+      callApi: vi.fn(async (method: string) => {
+        if (method === 'GET') return CLOUD_STATUS;
+        throw {
+          status: 429,
+          body: {
+            error: 'Daily free Smart generations reached. Upgrade to Pro for unlimited generations.',
+          },
+        };
       }),
     } as unknown as HassLike;
 
@@ -657,7 +1108,7 @@ describe('uc-smart-cards-service', () => {
     });
   });
 
-  it('builds clock and weather row above light list for the regression prompt', async () => {
+  it('builds clock and weather row above light list without dividers for the regression prompt', async () => {
     const hass = {
       callApi: vi.fn().mockRejectedValue({ status: 404 }),
       callWS: vi.fn().mockResolvedValue({ data: 'Clock weather lights card.' }),
@@ -690,15 +1141,60 @@ describe('uc-smart-cards-service', () => {
             expect.objectContaining({ type: 'horizontal' }),
           ],
         }),
-        expect.objectContaining({ type: 'separator' }),
         expect.objectContaining({ type: 'vertical' }),
       ],
     });
+    expect(JSON.stringify(modules)).not.toContain('"type":"separator"');
+  });
+
+  it('drops dividers the AI added when the prompt did not ask for them', async () => {
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      callWS: vi.fn().mockResolvedValue({
+        data: JSON.stringify({
+          name: 'Lights',
+          description: 'Lights',
+          layout: {
+            rows: [
+              {
+                id: 'row-1',
+                column_layout: '1-col',
+                columns: [
+                  {
+                    id: 'col-1',
+                    modules: [
+                      { type: 'light', entity: 'light.hall' },
+                      { type: 'separator', separator_style: 'line' },
+                      { type: 'light', entity: 'light.desk' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      }),
+      states: {
+        'ai_task.claude': {},
+        'light.hall': { state: 'on', attributes: { friendly_name: 'Hall Light' } },
+        'light.desk': { state: 'off', attributes: { friendly_name: 'Desk Lamp' } },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'hall light and desk lamp controls',
+      tier: 'free',
+    });
+
+    const json = JSON.stringify(result.smart_preset?.layout.rows[0].columns[0].modules || []);
+    expect(json).toContain('light.hall');
+    expect(json).toContain('light.desk');
+    expect(json).not.toContain('"type":"separator"');
   });
 
   it('sanitizes cloud presets through local tier validation', async () => {
     const hass = {
-      callApi: vi.fn().mockResolvedValue({
+      callApi: vi.fn(async (method: string) => method === 'GET' ? CLOUD_STATUS : {
         smart_preset: {
           id: 'cloud-1',
           name: 'Pro Weather',
@@ -754,5 +1250,49 @@ describe('uc-smart-cards-service', () => {
     expect(modules.some(module => module.type === 'animated_clock')).toBe(false);
     expect(modules.some(module => module.type === 'animated_weather')).toBe(false);
     expect(modules.some(module => module.type === 'clock' || module.type === 'weather')).toBe(true);
+  });
+
+  it('sends the AI a relevance-ranked, area-tagged inventory and names the mentioned area', async () => {
+    const callWS = vi.fn().mockResolvedValue({ data: 'no plan' });
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      callWS,
+      states: {
+        'ai_task.claude': {},
+        'light.lamp': { attributes: { friendly_name: 'Lamp' }, state: 'on' },
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+        'sensor.hub_rssi': { attributes: { friendly_name: 'Hub RSSI' }, state: '-50' },
+        'sensor.lounge_temp': {
+          attributes: { friendly_name: 'Lounge Temp', device_class: 'temperature', unit_of_measurement: '°C' },
+          state: '21',
+        },
+      },
+      areas: {
+        living_room: { area_id: 'living_room', name: 'Living Room' },
+        kitchen: { area_id: 'kitchen', name: 'Kitchen' },
+      },
+      devices: {},
+      entities: {
+        'light.lamp': { entity_id: 'light.lamp', area_id: 'living_room' },
+        'light.kitchen': { entity_id: 'light.kitchen', area_id: 'kitchen' },
+        'sensor.lounge_temp': { entity_id: 'sensor.lounge_temp', area_id: 'living_room' },
+        'sensor.hub_rssi': { entity_id: 'sensor.hub_rssi', entity_category: 'diagnostic' },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'living room lights',
+      tier: 'free',
+    });
+
+    const call = callWS.mock.calls[0]?.[0] as { service_data?: { instructions?: string } };
+    const instructions = call?.service_data?.instructions || '';
+    expect(instructions).toContain('The request mentions the area(s): Living Room');
+    expect(instructions).toContain('- light.lamp (Lamp) [area: Living Room]');
+    expect(instructions).not.toContain('light.kitchen');
+    expect(instructions).not.toContain('sensor.hub_rssi');
+    expect(instructions).toContain('[area: Living Room, temperature, °C]');
+    expect(result.smart_preset?.name).toBe('Living Room Light Control');
+    expect(result.smart_preset?.layout.rows[0].columns[0].modules).toHaveLength(1);
   });
 });

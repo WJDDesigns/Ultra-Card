@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { parseSmartCompositionPlan } from './uc-smart-composition-planner';
+// Registers module handlers (default builders) the same way the service does in production.
+import './uc-smart-module-sanitizer';
 
 const hass = {
   states: {
@@ -106,7 +108,8 @@ describe('uc-smart-composition-planner', () => {
     });
     expect(plan.sections[1].entities).toHaveLength(4);
     expect(plan.sections[2]).toMatchObject({
-      recipe: 'gaugeModule',
+      recipe: 'singleModule',
+      forcedModuleType: 'gauge',
       entities: [expect.objectContaining({ entityId: 'sensor.car_fuel_level' })],
     });
   });
@@ -151,6 +154,145 @@ describe('uc-smart-composition-planner', () => {
         expect.objectContaining({ entityId: 'light.desk' }),
       ]),
     });
+  });
+
+  it('narrows lights to the area named in the prompt using the registries', () => {
+    const areaHass = {
+      states: {
+        'light.lamp': { attributes: { friendly_name: 'Lamp' }, state: 'on' },
+        'light.ceiling': { attributes: { friendly_name: 'Ceiling' }, state: 'off' },
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+        'light.bedroom': { attributes: { friendly_name: 'Bedroom' }, state: 'off' },
+      },
+      areas: {
+        living_room: { area_id: 'living_room', name: 'Living Room' },
+        kitchen: { area_id: 'kitchen', name: 'Kitchen' },
+      },
+      devices: {},
+      entities: {
+        'light.lamp': { entity_id: 'light.lamp', area_id: 'living_room' },
+        'light.ceiling': { entity_id: 'light.ceiling', area_id: 'living_room' },
+        'light.kitchen': { entity_id: 'light.kitchen', area_id: 'kitchen' },
+      },
+    };
+
+    const plan = parseSmartCompositionPlan('living room light buttons', areaHass);
+    expect(plan.sections).toHaveLength(1);
+    expect(plan.sections[0].recipe).toBe('controlList');
+    expect(plan.sections[0].entities.map(entity => entity.entityId).sort()).toEqual(['light.ceiling', 'light.lamp']);
+  });
+
+  it('maps plugs and switches to a control list of switch entities', () => {
+    const plan = parseSmartCompositionPlan('kitchen plugs', {
+      states: {
+        'switch.kitchen_kettle': { attributes: { friendly_name: 'Kitchen Kettle', device_class: 'outlet' }, state: 'on' },
+        'switch.garage_pump': { attributes: { friendly_name: 'Garage Pump' }, state: 'off' },
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+      },
+    });
+
+    expect(plan.sections).toHaveLength(1);
+    expect(plan.sections[0]).toMatchObject({ recipe: 'controlList', domains: ['switch'] });
+    expect(plan.sections[0].entities[0].entityId).toBe('switch.kitchen_kettle');
+  });
+
+  it('treats temperature and humidity without weather words as sensor targets', () => {
+    const plan = parseSmartCompositionPlan('temperature and humidity readings', {
+      states: {
+        'weather.home': { attributes: { friendly_name: 'Home Weather' }, state: 'sunny' },
+        'sensor.office_temperature': {
+          attributes: { friendly_name: 'Office Temperature', device_class: 'temperature' },
+          state: '21',
+        },
+        'sensor.office_humidity': {
+          attributes: { friendly_name: 'Office Humidity', device_class: 'humidity' },
+          state: '40',
+        },
+        'sensor.power': { attributes: { friendly_name: 'Power', device_class: 'power' }, state: '120' },
+      },
+    });
+
+    expect(plan.sections).toHaveLength(1);
+    expect(plan.sections[0].domains).toEqual(['sensor']);
+    expect(plan.sections[0].targets?.[0].deviceClasses).toEqual(expect.arrayContaining(['temperature', 'humidity']));
+    expect(plan.sections[0].entities.map(entity => entity.entityId).sort()).toEqual([
+      'sensor.office_humidity',
+      'sensor.office_temperature',
+    ]);
+  });
+
+  it('uses door contact sensors for door prompts and falls back to locks when there are none', () => {
+    const withSensors = parseSmartCompositionPlan('door and window status', {
+      states: {
+        'binary_sensor.front_door': { attributes: { friendly_name: 'Front Door', device_class: 'door' }, state: 'off' },
+        'binary_sensor.kitchen_window': { attributes: { friendly_name: 'Kitchen Window', device_class: 'window' }, state: 'on' },
+        'binary_sensor.motion': { attributes: { friendly_name: 'Motion', device_class: 'motion' }, state: 'off' },
+        'lock.front_door': { attributes: { friendly_name: 'Front Door Lock' }, state: 'locked' },
+      },
+    });
+    expect(withSensors.sections[0].domains).toEqual(['binary_sensor']);
+    expect(withSensors.sections[0].entities.map(entity => entity.entityId).sort()).toEqual([
+      'binary_sensor.front_door',
+      'binary_sensor.kitchen_window',
+    ]);
+
+    const locksOnly = parseSmartCompositionPlan('front door status', {
+      states: {
+        'lock.front_door': { attributes: { friendly_name: 'Front Door' }, state: 'locked' },
+      },
+    });
+    expect(locksOnly.sections[0].entities.map(entity => entity.entityId)).toEqual(['lock.front_door']);
+  });
+
+  it('routes presence prompts to a person domain module', () => {
+    const plan = parseSmartCompositionPlan('who is home', {
+      states: {
+        'person.wayne': { attributes: { friendly_name: 'Wayne' }, state: 'home' },
+        'person.sam': { attributes: { friendly_name: 'Sam' }, state: 'not_home' },
+      },
+    });
+
+    expect(plan.sections[0]).toMatchObject({ recipe: 'domainModule', domains: ['person'] });
+    expect(plan.sections[0].entities).toHaveLength(2);
+  });
+
+  it('treats a plain light prompt as controls rather than a status list', () => {
+    const plan = parseSmartCompositionPlan('hall and desk lights', hass);
+    expect(plan.sections).toHaveLength(1);
+    expect(plan.sections[0]).toMatchObject({ recipe: 'controlList', domains: ['light'] });
+    expect(plan.sections[0].entities.map(entity => entity.entityId).sort()).toEqual(['light.desk', 'light.hall']);
+  });
+
+  it('feeds every matching entity to multi-entity modules like the battery monitor', () => {
+    const plan = parseSmartCompositionPlan('battery monitor of phones', {
+      states: {
+        'sensor.phone_battery': { attributes: { friendly_name: 'Phone Battery', device_class: 'battery' }, state: '80' },
+        'sensor.tablet_battery': { attributes: { friendly_name: 'Tablet Battery', device_class: 'battery' }, state: '30' },
+        'sensor.temperature': { attributes: { friendly_name: 'Temperature', device_class: 'temperature' }, state: '21' },
+      },
+    });
+
+    expect(plan.sections[0]).toMatchObject({ recipe: 'singleModule', forcedModuleType: 'battery_monitor' });
+    expect(plan.sections[0].entities.map(entity => entity.entityId).sort()).toEqual([
+      'sensor.phone_battery',
+      'sensor.tablet_battery',
+    ]);
+  });
+
+  it('falls back to entities named in the prompt when no domain word is present', () => {
+    const plan = parseSmartCompositionPlan('kettle', {
+      states: {
+        'switch.kitchen_kettle': { attributes: { friendly_name: 'Kettle' }, state: 'on' },
+        'light.kitchen': { attributes: { friendly_name: 'Kitchen' }, state: 'on' },
+      },
+    });
+
+    expect(plan.sections).toHaveLength(1);
+    expect(plan.sections[0]).toMatchObject({ recipe: 'controlList', domains: ['switch'] });
+    expect(plan.sections[0].entities.map(entity => entity.entityId)).toEqual(['switch.kitchen_kettle']);
+
+    // Generic prompts still produce no sections so the service can use its summary fallback.
+    expect(parseSmartCompositionPlan('make a useful dashboard card', hass).sections).toHaveLength(0);
   });
 
   it('uses pro clock and weather modules when tier is pro', () => {

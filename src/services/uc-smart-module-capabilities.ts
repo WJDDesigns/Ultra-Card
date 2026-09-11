@@ -9,6 +9,7 @@ import {
   isRegistrySmartModuleType,
   matchSmartModuleTypesForPrompt,
 } from './smart/uc-smart-module-registry';
+import type { SmartEntityTarget } from './smart/uc-smart-entity-context';
 
 export type SmartModuleCapability = {
   type: string;
@@ -323,21 +324,138 @@ export function promptWantsTextContent(prompt: string): boolean {
   );
 }
 
-export function inferEntityDomainsFromPrompt(prompt: string): string[] {
-  const text = prompt.toLowerCase();
-  const domains: string[] = [];
-  if (/\bweather\b|\bforecast\b|\btemperature\b|\btemp\b|\bconditions?\b/.test(text)) {
-    domains.push('weather');
-  }
-  if (/\blights?\b|\blamps?\b|\bbulbs?\b/.test(text)) domains.push('light');
-  if (/\blocks?\b|\bdoors?\b|\bdeadbolts?\b/.test(text)) domains.push('lock');
-  if (/\bcovers?\b|\bgarage\b|\bshades?\b|\bblinds?\b/.test(text)) domains.push('cover');
-  if (/\bfans?\b/.test(text)) domains.push('fan');
-  if (/\bclimate\b|\bthermostats?\b|\bhvac\b/.test(text)) domains.push('climate');
-  if (/\bmedia\b|\bmusic\b|\bspotify\b|\bspeaker\b|\btv\b/.test(text)) domains.push('media_player');
+export type { SmartEntityTarget };
 
-  if (!domains.length && /\bsensors?\b|\bstatus\b|\blist\b|\bgauge\b|\bfuel\b/.test(text)) {
-    domains.push('sensor');
+type TargetRule = {
+  pattern: RegExp;
+  domain: string;
+  deviceClasses?: string[];
+  /** Skip this rule when the guard matches (e.g. "temperature" belongs to weather when weather is mentioned). */
+  unless?: RegExp;
+};
+
+const WEATHER_WORDS = /\bweather\b|\bforecast\b|\boutside\b|\boutdoors?\b|\bconditions?\b/;
+
+/**
+ * Ordered so the resulting domain list keeps a sensible top-to-bottom reading order:
+ * weather/header first, then controls, then status sensors.
+ */
+const TARGET_RULES: TargetRule[] = [
+  { pattern: WEATHER_WORDS, domain: 'weather' },
+  // "temp" without any weather context is a temperature sensor, not a weather module.
+  { pattern: /\btemperatures?\b|\btemp\b|\bthermometer\b/, domain: 'sensor', deviceClasses: ['temperature'], unless: WEATHER_WORDS },
+  { pattern: /\bhumidity\b|\bmoisture level\b/, domain: 'sensor', deviceClasses: ['humidity'] },
+  { pattern: /\blights?\b|\blamps?\b|\bbulbs?\b|\bled strip\b|\bleds\b/, domain: 'light' },
+  { pattern: /\bswitch(?:es)?\b|\bplugs?\b|\boutlets?\b|\bsockets?\b|\bsmart plug\b/, domain: 'switch' },
+  { pattern: /\blocks?\b|\bdeadbolts?\b|\bdoor locks?\b/, domain: 'lock' },
+  {
+    pattern: /\bdoors?\b|\bwindows?\b|\bopenings?\b|\bcontact sensors?\b/,
+    domain: 'binary_sensor',
+    deviceClasses: ['door', 'window', 'garage_door', 'opening'],
+    unless: /\bdoor locks?\b|\block the door\b|\bunlock\b|\bgarage\b/,
+  },
+  { pattern: /\bcovers?\b|\bgarage\b|\bshades?\b|\bblinds?\b|\bshutters?\b|\bcurtains?\b|\bawnings?\b/, domain: 'cover' },
+  { pattern: /\bfans?\b|\bceiling fan\b|\bexhaust\b/, domain: 'fan' },
+  { pattern: /\bclimate\b|\bthermostats?\b|\bhvac\b|\bheating\b|\bcooling\b|\bair con(?:ditioning|ditioner)?\b|\ba\/c\b/, domain: 'climate' },
+  { pattern: /\bhumidifiers?\b|\bdehumidifiers?\b/, domain: 'humidifier' },
+  { pattern: /\bwater heaters?\b|\bboiler\b|\bhot water\b/, domain: 'water_heater' },
+  { pattern: /\bmedia\b|\bmusic\b|\bspotify\b|\bspeakers?\b|\btv\b|\btelevision\b|\bsonos\b|\bnow playing\b/, domain: 'media_player' },
+  { pattern: /\bvacuums?\b|\broomba\b|\brobot vac\b|\brobovac\b/, domain: 'vacuum' },
+  { pattern: /\bcameras?\b|\bcctv\b|\bdoorbell\b|\blive feed\b/, domain: 'camera' },
+  {
+    pattern:
+      /\bwho(?:'s| is| are)\s+(?:at\s+)?home\b|\bwho(?:'s| is)\s+away\b|\banyone(?:'s| is)?\s+(?:at\s+)?home\b|\bhome occupancy\b|\bpresence\b|\bpeople\b|\bpersons?\b|\bfamily\b|\bhousehold\b|\beveryone\b|\beverybody\b|\boccupants?\b/,
+    domain: 'person',
+  },
+  { pattern: /\balarm\b|\bsecurity system\b|\barm(?:ed|ing)?\b|\bdisarm\b/, domain: 'alarm_control_panel' },
+  { pattern: /\bcalendar\b|\bevents?\b|\bagenda\b|\bappointments?\b/, domain: 'calendar' },
+  { pattern: /\bto-?do\b|\bshopping list\b|\btasks?\b|\bchores\b|\bchecklist\b/, domain: 'todo' },
+  { pattern: /\bscenes?\b/, domain: 'scene' },
+  { pattern: /\bscripts?\b/, domain: 'script' },
+  { pattern: /\bautomations?\b/, domain: 'automation' },
+  { pattern: /\bmotion\b|\boccupancy\b|\bmovement\b/, domain: 'binary_sensor', deviceClasses: ['motion', 'occupancy', 'presence'] },
+  { pattern: /\bsmoke\b|\bfire alarm\b|\bco2? alarm\b|\bcarbon monoxide\b/, domain: 'binary_sensor', deviceClasses: ['smoke', 'carbon_monoxide', 'gas', 'safety'] },
+  { pattern: /\bleaks?\b|\bflood(?:ing)?\b|\bwater leak\b|\bwater sensor\b/, domain: 'binary_sensor', deviceClasses: ['moisture'] },
+  { pattern: /\bbattery\b|\bbatteries\b|\bbattery levels?\b/, domain: 'sensor', deviceClasses: ['battery'] },
+  { pattern: /\bpower\b|\benergy\b|\bwatts?\b|\bwattage\b|\bkwh\b|\bconsumption\b|\belectricity\b/, domain: 'sensor', deviceClasses: ['power', 'energy'] },
+  { pattern: /\bair quality\b|\bco2\b|\bpm2\.?5\b|\bvoc\b|\baqi\b/, domain: 'sensor', deviceClasses: ['carbon_dioxide', 'pm25', 'volatile_organic_compounds', 'aqi', 'pm10'] },
+  { pattern: /\billuminance\b|\blux\b|\blight level\b/, domain: 'sensor', deviceClasses: ['illuminance'] },
+  { pattern: /\bpressure\b|\bbarometer\b/, domain: 'sensor', deviceClasses: ['pressure', 'atmospheric_pressure'] },
+  { pattern: /\bfuel\b|\btank\b|\bgas level\b/, domain: 'sensor', deviceClasses: ['fuel', 'volume_storage'] },
+];
+
+/**
+ * Entity targets (domain + optional device classes) the prompt is asking for, in reading order.
+ * Multiple rules can contribute to the same domain; device classes are merged per domain.
+ */
+export function inferEntityTargetsFromPrompt(prompt: string): SmartEntityTarget[] {
+  const text = prompt.toLowerCase();
+  const targets: SmartEntityTarget[] = [];
+
+  for (const rule of TARGET_RULES) {
+    if (!rule.pattern.test(text)) continue;
+    if (rule.unless && rule.unless.test(text)) continue;
+
+    const existing = targets.find(target => target.domain === rule.domain);
+    if (!existing) {
+      targets.push({
+        domain: rule.domain,
+        ...(rule.deviceClasses ? { deviceClasses: [...rule.deviceClasses] } : {}),
+      });
+      continue;
+    }
+    if (!rule.deviceClasses) {
+      // A generic mention of the domain widens a previously class-restricted target.
+      existing.deviceClasses = undefined;
+      continue;
+    }
+    if (existing.deviceClasses) {
+      for (const deviceClass of rule.deviceClasses) {
+        if (!existing.deviceClasses.includes(deviceClass)) existing.deviceClasses.push(deviceClass);
+      }
+    }
+  }
+
+  if (!targets.length && /\bsensors?\b|\bstatus\b|\blist\b|\bgauge\b|\breadings?\b|\bmeter\b/.test(text)) {
+    targets.push({ domain: 'sensor' });
+  }
+  return targets;
+}
+
+export function inferEntityDomainsFromPrompt(prompt: string): string[] {
+  const domains: string[] = [];
+  for (const target of inferEntityTargetsFromPrompt(prompt)) {
+    if (!domains.includes(target.domain)) domains.push(target.domain);
   }
   return domains;
+}
+
+const OPENING_CLASSES = ['door', 'window', 'garage_door', 'opening'];
+
+/**
+ * Stand-in targets tried when a target has no matching entities, e.g. "front door"
+ * on a home that only has a door lock, or "who is home" with only device trackers.
+ */
+export function relatedEntityTargets(target: SmartEntityTarget): SmartEntityTarget[] {
+  switch (target.domain) {
+    case 'binary_sensor':
+      if (target.deviceClasses?.some(deviceClass => OPENING_CLASSES.includes(deviceClass))) {
+        return [{ domain: 'lock' }, { domain: 'cover' }];
+      }
+      return [];
+    case 'lock':
+      return [{ domain: 'binary_sensor', deviceClasses: ['door', 'lock'] }];
+    case 'person':
+      return [{ domain: 'device_tracker' }];
+    case 'water_heater':
+      return [{ domain: 'climate' }];
+    case 'switch':
+      return [{ domain: 'input_boolean' }];
+    case 'todo':
+      return [{ domain: 'shopping_list' }];
+    case 'calendar':
+      return [];
+    default:
+      return [];
+  }
 }

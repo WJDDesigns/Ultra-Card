@@ -1,5 +1,6 @@
 import type {
   PresetDefinition,
+  SmartAiProvider,
   SmartConnectorStatus,
   SmartGenerateRequest,
   SmartGenerateResponse,
@@ -10,9 +11,18 @@ import {
   getRegistryKeywordLines,
 } from './smart/uc-smart-module-registry';
 import { correctSmartAiPlan } from './smart/uc-smart-plan-corrector';
-import { promptWantsTextContent } from './uc-smart-module-capabilities';
+import { applySmartLayoutDesign } from './smart/uc-smart-layout-design';
+import { hydrateSmartLayoutModules } from './smart/uc-smart-module-defaults';
+import {
+  buildSmartEntityContext,
+  extractAreaHints,
+  rankSmartEntities,
+  type SmartEntityRecord,
+} from './smart/uc-smart-entity-context';
+import { inferEntityTargetsFromPrompt, promptWantsTextContent } from './uc-smart-module-capabilities';
 import { getCompositionCatalogLines } from './uc-smart-composition-planner';
 import {
+  collectLayoutEntityIds,
   composeSmartCardModules,
   enhanceSmartPresetLayout,
   hasStructuredComposerPlan,
@@ -66,10 +76,40 @@ class UcSmartCardsService {
     return this._normalizeConnectorStatus({}, hass);
   }
 
+  /** Whether Connect reports a paid cloud designer (per-user provider or Ultra Card's default). */
+  private async _cloudDesignerAvailable(hass: HassApiClient): Promise<boolean> {
+    if (!hass?.callApi) return false;
+    const status = await this.getConnectorStatus(hass);
+    return !!status.available.user_provider || !!status.available.cloud_default;
+  }
+
   async generatePreset(
     hass: HassApiClient,
     request: SmartGenerateRequest
   ): Promise<SmartGenerateResponse> {
+    const response = await this._generatePreset(hass, request);
+    // Modules need their full default shape before the card can render them;
+    // a missing nested settings block throws inside renderPreview and leaves
+    // the preview stuck on the loading skeleton.
+    const presets = [response.smart_preset, ...(response.presets || [])].filter(
+      (preset): preset is PresetDefinition => !!preset
+    );
+    for (const preset of presets) applySmartLayoutDesign(preset.layout);
+    await Promise.all(presets.map(preset => hydrateSmartLayoutModules(preset.layout, hass)));
+    return response;
+  }
+
+  private async _generatePreset(
+    hass: HassApiClient,
+    request: SmartGenerateRequest
+  ): Promise<SmartGenerateResponse> {
+    // Generation on the user's own Home Assistant AI (or the local composer) costs nothing,
+    // so it is unlimited and never touches Connect's quota. Only a cloud designer, which
+    // does cost money per call, goes through Connect.
+    if (this.hasAiProvider(hass) || !(await this._cloudDesignerAvailable(hass))) {
+      return this._generateViaNativeAssist(hass, request);
+    }
+
     if (hass?.callApi) {
       try {
         // Connect installed but too old / missing smart capability → do not silently
@@ -88,7 +128,29 @@ class UcSmartCardsService {
           HA_SMART_GENERATE_PATH,
           request as unknown as Record<string, unknown>
         );
-        return this._normalizeGenerateResponse(result, hass, request);
+        const normalized = this._normalizeGenerateResponse(result, hass, request);
+        if (!this._isConnectAssistStub(result)) {
+          return normalized;
+        }
+        // Connect only ran the built-in Assist agent and wrapped its speech in a
+        // text/markdown starter. That agent cannot design cards, so build the
+        // layout here (AI provider if one is connected, otherwise the local
+        // composer) and keep Connect's quota bookkeeping.
+        const native = await this._generateViaNativeAssist(hass, request);
+        return {
+          ...native,
+          ...(normalized.limits ? { limits: normalized.limits } : {}),
+          ...(normalized.tier_access ? { tier_access: normalized.tier_access } : {}),
+          generation: {
+            ...(native.generation || {}),
+            warnings: [
+              ...(native.generation?.warnings || []),
+              ...(normalized.generation?.warnings || []).filter(
+                warning => !/now use Home Assistant Assist/i.test(warning)
+              ),
+            ],
+          },
+        };
       } catch (err: unknown) {
         const errObj = err as {
           status?: number;
@@ -154,10 +216,22 @@ class UcSmartCardsService {
       rawObj.available && typeof rawObj.available === 'object'
         ? (rawObj.available as Record<string, unknown>)
         : {};
-    const frontendAssistAvailable = this._hasFrontendAssist(hass);
+    // Connect reports `ha_assist` whenever `conversation.process` exists, which is
+    // always true, but the built-in agent cannot design a card. When we can see
+    // hass, decide from the actual AI providers instead.
+    const aiAvailable = hass ? this.hasAiProvider(hass) : !!available.ha_assist;
+    const statusWarnings = Array.isArray(rawObj.warnings)
+      ? rawObj.warnings
+          .map((warning: unknown) => String(warning))
+          .filter(warning => !/Assist is not configured/i.test(warning))
+      : [];
+    const cloudDesigner = !!available.user_provider || !!available.cloud_default;
+    // Quotas only exist for the paid cloud designer. A user's own HA AI and the local
+    // composer are free to run, so no limit applies (or is shown) when they are in use.
+    const quotaApplies = cloudDesigner && !aiAvailable;
     return {
       available: {
-        ha_assist: !!available.ha_assist || frontendAssistAvailable,
+        ha_assist: aiAvailable,
         user_provider: !!available.user_provider,
         cloud_default: !!available.cloud_default,
       },
@@ -165,10 +239,10 @@ class UcSmartCardsService {
       ...(rawObj.ha && typeof rawObj.ha === 'object'
         ? { ha: rawObj.ha as SmartConnectorStatus['ha'] }
         : {}),
-      ...((rawObj.limits && typeof rawObj.limits === 'object')
+      ...((quotaApplies && rawObj.limits && typeof rawObj.limits === 'object')
         ? { limits: rawObj.limits as SmartConnectorStatus['limits'] }
         : {}),
-      ...((rawObj.tier_access && typeof rawObj.tier_access === 'object')
+      ...((quotaApplies && rawObj.tier_access && typeof rawObj.tier_access === 'object')
         ? {
             tier_access: {
               can_generate_free: !!(rawObj.tier_access as Record<string, unknown>).can_generate_free,
@@ -186,25 +260,75 @@ class UcSmartCardsService {
             } as SmartConnectorStatus['tier_access'],
           }
         : {}),
-      ...(Array.isArray(rawObj.warnings)
-        ? { warnings: rawObj.warnings.map((warning: unknown) => String(warning)) }
-        : {}),
+      ...(statusWarnings.length ? { warnings: statusWarnings } : {}),
     } as SmartConnectorStatus;
   }
 
-  private _hasFrontendAssist(hass?: HassApiClient): boolean {
-    if (!hass) return false;
-    if (hass.services?.conversation?.process) return true;
-    return Object.keys(hass.states || {}).some(
-      entityId => entityId.startsWith('conversation.') || entityId.startsWith('ai_task.')
+  /**
+   * True when Home Assistant has an AI that can design a layout: an AI Task entity or an LLM
+   * conversation agent. The built-in `conversation.home_assistant` agent only matches device
+   * intents ("turn on the lights"), so it does not count.
+   */
+  hasAiProvider(hass?: HassApiClient): boolean {
+    return this.listAiProviders(hass).length > 0;
+  }
+
+  /**
+   * Every AI in this Home Assistant that can design a layout, AI Task entities first.
+   * The built-in `conversation.home_assistant` agent is excluded: it only matches device
+   * intents and cannot write JSON.
+   */
+  listAiProviders(hass?: HassApiClient): SmartAiProvider[] {
+    const states = (hass?.states || {}) as Record<string, { attributes?: { friendly_name?: unknown } }>;
+    const providers: SmartAiProvider[] = [];
+    for (const kind of ['ai_task', 'conversation'] as const) {
+      for (const entityId of Object.keys(states)) {
+        if (!entityId.startsWith(`${kind}.`) || entityId === 'conversation.home_assistant') continue;
+        const friendly = states[entityId]?.attributes?.friendly_name;
+        providers.push({
+          id: entityId,
+          name: typeof friendly === 'string' && friendly.trim() ? friendly.trim() : entityName(hass as never, entityId),
+          kind,
+        });
+      }
+    }
+    return providers;
+  }
+
+  /** The provider a request will use: the requested one when it exists, else the first available. */
+  resolveAiProvider(hass?: HassApiClient, requestedId?: string | null): SmartAiProvider | null {
+    const providers = this.listAiProviders(hass);
+    if (!providers.length) return null;
+    return providers.find(provider => provider.id === requestedId) || providers[0] || null;
+  }
+
+  /**
+   * Ultra Card Connect's `smart/generate` endpoint (without a cloud designer)
+   * runs the built-in Assist conversation agent and returns its speech wrapped
+   * in a text + markdown starter preset authored "Home Assistant Assist".
+   */
+  private _isConnectAssistStub(raw: unknown): boolean {
+    if (!raw || typeof raw !== 'object') return false;
+    const preset = (raw as { smart_preset?: unknown }).smart_preset;
+    if (!preset || typeof preset !== 'object') return false;
+    const { author, id, tags } = preset as { author?: unknown; id?: unknown; tags?: unknown };
+    if (author === 'Home Assistant Assist') return true;
+    return (
+      typeof id === 'string' &&
+      id.startsWith('smart-local-') &&
+      Array.isArray(tags) &&
+      tags.includes('assist')
     );
   }
+
   private async _generateViaNativeAssist(
     hass: HassApiClient,
     request: SmartGenerateRequest
   ): Promise<SmartGenerateResponse> {
-    if (!hass?.callWS) {
-      throw new Error('Home Assistant Assist is unavailable from this dashboard session.');
+    if (!hass?.callWS || !this.hasAiProvider(hass)) {
+      return this._buildAssistPresetResponse(hass, request, [
+        'No AI is connected to Home Assistant (AI Task or an LLM conversation agent), so this card was built by the local composer from your entities.',
+      ]);
     }
 
     const aiPlan = await this._requestAiDesignPlan(hass, request);
@@ -212,57 +336,49 @@ class UcSmartCardsService {
     if (structuredPreset) return structuredPreset;
 
     const assistText = this._extractAssistText(aiPlan);
-    return this._buildAssistPresetResponse(hass, request, assistText);
+    return this._buildAssistPresetResponse(hass, request, [
+      assistText
+        ? `The AI reply was not a usable layout plan ("${assistText.replace(/\s+/g, ' ').trim().slice(0, 80)}"), so this card was built by the local composer from your entities.`
+        : 'The AI returned no layout plan, so this card was built by the local composer from your entities.',
+    ]);
   }
 
   private async _requestAiDesignPlan(
     hass: HassApiClient,
     request: SmartGenerateRequest
   ): Promise<unknown> {
+    const provider = this.resolveAiProvider(hass, request.ai_provider);
+    if (!provider) return null;
     const instructions = this._buildDesignInstructions(hass, request);
-    if (this._hasAiTask(hass)) {
-      const serviceData: Record<string, unknown> = {
-        task_name: 'Ultra Card Smart preset design',
-        instructions,
-      };
-      const aiTaskEntityId = this._getAiTaskEntityId(hass);
-      if (aiTaskEntityId) serviceData.entity_id = aiTaskEntityId;
 
+    if (provider.kind === 'ai_task') {
       const result = await hass.callWS?.({
         type: 'call_service',
         domain: 'ai_task',
         service: 'generate_data',
-        service_data: serviceData,
+        service_data: {
+          task_name: 'Ultra Card Smart preset design',
+          instructions,
+          entity_id: provider.id,
+        },
         return_response: true,
       });
       return this._extractAiTaskData(result);
     }
 
-    const serviceData: Record<string, unknown> = { text: instructions };
-    const agentId = this._getConversationAgentId(hass);
-    if (agentId) serviceData.agent_id = agentId;
-
     const result = await hass.callWS?.({
       type: 'call_service',
       domain: 'conversation',
       service: 'process',
-      service_data: serviceData,
+      service_data: { text: instructions, agent_id: provider.id },
       return_response: true,
     });
     return this._extractAiTaskData(result);
   }
 
   private _buildDesignInstructions(hass: HassApiClient, request: SmartGenerateRequest): string {
-    const entitiesByDomain = this._groupEntityInventory(hass);
-    const entityLines = Object.entries(entitiesByDomain)
-      .map(([domain, entities]) => {
-        const lines = entities
-          .slice(0, 20)
-          .map(entity => `  - ${entity.entityId} (${entity.name})`)
-          .join('\n');
-        return `${domain}:\n${lines}`;
-      })
-      .join('\n');
+    const inventory = this._buildRankedInventory(hass, request.prompt);
+    const entityLines = inventory.lines.join('\n');
     const catalog = getRegistryCatalogLines(request.tier).join('\n');
     const keywordCatalog = getRegistryKeywordLines(request.tier).join('\n');
     const moduleInstructionLines = getRegistryAiInstructionLines(request.tier).join('\n');
@@ -279,10 +395,10 @@ class UcSmartCardsService {
       'Think in ordered sections from the user prompt, then map each section to a layout recipe:',
       compositionCatalog,
       'Use horizontal/vertical/grid containers to compose sections instead of one repeated flat list.',
-      'Build ordered card sections from the prompt: top summary row, then controls/lists below with separators when needed.',
+      'Build ordered card sections from the prompt: top summary row, then controls/lists below. Do not add separator modules unless the user asks for dividers; sections are spaced automatically.',
       'For clock and weather together, use moduleRow with clock beside weather/animated_weather, then stack light or control sections below.',
       'Example: "clock and weather card with lights below" => horizontal(clock + weather) then vertical light status rows or light controls.',
-      'Example: room dashboard => area_summary or grouped vertical sections with separators.',
+      'Example: room dashboard => area_summary or grouped vertical sections.',
       'Example: media + lights => horizontal(media_player + light controls) or stacked sections.',
       'Layout words matter: grid, list, top, below that, beside, buttons, gauge, and large text change structure.',
       'For weather headers with large temperature text, use horizontal(icon + info) and set info.text_size to 32-40 with attribute temperature.',
@@ -292,6 +408,8 @@ class UcSmartCardsService {
       'Prefer domain-specific modules (light, lock, cover, fan, climate, media_player) over generic info rows when the user asks for controls.',
       'For status/detail prompts, use icon plus info rows for brightness, color, temperature, or state.',
       'Do not use markdown unless the user explicitly asks for notes, instructions, or formatted text.',
+      'Never answer with a text or markdown module that repeats or replies to the request. The request is a card description, not a question: every module must show or control entities from the inventory.',
+      'The "name" is a short card title (2-4 words, never the request itself) and "description" is one full sentence about what the card shows.',
       request.tier === 'free'
         ? 'Free tier: do not use Pro-only modules such as animated_clock, animated_weather, climate, calendar, or vacuum. Use free equivalents like clock and weather.'
         : 'Pro tier: prefer Pro modules (animated_clock, animated_weather, climate, calendar, vacuum) when they improve the requested design.',
@@ -304,18 +422,74 @@ class UcSmartCardsService {
       moduleInstructionLines,
       'Module keyword intent map (includes library-only references; output only supported modules):',
       keywordCatalog,
-      'Entity inventory grouped by domain:',
+      ...(inventory.areaLines.length ? ['Areas (rooms) in this home:', inventory.areaLines.join('\n')] : []),
+      ...(inventory.mentionedAreas.length
+        ? [
+            `The request mentions the area(s): ${inventory.mentionedAreas.join(', ')}. Only use entities tagged with that area unless the request clearly asks for something else.`,
+          ]
+        : []),
+      'Entity inventory grouped by domain. Entities are ranked by relevance to the request (best first) and tagged with [area], device_class, and unit when known.',
+      'Prefer the first entities in each group. Diagnostic, hidden, and unavailable entities were removed.',
       entityLines || '(no entities available)',
     ].join('\n');
   }
 
-  private _groupEntityInventory(hass: HassApiClient): Record<string, Array<{ entityId: string; name: string }>> {
-    const grouped: Record<string, Array<{ entityId: string; name: string }>> = {};
-    for (const entity of this._getEntityInventory(hass)) {
-      if (!grouped[entity.domain]) grouped[entity.domain] = [];
-      grouped[entity.domain].push({ entityId: entity.entityId, name: entity.name });
+  /**
+   * Prompt-relevance-ranked entity inventory for the AI plan. Domains the prompt asks
+   * for get a generous quota so the model can pick well; everything else is a short tail
+   * for context. Keeps the prompt bounded on large homes.
+   */
+  private _buildRankedInventory(
+    hass: HassApiClient,
+    prompt: string
+  ): { lines: string[]; areaLines: string[]; mentionedAreas: string[] } {
+    const context = buildSmartEntityContext(hass);
+    const targets = inferEntityTargetsFromPrompt(prompt);
+    const targetDomains = new Set(targets.map(target => target.domain));
+    const mentionedAreas = extractAreaHints(prompt, context.areas).map(area => area.name);
+
+    const RELEVANT_DOMAIN_QUOTA = 25;
+    const OTHER_DOMAIN_QUOTA = 6;
+    const TOTAL_CAP = 160;
+
+    const ranked = rankSmartEntities(context, prompt, { preferClean: true });
+    const grouped = new Map<string, SmartEntityRecord[]>();
+    for (const { entity } of ranked) {
+      const quota = targetDomains.has(entity.domain) ? RELEVANT_DOMAIN_QUOTA : OTHER_DOMAIN_QUOTA;
+      const bucket = grouped.get(entity.domain) || [];
+      if (bucket.length >= quota) continue;
+      bucket.push(entity);
+      grouped.set(entity.domain, bucket);
     }
-    return grouped;
+
+    // Requested domains first (in prompt order), then the rest alphabetically.
+    const orderedDomains = [
+      ...Array.from(targetDomains).filter(domain => grouped.has(domain)),
+      ...Array.from(grouped.keys())
+        .filter(domain => !targetDomains.has(domain))
+        .sort(),
+    ];
+
+    const lines: string[] = [];
+    let total = 0;
+    for (const domain of orderedDomains) {
+      const entities = grouped.get(domain) || [];
+      if (!entities.length) continue;
+      lines.push(`${domain}:`);
+      for (const entity of entities) {
+        if (total >= TOTAL_CAP) break;
+        const tags: string[] = [];
+        if (entity.areaName) tags.push(`area: ${entity.areaName}`);
+        if (entity.deviceClass) tags.push(entity.deviceClass);
+        if (entity.unit) tags.push(entity.unit);
+        lines.push(`  - ${entity.entityId} (${entity.name})${tags.length ? ` [${tags.join(', ')}]` : ''}`);
+        total += 1;
+      }
+      if (total >= TOTAL_CAP) break;
+    }
+
+    const areaLines = context.areas.slice(0, 40).map(area => `  - ${area.name}`);
+    return { lines, areaLines, mentionedAreas };
   }
 
   private _sanitizeContext(request: SmartGenerateRequest): SmartSanitizeContext {
@@ -324,26 +498,6 @@ class UcSmartCardsService {
       prompt: request.prompt,
       allowProModules: request.constraints?.allow_pro_modules ?? request.tier === 'pro',
     };
-  }
-
-  private _hasAiTask(hass?: HassApiClient): boolean {
-    if (!hass) return false;
-    if (hass.services?.ai_task?.generate_data) return true;
-    return Object.keys(hass.states || {}).some(entityId => entityId.startsWith('ai_task.'));
-  }
-
-  private _getAiTaskEntityId(hass?: HassApiClient): string | null {
-    const entityIds = Object.keys(hass?.states || {}).filter(entityId =>
-      entityId.startsWith('ai_task.')
-    );
-    return entityIds[0] || null;
-  }
-
-  private _getConversationAgentId(hass?: HassApiClient): string | null {
-    const entityIds = Object.keys(hass?.states || {}).filter(entityId =>
-      entityId.startsWith('conversation.')
-    );
-    return entityIds[0] || null;
   }
 
   private _extractAssistText(value: unknown): string | null {
@@ -373,11 +527,27 @@ class UcSmartCardsService {
     return null;
   }
 
+  /**
+   * Unwrap the service response. A frontend `call_service` with `return_response` resolves to
+   * `{ context, response }`; `ai_task.generate_data` puts the model output in `response.data`
+   * and `conversation.process` in `response.response.speech.plain.speech`.
+   */
   private _extractAiTaskData(value: unknown): unknown {
-    if (value && typeof value === 'object' && 'data' in value) {
-      return (value as Record<string, unknown>).data;
+    let current = value;
+    for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth += 1) {
+      const record = current as Record<string, unknown>;
+      if ('data' in record && record.data !== undefined && record.data !== null) return record.data;
+      if ('response' in record && record.response && typeof record.response === 'object') {
+        current = record.response;
+        continue;
+      }
+      break;
     }
-    return value;
+    if (current && typeof current === 'object') {
+      const speech = (current as { speech?: { plain?: { speech?: unknown } } }).speech?.plain?.speech;
+      if (typeof speech === 'string') return speech;
+    }
+    return current;
   }
 
   private _buildPresetFromAiPlan(
@@ -427,15 +597,17 @@ class UcSmartCardsService {
     const allWarnings = enhanced.warnings;
 
     const entities = selectEntitiesForPrompt(hass, request.prompt);
-    const promptTitle = deriveTitleFromPrompt(request.prompt, entities);
-    const name =
-      typeof correctedPlan.name === 'string' && correctedPlan.name.trim()
-        ? correctedPlan.name.trim().slice(0, 80)
-        : promptTitle || 'Smart Card';
-    const description =
-      typeof correctedPlan.description === 'string' && correctedPlan.description.trim()
-        ? correctedPlan.description.trim().slice(0, 180)
-        : 'Generated from Home Assistant AI using Ultra Card modules.';
+    const promptTitle = deriveTitleFromPrompt(request.prompt, entities, hass);
+    const aiName = this._usableAiText(correctedPlan.name, request.prompt, 1);
+    const aiDescription = this._usableAiText(correctedPlan.description, request.prompt, 4);
+    // Prefer our derived title when the AI just echoed the prompt or answered with a question.
+    const name = (aiName && !/\?$/.test(aiName) ? aiName : promptTitle || aiName || 'Smart Card').slice(0, 80);
+    const description = (
+      aiDescription ||
+      this._describeLayout(hass, layout) ||
+      (entities.length ? this._deriveDescriptionFromPrompt(request.prompt, entities) : '') ||
+      'Generated from Home Assistant AI using Ultra Card modules.'
+    ).slice(0, 180);
 
     return {
       smart_preset: {
@@ -465,6 +637,20 @@ class UcSmartCardsService {
     };
   }
 
+  /**
+   * AI-supplied name/description, or null when it is unusable: empty, too short to mean
+   * anything ("Not any"), or just the prompt read back.
+   */
+  private _usableAiText(value: unknown, prompt: string, minWords: number): string | null {
+    if (typeof value !== 'string') return null;
+    const text = value.replace(/\s+/g, ' ').trim();
+    if (!text) return null;
+    const normalize = (input: string): string => input.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (normalize(text) === normalize(prompt)) return null;
+    if (text.split(' ').length < minWords) return null;
+    return text;
+  }
+
   private _coerceAiPlan(raw: unknown): SmartAiPlan | null {
     if (!raw) return null;
     if (typeof raw === 'object') return raw as SmartAiPlan;
@@ -485,16 +671,12 @@ class UcSmartCardsService {
   private _buildAssistPresetResponse(
     hass: HassApiClient,
     request: SmartGenerateRequest,
-    assistText: string | null
+    notes: string[] = []
   ): SmartGenerateResponse {
     const now = new Date().toISOString();
     const context = this._sanitizeContext(request);
     const entities = selectEntitiesForPrompt(hass, request.prompt);
-    const title =
-      deriveTitleFromPrompt(request.prompt, entities) ||
-      assistText?.replace(/\s+/g, ' ').trim().split(/[.\n]/)[0]?.slice(0, 42) ||
-      'Smart Card';
-    const description = this._deriveDescriptionFromPrompt(request.prompt, entities, assistText);
+    const title = deriveTitleFromPrompt(request.prompt, entities, hass) || 'Smart Card';
     const id = `smart-assist-${Date.now()}`;
     const style = request.constraints?.style || 'clean';
     const useComposer = hasStructuredComposerPlan(request.prompt, hass, context.tier);
@@ -504,9 +686,20 @@ class UcSmartCardsService {
         ? (composed.modules as unknown as PresetDefinition['layout']['rows'][number]['columns'][number]['modules'])
         : entities.length > 0
           ? (buildComposedEntityModules(id, entities, style, hass, context) as unknown as PresetDefinition['layout']['rows'][number]['columns'][number]['modules'])
-          : this._buildFallbackModules(id, title, request, assistText, hass);
+          : this._buildFallbackModules(id, title, request, hass);
 
-    const generationWarnings = composed.warnings.length ? composed.warnings : undefined;
+    const description =
+      this._describeLayout(hass, modules) || this._deriveDescriptionFromPrompt(request.prompt, entities);
+
+    const layoutEntityCount = collectLayoutEntityIds(modules as unknown[]).size;
+    if (!layoutEntityCount) {
+      notes = [
+        ...notes,
+        'No matching entities were found in this Home Assistant for the request, so the card is only a starting point.',
+      ];
+    }
+    const warnings = [...notes, ...composed.warnings];
+    const generationWarnings = warnings.length ? warnings : undefined;
 
     return {
       smart_preset: {
@@ -550,7 +743,6 @@ class UcSmartCardsService {
     id: string,
     title: string,
     request: SmartGenerateRequest,
-    assistText: string | null,
     hass: HassApiClient
   ): PresetDefinition['layout']['rows'][number]['columns'][number]['modules'] {
     if (promptWantsTextContent(request.prompt)) {
@@ -566,12 +758,24 @@ class UcSmartCardsService {
         {
           id: `${id}-body`,
           type: 'markdown',
-          content: assistText || request.prompt,
+          content: request.prompt,
         },
       ] as unknown as PresetDefinition['layout']['rows'][number]['columns'][number]['modules'];
     }
 
-    const inventory = this._getEntityInventory(hass).slice(0, 8);
+    // Generic prompt: a status summary of the most relevant, non-diagnostic entities,
+    // favouring things people actually glance at (lights, doors, motion, climate, presence).
+    const context = buildSmartEntityContext(hass);
+    const ranked = rankSmartEntities(context, request.prompt, { preferClean: true });
+    const glanceable = new Set([
+      'light', 'switch', 'lock', 'cover', 'binary_sensor', 'climate', 'person', 'media_player', 'fan', 'alarm_control_panel',
+    ]);
+    const inventory = [
+      ...ranked.filter(item => glanceable.has(item.entity.domain)),
+      ...ranked.filter(item => !glanceable.has(item.entity.domain)),
+    ]
+      .slice(0, 8)
+      .map(item => item.entity);
     if (inventory.length) {
       return [
         buildStatusSummaryFallback(
@@ -595,35 +799,41 @@ class UcSmartCardsService {
     ] as unknown as PresetDefinition['layout']['rows'][number]['columns'][number]['modules'];
   }
 
+  /**
+   * One sentence naming what the finished card actually shows, e.g. "Shows Wayne and Sam." or
+   * "Shows Kitchen Light, Kettle, Front Door and 3 more." Empty when the layout has no entities.
+   */
+  private _describeLayout(
+    hass: HassApiClient,
+    layout: PresetDefinition['layout'] | unknown[] | null | undefined
+  ): string {
+    const modules = Array.isArray(layout)
+      ? layout
+      : layout?.rows?.flatMap(row => row.columns.flatMap(column => column.modules)) || [];
+    const entityIds = Array.from(collectLayoutEntityIds(modules)).filter(entityId => hass.states?.[entityId]);
+    if (!entityIds.length) return '';
+    const names = Array.from(new Set(entityIds.map(entityId => entityName(hass, entityId)))).filter(Boolean);
+    const shown = names.slice(0, 3);
+    const rest = names.length - shown.length;
+    const list =
+      shown.length === 1
+        ? shown[0]
+        : rest > 0
+          ? `${shown.join(', ')} and ${rest} more`
+          : `${shown.slice(0, -1).join(', ')} and ${shown[shown.length - 1]}`;
+    return `Shows ${list}.`;
+  }
+
   private _deriveDescriptionFromPrompt(
     prompt: string,
-    entities: Array<{ domain: string; entityId: string }>,
-    assistText: string | null
+    entities: Array<{ domain: string; entityId: string }>
   ): string {
     if (entities.length) {
       const domains = Array.from(new Set(entities.map(entity => entity.domain)));
       return `Shows ${entities.length} ${domains.join(', ')} ${entities.length === 1 ? 'entity' : 'entities'} from Home Assistant.`;
     }
-    return (
-      assistText?.replace(/\s+/g, ' ').trim().slice(0, 160) ||
-      prompt.replace(/\s+/g, ' ').trim().slice(0, 160) ||
-      'Assist generated starter preset'
-    );
-  }
-
-  private _getEntityInventory(hass: HassApiClient): Array<{ entityId: string; name: string; domain: string }> {
-    return Object.entries(hass.states || {})
-      .filter(
-        ([entityId]) =>
-          entityId.includes('.') &&
-          !entityId.startsWith('conversation.') &&
-          !entityId.startsWith('ai_task.')
-      )
-      .map(([entityId, state]) => ({
-        entityId,
-        name: entityName(hass, entityId, state),
-        domain: entityId.split('.')[0],
-      }));
+    const cleaned = prompt.replace(/\s+/g, ' ').trim().slice(0, 120);
+    return cleaned ? `Starter card for "${cleaned}".` : 'Starter card built from your entities.';
   }
 
   private _normalizeGenerateResponse(
@@ -652,6 +862,10 @@ class UcSmartCardsService {
       if (Array.isArray(rawObj.presets)) normalized.presets = rawObj.presets as PresetDefinition[];
       if (rawObj.generation && typeof rawObj.generation === 'object') {
         const generation = rawObj.generation as Record<string, unknown>;
+        const serverWarnings = Array.isArray(generation.warnings)
+          ? generation.warnings.map((warning: unknown) => String(warning))
+          : [];
+        const warnings = [...(normalized.generation?.warnings || []), ...serverWarnings];
         normalized.generation = {
           connector_used:
             typeof generation.connector_used === 'string' ? generation.connector_used : undefined,
@@ -659,9 +873,7 @@ class UcSmartCardsService {
             generation.tier_required === 'free' || generation.tier_required === 'pro'
               ? generation.tier_required
               : undefined,
-          warnings: Array.isArray(generation.warnings)
-            ? generation.warnings.map((warning: unknown) => String(warning))
-            : undefined,
+          warnings: warnings.length ? warnings : undefined,
           fallback: !!generation.fallback,
         };
       }

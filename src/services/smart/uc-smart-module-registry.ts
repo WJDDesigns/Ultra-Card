@@ -132,8 +132,8 @@ export function matchSmartModuleTypesForPrompt(
   options: { max?: number; composableOnly?: boolean } = {}
 ): SmartModuleMatch[] {
   const { max = 12, composableOnly = false } = options;
+  if (!allSpecs.length) getSmartModuleRegistry();
   const specs = composableOnly ? composableSpecs : allSpecs;
-  if (!specs.length) getSmartModuleRegistry();
 
   return specs
     .map(spec => ({
@@ -236,6 +236,48 @@ export function findBestEntityForModuleSpec(
   }
 
   return candidates[0];
+}
+
+/** Module types whose default builder renders a list of entities rather than one. */
+export const MULTI_ENTITY_MODULE_TYPES = new Set([
+  'battery_monitor',
+  'people',
+  'calendar',
+  'alert_center',
+  'graphs',
+  'map',
+  'status_summary',
+  'grid',
+]);
+
+/**
+ * Entities for a multi-entity module spec: every candidate that scores against the spec,
+ * best first, falling back to the single best match when nothing scores.
+ */
+export function findEntitiesForModuleSpec(
+  inventory: SmartEntityRef[],
+  spec: SmartModuleSpec,
+  prompt: string,
+  usedEntityIds: Set<string> = new Set(),
+  limit = 8
+): SmartEntityRef[] {
+  const scored = inventory
+    .filter(entity => !usedEntityIds.has(entity.entityId))
+    .map(entity => ({ entity, score: scoreEntityForModuleSpec(entity, spec, prompt) }))
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  // When the spec is picky (device classes or units), the bare domain score is not enough: a
+  // battery monitor wants battery sensors, not every sensor. Otherwise every domain member counts
+  // (people wants every person), but never wildcard fillers.
+  const picky = Boolean(spec.deviceClasses?.length || spec.unitHints?.length);
+  const members = scored.filter(item =>
+    picky ? item.score > 5 : spec.entityDomains.includes(item.entity.domain)
+  );
+  if (members.length) return members.slice(0, limit).map(item => item.entity);
+
+  const best = findBestEntityForModuleSpec(inventory, spec, prompt, usedEntityIds);
+  return best ? [best] : [];
 }
 
 export function getRegistryCatalogLines(tier: 'free' | 'pro'): string[] {

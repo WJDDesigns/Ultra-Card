@@ -6988,10 +6988,20 @@ export interface SmartConnectorStatus {
   warnings?: string[] | undefined;
 }
 
+/** An AI inside Home Assistant that can design a layout: an AI Task entity or an LLM conversation agent. */
+export interface SmartAiProvider {
+  /** Entity id, e.g. `ai_task.openai` or `conversation.claude`. */
+  id: string;
+  name: string;
+  kind: 'ai_task' | 'conversation';
+}
+
 export interface SmartGenerateRequest {
   prompt: string;
   tier: 'free' | 'pro';
   connector_preference?: SmartConnectorPreference | undefined;
+  /** Entity id of the Home Assistant AI to design with; omitted = first available. */
+  ai_provider?: string | undefined;
   context?: Record<string, unknown> | undefined;
   constraints?:
     | {
