@@ -1,5 +1,34 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.11.0-beta1
+
+The first 3.11.0 beta is about Smart Cards: describe a card in plain words and get a finished, well-designed Ultra Card built from your own entities. The Smart tab is now a single page, any AI you already run in Home Assistant can design the card with no daily limit, and the cards that come out are properly spaced and grouped instead of a flat list. The Hub also gets a full visual refresh and a focus-ring bug on iPhone is fixed. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Bring your own AI to Smart Cards, with no quota** - Any AI Task entity or LLM conversation agent set up in Home Assistant (OpenAI, Anthropic, Google, Ollama and friends) can now design your Smart Cards. Pick which one from the new **Design with** dropdown when you have more than one; the choice is remembered. Because it runs on your own AI there is no free-generation counter, and the built-in Assist agent is no longer mistaken for an AI it cannot be. Without an AI, the local composer still builds the card from your entities
+- **Smart Cards knows your rooms** - The builder now reads the area, device and entity registries, so "the living room lights" picks the lights that actually live in the living room, config and diagnostic entities are kept out of the way, and the AI is handed a relevance-ranked, room-annotated inventory instead of a raw dump. Switches, sensors, vacuums, cameras, people, scenes and more get the right module and icon
+
+### 🔧 Improvements
+
+- **Smart tab is one page** - Status, AI picker and prompt live together on a single Compose screen; Generate takes you straight to a live preview with **Apply Preset** and **Regenerate** buttons. The style picker and the separate Continue and Apply steps are gone
+- **Generated cards are actually designed** - Every Smart layout goes through a design pass: card padding, spacing between sections, compact controls grouped into soft rounded panels, columns stretched to fill, and module defaults filled in so the preview renders instead of sitting on a skeleton
+- **"Who is home" shows everyone** - Household prompts (who is home, the family, everyone, presence) expand to every person in your home even when the AI only picked one. Naming a person still keeps the card to that person
+- **No more dividers** - Smart Cards no longer drops separator lines between sections; spacing handles it. Ask for a divider and you still get one
+- **Hub refresh** - Every Hub tab uses shared design tokens, a branded header with your account chip, a keyboard-accessible tab strip with arrow-key navigation, auto-fit grids, clearer sync banners and loading states, and plain-language billing errors. The Dashboard renders the changelog as formatted markdown
+
+### 🐛 Bug Fixes
+
+- **Fixed Smart previews stuck loading** - Modules generated without their full settings (People, for example) threw while rendering and left the preview skeleton up forever
+- **Fixed Smart Cards using Assist's spoken reply as the card** - When Ultra Card Connect answered with a plain Assist reply, the prompt became the title and the speech became the description. Those replies are now detected and the card is built properly on the frontend
+- **Fixed "weather with forecast" crashing the composer** - The animated weather builder recursed into itself on Pro tiers and hit the call-stack limit
+- **Fixed Smart warnings disappearing** - Frontend sanitizer warnings were being overwritten by the server's; both are shown now
+- **Fixed the blue focus ring left around a tapped icon on iPhone** - Closing a more-info dialog handed focus back to the icon that opened it, and WebKit drew the keyboard focus ring around it until something else was tapped. Pointer-driven focus is now quiet while keyboard users still get the ring ([#138](https://github.com/WJDDesigns/Ultra-Card/issues/138))
+
+---
+
 ## Version 3.10.0
 
 The stable 3.10.0 release. Ultra Card loads much faster, you can generate a whole dashboard in one click, and Themes restyle every card at once. Two new PRO modules land as well: Boiler and Train Departures. Your existing cards keep their look until you pick a theme. Thanks to everyone who tested the betas and reported issues.
