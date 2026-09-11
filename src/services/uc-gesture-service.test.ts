@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ucGestureService, hasActionableGesture } from './uc-gesture-service';
+import {
+  ucGestureService,
+  hasActionableGesture,
+  lastInputModalityWasKeyboard,
+  POINTER_FOCUS_ATTR,
+} from './uc-gesture-service';
 import { UltraLinkComponent } from '../components/ultra-link';
 import type { HomeAssistant } from 'custom-card-helpers';
 
@@ -199,5 +204,121 @@ describe('hasActionableGesture', () => {
 
     expect(actionable.isActionable).toBe(true);
     expect(decorative.isActionable).toBe(false);
+  });
+});
+
+/**
+ * Issue #138: on iOS a tapped icon kept a blue focus ring after its more-info
+ * dialog closed, because WebKit marks restored focus as :focus-visible and the
+ * gesture element has tabindex="0" with no focus styling.
+ */
+describe('pointer focus ring suppression', () => {
+  function pointerDown(target: HTMLElement, currentTarget: HTMLElement): PointerEvent {
+    const event = new MouseEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    }) as PointerEvent;
+    Object.defineProperty(event, 'pointerId', { value: 1 });
+    Object.defineProperty(event, 'target', { value: target });
+    Object.defineProperty(event, 'currentTarget', { value: currentTarget });
+    return event;
+  }
+
+  /** A gesture element inside a shadow root, the way cards render modules. */
+  function makeShadowHost(): { root: ShadowRoot; el: HTMLElement } {
+    const outer = document.createElement('div');
+    document.body.appendChild(outer);
+    const root = outer.attachShadow({ mode: 'open' });
+    const el = document.createElement('div');
+    el.tabIndex = 0;
+    root.appendChild(el);
+    return { root, el };
+  }
+
+  it('marks the element on pointerdown and injects the suppression stylesheet', () => {
+    const { root, el } = makeShadowHost();
+    const handlers = ucGestureService.createGestureHandlers(
+      'pf-mark',
+      { tap_action: { action: 'toggle' }, entity: 'light.x' },
+      hass
+    );
+
+    handlers.onPointerDown(pointerDown(el, el));
+
+    expect(el.hasAttribute(POINTER_FOCUS_ATTR)).toBe(true);
+    const style = root.querySelector('#uc-pointer-focus-styles');
+    expect(style?.textContent).toContain(`[${POINTER_FOCUS_ATTR}]:focus-visible`);
+    expect(style?.textContent).toContain('outline: none');
+  });
+
+  it('keeps the marker when focus returns after a pointer interaction (dialog close)', () => {
+    const { el } = makeShadowHost();
+    const handlers = ucGestureService.createGestureHandlers(
+      'pf-restore',
+      { tap_action: { action: 'more-info' }, entity: 'sensor.x' },
+      hass
+    );
+
+    // Tap the icon, the dialog opens and the user taps its close button...
+    handlers.onPointerDown(pointerDown(el, el));
+    window.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    el.removeAttribute(POINTER_FOCUS_ATTR);
+
+    // ...then the dialog hands focus back to the icon.
+    el.dispatchEvent(new FocusEvent('focus'));
+
+    expect(lastInputModalityWasKeyboard()).toBe(false);
+    expect(el.hasAttribute(POINTER_FOCUS_ATTR)).toBe(true);
+  });
+
+  it('clears the marker when the element is focused after keyboard input', () => {
+    const { el } = makeShadowHost();
+    const handlers = ucGestureService.createGestureHandlers(
+      'pf-keyboard',
+      { tap_action: { action: 'toggle' }, entity: 'light.x' },
+      hass
+    );
+
+    handlers.onPointerDown(pointerDown(el, el));
+    expect(el.hasAttribute(POINTER_FOCUS_ATTR)).toBe(true);
+
+    // Tab arrives from elsewhere on the page, then focus lands on the element.
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    el.dispatchEvent(new FocusEvent('focus'));
+
+    expect(lastInputModalityWasKeyboard()).toBe(true);
+    expect(el.hasAttribute(POINTER_FOCUS_ATTR)).toBe(false);
+  });
+
+  it('clears the marker on any key pressed while focused', () => {
+    const { el } = makeShadowHost();
+    const handlers = ucGestureService.createGestureHandlers(
+      'pf-keydown',
+      { tap_action: { action: 'toggle' }, entity: 'light.x' },
+      hass
+    );
+
+    handlers.onPointerDown(pointerDown(el, el));
+    handlers.onKeyDown(keyEvent('ArrowDown', el, el));
+
+    expect(el.hasAttribute(POINTER_FOCUS_ATTR)).toBe(false);
+    expect(handleAction).not.toHaveBeenCalled();
+  });
+
+  it('injects the stylesheet once per root', () => {
+    const { root, el } = makeShadowHost();
+    const sibling = document.createElement('div');
+    root.appendChild(sibling);
+    const handlers = ucGestureService.createGestureHandlers(
+      'pf-once',
+      { tap_action: { action: 'toggle' }, entity: 'light.x' },
+      hass
+    );
+
+    handlers.onPointerDown(pointerDown(el, el));
+    handlers.onPointerDown(pointerDown(sibling, sibling));
+
+    expect(root.querySelectorAll('#uc-pointer-focus-styles')).toHaveLength(1);
   });
 });

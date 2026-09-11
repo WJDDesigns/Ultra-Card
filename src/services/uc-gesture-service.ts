@@ -91,6 +91,104 @@ export function hasActionableGesture(config: GestureConfig): boolean {
 }
 
 /**
+ * Marks a gesture element whose focus came from a pointer (tap/click) rather
+ * than the keyboard. Paired with a stylesheet that hides `:focus-visible` on it.
+ *
+ * Why: gesture elements are `tabindex="0"` so keyboard users can reach them,
+ * and they carry no focus styling, so the browser's default ring is what shows.
+ * Chromium and Firefox never mark a pointer-focused element `:focus-visible`,
+ * but WebKit does whenever focus is restored programmatically, which is exactly
+ * what happens when a more-info dialog closes and hands focus back to the icon
+ * that opened it. On iPhone that leaves a blue frame around the tapped icon
+ * (issue #138). Tracking input modality ourselves lets the ring show only after
+ * keyboard interaction, matching what the other engines already do.
+ */
+export const POINTER_FOCUS_ATTR = 'data-uc-pointer-focus';
+const POINTER_FOCUS_STYLE_ID = 'uc-pointer-focus-styles';
+const POINTER_FOCUS_CSS = `[${POINTER_FOCUS_ATTR}]:focus-visible { outline: none; }`;
+
+let lastInputWasKeyboard = false;
+let modalityListenersInstalled = false;
+
+/**
+ * Whether the most recent user input anywhere on the page came from the
+ * keyboard. Exported for tests.
+ */
+export function lastInputModalityWasKeyboard(): boolean {
+  return lastInputWasKeyboard;
+}
+
+/**
+ * Global listeners are cheap and keyboard/pointer events are composed, so one
+ * pair on the window sees interactions inside every card's shadow root and
+ * inside Home Assistant's dialogs.
+ */
+function installModalityListeners(): void {
+  if (modalityListenersInstalled || typeof window === 'undefined') return;
+  modalityListenersInstalled = true;
+  window.addEventListener(
+    'keydown',
+    () => {
+      lastInputWasKeyboard = true;
+    },
+    true
+  );
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      lastInputWasKeyboard = false;
+    },
+    true
+  );
+}
+
+const rootsWithPointerFocusStyles = new WeakSet<Node>();
+
+/** Ensure the pointer-focus stylesheet exists in whatever root renders `el`. */
+function ensurePointerFocusStyles(el: Element): void {
+  const root = el.getRootNode();
+  if (rootsWithPointerFocusStyles.has(root)) return;
+
+  const container: ParentNode | null =
+    root instanceof ShadowRoot ? root : root instanceof Document ? root.head : null;
+  if (!container) return;
+
+  rootsWithPointerFocusStyles.add(root);
+  if (container.querySelector(`#${POINTER_FOCUS_STYLE_ID}`)) return;
+
+  const style = document.createElement('style');
+  style.id = POINTER_FOCUS_STYLE_ID;
+  style.textContent = POINTER_FOCUS_CSS;
+  container.appendChild(style);
+}
+
+const elementsWithFocusTracking = new WeakSet<Element>();
+
+/**
+ * Record that `el` is focused because of a pointer, and keep that in sync on
+ * later focus changes. Attributes are not managed by Lit, so the marker
+ * survives re-renders for as long as the element does.
+ */
+function markPointerFocus(el: Element): void {
+  installModalityListeners();
+  ensurePointerFocusStyles(el);
+  el.setAttribute(POINTER_FOCUS_ATTR, '');
+
+  // Focus can arrive well after the pointerdown (a dialog closing returns focus
+  // to its opener), so the decision has to be made at focus time from the
+  // most recent input modality, not from a timer.
+  if (elementsWithFocusTracking.has(el)) return;
+  elementsWithFocusTracking.add(el);
+  el.addEventListener('focus', () => {
+    if (lastInputWasKeyboard) {
+      el.removeAttribute(POINTER_FOCUS_ATTR);
+    } else {
+      el.setAttribute(POINTER_FOCUS_ATTR, '');
+    }
+  });
+}
+
+/**
  * Gesture state for tracking multi-touch interactions
  */
 interface GestureState {
@@ -166,6 +264,10 @@ interface GestureState {
  * suppress the tap action when the user is just trying to scroll the page
  * (a common issue on mobile where small finger movements still triggered
  * a tap before this was added).
+ *
+ * Focus rings: the pointer handlers mark the element with POINTER_FOCUS_ATTR so
+ * the browser's focus ring only shows after keyboard interaction. Nothing extra
+ * to bind; see markPointerFocus.
  */
 export class UcGestureService {
   private static instance: UcGestureService;
@@ -276,6 +378,12 @@ export class UcGestureService {
 
       onPointerDown: (e: PointerEvent) => {
         const target = e.target as HTMLElement;
+
+        // The browser is about to focus this element because of the pointer;
+        // remember that so its focus ring stays hidden (see POINTER_FOCUS_ATTR).
+        if (e.currentTarget instanceof Element) {
+          markPointerFocus(e.currentTarget);
+        }
 
         // Don't handle events on excluded elements (editor controls)
         if (shouldExcludeTarget(target)) {
@@ -458,6 +566,11 @@ export class UcGestureService {
        * reached at all — see hasActionableGesture before doing that.
        */
       onKeyDown: (e: KeyboardEvent) => {
+        // Any key while focused means a keyboard user: let the focus ring show.
+        if (e.currentTarget instanceof Element) {
+          e.currentTarget.removeAttribute(POINTER_FOCUS_ATTR);
+        }
+
         if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
 
         const target = e.target as HTMLElement;
