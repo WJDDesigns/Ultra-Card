@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PORT_MAP_SKUS, portMapForSku } from '../port-maps';
+import { PORT_MAP_SKUS, inferPortCountFromModel, portCountForSku, portMapForSku } from '../port-maps';
 
 /**
  * The maps place lights on real product photos, so bad data shows up as lights
@@ -16,6 +16,16 @@ describe('port maps', () => {
     expect(portMapForSku(undefined)).toBeNull();
     expect(portMapForSku('')).toBeNull();
     expect(portMapForSku('NOT-A-REAL-SKU')).toBeNull();
+  });
+
+  it('maps the Flex 2.5G 8 family as nine ports including the 10G combo', () => {
+    expect(portMapForSku('USW-Flex-2.5G-8')?.cells.map(c => c.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(portMapForSku('USW-Flex-2.5G-8-POE')?.cells).toHaveLength(9);
+    expect(portMapForSku('usw-flex-2.5g-8-poe')?.cells).toHaveLength(9);
+    expect(portCountForSku('USW-Flex-2.5G-8')).toBe(9);
+    expect(portCountForSku('USW-Flex-Mini')).toBe(5);
+    expect(inferPortCountFromModel('USM25G8')).toBe(9);
+    expect(inferPortCountFromModel('USW Flex')).toBe(5);
   });
 
   for (const sku of PORT_MAP_SKUS) {

@@ -21,8 +21,13 @@ import {
   sortTemperatures,
   suggestVisibleDeviceIds,
   seedCuration,
+  fillMissingPorts,
+  expectedPortCount,
   type UnifiDevice,
+  type UnifiPort,
 } from './uc-unifi-service';
+import { ucUnifiDeviceDb } from './uc-unifi-device-db';
+import { inferPortCountFromModel, portCountForSku, portMapForSku } from '../modules/unifi/port-maps';
 
 describe('parsePortUniqueId', () => {
   it('parses port_rx unique ids', () => {
@@ -685,10 +690,12 @@ describe('discoverUnifiTopology', () => {
     expect(topo.devices[0].name).toBe('Dream Machine Pro');
     expect(topo.devices[0].cpuPct).toBe(12);
     expect(topo.devices[0].state).toBe('connected');
-    expect(topo.devices[0].ports.length).toBe(1);
+    // UDM-Pro has 11 physical ports; HA only enabled sensors for port 1.
+    expect(topo.devices[0].ports.length).toBe(11);
     expect(topo.devices[0].ports[0].index).toBe(1);
     expect(topo.devices[0].ports[0].linkSpeedMbps).toBe(1000);
     expect(topo.devices[0].ports[0].up).toBe(true);
+    expect(topo.devices[0].ports.filter(p => p.up).length).toBe(1);
     expect(topo.allEntityIds.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -1098,5 +1105,135 @@ describe('discoverUnifiTopology', () => {
     expect(sw?.uplinkDeviceId).toBe('gw');
     expect(sw?.kind).toBe('switch');
     expect(topo.devices.find(d => d.deviceId === 'gw')?.kind).toBe('gateway');
+  });
+
+  it('does not treat a USW Flex 2.5G 8 as a 5-port switch when only live ports have sensors', () => {
+    ucUnifiDeviceDb.prime([
+      {
+        id: 'flex8',
+        sku: 'USW-Flex-2.5G-8',
+        deviceType: 'switch',
+        shortnames: ['USM25G8'],
+        sysids: ['ed36'],
+        product: { name: 'Switch Flex 2.5G 8' },
+        images: { nopadding: 'hash' },
+      },
+    ]);
+
+    const mac = 'aa:bb:cc:dd:ee:08';
+    const live = [1, 2, 3, 6, 8];
+    const states: Record<string, { state: string; attributes: Record<string, unknown> }> = {
+      'sensor.flex_state': { state: 'connected', attributes: {} },
+    };
+    const entities: Record<string, Record<string, unknown>> = {
+      'sensor.flex_state': {
+        entity_id: 'sensor.flex_state',
+        device_id: 'flex8',
+        platform: 'unifi',
+        unique_id: `device_state-${mac}`,
+        translation_key: 'device_state',
+      },
+    };
+    for (const idx of live) {
+      const id = `sensor.port_${idx}_link`;
+      states[id] = { state: idx === 1 ? '2500' : '1000', attributes: { unit_of_measurement: 'Mbit/s' } };
+      entities[id] = {
+        entity_id: id,
+        device_id: 'flex8',
+        platform: 'unifi',
+        unique_id: `port_link_speed-${mac}_${idx}`,
+        translation_key: 'port_link_speed',
+        original_name: `Port ${idx}`,
+      };
+    }
+
+    const hass = {
+      states,
+      entities,
+      devices: {
+        flex8: {
+          id: 'flex8',
+          name: 'USW Flex 2.5G 8',
+          manufacturer: 'Ubiquiti Networks',
+          model: 'USM25G8',
+          connections: [['mac', mac]],
+        },
+      },
+      areas: {},
+    } as any;
+
+    const topo = discoverUnifiTopology(hass, 'fixture-flex8', {});
+    const sw = topo.devices[0];
+    expect(sw?.kind).toBe('switch');
+    expect(sw?.ports.length).toBe(9);
+    expect(sw?.ports.filter(p => p.up).map(p => p.index)).toEqual(live);
+    expect(sw?.ports.filter(p => !p.up).map(p => p.index)).toEqual([4, 5, 7, 9]);
+  });
+});
+
+describe('fillMissingPorts', () => {
+  const live = (index: number): UnifiPort => ({
+    index,
+    name: `Port ${index}`,
+    linkSpeedMbps: 1000,
+    rx: null,
+    tx: null,
+    poePowerW: null,
+    poeOn: null,
+    enabled: null,
+    up: true,
+  });
+
+  it('pads a 9-port Flex so five live sensors still yield nine ports', () => {
+    const ports = fillMissingPorts([1, 2, 3, 6, 8].map(live), 9);
+    expect(ports.map(p => p.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(ports.filter(p => p.up).length).toBe(5);
+    expect(ports.find(p => p.index === 9)?.up).toBe(false);
+  });
+
+  it('fills gaps up to the highest discovered index when expected is unknown', () => {
+    const ports = fillMissingPorts([1, 3, 8].map(live), null);
+    expect(ports.map(p => p.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('shifts 0-based UniFi indices to 1-based', () => {
+    const ports = fillMissingPorts([0, 1, 4].map(live), 5);
+    expect(ports.map(p => p.index)).toEqual([1, 2, 3, 4, 5]);
+    expect(ports[0].up).toBe(true);
+    expect(ports[1].up).toBe(true);
+    expect(ports[4].up).toBe(true);
+  });
+
+  it('never drops a discovered port above the expected count', () => {
+    const ports = fillMissingPorts([1, 10].map(live), 8);
+    expect(ports.map(p => p.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(ports.find(p => p.index === 10)?.up).toBe(true);
+  });
+});
+
+describe('expectedPortCount', () => {
+  it('resolves the Flex 2.5G 8 as nine ports from shortname, SKU, and catalog', () => {
+    expect(inferPortCountFromModel('USM25G8')).toBe(9);
+    expect(inferPortCountFromModel('USW-Flex-2.5G-8')).toBe(9);
+    expect(inferPortCountFromModel('USW Flex 2.5G 8 PoE')).toBe(9);
+    expect(inferPortCountFromModel('USW-Flex-2.5G-5')).toBe(5);
+    expect(inferPortCountFromModel('USW-Flex')).toBe(5);
+    expect(portCountForSku('USW-Flex-2.5G-8')).toBe(9);
+    expect(portCountForSku('USW-Flex-2.5G-8-POE')).toBe(9);
+    expect(portMapForSku('USW-Flex-2.5G-8')?.cells).toHaveLength(9);
+
+    ucUnifiDeviceDb.prime([
+      {
+        id: 'flex8',
+        sku: 'USW-Flex-2.5G-8',
+        deviceType: 'switch',
+        shortnames: ['USM25G8'],
+        sysids: ['ed36'],
+        product: { name: 'Switch Flex 2.5G 8' },
+        images: { nopadding: 'hash' },
+      },
+    ]);
+    expect(expectedPortCount('USM25G8')).toBe(9);
+    expect(expectedPortCount('USWED36')).toBe(9);
   });
 });

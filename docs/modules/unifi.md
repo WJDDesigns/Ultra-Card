@@ -37,7 +37,9 @@ Home Assistant doesn't expose the controller's Etherlighting configuration, so t
 
 ### Port maps
 
-Painting light into a jack requires knowing where that jack is in the photo. `src/modules/unifi/port-maps.ts` holds measured openings (fractions of the image) for the common gateways and switches, with indices checked against each photo's silkscreen so port 7 on screen is port 7 in Home Assistant: UDM-Pro, UDM-SE, USW-16-PoE, USW-24-PoE, USW-Pro-24-PoE, USW-Pro-HD-24-PoE, USW-Pro-Max-48-PoE, USW-Enterprise-8-PoE, USW-Enterprise-24-PoE, USW-Lite-16-PoE and USW-Aggregation.
+Painting light into a jack requires knowing where that jack is in the photo. `src/modules/unifi/port-maps.ts` holds measured openings (fractions of the image) for the common gateways and switches, with indices checked against each photo's silkscreen so port 7 on screen is port 7 in Home Assistant: UDM-Pro, UDM-SE, USW-16-PoE, USW-24-PoE, USW-Pro-24-PoE, USW-Pro-HD-24-PoE, USW-Pro-Max-48-PoE, USW-Enterprise-8-PoE, USW-Enterprise-24-PoE, USW-Lite-16-PoE, USW-Aggregation, USW-Flex-2.5G-8 and USW-Flex-2.5G-8-PoE.
+
+Home Assistant's UniFi integration only creates **port link-speed** sensors for ports whose negotiated speed is greater than zero, and bandwidth / port-enable entities are disabled by default. The card therefore **does not treat the number of enabled sensors as the hardware port count**. It pads missing ports (shown down) from the catalog SKU, the measured port map, or the model shortname — so a USW Flex 2.5G 8 with five cables still renders as a 9-port switch (`5/9`), not `5/5`.
 
 Anything else — an unmapped model, or a photo that isn't a straight-on front panel — renders the same lit openings and LEDs as a **port row directly beneath the photo** instead of guessing coordinates and landing the lights on the wrong port. Offline (or with **Real device photos** off) the card falls back to procedural SVG faceplates.
 

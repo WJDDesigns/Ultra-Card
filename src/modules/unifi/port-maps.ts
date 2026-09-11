@@ -176,11 +176,74 @@ const PORT_MAPS: Record<string, PortMap> = {
       ),
     ],
   },
+
+  // 828x144 — desktop 8x 2.5G + 10G combo RJ45 (silkscreen 9). The SFP half of
+  // the combo is the same logical port, so it is not a tenth cell.
+  'USW-Flex-2.5G-8': {
+    cells: [
+      ...singleRow(1, spread(0.1178, 0.5894, 8), 0.055, 0.375, 0.26),
+      { index: 9, cx: 0.689, y: 0.375, w: 0.055, h: 0.26, kind: 'rj45' },
+    ],
+  },
+
+  // 828x148 — same 9-port layout as the non-PoE Flex 8; DC barrel on the right
+  'USW-Flex-2.5G-8-POE': {
+    cells: [
+      ...singleRow(1, spread(0.1178, 0.5894, 8), 0.055, 0.4, 0.255),
+      { index: 9, cx: 0.689, y: 0.4, w: 0.055, h: 0.255, kind: 'rj45' },
+    ],
+  },
+};
+
+/** Physical port counts for SKUs whose photos are not yet mapped. */
+const SKU_PORT_COUNT_EXTRAS: Record<string, number> = {
+  'USW-Flex': 5,
+  'USW-Flex-2.5G-5': 5,
+  'USW-Flex-Mini': 5,
+  'USW-Flex-XG': 5,
 };
 
 export function portMapForSku(sku: string | null | undefined): PortMap | null {
   if (!sku) return null;
-  return PORT_MAPS[sku] || null;
+  if (PORT_MAPS[sku]) return PORT_MAPS[sku];
+  const upper = sku.toUpperCase();
+  for (const [key, map] of Object.entries(PORT_MAPS)) {
+    if (key.toUpperCase() === upper) return map;
+  }
+  return null;
+}
+
+/**
+ * How many physical ports this SKU has (combo = one logical port).
+ * Prefers a measured map so geometry and inventory cannot drift.
+ */
+export function portCountForSku(sku: string | null | undefined): number | null {
+  if (!sku) return null;
+  const map = portMapForSku(sku);
+  if (map?.cells.length) return Math.max(...map.cells.map(c => c.index));
+  if (SKU_PORT_COUNT_EXTRAS[sku] != null) return SKU_PORT_COUNT_EXTRAS[sku];
+  const upper = sku.toUpperCase();
+  for (const [key, n] of Object.entries(SKU_PORT_COUNT_EXTRAS)) {
+    if (key.toUpperCase() === upper) return n;
+  }
+  return null;
+}
+
+/**
+ * Guess a switch's port count from a HA model / shortname when the catalog
+ * has not loaded yet. More specific Flex 8 tokens beat a generic "Flex".
+ */
+export function inferPortCountFromModel(model: string | null | undefined): number | null {
+  if (!model) return null;
+  const m = model.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!m) return null;
+  // USW Flex 2.5G 8 / USM25G8 / USM25G8P: 8×2.5G + 10G combo = 9
+  if (m.includes('USM25G8') || m.includes('FLEX25G8')) return 9;
+  if (m.includes('USM25G5') || m.includes('FLEX25G5')) return 5;
+  if (m.includes('FLEXXG') || m.includes('USFXG')) return 5;
+  if (m.includes('FLEXMINI') || m.includes('USMINI')) return 5;
+  if (m === 'USWFLEX' || m === 'USF5P') return 5;
+  return null;
 }
 
 /** Every SKU with measured port geometry (used by tests and docs). */

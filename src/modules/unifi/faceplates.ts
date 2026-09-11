@@ -135,7 +135,7 @@ export function devicePhotoUrl(
 /** Measured physical port positions for this device's product photo. */
 function devicePortMap(device: UnifiDevice): PortMap | null {
   const entry = ucUnifiDeviceDb.lookup(device.model);
-  return portMapForSku(entry?.sku);
+  return portMapForSku(entry?.sku) || portMapForSku(device.model);
 }
 
 /** Blink period (seconds) for a traffic rate — faster with more data. */
@@ -297,20 +297,21 @@ function renderPortLightsOverlay(
     <div class="uc-unifi-port-lights" aria-hidden="true">
       ${map.cells.map(cell => {
         const port = byIndex.get(cell.index);
-        if (!port) return nothing;
-        const up = port.up;
-        const color = linkSpeedColor(port.linkSpeedMbps);
-        const { rx, tx } = up ? portRates(port, options.hass) : { rx: 0, tx: 0 };
+        const up = port?.up === true;
+        const color = linkSpeedColor(port?.linkSpeedMbps ?? null);
+        const { rx, tx } = up && port ? portRates(port, options.hass) : { rx: 0, tx: 0 };
         const rxMs = anim !== 'off' ? rateBlinkMs(rx) : 0;
         const txMs = anim !== 'off' ? rateBlinkMs(tx) : 0;
-        const poe = port.poeOn === true || (port.poePowerW != null && port.poePowerW > 0);
+        const poe = port
+          ? port.poeOn === true || (port.poePowerW != null && port.poePowerW > 0)
+          : false;
         const pos = `left:${((cell.cx - cell.w / 2) * 100).toFixed(3)}%;top:${(cell.y * 100).toFixed(3)}%;width:${(cell.w * 100).toFixed(3)}%;height:${(cell.h * 100).toFixed(3)}%;`;
         const rate = formatRate(rx + tx);
         return html`
           <span
             class="uc-unifi-port-cell ${up ? 'is-up' : 'is-down'} kind-${cell.kind}"
             style="${pos}${up ? `--plc:${color};` : ''}"
-            title="P${port.index}${port.linkSpeedMbps ? ` · ${port.linkSpeedMbps} Mbps` : ''}${up ? ` · ${rate}` : ' · down'}${poe && port.poePowerW != null ? ` · PoE ${port.poePowerW} W` : ''}"
+            title="P${cell.index}${port?.linkSpeedMbps ? ` · ${port.linkSpeedMbps} Mbps` : ''}${up ? ` · ${rate}` : ' · down'}${poe && port?.poePowerW != null ? ` · PoE ${port.poePowerW} W` : ''}"
           >
             <i class="etherlight"></i>
             ${up ? html`<i class="halo"></i>` : nothing}
@@ -344,7 +345,8 @@ function renderPhotoUnit(
 ): TemplateResult {
   const up = device.state === 'connected' || device.state === undefined;
   const upPorts = device.ports.filter(p => p.up).length;
-  const map = device.ports.length ? devicePortMap(device) : null;
+  const map = devicePortMap(device);
+  const portTotal = Math.max(device.ports.length, map ? Math.max(...map.cells.map(c => c.index)) : 0);
   return html`
     <div class="uc-unifi-photo-unit" data-device="${device.deviceId}" data-kind="${device.kind}">
       <div class="uc-unifi-photo-stage">
@@ -369,7 +371,9 @@ function renderPhotoUnit(
       <div class="uc-unifi-photo-footer">
         <span class="nm">${device.name}</span>
         <span class="meta">
-          ${device.ports.length ? html`<span class="ports">${upPorts}/${device.ports.length}</span>` : nothing}
+          ${portTotal
+            ? html`<span class="ports">${upPorts}/${portTotal}</span>`
+            : nothing}
           ${device.state
             ? html`<span class="state ${up ? 'ok' : 'bad'}">${device.state}</span>`
             : nothing}

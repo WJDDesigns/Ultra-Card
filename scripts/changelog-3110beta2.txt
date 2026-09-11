@@ -1,0 +1,1 @@
+Fixed UniFi switches showing only connected ports - Home Assistant's UniFi integration only creates port link-speed sensors when a port has a live link, so a USW Flex 2.5G 8 with five cables looked like a 5-port switch. The card now pads missing ports from the catalog SKU and model, and lights all nine jacks on the Flex 2.5G 8 and Flex 2.5G 8 PoE product photos

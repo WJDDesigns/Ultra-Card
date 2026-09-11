@@ -16,6 +16,7 @@
 
 import { HomeAssistant } from 'custom-card-helpers';
 import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
+import { inferPortCountFromModel, portCountForSku } from '../modules/unifi/port-maps';
 import { ucUnifiDeviceDb } from './uc-unifi-device-db';
 
 /* -------------------------------------------------------------------------- */
@@ -998,6 +999,66 @@ function ensurePort(map: Map<number, PortBucket>, index: number, name: string): 
   return b;
 }
 
+/**
+ * Hardware port count for a switch/gateway. Catalog SKU and measured port
+ * maps win; model shortnames (USM25G8, USW-Flex-2.5G-8) fill in before the
+ * catalog arrives.
+ *
+ * HA's UniFi integration only creates `port_link_speed-*` entities when
+ * `speed > 0`, so a 9-port Flex with 5 cables otherwise looks like a 5-port.
+ */
+export function expectedPortCount(model: string | null | undefined): number | null {
+  if (!model) return null;
+  const entry = ucUnifiDeviceDb.lookup(model);
+  return portCountForSku(entry?.sku) ?? portCountForSku(model) ?? inferPortCountFromModel(model);
+}
+
+function syntheticPort(index: number): UnifiPort {
+  return {
+    index,
+    name: `Port ${index}`,
+    linkSpeedMbps: null,
+    rx: null,
+    tx: null,
+    poePowerW: null,
+    poeOn: null,
+    enabled: null,
+    up: false,
+  };
+}
+
+/**
+ * Fill holes so the faceplate matches the hardware, not just the sensors
+ * that happen to be enabled. Never drops a discovered port.
+ */
+export function fillMissingPorts(ports: UnifiPort[], expected: number | null): UnifiPort[] {
+  if (!ports.length && (expected == null || expected <= 0)) return ports;
+
+  let list = ports;
+  if (list.length && Math.min(...list.map(p => p.index)) === 0) {
+    list = list.map(p => ({
+      ...p,
+      index: p.index + 1,
+      name: /^port\s+\d+$/i.test(p.name) ? `Port ${p.index + 1}` : p.name,
+    }));
+  }
+
+  const byIndex = new Map<number, UnifiPort>();
+  for (const p of list) byIndex.set(p.index, p);
+  const maxDiscovered = list.length ? Math.max(...list.map(p => p.index)) : 0;
+  const target = Math.max(expected && expected > 0 ? expected : 0, maxDiscovered);
+  if (target <= 0) return [...list].sort((a, b) => a.index - b.index);
+
+  const out: UnifiPort[] = [];
+  for (let i = 1; i <= target; i++) {
+    out.push(byIndex.get(i) || syntheticPort(i));
+  }
+  for (const p of list) {
+    if (p.index > target) out.push(p);
+  }
+  return out.sort((a, b) => a.index - b.index);
+}
+
 function buildTopologyFromHass(
   hass: HomeAssistant,
   config: UnifiDiscoveryConfig | undefined
@@ -1389,7 +1450,7 @@ function buildTopologyFromHass(
       if (mac && networkMacs.has(mac)) continue;
     }
 
-    const ports: UnifiPort[] = [...acc.ports.values()]
+    let ports: UnifiPort[] = [...acc.ports.values()]
       .sort((a, b) => a.index - b.index)
       .map(pb => {
         const linkSpeedMbps = pb.link ? parseNum(hass.states[pb.link]?.state) : null;
@@ -1435,6 +1496,14 @@ function buildTopologyFromHass(
           up,
         };
       });
+
+    // HA only creates link-speed sensors for ports that are up (`speed > 0`),
+    // and bandwidth / port-enable entities are disabled by default — so a
+    // 9-port Flex with 5 cables would otherwise render as 5/5. Pad from the
+    // catalog / SKU / model so down ports still exist.
+    if (kind === 'switch' || kind === 'gateway') {
+      ports = fillMissingPorts(ports, expectedPortCount(model));
+    }
 
     const outlets: UnifiOutlet[] = [...acc.outlets.values()]
       .sort((a, b) => a.index - b.index)

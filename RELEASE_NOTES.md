@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.11.0-beta2
+
+The second 3.11.0 beta fixes UniFi switches that looked smaller than they really are: Home Assistant only creates link-speed sensors for ports that are up, so a 9-port Flex with five cables showed as 5/5. The card now uses the real hardware port count, fills empty jacks in as down, and lights the Flex 2.5G 8 faceplate on the chassis. It includes everything from beta1. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed UniFi switches showing only connected ports** - Home Assistant's UniFi integration only creates port link-speed sensors when a port has a live link, so a USW Flex 2.5G 8 with five cables looked like a 5-port switch. The card now pads missing ports from the catalog SKU and model, and lights all nine jacks on the Flex 2.5G 8 and Flex 2.5G 8 PoE product photos
+
+---
+
 ## Version 3.11.0-beta1
 
 The first 3.11.0 beta is about Smart Cards: describe a card in plain words and get a finished, well-designed Ultra Card built from your own entities. The Smart tab is now a single page, any AI you already run in Home Assistant can design the card with no daily limit, and the cards that come out are properly spaced and grouped instead of a flat list. The Hub also gets a full visual refresh and a focus-ring bug on iPhone is fixed. This is a pre-release for testing — please report anything odd on GitHub or Discord.
