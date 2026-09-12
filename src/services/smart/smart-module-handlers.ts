@@ -1025,6 +1025,101 @@ function sanitizeUnifiModule(module: SmartModule, id: string): SmartModule | nul
   };
 }
 
+function sanitizeBambuModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'bambu',
+    view: oneOf(
+      module.view,
+      ['printer', 'dashboard', 'camera', 'farm', 'compact'] as const,
+      'printer'
+    ),
+    printer_device_id: module.printer_device_id ? String(module.printer_device_id) : undefined,
+    printer_order: [],
+    hidden_printer_ids: [],
+    show_title: module.show_title !== false,
+    title: String(module.title || 'Bambu Lab'),
+    style: oneOf(module.style, ['theme', 'dark', 'light', 'glass', 'carbon'] as const, 'dark'),
+    animation_intensity: oneOf(module.animation_intensity, ['full', 'subtle', 'off'] as const, 'full'),
+    show_ams: module.show_ams !== false,
+    ams_layout: oneOf(module.ams_layout, ['stacked', 'grid', 'strip'] as const, 'stacked'),
+    ams_order: Array.isArray(module.ams_order) ? module.ams_order.map(String) : [],
+    hidden_ams_ids: Array.isArray(module.hidden_ams_ids) ? module.hidden_ams_ids.map(String) : [],
+    show_camera: module.show_camera !== false,
+    show_controls: module.show_controls !== false,
+    show_temps: module.show_temps !== false,
+    show_fans: module.show_fans !== false,
+    show_print_details: module.show_print_details !== false,
+    show_hms: module.show_hms !== false,
+    show_speed: module.show_speed !== false,
+    show_job: module.show_job !== false,
+    show_thumbnail: module.show_thumbnail !== false,
+    camera_mode: oneOf(module.camera_mode, ['snapshot', 'live'] as const, 'snapshot'),
+    camera_refresh_seconds: numberInRange(module.camera_refresh_seconds, 1, 120, 10),
+    setup_dismissed: false,
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizePrinter3dModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'printer_3d',
+    layout: oneOf(module.layout, ['hero', 'standard', 'compact', 'camera'] as const, 'standard'),
+    style: oneOf(module.style, ['theme', 'dark', 'light', 'glass'] as const, 'dark'),
+    illustration: oneOf(
+      module.illustration,
+      ['enclosed', 'bedslinger', 'none', 'image'] as const,
+      'enclosed'
+    ),
+    show_title: module.show_title !== false,
+    title: String(module.title || '3D Printer'),
+    source: oneOf(
+      module.source,
+      ['manual', 'octoprint', 'moonraker', 'prusalink'] as const,
+      'manual'
+    ),
+    source_device_id: module.source_device_id ? String(module.source_device_id) : undefined,
+    status_entity: module.status_entity ? String(module.status_entity) : undefined,
+    progress_entity: module.progress_entity ? String(module.progress_entity) : undefined,
+    nozzle_temp_entity: module.nozzle_temp_entity ? String(module.nozzle_temp_entity) : undefined,
+    nozzle_target_entity: module.nozzle_target_entity
+      ? String(module.nozzle_target_entity)
+      : undefined,
+    bed_temp_entity: module.bed_temp_entity ? String(module.bed_temp_entity) : undefined,
+    bed_target_entity: module.bed_target_entity ? String(module.bed_target_entity) : undefined,
+    chamber_temp_entity: module.chamber_temp_entity ? String(module.chamber_temp_entity) : undefined,
+    remaining_time_entity: module.remaining_time_entity
+      ? String(module.remaining_time_entity)
+      : undefined,
+    end_time_entity: module.end_time_entity ? String(module.end_time_entity) : undefined,
+    current_layer_entity: module.current_layer_entity
+      ? String(module.current_layer_entity)
+      : undefined,
+    total_layers_entity: module.total_layers_entity
+      ? String(module.total_layers_entity)
+      : undefined,
+    file_name_entity: module.file_name_entity ? String(module.file_name_entity) : undefined,
+    camera_entity: module.camera_entity ? String(module.camera_entity) : undefined,
+    thumbnail_entity: module.thumbnail_entity ? String(module.thumbnail_entity) : undefined,
+    pause_entity: module.pause_entity ? String(module.pause_entity) : undefined,
+    resume_entity: module.resume_entity ? String(module.resume_entity) : undefined,
+    stop_entity: module.stop_entity ? String(module.stop_entity) : undefined,
+    light_entity: module.light_entity ? String(module.light_entity) : undefined,
+    fans: Array.isArray(module.fans) ? module.fans : [],
+    extra_stats: Array.isArray(module.extra_stats) ? module.extra_stats : [],
+    show_controls: module.show_controls !== false,
+    show_temps: module.show_temps !== false,
+    show_fans: module.show_fans !== false,
+    show_camera: module.show_camera !== false,
+    show_job: module.show_job !== false,
+    show_thumbnail: module.show_thumbnail !== false,
+    camera_mode: oneOf(module.camera_mode, ['snapshot', 'live'] as const, 'snapshot'),
+    camera_refresh_seconds: numberInRange(module.camera_refresh_seconds, 1, 120, 10),
+    ...defaultDisplayActions(),
+  };
+}
+
 export const supplementalSmartModuleHandlers = {
   bar: {
     sanitize: wrapSanitize(sanitizeBarModule),
@@ -1243,6 +1338,16 @@ export const supplementalSmartModuleHandlers = {
     // UniFi gear is auto-discovered from the integration — no entity required.
     defaultBuilder: (ctx: SmartBuildContext) =>
       sanitizeUnifiModule({ type: 'unifi' } as SmartModule, ctx.id),
+  },
+  bambu: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeBambuModule(module, id)),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeBambuModule({ type: 'bambu' } as SmartModule, ctx.id),
+  },
+  printer_3d: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizePrinter3dModule(module, id)),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizePrinter3dModule({ type: 'printer_3d' } as SmartModule, ctx.id),
   },
   animated_weather: {
     sanitize: wrapSanitize(sanitizeAnimatedWeatherModule),

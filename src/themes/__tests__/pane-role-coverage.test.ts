@@ -15,6 +15,9 @@ const PANE_ROLE_CARVE_OUTS: Readonly<Record<string, string>> = {
   '_module-template.ts': 'template only',
   // Stylesheet-only UniFi chrome; rack-view.ts owns the role attribute.
   'unifi/styles.ts': 'CSS companion to rack-view.ts',
+  // Stylesheet-only printer chrome; bambu-module.ts / printer-3d-module.ts own the role attribute.
+  'bambu/styles.ts': 'CSS companion to bambu-module.ts',
+  'printer-shared/styles.ts': 'CSS companion to bambu-module.ts and printer-3d-module.ts',
   // Full-bleed background layer, not a nested pane.
   'video-bg-module.ts': 'full-bleed background',
   // Orphaned `.entity-item` CSS only — runtime chrome does not use pane vars.

@@ -56,6 +56,8 @@ describe('theme module style coverage (100%)', () => {
     expect(surfaceRoleFor('area_summary', 'style_preset')).toBeUndefined();
     expect(surfaceRoleFor('tabs', 'style')).toBeUndefined();
     expect(surfaceRoleFor('unifi', 'rack_style')).toBeUndefined();
+    expect(surfaceRoleFor('bambu', 'style')).toBeUndefined();
+    expect(surfaceRoleFor('printer_3d', 'style')).toBeUndefined();
     expect(surfaceRoleFor('activity_feed', 'feed_card_style')).toBeUndefined();
     expect(surfaceRoleFor('auto_entity_list', 'row_style')).toBeUndefined();
   });

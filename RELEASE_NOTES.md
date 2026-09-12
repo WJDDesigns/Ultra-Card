@@ -1,5 +1,30 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.11.0-beta3
+
+The third 3.11.0 beta brings 3D printing to Ultra Card. **Bambu Lab** (PRO) turns the ha-bambulab integration into a live printer card: an H2D-style illustration with temperature badges, every AMS and spool you own, snapshot or live camera, controls, and a farm view for all your printers. **3D Printer** (free) does the same for OctoPrint, Moonraker/Klipper, PrusaLink, or any entities you map by hand. Everything on both cards taps through to the entity's more-info dialog. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the Bambu Lab module (PRO)** - Works with the [ha-bambulab](https://github.com/greghesp/ha-bambulab) integration and finds your printers on its own. Five views: Printer (an H2D-style illustration with live nozzle, bed and chamber badges, status screen and progress ring), Dashboard, Camera, Farm and Compact. Pause, resume, stop, chamber light, speed profile and fan sliders are built in, and the print job block shows the cover thumbnail, layers and time left
+- **Every AMS you own** - AMS, AMS Lite, AMS 2 Pro, AMS HT and the external spool holder all appear, with the colour, material and remaining filament for each slot and the humidity index per unit. Pick Stacked, Grid or Spools-only when you have more than one unit, and drag to reorder or hide units in the editor
+- **Added the 3D Printer module** - The free card for every other printer. Choose OctoPrint, Moonraker/Klipper or PrusaLink and press **Auto-fill entities**, or map the entities yourself. Hero, Standard, Compact and Camera layouts with temps, fans, progress, job info and controls, drawn as an enclosed or bedslinger printer or with your own photo
+- **Camera as snapshot or live stream** - Both printer cards can show the camera as a self-refreshing snapshot with an adjustable interval, or as live video. Tapping the camera opens the full-size dialog
+
+### 🔧 Improvements
+
+- **Everything on the printer cards opens more-info** - Temperatures, fans, spools, progress, status, job details and the camera each open their entity's dialog. Items lift on hover instead of shrinking when pressed, and the badges on the illustration pop into place when the card appears. Animations respect the module's intensity setting and your reduced-motion preference
+- **Style presets that change the look** - Theme, Dark, Light, Glass and Carbon paint their own surface on both printer modules, and Ultra themes can set the printer style like any other module style
+- **Farm view fits narrow tiles** - Tiles shrink the illustration, drop the badges and show every spool in one strip when space is tight
+
+### 🐛 Bug Fixes
+
+- **Fixed the UniFi "Showing X of Y devices" note appearing on the dashboard** - It is an editor hint and now only shows in the editor preview
+
+---
+
 ## Version 3.11.0-beta2
 
 The second 3.11.0 beta fixes UniFi switches that looked smaller than they really are: Home Assistant only creates link-speed sensors for ports that are up, so a 9-port Flex with five cables showed as 5/5. The card now uses the real hardware port count, fills empty jacks in as down, and lights the Flex 2.5G 8 faceplate on the chassis. It includes everything from beta1. This is a pre-release for testing — please report anything odd on GitHub or Discord.

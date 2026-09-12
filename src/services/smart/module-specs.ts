@@ -53,6 +53,8 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   vehicle_maintenance: ['vehicle maintenance', 'car maintenance', 'oil change', 'service interval', 'odometer'],
   vampire_power: ['vampire power', 'phantom load', 'standby power', 'idle power', 'energy waste'],
   unifi: ['unifi', 'ubiquiti', 'udm', 'network rack', 'switch ports', 'access point', 'unifi network'],
+  bambu: ['bambu', 'bambu lab', 'x1c', 'p1s', 'a1', 'ams', '3d printer bambu', 'bambulab'],
+  printer_3d: ['3d printer', 'octoprint', 'moonraker', 'klipper', 'prusa', 'prusalink', 'print progress'],
   calendar: ['events', 'schedule', 'agenda'],
   battery_monitor: ['battery', 'low battery', 'phone battery'],
   area_summary: ['room summary', 'room tile', 'floor plan'],
@@ -470,6 +472,31 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
     fields: ['view', 'rack_style', 'animation_intensity', 'topology_layout', 'show_advanced'],
     example: { type: 'unifi', view: 'rack', rack_style: 'dark', animation_intensity: 'full' },
   },
+  bambu: {
+    purpose:
+      'Auto-discovers Bambu Lab printers via ha-bambulab and renders printer, dashboard, camera, farm, or compact views with AMS, temps, fans, and print controls.',
+    fields: ['view', 'style', 'animation_intensity', 'show_ams', 'show_controls', 'show_temps'],
+    example: { type: 'bambu', view: 'printer', style: 'dark', animation_intensity: 'full' },
+  },
+  printer_3d: {
+    purpose:
+      'Generic 3D printer card with manual entity mapping (or OctoPrint / Moonraker / PrusaLink auto-fill) for temps, progress, camera, and controls.',
+    fields: [
+      'layout',
+      'style',
+      'status_entity',
+      'progress_entity',
+      'nozzle_temp_entity',
+      'bed_temp_entity',
+    ],
+    example: {
+      type: 'printer_3d',
+      layout: 'standard',
+      style: 'dark',
+      status_entity: 'sensor.printer_status',
+      progress_entity: 'sensor.printer_progress',
+    },
+  },
 };
 
 const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
@@ -524,6 +551,8 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   vehicle_maintenance: ['sensor', 'input_number', 'todo'],
   vampire_power: ['sensor'],
   unifi: ['sensor', 'switch', 'button', 'device_tracker', 'light', 'update'],
+  bambu: ['sensor', 'binary_sensor', 'button', 'fan', 'light', 'number', 'select', 'camera', 'image'],
+  printer_3d: ['sensor', 'binary_sensor', 'button', 'switch', 'light', 'fan', 'camera', 'image', 'script'],
   animated_weather: ['weather'],
   animated_forecast: ['weather'],
   animated_clock: ['*'],

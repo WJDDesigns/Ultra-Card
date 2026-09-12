@@ -234,7 +234,9 @@ export interface BaseModule {
     | 'laundry_tracker'
     | 'vehicle_maintenance'
     | 'vampire_power'
-    | 'unifi';
+    | 'unifi'
+    | 'bambu'
+    | 'printer_3d';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5532,7 +5534,9 @@ export type CardModule =
   | LaundryTrackerModule
   | VehicleMaintenanceModule
   | VampirePowerModule
-  | UnifiModule;
+  | UnifiModule
+  | BambuModule
+  | Printer3dModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -8959,6 +8963,156 @@ export interface UnifiModule extends BaseModule {
   led_up_color?: string | undefined;
   led_down_color?: string | undefined;
   rack_background?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Bambu Lab (Pro) — printer / dashboard / camera / farm / compact views
+// -------------------------------------------------------------------------
+
+export type BambuViewMode = 'printer' | 'dashboard' | 'camera' | 'farm' | 'compact';
+
+/** Shared by Bambu Lab and 3D Printer modules. */
+export type PrinterCameraMode = 'snapshot' | 'live';
+
+/** stacked = one housing per unit, full width; grid = housings wrap side by side; strip = all spools in one row. */
+export type BambuAmsLayout = 'stacked' | 'grid' | 'strip';
+
+export type BambuStyle = 'theme' | 'dark' | 'light' | 'glass' | 'carbon';
+
+export type BambuAnimationIntensity = 'off' | 'subtle' | 'full';
+
+export interface BambuModule extends BaseModule {
+  type: 'bambu';
+
+  /** Active visualization mode. */
+  view: BambuViewMode;
+
+  /** Focused printer device id; empty = first discovered (non-farm views). */
+  printer_device_id?: string | undefined;
+  /** Device ids in farm order. */
+  printer_order: string[];
+  /** Device ids the user dismissed from farm. */
+  hidden_printer_ids: string[];
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+
+  style: BambuStyle;
+  animation_intensity: BambuAnimationIntensity;
+
+  show_ams?: boolean | undefined;
+  /** How multiple AMS / external spool units are arranged. */
+  ams_layout?: BambuAmsLayout | undefined;
+  /** User order of AMS / external spool device ids (unlisted append). */
+  ams_order?: string[] | undefined;
+  /** AMS / external spool device ids to hide. */
+  hidden_ams_ids?: string[] | undefined;
+  show_camera?: boolean | undefined;
+  show_controls?: boolean | undefined;
+  show_temps?: boolean | undefined;
+  show_fans?: boolean | undefined;
+  show_print_details?: boolean | undefined;
+  show_hms?: boolean | undefined;
+  show_speed?: boolean | undefined;
+  /** Print job block (name, layer, ETA). */
+  show_job?: boolean | undefined;
+  /** Cover image inside the print job block. */
+  show_thumbnail?: boolean | undefined;
+  /** snapshot = polled stills (low data); live = ha-camera-stream. */
+  camera_mode?: PrinterCameraMode | undefined;
+  camera_refresh_seconds?: number | undefined;
+
+  /** Optional uploaded printer body image (overrides SVG illustration). */
+  custom_image?: string | undefined;
+
+  accent_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+
+  setup_dismissed?: boolean | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// 3D Printer (Free) — generic hero / standard / compact / camera layouts
+// -------------------------------------------------------------------------
+
+export type Printer3dLayout = 'hero' | 'standard' | 'compact' | 'camera';
+
+export type Printer3dStyle = 'theme' | 'dark' | 'light' | 'glass';
+
+export type Printer3dIllustration = 'enclosed' | 'bedslinger' | 'none' | 'image';
+
+export interface Printer3dFanMapping {
+  entity: string;
+  label?: string | undefined;
+}
+
+export interface Printer3dExtraStat {
+  entity: string;
+  label?: string | undefined;
+  icon?: string | undefined;
+}
+
+export interface Printer3dModule extends BaseModule {
+  type: 'printer_3d';
+
+  layout: Printer3dLayout;
+  style: Printer3dStyle;
+  illustration: Printer3dIllustration;
+  custom_image?: string | undefined;
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+
+  /** Integration hint used by auto-fill: octoprint | moonraker | prusalink | manual */
+  source?: 'manual' | 'octoprint' | 'moonraker' | 'prusalink' | undefined;
+  source_device_id?: string | undefined;
+
+  status_entity?: string | undefined;
+  progress_entity?: string | undefined;
+  nozzle_temp_entity?: string | undefined;
+  nozzle_target_entity?: string | undefined;
+  bed_temp_entity?: string | undefined;
+  bed_target_entity?: string | undefined;
+  chamber_temp_entity?: string | undefined;
+  remaining_time_entity?: string | undefined;
+  end_time_entity?: string | undefined;
+  current_layer_entity?: string | undefined;
+  total_layers_entity?: string | undefined;
+  file_name_entity?: string | undefined;
+  camera_entity?: string | undefined;
+  thumbnail_entity?: string | undefined;
+  pause_entity?: string | undefined;
+  resume_entity?: string | undefined;
+  stop_entity?: string | undefined;
+  light_entity?: string | undefined;
+
+  fans?: Printer3dFanMapping[] | undefined;
+  extra_stats?: Printer3dExtraStat[] | undefined;
+
+  show_controls?: boolean | undefined;
+  show_temps?: boolean | undefined;
+  show_fans?: boolean | undefined;
+  show_camera?: boolean | undefined;
+  /** Print job block (name, layer, ETA). */
+  show_job?: boolean | undefined;
+  /** Cover image inside the print job block. */
+  show_thumbnail?: boolean | undefined;
+  /** snapshot = polled stills (low data); live = ha-camera-stream. */
+  camera_mode?: PrinterCameraMode | undefined;
+  camera_refresh_seconds?: number | undefined;
+
+  accent_color?: string | undefined;
   text_color?: string | undefined;
   secondary_text_color?: string | undefined;
 

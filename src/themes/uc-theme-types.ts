@@ -169,6 +169,8 @@ export const UC_THEME_MODULE_STYLE_KEYS: Readonly<Record<string, readonly string
   area_summary: ['style_preset', 'accent_color', 'tile_border_radius'],
   auto_entity_list: ['row_style'],
   unifi: ['rack_style'],
+  bambu: ['style'],
+  printer_3d: ['style'],
   tabs: ['style'],
   activity_feed: ['feed_card_style'],
   button_input: ['button_style'],

@@ -64,6 +64,7 @@ const EMPTY_GENERAL_TAB = new Set([
   'vehicle_maintenance',
   'vampire_power',
   'unifi',
+  'bambu',
 ]);
 
 const CONFIG: UltraCardConfig = {

@@ -1260,9 +1260,12 @@ export class UltraUnifiModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    _previewContext?: 'live' | 'ha-preview' | 'dashboard'
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const m = withThemedStyles(module as UnifiModule, config, 'unifi', { rack_style: 'dark' });
+    // Editor-only hints (e.g. the "Showing X of Y devices" curation note) must
+    // never leak onto the real dashboard.
+    const isEditorPreview = previewContext === 'live' || previewContext === 'ha-preview';
     const lang = hass?.locale?.language || 'en';
 
     if (!hasProAccess(hass)) {
@@ -1387,7 +1390,7 @@ export class UltraUnifiModule extends BaseUltraModule {
                 ? html`<div class="uc-unifi-title">${curated.title}</div>`
                 : nothing}
 
-              ${hiddenCount > 0 && view === 'rack'
+              ${isEditorPreview && hiddenCount > 0 && view === 'rack'
                 ? html`
                     <div class="uc-unifi-curation-note">
                       ${localize(

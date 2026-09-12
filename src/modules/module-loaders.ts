@@ -351,4 +351,10 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     ),
   unifi: () =>
     import(/* webpackChunkName: "m-unifi" */ './unifi-module').then(m => new m.UltraUnifiModule()),
+  bambu: () =>
+    import(/* webpackChunkName: "m-bambu" */ './bambu-module').then(m => new m.UltraBambuModule()),
+  printer_3d: () =>
+    import(/* webpackChunkName: "m-printer-3d" */ './printer-3d-module').then(
+      m => new m.UltraPrinter3dModule()
+    ),
 };

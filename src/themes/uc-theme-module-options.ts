@@ -173,6 +173,22 @@ export const UC_THEME_MODULE_FIELDS: readonly UcThemeModuleField[] = [
     options: ['dark', 'light', 'glass', 'blueprint', 'blank'].map(v => ({ value: v, label: titleCase(v) })),
   },
   {
+    moduleType: 'bambu',
+    moduleLabel: 'Bambu Lab',
+    key: 'style',
+    label: 'Style',
+    kind: 'select',
+    options: ['theme', 'dark', 'light', 'glass', 'carbon'].map(v => ({ value: v, label: titleCase(v) })),
+  },
+  {
+    moduleType: 'printer_3d',
+    moduleLabel: '3D Printer',
+    key: 'style',
+    label: 'Style',
+    kind: 'select',
+    options: ['theme', 'dark', 'light', 'glass'].map(v => ({ value: v, label: titleCase(v) })),
+  },
+  {
     moduleType: 'tabs',
     moduleLabel: 'Tabs',
     key: 'style',

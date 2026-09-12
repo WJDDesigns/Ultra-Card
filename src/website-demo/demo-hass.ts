@@ -1326,12 +1326,193 @@ function subscribeRenderTemplate(
   };
 }
 
+/* --------------------------------------------------------------------------
+ * Bambu Lab demo printers — feeds the Bambu Lab pro module.
+ * ------------------------------------------------------------------------ */
+
+export function buildBambuDemoNetwork(): UnifiDemoRegistry {
+  const states: Record<string, any> = {};
+  const entities: Record<string, any> = {};
+  const devices: Record<string, any> = {};
+
+  const reg = (
+    entityId: string,
+    deviceId: string,
+    uniqueId: string,
+    translationKey: string | null,
+    platform = 'bambu_lab'
+  ) => {
+    entities[entityId] = {
+      entity_id: entityId,
+      device_id: deviceId,
+      platform,
+      unique_id: uniqueId,
+      translation_key: translationKey,
+      disabled_by: null,
+    };
+  };
+
+  const st = (entityId: string, state: string, attributes: Record<string, any> = {}) => {
+    states[entityId] = {
+      entity_id: entityId,
+      state,
+      attributes,
+      last_changed: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+    };
+  };
+
+  // X1C + AMS
+  const x1c = 'ucd_bambu_x1c';
+  const ams1 = 'ucd_bambu_ams1';
+  devices[x1c] = {
+    id: x1c,
+    name: 'X1C_DEMO',
+    name_by_user: 'Studio X1C',
+    model: 'X1C',
+    manufacturer: 'Bambu Lab',
+    identifiers: [['bambu_lab', 'DEMOX1C']],
+    sw_version: '01.08.00',
+  };
+  devices[ams1] = {
+    id: ams1,
+    name: 'AMS 1',
+    model: 'AMS',
+    identifiers: [['bambu_lab', 'DEMOAMS1']],
+    via_device_id: x1c,
+  };
+
+  const x = (suffix: string, key: string, state: string, attrs: Record<string, any> = {}) => {
+    const eid = `sensor.studio_x1c_${suffix}`;
+    reg(eid, x1c, `DEMOX1C_${key}`, key);
+    st(eid, state, attrs);
+  };
+
+  x('nozzle_temperature', 'nozzle_temp', '220', { unit_of_measurement: '°C' });
+  x('bed_temperature', 'bed_temp', '55', { unit_of_measurement: '°C' });
+  x('chamber_temperature', 'chamber_temp', '32', { unit_of_measurement: '°C' });
+  x('print_progress', 'print_progress', '64', { unit_of_measurement: '%' });
+  x('print_status', 'print_status', 'running');
+  x('current_stage', 'stage', 'printing');
+  x('current_layer', 'current_layer', '142');
+  x('total_layer_count', 'total_layers', '380');
+  x('remaining_time', 'remaining_time', '84', { unit_of_measurement: 'min' });
+  x('task_name', 'subtask_name', 'benchy');
+  x('speed_profile', 'speed_profile', 'standard', { modifier: 100 });
+  x('active_tray', 'active_tray', 'Bambu PETG', {
+    type: 'PETG',
+    color: '#4488FFFF',
+    remain: 42,
+    active: true,
+  });
+
+  reg('binary_sensor.studio_x1c_online', x1c, 'DEMOX1C_online', 'online');
+  st('binary_sensor.studio_x1c_online', 'on');
+  reg('binary_sensor.studio_x1c_hms_errors', x1c, 'DEMOX1C_hms', 'hms');
+  st('binary_sensor.studio_x1c_hms_errors', 'off', { Count: 0 });
+  reg('button.studio_x1c_pause', x1c, 'DEMOX1C_pause', 'pause');
+  st('button.studio_x1c_pause', 'unknown');
+  reg('button.studio_x1c_resume', x1c, 'DEMOX1C_resume', 'resume');
+  st('button.studio_x1c_resume', 'unknown');
+  reg('button.studio_x1c_stop', x1c, 'DEMOX1C_stop', 'stop');
+  st('button.studio_x1c_stop', 'unknown');
+  reg('light.studio_x1c_chamber_light', x1c, 'DEMOX1C_chamber_light', 'chamber_light');
+  st('light.studio_x1c_chamber_light', 'on');
+  reg('fan.studio_x1c_cooling_fan', x1c, 'DEMOX1C_cooling_fan', 'cooling_fan');
+  st('fan.studio_x1c_cooling_fan', 'on', { percentage: 80 });
+  reg('fan.studio_x1c_aux_fan', x1c, 'DEMOX1C_aux_fan', 'aux_fan');
+  st('fan.studio_x1c_aux_fan', 'off', { percentage: 0 });
+  reg('fan.studio_x1c_chamber_fan', x1c, 'DEMOX1C_chamber_fan', 'chamber_fan');
+  st('fan.studio_x1c_chamber_fan', 'on', { percentage: 60 });
+  reg('select.studio_x1c_printing_speed', x1c, 'DEMOX1C_Speed', 'printing_speed');
+  st('select.studio_x1c_printing_speed', 'standard');
+  reg('number.studio_x1c_nozzle_target_temperature', x1c, 'DEMOX1C_target_nozzle_temperature', 'target_nozzle_temperature');
+  st('number.studio_x1c_nozzle_target_temperature', '220');
+  reg('number.studio_x1c_bed_target_temperature', x1c, 'DEMOX1C_target_bed_temperature', 'target_bed_temperature');
+  st('number.studio_x1c_bed_target_temperature', '55');
+  reg('camera.studio_x1c_camera', x1c, 'DEMOX1C_camera', 'camera');
+  st('camera.studio_x1c_camera', 'idle');
+  reg('image.studio_x1c_cover_image', x1c, 'DEMOX1C_cover_image', 'cover_image');
+  st('image.studio_x1c_cover_image', 'idle', { entity_picture: '' });
+
+  const trays = [
+    { n: 1, name: 'Bambu PLA Basic', type: 'PLA', color: '#FF0000FF', remain: 85, active: false },
+    { n: 2, name: 'Bambu PETG', type: 'PETG', color: '#4488FFFF', remain: 42, active: true },
+    { n: 3, name: 'Empty', type: 'Empty', color: '#00000000', remain: -1, active: false, empty: true },
+    { n: 4, name: 'ABS', type: 'ABS', color: '#111111FF', remain: 12, active: false },
+  ];
+  for (const t of trays) {
+    const eid = `sensor.ams_1_tray_${t.n}`;
+    reg(eid, ams1, `DEMOAMS1_tray_${t.n}`, `tray_${t.n}`);
+    st(eid, t.name, {
+      type: t.type,
+      color: t.color,
+      remain: t.remain,
+      active: t.active,
+      empty: t.empty === true,
+      slot: t.n,
+    });
+  }
+  reg('sensor.ams_1_humidity_index', ams1, 'DEMOAMS1_humidity_index', 'humidity_index');
+  st('sensor.ams_1_humidity_index', '2');
+
+  // A1 mini + AMS Lite
+  const a1 = 'ucd_bambu_a1';
+  const lite = 'ucd_bambu_lite';
+  devices[a1] = {
+    id: a1,
+    name: 'A1 Mini',
+    name_by_user: 'Desk A1',
+    model: 'A1MINI',
+    manufacturer: 'Bambu Lab',
+    identifiers: [['bambu_lab', 'DEMOA1']],
+  };
+  devices[lite] = {
+    id: lite,
+    name: 'AMS Lite',
+    model: 'AMS Lite',
+    identifiers: [['bambu_lab', 'DEMOLITE']],
+    via_device_id: a1,
+  };
+  reg('sensor.desk_a1_print_progress', a1, 'DEMOA1_print_progress', 'print_progress');
+  st('sensor.desk_a1_print_progress', '12', { unit_of_measurement: '%' });
+  reg('sensor.desk_a1_print_status', a1, 'DEMOA1_print_status', 'print_status');
+  st('sensor.desk_a1_print_status', 'running');
+  reg('sensor.desk_a1_nozzle_temperature', a1, 'DEMOA1_nozzle_temp', 'nozzle_temp');
+  st('sensor.desk_a1_nozzle_temperature', '210');
+  reg('sensor.desk_a1_bed_temperature', a1, 'DEMOA1_bed_temp', 'bed_temp');
+  st('sensor.desk_a1_bed_temperature', '60');
+  reg('binary_sensor.desk_a1_online', a1, 'DEMOA1_online', 'online');
+  st('binary_sensor.desk_a1_online', 'on');
+  reg('fan.desk_a1_cooling_fan', a1, 'DEMOA1_cooling_fan', 'cooling_fan');
+  st('fan.desk_a1_cooling_fan', 'on', { percentage: 100 });
+  reg('button.desk_a1_pause', a1, 'DEMOA1_pause', 'pause');
+  st('button.desk_a1_pause', 'unknown');
+  reg('button.desk_a1_stop', a1, 'DEMOA1_stop', 'stop');
+  st('button.desk_a1_stop', 'unknown');
+  for (let i = 1; i <= 4; i++) {
+    const eid = `sensor.ams_lite_tray_${i}`;
+    reg(eid, lite, `DEMOLITE_tray_${i}`, `tray_${i}`);
+    st(eid, i === 1 ? 'PLA' : 'Empty', {
+      type: i === 1 ? 'PLA' : 'Empty',
+      color: i === 1 ? '#FFFFFFFF' : '#00000000',
+      remain: i === 1 ? 70 : -1,
+      empty: i !== 1,
+      active: i === 1,
+      slot: i,
+    });
+  }
+
+  return { states, entities, devices };
+}
+
 /** Build the fake hass object. Mutating services trigger listener callbacks. */
 export function createDemoHass() {
   const listeners = new Set<Listener>();
   const states = createDemoStates();
   const unifi = buildUnifiDemoNetwork();
-  Object.assign(states, unifi.states);
+  const bambu = buildBambuDemoNetwork();
+  Object.assign(states, unifi.states, bambu.states);
 
   const notify = () => listeners.forEach(l => l());
 
@@ -1368,9 +1549,10 @@ export function createDemoHass() {
       kitchen: { area_id: 'kitchen', name: 'Kitchen', icon: 'mdi:silverware-fork-knife' },
       bedroom: { area_id: 'bedroom', name: 'Bedroom', icon: 'mdi:bed' },
     },
-    devices: { ...unifi.devices },
+    devices: { ...unifi.devices, ...bambu.devices },
     entities: {
       ...unifi.entities,
+      ...bambu.entities,
       'light.living_room': { entity_id: 'light.living_room', area_id: 'living_room' },
       'sensor.living_room_temperature': {
         entity_id: 'sensor.living_room_temperature',
