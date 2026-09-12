@@ -45,14 +45,14 @@ export const Teaser: React.FC = () => (
 
     {/* 3 — Modules */}
     <ShotSequence shot={SHOTS.modules}>
-      <Headline text={COPY.modulesA} inAt={TEXT.modulesA.in} outAt={TEXT.modulesA.out} size={112} placement="bottom" />
-      <Headline text={COPY.modulesB} inAt={TEXT.modulesB.in} outAt={TEXT.modulesB.out} size={112} placement="bottom" />
+      <Headline text={COPY.modulesA} inAt={TEXT.modulesA.in} outAt={TEXT.modulesA.out} size={120} placement="bottom" />
+      <Headline text={COPY.modulesB} inAt={TEXT.modulesB.in} outAt={TEXT.modulesB.out} size={120} placement="bottom" />
     </ShotSequence>
 
     {/* 4 — Theme Engine */}
     <ShotSequence shot={SHOTS.themeEngine}>
       <Kicker text={COPY.themeKicker} inAt={TEXT.themeKicker.in} outAt={TEXT.themeHeadline.out} offsetY={132} />
-      <Headline text={COPY.themeHeadline} inAt={TEXT.themeHeadline.in} outAt={TEXT.themeHeadline.out} size={104} placement="bottom" />
+      <Headline text={COPY.themeHeadline} inAt={TEXT.themeHeadline.in} outAt={TEXT.themeHeadline.out} size={116} placement="bottom" />
     </ShotSequence>
 
     {/* 5 — Template Mode */}
@@ -62,7 +62,7 @@ export const Teaser: React.FC = () => (
         text={COPY.templateHeadline}
         inAt={TEXT.templateHeadline.in}
         outAt={TEXT.templateHeadline.out}
-        size={104}
+        size={116}
         placement="bottom"
       />
     </ShotSequence>

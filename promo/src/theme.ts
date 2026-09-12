@@ -5,6 +5,7 @@ export const COLORS = {
   black: '#000000',
   white: '#ffffff',
   secondary: 'rgba(255,255,255,0.55)',
+  kicker: 'rgba(255,255,255,0.82)',
   cyan: '#22d3ee',
   violet: '#a21caf',
 };

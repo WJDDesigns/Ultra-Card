@@ -12,6 +12,7 @@ export const MusicTrack: React.FC = () => {
   return (
     <Audio
       src={staticFile(MUSIC.file)}
+      trimBefore={MUSIC.trimBeforeFrames}
       volume={(f) =>
         MUSIC.volume *
         interpolate(f, [0, MUSIC.fadeInFrames, MUSIC.fadeOutStart, MUSIC.fadeOutEnd], [0, 1, 1, 0], {

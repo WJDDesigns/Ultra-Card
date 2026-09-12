@@ -1,6 +1,6 @@
 import { AbsoluteFill, OffthreadVideo, Sequence, getStaticFiles, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import type { ClipCut } from '../storyboard';
-import { COLORS, FONT_STACK } from '../theme';
+import { COLORS, EASE_OUT_CUBIC, FONT_STACK } from '../theme';
 
 const hasStaticFile = (name: string) => getStaticFiles().some((f) => f.name === name);
 
@@ -18,10 +18,17 @@ export const ClipSlot: React.FC<{ cut: ClipCut }> = ({ cut }) => (
 const ClipFrame: React.FC<{ cut: ClipCut }> = ({ cut }) => {
   const frame = useCurrentFrame();
   const [zoomFrom, zoomTo] = cut.zoom ?? [1, 1];
-  const zoom = interpolate(frame, [0, cut.duration], [zoomFrom, zoomTo], {
+  const drift = interpolate(frame, [0, cut.duration], [zoomFrom, zoomTo], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
+  // Punch-in on every hard cut: land 4 % large and settle within 8 frames so each edit hits the beat.
+  const punch = interpolate(frame, [0, 8], [1.04, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: EASE_OUT_CUBIC,
+  });
+  const zoom = drift * punch;
   const relPath = `clips/${cut.file}`;
   const available = hasStaticFile(relPath);
 

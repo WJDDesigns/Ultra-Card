@@ -4,6 +4,9 @@ import { COLORS, EASE_OUT_CUBIC, FONT_STACK } from '../theme';
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 
+/** Bottom-placed copy sits over busy UI footage: a tight dark halo plus a wide soft shadow keeps it readable. */
+const BOTTOM_TEXT_SHADOW = '0 2px 6px rgba(0,0,0,0.9), 0 8px 28px rgba(0,0,0,0.85), 0 0 60px rgba(0,0,0,0.7)';
+
 type Placement = 'center' | 'bottom';
 
 const placementStyle = (placement: Placement): CSSProperties =>
@@ -15,18 +18,19 @@ const placementStyle = (placement: Placement): CSSProperties =>
  * Apple-style enter/exit: opacity + blur + slight scale, ease-out cubic. Nothing moves during the hold.
  * `inAt` / `outAt` are frames relative to the enclosing <Sequence>.
  */
-export const useAppleReveal = (inAt: number, outAt?: number, enterFrames = 18, exitFrames = 12) => {
+export const useAppleReveal = (inAt: number, outAt?: number, enterFrames = 13, exitFrames = 9) => {
   const frame = useCurrentFrame();
   const enter = interpolate(frame, [inAt, inAt + enterFrames], [0, 1], { ...clamp, easing: EASE_OUT_CUBIC });
   const exit =
     outAt === undefined ? 1 : interpolate(frame, [outAt - exitFrames, outAt], [1, 0], { ...clamp, easing: EASE_OUT_CUBIC });
   const opacity = enter * exit;
   const blur = interpolate(enter, [0, 1], [16, 0]) + interpolate(exit, [0, 1], [8, 0]);
-  const scale = interpolate(enter, [0, 1], [0.96, 1]);
+  const scale = interpolate(enter, [0, 1], [0.94, 1]);
+  const rise = interpolate(enter, [0, 1], [22, 0]);
   return {
     opacity,
     filter: `blur(${blur.toFixed(2)}px)`,
-    transform: `scale(${scale.toFixed(4)})`,
+    transform: `translateY(${rise.toFixed(2)}px) scale(${scale.toFixed(4)})`,
     willChange: 'opacity, filter, transform',
   } satisfies CSSProperties;
 };
@@ -52,7 +56,7 @@ export const Headline: React.FC<{
           lineHeight: 1.05,
           color: COLORS.white,
           textAlign: 'center',
-          textShadow: placement === 'bottom' ? '0 6px 40px rgba(0,0,0,0.6)' : undefined,
+          textShadow: placement === 'bottom' ? BOTTOM_TEXT_SHADOW : undefined,
         }}
       >
         {text}
@@ -75,12 +79,12 @@ export const Kicker: React.FC<{ text: string; inAt: number; outAt?: number; offs
         style={{
           ...reveal,
           fontFamily: FONT_STACK,
-          fontSize: 26,
-          fontWeight: 600,
+          fontSize: 30,
+          fontWeight: 700,
           letterSpacing: '0.22em',
           textTransform: 'uppercase',
-          color: COLORS.secondary,
-          textShadow: '0 4px 24px rgba(0,0,0,0.6)',
+          color: COLORS.kicker,
+          textShadow: BOTTOM_TEXT_SHADOW,
         }}
       >
         {text}
@@ -117,7 +121,7 @@ const Word: React.FC<{ text: string; inAt: number; outAt: number; size: number }
         fontWeight: 700,
         letterSpacing: '-0.02em',
         color: COLORS.white,
-        textShadow: '0 6px 40px rgba(0,0,0,0.6)',
+        textShadow: BOTTOM_TEXT_SHADOW,
       }}
     >
       {text}
@@ -134,21 +138,21 @@ export const PopWord: React.FC<{ text: string; inAt: number; outAt: number; size
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const s = spring({ frame: frame - inAt, fps, config: { damping: 18, stiffness: 220, mass: 0.8 }, durationInFrames: 12 });
-  const opacityIn = interpolate(frame, [inAt, inAt + 5], [0, 1], clamp);
+  const s = spring({ frame: frame - inAt, fps, config: { damping: 14, stiffness: 320, mass: 0.7 }, durationInFrames: 10 });
+  const opacityIn = interpolate(frame, [inAt, inAt + 3], [0, 1], clamp);
   const opacityOut = interpolate(frame, [outAt - 6, outAt], [1, 0], clamp);
   return (
     <div style={{ position: 'absolute', ...placementStyle('bottom'), pointerEvents: 'none' }}>
       <div
         style={{
           opacity: opacityIn * opacityOut,
-          transform: `scale(${interpolate(s, [0, 1], [0.9, 1])})`,
+          transform: `scale(${interpolate(s, [0, 1], [0.82, 1])})`,
           fontFamily: FONT_STACK,
           fontSize: size,
           fontWeight: 700,
           letterSpacing: '-0.02em',
           color: COLORS.white,
-          textShadow: '0 6px 40px rgba(0,0,0,0.7)',
+          textShadow: BOTTOM_TEXT_SHADOW,
         }}
       >
         {text}
@@ -165,8 +169,8 @@ export const BottomVignette: React.FC = () => (
       left: 0,
       right: 0,
       bottom: 0,
-      height: '34%',
-      background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0))',
+      height: '48%',
+      background: 'linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.86) 32%, rgba(0,0,0,0.45) 68%, rgba(0,0,0,0) 100%)',
       pointerEvents: 'none',
     }}
   />

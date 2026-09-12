@@ -46,7 +46,7 @@ export const SHOTS = {
         from: 0,
         duration: sec(5),
         trimBefore: sec(1),
-        zoom: [1, 1.05],
+        zoom: [1, 1.09],
         label: 'Layout Builder — drag Gauge module into column',
       },
     ],
@@ -57,10 +57,10 @@ export const SHOTS = {
     start: sec(8),
     duration: sec(5),
     cuts: [
-      { file: 'clip-03a-gauge.mp4', from: 0, duration: sec(1), trimBefore: sec(1), zoom: [1, 1.03], label: 'Gauge close-up' },
-      { file: 'clip-03b-graphs.mp4', from: sec(1), duration: sec(1), trimBefore: sec(1), zoom: [1, 1.03], label: 'Graphs close-up' },
-      { file: 'clip-03c-climate.mp4', from: sec(2), duration: sec(1), trimBefore: sec(1), zoom: [1, 1.03], label: 'Climate close-up' },
-      { file: 'clip-03d-module-picker.mp4', from: sec(3), duration: sec(2), trimBefore: sec(1), zoom: [1.02, 1.02], label: 'Module picker scrolling (96 modules)' },
+      { file: 'clip-03a-gauge.mp4', from: 0, duration: sec(1), trimBefore: sec(1), zoom: [1, 1.06], label: 'Gauge close-up' },
+      { file: 'clip-03b-graphs.mp4', from: sec(1), duration: sec(1), trimBefore: sec(1), zoom: [1, 1.06], label: 'Graphs close-up' },
+      { file: 'clip-03c-climate.mp4', from: sec(2), duration: sec(1), trimBefore: sec(1), zoom: [1, 1.06], label: 'Climate close-up' },
+      { file: 'clip-03d-module-picker.mp4', from: sec(3), duration: sec(2), trimBefore: sec(1), zoom: [1.02, 1.07], label: 'Module picker scrolling (96 modules)' },
     ],
   },
 
@@ -74,7 +74,7 @@ export const SHOTS = {
         from: 0,
         duration: sec(5),
         trimBefore: sec(1),
-        zoom: [1.06, 1],
+        zoom: [1.1, 1],
         label: 'Theme Engine — Glass → Liquid Glass → Vapor → Wood',
       },
     ],
@@ -90,7 +90,7 @@ export const SHOTS = {
         from: 0,
         duration: sec(4),
         trimBefore: sec(1),
-        zoom: [1, 1],
+        zoom: [1, 1.05],
         label: 'Template Mode — icon reacts to entity change',
       },
     ],
@@ -101,12 +101,12 @@ export const SHOTS = {
     start: sec(22),
     duration: sec(4),
     cuts: [
-      { file: 'clip-06a-presets-gallery.mp4', from: 0, duration: 20, trimBefore: sec(1), zoom: [1, 1.02], label: 'Preset gallery scroll' },
-      { file: 'clip-06b-preset-install.mp4', from: 20, duration: 20, trimBefore: sec(1), zoom: [1, 1.02], label: 'One-click preset install' },
-      { file: 'clip-06c-hub-open.mp4', from: 40, duration: 20, trimBefore: sec(1), zoom: [1, 1.02], label: 'Ultra Card Hub opens' },
-      { file: 'clip-06d-hub-docs.mp4', from: 60, duration: 20, trimBefore: sec(1), zoom: [1, 1.02], label: 'Hub Docs / Favorites' },
-      { file: 'clip-06e-pro-backups.mp4', from: 80, duration: 20, trimBefore: sec(1), zoom: [1, 1.02], label: 'Pro cloud backups & snapshots' },
-      { file: 'clip-06f-phone-view.mp4', from: 100, duration: 20, trimBefore: sec(1), zoom: [1, 1.02], label: 'Dashboard on phone width' },
+      { file: 'clip-06a-presets-gallery.mp4', from: 0, duration: 20, trimBefore: sec(1), zoom: [1, 1.05], label: 'Preset gallery scroll' },
+      { file: 'clip-06b-preset-install.mp4', from: 20, duration: 20, trimBefore: sec(1), zoom: [1, 1.05], label: 'One-click preset install' },
+      { file: 'clip-06c-hub-open.mp4', from: 40, duration: 20, trimBefore: sec(1), zoom: [1, 1.05], label: 'Ultra Card Hub opens' },
+      { file: 'clip-06d-hub-docs.mp4', from: 60, duration: 20, trimBefore: sec(1), zoom: [1, 1.05], label: 'Hub Docs / Favorites' },
+      { file: 'clip-06e-pro-backups.mp4', from: 80, duration: 20, trimBefore: sec(1), zoom: [1, 1.05], label: 'Pro cloud backups & snapshots' },
+      { file: 'clip-06f-phone-view.mp4', from: 100, duration: 20, trimBefore: sec(1), zoom: [1, 1.05], label: 'Dashboard on phone width' },
     ],
   },
 
@@ -116,11 +116,11 @@ export const SHOTS = {
 /** Text cards, in frames relative to their shot. */
 export const TEXT = {
   hook: { in: 12, out: sec(3) },
-  layoutWords: { firstIn: 15, stagger: 15, out: sec(4.4) },
+  layoutWords: { firstIn: 12, stagger: 13, out: sec(4.5) },
   modulesA: { in: 6, out: sec(3) },
   modulesB: { in: sec(3), out: sec(5) },
   themeKicker: { in: 6 },
-  themeHeadline: { in: 18, out: sec(4.4) },
+  themeHeadline: { in: 14, out: sec(4.4) },
   templateKicker: { in: 6 },
   templateHeadline: { in: 9, out: sec(3.5) },
   montageWords: [
@@ -135,10 +135,13 @@ export const TEXT = {
 };
 
 export const MUSIC = {
-  /** Drop a track at public/music/teaser-music.mp3 (see media/music/LICENSES.md for candidates). */
+  /** public/music/teaser-music.mp3 — "Lost In Space" by HoliznaCC0 (CC0); see public/music/LICENSE.md. */
   file: 'music/teaser-music.mp3',
-  volume: 0.9,
-  fadeInFrames: 15,
+  /** The track is loud and compressed, so it sits lower than the Effervescence mix did. */
+  volume: 0.72,
+  /** Skip the first second so the groove enters on the 0:03 cut and the +7 dB lift lands on Template Mode (~0:17). */
+  trimBeforeFrames: sec(1),
+  fadeInFrames: 12,
   fadeOutStart: sec(27.5),
   fadeOutEnd: DURATION_IN_FRAMES,
 };
@@ -146,7 +149,7 @@ export const MUSIC = {
 export const COPY = {
   hook: 'Skip the YAML.',
   layoutWords: ['Drag.', 'Drop.', 'Done.'],
-  modulesA: '96 modules.',
+  modulesA: '90+ modules.',
   modulesB: 'One editor.',
   themeKicker: 'THEME ENGINE',
   themeHeadline: 'Every look. One click.',
