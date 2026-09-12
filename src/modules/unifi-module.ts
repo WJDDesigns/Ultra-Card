@@ -1263,8 +1263,8 @@ export class UltraUnifiModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const m = withThemedStyles(module as UnifiModule, config, 'unifi', { rack_style: 'dark' });
-    // Editor-only hints (e.g. the "Showing X of Y devices" curation note) must
-    // never leak onto the real dashboard.
+    // Editor-only hints (setup wizard, "Showing X of Y devices") must never
+    // leak onto the real dashboard. Dismiss also only persists in the editor.
     const isEditorPreview = previewContext === 'live' || previewContext === 'ha-preview';
     const lang = hass?.locale?.language || 'en';
 
@@ -1404,11 +1404,13 @@ export class UltraUnifiModule extends BaseUltraModule {
                   `
                 : nothing}
 
-              ${renderSetupWizard(curated, hass, caps, {
-                onDismiss: () => patch({ setup_dismissed: true }),
-                onEnabled: () => this.triggerPreviewUpdate(),
-                triggerPreviewUpdate: () => this.triggerPreviewUpdate(),
-              })}
+              ${isEditorPreview
+                ? renderSetupWizard(curated, hass, caps, {
+                    onDismiss: () => patch({ setup_dismissed: true }),
+                    onEnabled: () => this.triggerPreviewUpdate(),
+                    triggerPreviewUpdate: () => this.triggerPreviewUpdate(),
+                  })
+                : nothing}
 
               ${!topo.hasUnifiIntegration && topo.devices.length === 0
                 ? html`

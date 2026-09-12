@@ -84,7 +84,13 @@ export function renderSetupWizard(
     return html`<span class="uc-unifi-badge ${cls}">${label}: ${status}</span>`;
   };
 
-  const runEnable = async () => {
+  const stopBubble = (ev: Event) => {
+    ev.stopPropagation();
+  };
+
+  const runEnable = async (ev: Event) => {
+    ev.preventDefault();
+    ev.stopPropagation();
     if (!isAdmin || progress?.running) return;
     const ids = report.disabledEntityIds;
     progressByModule.set(module.id, { done: 0, total: ids.length, running: true });
@@ -97,6 +103,12 @@ export function renderSetupWizard(
     invalidateCapabilityReport(module.id);
     handlers.onEnabled();
     handlers.triggerPreviewUpdate();
+  };
+
+  const dismiss = (ev: Event) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    handlers.onDismiss();
   };
 
   return html`
@@ -146,6 +158,7 @@ export function renderSetupWizard(
                       class="uc-unifi-btn"
                       type="button"
                       ?disabled=${!!progress?.running}
+                      @pointerdown=${stopBubble}
                       @click=${runEnable}
                     >
                       ${progress?.running
@@ -195,7 +208,12 @@ export function renderSetupWizard(
         : nothing}
 
       <div class="uc-unifi-wizard-actions" style="margin-top:10px;">
-        <button class="uc-unifi-btn linkish" type="button" @click=${handlers.onDismiss}>
+        <button
+          class="uc-unifi-btn linkish"
+          type="button"
+          @pointerdown=${stopBubble}
+          @click=${dismiss}
+        >
           ${localize('editor.unifi.wizard_dismiss', lang, 'Dismiss')}
         </button>
       </div>

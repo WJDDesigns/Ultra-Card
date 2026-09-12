@@ -1,0 +1,1 @@
+Fixed the UniFi setup banner appearing on the live dashboard with an unclickable Dismiss button - The setup wizard now only shows in the editor, and Dismiss actually works there

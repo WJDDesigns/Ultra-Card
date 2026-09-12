@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.11.0-beta4
+
+The fourth 3.11.0 beta keeps the UniFi setup banner in the editor, where it belongs. Dismiss was showing on the live dashboard and did nothing when tapped. It includes everything from beta1 through beta3. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed the UniFi setup banner appearing on the dashboard** - The setup wizard, including Dismiss, now only shows in the editor. Dismiss actually works there instead of looking clickable on the live card and doing nothing
+
+---
+
 ## Version 3.11.0-beta3
 
 The third 3.11.0 beta brings 3D printing to Ultra Card. **Bambu Lab** (PRO) turns the ha-bambulab integration into a live printer card: an H2D-style illustration with temperature badges, every AMS and spool you own, snapshot or live camera, controls, and a farm view for all your printers. **3D Printer** (free) does the same for OctoPrint, Moonraker/Klipper, PrusaLink, or any entities you map by hand. Everything on both cards taps through to the entity's more-info dialog. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord.

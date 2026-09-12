@@ -33,6 +33,9 @@ export function unifiModuleStyles(): string {
   border-radius: var(--uc-r-12, 12px);
   padding: 14px 16px;
   margin-bottom: 14px;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
 }
 .uc-unifi-wizard h3 {
   margin: 0 0 6px;
@@ -65,6 +68,9 @@ export function unifiModuleStyles(): string {
   cursor: pointer;
   background: var(--primary-color);
   color: var(--text-primary-color, #fff);
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
 }
 .uc-unifi-btn[disabled] { opacity: 0.5; cursor: default; }
 .uc-unifi-btn.secondary {
@@ -74,8 +80,12 @@ export function unifiModuleStyles(): string {
 }
 .uc-unifi-btn.linkish {
   background: transparent;
-  color: var(--secondary-text-color);
+  color: var(--primary-color);
   padding: 8px 10px;
+}
+.uc-unifi-btn.linkish:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .uc-unifi-progress {
   height: 4px;
