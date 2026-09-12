@@ -33,7 +33,9 @@ clip-03c-climate.mp4         clip-06b-preset-install.mp4   clip-06f-phone-view.m
 clip-03d-module-picker.mp4
 ```
 
-Each slot skips the first second of its clip (`trimBefore` in `src/storyboard.ts`) so you can start recording a moment before the action. Adjust `trimBefore` per clip if a take starts late. If a file is missing, the slot renders a labelled placeholder instead of failing. Any H.264 `.mp4`/`.mov` works; 1920x1080 or larger at 30/60 fps is ideal.
+Each slot skips the first second of its clip (`trimBefore` in `src/storyboard.ts`) so you can start recording a moment before the action. Adjust `trimBefore` per clip if a take starts late. Any H.264 `.mp4`/`.mov` works; 1920x1080 or larger at 30/60 fps is ideal.
+
+Video files are git-ignored by the repo root `.gitignore` (`*.mp4`), so recordings stay local. Until you have footage, either run `npm run placeholders` (needs ffmpeg) to generate labelled stand-in clips, or do nothing: a slot whose file is missing renders a labelled placeholder card instead of failing.
 
 ## Music
 
@@ -57,13 +59,13 @@ All cut points live in `src/storyboard.ts` (`SHOTS[...].start`, `TEXT`, `MUSIC`)
 
 ## Placeholders
 
-`scripts/make-placeholders.sh` regenerates the labelled stand-in clips in `public/clips/` with ffmpeg (used to verify the pipeline before real footage exists).
+`npm run placeholders` (`scripts/make-placeholders.sh`) generates labelled stand-in clips in `public/clips/` with ffmpeg. They exercise the real `<OffthreadVideo>` path so the whole pipeline can be rendered before footage exists.
 
 ## Layout
 
 ```
 promo/
-  package.json            scripts: studio, render, render:preview, still:endcard, typecheck
+  package.json            scripts: studio, render, render:preview, still:endcard, placeholders, typecheck
   remotion.config.ts
   src/
     index.ts              registerRoot
@@ -78,7 +80,7 @@ promo/
       MusicTrack.tsx      <Audio> with fade in/out
   public/
     brand/ultra-card-logo.jpg   copied from ../assets/Ultra.jpg
-    clips/                      placeholder MP4s, overwrite with recordings
+    clips/                      recordings go here (git-ignored); npm run placeholders for stand-ins
     music/                      drop teaser-music.mp3 here
   scripts/make-placeholders.sh
 ```

@@ -8,6 +8,7 @@
     "render": "remotion render UltraCardTeaser out/ultra-card-teaser.mp4 --codec h264 --crf 18",
     "render:preview": "remotion render UltraCardTeaser out/ultra-card-teaser-preview.mp4 --scale 0.5 --crf 28",
     "still:endcard": "remotion still UltraCardTeaser out/end-card.png --frame 870",
+    "placeholders": "bash scripts/make-placeholders.sh",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
