@@ -3,7 +3,7 @@
 Self-contained [Remotion](https://www.remotion.dev) project for the 30-second Apple-style teaser. It is independent of the card build: its own `package.json`, nothing is added to the repo root.
 
 - Composition: `UltraCardTeaser`, 1920x1080, 30 fps, 900 frames (30 s)
-- Storyboard and shot list: `docs/promo-storyboard.md` in the Ultra Card Project store (timecodes match `src/storyboard.ts` 1:1)
+- Storyboard and shot list: `STORYBOARD.md` in this folder (timecodes match `src/storyboard.ts` 1:1)
 - Requires Node 18+ and a Chromium download on first run (Remotion fetches it automatically). `ffmpeg` is only needed for `scripts/make-placeholders.sh`.
 
 ## Install
@@ -39,9 +39,7 @@ Video files are git-ignored by the repo root `.gitignore` (`*.mp4`), so recordin
 
 ## Music
 
-Copy the chosen track to `public/music/teaser-music.mp3` (git-ignored). Candidates with licenses are in `media/music/LICENSES.md` in the Project store. The track fades in over 0.5 s and out from 27.5 s to 30 s (`MUSIC` in `src/storyboard.ts`). With no file present the video renders silent.
-
-Remember the credit line for CC-BY tracks in the video description.
+`public/music/teaser-music.mp3` is committed: "Effervescence" by Scott Buckley, CC BY 4.0 — credit line and terms in `public/music/LICENSE.md` (the credit must go in the video description). To try another track, overwrite that file (other `.mp3` files in the folder are git-ignored; candidates are in `media/music/LICENSES.md` in the Project store). The track fades in over 0.5 s and out from 27.5 s to 30 s (`MUSIC` in `src/storyboard.ts`). With no file present the video renders silent.
 
 ## Render
 
@@ -81,6 +79,6 @@ promo/
   public/
     brand/ultra-card-logo.jpg   copied from ../assets/Ultra.jpg
     clips/                      recordings go here (git-ignored); npm run placeholders for stand-ins
-    music/                      drop teaser-music.mp3 here
+    music/                      teaser-music.mp3 (Effervescence, CC BY 4.0) + LICENSE.md
   scripts/make-placeholders.sh
 ```
