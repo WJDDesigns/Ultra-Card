@@ -1,12 +1,32 @@
 {
-  "generatedAt": "2026-09-11T22:24:25.788Z",
-  "ultraCardVersion": "3.11.0-beta2",
+  "generatedAt": "2026-09-12T00:34:11.140Z",
+  "ultraCardVersion": "3.11.0-beta3",
   "counts": {
-    "total": 96,
-    "free": 66,
-    "pro": 30
+    "total": 98,
+    "free": 67,
+    "pro": 31
   },
   "modules": [
+    {
+      "type": "printer_3d",
+      "title": "3D Printer",
+      "description": "Generic 3D printer card with temps, progress, camera, and controls for any integration",
+      "category": "interactive",
+      "icon": "mdi:printer-3d",
+      "pro": false,
+      "tags": [
+        "3d printer",
+        "octoprint",
+        "moonraker",
+        "klipper",
+        "prusa",
+        "print",
+        "filament",
+        "interactive"
+      ],
+      "preview": "previews/printer_3d.png",
+      "status": "ok"
+    },
     {
       "type": "external_card",
       "title": "3rd Party Card",
@@ -216,6 +236,28 @@
         "animated"
       ],
       "preview": "previews/badge_of_honor.png",
+      "status": "ok"
+    },
+    {
+      "type": "bambu",
+      "title": "Bambu Lab",
+      "description": "Live Bambu Lab printer card with AMS, camera, controls, and farm view",
+      "category": "data",
+      "icon": "mdi:printer-3d-nozzle",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "bambu",
+        "bambu lab",
+        "3d printer",
+        "ams",
+        "x1c",
+        "p1s",
+        "a1",
+        "print"
+      ],
+      "preview": "previews/bambu.png",
       "status": "ok"
     },
     {
@@ -1597,48 +1639,6 @@
         "server-room"
       ],
       "preview": "previews/unifi.png",
-      "status": "ok"
-    },
-    {
-      "type": "bambu",
-      "title": "Bambu Lab",
-      "description": "Live Bambu Lab printer card with AMS, camera, controls, and farm view",
-      "category": "data",
-      "icon": "mdi:printer-3d-nozzle",
-      "pro": true,
-      "tags": [
-        "pro",
-        "premium",
-        "bambu",
-        "bambu lab",
-        "3d printer",
-        "ams",
-        "x1c",
-        "p1s",
-        "a1",
-        "print"
-      ],
-      "preview": "previews/bambu.png",
-      "status": "ok"
-    },
-    {
-      "type": "printer_3d",
-      "title": "3D Printer",
-      "description": "Generic 3D printer card with temps, progress, camera, and controls for any integration",
-      "category": "interactive",
-      "icon": "mdi:printer-3d",
-      "pro": false,
-      "tags": [
-        "3d printer",
-        "octoprint",
-        "moonraker",
-        "klipper",
-        "prusa",
-        "print",
-        "filament",
-        "interactive"
-      ],
-      "preview": "previews/printer_3d.png",
       "status": "ok"
     },
     {

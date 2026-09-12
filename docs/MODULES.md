@@ -1,8 +1,8 @@
 # Ultra Card module gallery
 
-_Generated from v3.11.0-beta2 on 2026-09-11 — do not edit by hand._
+_Generated from v3.11.0-beta3 on 2026-09-12 — do not edit by hand._
 
-**96 modules** · 66 free · 30 PRO
+**98 modules** · 67 free · 31 PRO
 
 ## content
 
@@ -30,6 +30,7 @@ _Generated from v3.11.0-beta2 on 2026-09-11 — do not edit by hand._
 <tr><td width="220"><img src="previews/alert_center.png" width="200" alt="Alert Center"></td><td><b>Alert Center</b><br>Monitor and prioritize active Home Assistant alerts in one place</td></tr>
 <tr><td width="220"><img src="previews/area_summary.png" width="200" alt="Area / Room Summary"></td><td><b>Area / Room Summary</b><br>Smart room tile that auto-pulls lights, climate, motion, doors, media, humidity, and presence by Home Assistant area</td></tr>
 <tr><td width="220"><img src="previews/auto_entity_list.png" width="200" alt="Auto Entities List"></td><td><b>Auto Entities List</b><br>Dynamically list entities using domain, device_class, area, label, state, and keyword filters</td></tr>
+<tr><td width="220"><img src="previews/bambu.png" width="200" alt="Bambu Lab"></td><td><b>Bambu Lab</b> · <sub>PRO</sub><br>Live Bambu Lab printer card with AMS, camera, controls, and farm view</td></tr>
 <tr><td width="220"><img src="previews/bar.png" width="200" alt="Bars"></td><td><b>Bars</b><br>Progress bars for values</td></tr>
 <tr><td width="220"><img src="previews/battery_fleet.png" width="200" alt="Battery Fleet"></td><td><b>Battery Fleet</b> · <sub>PRO</sub><br>Ranked battery health with drain-rate analysis and replacement predictions</td></tr>
 <tr><td width="220"><img src="previews/battery_monitor.png" width="200" alt="Battery Monitor"></td><td><b>Battery Monitor</b><br>Auto-discover battery sensors and highlight low / critical devices with 5 visual styles</td></tr>
@@ -51,8 +52,6 @@ _Generated from v3.11.0-beta2 on 2026-09-11 — do not edit by hand._
 <tr><td width="220"><img src="previews/todo_list.png" width="200" alt="To-Do List"></td><td><b>To-Do List</b><br>Show, check off, and add items on Home Assistant to-do lists</td></tr>
 <tr><td width="220"><img src="previews/train.png" width="200" alt="Train Departures"></td><td><b>Train Departures</b> · <sub>PRO</sub><br>Animated departure board with the next trains as status-colored icons, live countdown, delays, and an LED dot-matrix style</td></tr>
 <tr><td width="220"><img src="previews/unifi.png" width="200" alt="UniFi Network"></td><td><b>UniFi Network</b> · <sub>PRO</sub><br>Virtual rack, live ports, topology and clients for UniFi gear</td></tr>
-<tr><td width="220"><img src="previews/bambu.png" width="200" alt="Bambu Lab"></td><td><b>Bambu Lab</b> · <sub>PRO</sub><br>Live Bambu Lab printer card with AMS, camera, controls, and farm view</td></tr>
-<tr><td width="220"><img src="previews/printer_3d.png" width="200" alt="3D Printer"></td><td><b>3D Printer</b><br>Generic 3D printer card with temps, progress, camera, and controls for any integration</td></tr>
 <tr><td width="220"><img src="previews/update_monitor.png" width="200" alt="Update Monitor"></td><td><b>Update Monitor</b><br>Auto-discover update entities and surface pending updates with install actions</td></tr>
 <tr><td width="220"><img src="previews/vampire_power.png" width="200" alt="Vampire Power"></td><td><b>Vampire Power</b> · <sub>PRO</sub><br>Finds always-on standby loads and ranks them by what they cost you</td></tr>
 <tr><td width="220"><img src="previews/vehicle_maintenance.png" width="200" alt="Vehicle Maintenance"></td><td><b>Vehicle Maintenance</b> · <sub>PRO</sub><br>Odometer and time based service intervals with a cost-tracked service log</td></tr>
@@ -76,6 +75,7 @@ _Generated from v3.11.0-beta2 on 2026-09-11 — do not edit by hand._
 ## interactive
 
 <table>
+<tr><td width="220"><img src="previews/printer_3d.png" width="200" alt="3D Printer"></td><td><b>3D Printer</b><br>Generic 3D printer card with temps, progress, camera, and controls for any integration</td></tr>
 <tr><td width="220"><img src="previews/external_card.png" width="200" alt="3rd Party Card"></td><td><b>3rd Party Card</b><br>Embed any 3rd party Home Assistant card</td></tr>
 <tr><td width="220"><img src="previews/alarm_panel.png" width="200" alt="Alarm Panel"></td><td><b>Alarm Panel</b> · <sub>PRO</sub><br>Arm, disarm, and monitor your security alarm with a PIN pad and status ring</td></tr>
 <tr><td width="220"><img src="previews/boiler.png" width="200" alt="Boiler"></td><td><b>Boiler</b> · <sub>PRO</sub><br>Animated boiler card with temperature-driven colors, flame and pipe animations, pressure, and target control</td></tr>
