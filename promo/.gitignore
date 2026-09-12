@@ -1,0 +1,6 @@
+node_modules/
+out/
+# Music is chosen per render; drop the licensed track in as public/music/teaser-music.mp3
+public/music/*.mp3
+public/music/*.wav
+public/music/*.m4a
