@@ -392,7 +392,7 @@ export const GREEN_TERMINAL_THEME: UcThemeDefinition = {
 // as in iOS light mode; the glass itself stays white and clear.
 const LG_INK = '#10224d';
 const LG_INK_SOFT = 'rgba(16, 34, 77, 0.7)';
-const LG_TINT = 'rgba(255, 255, 255, 0.08)';
+const LG_TINT = 'rgba(255, 255, 255, 0.62)';
 const LG_PRIMARY = '#1b5fd6'; // white on it 5.7:1
 const LG_ACCENT = '#3d8bff';
 const LG_SHADOW_TINT = '30, 60, 140';
@@ -557,7 +557,7 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
       primary: LG_PRIMARY,
       on_primary: '#ffffff',
       accent: LG_ACCENT,
-      card_bg: LG_TINT,
+      card_bg: 'rgba(232, 236, 248, 0.92)',
       text: LG_INK,
       text_secondary: LG_INK_SOFT,
       divider: 'rgba(16, 34, 77, 0.12)',
@@ -597,10 +597,12 @@ export const LIQUID_GLASS_THEME: UcThemeDefinition = {
   --rgb-primary-text-color: 16, 34, 77;
   color: ${LG_INK};
   background-color: ${LG_TINT} !important;
-  /* Specular top-left, a fainter lens light bottom-right, the rest clear. */
+  /* Soft sky wash keeps dark ink readable when the page wallpaper is owned by
+     another card (theme galleries). Specular highlights sit on top. */
   background-image:
-    radial-gradient(120% 70% at 8% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 48%),
-    radial-gradient(80% 50% at 96% 100%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 55%) !important;
+    radial-gradient(120% 70% at 8% 0%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 48%),
+    radial-gradient(80% 50% at 96% 100%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(165deg, #d4e6fa 0%, #e8ddf5 48%, #f3d5e8 100%) !important;
   /* See-through: a moderate blur keeps the wallpaper's shapes legible through the pane. */
   backdrop-filter: blur(var(--uc-blur, 10px)) saturate(150%);
   -webkit-backdrop-filter: blur(var(--uc-blur, 10px)) saturate(150%);
