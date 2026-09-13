@@ -5498,7 +5498,7 @@
       "sign_in": "Sign in",
       "status_pending": "In review",
       "status_revision": "Update in review",
-      "status_approved": "Published",
+      "status_approved": "Live",
       "status_changes": "Changes requested",
       "status_rejected": "Rejected",
       "withdraw": "Withdraw",

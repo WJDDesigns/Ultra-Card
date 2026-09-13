@@ -44,6 +44,29 @@ export interface SubmitThemePayload {
 
 export type UpdateThemePayload = Partial<SubmitThemePayload>;
 
+export type AuthorThemeState = 'live' | 'revision_pending' | 'pending' | 'changes_requested' | 'rejected';
+
+/**
+ * What the member should see for a submission. A theme whose post is
+ * published is live in the catalog no matter what the review meta says: an
+ * admin pressing "Publish" in wp-admin used to leave `review_status` at
+ * `pending`, and the Hub then claimed a theme everyone could install was
+ * still "In review". A queued revision on a live theme is reported as such,
+ * and an approved theme an admin has since unpublished is back to pending.
+ */
+export function authorThemeState(item: Pick<AuthorTheme, 'status' | 'review_status' | 'has_pending_revision'>): AuthorThemeState {
+  if (item.has_pending_revision) return 'revision_pending';
+  if (item.status === 'publish') return 'live';
+  switch (item.review_status) {
+    case 'changes_requested':
+      return 'changes_requested';
+    case 'rejected':
+      return 'rejected';
+    default:
+      return 'pending';
+  }
+}
+
 export interface ThemeRatingResult {
   rating: number;
   ratingCount: number;

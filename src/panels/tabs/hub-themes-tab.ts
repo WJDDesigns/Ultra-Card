@@ -13,7 +13,11 @@ import {
   type UcCatalogTheme,
   type UcThemeCatalogSort,
 } from '../../services/uc-themes-catalog-service';
-import { ucThemeAuthorService, type AuthorTheme } from '../../services/uc-theme-author-service';
+import {
+  authorThemeState,
+  ucThemeAuthorService,
+  type AuthorTheme,
+} from '../../services/uc-theme-author-service';
 import { describeThemeRisks, scanThemeForRisks } from '../../services/uc-theme-trust-scanner';
 import { ucCloudAuthService, type CloudUser } from '../../services/uc-cloud-auth-service';
 import { copyTextToClipboard } from '../../utils/uc-clipboard';
@@ -223,12 +227,20 @@ export class HubThemesTab extends LitElement {
 
   // --------------------------------------------------------------- catalog
 
+  /**
+   * `force` (Refresh button, after the member changed the catalog) drops the
+   * local copy and bypasses the 5-minute cache so the request reaches
+   * ultracard.io instead of being answered from memory.
+   */
   private async _loadCatalog(force = false): Promise<void> {
     if (force) ucThemesCatalogService.clearCache();
     this._catalogLoading = true;
     this._catalogError = '';
     try {
-      const page = await ucThemesCatalogService.fetchThemes({ orderby: 'downloads', per_page: 100 });
+      const page = await ucThemesCatalogService.fetchThemes(
+        { orderby: 'downloads', per_page: 100 },
+        { force }
+      );
       this._catalog = page.themes;
     } catch (err) {
       this._catalog = [];
@@ -547,6 +559,7 @@ export class HubThemesTab extends LitElement {
             @theme-submitted=${() => {
               this._setView('mine');
               void this._loadMine();
+              void this._loadCatalog(true);
             }}
             @close=${() => (this._share = null)}
           ></uc-hub-submit-theme-dialog>`
@@ -556,7 +569,10 @@ export class HubThemesTab extends LitElement {
             mode="edit"
             .existing=${this._editSubmission}
             .language=${this._lang}
-            @theme-updated=${() => void this._loadMine()}
+            @theme-updated=${() => {
+              void this._loadMine();
+              void this._loadCatalog(true);
+            }}
             @close=${() => (this._editSubmission = null)}
           ></uc-hub-submit-theme-dialog>`
         : nothing}
@@ -1098,10 +1114,11 @@ export class HubThemesTab extends LitElement {
 
   private _renderSubmissions(): TemplateResult {
     const statusLabel = (item: AuthorTheme): { text: string; cls: string } => {
-      if (item.has_pending_revision) return { text: this._t('status_revision', 'Update in review'), cls: 'pending' };
-      switch (item.review_status) {
-        case 'approved':
-          return { text: this._t('status_approved', 'Published'), cls: 'approved' };
+      switch (authorThemeState(item)) {
+        case 'revision_pending':
+          return { text: this._t('status_revision', 'Update in review'), cls: 'pending' };
+        case 'live':
+          return { text: this._t('status_approved', 'Live'), cls: 'approved' };
         case 'changes_requested':
           return { text: this._t('status_changes', 'Changes requested'), cls: 'changes' };
         case 'rejected':
@@ -1148,7 +1165,7 @@ export class HubThemesTab extends LitElement {
                     <div class="mine-list">
                       ${this._mine.map(item => {
                         const status = statusLabel(item);
-                        const live = item.review_status === 'approved';
+                        const live = item.status === 'publish' || item.review_status === 'approved';
                         return html`
                           <div class="mine-row">
                             <div class="mine-thumb">
@@ -1191,7 +1208,7 @@ export class HubThemesTab extends LitElement {
                               >
                                 <ha-icon icon="mdi:palette-advanced"></ha-icon>
                               </a>
-                              ${item.review_status === 'pending' || item.has_pending_revision
+                              ${['pending', 'revision_pending'].includes(authorThemeState(item))
                                 ? html`<button class="action-btn" title=${this._t('withdraw', 'Withdraw')} @click=${() => this._withdraw(item)}>
                                     <ha-icon icon="mdi:undo-variant"></ha-icon>
                                   </button>`
