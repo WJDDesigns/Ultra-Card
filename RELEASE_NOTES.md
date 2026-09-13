@@ -1,5 +1,50 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.11.0
+
+The stable 3.11.0 release. Smart Cards can now be designed by any AI you already run in Home Assistant, with no daily limit, and the cards that come out are properly laid out from your own rooms and entities. 3D printing arrives with two new modules: **Bambu Lab** (PRO) for the ha-bambulab integration and **3D Printer** for OctoPrint, Moonraker/Klipper and PrusaLink. The Hub gets a full visual refresh, UniFi switches show every port they actually have, gauge values sit in the middle of the ring, and the theme you pick in the Hub stays picked. Thanks to everyone who tested the betas and reported issues.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Bring your own AI to Smart Cards, with no quota** - Any AI Task entity or LLM conversation agent set up in Home Assistant (OpenAI, Anthropic, Google, Ollama and friends) can design your Smart Cards. Pick which one from the new **Design with** dropdown when you have more than one; the choice is remembered. Because it runs on your own AI there is no free-generation counter, and the built-in Assist agent is no longer mistaken for an AI it cannot be. Without an AI, the local composer still builds the card from your entities
+- **Smart Cards knows your rooms** - The builder reads the area, device and entity registries, so "the living room lights" picks the lights that actually live in the living room, config and diagnostic entities are kept out of the way, and the AI is handed a relevance-ranked, room-annotated inventory instead of a raw dump. Switches, sensors, vacuums, cameras, people, scenes and more get the right module and icon
+- **Added the Bambu Lab module (PRO)** - Works with the [ha-bambulab](https://github.com/greghesp/ha-bambulab) integration and finds your printers on its own. Five views: Printer (an H2D-style illustration with live nozzle, bed and chamber badges, status screen and progress ring), Dashboard, Camera, Farm and Compact. Pause, resume, stop, chamber light, speed profile and fan sliders are built in, and the print job block shows the cover thumbnail, layers and time left
+- **Every AMS you own** - AMS, AMS Lite, AMS 2 Pro, AMS HT and the external spool holder all appear, with the colour, material and remaining filament for each slot and the humidity index per unit. Pick Stacked, Grid or Spools-only when you have more than one unit, and drag to reorder or hide units in the editor
+- **Added the 3D Printer module** - The free card for every other printer. Choose OctoPrint, Moonraker/Klipper or PrusaLink and press **Auto-fill entities**, or map the entities yourself. Hero, Standard, Compact and Camera layouts with temps, fans, progress, job info and controls, drawn as an enclosed or bedslinger printer or with your own photo
+- **Camera as snapshot or live stream** - Both printer cards can show the camera as a self-refreshing snapshot with an adjustable interval, or as live video. Tapping the camera opens the full-size dialog
+
+### 🔧 Improvements
+
+- **Smart tab is one page** - Status, AI picker and prompt live together on a single Compose screen; Generate takes you straight to a live preview with **Apply Preset** and **Regenerate** buttons. The style picker and the separate Continue and Apply steps are gone
+- **Generated cards are actually designed** - Every Smart layout goes through a design pass: card padding, spacing between sections, compact controls grouped into soft rounded panels, columns stretched to fill, and module defaults filled in so the preview renders instead of sitting on a skeleton
+- **"Who is home" shows everyone** - Household prompts (who is home, the family, everyone, presence) expand to every person in your home even when the AI only picked one. Naming a person still keeps the card to that person
+- **No more dividers** - Smart Cards no longer drops separator lines between sections; spacing handles it. Ask for a divider and you still get one
+- **Hub refresh** - Every Hub tab uses shared design tokens, a branded header with your account chip, a keyboard-accessible tab strip with arrow-key navigation, auto-fit grids, clearer sync banners and loading states, and plain-language billing errors. The Dashboard renders the changelog as formatted markdown
+- **Everything on the printer cards opens more-info** - Temperatures, fans, spools, progress, status, job details and the camera each open their entity's dialog. Items lift on hover instead of shrinking when pressed, and the badges on the illustration pop into place when the card appears. Animations respect the module's intensity setting and your reduced-motion preference
+- **Style presets that change the look** - Theme, Dark, Light, Glass and Carbon paint their own surface on both printer modules, and Ultra themes can set the printer style like any other module style
+- **Farm view fits narrow tiles** - Tiles shrink the illustration, drop the badges and show every spool in one strip when space is tight
+- **Community themes are listed as community** - A theme's section in the Hub catalog (Default or Community) is now set by the catalog moderators rather than guessed from who submitted it, and community previews are a clean shot of the theme on real cards
+- **New themes are announced on Discord** - When a community theme is approved it is posted to the `#themes` channel with its preview, author and a link to the gallery, the same way presets are
+
+### 🐛 Bug Fixes
+
+- **Fixed the global default theme picked in the Hub reverting to HA Native** - Choosing a theme in the Hub, then opening a dashboard, pulled the older synced value back over your pick. The Hub now syncs the choice to Ultra Card Connect straight away, and a pick you just made always wins over a stale read
+- **Fixed the COMMUNITY badge hiding the theme name in the default theme picker** - On narrow tiles the badge squeezed the name down to a single letter; it now sits on the corner of the swatch
+- **Fixed gauge values sitting high in the circle** - Centered values in radial and modern gauges had a hard-coded upward offset and a tall line box; the digits now sit in the middle of the ring
+- **Fixed Liquid Glass turning unreadable on someone else's wallpaper** - The theme's panes now carry their own frosted sky wash, so the dark ink stays legible when another theme or card owns the page background
+- **Fixed UniFi switches showing only connected ports** - Home Assistant's UniFi integration only creates port link-speed sensors when a port has a live link, so a USW Flex 2.5G 8 with five cables looked like a 5-port switch. The card now pads missing ports from the catalog SKU and model, and lights all nine jacks on the Flex 2.5G 8 and Flex 2.5G 8 PoE product photos
+- **Fixed the UniFi setup banner appearing on the dashboard** - The setup wizard, including Dismiss, now only shows in the editor, and Dismiss actually works there instead of looking clickable on the live card and doing nothing
+- **Fixed the UniFi "Showing X of Y devices" note appearing on the dashboard** - It is an editor hint and now only shows in the editor preview
+- **Fixed Smart previews stuck loading** - Modules generated without their full settings (People, for example) threw while rendering and left the preview skeleton up forever
+- **Fixed Smart Cards using Assist's spoken reply as the card** - When Ultra Card Connect answered with a plain Assist reply, the prompt became the title and the speech became the description. Those replies are now detected and the card is built properly on the frontend
+- **Fixed "weather with forecast" crashing the composer** - The animated weather builder recursed into itself on Pro tiers and hit the call-stack limit
+- **Fixed Smart warnings disappearing** - Frontend sanitizer warnings were being overwritten by the server's; both are shown now
+- **Fixed the blue focus ring left around a tapped icon on iPhone** - Closing a more-info dialog handed focus back to the icon that opened it, and WebKit drew the keyboard focus ring around it until something else was tapped. Pointer-driven focus is now quiet while keyboard users still get the ring ([#138](https://github.com/WJDDesigns/Ultra-Card/issues/138))
+
+---
+
 ## Version 3.11.0-beta4
 
 The fourth 3.11.0 beta keeps the UniFi setup banner in the editor, where it belongs. Dismiss was showing on the live dashboard and did nothing when tapped. It includes everything from beta1 through beta3. This is a pre-release for testing — please report anything odd on GitHub or Discord.
