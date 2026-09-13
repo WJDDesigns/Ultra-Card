@@ -11,6 +11,7 @@
  *   GET    /themes                      public catalog (published, cached)
  *   GET    /themes/mine                 caller's submissions
  *   GET    /themes/moderation-queue     moderators
+ *   GET    /themes/revalidate           moderators: themes whose stored definition no longer parses
  *   GET    /themes/{id}
  *   POST   /themes                      submit (pending review)
  *   PUT    /themes/{id}                 edit (revision model when published)
@@ -299,9 +300,69 @@ function uc_get_theme_definition($post_id) {
     return is_array($decoded) ? $decoded : null;
 }
 
+/**
+ * Why a stored definition cannot be read back, or '' when it is fine.
+ * Distinguishes "never stored" from "stored but unparseable" (see
+ * uc_theme_find_broken_definitions()).
+ */
+function uc_theme_definition_problem($post_id) {
+    $json = get_post_meta($post_id, UC_THEME_META_DEFINITION, true);
+    if (!is_string($json) || $json === '') {
+        return 'no definition stored';
+    }
+    $decoded = json_decode($json, true);
+    if (!is_array($decoded)) {
+        return 'invalid JSON: ' . json_last_error_msg();
+    }
+    if (empty($decoded['tokens']) || !is_array($decoded['tokens'])) {
+        return 'definition has no tokens';
+    }
+    return '';
+}
+
+/**
+ * Theme JSON goes into post meta wrapped in wp_slash(): update_metadata()
+ * unslashes every value it is handed, which used to strip the escapes out of
+ * the encoded string (`\"` -> `"`, `\n` -> `n`, `\\` -> `\`) and left any
+ * theme carrying quotes, newlines or backslashes (i.e. real CSS) as invalid
+ * JSON that uc_get_theme_definition() read back as null.
+ */
 function uc_set_theme_definition($post_id, array $definition) {
-    update_post_meta($post_id, UC_THEME_META_DEFINITION, wp_json_encode($definition));
+    update_post_meta($post_id, UC_THEME_META_DEFINITION, wp_slash(wp_json_encode($definition)));
     update_post_meta($post_id, '_uc_theme_version', isset($definition['version']) ? (int) $definition['version'] : 1);
+}
+
+/**
+ * Every theme (any status except trash) whose stored definition does not
+ * decode. Used by the moderator "Re-validate definitions" tools so the site
+ * owner can ask those authors to re-share; a definition mangled on the way
+ * into the database cannot be repaired reliably after the fact.
+ */
+function uc_theme_find_broken_definitions() {
+    $posts = get_posts(array(
+        'post_type'      => UC_THEME_POST_TYPE,
+        'post_status'    => array('publish', 'pending', 'draft', 'private', 'future'),
+        'posts_per_page' => -1,
+        'orderby'        => 'date',
+        'order'          => 'ASC',
+    ));
+    $broken = array();
+    foreach ($posts as $post) {
+        $problem = uc_theme_definition_problem($post->ID);
+        if ($problem === '') {
+            continue;
+        }
+        $author = get_user_by('id', $post->post_author);
+        $broken[] = array(
+            'id'           => (int) $post->ID,
+            'name'         => get_the_title($post),
+            'status'       => $post->post_status,
+            'author'       => $author ? $author->display_name : 'Unknown',
+            'author_email' => $author && !empty($author->user_email) ? $author->user_email : '',
+            'problem'      => $problem,
+        );
+    }
+    return array('checked' => count($posts), 'broken' => $broken);
 }
 
 function uc_apply_theme_tags($post_id, $tags_csv) {
@@ -452,6 +513,9 @@ class UltraCardThemeAuthoring {
         add_filter('post_row_actions', array($this, 'admin_row_actions'), 10, 2);
         add_action('admin_action_uc_theme_moderate', array($this, 'handle_admin_moderation'));
         add_action('admin_notices', array($this, 'admin_moderation_notice'));
+        add_filter('views_edit-' . UC_THEME_POST_TYPE, array($this, 'admin_revalidate_link'));
+        add_action('admin_action_uc_theme_revalidate', array($this, 'handle_admin_revalidate'));
+        add_action('admin_notices', array($this, 'admin_revalidate_notice'));
     }
 
     /** True while apply_moderation() runs, so the status hook does not re-enter it. */
@@ -715,6 +779,53 @@ class UltraCardThemeAuthoring {
         exit;
     }
 
+    /** "Re-validate definitions" next to the All / Published / Pending views of the Ultra Themes list. */
+    public function admin_revalidate_link($views) {
+        if (!current_user_can('manage_options')) {
+            return $views;
+        }
+        $url = wp_nonce_url(admin_url('admin.php?action=uc_theme_revalidate'), 'uc_theme_revalidate');
+        $views['uc_revalidate'] = '<a href="' . esc_url($url) . '" title="Check every stored theme definition still parses">Re-validate definitions</a>';
+        return $views;
+    }
+
+    /** admin.php?action=uc_theme_revalidate — scan, park the result for the notice, back to the list. */
+    public function handle_admin_revalidate() {
+        if (!current_user_can('manage_options')) {
+            wp_die('You are not allowed to do that.', 'Ultra Themes', array('response' => 403));
+        }
+        check_admin_referer('uc_theme_revalidate');
+        set_transient('uc_theme_revalidate_' . get_current_user_id(), uc_theme_find_broken_definitions(), 5 * MINUTE_IN_SECONDS);
+        wp_safe_redirect(add_query_arg(array('post_type' => UC_THEME_POST_TYPE, 'uc_revalidated' => '1'), admin_url('edit.php')));
+        exit;
+    }
+
+    public function admin_revalidate_notice() {
+        if (empty($_GET['uc_revalidated']) || !isset($_GET['post_type']) || $_GET['post_type'] !== UC_THEME_POST_TYPE) {
+            return;
+        }
+        $key = 'uc_theme_revalidate_' . get_current_user_id();
+        $result = get_transient($key);
+        delete_transient($key);
+        if (!is_array($result) || !isset($result['checked'], $result['broken'])) {
+            return;
+        }
+        if (empty($result['broken'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html(sprintf('All %d theme definitions parse.', (int) $result['checked'])) . '</p></div>';
+            return;
+        }
+        echo '<div class="notice notice-warning"><p><strong>' . esc_html(sprintf('%d of %d theme definitions cannot be read.', count($result['broken']), (int) $result['checked'])) . '</strong> '
+            . 'These themes are missing from the catalog until their author re-shares them (Hub → My Themes → Share, or the theme builder).</p><ul style="list-style:disc;margin-left:20px">';
+        foreach ($result['broken'] as $row) {
+            $edit = get_edit_post_link($row['id']);
+            $label = sprintf('#%d %s (%s)', $row['id'], $row['name'], $row['status']);
+            $contact = $row['author_email'] ? sprintf('%s <%s>', $row['author'], $row['author_email']) : $row['author'];
+            echo '<li>' . ($edit ? '<a href="' . esc_url($edit) . '">' . esc_html($label) . '</a>' : esc_html($label))
+                . ' — ' . esc_html($contact) . ' — <code>' . esc_html($row['problem']) . '</code></li>';
+        }
+        echo '</ul></div>';
+    }
+
     public function admin_moderation_notice() {
         if (empty($_GET['uc_moderated']) || !isset($_GET['post_type']) || $_GET['post_type'] !== UC_THEME_POST_TYPE) {
             return;
@@ -747,6 +858,10 @@ class UltraCardThemeAuthoring {
             echo esc_html(uc_get_theme_review_status($post));
             if (get_post_meta($post_id, '_uc_pending_revision', true)) {
                 echo ' <em>(revision queued)</em>';
+            }
+            $problem = uc_theme_definition_problem($post_id);
+            if ($problem !== '') {
+                echo '<br><span style="color:#b32d2e" title="' . esc_attr($problem) . '">&#9888; definition unreadable</span>';
             }
         } elseif ($column === 'uc_downloads') {
             echo (int) get_post_meta($post_id, 'downloads', true);
@@ -789,6 +904,11 @@ class UltraCardThemeAuthoring {
         register_rest_route($ns, '/themes/moderation-queue', array(
             'methods'             => 'GET',
             'callback'            => array($this, 'moderation_queue'),
+            'permission_callback' => array($this, 'check_moderator'),
+        ));
+        register_rest_route($ns, '/themes/revalidate', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'revalidate_definitions'),
             'permission_callback' => array($this, 'check_moderator'),
         ));
         register_rest_route($ns, '/themes/builtin', array(
@@ -1171,7 +1291,9 @@ class UltraCardThemeAuthoring {
                     $revision['tags'] = implode(',', wp_list_pluck($terms, 'name'));
                 }
             }
-            update_post_meta($id, '_uc_pending_revision', $revision);
+            // wp_slash(): update_metadata() unslashes recursively, which would strip
+            // backslashes out of the queued definition's CSS and strings.
+            update_post_meta($id, '_uc_pending_revision', wp_slash($revision));
             update_post_meta($id, '_uc_review_status', 'pending');
             update_post_meta($id, '_uc_submitted_at', current_time('mysql'));
             delete_post_meta($id, '_uc_moderator_note');
@@ -1257,6 +1379,11 @@ class UltraCardThemeAuthoring {
             return rest_ensure_response($norm);
         }
         return new WP_Error('nothing_to_withdraw', 'No pending submission or revision to withdraw', array('status' => 400));
+    }
+
+    /** GET /themes/revalidate (moderators) — { checked, broken: [{ id, name, status, author, author_email, problem }] }. */
+    public function revalidate_definitions($request) {
+        return $this->no_store(uc_theme_find_broken_definitions());
     }
 
     public function moderation_queue($request) {
