@@ -79,6 +79,18 @@ async function fetchWithTimeout(
   }
 }
 
+/**
+ * Bearer header for a direct call to a Home Assistant HTTP view. The Connect
+ * media-upload view is `requires_auth`, and the HA frontend authenticates with
+ * a token rather than a cookie, so a bare `fetch` with `credentials` alone is
+ * answered 401. Same pattern as the HA-view uploads in `utils/image-upload.ts`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function hassAuthHeaders(hass: any): Record<string, string> {
+  const token = hass?.auth?.data?.access_token;
+  return typeof token === 'string' && token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function formDataContainsFile(fd: FormData): boolean {
   for (const [, value] of fd.entries()) {
     if (value instanceof File) return true;
@@ -641,7 +653,12 @@ class UcCloudAuthService {
           }
           const r = await fetchWithTimeout(
             UC_MEDIA_UPLOAD_PATH,
-            { method: 'POST', body: fd, credentials: 'same-origin' },
+            {
+              method: 'POST',
+              body: fd,
+              credentials: 'same-origin',
+              headers: hassAuthHeaders(this._integrationHass),
+            },
             UC_CLOUD_UPLOAD_TIMEOUT_MS
           );
 
