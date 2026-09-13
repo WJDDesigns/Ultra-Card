@@ -18,6 +18,13 @@
  *   POST   /themes/{id}/withdraw
  *   POST   /themes/{id}/moderate        { action: approve|request_changes|reject, note? }
  *   POST   /themes/{id}/track-download
+ *
+ * Moderation also happens from wp-admin: the Ultra Themes list has
+ * Approve / Request changes / Reject row actions, and pressing "Publish" on a
+ * pending theme counts as an approval (review meta, timestamp, author email).
+ *
+ * Catalog reads (/themes, /themes/mine, /themes/{id}) are sent with no-store
+ * headers so the host's edge cache never serves a stale copy to the Hub.
  */
 
 if (!defined('ABSPATH')) {
@@ -442,7 +449,13 @@ class UltraCardThemeAuthoring {
 
         add_filter('manage_' . UC_THEME_POST_TYPE . '_posts_columns', array($this, 'admin_columns'));
         add_action('manage_' . UC_THEME_POST_TYPE . '_posts_custom_column', array($this, 'admin_column_value'), 10, 2);
+        add_filter('post_row_actions', array($this, 'admin_row_actions'), 10, 2);
+        add_action('admin_action_uc_theme_moderate', array($this, 'handle_admin_moderation'));
+        add_action('admin_notices', array($this, 'admin_moderation_notice'));
     }
+
+    /** True while apply_moderation() runs, so the status hook does not re-enter it. */
+    private $applying_moderation = false;
 
     public function register_cpt_and_taxonomies() {
         register_post_type(UC_THEME_POST_TYPE, array(
@@ -544,14 +557,180 @@ class UltraCardThemeAuthoring {
         $like = $wpdb->esc_like('_transient_uc_themes_') . '%';
         $timeout_like = $wpdb->esc_like('_transient_timeout_uc_themes_') . '%';
         $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s", $like, $timeout_like));
+        $this->purge_host_cache((int) $post_id);
+    }
+
+    /**
+     * Tell whatever page/edge cache the host runs that the catalog changed.
+     *
+     * The transient above is only the plugin's own layer; the host's edge cache
+     * kept serving a pre-approval `{"themes":[]}` to the Hub long after the
+     * first theme went live. Catalog responses now carry no-store headers (see
+     * no_store()) so the edge should not hold them at all; this is the
+     * belt-and-braces purge for hosts that ignore those. Every integration is
+     * optional and guarded, and `uc_theme_catalog_invalidated` lets the site
+     * hook its own purge (e.g. a WJD Hub purge endpoint) without editing the
+     * plugin. Runs at most once per request: a single admin action fires
+     * several invalidations.
+     */
+    private function purge_host_cache($post_id = 0) {
+        static $purged = false;
+        if ($purged) {
+            return;
+        }
+        $purged = true;
+
+        $urls = array(
+            rest_url('ultra-card/v1/themes'),
+            rest_url('ultra-card/v1/themes/mine'),
+        );
+        if ($post_id) {
+            $urls[] = rest_url('ultra-card/v1/themes/' . $post_id);
+        }
+
+        // SiteGround Optimizer (dynamic cache). Not installed on every site.
+        if (function_exists('sg_cachepress_purge_cache')) {
+            sg_cachepress_purge_cache();
+        } elseif (class_exists('\SiteGround_Optimizer\Supercacher\Supercacher')
+            && method_exists('\SiteGround_Optimizer\Supercacher\Supercacher', 'purge_cache')) {
+            \SiteGround_Optimizer\Supercacher\Supercacher::purge_cache();
+        }
+
+        /**
+         * Fires after the theme catalog changed and its transients were dropped.
+         *
+         * @param int      $post_id Theme post that changed (0 when unknown).
+         * @param string[] $urls    Catalog REST URLs whose cached copies are stale.
+         */
+        do_action('uc_theme_catalog_invalidated', $post_id, $urls);
+    }
+
+    /**
+     * Catalog reads must never be served from an edge/proxy cache: the host's
+     * CDN caches REST responses per URL and Accept-Encoding variant and would
+     * otherwise hand the Hub a stale page for as long as it likes. WordPress
+     * only adds no-cache headers to REST responses for logged-in users, so the
+     * anonymous catalog request has to say so itself. The WP transient (dropped
+     * on every change) stays the only cache layer.
+     */
+    private function no_store($response) {
+        $response = rest_ensure_response($response);
+        $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $response->header('Pragma', 'no-cache');
+        $response->header('Expires', '0');
+        return $response;
     }
 
     public function on_status_transition($new_status, $old_status, $post) {
         if (!$post instanceof WP_Post || $post->post_type !== UC_THEME_POST_TYPE) {
             return;
         }
-        if ($new_status !== $old_status) {
-            $this->invalidate_list_cache($post->ID);
+        if ($new_status === $old_status) {
+            return;
+        }
+        $this->invalidate_list_cache($post->ID);
+        if ($new_status === 'publish' && !$this->applying_moderation) {
+            $this->approve_on_publish($post);
+        }
+    }
+
+    /**
+     * Pressing "Publish" in wp-admin only flips post_status; the review meta
+     * would stay `pending`, so the author kept seeing "In review" for a theme
+     * that was already in the catalog. Treat an admin publish as an approval
+     * and run the same path the moderation endpoint uses (review meta,
+     * reviewed-at stamp, author email). A publish that apply_moderation()
+     * itself issues is skipped by the caller so the author is mailed once.
+     */
+    private function approve_on_publish($post) {
+        $review = get_post_meta($post->ID, '_uc_review_status', true);
+        $has_revision = (bool) get_post_meta($post->ID, '_uc_pending_revision', true);
+        if ($review === 'approved' && !$has_revision) {
+            return;
+        }
+        $this->apply_moderation($post, 'approve');
+    }
+
+    /**
+     * Approve / Request changes / Reject links in the Ultra Themes admin list.
+     * The two "with note" actions ask for the note in a prompt and append it
+     * to the link; all three land in handle_admin_moderation().
+     */
+    public function admin_row_actions($actions, $post) {
+        if (!$post instanceof WP_Post || $post->post_type !== UC_THEME_POST_TYPE || !current_user_can('manage_options')) {
+            return $actions;
+        }
+        if ($post->post_status === 'trash') {
+            return $actions;
+        }
+        $review = uc_get_theme_review_status($post);
+        $has_revision = (bool) get_post_meta($post->ID, '_uc_pending_revision', true);
+        $link = function ($decision) use ($post) {
+            return wp_nonce_url(
+                admin_url('admin.php?action=uc_theme_moderate&post=' . $post->ID . '&decision=' . $decision),
+                'uc_theme_moderate_' . $post->ID
+            );
+        };
+        $with_note = "var n=window.prompt('Note to the author (optional):','');if(n===null){return false;}this.href+='&note='+encodeURIComponent(n);";
+
+        if ($review !== 'approved' || $has_revision) {
+            $label = $has_revision ? 'Approve update' : 'Approve';
+            $actions['uc_approve'] = '<a href="' . esc_url($link('approve')) . '" aria-label="Approve this theme">' . esc_html($label) . '</a>';
+        }
+        if ($review !== 'changes_requested') {
+            $actions['uc_request_changes'] = '<a href="' . esc_url($link('request_changes')) . '" onclick="' . esc_attr($with_note) . '" aria-label="Request changes to this theme">Request changes</a>';
+        }
+        if ($review !== 'rejected') {
+            $actions['uc_reject'] = '<a href="' . esc_url($link('reject')) . '" onclick="' . esc_attr($with_note) . '" style="color:#b32d2e" aria-label="Reject this theme">Reject</a>';
+        }
+        return $actions;
+    }
+
+    /** admin.php?action=uc_theme_moderate&post=ID&decision=approve|request_changes|reject[&note=] */
+    public function handle_admin_moderation() {
+        $post_id = isset($_GET['post']) ? (int) $_GET['post'] : 0;
+        $post = $post_id ? get_post($post_id) : null;
+        if (!$post || $post->post_type !== UC_THEME_POST_TYPE) {
+            wp_die('Theme not found.', 'Ultra Themes', array('response' => 404));
+        }
+        if (!current_user_can('manage_options')) {
+            wp_die('You are not allowed to moderate themes.', 'Ultra Themes', array('response' => 403));
+        }
+        check_admin_referer('uc_theme_moderate_' . $post_id);
+
+        $decision = isset($_GET['decision']) ? sanitize_key(wp_unslash($_GET['decision'])) : '';
+        $note = isset($_GET['note']) ? sanitize_textarea_field(wp_unslash($_GET['note'])) : '';
+        if (!in_array($decision, array('approve', 'request_changes', 'reject'), true)) {
+            wp_die('Unknown moderation action.', 'Ultra Themes', array('response' => 400));
+        }
+
+        $result = $this->apply_moderation($post, $decision, $note);
+        $this->invalidate_list_cache($post_id);
+
+        wp_safe_redirect(add_query_arg(array(
+            'post_type'    => UC_THEME_POST_TYPE,
+            'uc_moderated' => is_wp_error($result) ? 'error' : $decision,
+            'uc_theme'     => $post_id,
+        ), admin_url('edit.php')));
+        exit;
+    }
+
+    public function admin_moderation_notice() {
+        if (empty($_GET['uc_moderated']) || !isset($_GET['post_type']) || $_GET['post_type'] !== UC_THEME_POST_TYPE) {
+            return;
+        }
+        $what = sanitize_key(wp_unslash($_GET['uc_moderated']));
+        $title = !empty($_GET['uc_theme']) ? get_the_title((int) $_GET['uc_theme']) : '';
+        $name = $title !== '' ? '"' . $title . '"' : 'Theme';
+        $messages = array(
+            'approve'         => '%s was approved and is live in the catalog. The author has been notified.',
+            'request_changes' => '%s was sent back to the author with your note.',
+            'reject'          => '%s was rejected. The author has been notified.',
+        );
+        if (isset($messages[$what])) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html(sprintf($messages[$what], $name)) . '</p></div>';
+        } elseif ($what === 'error') {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html(sprintf('Could not apply the moderation action to %s.', $name)) . '</p></div>';
         }
     }
 
@@ -742,7 +921,8 @@ class UltraCardThemeAuthoring {
     }
 
     /**
-     * GET /themes — published catalog, cached 10 minutes per query.
+     * GET /themes — published catalog, cached 10 minutes per query in a
+     * transient (dropped on every change); never cacheable downstream.
      */
     public function list_public_themes($request) {
         $page = max(1, (int) $request->get_param('page'));
@@ -759,7 +939,7 @@ class UltraCardThemeAuthoring {
         if (is_array($cached) && isset($cached['body'], $cached['total'], $cached['total_pages'])) {
             $body = $cached['body'];
             $body['themes'] = uc_theme_attach_my_ratings($body['themes']);
-            $response = rest_ensure_response($body);
+            $response = $this->no_store($body);
             $response->header('X-WP-Total', (string) $cached['total']);
             $response->header('X-WP-TotalPages', (string) $cached['total_pages']);
             $response->header('X-UC-Cache', 'HIT');
@@ -818,7 +998,7 @@ class UltraCardThemeAuthoring {
         ), 10 * MINUTE_IN_SECONDS);
 
         $body['themes'] = uc_theme_attach_my_ratings($body['themes']);
-        $response = rest_ensure_response($body);
+        $response = $this->no_store($body);
         $response->header('X-WP-Total', (string) $q->found_posts);
         $response->header('X-WP-TotalPages', (string) $q->max_num_pages);
         $response->header('X-UC-Cache', 'MISS');
@@ -845,7 +1025,7 @@ class UltraCardThemeAuthoring {
                 $items[] = $norm;
             }
         }
-        return rest_ensure_response(array('themes' => $items));
+        return $this->no_store(array('themes' => $items));
     }
 
     public function get_theme($request) {
@@ -859,7 +1039,7 @@ class UltraCardThemeAuthoring {
         }
         $norm = uc_normalize_theme($post, true);
         $norm['my_rating'] = uc_theme_my_rating($id, get_current_user_id());
-        return rest_ensure_response($norm);
+        return $this->no_store($norm);
     }
 
     /**
@@ -1132,6 +1312,15 @@ class UltraCardThemeAuthoring {
     }
 
     public function apply_moderation($post, $action, $note = '') {
+        $this->applying_moderation = true;
+        try {
+            return $this->do_apply_moderation($post, $action, $note);
+        } finally {
+            $this->applying_moderation = false;
+        }
+    }
+
+    private function do_apply_moderation($post, $action, $note) {
         $id = $post->ID;
         $pending = get_post_meta($id, '_uc_pending_revision', true);
         $author = get_user_by('id', $post->post_author);
@@ -1165,7 +1354,7 @@ class UltraCardThemeAuthoring {
                     uc_apply_theme_tags($id, $pending['tags']);
                 }
                 delete_post_meta($id, '_uc_pending_revision');
-            } else {
+            } elseif ($post->post_status !== 'publish') {
                 wp_update_post(array('ID' => $id, 'post_status' => 'publish'));
             }
             update_post_meta($id, '_uc_review_status', 'approved');
