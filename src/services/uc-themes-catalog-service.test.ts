@@ -45,6 +45,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('ucThemesCatalogService', () => {
@@ -74,6 +75,43 @@ describe('ucThemesCatalogService', () => {
     await ucThemesCatalogService.fetchThemes({ orderby: 'downloads' });
     await ucThemesCatalogService.fetchThemes({ orderby: 'downloads' });
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('busts intermediary caches: unique _uc param and no-store on every catalog request', async () => {
+    const fn = mockFetch({ themes: [entry()] });
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    await ucThemesCatalogService.fetchThemes({ orderby: 'downloads', per_page: 100 });
+    const [url, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
+    const params = new URL(url).searchParams;
+    expect(params.get('orderby')).toBe('downloads');
+    expect(params.get('per_page')).toBe('100');
+    expect(params.get('_uc')).toBe('1700000000000');
+    expect(init.cache).toBe('no-store');
+
+    // The single-theme endpoint gets the same treatment.
+    await ucThemesCatalogService.fetchTheme(42);
+    const [single, singleInit] = fn.mock.calls[1] as unknown as [string, RequestInit];
+    expect(single).toMatch(/\/themes\/42\?_uc=1700000000000$/);
+    expect(singleInit.cache).toBe('no-store');
+  });
+
+  it('force refetches past a fresh cache with a new cache-buster (Hub Refresh)', async () => {
+    const fn = mockFetch({ themes: [entry()] });
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(1_000);
+    await ucThemesCatalogService.fetchThemes({ orderby: 'downloads' });
+    now.mockReturnValue(2_000);
+    await ucThemesCatalogService.fetchThemes({ orderby: 'downloads' });
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    await ucThemesCatalogService.fetchThemes({ orderby: 'downloads' }, { force: true });
+    expect(fn).toHaveBeenCalledTimes(2);
+    const urls = fn.mock.calls.map(c => new URL(String((c as unknown[])[0])).searchParams.get('_uc'));
+    expect(urls).toEqual(['1000', '2000']);
+
+    // The forced result replaces the cached page for the next plain read.
+    await ucThemesCatalogService.fetchThemes({ orderby: 'downloads' });
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 
   it('falls back to stale cache when the network fails', async () => {
@@ -117,7 +155,7 @@ describe('ucThemesCatalogService', () => {
       ok: true,
       status: 200,
       statusText: 'OK',
-      json: async () => (/\/themes\?/.test(url) ? { themes: [listed] } : /\/themes\/42$/.test(url) ? full : {}),
+      json: async () => (/\/themes\?/.test(url) ? { themes: [listed] } : /\/themes\/42(\?|$)/.test(url) ? full : {}),
     }));
     vi.stubGlobal('fetch', fn);
 
@@ -129,7 +167,7 @@ describe('ucThemesCatalogService', () => {
     expect(saved?.tokens.page_background).toBe(wallpaper);
     expect(ucThemesCatalogService.installState(t)).toBe('installed');
     const urls = fn.mock.calls.map(c => String((c as unknown[])[0]));
-    expect(urls.some(u => /\/themes\/42$/.test(u))).toBe(true);
+    expect(urls.some(u => /\/themes\/42(\?|$)/.test(u))).toBe(true);
   });
 
   it('refuses to install a partial entry when the full definition cannot be fetched', async () => {

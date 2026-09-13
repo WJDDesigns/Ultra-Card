@@ -66,7 +66,23 @@ export interface UcCatalogQuery {
 
 export type UcThemeInstallState = 'not_installed' | 'installed' | 'update_available';
 
+export interface UcCatalogFetchOptions {
+  /**
+   * Skip the local cache (fresh and in-flight) and hit ultracard.io now. Used
+   * by the Hub's Refresh button and after the member changes the catalog.
+   */
+  force?: boolean | undefined;
+}
+
 const API_BASE = 'https://ultracard.io/wp-json/ultra-card/v1';
+/**
+ * Query param carrying a cache-buster. ultracard.io sits behind an edge cache
+ * that keys on the full URL and once held a stale, pre-approval copy of the
+ * catalog for the Hub for a long time. The server now answers with no-store,
+ * but a unique URL per request makes sure no intermediary can serve an old
+ * copy even if those headers get lost along the way.
+ */
+const CACHE_BUST_PARAM = '_uc';
 const CACHE_PREFIX = 'ultra-card-themes-v1:';
 const CACHE_TTL = 5 * 60 * 1000;
 /** Stale data is still better than an empty catalog when ultracard.io is unreachable. */
@@ -123,7 +139,7 @@ class UcThemesCatalogService {
   private _memory = new Map<string, CacheEntry>();
   private _inflight = new Map<string, Promise<UcCatalogPage>>();
 
-  async fetchThemes(query: UcCatalogQuery = {}): Promise<UcCatalogPage> {
+  async fetchThemes(query: UcCatalogQuery = {}, options: UcCatalogFetchOptions = {}): Promise<UcCatalogPage> {
     const key = JSON.stringify({
       page: query.page ?? 1,
       per_page: query.per_page ?? 50,
@@ -132,11 +148,13 @@ class UcThemesCatalogService {
       orderby: query.orderby ?? 'date',
     });
 
-    const fresh = this._read(key, CACHE_TTL);
-    if (fresh) return fresh;
+    if (!options.force) {
+      const fresh = this._read(key, CACHE_TTL);
+      if (fresh) return fresh;
 
-    const running = this._inflight.get(key);
-    if (running) return running;
+      const running = this._inflight.get(key);
+      if (running) return running;
+    }
 
     const promise = this._fetch(query)
       .then(page => {
@@ -155,8 +173,9 @@ class UcThemesCatalogService {
   }
 
   async fetchTheme(id: number): Promise<UcCatalogTheme | null> {
-    const response = await fetch(`${API_BASE}/themes/${id}`, {
+    const response = await fetch(`${API_BASE}/themes/${id}?${CACHE_BUST_PARAM}=${Date.now()}`, {
       headers: { Accept: 'application/json' },
+      cache: 'no-store',
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!response.ok) return null;
@@ -218,9 +237,11 @@ class UcThemesCatalogService {
     if (query.search) params.set('search', query.search);
     if (query.tag) params.set('tag', query.tag);
     params.set('orderby', query.orderby ?? 'date');
+    params.set(CACHE_BUST_PARAM, String(Date.now()));
 
     const response = await fetch(`${API_BASE}/themes?${params.toString()}`, {
       headers: { Accept: 'application/json' },
+      cache: 'no-store',
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
