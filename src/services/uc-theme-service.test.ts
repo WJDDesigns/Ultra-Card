@@ -317,14 +317,16 @@ describe('built-ins', () => {
     }
   });
 
-  it('liquid glass: clear tint, deep blur, lensing rim, dark ink on its own lens wallpaper', () => {
+  it('liquid glass: frosted tint, deep blur, lensing rim, dark ink on its own lens wallpaper', () => {
     const vars = ucThemeService.getHostVars(LIQUID_GLASS_THEME);
     expect(vars['--uc-radius']).toBe('32px');
     expect(vars['--uc-radius-sm']).toBe('22px');
     expect(vars['--uc-surface-backdrop']).toContain('blur(10px)');
     expect(vars['--uc-shadow']).toContain('inset 0 1px 0');
     expect(vars['--primary-text-color']).toBe('#10224d');
-    expect(vars['--card-background-color']).toBe('rgba(255, 255, 255, 0.08)');
+    // Frosted, not clear: a stronger wash keeps the dark ink readable when
+    // another theme owns the page wallpaper (galleries, mixed dashboards).
+    expect(vars['--card-background-color']).toBe('rgba(232, 236, 248, 0.92)');
     // Inline lens artwork sized to cover, over the sky gradient.
     expect(LIQUID_GLASS_THEME.tokens.page_background).toMatch(
       /^url\("data:image\/svg\+xml,[^"]+"\) center \/ 100% 100% no-repeat fixed, /
