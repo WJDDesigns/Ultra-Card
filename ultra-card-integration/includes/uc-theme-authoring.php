@@ -16,8 +16,12 @@
  *   PUT    /themes/{id}                 edit (revision model when published)
  *   DELETE /themes/{id}
  *   POST   /themes/{id}/withdraw
- *   POST   /themes/{id}/moderate        { action: approve|request_changes|reject, note? }
+ *   POST   /themes/{id}/moderate        { action?: approve|request_changes|reject, note?, official?: bool }
  *   POST   /themes/{id}/track-download
+ *
+ * Section: a catalog theme is "community" unless a moderator flags it
+ * official (meta _uc_official; Catalog box in wp-admin or `official` on
+ * /moderate). Who submitted it plays no part.
  */
 
 if (!defined('ABSPATH')) {
@@ -27,6 +31,10 @@ if (!defined('ABSPATH')) {
 define('UC_THEME_POST_TYPE', 'ultra_theme');
 define('UC_THEME_TAG_TAXONOMY', 'uc_theme_tag');
 define('UC_THEME_META_DEFINITION', '_uc_theme_definition');
+// Set by a moderator to list a catalog theme under Default (source "official").
+// Everything else submitted through the theme builder is a community theme,
+// whoever the author is.
+define('UC_THEME_META_OFFICIAL', '_uc_official');
 // Size budget, kept in sync with src/themes/uc-theme-validate.ts: a wallpaper
 // may be a real picture (~150 KB of WebP as base64), panes and CSS only get
 // room for compact SVG props.
@@ -55,6 +63,23 @@ function uc_user_can_manage_theme($post) {
     }
     $uid = get_current_user_id();
     return $uid > 0 && (int) $post->post_author === $uid;
+}
+
+/**
+ * Whether a catalog theme is listed under Default. Only an explicit moderator
+ * flag counts: the team submits community themes from the same administrator
+ * accounts everyone else uses, so authorship must not decide the section.
+ */
+function uc_theme_is_official($post_id) {
+    return (bool) get_post_meta((int) $post_id, UC_THEME_META_OFFICIAL, true);
+}
+
+function uc_theme_set_official($post_id, $official) {
+    if ($official) {
+        update_post_meta((int) $post_id, UC_THEME_META_OFFICIAL, 1);
+    } else {
+        delete_post_meta((int) $post_id, UC_THEME_META_OFFICIAL);
+    }
 }
 
 function uc_get_theme_review_status($post) {
@@ -338,13 +363,7 @@ function uc_normalize_theme($post, $include_definition = true, $light = false) {
 
     $author_user = get_user_by('id', $post->post_author);
     $author_name = $author_user ? $author_user->display_name : 'Unknown';
-    $is_official = false;
-    if ($author_user) {
-        $is_official = user_can($author_user, 'manage_options')
-            || stripos($author_name, 'WJD') !== false
-            || stripos($author_name, 'Ultra Card') !== false;
-    }
-    $source = $is_official ? 'official' : 'community';
+    $source = uc_theme_is_official($post->ID) ? 'official' : 'community';
 
     $tags = array();
     if (taxonomy_exists(UC_THEME_TAG_TAXONOMY)) {
@@ -442,6 +461,8 @@ class UltraCardThemeAuthoring {
 
         add_filter('manage_' . UC_THEME_POST_TYPE . '_posts_columns', array($this, 'admin_columns'));
         add_action('manage_' . UC_THEME_POST_TYPE . '_posts_custom_column', array($this, 'admin_column_value'), 10, 2);
+        add_action('add_meta_boxes_' . UC_THEME_POST_TYPE, array($this, 'add_catalog_meta_box'));
+        add_action('save_post_' . UC_THEME_POST_TYPE, array($this, 'save_catalog_meta_box'), 10, 2);
     }
 
     public function register_cpt_and_taxonomies() {
@@ -557,13 +578,16 @@ class UltraCardThemeAuthoring {
 
     public function admin_columns($columns) {
         $columns['uc_review'] = 'Review';
+        $columns['uc_source'] = 'Section';
         $columns['uc_downloads'] = 'Downloads';
         $columns['uc_rating'] = 'Rating';
         return $columns;
     }
 
     public function admin_column_value($column, $post_id) {
-        if ($column === 'uc_review') {
+        if ($column === 'uc_source') {
+            echo uc_theme_is_official($post_id) ? 'Default (official)' : 'Community';
+        } elseif ($column === 'uc_review') {
             $post = get_post($post_id);
             echo esc_html(uc_get_theme_review_status($post));
             if (get_post_meta($post_id, '_uc_pending_revision', true)) {
@@ -575,6 +599,39 @@ class UltraCardThemeAuthoring {
             $agg = uc_theme_rating_aggregate($post_id);
             echo $agg['rating_count'] ? esc_html($agg['rating'] . ' (' . $agg['rating_count'] . ')') : '—';
         }
+    }
+
+    /**
+     * "Catalog" box on the theme edit screen: the one place (besides the
+     * moderation endpoint) where a theme is moved between Default and Community.
+     */
+    public function add_catalog_meta_box() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        add_meta_box('uc_theme_catalog', 'Catalog', array($this, 'render_catalog_meta_box'), UC_THEME_POST_TYPE, 'side', 'high');
+    }
+
+    public function render_catalog_meta_box($post) {
+        wp_nonce_field('uc_theme_catalog_' . $post->ID, 'uc_theme_catalog_nonce');
+        $official = uc_theme_is_official($post->ID);
+        echo '<p><label><input type="checkbox" name="uc_theme_official" value="1" ' . checked($official, true, false) . '> ';
+        echo 'Official theme (listed under <strong>Default</strong>)</label></p>';
+        echo '<p class="description">Unchecked, the theme is a community theme regardless of who submitted it.</p>';
+    }
+
+    public function save_catalog_meta_box($post_id, $post) {
+        if (!isset($_POST['uc_theme_catalog_nonce'])) {
+            return;
+        }
+        if (!wp_verify_nonce(wp_unslash($_POST['uc_theme_catalog_nonce']), 'uc_theme_catalog_' . $post_id)) {
+            return;
+        }
+        if (!current_user_can('manage_options') || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
+            return;
+        }
+        uc_theme_set_official($post_id, !empty($_POST['uc_theme_official']));
+        $this->invalidate_list_cache($post_id);
     }
 
     // ------------------------------------------------------------------ REST
@@ -754,7 +811,9 @@ class UltraCardThemeAuthoring {
             $orderby = 'date';
         }
 
-        $cache_key = 'uc_themes_' . md5(wp_json_encode(compact('page', 'per_page', 'search', 'tag', 'orderby')));
+        // Keyed on the plugin version too, so a release that changes the
+        // listing shape (or how source is decided) never serves a stale body.
+        $cache_key = 'uc_themes_' . md5(wp_json_encode(compact('page', 'per_page', 'search', 'tag', 'orderby')) . ULTRA_CARD_INTEGRATION_VERSION);
         $cached = get_transient($cache_key);
         if (is_array($cached) && isset($cached['body'], $cached['total'], $cached['total_pages'])) {
             $body = $cached['body'];
@@ -1120,12 +1179,24 @@ class UltraCardThemeAuthoring {
         }
         $action = sanitize_text_field($params['action'] ?? $request->get_param('action') ?? '');
         $note = sanitize_textarea_field($params['note'] ?? $request->get_param('note') ?? '');
-        if (!in_array($action, array('approve', 'request_changes', 'reject'), true)) {
-            return new WP_Error('invalid_action', 'action must be approve, request_changes, or reject', array('status' => 400));
+        // `official` moves the theme between Default and Community. It may ride
+        // along with a review action or be the whole request.
+        $official = $params['official'] ?? $request->get_param('official');
+        $has_official = $official !== null;
+        if ($action === '' && !$has_official) {
+            return new WP_Error('invalid_action', 'action must be approve, request_changes, or reject (or pass official: true|false)', array('status' => 400));
         }
-        $result = $this->apply_moderation($post, $action, $note);
-        if (is_wp_error($result)) {
-            return $result;
+        if ($action !== '') {
+            if (!in_array($action, array('approve', 'request_changes', 'reject'), true)) {
+                return new WP_Error('invalid_action', 'action must be approve, request_changes, or reject', array('status' => 400));
+            }
+            $result = $this->apply_moderation($post, $action, $note);
+            if (is_wp_error($result)) {
+                return $result;
+            }
+        }
+        if ($has_official) {
+            uc_theme_set_official($id, rest_sanitize_boolean($official));
         }
         $this->invalidate_list_cache($id);
         return rest_ensure_response(uc_normalize_theme(get_post($id), true));
