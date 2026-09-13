@@ -167,6 +167,7 @@ export function resolveThemeRecipes(
 
 const STORAGE_LIBRARY = 'ultra-card-theme-library';
 const STORAGE_GLOBAL = 'ultra-card-global-theme';
+const CONNECT_SYNC_RETRY_MS = 5000;
 const STORAGE_PAINT_PAGE = 'ultra-card-theme-paint-page';
 const HOST_VARS_APPLIED = new WeakMap<HTMLElement, { key: string; props: string[] }>();
 
@@ -408,6 +409,15 @@ class UcThemeService {
   private _connectLoaded = false;
   private _connectMissing = false;
   private _loadPromise: Promise<void> | null = null;
+  /**
+   * A global-default change made before Connect was reachable (the Hub panel
+   * sets it without any card on screen). Pushed the moment `setHass` arrives,
+   * and it wins over whatever Connect still holds from before.
+   */
+  private _pendingGlobalSync = false;
+  private _lastSyncAttempt = 0;
+  /** Bumped on every local global-default write so an in-flight Connect read cannot undo it. */
+  private _globalWrites = 0;
 
   constructor() {
     this._loadFromStorage();
@@ -515,6 +525,7 @@ class UcThemeService {
     const next = id && this.getTheme(id) ? id : null;
     if (next === this._globalDefaultId) return;
     this._globalDefaultId = next;
+    this._globalWrites++;
     if (next) safeSetItem(STORAGE_GLOBAL, next);
     else safeRemoveItem(STORAGE_GLOBAL);
     this._notify();
@@ -742,9 +753,20 @@ class UcThemeService {
 
   setHass(hass: any): void {
     this._hass = hass;
-    if (hass && !this._connectLoaded && !this._connectMissing) {
-      void this._loadGlobalFromConnect(hass);
+    if (!hass || this._connectMissing) return;
+    if (this._pendingGlobalSync) {
+      // The user already chose a theme in this session (Hub panel, no card
+      // mounted yet). That choice is newer than anything Connect holds, so push
+      // it rather than letting a stale read overwrite it. hass arrives on every
+      // state change, so a failing push is retried at most every few seconds.
+      const now = Date.now();
+      if (now - this._lastSyncAttempt < CONNECT_SYNC_RETRY_MS) return;
+      this._lastSyncAttempt = now;
+      this._connectLoaded = true;
+      this._syncGlobalToConnect();
+      return;
     }
+    if (!this._connectLoaded) void this._loadGlobalFromConnect(hass);
   }
 
   private async _loadGlobalFromConnect(hass: any): Promise<void> {
@@ -757,8 +779,11 @@ class UcThemeService {
           this._connectMissing = true;
           return;
         }
+        const writesBefore = this._globalWrites;
         const result = await hass.callApi('GET', 'ultra_card_pro_cloud/theme_settings');
         this._connectLoaded = true;
+        // A pick made while the request was in flight is newer than the answer.
+        if (this._globalWrites !== writesBefore) return;
         const id = typeof result?.global_theme === 'string' ? result.global_theme : null;
         if (id !== null && id !== this._globalDefaultId && (id === '' || this.getTheme(id))) {
           this._globalDefaultId = id || null;
@@ -781,8 +806,13 @@ class UcThemeService {
   }
 
   private _syncGlobalToConnect(): void {
+    if (this._connectMissing) return;
     const hass = this._hass;
-    if (!hass?.callApi || this._connectMissing) return;
+    if (!hass?.callApi) {
+      this._pendingGlobalSync = true;
+      return;
+    }
+    this._pendingGlobalSync = false;
     hass
       .callApi('POST', 'ultra_card_pro_cloud/theme_settings', {
         global_theme: this._globalDefaultId ?? '',
@@ -790,6 +820,8 @@ class UcThemeService {
       .catch((err: any) => {
         const status = err?.status ?? err?.status_code ?? err?.response?.status;
         if (status === 404) this._connectMissing = true;
+        // Anything else (offline, transient 5xx): try again when hass next arrives.
+        else this._pendingGlobalSync = true;
         UC_DEBUG && console.debug('[UltraCard themes] Connect theme sync failed:', err);
       });
   }

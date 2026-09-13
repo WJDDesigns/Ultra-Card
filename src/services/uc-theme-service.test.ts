@@ -32,6 +32,7 @@ import {
   scanThemeCss,
 } from '../themes/uc-theme-validate';
 import type { UltraCardConfig } from '../types';
+import { CONNECT_AUTH_SENSOR_ID } from './uc-connect-compatibility';
 
 const cfg = (uc_theme?: string): UltraCardConfig =>
   ({ type: 'custom:ultra-card', layout: { rows: [] }, uc_theme }) as UltraCardConfig;
@@ -623,6 +624,81 @@ describe('library', () => {
     off();
     ucThemeService.setGlobalDefault(null);
     expect(calls).toBe(1);
+  });
+});
+
+describe('Connect sync of the global default', () => {
+  const CONNECT_SENSOR = CONNECT_AUTH_SENSOR_ID;
+  type Call = { method: string; path: string; body?: unknown };
+
+  const makeHass = (stored: string, calls: Call[]) => ({
+    states: {
+      [CONNECT_SENSOR]: {
+        state: 'connected',
+        attributes: { integration_version: '9.9.9', capabilities: { theme_settings: true } },
+      },
+    },
+    callApi: (method: string, path: string, body?: unknown) => {
+      calls.push({ method, path, body });
+      return Promise.resolve(method === 'GET' ? { global_theme: stored } : { success: true });
+    },
+  });
+
+  const resetConnect = () => {
+    const svc = ucThemeService as any;
+    svc._hass = null;
+    svc._connectLoaded = false;
+    svc._connectMissing = false;
+    svc._loadPromise = null;
+    svc._pendingGlobalSync = false;
+    svc._lastSyncAttempt = 0;
+  };
+
+  beforeEach(resetConnect);
+
+  it('applies the value Connect holds when nothing was picked locally', async () => {
+    const calls: Call[] = [];
+    ucThemeService.setHass(makeHass('glass', calls));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(ucThemeService.getGlobalDefaultId()).toBe('glass');
+    expect(calls.map(c => c.method)).toEqual(['GET']);
+  });
+
+  it('a pick made before hass arrives (Hub panel) is pushed and not undone by a stale read', async () => {
+    const calls: Call[] = [];
+    ucThemeService.setGlobalDefault('glass');
+    ucThemeService.setHass(makeHass('', calls));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(ucThemeService.getGlobalDefaultId()).toBe('glass');
+    expect(calls).toEqual([
+      { method: 'POST', path: 'ultra_card_pro_cloud/theme_settings', body: { global_theme: 'glass' } },
+    ]);
+    // Later hass updates neither re-read nor re-post.
+    ucThemeService.setHass(makeHass('', calls));
+    await Promise.resolve();
+    expect(calls).toHaveLength(1);
+  });
+
+  it('a pick made while the Connect read is in flight wins over its answer', async () => {
+    const calls: Call[] = [];
+    let resolveGet: (v: unknown) => void = () => {};
+    const hass = {
+      ...makeHass('', calls),
+      callApi: (method: string, path: string, body?: unknown) => {
+        calls.push({ method, path, body });
+        if (method === 'GET') return new Promise(r => (resolveGet = r));
+        return Promise.resolve({ success: true });
+      },
+    };
+    ucThemeService.setHass(hass);
+    ucThemeService.setGlobalDefault('bold');
+    resolveGet({ global_theme: '' });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(ucThemeService.getGlobalDefaultId()).toBe('bold');
+    expect(calls.filter(c => c.method === 'POST').map(c => c.body)).toEqual([{ global_theme: 'bold' }]);
   });
 });
 

@@ -125,8 +125,12 @@ export class HubThemesTab extends LitElement {
   }
 
   override updated(changed: Map<string, unknown>): void {
-    if (changed.has('hass') && this.hass && !this._dashboards.length) {
-      void this._loadDashboards();
+    if (changed.has('hass') && this.hass) {
+      // The Hub can be the first Ultra Card surface on screen: without this the
+      // global default picked here never reaches Connect, and the next
+      // dashboard load pulls Connect's older value back over it.
+      ucThemeService.setHass(this.hass);
+      if (!this._dashboards.length) void this._loadDashboards();
     }
     if (changed.has('initialView') && this.initialView === 'mine') {
       this._setView('mine');

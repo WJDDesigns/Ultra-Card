@@ -132,12 +132,14 @@ export class UcThemePicker extends LitElement {
         title=${t.desc}
         @click=${() => this._pick(t.value)}
       >
-        <uc-theme-swatch .theme=${t.theme}></uc-theme-swatch>
+        <div class="art">
+          <uc-theme-swatch .theme=${t.theme}></uc-theme-swatch>
+          ${t.badge ? html`<span class="badge">${t.badge}</span>` : nothing}
+        </div>
         <div class="meta">
           <div class="name-row">
             <ha-icon .icon=${t.icon}></ha-icon>
             <span class="name">${t.name}</span>
-            ${t.badge ? html`<span class="badge">${t.badge}</span>` : nothing}
           </div>
           ${this.compact ? nothing : html`<span class="desc">${t.desc}</span>`}
         </div>
@@ -207,22 +209,37 @@ export class UcThemePicker extends LitElement {
       flex: none;
     }
     .name {
+      flex: 1;
+      min-width: 0;
       font-weight: 500;
       font-size: 13px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    /* The source badge sits on the swatch so a narrow tile never trades the
+       theme's name for the word "community". */
+    .art {
+      position: relative;
+      min-width: 0;
+    }
+    .art uc-theme-swatch {
+      display: block;
+    }
     .badge {
-      margin-left: auto;
-      font-size: 10px;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 9px;
+      font-weight: 600;
+      line-height: 1.2;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       padding: 1px 6px;
       border-radius: 999px;
-      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
-      color: var(--primary-color);
-      flex: none;
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.85);
+      color: var(--text-primary-color, #fff);
+      pointer-events: none;
     }
     .desc {
       font-size: 11px;
