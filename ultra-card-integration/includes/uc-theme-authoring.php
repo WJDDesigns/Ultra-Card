@@ -17,6 +17,7 @@
  *   DELETE /themes/{id}
  *   POST   /themes/{id}/withdraw
  *   POST   /themes/{id}/moderate        { action?: approve|request_changes|reject, note?, official?: bool }
+ *   POST   /themes/{id}/announce        re-post a published theme to the Discord themes channel
  *   POST   /themes/{id}/track-download
  *
  * Section: a catalog theme is "community" unless a moderator flags it
@@ -35,6 +36,20 @@ define('UC_THEME_META_DEFINITION', '_uc_theme_definition');
 // Everything else submitted through the theme builder is a community theme,
 // whoever the author is.
 define('UC_THEME_META_OFFICIAL', '_uc_official');
+// Discord webhook for the themes announce channel (option only, never in
+// source). Set under Ultra Themes → Settings in wp-admin.
+if (!defined('UC_THEME_DISCORD_WEBHOOK_OPTION')) {
+    define('UC_THEME_DISCORD_WEBHOOK_OPTION', 'ultra_card_theme_discord_webhook');
+}
+// Alternative to the webhook: the channel id the site's Discord bot posts to
+// (the bot token already lives in ultra_card_discord_bot_token). Used when no
+// webhook is set, e.g. when the bot cannot manage webhooks in that channel.
+if (!defined('UC_THEME_DISCORD_CHANNEL_OPTION')) {
+    define('UC_THEME_DISCORD_CHANNEL_OPTION', 'ultra_card_theme_discord_channel_id');
+}
+// When the last announcement for a theme went out (avoids a double post when a
+// moderator re-announces right after publish).
+define('UC_THEME_META_ANNOUNCED_AT', '_uc_announced_at');
 // Size budget, kept in sync with src/themes/uc-theme-validate.ts: a wallpaper
 // may be a real picture (~150 KB of WebP as base64), panes and CSS only get
 // room for compact SVG props.
@@ -463,6 +478,13 @@ class UltraCardThemeAuthoring {
         add_action('manage_' . UC_THEME_POST_TYPE . '_posts_custom_column', array($this, 'admin_column_value'), 10, 2);
         add_action('add_meta_boxes_' . UC_THEME_POST_TYPE, array($this, 'add_catalog_meta_box'));
         add_action('save_post_' . UC_THEME_POST_TYPE, array($this, 'save_catalog_meta_box'), 10, 2);
+
+        // Discord: first publish of a theme announces it, same as presets.
+        add_action('transition_post_status', array($this, 'announce_theme_publish'), 10, 3);
+        add_action('admin_menu', array($this, 'register_settings_page'));
+        add_filter('post_row_actions', array($this, 'row_actions'), 10, 2);
+        add_action('admin_post_uc_theme_announce', array($this, 'handle_announce_action'));
+        add_action('admin_notices', array($this, 'announce_admin_notice'));
     }
 
     public function register_cpt_and_taxonomies() {
@@ -699,6 +721,11 @@ class UltraCardThemeAuthoring {
         register_rest_route($ns, '/themes/(?P<id>\d+)/moderate', array(
             'methods'             => 'POST',
             'callback'            => array($this, 'moderate_theme'),
+            'permission_callback' => array($this, 'check_moderator'),
+        ));
+        register_rest_route($ns, '/themes/(?P<id>\d+)/announce', array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'announce_theme_endpoint'),
             'permission_callback' => array($this, 'check_moderator'),
         ));
         register_rest_route($ns, '/themes/(?P<id>\d+)/rate', array(
@@ -1295,6 +1322,229 @@ class UltraCardThemeAuthoring {
         }
         $body .= "\nManage your themes: " . home_url('/dashboard/') . "\n";
         wp_mail($author->user_email, $subject, $body);
+    }
+
+    // --------------------------------------------------------------- Discord
+
+    /**
+     * First-time publish (pending → publish on approval) announces the theme.
+     * Approved revisions keep the post published, so they never re-fire.
+     */
+    public function announce_theme_publish($new_status, $old_status, $post) {
+        if ($new_status !== 'publish' || $old_status === 'publish') {
+            return;
+        }
+        if (!$post instanceof WP_Post || $post->post_type !== UC_THEME_POST_TYPE) {
+            return;
+        }
+        $this->announce_theme($post);
+    }
+
+    /**
+     * Post the theme to the Discord themes channel: a short line naming the
+     * author plus an embed with the description, tags and the preview image.
+     * Returns true on success, a WP_Error otherwise.
+     */
+    public function announce_theme($post) {
+        $post = get_post($post);
+        if (!$post || $post->post_type !== UC_THEME_POST_TYPE) {
+            return new WP_Error('not_found', 'Theme not found');
+        }
+        $webhook = (string) get_option(UC_THEME_DISCORD_WEBHOOK_OPTION, '');
+        $channel = preg_replace('/\D+/', '', (string) get_option(UC_THEME_DISCORD_CHANNEL_OPTION, ''));
+        $bot_token = (string) get_option('ultra_card_discord_bot_token', '');
+        if ($webhook === '' && ($channel === '' || $bot_token === '')) {
+            return new WP_Error('no_webhook', 'No Discord webhook or bot channel configured for theme announcements (Ultra Themes → Settings).');
+        }
+
+        $norm = uc_normalize_theme($post, false);
+        $name = $norm['name'];
+        $author = $norm['author'];
+        $url = home_url('/themes/#theme-' . $post->ID);
+        $description = trim(wp_strip_all_tags($post->post_content));
+        if (mb_strlen($description) > 300) {
+            $description = rtrim(mb_substr($description, 0, 297)) . '…';
+        }
+        $section = $norm['source'] === 'official' ? 'Default' : 'Community';
+
+        $fields = array(
+            array('name' => 'Author', 'value' => $author, 'inline' => true),
+            array('name' => 'Section', 'value' => $section, 'inline' => true),
+        );
+        if (!empty($norm['tags'])) {
+            $fields[] = array('name' => 'Tags', 'value' => implode(', ', array_slice($norm['tags'], 0, 6)), 'inline' => true);
+        }
+
+        $embed = array(
+            'title'       => $name,
+            'url'         => $url,
+            'description' => $description !== '' ? $description : 'Install it from the Ultra Card Hub → Themes, or open the gallery for a live preview.',
+            'color'       => 0x03a9f4,
+            'fields'      => $fields,
+            'footer'      => array('text' => 'Ultra Card Hub → Themes → Install'),
+            'timestamp'   => gmdate('c'),
+        );
+        if (!empty($norm['preview'])) {
+            $embed['image'] = array('url' => $norm['preview']);
+        }
+
+        $data = array(
+            'content' => "🎨 New theme added by **{$author}**:\n{$url}",
+            'embeds'  => array($embed),
+        );
+
+        if ($webhook !== '') {
+            $data['username'] = 'Ultra Card';
+            $response = wp_remote_post($webhook, array(
+                'headers' => array('Content-Type' => 'application/json'),
+                'body'    => wp_json_encode($data),
+                'timeout' => 20,
+            ));
+        } else {
+            $response = wp_remote_post("https://discord.com/api/v10/channels/{$channel}/messages", array(
+                'headers' => array(
+                    'Content-Type'  => 'application/json',
+                    'Authorization' => 'Bot ' . $bot_token,
+                ),
+                'body'    => wp_json_encode($data),
+                // Discord occasionally takes >10s to answer even though the
+                // message is delivered; a short timeout reads as a failure.
+                'timeout' => 20,
+            ));
+        }
+        if (is_wp_error($response)) {
+            error_log('Ultra Card theme Discord webhook error: ' . $response->get_error_message());
+            return $response;
+        }
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code < 200 || $code >= 300) {
+            $msg = 'Discord webhook returned HTTP ' . $code;
+            error_log('Ultra Card theme Discord webhook error: ' . $msg . ' ' . wp_remote_retrieve_body($response));
+            return new WP_Error('webhook_failed', $msg);
+        }
+        update_post_meta($post->ID, UC_THEME_META_ANNOUNCED_AT, current_time('mysql'));
+        return true;
+    }
+
+    /**
+     * POST /themes/{id}/announce — moderators re-announce a published theme
+     * (missed webhook, theme published before the channel existed).
+     */
+    public function announce_theme_endpoint($request) {
+        $id = (int) $request['id'];
+        $post = get_post($id);
+        if (!$post || !uc_is_theme_post($id)) {
+            return new WP_Error('not_found', 'Theme not found', array('status' => 404));
+        }
+        if ($post->post_status !== 'publish') {
+            return new WP_Error('not_published', 'Only published themes can be announced', array('status' => 400));
+        }
+        $result = $this->announce_theme($post);
+        if (is_wp_error($result)) {
+            $result->add_data(array('status' => $result->get_error_code() === 'no_webhook' ? 409 : 502));
+            return $result;
+        }
+        return rest_ensure_response(array(
+            'success'      => true,
+            'id'           => $id,
+            'announced_at' => (string) get_post_meta($id, UC_THEME_META_ANNOUNCED_AT, true),
+        ));
+    }
+
+    /** "Announce in Discord" on the Ultra Themes list for published themes. */
+    public function row_actions($actions, $post) {
+        if (!$post instanceof WP_Post || $post->post_type !== UC_THEME_POST_TYPE || $post->post_status !== 'publish') {
+            return $actions;
+        }
+        if (!current_user_can('manage_options')) {
+            return $actions;
+        }
+        $url = wp_nonce_url(
+            admin_url('admin-post.php?action=uc_theme_announce&post=' . $post->ID),
+            'uc_theme_announce_' . $post->ID
+        );
+        $announced = get_post_meta($post->ID, UC_THEME_META_ANNOUNCED_AT, true);
+        $label = $announced ? 'Re-announce in Discord' : 'Announce in Discord';
+        $actions['uc_announce'] = '<a href="' . esc_url($url) . '">' . esc_html($label) . '</a>';
+        return $actions;
+    }
+
+    public function handle_announce_action() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Not allowed');
+        }
+        $id = isset($_GET['post']) ? (int) $_GET['post'] : 0;
+        check_admin_referer('uc_theme_announce_' . $id);
+        $result = $this->announce_theme($id);
+        $back = admin_url('edit.php?post_type=' . UC_THEME_POST_TYPE);
+        $back = add_query_arg(
+            is_wp_error($result)
+                ? array('uc_announced' => '0', 'uc_announce_error' => rawurlencode($result->get_error_message()))
+                : array('uc_announced' => '1'),
+            $back
+        );
+        wp_safe_redirect($back);
+        exit;
+    }
+
+    public function announce_admin_notice() {
+        if (!isset($_GET['uc_announced'])) {
+            return;
+        }
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== UC_THEME_POST_TYPE) {
+            return;
+        }
+        if ($_GET['uc_announced'] === '1') {
+            echo '<div class="notice notice-success is-dismissible"><p>Theme announced in Discord.</p></div>';
+        } else {
+            $err = isset($_GET['uc_announce_error']) ? sanitize_text_field(rawurldecode(wp_unslash($_GET['uc_announce_error']))) : 'Unknown error';
+            echo '<div class="notice notice-error is-dismissible"><p>Discord announcement failed: ' . esc_html($err) . '</p></div>';
+        }
+    }
+
+    /** Ultra Themes → Settings: the Discord webhook for the themes channel. */
+    public function register_settings_page() {
+        add_submenu_page(
+            'edit.php?post_type=' . UC_THEME_POST_TYPE,
+            'Theme catalog settings',
+            'Settings',
+            'manage_options',
+            'uc-theme-settings',
+            array($this, 'render_settings_page')
+        );
+    }
+
+    public function render_settings_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Not allowed');
+        }
+        if (isset($_POST['uc_theme_save_webhook']) && check_admin_referer('uc_theme_discord_webhook')) {
+            $new = esc_url_raw(wp_unslash($_POST[UC_THEME_DISCORD_WEBHOOK_OPTION] ?? ''));
+            update_option(UC_THEME_DISCORD_WEBHOOK_OPTION, $new, false);
+            $chan = preg_replace('/\D+/', '', (string) wp_unslash($_POST[UC_THEME_DISCORD_CHANNEL_OPTION] ?? ''));
+            update_option(UC_THEME_DISCORD_CHANNEL_OPTION, $chan, false);
+            echo '<div class="notice notice-success is-dismissible"><p>Discord settings saved.</p></div>';
+        }
+        $webhook = get_option(UC_THEME_DISCORD_WEBHOOK_OPTION, '');
+        $channel = get_option(UC_THEME_DISCORD_CHANNEL_OPTION, '');
+        $has_bot = get_option('ultra_card_discord_bot_token', '') !== '';
+        echo '<div class="wrap"><h1>Theme catalog settings</h1>';
+        echo '<h2>Discord theme announcements</h2>';
+        echo '<p>When a theme is approved for the first time it is posted to Discord, the same way presets are. Use the <em>Announce in Discord</em> row action on the Ultra Themes list to post a theme again. Either a webhook or a channel id is enough; the webhook is used when both are set.</p>';
+        echo '<form method="post">';
+        wp_nonce_field('uc_theme_discord_webhook');
+        echo '<table class="form-table">';
+        echo '<tr><th scope="row"><label for="uc-theme-webhook">Webhook URL</label></th><td>';
+        echo '<input type="url" id="uc-theme-webhook" class="large-text" name="' . esc_attr(UC_THEME_DISCORD_WEBHOOK_OPTION) . '" value="' . esc_attr($webhook) . '" placeholder="https://discord.com/api/webhooks/…" />';
+        echo '<p class="description">Stored only in the <code>' . esc_html(UC_THEME_DISCORD_WEBHOOK_OPTION) . '</code> option. Never commit this URL; if it leaks, delete the webhook in Discord and paste a new one.</p>';
+        echo '</td></tr>';
+        echo '<tr><th scope="row"><label for="uc-theme-channel">Channel ID (bot)</label></th><td>';
+        echo '<input type="text" id="uc-theme-channel" class="regular-text" name="' . esc_attr(UC_THEME_DISCORD_CHANNEL_OPTION) . '" value="' . esc_attr($channel) . '" placeholder="1548822895118131241" inputmode="numeric" />';
+        echo '<p class="description">The Ultra Card bot (token from the Discord settings tab' . ($has_bot ? '' : ', <strong>not set</strong>') . ') posts to this channel when no webhook is set. The bot needs View Channel and Send Messages there.</p>';
+        echo '</td></tr></table>';
+        echo '<p><button type="submit" name="uc_theme_save_webhook" class="button button-primary">Save</button></p>';
+        echo '</form></div>';
     }
 
     /**
