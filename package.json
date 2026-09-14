@@ -88,7 +88,7 @@
     "home-assistant-js-websocket": "^9.6.0",
     "js-yaml": "4.3.1",
     "leaflet": "1.9.4",
-    "lit": "^3.1.0",
+    "lit": "^3.3.3",
     "marked": "16.3.0",
     "pako": "^2.1.0",
     "qr-code-styling": "1.9.2",
