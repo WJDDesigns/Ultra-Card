@@ -197,7 +197,41 @@ describe('classifyDevice', () => {
   it('classifies NVRs', () => {
     expect(classifyDevice('UNVR')).toBe('nvr');
     expect(classifyDevice('UNVR-Pro')).toBe('nvr');
+    expect(classifyDevice('UNVR-G2')).toBe('nvr');
+    expect(classifyDevice('ENVR')).toBe('nvr');
     expect(classifyDevice('Network Video Recorder')).toBe('nvr');
+  });
+
+  it('keeps UNVR as an NVR when Ubiquiti catalog types it as console', () => {
+    ucUnifiDeviceDb.prime([
+      {
+        id: 'unvr',
+        sku: 'UNVR',
+        deviceType: 'console',
+        shortnames: ['UNVR', 'UNVR-4', 'UNVR4'],
+        product: { name: 'Network Video Recorder' },
+        images: { nopadding: 'hash' },
+      },
+      {
+        id: 'unvrpro',
+        sku: 'UNVR-Pro',
+        deviceType: 'console',
+        shortnames: ['UNVR-PRO', 'UNVRPRO'],
+        product: { name: 'Network Video Recorder Pro' },
+        images: { nopadding: 'hash' },
+      },
+      {
+        id: 'udmse',
+        sku: 'UDM-SE',
+        deviceType: 'console',
+        shortnames: ['UDMPROSE', 'UDM SE'],
+        product: { name: 'Dream Machine Special Edition' },
+        images: { nopadding: 'hash' },
+      },
+    ]);
+    expect(classifyDevice('UNVR')).toBe('nvr');
+    expect(classifyDevice('UNVR-Pro')).toBe('nvr');
+    expect(classifyDevice('UDM-SE')).toBe('gateway');
   });
 });
 
@@ -207,6 +241,10 @@ describe('kindFromDbType', () => {
     expect(kindFromDbType('mesh-point')).toBe('ap');
     expect(kindFromDbType('switch')).toBe('switch');
     expect(kindFromDbType('console')).toBe('gateway');
+    expect(kindFromDbType('console', 'UDM-SE')).toBe('gateway');
+    expect(kindFromDbType('console', 'UNVR')).toBe('nvr');
+    expect(kindFromDbType('console', 'UNVR-Pro')).toBe('nvr');
+    expect(kindFromDbType('console', 'ENVR')).toBe('nvr');
     expect(kindFromDbType('gateway')).toBe('gateway');
     expect(kindFromDbType('router')).toBe('gateway');
     expect(kindFromDbType('power-supply', 'USP-Plug')).toBe('plug');
@@ -888,6 +926,62 @@ describe('discoverUnifiTopology', () => {
     expect(cam.cameraEntityId).toBe('camera.driveway_high');
     expect(cam.motionEntityId).toBe('binary_sensor.driveway_motion');
     expect(cam.motionOn).toBe(true);
+    expect(topo.devices.find(d => d.deviceId === 'nvr1')?.kind).toBe('nvr');
+  });
+
+  it('admits a Protect-only UNVR even when the catalog types it as console', () => {
+    ucUnifiDeviceDb.prime([
+      {
+        id: 'unvr',
+        sku: 'UNVR',
+        deviceType: 'console',
+        shortnames: ['UNVR', 'UNVR-4'],
+        product: { name: 'Network Video Recorder' },
+        images: { nopadding: 'hash' },
+      },
+    ]);
+
+    const hass = {
+      states: {
+        'sensor.gw_state': { state: 'connected', attributes: {} },
+        'sensor.nvr_storage': { state: '38', attributes: { unit_of_measurement: '%' } },
+      },
+      entities: {
+        'sensor.gw_state': {
+          entity_id: 'sensor.gw_state',
+          device_id: 'gw',
+          platform: 'unifi',
+          unique_id: 'device_state-aa:bb:cc:dd:ee:01',
+          translation_key: 'device_state',
+        },
+        'sensor.nvr_storage': {
+          entity_id: 'sensor.nvr_storage',
+          device_id: 'nvr1',
+          platform: 'unifiprotect',
+          unique_id: 'aabbccddee11_storage',
+        },
+      },
+      devices: {
+        gw: {
+          id: 'gw',
+          name: 'Gateway',
+          manufacturer: 'Ubiquiti Networks',
+          model: 'UDM-SE',
+          connections: [['mac', 'aa:bb:cc:dd:ee:01']],
+        },
+        nvr1: {
+          id: 'nvr1',
+          name: 'Network Video Recorder',
+          manufacturer: 'Ubiquiti',
+          model: 'UNVR',
+          connections: [['mac', 'aa:bb:cc:dd:ee:11']],
+        },
+      },
+      areas: {},
+    } as any;
+
+    const topo = discoverUnifiTopology(hass, 'fixture-protect-unvr-console', {});
+    expect(topo.devices.map(d => d.deviceId).sort()).toEqual(['gw', 'nvr1']);
     expect(topo.devices.find(d => d.deviceId === 'nvr1')?.kind).toBe('nvr');
   });
 

@@ -286,7 +286,11 @@ const CAMERA_MODEL_RE =
   /(^|[^A-Z0-9])(UVC[\sA-Z0-9-]*|G[3-6][\s-]?(BULLET|DOME|FLEX|PRO|PTZ|INSTANT|TURRET|DOORBELL)[\sA-Z0-9-]*|AI[\s-]?(360|BULLET|DOME|PRO|THETA|DSLR|PORT|KEY)|DOORBELL)([^A-Z0-9]|$)/;
 
 const NVR_MODEL_RE =
-  /(^|[^A-Z0-9])(UNVR[\sA-Z0-9-]*|ENVR|NETWORK\s*VIDEO\s*RECORDER)([^A-Z0-9]|$)/;
+  /(^|[^A-Z0-9])(UNVR[\sA-Z0-9-]*|ENVR[\sA-Z0-9-]*|NVR|NETWORK\s*VIDEO\s*RECORDER)([^A-Z0-9]|$)/;
+
+function isNvrModel(model: string | null | undefined): boolean {
+  return NVR_MODEL_RE.test((model || '').toUpperCase());
+}
 
 /** unique_id prefixes used by the official UniFi integration for ports/outlets. */
 export const PORT_UID_PREFIXES: Record<string, UnifiPortRole> = {
@@ -486,6 +490,11 @@ export function kindFromDbType(
     case 'switch':
       return 'switch';
     case 'console':
+      // Ubiquiti types UNVR / ENVR as "console" (same bucket as UDM / Cloud
+      // Key). Those are NVRs, not gateways — treating them as gateways made
+      // Protect-only UNVRs get dropped as duplicate UDM shells.
+      if (isNvrModel(model)) return 'nvr';
+      return 'gateway';
     case 'gateway':
     case 'router':
       return 'gateway';
@@ -540,7 +549,7 @@ export function classifyDevice(
   const dbKind = dbEntry ? kindFromDbType(dbEntry.deviceType, model) : null;
   if (dbKind) return dbKind;
 
-  if (NVR_MODEL_RE.test(m)) return 'nvr';
+  if (isNvrModel(m)) return 'nvr';
   if (CAMERA_MODEL_RE.test(m)) return 'camera';
 
   if (PLUG_MODEL_RE.test(m)) return 'plug';
@@ -673,7 +682,7 @@ export function isInfrastructureAccumulator(acc: {
     acc.wanLatency.length > 0 ||
     looksLikeUnifiInfraModel(acc.device.model) ||
     CAMERA_MODEL_RE.test((acc.device.model || '').toUpperCase()) ||
-    NVR_MODEL_RE.test((acc.device.model || '').toUpperCase());
+    isNvrModel(acc.device.model);
   return hasSomething;
 }
 
