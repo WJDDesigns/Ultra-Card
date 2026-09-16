@@ -14,6 +14,7 @@ import {
   runUltraCardVersionBanner,
 } from './utils/uc-pro-banner';
 import { registerUltraDashboardStrategy } from './strategy/ultra-dashboard-strategy';
+import { ucSectionsLayoutService } from './services/uc-sections-layout-service';
 
 // The English dictionary is its own chunk; start it now so it is in memory
 // before the first card renders (call sites carry the same text as fallbacks).
@@ -57,3 +58,7 @@ window.customCards.push({
 
 // "Ultra Dashboard" in the new-dashboard dialog (Community dashboards, HA 2026.5+).
 registerUltraDashboardStrategy();
+
+// Hub > Themes "Sections view width": widens Sections views on every dashboard,
+// including views that have no Ultra Card on them.
+ucSectionsLayoutService.start();

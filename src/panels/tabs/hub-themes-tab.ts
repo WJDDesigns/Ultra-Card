@@ -4,6 +4,15 @@ import { panelStyles } from '../panel-styles';
 import { localize } from '../../localize/localize';
 import { ucThemeService } from '../../services/uc-theme-service';
 import {
+  ucSectionsLayoutService,
+  UC_SECTIONS_COLUMN_WIDTH_DEFAULT,
+  UC_SECTIONS_COLUMN_WIDTH_MAX,
+  UC_SECTIONS_COLUMN_WIDTH_MIN,
+  UC_SECTIONS_GAP_MAX,
+  UC_SECTIONS_GAP_MIN,
+  type UcSectionsWidthMode,
+} from '../../services/uc-sections-layout-service';
+import {
   ucThemeDashboardService,
   type UcDashboardRef,
 } from '../../services/uc-theme-dashboard-service';
@@ -85,12 +94,16 @@ export class HubThemesTab extends LitElement {
   @state() private _mineLoaded = false;
 
   private _unsub: (() => void) | null = null;
+  private _unsubLayout: (() => void) | null = null;
   private _authListener: ((user: CloudUser | null) => void) | null = null;
   private _toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   override connectedCallback(): void {
     super.connectedCallback();
     this._unsub = ucThemeService.subscribe(() => {
+      this._tick++;
+    });
+    this._unsubLayout = ucSectionsLayoutService.subscribe(() => {
       this._tick++;
     });
     this._cloudUser = ucCloudAuthService.getCurrentUser();
@@ -117,6 +130,8 @@ export class HubThemesTab extends LitElement {
     super.disconnectedCallback();
     this._unsub?.();
     this._unsub = null;
+    this._unsubLayout?.();
+    this._unsubLayout = null;
     if (this._authListener) {
       ucCloudAuthService.removeListener(this._authListener);
       this._authListener = null;
@@ -583,6 +598,101 @@ export class HubThemesTab extends LitElement {
     `;
   }
 
+  // ------------------------------------------------------ sections view width
+
+  private _renderSectionsWidth(): TemplateResult {
+    const layout = ucSectionsLayoutService.get();
+    const modes: { id: UcSectionsWidthMode; label: string; hint: string }[] = [
+      {
+        id: 'default',
+        label: this._t('sections_width_default', 'Home Assistant default'),
+        hint: this._t('sections_width_default_hint', `${UC_SECTIONS_COLUMN_WIDTH_DEFAULT}px per column, centred`),
+      },
+      {
+        id: 'full',
+        label: this._t('sections_width_full', 'Full width'),
+        hint: this._t('sections_width_full_hint', 'Columns share the whole screen'),
+      },
+      {
+        id: 'custom',
+        label: this._t('sections_width_custom', 'Custom'),
+        hint: this._t('sections_width_custom_hint', 'Pick a max width per column'),
+      },
+    ];
+    const gapPlaceholder = this._t('sections_gap_placeholder', 'HA default (32)');
+
+    return html`
+      <div class="sections-width">
+        <div class="sections-width-text">
+          <strong>${this._t('sections_width', 'Sections view width')}</strong>
+          <small
+            >${this._t(
+              'sections_width_desc',
+              'Home Assistant caps each Sections column at 500px and centres the view, which leaves empty space either side on wide screens. Widen it here for every dashboard in this browser. A theme set on the view in the dashboard config still wins. Masonry and Panel views are not affected.'
+            )}</small
+          >
+        </div>
+        <div class="sections-width-modes" role="radiogroup" aria-label=${this._t('sections_width', 'Sections view width')}>
+          ${modes.map(
+            m => html`
+              <button
+                type="button"
+                role="radio"
+                class="mode ${layout.mode === m.id ? 'active' : ''}"
+                aria-checked=${layout.mode === m.id ? 'true' : 'false'}
+                @click=${() => ucSectionsLayoutService.set({ mode: m.id })}
+              >
+                <span class="mode-label">${m.label}</span>
+                <span class="mode-hint">${m.hint}</span>
+              </button>
+            `
+          )}
+        </div>
+        ${layout.mode !== 'default'
+          ? html`
+              <div class="sections-width-fields">
+                ${layout.mode === 'custom'
+                  ? html`
+                      <label class="field">
+                        <span>${this._t('sections_column_width', 'Max width per column (px)')}</span>
+                        <input
+                          type="number"
+                          inputmode="numeric"
+                          min=${UC_SECTIONS_COLUMN_WIDTH_MIN}
+                          max=${UC_SECTIONS_COLUMN_WIDTH_MAX}
+                          step="10"
+                          .value=${String(layout.column_max_width)}
+                          @change=${(e: Event) =>
+                            ucSectionsLayoutService.set({
+                              column_max_width: Number((e.target as HTMLInputElement).value),
+                            })}
+                        />
+                      </label>
+                    `
+                  : nothing}
+                <label class="field">
+                  <span>${this._t('sections_gap', 'Column gap and side padding (px)')}</span>
+                  <input
+                    type="number"
+                    inputmode="numeric"
+                    min=${UC_SECTIONS_GAP_MIN}
+                    max=${UC_SECTIONS_GAP_MAX}
+                    step="4"
+                    placeholder=${gapPlaceholder}
+                    .value=${layout.column_gap === undefined ? '' : String(layout.column_gap)}
+                    @change=${(e: Event) => {
+                      const raw = (e.target as HTMLInputElement).value.trim();
+                      ucSectionsLayoutService.set({ column_gap: raw === '' ? undefined : Number(raw) });
+                    }}
+                  />
+                </label>
+              </div>
+            `
+          : nothing}
+      </div>
+    `;
+  }
+
   // ------------------------------------------------------------ browse view
 
   private _renderBrowse(): TemplateResult {
@@ -635,6 +745,7 @@ export class HubThemesTab extends LitElement {
             >
           </span>
         </label>
+        ${this._renderSectionsWidth()}
       </div>
 
       <div class="themes-toolbar">
@@ -1319,6 +1430,97 @@ export class HubThemesTab extends LitElement {
         line-height: 1.4;
         color: var(--secondary-text-color);
       }
+      .sections-width {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+      }
+      .sections-width-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .sections-width-text strong {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .sections-width-text small {
+        font-size: 12px;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
+      }
+      .sections-width-modes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .sections-width-modes .mode {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 10px 12px;
+        text-align: left;
+        font: inherit;
+        color: var(--primary-text-color);
+        background: var(--ha-card-background, var(--card-background-color));
+        border: 1px solid var(--divider-color);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .sections-width-modes .mode:hover {
+        border-color: var(--primary-color);
+      }
+      .sections-width-modes .mode:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+      .sections-width-modes .mode.active {
+        border-color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
+      }
+      .sections-width-modes .mode-label {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .sections-width-modes .mode-hint {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+      .sections-width-fields {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .sections-width-fields .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1 1 200px;
+        min-width: 0;
+      }
+      .sections-width-fields .field span {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+      }
+      .sections-width-fields input {
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 10px;
+        color: var(--primary-text-color);
+        background: var(--ha-card-background, var(--card-background-color));
+        border: 1px solid var(--divider-color);
+        border-radius: 10px;
+        outline: none;
+      }
+      .sections-width-fields input:focus-visible {
+        border-color: var(--primary-color);
+      }
       .btn {
         display: inline-flex;
         align-items: center;
@@ -1819,6 +2021,9 @@ export class HubThemesTab extends LitElement {
       /* Mobile */
       @media (max-width: 700px) {
         .apply-row {
+          grid-template-columns: 1fr;
+        }
+        .sections-width-modes {
           grid-template-columns: 1fr;
         }
         .themes-toolbar {

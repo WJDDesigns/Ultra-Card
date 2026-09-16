@@ -66,6 +66,7 @@ import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
 import { applyHaThemeToElement } from '../utils/uc-apply-ha-theme';
 import { UC_THEME_BASE_CSS, ucThemeService } from '../services/uc-theme-service';
 import { ucThemePageService } from '../services/uc-theme-page-service';
+import { ucSectionsLayoutService } from '../services/uc-sections-layout-service';
 import { loadUltraCardEditor } from '../editor/load-ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
@@ -3964,6 +3965,7 @@ export class UltraCard extends LitElement {
     // Preview cards in the editor are not in a view; the service finds no
     // hui-root above them and leaves the page alone.
     ucThemePageService.claim(this, ucThemeService.pageBackgroundFor(theme));
+    ucSectionsLayoutService.touch(this);
 
     const cssKey = theme ? `${theme.id}@${theme.version}` : '';
     if (cssKey === this._ucThemeCssKey && (!cssKey || this._ucThemeStyleElement?.isConnected)) {
