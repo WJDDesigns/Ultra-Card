@@ -36,6 +36,25 @@ const INTERACTIVE_CHILD_SELECTORS = [
   '[role="switch"]',
 ];
 
+/**
+ * Negative gap is an overlap control. Spreading those children with
+ * space-between / space-around makes overlay controls (for example a mode
+ * chevron next to a state label) drift apart as the column gets wider.
+ */
+export function resolveHorizontalMainAxisAlignment(
+  alignment: string | undefined,
+  gapValue: number
+): string | undefined {
+  if (gapValue < 0 && (alignment === 'space-between' || alignment === 'space-around')) {
+    return 'center';
+  }
+  return alignment;
+}
+
+export function shouldClusterOverlappingHorizontalChildren(gapValue: number): boolean {
+  return gapValue < 0;
+}
+
 const horizontalSettings = createLazySettings(
   () => import(/* webpackChunkName: "core-settings" */ './settings/horizontal-module-settings'),
   'horizontal settings'
@@ -141,7 +160,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
           ? 8
           : 0.7;
     // Only use alignment if user explicitly sets it - let flexbox work naturally
-    const horizontalAlign = horizontalModule.alignment;
+    const horizontalAlign = resolveHorizontalMainAxisAlignment(
+      horizontalModule.alignment,
+      gapValue
+    );
+    const clusterOverlappingChildren = shouldClusterOverlappingHorizontalChildren(gapValue);
 
     // Width: only set if user explicitly controls it, otherwise let flexbox handle sizing naturally
     // Default behavior: fill container (100% width) like WPBakery columns
@@ -399,11 +422,14 @@ export class UltraHorizontalModule extends BaseUltraModule {
                         gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}${gapUnit}` : '0';
                       const isNegativeGap = gapValue < 0;
 
-                      const layoutShouldGrow = horizontalModule.alignment === 'justify';
-                      const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
+                      const layoutShouldGrow =
+                        !clusterOverlappingChildren && horizontalModule.alignment === 'justify';
+                      const childShouldGrow =
+                        !clusterOverlappingChildren &&
+                        this.childShouldFillAvailableSpace(childModule);
 
                       const childPreferredWidth =
-                        !layoutShouldGrow && !childShouldGrow
+                        !layoutShouldGrow && !childShouldGrow && !clusterOverlappingChildren
                           ? this.getChildPreferredWidth(childModule)
                           : null;
 
@@ -411,6 +437,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
                         layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
                         childShouldGrow
                           ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                          : '',
+                        clusterOverlappingChildren
+                          ? 'flex: 0 0 auto; width: max-content; max-width: 100%;'
                           : '',
                         !layoutShouldGrow && !childShouldGrow && childPreferredWidth
                           ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
@@ -429,7 +458,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
                       return html`
                         <div
-                          class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                          class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''} ${clusterOverlappingChildren ? 'uc-overlap-child' : ''}"
                           data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
                           style="${baseStyles} ${negativeGapStyles}"
                         >
@@ -1255,6 +1284,20 @@ export class UltraHorizontalModule extends BaseUltraModule {
         border: none !important;
         border-radius: 0 !important;
         padding: 0 !important;
+      }
+
+      /* Overlapping (negative-gap) rows must shrink-wrap. Child modules default
+         to width:100%, which otherwise turns space-between into two stretching
+         columns and the overlay controls drift apart as the card gets wider. */
+      .child-module-preview.uc-overlap-child {
+        flex: 0 0 auto;
+        width: max-content;
+        max-width: 100%;
+      }
+
+      .child-module-preview.uc-overlap-child > *:not(style) {
+        width: max-content !important;
+        max-width: 100% !important;
       }
 
       /* Legacy hover effects removed - now handled by new hover effects system */

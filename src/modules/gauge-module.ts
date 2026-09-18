@@ -4734,7 +4734,10 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     if (gaugeModule.value_position === 'center') {
       styles.push('position: absolute');
-      styles.push('top: 50%');
+      // 3.10 used `top: calc(50% - 15px)` as the origin. Default gauges stay
+      // optically centered (3.11). Custom y_offset keeps the 3.10 origin so
+      // overlay cards that were tuned around a shifted value do not jump.
+      styles.push(yOffset !== 0 ? 'top: calc(50% - 15px)' : 'top: 50%');
       styles.push('left: 50%');
       styles.push('line-height: 1');
       styles.push('display: flex');
