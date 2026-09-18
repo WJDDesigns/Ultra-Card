@@ -1,5 +1,26 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.12.0-beta1
+
+The first 3.12.0 beta lets Hub Themes stretch Home Assistant's Sections view past the 500px column cap, classifies Protect-only UNVR/ENVR gear as NVRs, and keeps overlay HVAC Off/mode controls from drifting apart when the card gets wider. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added Hub Sections view width** - Home Assistant caps each Sections column at 500px, so a two-column view on a wide screen leaves empty space on both sides. Hub → Themes now has HA default, Full width, or a custom max column width, plus optional column gap / side padding. It is per browser, applies to every dashboard, and Masonry / Panel views are unchanged
+
+### 🔧 Improvements
+
+- **UniFi Protect-only UNVR and ENVR classify as NVRs** - Ubiquiti types those as "console" (the same bucket as UDM / Cloud Key), so a Protect-only UNVR was treated as a gateway and dropped as a duplicate UDM shell. Console-typed devices whose model is an NVR now classify as NVR, including ENVR variants and bare "NVR"
+
+### 🐛 Bug Fixes
+
+- **Fixed overlay HVAC Off/mode controls spreading apart on wider columns** - Cards that stack a state label and a dropdown chevron over a gauge with a negative-gap horizontal row were using space-between, so the controls drifted apart as the column got wider. Overlapping children now stay clustered in the middle of the arc
+- **Fixed custom gauge value offsets jumping in 3.11.0** - Default centered gauges stay optically in the ring. Gauges with a custom y offset keep the 3.10 origin so overlay cards that were tuned around that shift do not jump
+
+---
+
 ## Version 3.11.0
 
 The stable 3.11.0 release. Smart Cards can now be designed by any AI you already run in Home Assistant, with no daily limit, and the cards that come out are properly laid out from your own rooms and entities. 3D printing arrives with two new modules: **Bambu Lab** (PRO) for the ha-bambulab integration and **3D Printer** for OctoPrint, Moonraker/Klipper and PrusaLink. The Hub gets a full visual refresh, UniFi switches show every port they actually have, gauge values sit in the middle of the ring, and the theme you pick in the Hub stays picked. Thanks to everyone who tested the betas and reported issues.

@@ -55,15 +55,15 @@ describe('horizontal overlap clustering', () => {
     const textB = { ...reg.createDefaultModule('text', 'text-chevron', mockHass)!, text: 'v' };
     const module = {
       ...handler.createDefault('hvac-overlay', mockHass),
-      alignment: 'space-between',
+      alignment: 'space-between' as const,
       gap: -97,
-      gap_unit: 'px',
+      gap_unit: 'px' as const,
       modules: [textA, textB],
     };
 
     const markup = flattenTemplate(
       handler.renderPreview(
-        module,
+        module as any,
         mockHass,
         { type: 'custom:ultra-card', layout: { rows: [] } },
         'live'
@@ -72,8 +72,9 @@ describe('horizontal overlap clustering', () => {
 
     expect(markup).toContain('justify-content: center');
     expect(markup).not.toMatch(/horizontal-preview-content[^>]*justify-content:\s*space-between/);
-    expect(handler.getStyles()).toContain('.child-module-preview.uc-overlap-child');
-    expect(handler.getStyles()).toContain('width: max-content');
+    const styles = handler.getStyles?.() ?? '';
+    expect(styles).toContain('.child-module-preview.uc-overlap-child');
+    expect(styles).toContain('width: max-content');
   });
 
   it('still spreads children when space-between has a positive gap', async () => {
@@ -85,15 +86,15 @@ describe('horizontal overlap clustering', () => {
     const textB = { ...reg.createDefaultModule('text', 'text-b', mockHass)!, text: 'Right' };
     const module = {
       ...handler.createDefault('spread-row', mockHass),
-      alignment: 'space-between',
+      alignment: 'space-between' as const,
       gap: 8,
-      gap_unit: 'px',
+      gap_unit: 'px' as const,
       modules: [textA, textB],
     };
 
     const markup = flattenTemplate(
       handler.renderPreview(
-        module,
+        module as any,
         mockHass,
         { type: 'custom:ultra-card', layout: { rows: [] } },
         'live'
