@@ -4,7 +4,7 @@ Code + product + pricing shortcode are in place. Finish these after uploading th
 
 ## 1. Upload plugin (required)
 
-Upload `ultra-card-integration.zip` (v1.3.52) via **Plugins → Add New → Upload Plugin → Replace**.
+Upload `ultra-card-integration.zip` (v1.3.53) via **Plugins → Add New → Upload Plugin → Replace**.
 
 This enables:
 - `[ultra_card_page id="pricing"]` on `/pricing/`
