@@ -396,9 +396,17 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
 
     /**
      * On /product/ultra-card-pro/, add a Lifetime option to Billing Cycle so
-     * shoppers can pick Monthly / Yearly / Lifetime from one page. Lifetime is
-     * a separate simple product (not a subscription variation), so we hijack
-     * the Add to Cart button when that option is selected.
+     * shoppers pick Monthly / Yearly / Lifetime from one page.
+     *
+     * Lifetime is a separate simple product, not a variation. WooCommerce's
+     * variation script rebuilds every attribute <select> from the variations
+     * JSON and drops options that no variation owns, so a plain appended
+     * option disappears the moment it is chosen. Instead we register Lifetime
+     * as a pseudo-variation in `data-product_variations` *before* WooCommerce
+     * initialises (this inline script runs synchronously at the end of the
+     * body, WC initialises on DOM-ready). WC then handles the option, price,
+     * description and button state natively; we only intercept Add to Cart to
+     * send the shopper to checkout with the real Lifetime product.
      */
     public function enqueue_pro_billing_cycle_script() {
         if (!function_exists('is_product') || !is_product()) {
@@ -424,166 +432,152 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
         $credit = $loyalty ? floatval($loyalty['credit']) : 0;
         $already = $user_id ? $this->user_has_lifetime($user_id) : false;
 
-        // Adds Lifetime and lands on checkout: loyalty credit is applied there
-        // and an account is created from the email for first-time buyers.
-        $add_url = esc_url($this->get_checkout_url());
-        $product_url = esc_url($this->get_pro_page_url('Lifetime'));
-
-        $loyalty_note = $credit > 0
-            ? sprintf(
-                /* translators: 1: credit amount, 2: amount paid so far */
-                __('Loyalty credit applied: %1$s off for the %2$s you have already paid toward Pro.', 'ultra-card-integration'),
-                wc_price($credit),
-                wc_price($loyalty['paid'])
-            )
-            : __('One payment, no renewals. Your Pro is yours for the life of Ultra Card.', 'ultra-card-integration');
-
-        $cfg = array(
-            'optionValue' => 'Lifetime',
-            'optionLabel' => 'Lifetime',
-            'listPrice' => $list_price,
-            'due' => $due,
-            'credit' => $credit,
-            'alreadyLifetime' => $already,
-            'loggedIn' => (bool) $user_id,
-            'addToCartUrl' => $add_url,
-            'productUrl' => $product_url,
-            'currencySymbol' => function_exists('get_woocommerce_currency_symbol')
-                ? html_entity_decode(get_woocommerce_currency_symbol(), ENT_QUOTES, 'UTF-8')
-                : '$',
-            'i18n' => array(
-                'priceOnce' => __('once', 'ultra-card-integration'),
-                'loyaltyNote' => wp_strip_all_tags($loyalty_note),
-                'loginNote' => __('Already a Pro subscriber? Log in at checkout and every payment you have made is credited automatically (minimum $29 due).', 'ultra-card-integration'),
-                'alreadyNote' => __('You already have Ultra Card Pro Lifetime.', 'ultra-card-integration'),
-                'blurb' => __('Every Pro module, cloud backups, snapshots and priority support. Pay once — no renewals, ever.', 'ultra-card-integration'),
-                'button' => __('Go Lifetime', 'ultra-card-integration'),
-            ),
-        );
-
-        // Depend on variation script so we run after WooCommerce wires the form.
-        $handle = wp_script_is('wc-add-to-cart-variation', 'registered')
-            ? 'wc-add-to-cart-variation'
-            : (wp_script_is('jquery', 'registered') ? 'jquery' : '');
-        if ($handle) {
-            wp_enqueue_script($handle);
+        $once = '<span class="subscription-details"> ' . esc_html__('once', 'ultra-card-integration') . '</span>';
+        if ($credit > 0 && $due < $list_price) {
+            $price_html = '<span class="price"><del aria-hidden="true">' . wc_price($list_price) . '</del> <ins>' . wc_price($due) . '</ins>' . $once . '</span>';
+        } else {
+            $price_html = '<span class="price">' . wc_price($list_price) . $once . '</span>';
         }
 
-        $json = wp_json_encode($cfg);
+        $blurb = esc_html__('Every Pro module, cloud backups, snapshots and priority support. Pay once — no renewals, ever.', 'ultra-card-integration');
+        if ($already) {
+            $note = esc_html__('You already have Ultra Card Pro Lifetime.', 'ultra-card-integration');
+        } elseif ($credit > 0) {
+            $note = sprintf(
+                /* translators: 1: credit amount, 2: amount paid so far */
+                esc_html__('Loyalty credit applied: %1$s off for the %2$s you have already paid toward Pro. Your current plan is cancelled automatically when this order completes.', 'ultra-card-integration'),
+                wc_price($credit),
+                wc_price($loyalty['paid'])
+            );
+        } elseif ($user_id) {
+            $note = esc_html__('One payment, then nothing to renew. Every Pro payment you have made counts toward this price.', 'ultra-card-integration');
+        } else {
+            $note = esc_html__('Already a Pro subscriber? Log in at checkout and every payment you have made is credited automatically (minimum $29 due).', 'ultra-card-integration');
+        }
+        $description_html = '<p>' . $blurb . '</p><p class="uc-lifetime-note" style="margin:.5em 0 0;font-size:.92em;opacity:.85">' . $note . '</p>';
+
+        $cfg = array(
+            'attribute' => 'attribute_billing-cycle',
+            'optionValue' => 'Lifetime',
+            'optionLabel' => __('Lifetime', 'ultra-card-integration'),
+            'productId' => (int) $lifetime_id,
+            'listPrice' => $list_price,
+            'due' => $due,
+            'alreadyLifetime' => $already,
+            'addToCartUrl' => esc_url_raw($this->get_checkout_url()),
+            'priceHtml' => $price_html,
+            'descriptionHtml' => $description_html,
+            'buttonLabel' => __('Go Lifetime', 'ultra-card-integration'),
+        );
+
+        // Run after WC's variation script is loaded but before its DOM-ready init.
+        $deps = array();
+        if (wp_script_is('wc-add-to-cart-variation', 'registered')) {
+            wp_enqueue_script('wc-add-to-cart-variation');
+            $deps[] = 'wc-add-to-cart-variation';
+        }
+
         $js = <<<'JS'
-(function ($) {
+(function () {
   var cfg = window.ucProLifetimeOption;
-  if (!cfg || !$) return;
+  if (!cfg) return;
 
-  function money(n) {
-    var s = (Math.round(n * 100) / 100).toFixed(2);
-    return cfg.currencySymbol + s.replace(/\.00$/, '');
-  }
+  function setup(form) {
+    var select = form.querySelector('select[name="' + cfg.attribute + '"]');
+    if (!select) return;
 
-  function ensureOption($select) {
-    if (!$select.length) return;
-    if ($select.find('option[value="' + cfg.optionValue + '"]').length) return;
-    $select.append($('<option/>', { value: cfg.optionValue, text: cfg.optionLabel }));
-  }
-
-  function lifetimeHtml() {
-    var priceLine = money(cfg.due) + ' <span class="subscription-details"> / ' + cfg.i18n.priceOnce + '</span>';
-    if (cfg.credit > 0 && cfg.due < cfg.listPrice) {
-      priceLine =
-        '<del style="opacity:.55;margin-right:.4em">' + money(cfg.listPrice) + '</del> ' +
-        money(cfg.due) + ' <span class="subscription-details"> / ' + cfg.i18n.priceOnce + '</span>';
+    // 1. The option itself.
+    if (!select.querySelector('option[value="' + cfg.optionValue + '"]')) {
+      var opt = document.createElement('option');
+      opt.value = cfg.optionValue;
+      opt.textContent = cfg.optionLabel;
+      opt.className = 'attached enabled';
+      select.appendChild(opt);
     }
-    var note = cfg.alreadyLifetime
-      ? cfg.i18n.alreadyNote
-      : (cfg.loggedIn ? cfg.i18n.loyaltyNote : cfg.i18n.loginNote);
-    return (
-      '<div class="uc-lifetime-variation">' +
-        '<div class="woocommerce-variation-description"><p>' + cfg.i18n.blurb + '</p></div>' +
-        '<div class="woocommerce-variation-price"><span class="price">' + priceLine + '</span></div>' +
-        '<p class="uc-lifetime-note" style="margin:.5em 0 0;font-size:.9em;opacity:.8">' + note + '</p>' +
-      '</div>'
-    );
-  }
 
-  function bind($form) {
-    var $select = $form.find('select[name="attribute_billing-cycle"], select#billing-cycle');
-    if (!$select.length) return;
-
-    ensureOption($select);
-
-    var $variation = $form.find('.single_variation');
-    var $btn = $form.find('.single_add_to_cart_button');
-    var originalLabel = $btn.length ? $btn.text() : '';
-    var lifetimeMode = false;
-
-    function enterLifetime() {
-      lifetimeMode = true;
-      $form.find('.woocommerce-variation.single_variation').show().html(lifetimeHtml());
-      $form.find('.single_variation_wrap').show();
-      $form.find('.woocommerce-variation-add-to-cart').show();
-      // Kill WC's "no matching variation" notice if present.
-      $form.find('.wc-no-matching-variations').remove();
-      $('.woocommerce-info.wc-no-matching-variations').remove();
-
-      if (cfg.alreadyLifetime) {
-        $btn.prop('disabled', true).text(cfg.i18n.alreadyNote);
-        return;
-      }
-
-      $btn.prop('disabled', false).text(cfg.i18n.button);
-      $btn.off('click.ucLifetime').on('click.ucLifetime', function (e) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        window.location.href = cfg.addToCartUrl;
-        return false;
+    // 2. Register Lifetime as a pseudo-variation so WC keeps the option and
+    //    shows its price / description / enabled button.
+    var raw = form.getAttribute('data-product_variations');
+    var list = null;
+    try { list = JSON.parse(raw); } catch (e) { list = null; }
+    if (Array.isArray(list)) {
+      var exists = list.some(function (v) {
+        return v && v.attributes && v.attributes[cfg.attribute] === cfg.optionValue;
       });
-    }
-
-    function leaveLifetime() {
-      if (!lifetimeMode) return;
-      lifetimeMode = false;
-      $btn.off('click.ucLifetime');
-      if (originalLabel) $btn.text(originalLabel);
-      $btn.prop('disabled', false);
-    }
-
-    function sync() {
-      if ($select.val() === cfg.optionValue) {
-        // Let WC reset first, then paint Lifetime UI.
-        setTimeout(enterLifetime, 0);
-      } else {
-        leaveLifetime();
+      if (!exists) {
+        var tmpl = list[0] || {};
+        var attrs = {};
+        attrs[cfg.attribute] = cfg.optionValue;
+        var pseudo = {};
+        for (var k in tmpl) if (Object.prototype.hasOwnProperty.call(tmpl, k)) pseudo[k] = tmpl[k];
+        pseudo.attributes = attrs;
+        pseudo.variation_id = cfg.productId;
+        pseudo.variation_is_active = !cfg.alreadyLifetime;
+        pseudo.variation_is_visible = true;
+        pseudo.is_purchasable = !cfg.alreadyLifetime;
+        pseudo.is_in_stock = true;
+        pseudo.backorders_allowed = false;
+        pseudo.is_downloadable = false;
+        pseudo.is_virtual = true;
+        pseudo.is_sold_individually = 'yes';
+        pseudo.min_qty = 1;
+        pseudo.max_qty = 1;
+        pseudo.sku = '';
+        // Keep the template's weight/dimensions HTML: WC does
+        // parseHTML(dimensions_html)[0].data and crashes on an empty string.
+        pseudo.availability_html = '';
+        pseudo.display_price = cfg.due;
+        pseudo.display_regular_price = cfg.listPrice;
+        pseudo.price_html = cfg.priceHtml;
+        pseudo.variation_description = cfg.descriptionHtml;
+        list.push(pseudo);
+        form.setAttribute('data-product_variations', JSON.stringify(list));
+        if (window.jQuery) window.jQuery(form).data('product_variations', list);
       }
     }
 
-    $select.on('change.ucLifetime', sync);
-    $form.on('hide_variation reset_data', function () {
-      if ($select.val() === cfg.optionValue) {
-        setTimeout(enterLifetime, 0);
+    // 3. Deep link: ?attribute_billing-cycle=Lifetime (server can't preselect
+    //    an option it doesn't know about).
+    try {
+      var pre = new URLSearchParams(window.location.search).get(cfg.attribute);
+      if (pre && pre.toLowerCase() === cfg.optionValue.toLowerCase()) {
+        select.value = cfg.optionValue;
       }
-    });
+    } catch (e) {}
 
-    // Deep link: ?attribute_billing-cycle=Lifetime
-    var params = new URLSearchParams(window.location.search);
-    var pre = params.get('attribute_billing-cycle') || params.get('attribute_Billing Cycle');
-    if (pre && pre.toLowerCase() === 'lifetime') {
-      $select.val(cfg.optionValue);
+    // 4. Intercept Add to Cart for Lifetime. Native capture-phase listeners on
+    //    the button run before WC's delegated jQuery handlers on the form.
+    var isLifetime = function () { return select.value === cfg.optionValue; };
+    var go = function (e) {
+      if (!isLifetime()) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (cfg.alreadyLifetime) return;
+      window.location.href = cfg.addToCartUrl;
+    };
+    var btn = form.querySelector('.single_add_to_cart_button');
+    if (btn) btn.addEventListener('click', go, true);
+    form.addEventListener('submit', go, true);
+
+    // 5. Button label while Lifetime is the found variation.
+    if (window.jQuery && btn) {
+      var $form = window.jQuery(form);
+      var orig = btn.textContent;
+      $form.on('found_variation', function (ev, variation) {
+        btn.textContent = (variation && Number(variation.variation_id) === Number(cfg.productId)) ? cfg.buttonLabel : orig;
+      });
+      $form.on('reset_data', function () { btn.textContent = orig; });
     }
-    sync();
   }
 
-  $(function () {
-    $('form.variations_form').each(function () {
-      bind($(this));
-    });
-  });
-})(window.jQuery);
+  var forms = document.querySelectorAll('form.variations_form');
+  for (var i = 0; i < forms.length; i++) setup(forms[i]);
+})();
 JS;
 
-        // Register a tiny handle so inline script attaches cleanly.
-        wp_register_script('uc-pro-lifetime-option', false, $handle ? array($handle) : array('jquery'), ULTRA_CARD_INTEGRATION_VERSION, true);
+        wp_register_script('uc-pro-lifetime-option', false, $deps, ULTRA_CARD_INTEGRATION_VERSION, true);
         wp_enqueue_script('uc-pro-lifetime-option');
-        wp_add_inline_script('uc-pro-lifetime-option', 'window.ucProLifetimeOption = ' . $json . ';', 'before');
+        wp_add_inline_script('uc-pro-lifetime-option', 'window.ucProLifetimeOption = ' . wp_json_encode($cfg) . ';', 'before');
         wp_add_inline_script('uc-pro-lifetime-option', $js, 'after');
     }
 
@@ -657,11 +651,17 @@ JS;
         if (!class_exists('WooCommerce') || !function_exists('wc_get_product')) {
             return;
         }
-        // Avoid running on every front-end hit once the product exists.
+        // Avoid running on every front-end hit once the product exists, but
+        // re-sync (price, visibility, image) once per plugin version.
         $existing = $this->get_product_id();
+        $synced_for = get_option('ultra_card_lifetime_synced_version', '');
         if ($existing) {
             $product = wc_get_product($existing);
             if ($product && $product->get_status() === 'publish') {
+                if ($synced_for !== ULTRA_CARD_INTEGRATION_VERSION) {
+                    $this->ensure_lifetime_product();
+                    update_option('ultra_card_lifetime_synced_version', ULTRA_CARD_INTEGRATION_VERSION, false);
+                }
                 return;
             }
         }
@@ -717,6 +717,10 @@ JS;
             $product->set_virtual(true);
             $product->set_sold_individually(true);
             $product->set_reviews_allowed(false);
+            $image_id = $this->get_pro_product_image_id();
+            if ($image_id) {
+                $product->set_image_id($image_id);
+            }
             $product_id = $product->save();
         } else {
             // Keep price in sync with the setting, and keep the product out of
@@ -732,6 +736,13 @@ JS;
                 $product->set_catalog_visibility('hidden');
                 $dirty = true;
             }
+            if (!$product->get_image_id()) {
+                $image_id = $this->get_pro_product_image_id();
+                if ($image_id) {
+                    $product->set_image_id($image_id);
+                    $dirty = true;
+                }
+            }
             if ($dirty) {
                 $product->save();
             }
@@ -740,9 +751,23 @@ JS;
 
         if ($product_id) {
             update_option(self::OPTION_PRODUCT_ID, (int) $product_id, false);
+            update_option('ultra_card_lifetime_synced_version', ULTRA_CARD_INTEGRATION_VERSION, false);
         }
 
         return (int) $product_id;
+    }
+
+    /**
+     * Featured image of the Pro subscription product, reused for Lifetime so
+     * cart / checkout / listings never show a placeholder.
+     */
+    private function get_pro_product_image_id() {
+        $page = get_page_by_path('ultra-card-pro', OBJECT, 'product');
+        if (!$page || !function_exists('wc_get_product')) {
+            return 0;
+        }
+        $pro = wc_get_product($page->ID);
+        return $pro ? (int) $pro->get_image_id() : 0;
     }
 
     public function is_lifetime_product($product_id) {
