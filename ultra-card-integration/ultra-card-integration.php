@@ -3,7 +3,7 @@
  * Plugin Name: Ultra Card Integration
  * Plugin URI: https://ultracard.io
  * Description: Complete Ultra Card integration for WordPress - includes cloud sync functionality and Directories Pro dashboard panels for managing favorites, colors, and reviews.
- * Version: 1.3.49
+ * Version: 1.3.50
  * Author: WJD Designs
  * Author URI: https://wjddesigns.com
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('ULTRA_CARD_INTEGRATION_VERSION', '1.3.49');
+define('ULTRA_CARD_INTEGRATION_VERSION', '1.3.50');
 define('ULTRA_CARD_INTEGRATION_PLUGIN_FILE', __FILE__);
 define('ULTRA_CARD_INTEGRATION_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ULTRA_CARD_INTEGRATION_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -47,6 +47,12 @@ if (!defined('ULTRA_CARD_DISABLE_HARNESS') || !ULTRA_CARD_DISABLE_HARNESS) {
     if (file_exists($uc_website_harness)) {
         require_once $uc_website_harness;
     }
+}
+
+// Lifetime Pro: one-time purchase, loyalty credit, auto-flip, grandfathering.
+$uc_lifetime = ULTRA_CARD_INTEGRATION_PLUGIN_DIR . 'includes/uc-lifetime.php';
+if (file_exists($uc_lifetime)) {
+    require_once $uc_lifetime;
 }
 
 /**
@@ -202,6 +208,14 @@ class UltraCardCloudSync {
         if (in_array('administrator', (array) $user->roles)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log("Ultra Card: Skipping role change for admin user {$user_id}");
+            }
+            return;
+        }
+
+        // Lifetime members keep Pro even when a leftover subscription ends.
+        if (function_exists('ultra_card_user_has_lifetime') && ultra_card_user_has_lifetime($user_id)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("Ultra Card: Skipping revoke for Lifetime user {$user_id}");
             }
             return;
         }
@@ -576,6 +590,11 @@ class UltraCardCloudSync {
      * @return array|null
      */
     public function get_woocommerce_subscription_data($user_id) {
+        // Lifetime members get a pseudo subscription record (no renewals).
+        if (function_exists('ultra_card_lifetime') && ultra_card_lifetime()->user_has_lifetime($user_id)) {
+            return ultra_card_lifetime()->get_lifetime_subscription_payload($user_id);
+        }
+
         if (!function_exists('wcs_get_users_subscriptions')) {
             return null; // WooCommerce Subscriptions not active
         }
@@ -619,6 +638,7 @@ class UltraCardCloudSync {
                     'orders_url' => function_exists('wc_get_account_endpoint_url')
                         ? wc_get_account_endpoint_url('orders')
                         : home_url('/my-account/orders/'),
+                    'lifetime' => false,
                 );
             }
         }
@@ -2407,7 +2427,7 @@ class UltraCardCloudSync {
         
         $snapshot_count = $this->count_user_snapshots($user_id);
         
-        return array(
+        $data = array(
             'tier' => $tier,
             'status' => $status,
             'expires' => $expires,
@@ -2415,8 +2435,26 @@ class UltraCardCloudSync {
             'snapshot_count' => $snapshot_count,
             'snapshot_limit' => $features['snapshot_limit'],
             'is_admin' => $is_admin, // Add flag for admin status
-            'woocommerce' => $wc_subscription // Include WooCommerce subscription data
+            'woocommerce' => $wc_subscription, // Include WooCommerce subscription data
+            'lifetime' => false,
+            'plan' => $tier === 'pro' ? 'pro' : 'free',
         );
+
+        if (function_exists('ultra_card_lifetime')) {
+            $data = ultra_card_lifetime()->enrich_subscription_data($user_id, $data);
+            // Re-apply Pro features if Lifetime enrichment restored tier/status.
+            if (!empty($data['lifetime']) || (isset($data['tier']) && $data['tier'] === 'pro' && $data['status'] === 'active')) {
+                $data['features'] = array(
+                    'auto_backups' => true,
+                    'snapshots_enabled' => true,
+                    'snapshot_limit' => 30,
+                    'backup_retention_days' => 30,
+                );
+                $data['snapshot_limit'] = 30;
+            }
+        }
+
+        return $data;
     }
     
     // ====================
@@ -5533,27 +5571,49 @@ class UltraCardDashboardIntegration {
                 </div>
             <?php else: ?>
                 <!-- Subscription Details -->
+                <?php
+                $is_lifetime = !empty($subscription_data['lifetime'])
+                    || (!empty($wc_subscription['billing_period']) && $wc_subscription['billing_period'] === 'lifetime')
+                    || (!empty($wc_subscription['status']) && $wc_subscription['status'] === 'lifetime');
+                $loyalty = isset($subscription_data['loyalty']) ? $subscription_data['loyalty'] : null;
+                ?>
                 <div class="ucp-membership-header">
                     <span class="ucp-membership-status">
-                        <?php echo esc_html(strtoupper($subscription_data['tier'])); ?> MEMBER
+                        <?php echo $is_lifetime ? 'LIFETIME MEMBER' : esc_html(strtoupper($subscription_data['tier'])) . ' MEMBER'; ?>
                     </span>
-                    <h2><?php echo $subscription_data['tier'] === 'pro' ? 'Ultra Card Pro' : 'Ultra Card Free'; ?></h2>
-                    <p><?php echo $subscription_data['tier'] === 'pro' ? 'Thank you for being a Pro member!' : 'Upgrade to Pro for advanced features!'; ?></p>
+                    <h2><?php
+                        if ($is_lifetime) {
+                            echo 'Ultra Card Pro Lifetime';
+                        } elseif ($subscription_data['tier'] === 'pro') {
+                            echo 'Ultra Card Pro';
+                        } else {
+                            echo 'Ultra Card Free';
+                        }
+                    ?></h2>
+                    <p><?php
+                        if ($is_lifetime) {
+                            echo 'Thank you for being a Lifetime member — Pro for the life of Ultra Card.';
+                        } elseif ($subscription_data['tier'] === 'pro') {
+                            echo 'Thank you for being a Pro member!';
+                        } else {
+                            echo 'Upgrade to Pro for advanced features!';
+                        }
+                    ?></p>
                 </div>
                 
                 <?php if ($wc_subscription): ?>
                     <div class="ucp-subscription-card">
-                        <h3><i class="fas fa-star"></i> Subscription Details</h3>
+                        <h3><i class="fas fa-star"></i> <?php echo $is_lifetime ? 'Lifetime Details' : 'Subscription Details'; ?></h3>
                         <div class="ucp-subscription-grid">
                             <div class="ucp-sub-item">
                                 <div class="ucp-sub-item-label">Status</div>
                                 <div class="ucp-sub-item-value">
-                                    <span class="ucp-status-badge ucp-status-<?php echo esc_attr($wc_subscription['status']); ?>">
-                                        <?php echo esc_html($wc_subscription['status']); ?>
+                                    <span class="ucp-status-badge ucp-status-<?php echo esc_attr($is_lifetime ? 'active' : $wc_subscription['status']); ?>">
+                                        <?php echo esc_html($is_lifetime ? 'lifetime' : $wc_subscription['status']); ?>
                                     </span>
                                 </div>
                             </div>
-                            <?php if ($wc_subscription['next_payment_date']): ?>
+                            <?php if (!$is_lifetime && !empty($wc_subscription['next_payment_date'])): ?>
                                 <div class="ucp-sub-item">
                                     <div class="ucp-sub-item-label">Next Payment</div>
                                     <div class="ucp-sub-item-value">
@@ -5561,36 +5621,63 @@ class UltraCardDashboardIntegration {
                                     </div>
                                 </div>
                             <?php endif; ?>
-                            <?php if ($wc_subscription['last_payment_date']): ?>
+                            <?php if (!empty($wc_subscription['last_payment_date']) || !empty($wc_subscription['start_date'])): ?>
                                 <div class="ucp-sub-item">
-                                    <div class="ucp-sub-item-label">Last Payment</div>
+                                    <div class="ucp-sub-item-label"><?php echo $is_lifetime ? 'Since' : 'Last Payment'; ?></div>
                                     <div class="ucp-sub-item-value">
-                                        <?php echo date('M d, Y', strtotime($wc_subscription['last_payment_date'])); ?>
+                                        <?php
+                                        $d = $is_lifetime
+                                            ? ($wc_subscription['start_date'] ?? $wc_subscription['last_payment_date'])
+                                            : $wc_subscription['last_payment_date'];
+                                        echo $d ? date('M d, Y', strtotime($d)) : '—';
+                                        ?>
                                     </div>
                                 </div>
                             <?php endif; ?>
                             <div class="ucp-sub-item">
-                                <div class="ucp-sub-item-label">Amount</div>
+                                <div class="ucp-sub-item-label"><?php echo $is_lifetime ? 'Billing' : 'Amount'; ?></div>
                                 <div class="ucp-sub-item-value">
-                                    <?php echo esc_html($wc_subscription['currency'] . ' ' . $wc_subscription['total']); ?>
-                                    /<?php echo esc_html($wc_subscription['billing_period']); ?>
+                                    <?php if ($is_lifetime): ?>
+                                        For the life of Ultra Card
+                                    <?php else: ?>
+                                        <?php echo esc_html($wc_subscription['currency'] . ' ' . $wc_subscription['total']); ?>
+                                        /<?php echo esc_html($wc_subscription['billing_period']); ?>
+                                    <?php endif; ?>
                                 </div>
                             </div>
+                            <?php if (!$is_lifetime): ?>
                             <div class="ucp-sub-item">
                                 <div class="ucp-sub-item-label">Payment Method</div>
                                 <div class="ucp-sub-item-value">
                                     <?php echo esc_html($wc_subscription['payment_method_title']); ?>
                                 </div>
                             </div>
+                            <?php endif; ?>
+                            <?php if (!$is_lifetime && !empty($wc_subscription['start_date'])): ?>
                             <div class="ucp-sub-item">
                                 <div class="ucp-sub-item-label">Start Date</div>
                                 <div class="ucp-sub-item-value">
                                     <?php echo date('M d, Y', strtotime($wc_subscription['start_date'])); ?>
                                 </div>
                             </div>
+                            <?php endif; ?>
                         </div>
+
+                        <?php if (!$is_lifetime && is_array($loyalty) && !empty($loyalty['product_url'])): ?>
+                        <div style="margin-top: 24px; padding: 16px; border-radius: 12px; background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.25);">
+                            <strong>Go Lifetime for $<?php echo esc_html(number_format((float) $loyalty['due'], 2)); ?></strong>
+                            <p style="margin: 8px 0 12px; color: #666;">
+                                You've paid $<?php echo esc_html(number_format((float) $loyalty['paid'], 2)); ?> toward Pro.
+                                That credit applies at checkout.
+                            </p>
+                            <a href="<?php echo esc_url($loyalty['product_url']); ?>" class="ucp-btn ucp-btn-primary">
+                                <i class="fas fa-infinity"></i> Upgrade to Lifetime
+                            </a>
+                        </div>
+                        <?php endif; ?>
                         
                         <!-- Subscription Management Actions -->
+                        <?php if (!$is_lifetime): ?>
                         <div style="margin-top: 32px;">
                             <h4 style="margin-bottom: 16px; color: #666;">Manage Your Subscription</h4>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
@@ -5629,6 +5716,7 @@ class UltraCardDashboardIntegration {
                                 <i class="fas fa-external-link-alt"></i> View Full Subscription Details
                             </a>
                         </div>
+                        <?php endif; /* !$is_lifetime management */ ?>
                     </div>
                 <?php else: ?>
                     <div class="ucp-subscription-card" style="text-align: center; padding: 40px;">
@@ -5637,6 +5725,7 @@ class UltraCardDashboardIntegration {
                         <a href="https://ultracard.io/product/ultra-card-pro/" class="ucp-btn ucp-btn-primary" target="_blank">
                             <i class="fas fa-star"></i> Subscribe to Pro - $4.99/month
                         </a>
+                        <p style="margin-top:12px"><a href="https://ultracard.io/pricing/">Or go Lifetime for $99</a></p>
                     </div>
                 <?php endif; ?>
             <?php endif; ?>

@@ -5,7 +5,7 @@
  * Server-side delivery of website/*.html fragments for ultracard.io, plus
  * admin diagnostics and a secret-guarded flush endpoint for CI.
  *
- * Shortcode: [ultra_card_page id="modules|template-mode|presets"]
+ * Shortcode: [ultra_card_page id="modules|template-mode|presets|pricing"]
  * Paste into a WPBakery Text Block (not Raw HTML — Raw HTML base64-encodes
  * content and does not expand shortcodes).
  */
@@ -209,6 +209,12 @@ class UltraCardWebsiteHarness {
                 'title' => 'Presets',
                 'needs_bundle' => false,
                 'path' => '/presets/',
+            ),
+            'pricing' => array(
+                'file' => 'website/pricing-page-embed.html',
+                'title' => 'Pricing',
+                'needs_bundle' => false,
+                'path' => '/pricing/',
             ),
         );
     }
@@ -589,7 +595,7 @@ class UltraCardWebsiteHarness {
         ?>
         <div class="uc-harness-admin">
             <h2><span class="dashicons dashicons-admin-site-alt3"></span> Website Harness</h2>
-            <p>Serves the modules, template-mode and presets page fragments from the Ultra Card repo.
+            <p>Serves the modules, template-mode, presets and pricing page fragments from the Ultra Card repo.
                Paste <code>[ultra_card_page id="modules"]</code> into a <strong>WPBakery Text Block</strong>
                (not Raw HTML). After the first paste, CI keeps the live page current.</p>
 

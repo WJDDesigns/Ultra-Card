@@ -1057,9 +1057,14 @@ export class HubAccountTab extends LitElement {
     }
 
     const period =
-      woo?.billing_interval && woo.billing_interval !== '1'
-        ? `every ${woo.billing_interval} ${woo.billing_period || 'month'}s`
-        : `/ ${woo?.billing_period || 'month'}`;
+      woo?.billing_period === 'lifetime' || woo?.status === 'lifetime'
+        ? ''
+        : woo?.billing_interval && woo.billing_interval !== '1'
+          ? `every ${woo.billing_interval} ${woo.billing_period || 'month'}s`
+          : `/ ${woo?.billing_period || 'month'}`;
+
+    const isLifetime =
+      !!woo && (woo.billing_period === 'lifetime' || woo.status === 'lifetime' || !!woo.lifetime);
 
     return html`
       <div class="account-card">
@@ -1083,24 +1088,41 @@ export class HubAccountTab extends LitElement {
                         <div class="billing-row">
                           <span class="billing-label">Plan</span>
                           <span class="billing-value">
-                            Ultra Card Pro · ${formatMoney(woo.total, woo.currency)} ${period}
+                            ${isLifetime
+                              ? 'Ultra Card Pro · Lifetime'
+                              : `Ultra Card Pro · ${formatMoney(woo.total, woo.currency)} ${period}`}
                           </span>
                         </div>
                         <div class="billing-row">
                           <span class="billing-label">Status</span>
-                          <span class="billing-pill ${this._billingStatusClass(woo.status)}">
-                            ${woo.status || 'unknown'}
+                          <span class="billing-pill ${this._billingStatusClass(isLifetime ? 'active' : woo.status)}">
+                            ${isLifetime ? 'lifetime' : woo.status || 'unknown'}
                           </span>
                         </div>
+                        ${isLifetime
+                          ? html`
+                              <div class="billing-row">
+                                <span class="billing-label">Billing</span>
+                                <span class="billing-value">For the life of Ultra Card</span>
+                              </div>
+                            `
+                          : html`
+                              <div class="billing-row">
+                                <span class="billing-label">Next payment</span>
+                                <span class="billing-value"
+                                  >${formatBillingDate(woo.next_payment_date)}</span
+                                >
+                              </div>
+                            `}
                         <div class="billing-row">
-                          <span class="billing-label">Next payment</span>
-                          <span class="billing-value">${formatBillingDate(woo.next_payment_date)}</span>
+                          <span class="billing-label">${isLifetime ? 'Since' : 'Last payment'}</span>
+                          <span class="billing-value"
+                            >${formatBillingDate(
+                              isLifetime ? woo.start_date || woo.last_payment_date : woo.last_payment_date
+                            )}</span
+                          >
                         </div>
-                        <div class="billing-row">
-                          <span class="billing-label">Last payment</span>
-                          <span class="billing-value">${formatBillingDate(woo.last_payment_date)}</span>
-                        </div>
-                        ${woo.payment_method_title
+                        ${!isLifetime && woo.payment_method_title
                           ? html`
                               <div class="billing-row">
                                 <span class="billing-label">Payment method</span>
@@ -1142,7 +1164,7 @@ export class HubAccountTab extends LitElement {
                     `
                   : nothing}
                 <div class="billing-actions">
-                  ${woo?.view_subscription_url
+                  ${woo?.view_subscription_url && !isLifetime
                     ? html`
                         <a
                           class="billing-btn"
@@ -1155,18 +1177,33 @@ export class HubAccountTab extends LitElement {
                         </a>
                       `
                     : nothing}
+                  ${!isLifetime
+                    ? html`
+                        <a
+                          class="billing-btn"
+                          href="https://ultracard.io/pricing/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ha-icon icon="mdi:infinity"></ha-icon>
+                          Go Lifetime
+                        </a>
+                      `
+                    : nothing}
                   <a
                     class="billing-btn"
-                    href="https://ultracard.io/my-account/payment-methods/"
+                    href="https://ultracard.io/my-account/orders/"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <ha-icon icon="mdi:credit-card-edit-outline"></ha-icon>
-                    Payment methods
+                    <ha-icon icon="mdi:receipt"></ha-icon>
+                    Order history
                   </a>
                 </div>
                 <p class="billing-note">
-                  Payment changes and cancellations are completed securely on ultracard.io.
+                  ${isLifetime
+                    ? 'Lifetime has no renewals — Pro stays yours for the life of Ultra Card.'
+                    : 'Payment changes and cancellations are completed securely on ultracard.io. Every Pro payment counts toward Lifetime.'}
                 </p>
               `}
       </div>

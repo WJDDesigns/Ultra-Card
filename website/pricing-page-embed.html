@@ -1,0 +1,125 @@
+<style>
+/* full-bleed + neutralize Impreza section padding on the Pricing page */
+.ucp-price{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);color:#e8eaef;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.page-id-31 .l-section.wpb_row{padding-top:0!important;padding-bottom:0!important}
+.page-id-31 .l-main{background:#0e1015}
+.ucp-price *{box-sizing:border-box}
+.ucp-price a{text-decoration:none;color:inherit}
+.ucp-price .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+.ucp-price-hero{position:relative;padding:72px 0 48px;text-align:center;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(99,102,241,.28),transparent 60%),#0e1015}
+.ucp-price-hero h1{font-size:clamp(2rem,4.5vw,3.25rem);font-weight:800;letter-spacing:-.03em;margin:0 0 14px;line-height:1.15}
+.ucp-price-hero .grad{background:linear-gradient(135deg,#a5b4fc,#67e8f9 55%,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ucp-price-hero p{max-width:560px;margin:0 auto;color:#a0a8b8;font-size:1.05rem;line-height:1.55}
+.ucp-price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:8px 0 56px}
+@media(max-width:900px){.ucp-price-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+.ucp-tier{position:relative;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:28px 24px 24px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;min-height:100%}
+.ucp-tier.featured{border-color:rgba(129,140,248,.55);background:linear-gradient(180deg,rgba(99,102,241,.16),rgba(255,255,255,.03));box-shadow:0 0 0 1px rgba(129,140,248,.2),0 20px 50px rgba(0,0,0,.35)}
+.ucp-tier .badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#6366f1;color:#fff;padding:4px 12px;border-radius:999px;white-space:nowrap}
+.ucp-tier h2{font-size:1.15rem;font-weight:700;margin:0 0 6px}
+.ucp-tier .price{font-size:2.4rem;font-weight:800;letter-spacing:-.03em;margin:10px 0 4px;line-height:1}
+.ucp-tier .price span{font-size:.95rem;font-weight:500;color:#94a3b8}
+.ucp-tier .save{display:inline-block;margin:6px 0 12px;font-size:12px;font-weight:600;color:#67e8f9;background:rgba(103,232,249,.1);padding:3px 8px;border-radius:6px}
+.ucp-tier .blurb{color:#94a3b8;font-size:.92rem;line-height:1.5;margin:0 0 18px;min-height:2.8em}
+.ucp-tier ul{list-style:none;margin:0 0 22px;padding:0;flex:1}
+.ucp-tier li{position:relative;padding:7px 0 7px 26px;font-size:.9rem;color:#c8ced9;line-height:1.4}
+.ucp-tier li:before{content:"";position:absolute;left:0;top:11px;width:14px;height:14px;border-radius:50%;background:rgba(103,232,249,.15);box-shadow:inset 0 0 0 1.5px #67e8f9}
+.ucp-tier li:after{content:"";position:absolute;left:4px;top:14px;width:6px;height:3px;border-left:1.5px solid #67e8f9;border-bottom:1.5px solid #67e8f9;transform:rotate(-45deg)}
+.ucp-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 18px;border-radius:10px;font-weight:700;font-size:.95rem;transition:transform .15s,background .15s,border-color .15s}
+.ucp-btn:hover{transform:translateY(-1px)}
+.ucp-btn-pro{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none}
+.ucp-btn-ghost{background:transparent;color:#e8eaef;border:1px solid rgba(255,255,255,.18)}
+.ucp-btn-ghost:hover{border-color:rgba(255,255,255,.4)}
+.ucp-fair{padding:0 0 72px}
+.ucp-fair-card{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px 28px 24px;background:rgba(255,255,255,.03);max-width:820px;margin:0 auto}
+.ucp-fair-card h3{margin:0 0 10px;font-size:1.25rem;font-weight:750}
+.ucp-fair-card p{margin:0 0 14px;color:#94a3b8;line-height:1.55;font-size:.95rem}
+.ucp-fair-card ol{margin:0;padding-left:1.2em;color:#c8ced9;line-height:1.55;font-size:.95rem}
+.ucp-fair-card li{margin-bottom:8px}
+.ucp-fair-card strong{color:#e8eaef}
+.ucp-price-foot{text-align:center;padding:0 0 64px;color:#6b7280;font-size:.85rem}
+.ucp-price-foot a{color:#a5b4fc;text-decoration:underline}
+</style>
+<!-- ======================= UCP:EMBED-START =======================
+     Live delivery: paste [ultra_card_page id="pricing"] into a WPBakery
+     Text Block. The Website Harness fetches this fragment from the repo.
+     ================================================================ -->
+<div class="ucp-price" id="ucp-price">
+
+  <header class="ucp-price-hero">
+    <div class="wrap">
+      <h1>Pro that fits how you <span class="grad">actually pay.</span></h1>
+      <p>Free forever for the core builder. Go Pro for the flagship modules, cloud backups, and snapshots — monthly, yearly, or once for the life of Ultra Card.</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="ucp-price-grid">
+
+      <article class="ucp-tier">
+        <h2>Monthly</h2>
+        <div class="price">$4.99<span>/mo</span></div>
+        <p class="blurb">Maximum flexibility. Cancel anytime.</p>
+        <ul>
+          <li>All 28 Pro modules</li>
+          <li>Cloud backup &amp; sync</li>
+          <li>30-day snapshot history</li>
+          <li>Payments count toward Lifetime</li>
+        </ul>
+        <a class="ucp-btn ucp-btn-ghost" href="https://ultracard.io/product/ultra-card-pro/?attribute_billing-cycle=Monthly">Start monthly</a>
+      </article>
+
+      <article class="ucp-tier featured">
+        <span class="badge">Most popular</span>
+        <h2>Yearly</h2>
+        <div class="price">$45<span>/yr</span></div>
+        <span class="save">Save ~25% vs monthly</span>
+        <p class="blurb">One payment a year. Same Pro, less friction.</p>
+        <ul>
+          <li>Everything in Monthly</li>
+          <li>Best value for active dashboards</li>
+          <li>Prior payments credited to Lifetime</li>
+          <li>Cancel before renewal anytime</li>
+        </ul>
+        <a class="ucp-btn ucp-btn-pro" href="https://ultracard.io/product/ultra-card-pro/?attribute_billing-cycle=Yearly">Get yearly Pro</a>
+      </article>
+
+      <article class="ucp-tier">
+        <h2>Lifetime</h2>
+        <div class="price">$99<span> once</span></div>
+        <span class="save">For the life of Ultra Card</span>
+        <p class="blurb">Pay once. Own Pro as long as Ultra Card exists.</p>
+        <ul>
+          <li>Everything in Pro, forever*</li>
+          <li>Loyalty credit from prior payments</li>
+          <li>Auto-converts at $99 paid total</li>
+          <li>No renewals to manage</li>
+        </ul>
+        <a class="ucp-btn ucp-btn-ghost" href="https://ultracard.io/product/ultra-card-pro-lifetime/">Go Lifetime</a>
+      </article>
+
+    </div>
+  </div>
+
+  <section class="ucp-fair">
+    <div class="wrap">
+      <div class="ucp-fair-card">
+        <h3>Every payment counts</h3>
+        <p>If you’ve already been supporting Pro, Lifetime isn’t starting from zero.</p>
+        <ol>
+          <li><strong>Loyalty credit.</strong> Buy Lifetime for <strong>$99 minus what you’ve already paid</strong> (minimum $29 remaining). A $45 yearly subscriber pays $54; eleven monthly payments leave about $44 due.</li>
+          <li><strong>Auto Lifetime.</strong> When your cumulative Pro payments reach <strong>$99</strong>, your account converts to Lifetime and billing stops. No form to fill out.</li>
+          <li><strong>Early supporters.</strong> Anyone who has already paid <strong>$60+</strong> is grandfathered to Lifetime at launch.</li>
+        </ol>
+        <p style="margin-top:16px;margin-bottom:0">Log in, open your <a href="https://ultracard.io/dashboard/" style="color:#a5b4fc;text-decoration:underline">dashboard</a>, and you’ll see your personal Lifetime price.</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="ucp-price-foot wrap">
+    *Lifetime means for the life of the Ultra Card product — Pro features as long as Ultra Card is offered.
+    Free tier stays free. <a href="https://ultracard.io/modules/">Browse modules</a> ·
+    <a href="https://github.com/WJDDesigns/Ultra-Card">Install free via HACS</a>
+  </p>
+
+</div>
+<!-- ======================= UCP:EMBED-END ======================= -->
