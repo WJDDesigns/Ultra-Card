@@ -703,6 +703,7 @@ if (file_exists($runtime)) {
         var lifetimeBuyUrl = loyalty && (loyalty.checkout_url || loyalty.pro_page_url || loyalty.product_url);
         if (lifetimeBuyUrl && !loyalty.qualifies_auto) {
           var savings = Number(loyalty.credit || 0);
+          var planName = woo.billing_period === 'year' ? 'yearly' : (woo.billing_period === 'month' ? 'monthly' : 'current');
           html += '<div style="margin-top:16px;padding:16px 18px;border:1px solid rgba(165,180,252,.35);border-radius:12px;background:linear-gradient(135deg,rgba(99,102,241,.14),rgba(255,255,255,.03))">' +
             '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline">' +
               '<div style="font-weight:800;font-size:18px">Go Lifetime for $' + esc(String(loyalty.due)) + '</div>' +
@@ -710,7 +711,7 @@ if (file_exists($runtime)) {
             '</div>' +
             '<p class="ucp-hint" style="margin:8px 0 12px">' +
               (savings > 0
-                ? 'You\'ve paid $' + esc(String(loyalty.paid)) + ' toward Pro, so Lifetime is $' + esc(String(loyalty.price)) + ' minus that credit. One payment, then your ' + esc(String(woo.billing_period || 'current')) + ' plan is cancelled automatically — no more renewals.'
+                ? 'You\'ve paid $' + esc(String(loyalty.paid)) + ' toward Pro, so Lifetime is $' + esc(String(loyalty.price)) + ' minus that credit. One payment, then your ' + planName + ' plan is cancelled automatically — no more renewals.'
                 : 'One payment of $' + esc(String(loyalty.price)) + ' for Pro, for the life of Ultra Card. Every payment you make counts toward it.') +
             '</p>' +
             '<a class="ucp-btn ucp-btn-pro" href="' + esc(lifetimeBuyUrl) + '"><i class="mdi mdi-infinity"></i> Upgrade to Lifetime — $' + esc(String(loyalty.due)) + '</a></div>';
