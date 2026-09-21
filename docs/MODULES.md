@@ -1,8 +1,8 @@
 # Ultra Card module gallery
 
-_Generated from v3.12.0-beta1 on 2026-09-18 — do not edit by hand._
+_Generated from v3.12.0-beta2 on 2026-09-21 — do not edit by hand._
 
-**98 modules** · 67 free · 31 PRO
+**99 modules** · 68 free · 31 PRO
 
 ## content
 
@@ -12,6 +12,7 @@ _Generated from v3.12.0-beta1 on 2026-09-18 — do not edit by hand._
 <tr><td width="220"><img src="previews/animated_weather.png" width="200" alt="Animated Weather"></td><td><b>Animated Weather</b> · <sub>PRO</sub><br>Current weather display with animated icons</td></tr>
 <tr><td width="220"><img src="previews/badge_of_honor.png" width="200" alt="Badge of Honor"></td><td><b>Badge of Honor</b> · <sub>PRO</sub><br>Animated Pro membership badge with rotating text and gradient effects</td></tr>
 <tr><td width="220"><img src="previews/camera.png" width="200" alt="Camera"></td><td><b>Camera</b><br>Display live camera feeds with comprehensive control options</td></tr>
+<tr><td width="220"><img src="previews/camera_grid.png" width="200" alt="Camera Grid"></td><td><b>Camera Grid</b><br>NVR-style multi-camera grid with live tiles, logos, and flexible layouts</td></tr>
 <tr><td width="220"><img src="previews/clock.png" width="200" alt="Digital Clock"></td><td><b>Digital Clock</b><br>Clean digital clock with date, 12/24h formats, and timezone support</td></tr>
 <tr><td width="220"><img src="previews/gauge.png" width="200" alt="Gauge"></td><td><b>Gauge</b><br>Display sensor values as customizable gauges with various styles and pointer options</td></tr>
 <tr><td width="220"><img src="previews/lunar_phase.png" width="200" alt="Lunar Phase"></td><td><b>Lunar Phase</b> · <sub>PRO</sub><br>Animated lunar phase tracker with live moon data, month calendar, and horizon graph</td></tr>

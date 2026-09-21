@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-18T20:56:18.353Z",
-  "ultraCardVersion": "3.12.0-beta1",
+  "generatedAt": "2026-09-21T14:14:05.967Z",
+  "ultraCardVersion": "3.12.0-beta2",
   "counts": {
-    "total": 98,
-    "free": 67,
+    "total": 99,
+    "free": 68,
     "pro": 31
   },
   "modules": [
@@ -424,6 +424,24 @@
         "surveillance"
       ],
       "preview": "previews/camera.png",
+      "status": "ok"
+    },
+    {
+      "type": "camera_grid",
+      "title": "Camera Grid",
+      "description": "NVR-style multi-camera grid with live tiles, logos, and flexible layouts",
+      "category": "content",
+      "icon": "mdi:view-grid-outline",
+      "pro": false,
+      "tags": [
+        "camera",
+        "grid",
+        "security",
+        "nvr",
+        "surveillance",
+        "multiview"
+      ],
+      "preview": "previews/camera_grid.png",
       "status": "ok"
     },
     {
