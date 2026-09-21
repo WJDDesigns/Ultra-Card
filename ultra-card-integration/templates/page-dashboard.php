@@ -652,7 +652,7 @@ if (file_exists($runtime)) {
 
   function statusClass(st) {
     st = String(st || '').toLowerCase();
-    if (st === 'active' || st === 'completed' || st === 'processing') return 'ucp-badge-ok';
+    if (st === 'active' || st === 'completed' || st === 'processing' || st === 'lifetime') return 'ucp-badge-ok';
     if (st === 'on-hold' || st === 'pending' || st === 'pending-cancel') return 'ucp-badge-pend';
     if (st === 'cancelled' || st === 'expired' || st === 'failed' || st === 'refunded') return 'ucp-badge-bad';
     return 'ucp-badge-info';
@@ -670,14 +670,22 @@ if (file_exists($runtime)) {
       var woo = sub.woocommerce || null;
       var tier = (sub.tier || 'free').toLowerCase();
       var status = sub.status || 'inactive';
-      var title = tier === 'pro' ? 'Ultra Card Pro' : 'Ultra Card Free';
+      var isLifetime = !!(sub.lifetime || (woo && (woo.lifetime || woo.billing_period === 'lifetime' || woo.status === 'lifetime')));
+      var title = isLifetime ? 'Ultra Card Pro Lifetime' : (tier === 'pro' ? 'Ultra Card Pro' : 'Ultra Card Free');
+      var loyalty = sub.loyalty || null;
 
       var html = '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">' +
         '<div><div class="ucp-hint" style="margin-bottom:4px">Current plan</div>' +
         '<div style="font-size:26px;font-weight:800">' + esc(title) + '</div></div>' +
-        '<span class="ucp-badge ' + statusClass(status) + '">' + esc(status) + '</span></div>';
+        '<span class="ucp-badge ' + statusClass(isLifetime ? 'active' : status) + '">' + esc(isLifetime ? 'lifetime' : status) + '</span></div>';
 
-      if (woo) {
+      if (isLifetime) {
+        html += '<div class="ucp-sub-grid">' +
+          '<div class="ucp-sub-item"><div class="ucp-sub-item-label">Status</div><div class="ucp-sub-item-value"><span class="ucp-badge ucp-badge-ok">Lifetime</span></div></div>' +
+          '<div class="ucp-sub-item"><div class="ucp-sub-item-label">Billing</div><div class="ucp-sub-item-value">For the life of Ultra Card</div></div>' +
+          (woo && woo.start_date ? '<div class="ucp-sub-item"><div class="ucp-sub-item-label">Since</div><div class="ucp-sub-item-value">' + esc(fmtDate(woo.start_date)) + '</div></div>' : '') +
+          '</div><p class="ucp-hint" style="margin-top:14px">Thank you for being a Lifetime member. No renewals — Pro stays yours as long as Ultra Card exists.</p>';
+      } else if (woo) {
         var interval = woo.billing_interval && Number(woo.billing_interval) > 1
           ? (woo.billing_interval + ' ' + (woo.billing_period || 'month') + 's')
           : (woo.billing_period || 'month');
@@ -692,21 +700,32 @@ if (file_exists($runtime)) {
           (woo.subscription_id ? '<div class="ucp-sub-item"><div class="ucp-sub-item-label">Subscription ID</div><div class="ucp-sub-item-value">#' + esc(woo.subscription_id) + '</div></div>' : '') +
           (woo.trial_end ? '<div class="ucp-sub-item"><div class="ucp-sub-item-label">Trial ends</div><div class="ucp-sub-item-value">' + esc(fmtDate(woo.trial_end)) + '</div></div>' : '') +
           '</div>';
+        if (loyalty && loyalty.product_url && !loyalty.qualifies_auto) {
+          html += '<div style="margin-top:16px;padding:14px 16px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.03)">' +
+            '<div style="font-weight:700;margin-bottom:6px">Go Lifetime for $' + esc(String(loyalty.due)) + '</div>' +
+            '<p class="ucp-hint" style="margin:0 0 12px">You\'ve paid $' + esc(String(loyalty.paid)) + ' toward Pro. That credit applies at checkout (list price $' + esc(String(loyalty.price)) + '). Every payment counts — at $' + esc(String(loyalty.price)) + ' you convert automatically.</p>' +
+            '<a class="ucp-btn ucp-btn-pro" href="' + esc(loyalty.product_url) + '"><i class="mdi mdi-infinity"></i> Upgrade to Lifetime</a></div>';
+        }
       } else if (tier !== 'pro') {
         html += '<p class="ucp-hint" style="margin-top:14px">Upgrade to Pro for cloud backups, snapshots, Discord Pro role, and more.</p>' +
-          '<div style="margin-top:14px"><a class="ucp-btn ucp-btn-pro" href="https://ultracard.io/product/ultra-card-pro/"><i class="mdi mdi-star"></i> Get Ultra Card PRO</a></div>';
+          '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">' +
+          '<a class="ucp-btn ucp-btn-pro" href="https://ultracard.io/product/ultra-card-pro/"><i class="mdi mdi-star"></i> Get Ultra Card PRO</a>' +
+          '<a class="ucp-btn ucp-btn-ghost" href="https://ultracard.io/pricing/"><i class="mdi mdi-infinity"></i> See Lifetime</a></div>';
       } else {
         html += '<p class="ucp-hint" style="margin-top:14px">Pro access is active via role. No WooCommerce subscription record was found for invoice history.</p>';
+        if (loyalty && loyalty.product_url) {
+          html += '<div style="margin-top:14px"><a class="ucp-btn ucp-btn-pro" href="' + esc(loyalty.product_url) + '"><i class="mdi mdi-infinity"></i> Go Lifetime for $' + esc(String(loyalty.due)) + '</a></div>';
+        }
       }
       card.innerHTML = withFade(html);
 
       // Billing management actions (stay on-site via Woo account endpoints)
-      var manageUrl = woo && (woo.manage_subscription_url || woo.view_subscription_url);
+      var manageUrl = woo && !isLifetime && (woo.manage_subscription_url || woo.view_subscription_url);
       var payUrl = woo && woo.payment_methods_url;
       var billUrl = woo && woo.billing_address_url;
       var subsUrl = woo && woo.subscriptions_url;
       var ordersUrl = woo && woo.orders_url;
-      if (woo) {
+      if (woo && !isLifetime) {
         actions.hidden = false;
         actions.className = 'ucp-card ucp-billing-actions ucp-fade-in';
         actions.innerHTML = '<h3>Manage billing</h3><div class="ucp-billing-grid">' +
@@ -717,6 +736,12 @@ if (file_exists($runtime)) {
           (ordersUrl ? '<a class="ucp-btn ucp-btn-ghost" href="' + esc(ordersUrl) + '"><i class="mdi mdi-receipt"></i> Order history</a>' : '') +
           (manageUrl ? '<a class="ucp-btn ucp-btn-danger" href="' + esc(manageUrl) + '" onclick="return confirm(\'Open subscription page to cancel or change your plan?\');"><i class="mdi mdi-cancel"></i> Cancel / change plan</a>' : '') +
           '</div><p class="ucp-hint" style="margin-top:12px">Payment changes, cancellations, and renewals are handled securely through your WooCommerce customer account.</p>';
+      } else if (isLifetime && ordersUrl) {
+        actions.hidden = false;
+        actions.className = 'ucp-card ucp-billing-actions ucp-fade-in';
+        actions.innerHTML = '<h3>Billing</h3><div class="ucp-billing-grid">' +
+          '<a class="ucp-btn ucp-btn-ghost" href="' + esc(ordersUrl) + '"><i class="mdi mdi-receipt"></i> Order history</a></div>' +
+          '<p class="ucp-hint" style="margin-top:12px">No subscription to manage — Lifetime has no renewals.</p>';
       } else {
         actions.hidden = true;
         actions.innerHTML = '';

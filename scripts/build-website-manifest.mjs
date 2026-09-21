@@ -35,6 +35,13 @@ const PAGES = [
     needsDemoBundle: false,
     path: '/presets/',
   },
+  {
+    id: 'pricing',
+    file: 'pricing-page-embed.html',
+    title: 'Pricing',
+    needsDemoBundle: false,
+    path: '/pricing/',
+  },
 ];
 
 const pages = PAGES.map(p => {

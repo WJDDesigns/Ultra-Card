@@ -23,6 +23,8 @@ export interface WooSubscription {
   payment_method_title?: string;
   view_subscription_url?: string;
   subscription_id?: number;
+  lifetime?: boolean;
+  manage_subscription_url?: string;
 }
 
 export interface BillingInvoice {
