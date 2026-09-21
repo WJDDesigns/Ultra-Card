@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-21T23:01:12.876Z",
+  "generatedAt": "2026-09-21T23:05:51.495Z",
   "repo": "WJDDesigns/Ultra-Card",
   "demoBundle": "dist-demo/ultra-card-demo.js",
   "pages": [
@@ -36,8 +36,8 @@
       "title": "Pricing",
       "path": "/pricing/",
       "needsDemoBundle": false,
-      "bytes": 8100,
-      "sha256": "145f2783067c51bbaab06df9db1102adba0d542296b6aba151cf1543350c7a85"
+      "bytes": 8124,
+      "sha256": "6b7c127692ac280e1bf006f16e8d26a94de7f3e1dc2d360d02a8e253ebd44384"
     }
   ]
 }
