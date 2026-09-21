@@ -155,6 +155,36 @@ function sanitizeCameraModule(module: SmartModule, hass: SmartSanitizeHass, id: 
   });
 }
 
+function sanitizeCameraGridModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const fromTiles = Array.isArray(module.tiles) ? (module.tiles as SmartModule[]) : [];
+  const fromEntities = Array.isArray(module.entities) ? (module.entities as unknown[]) : [];
+  const rawIds = [
+    ...fromTiles.map(tile => String(tile?.entity || '')),
+    ...fromEntities.map(item => (typeof item === 'string' ? item : String((item as SmartModule)?.entity || ''))),
+    String(module.entity || ''),
+  ].filter(entityId => entityId.startsWith('camera.') && entityExists(hass, entityId));
+  const entityIds = [...new Set(rawIds)];
+  if (!entityIds.length) return null;
+  return {
+    id,
+    type: 'camera_grid',
+    layout: oneOf(module.layout, ['regular', 'auto_fit', 'masonry', 'spotlight', 'custom'] as const, 'regular'),
+    columns: numberInRange(module.columns, 1, 8, Math.min(2, entityIds.length)),
+    tiles: entityIds.slice(0, 12).map((entityId, index) => ({
+      id: `${id}-tile-${index}`,
+      type: 'camera',
+      entity: entityId,
+      name: entityName(hass, entityId),
+      view_mode: 'inherit',
+    })),
+    ...defaultDisplayActions(),
+  };
+}
+
 function entityAttributes(hass: SmartSanitizeHass, entityId: string): Record<string, unknown> {
   const state = (hass.states || {})[entityId] as { attributes?: Record<string, unknown> } | undefined;
   return state?.attributes || {};
@@ -1130,6 +1160,9 @@ export const supplementalSmartModuleHandlers = {
   camera: {
     sanitize: wrapSanitize(sanitizeCameraModule),
     defaultBuilder: createEntityDefaultBuilder('camera', { live_view: true }),
+  },
+  camera_grid: {
+    sanitize: wrapSanitize(sanitizeCameraGridModule),
   },
   spinbox: {
     sanitize: wrapSanitize(sanitizeSpinboxModule),

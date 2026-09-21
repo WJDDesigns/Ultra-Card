@@ -20,6 +20,12 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 import '../components/ultra-color-picker';
 
+/** Labels that are only spaces / Braille blanks should not take layout width. */
+export function isVisuallyBlankLabel(label: string | undefined | null): boolean {
+  if (label === undefined || label === null) return true;
+  return /^[\s\u2800]*$/.test(label);
+}
+
 /**
  * Unified-template keys the dropdown module reads: a top-level `options` array
  * (or a bare JSON array) of option objects plus an optional `display` object.
@@ -1935,7 +1941,20 @@ export class UltraDropdownModule extends BaseUltraModule {
       }
     }
 
+    const hideClosedTitle =
+      (displayLabel === undefined || displayLabel === '') &&
+      !shouldPrioritizeEntityDisplay &&
+      isVisuallyBlankLabel(closedTitleLabel) &&
+      !closedTitleIcon;
+
+    const triggerStyles = hideClosedTitle
+      ? `${dropdownStyles}; width: max-content; min-width: 0; padding: 8px 2px; gap: 0;`
+      : dropdownStyles;
+
     return this.wrapWithAnimation(html`
+      <style>
+        ${this.getStyles()}
+      </style>
       <div
         class="dropdown-module-container ${hoverEffectClass}"
         data-module-id="${dropdownModule.id}"
@@ -1949,9 +1968,9 @@ export class UltraDropdownModule extends BaseUltraModule {
           <div style="position: relative; width: 100%; z-index: 1;">
             <div class="custom-dropdown" style="position: relative;">
               <div
-                class="dropdown-selected"
+                class="dropdown-selected ${hideClosedTitle ? 'uc-blank-closed-title' : ''}"
                 data-uc-role="pane"
-                style="${dropdownStyles}"
+                style="${triggerStyles}"
                 tabindex="0"
                 role="combobox"
                 aria-haspopup="listbox"
@@ -2031,6 +2050,9 @@ export class UltraDropdownModule extends BaseUltraModule {
                       const iconToUse = closedTitleIcon;
                       const labelToUse = closedTitleLabel;
                       const iconColorToUse = closedTitleIconColor || 'var(--primary-color)';
+                      if (!iconToUse && isVisuallyBlankLabel(labelToUse)) {
+                        return '';
+                      }
                       return html`
                         ${iconToUse
                           ? html`<ha-icon
@@ -2038,7 +2060,9 @@ export class UltraDropdownModule extends BaseUltraModule {
                               style="color: ${iconColorToUse};"
                             ></ha-icon>`
                           : ''}
-                        <span>${labelToUse}</span>
+                        ${isVisuallyBlankLabel(labelToUse)
+                          ? ''
+                          : html`<span>${labelToUse}</span>`}
                       `;
                     }
                     
@@ -3671,6 +3695,28 @@ export class UltraDropdownModule extends BaseUltraModule {
       .dropdown-module-container[data-preview-context="live"] .dropdown-module-preview,
       .dropdown-module-container[data-preview-context="ha-preview"] .dropdown-module-preview {
         overflow: visible !important;
+      }
+
+      .dropdown-selection:empty {
+        display: none !important;
+      }
+
+      .dropdown-selected.uc-blank-closed-title {
+        width: max-content !important;
+        min-width: 0 !important;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+        gap: 0 !important;
+      }
+
+      .dropdown-selected.uc-blank-closed-title .dropdown-selection {
+        display: none !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        flex: 0 0 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
 
       .dropdown-selected {

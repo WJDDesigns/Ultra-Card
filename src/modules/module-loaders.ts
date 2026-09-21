@@ -63,6 +63,10 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-camera" */ './camera-module').then(
       m => new m.UltraCameraModule()
     ),
+  camera_grid: () =>
+    import(/* webpackChunkName: "m-camera-grid" */ './camera-grid-module').then(
+      m => new m.UltraCameraGridModule()
+    ),
   graphs: () =>
     import(/* webpackChunkName: "m-graphs" */ './graphs-module').then(
       m => new m.UltraGraphsModule()

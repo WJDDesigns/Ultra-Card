@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   resolveHorizontalMainAxisAlignment,
   shouldClusterOverlappingHorizontalChildren,
+  resolveHorizontalClusterGap,
 } from '../horizontal-module';
 import { getModuleRegistry } from '../module-registry';
 import { mockHass } from '../../editor/tabs/__tests__/layout-tab-harness';
@@ -46,6 +47,14 @@ describe('horizontal overlap clustering', () => {
     expect(shouldClusterOverlappingHorizontalChildren(-97)).toBe(true);
   });
 
+  it('zeros compensatory negative gap when clustering space-between', () => {
+    expect(resolveHorizontalClusterGap('space-between', -97)).toBe(0);
+    expect(resolveHorizontalClusterGap('space-around', -8)).toBe(0);
+    expect(resolveHorizontalClusterGap('center', -97)).toBe(-97);
+    expect(resolveHorizontalClusterGap('left', -11.4)).toBe(-11.4);
+    expect(resolveHorizontalClusterGap('space-between', 8)).toBe(8);
+  });
+
   it('renders overlap class and centered justify for the HVAC overlay pattern', async () => {
     const reg = getModuleRegistry();
     await Promise.all(['horizontal', 'text'].map(t => reg.ensureModuleLoaded(t)));
@@ -72,9 +81,12 @@ describe('horizontal overlap clustering', () => {
 
     expect(markup).toContain('justify-content: center');
     expect(markup).not.toMatch(/horizontal-preview-content[^>]*justify-content:\s*space-between/);
+    expect(markup).not.toMatch(/0 0 0 -97/);
     const styles = handler.getStyles?.() ?? '';
     expect(styles).toContain('.child-module-preview.uc-overlap-child');
     expect(styles).toContain('width: max-content');
+    expect(styles).toContain('.info-entity-item');
+    expect(styles).toContain('.dropdown-selected');
   });
 
   it('still spreads children when space-between has a positive gap', async () => {

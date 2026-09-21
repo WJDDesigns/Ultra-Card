@@ -161,6 +161,7 @@ export interface BaseModule {
     | 'markdown'
     | 'climate'
     | 'camera'
+    | 'camera_grid'
     | 'graphs'
     | 'dropdown'
     | 'light'
@@ -3122,6 +3123,77 @@ export interface CameraModule extends BaseModule {
   hover_background_color?: string | undefined;
 }
 
+export type CameraGridLayout = 'regular' | 'auto_fit' | 'masonry' | 'spotlight' | 'custom';
+export type CameraGridViewMode = 'auto' | 'live' | 'snapshot';
+export type CameraGridTileType = 'camera' | 'image' | 'text' | 'clock' | 'empty';
+export type CameraGridNamePosition =
+  | 'top-left'
+  | 'top-middle'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-middle'
+  | 'bottom-right'
+  | 'center';
+
+export interface CameraGridTile {
+  id: string;
+  type: CameraGridTileType;
+  entity?: string | undefined;
+  name?: string | undefined;
+  view_mode?: 'inherit' | CameraGridViewMode | undefined;
+  motion_entity?: string | undefined;
+  recording_entity?: string | undefined;
+  image_type?: 'upload' | 'url' | 'entity' | undefined;
+  image_url?: string | undefined;
+  image_entity?: string | undefined;
+  image_fit?: 'cover' | 'contain' | 'fill' | undefined;
+  text?: string | undefined;
+  clock_format?: '12h' | '24h' | undefined;
+  show_date?: boolean | undefined;
+  col_span?: number | undefined;
+  row_span?: number | undefined;
+  aspect_ratio?: number | undefined;
+  tap_action?: ModuleActionConfig | undefined;
+}
+
+export interface CameraGridModule extends BaseModule {
+  type: 'camera_grid';
+  tiles: CameraGridTile[];
+  layout?: CameraGridLayout | undefined;
+  columns?: number | undefined;
+  min_tile_width?: number | undefined;
+  gap?: number | undefined;
+  tile_aspect_ratio?: number | undefined;
+  tile_border_radius?: number | undefined;
+  spotlight_span?: number | undefined;
+  spotlight_position?: 'top-left' | 'top-right' | 'left' | 'right' | 'center' | undefined;
+  spotlight_tile_id?: string | undefined;
+  tap_to_spotlight?: boolean | undefined;
+  spotlight_cycle?: boolean | undefined;
+  spotlight_cycle_interval?: number | undefined;
+  motion_spotlight?: boolean | undefined;
+  motion_hold_seconds?: number | undefined;
+  motion_highlight_color?: string | undefined;
+  view_mode?: CameraGridViewMode | undefined;
+  refresh_interval?: number | undefined;
+  adaptive_streaming?: boolean | undefined;
+  image_fit?: 'cover' | 'contain' | 'fill' | undefined;
+  show_names?: boolean | undefined;
+  name_position?: CameraGridNamePosition | undefined;
+  show_status_badges?: boolean | undefined;
+  show_snapshot_time?: boolean | undefined;
+  fallback_image?: string | undefined;
+  tiles_per_page?: number | undefined;
+  pagination_style?: 'both' | 'dots' | 'arrows' | 'none' | undefined;
+  auto_page?: boolean | undefined;
+  auto_page_interval?: number | undefined;
+  tile_tap_action?: 'spotlight' | 'fullscreen' | 'more-info' | 'nothing' | undefined;
+  tile_hold_action?: 'fullscreen' | 'more-info' | 'nothing' | undefined;
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
 // Graph Entity Configuration
 export interface GraphEntityConfig {
   id: string;
@@ -5467,6 +5539,7 @@ export type CardModule =
   | SpinboxModule
   | MarkdownModule
   | CameraModule
+  | CameraGridModule
   | GraphsModule
   | DropdownModule
   | LightModule

@@ -256,6 +256,14 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.camera_name = 'Koala Cam';
     c.show_name = true;
   },
+  camera_grid: c => {
+    c.layout = 'regular';
+    c.columns = 2;
+    c.tiles = [
+      { id: 'demo_cg1', type: 'camera', entity: 'camera.outdoor', view_mode: 'inherit' },
+      { id: 'demo_cg2', type: 'camera', entity: 'camera.indoor', view_mode: 'inherit' },
+    ];
+  },
   graphs: c => {
     c.entities = [
       { id: 'demo_g1', entity: 'sensor.living_room_temperature', name: 'Living Room', color: '#29b6f6' },

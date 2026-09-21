@@ -69,6 +69,7 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'button-module.ts',
   'calendar-module.ts',
   'camera-module.ts',
+  'camera-grid-module.ts',
   'color-input-module.ts',
   'counter-input-module.ts',
   'cover-module.ts',

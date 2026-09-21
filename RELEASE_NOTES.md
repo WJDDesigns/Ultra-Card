@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.12.0-beta2
+
+This beta adds the Camera Grid module and finishes the overlay HVAC layout fix from beta1. Existing cards keep their YAML — the engine now clusters Off and the mode chevron without rewriting your row. It includes everything from beta1. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the Camera Grid module** - An NVR-style grid for several cameras in one module, with regular, auto-fit, masonry, spotlight and custom layouts. Tiles can be cameras, logos/images, text, a clock, or empty spacers. Adaptive streaming keeps large tiles live and the rest on snapshots. Tap to spotlight, hold for fullscreen, optional motion spotlight, status badges, and paging
+
+- **Added Hub Sections view width** - Home Assistant caps each Sections column at 500px, so a two-column view on a wide screen leaves empty space on both sides. Hub → Themes now has HA default, Full width, or a custom max column width, plus optional column gap / side padding. It is per browser, applies to every dashboard, and Masonry / Panel views are unchanged
+
+### 🔧 Improvements
+
+- **UniFi Protect-only UNVR and ENVR classify as NVRs** - Ubiquiti types those as "console" (the same bucket as UDM / Cloud Key), so a Protect-only UNVR was treated as a gateway and dropped as a duplicate UDM shell. Console-typed devices whose model is an NVR now classify as NVR, including ENVR variants and bare "NVR"
+
+### 🐛 Bug Fixes
+
+- **Fixed overlay HVAC Off/mode controls overlapping or hiding the chevron** - Cards that overlay a state label and a dropdown chevron on a gauge with `space-between` and a large negative gap were spreading on wide columns (3.10/3.11) then stacking as "Offv" after beta1. The engine now clusters those children and ignores the compensatory negative gap, so the chevron sits beside Off at every width. No change to the card YAML
+- **Fixed Braille-blank dropdown titles taking layout width** - A custom closed title of Braille blanks used to park a chevron next to a label was still occupying space, which shoved the chevron off the control. Visually empty titles collapse so only the chevron remains
+- **Fixed custom gauge value offsets jumping in 3.11.0** - Default centered gauges stay optically in the ring. Gauges with a custom y offset keep the 3.10 origin so overlay cards that were tuned around that shift do not jump
+
+---
+
 ## Version 3.12.0-beta1
 
 The first 3.12.0 beta lets Hub Themes stretch Home Assistant's Sections view past the 500px column cap, classifies Protect-only UNVR/ENVR gear as NVRs, and keeps overlay HVAC Off/mode controls from drifting apart when the card gets wider. This is a pre-release for testing — please report anything odd on GitHub or Discord.

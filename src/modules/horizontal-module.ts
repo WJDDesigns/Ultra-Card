@@ -55,6 +55,23 @@ export function shouldClusterOverlappingHorizontalChildren(gapValue: number): bo
   return gapValue < 0;
 }
 
+/**
+ * space-between + a negative gap is a compensatory hack: the negative gap
+ * pulls together items that space-between just pushed apart. Once we cluster
+ * those children, applying the same negative gap stacks the chevron on the
+ * label. Treat the overlap as 0 in that case; real overlay rows that chose
+ * left/center/right keep their negative gap.
+ */
+export function resolveHorizontalClusterGap(
+  alignment: string | undefined,
+  gapValue: number
+): number {
+  if (gapValue < 0 && (alignment === 'space-between' || alignment === 'space-around')) {
+    return 0;
+  }
+  return gapValue;
+}
+
 const horizontalSettings = createLazySettings(
   () => import(/* webpackChunkName: "core-settings" */ './settings/horizontal-module-settings'),
   'horizontal settings'
@@ -160,11 +177,10 @@ export class UltraHorizontalModule extends BaseUltraModule {
           ? 8
           : 0.7;
     // Only use alignment if user explicitly sets it - let flexbox work naturally
-    const horizontalAlign = resolveHorizontalMainAxisAlignment(
-      horizontalModule.alignment,
-      gapValue
-    );
+    const rawAlign = horizontalModule.alignment;
+    const horizontalAlign = resolveHorizontalMainAxisAlignment(rawAlign, gapValue);
     const clusterOverlappingChildren = shouldClusterOverlappingHorizontalChildren(gapValue);
+    const layoutGap = resolveHorizontalClusterGap(rawAlign, gapValue);
 
     // Width: only set if user explicitly controls it, otherwise let flexbox handle sizing naturally
     // Default behavior: fill container (100% width) like WPBakery columns
@@ -419,8 +435,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
                     cm => cm.id || cm.type,
                     (childModule, index) => {
                       const childMargin =
-                        gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}${gapUnit}` : '0';
-                      const isNegativeGap = gapValue < 0;
+                        layoutGap < 0 && index > 0 ? `0 0 0 ${layoutGap}${gapUnit}` : '0';
+                      const isNegativeGap = layoutGap < 0;
 
                       const layoutShouldGrow =
                         !clusterOverlappingChildren && horizontalModule.alignment === 'justify';
@@ -1293,11 +1309,32 @@ export class UltraHorizontalModule extends BaseUltraModule {
         flex: 0 0 auto;
         width: max-content;
         max-width: 100%;
+        min-width: 0;
       }
 
       .child-module-preview.uc-overlap-child > *:not(style) {
         width: max-content !important;
         max-width: 100% !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* Info/dropdown roots also force width:100% on nested wrappers. Pierce
+         those so Off and the mode chevron sit on their content boxes. */
+      .child-module-preview.uc-overlap-child .info-module-container,
+      .child-module-preview.uc-overlap-child .info-module-preview,
+      .child-module-preview.uc-overlap-child .info-entities,
+      .child-module-preview.uc-overlap-child .info-entity-item,
+      .child-module-preview.uc-overlap-child .info-entity-clickable,
+      .child-module-preview.uc-overlap-child .entity-content,
+      .child-module-preview.uc-overlap-child .dropdown-module-container,
+      .child-module-preview.uc-overlap-child .dropdown-module-preview,
+      .child-module-preview.uc-overlap-child .custom-dropdown,
+      .child-module-preview.uc-overlap-child .dropdown-selected {
+        width: max-content !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        flex: 0 0 auto !important;
       }
 
       /* Legacy hover effects removed - now handled by new hover effects system */

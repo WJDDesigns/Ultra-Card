@@ -52,6 +52,7 @@ const EMPTY_GENERAL_TAB = new Set([
   // First controls are ultra-segmented / ultra-color-picker custom elements
   // without a directly-interactable primitive control in the test stubs.
   'drawer',
+  'camera_grid',
   // Pro-gated general tabs. `mockHass` has no Ultra Card Connect sensor, so these
   // render the upgrade lock card, which intentionally has no config controls.
   'boiler',

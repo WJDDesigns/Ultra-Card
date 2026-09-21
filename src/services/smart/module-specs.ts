@@ -43,6 +43,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   gauge: ['fuel', 'tank', 'meter', 'percentage'],
   bar: ['progress bar', 'percentage bar', 'progress'],
   camera: ['live feed', 'surveillance', 'security camera'],
+  camera_grid: ['camera grid', 'nvr', 'multiview', 'camera wall', 'cctv grid'],
   image: ['picture', 'photo'],
   qr_code: ['qr', 'qrcode', 'wifi code'],
   dog_duty: ['dog duty', 'dog poop', 'yard camera', 'pet waste', 'dog map'],
@@ -206,6 +207,10 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
   camera: {
     purpose: 'Live camera feed from a camera entity.',
     fields: ['entity', 'name', 'live_view'],
+  },
+  camera_grid: {
+    purpose: 'NVR-style grid of several camera feeds in one module.',
+    fields: ['tiles', 'layout', 'columns'],
   },
   calendar: {
     purpose: 'Upcoming calendar events from calendar entities.',
@@ -513,6 +518,7 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   climate: ['climate'],
   media_player: ['media_player'],
   camera: ['camera'],
+  camera_grid: ['camera'],
   image: ['camera', '*'],
   vacuum: ['vacuum'],
   people: ['person', 'device_tracker'],
