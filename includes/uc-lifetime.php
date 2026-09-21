@@ -147,7 +147,7 @@ class UltraCardLifetime {
     }
 
     public function cart_has_lifetime() {
-        if (!function_exists('WC') || !WC() || empty(WC()->cart)) {
+        if (!did_action('wp_loaded') || !function_exists('WC') || !WC() || empty(WC()->cart)) {
             return false;
         }
         $cart = WC()->cart;
