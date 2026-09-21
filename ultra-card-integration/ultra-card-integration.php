@@ -3,7 +3,7 @@
  * Plugin Name: Ultra Card Integration
  * Plugin URI: https://ultracard.io
  * Description: Complete Ultra Card integration for WordPress - includes cloud sync functionality and Directories Pro dashboard panels for managing favorites, colors, and reviews.
- * Version: 1.3.51
+ * Version: 1.3.52
  * Author: WJD Designs
  * Author URI: https://wjddesigns.com
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('ULTRA_CARD_INTEGRATION_VERSION', '1.3.51');
+define('ULTRA_CARD_INTEGRATION_VERSION', '1.3.52');
 define('ULTRA_CARD_INTEGRATION_PLUGIN_FILE', __FILE__);
 define('ULTRA_CARD_INTEGRATION_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ULTRA_CARD_INTEGRATION_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -5699,7 +5699,7 @@ class UltraCardDashboardIntegration {
                                         <i class="fas fa-credit-card"></i> Update Payment Method
                                     </a>
                                 <?php elseif ($wc_subscription['status'] === 'cancelled' || $wc_subscription['status'] === 'expired'): ?>
-                                    <a href="https://ultracard.io/product/ultra-card-pro/" class="ucp-btn ucp-btn-primary" style="display: inline-block; text-align: center;">
+                                    <a href="https://ultracard.io/pricing/" class="ucp-btn ucp-btn-primary" style="display: inline-block; text-align: center;">
                                         <i class="fas fa-redo"></i> Resubscribe to Pro
                                     </a>
                                 <?php endif; ?>
@@ -5722,10 +5722,10 @@ class UltraCardDashboardIntegration {
                     <div class="ucp-subscription-card" style="text-align: center; padding: 40px;">
                         <h3>No Active Subscription</h3>
                         <p>Upgrade to Ultra Card Pro to unlock premium features!</p>
-                        <a href="https://ultracard.io/product/ultra-card-pro/" class="ucp-btn ucp-btn-primary" target="_blank">
-                            <i class="fas fa-star"></i> Subscribe to Pro - $4.99/month
+                        <a href="https://ultracard.io/pricing/" class="ucp-btn ucp-btn-primary" target="_blank">
+                            <i class="fas fa-star"></i> See plans &amp; pricing
                         </a>
-                        <p style="margin-top:12px"><a href="https://ultracard.io/pricing/">Or go Lifetime for $99</a></p>
+                        <p style="margin-top:12px; color:#666; font-size:14px;">Monthly $4.99 · Yearly $45 · Lifetime $99 once</p>
                     </div>
                 <?php endif; ?>
             <?php endif; ?>

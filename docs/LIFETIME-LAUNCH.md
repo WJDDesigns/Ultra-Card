@@ -4,20 +4,35 @@ Code + product + pricing shortcode are in place. Finish these after uploading th
 
 ## 1. Upload plugin (required)
 
-Upload `ultra-card-integration.zip` (v1.3.50) via **Plugins → Add New → Upload Plugin → Replace**.
+Upload `ultra-card-integration.zip` (v1.3.52) via **Plugins → Add New → Upload Plugin → Replace**.
 
 This enables:
 - `[ultra_card_page id="pricing"]` on `/pricing/`
-- Loyalty credit at checkout
-- Auto-flip at $99 cumulative paid
-- Lifetime revoke guard
+- **Lifetime** in the Billing Cycle dropdown on `/product/ultra-card-pro/` (Monthly / Yearly / Lifetime on one page)
+- Loyalty credit at checkout, with an explanatory note in the order summary
+- Guest-friendly Lifetime checkout: account is created from the email (no guest orders, so the grant always has a user)
+- Auto-flip at $99 cumulative paid, Lifetime revoke guard
+- Order-received page + customer email confirm Lifetime and that any subscription was cancelled
+- Readable checkout summary (Impreza was rendering dark text on the dark "Your order" box)
+- **Pricing** added to the header menu (before FAQs); header **Get Ultra Card PRO** button goes to `/pricing/`
 - **Ultra Card → Lifetime** admin screen
 
 ## 2. Confirm product
 
-Product already created: **ID 11702** — https://ultracard.io/product/ultra-card-pro-lifetime/
+Product already created: **ID 11702**. Its own page now 302-redirects to `/product/ultra-card-pro/?attribute_billing-cycle=Lifetime` and it is hidden from shop/search listings — the Pro page dropdown is the single storefront.
 
 In **Ultra Card → Lifetime**, click **Create / repair Lifetime product** once if the option ID is empty after upload (should already be `ultra_card_lifetime_product_id=11702`).
+
+### The journey (what to click-test after upload)
+
+| Who | Path | Expect |
+|-----|------|--------|
+| New visitor | Header **Get Ultra Card PRO** → `/pricing/` → **Go Lifetime** → Pro page with Lifetime selected → **Go Lifetime** → checkout | "$99 once", note "Already a Pro subscriber? Log in…", account created from email, order-received shows "You're Lifetime" |
+| Monthly / Yearly subscriber (logged in) | Dashboard → **Upgrade to Lifetime — $54** (or pricing → Go Lifetime) → checkout | Summary: Lifetime $99, **Loyalty credit −$45**, total $54; after payment the subscription is cancelled automatically and the dashboard shows Lifetime |
+| Subscriber not logged in | Same as new visitor, then **Click here to login** at checkout | Total recalculates to their personal price |
+| Already Lifetime | Any Lifetime CTA | Item is removed with a notice; checkout blocked |
+
+Optional manual polish (theme content, not plugin): the Pro product long description still says "subscribe for $4.99/month" in *Step 1* — edit the product text to "from $4.99/month, or $99 once for Lifetime".
 
 ## 3. Grandfather
 

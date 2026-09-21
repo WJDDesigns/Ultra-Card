@@ -100,7 +100,7 @@ body.admin-bar .ucp{ --ucp-header-offset: 128px; }
 
       <div class="ucp-hero-ctas">
         <a class="ucp-btn ucp-btn-ghost" href="https://github.com/WJDDesigns/Ultra-Card" target="_blank" rel="noopener"><i class="mdi mdi-github"></i> Get Ultra Card free</a>
-        <a class="ucp-btn ucp-btn-pro" href="https://ultracard.io/product/ultra-card-pro/"><i class="mdi mdi-star"></i> Get Ultra Card PRO</a>
+        <a class="ucp-btn ucp-btn-pro" href="https://ultracard.io/pricing/"><i class="mdi mdi-star"></i> Get Ultra Card PRO</a>
       </div>
     </div>
   </header>

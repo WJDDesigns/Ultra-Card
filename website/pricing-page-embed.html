@@ -5,6 +5,8 @@
 .page-id-31 .l-main{background:#0e1015}
 .ucp-price *{box-sizing:border-box}
 .ucp-price a{text-decoration:none;color:inherit}
+/* theme headings default to near-black; force light text inside the pricing block */
+.ucp-price h1,.ucp-price h2,.ucp-price h3,.ucp-price h4{color:#f4f6fb;font-family:inherit}
 .ucp-price .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
 .ucp-price-hero{position:relative;padding:72px 0 48px;text-align:center;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(99,102,241,.28),transparent 60%),#0e1015}
 .ucp-price-hero h1{font-size:clamp(2rem,4.5vw,3.25rem);font-weight:800;letter-spacing:-.03em;margin:0 0 14px;line-height:1.15}
@@ -36,6 +38,19 @@
 .ucp-fair-card ol{margin:0;padding-left:1.2em;color:#c8ced9;line-height:1.55;font-size:.95rem}
 .ucp-fair-card li{margin-bottom:8px}
 .ucp-fair-card strong{color:#e8eaef}
+.ucp-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:820px;margin:28px auto 0}
+@media(max-width:760px){.ucp-steps{grid-template-columns:1fr}}
+.ucp-step{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px 18px;background:rgba(255,255,255,.02)}
+.ucp-step .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#6366f1;color:#fff;font-size:13px;font-weight:700;margin-bottom:10px}
+.ucp-step h4{margin:0 0 6px;font-size:1rem;font-weight:700}
+.ucp-step p{margin:0;color:#94a3b8;font-size:.9rem;line-height:1.5}
+.ucp-faq{max-width:820px;margin:28px auto 0}
+.ucp-faq details{border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.02);margin-bottom:10px;padding:0 18px}
+.ucp-faq summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:600;color:#e8eaef;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ucp-faq summary::-webkit-details-marker{display:none}
+.ucp-faq summary:after{content:"+";color:#a5b4fc;font-size:1.2rem;line-height:1;flex:none}
+.ucp-faq details[open] summary:after{content:"–"}
+.ucp-faq details p{margin:0 0 16px;color:#94a3b8;line-height:1.55;font-size:.92rem}
 .ucp-price-foot{text-align:center;padding:0 0 64px;color:#6b7280;font-size:.85rem}
 .ucp-price-foot a{color:#a5b4fc;text-decoration:underline}
 </style>
@@ -60,7 +75,7 @@
         <div class="price">$4.99<span>/mo</span></div>
         <p class="blurb">Maximum flexibility. Cancel anytime.</p>
         <ul>
-          <li>All 28 Pro modules</li>
+          <li>Every Pro module</li>
           <li>Cloud backup &amp; sync</li>
           <li>30-day snapshot history</li>
           <li>Payments count toward Lifetime</li>
@@ -110,7 +125,20 @@
           <li><strong>Auto Lifetime.</strong> When your cumulative Pro payments reach <strong>$99</strong>, your account converts to Lifetime and billing stops. No form to fill out.</li>
           <li><strong>Early supporters.</strong> Anyone who has already paid <strong>$60+</strong> is grandfathered to Lifetime at launch.</li>
         </ol>
-        <p style="margin-top:16px;margin-bottom:0">Log in, open your <a href="https://ultracard.io/dashboard/" style="color:#a5b4fc;text-decoration:underline">dashboard</a>, and you’ll see your personal Lifetime price.</p>
+        <p style="margin-top:16px;margin-bottom:0">Log in, open your <a href="https://ultracard.io/dashboard/" style="color:#a5b4fc;text-decoration:underline">dashboard</a>, and you’ll see your personal Lifetime price. Already subscribed? Your credit is applied automatically at checkout when you’re logged in.</p>
+      </div>
+
+      <div class="ucp-steps">
+        <div class="ucp-step"><span class="n">1</span><h4>Pick a plan</h4><p>Monthly, Yearly or Lifetime. Same Pro features on every plan.</p></div>
+        <div class="ucp-step"><span class="n">2</span><h4>Check out</h4><p>Pay by card or PayPal. New here? Your ultracard.io account is created from your email.</p></div>
+        <div class="ucp-step"><span class="n">3</span><h4>Connect Home Assistant</h4><p>Install <strong>Ultra Card Pro Cloud</strong> from HACS, sign in once, and Pro unlocks on every device.</p></div>
+      </div>
+
+      <div class="ucp-faq">
+        <details><summary>I’m on Monthly or Yearly. What do I pay for Lifetime?</summary><p>$99 minus everything you’ve already paid, with a $29 minimum. Your current plan is cancelled automatically the moment the Lifetime order completes, so you’re never billed twice.</p></details>
+        <details><summary>Do I need to do anything to get the credit?</summary><p>No. Log in with your ultracard.io account and the credit shows up as a line on the checkout page.</p></details>
+        <details><summary>What does “for the life of Ultra Card” mean?</summary><p>Pro features for as long as Ultra Card is offered, with no renewals or price changes for you.</p></details>
+        <details><summary>Can I cancel Monthly or Yearly?</summary><p>Anytime, from your dashboard. You keep Pro until the end of the period you paid for, and every payment still counts toward Lifetime if you come back.</p></details>
       </div>
     </div>
   </section>

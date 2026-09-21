@@ -700,21 +700,33 @@ if (file_exists($runtime)) {
           (woo.subscription_id ? '<div class="ucp-sub-item"><div class="ucp-sub-item-label">Subscription ID</div><div class="ucp-sub-item-value">#' + esc(woo.subscription_id) + '</div></div>' : '') +
           (woo.trial_end ? '<div class="ucp-sub-item"><div class="ucp-sub-item-label">Trial ends</div><div class="ucp-sub-item-value">' + esc(fmtDate(woo.trial_end)) + '</div></div>' : '') +
           '</div>';
-        if (loyalty && loyalty.product_url && !loyalty.qualifies_auto) {
-          html += '<div style="margin-top:16px;padding:14px 16px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.03)">' +
-            '<div style="font-weight:700;margin-bottom:6px">Go Lifetime for $' + esc(String(loyalty.due)) + '</div>' +
-            '<p class="ucp-hint" style="margin:0 0 12px">You\'ve paid $' + esc(String(loyalty.paid)) + ' toward Pro. That credit applies at checkout (list price $' + esc(String(loyalty.price)) + '). Every payment counts — at $' + esc(String(loyalty.price)) + ' you convert automatically.</p>' +
-            '<a class="ucp-btn ucp-btn-pro" href="' + esc(loyalty.product_url) + '"><i class="mdi mdi-infinity"></i> Upgrade to Lifetime</a></div>';
+        var lifetimeBuyUrl = loyalty && (loyalty.checkout_url || loyalty.pro_page_url || loyalty.product_url);
+        if (lifetimeBuyUrl && !loyalty.qualifies_auto) {
+          var savings = Number(loyalty.credit || 0);
+          html += '<div style="margin-top:16px;padding:16px 18px;border:1px solid rgba(165,180,252,.35);border-radius:12px;background:linear-gradient(135deg,rgba(99,102,241,.14),rgba(255,255,255,.03))">' +
+            '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline">' +
+              '<div style="font-weight:800;font-size:18px">Go Lifetime for $' + esc(String(loyalty.due)) + '</div>' +
+              (savings > 0 ? '<span class="ucp-badge ucp-badge-ok">$' + esc(String(savings)) + ' loyalty credit</span>' : '') +
+            '</div>' +
+            '<p class="ucp-hint" style="margin:8px 0 12px">' +
+              (savings > 0
+                ? 'You\'ve paid $' + esc(String(loyalty.paid)) + ' toward Pro, so Lifetime is $' + esc(String(loyalty.price)) + ' minus that credit. One payment, then your ' + esc(String(woo.billing_period || 'current')) + ' plan is cancelled automatically — no more renewals.'
+                : 'One payment of $' + esc(String(loyalty.price)) + ' for Pro, for the life of Ultra Card. Every payment you make counts toward it.') +
+            '</p>' +
+            '<a class="ucp-btn ucp-btn-pro" href="' + esc(lifetimeBuyUrl) + '"><i class="mdi mdi-infinity"></i> Upgrade to Lifetime — $' + esc(String(loyalty.due)) + '</a></div>';
         }
       } else if (tier !== 'pro') {
-        html += '<p class="ucp-hint" style="margin-top:14px">Upgrade to Pro for cloud backups, snapshots, Discord Pro role, and more.</p>' +
+        var freeLifetimeUrl = loyalty && (loyalty.checkout_url || loyalty.pro_page_url || loyalty.product_url);
+        html += '<p class="ucp-hint" style="margin-top:14px">Upgrade to Pro for every Pro module, cloud backups, snapshots, the Discord Pro role, and priority support. Monthly, yearly, or once for the life of Ultra Card.</p>' +
           '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">' +
-          '<a class="ucp-btn ucp-btn-pro" href="https://ultracard.io/product/ultra-card-pro/"><i class="mdi mdi-star"></i> Get Ultra Card PRO</a>' +
-          '<a class="ucp-btn ucp-btn-ghost" href="https://ultracard.io/pricing/"><i class="mdi mdi-infinity"></i> See Lifetime</a></div>';
+          '<a class="ucp-btn ucp-btn-pro" href="' + esc((loyalty && loyalty.pricing_url) || 'https://ultracard.io/pricing/') + '"><i class="mdi mdi-star"></i> See plans &amp; pricing</a>' +
+          (freeLifetimeUrl ? '<a class="ucp-btn ucp-btn-ghost" href="' + esc(freeLifetimeUrl) + '"><i class="mdi mdi-infinity"></i> Go Lifetime — $' + esc(String(loyalty.due)) + '</a>' : '') +
+          '</div>';
       } else {
         html += '<p class="ucp-hint" style="margin-top:14px">Pro access is active via role. No WooCommerce subscription record was found for invoice history.</p>';
-        if (loyalty && loyalty.product_url) {
-          html += '<div style="margin-top:14px"><a class="ucp-btn ucp-btn-pro" href="' + esc(loyalty.product_url) + '"><i class="mdi mdi-infinity"></i> Go Lifetime for $' + esc(String(loyalty.due)) + '</a></div>';
+        var roleLifetimeUrl = loyalty && (loyalty.checkout_url || loyalty.pro_page_url || loyalty.product_url);
+        if (roleLifetimeUrl) {
+          html += '<div style="margin-top:14px"><a class="ucp-btn ucp-btn-pro" href="' + esc(roleLifetimeUrl) + '"><i class="mdi mdi-infinity"></i> Go Lifetime for $' + esc(String(loyalty.due)) + '</a></div>';
         }
       }
       card.innerHTML = withFade(html);

@@ -60,6 +60,338 @@ class UltraCardLifetime {
 
         // Inject Lifetime into the Pro variable product Billing Cycle dropdown.
         add_action('wp_enqueue_scripts', array($this, 'enqueue_pro_billing_cycle_script'), 30);
+
+        // One product page for all three plans: /product/ultra-card-pro-lifetime/
+        // deep-links to the Pro page with Lifetime preselected.
+        add_action('template_redirect', array($this, 'redirect_lifetime_product_page'));
+
+        // Lifetime is a simple product, so WooCommerce would allow guest checkout.
+        // A guest order has no user to grant, so force an account (same as WC
+        // Subscriptions does for Monthly / Yearly) whenever Lifetime is in the cart.
+        add_filter('pre_option_woocommerce_enable_guest_checkout', array($this, 'force_registration_option_no'));
+        add_filter('pre_option_woocommerce_enable_signup_and_login_from_checkout', array($this, 'force_registration_option_yes'));
+        add_filter('pre_option_woocommerce_enable_checkout_login_reminder', array($this, 'force_registration_option_yes'));
+        add_action('woocommerce_check_cart_items', array($this, 'check_cart_for_existing_lifetime'));
+        add_action('woocommerce_checkout_before_order_review', array($this, 'render_checkout_lifetime_note'), 5);
+        add_action('woocommerce_after_checkout_validation', array($this, 'validate_checkout_lifetime'), 10, 2);
+
+        // Post-purchase: confirmation box + email note.
+        add_action('woocommerce_thankyou', array($this, 'render_thankyou_lifetime'), 4);
+        add_action('woocommerce_email_before_order_table', array($this, 'email_lifetime_note'), 10, 4);
+
+        // Storefront polish: readable checkout summary, Pricing in the header
+        // menu, header "Get Ultra Card PRO" button to /pricing/.
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_storefront_polish'), 40);
+        add_filter('wp_nav_menu_objects', array($this, 'inject_pricing_menu_item'), 10, 2);
+    }
+
+    // ------------------------------------------------------------------
+    // Storefront journey
+    // ------------------------------------------------------------------
+
+    /**
+     * URL of the Pro variable product page (Monthly / Yearly / Lifetime dropdown).
+     */
+    public function get_pro_page_url($plan = '') {
+        $url = home_url('/product/ultra-card-pro/');
+        $page = get_page_by_path('ultra-card-pro', OBJECT, 'product');
+        if ($page) {
+            $permalink = get_permalink($page->ID);
+            if ($permalink) {
+                $url = $permalink;
+            }
+        }
+        if ($plan) {
+            $url = add_query_arg('attribute_billing-cycle', $plan, $url);
+        }
+        return $url;
+    }
+
+    /**
+     * One-click "buy Lifetime" URL: adds the product and lands on checkout,
+     * where loyalty credit is applied and an account is created if needed.
+     */
+    public function get_checkout_url() {
+        $id = $this->get_product_id();
+        if (!$id) {
+            return $this->get_pro_page_url('Lifetime');
+        }
+        $checkout = function_exists('wc_get_checkout_url') ? wc_get_checkout_url() : home_url('/checkout/');
+        return add_query_arg('add-to-cart', $id, $checkout);
+    }
+
+    public function get_pricing_url() {
+        $page = get_page_by_path('pricing', OBJECT, 'page');
+        if ($page) {
+            $permalink = get_permalink($page->ID);
+            if ($permalink) {
+                return $permalink;
+            }
+        }
+        return home_url('/pricing/');
+    }
+
+    public function redirect_lifetime_product_page() {
+        if (is_admin() || !function_exists('is_product') || !is_product()) {
+            return;
+        }
+        $id = get_queried_object_id();
+        if (!$id || !$this->is_lifetime_product($id)) {
+            return;
+        }
+        if (!apply_filters('ultra_card_lifetime_redirect_product_page', true)) {
+            return;
+        }
+        wp_safe_redirect($this->get_pro_page_url('Lifetime'), 302);
+        exit;
+    }
+
+    public function cart_has_lifetime() {
+        if (!function_exists('WC') || !WC() || empty(WC()->cart)) {
+            return false;
+        }
+        $cart = WC()->cart;
+        if (!method_exists($cart, 'get_cart')) {
+            return false;
+        }
+        foreach ($cart->get_cart() as $item) {
+            $pid = isset($item['product_id']) ? $item['product_id'] : 0;
+            if ($this->is_lifetime_product($pid)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function force_registration_option_no($pre) {
+        if (is_admin() && !defined('DOING_AJAX')) {
+            return $pre;
+        }
+        return $this->cart_has_lifetime() ? 'no' : $pre;
+    }
+
+    public function force_registration_option_yes($pre) {
+        if (is_admin() && !defined('DOING_AJAX')) {
+            return $pre;
+        }
+        return $this->cart_has_lifetime() ? 'yes' : $pre;
+    }
+
+    /**
+     * Runs on cart + checkout render: a guest who added Lifetime and then
+     * logged into an account that already has it must not pay again.
+     */
+    public function check_cart_for_existing_lifetime() {
+        if (!is_user_logged_in() || !$this->cart_has_lifetime()) {
+            return;
+        }
+        if ($this->user_has_lifetime(get_current_user_id())) {
+            wc_add_notice(__('You already have Ultra Card Pro Lifetime, so it was removed from your cart.', 'ultra-card-integration'), 'notice');
+            foreach (WC()->cart->get_cart() as $key => $item) {
+                if ($this->is_lifetime_product(isset($item['product_id']) ? $item['product_id'] : 0)) {
+                    WC()->cart->remove_cart_item($key);
+                }
+            }
+        }
+    }
+
+    public function validate_checkout_lifetime($data, $errors) {
+        if (!$this->cart_has_lifetime()) {
+            return;
+        }
+        if (is_user_logged_in() && $this->user_has_lifetime(get_current_user_id())) {
+            $errors->add('ultra_card_lifetime', __('You already have Ultra Card Pro Lifetime.', 'ultra-card-integration'));
+        }
+    }
+
+    /**
+     * Order-received page: confirm Lifetime and explain what happened to
+     * any monthly / yearly subscription.
+     */
+    public function render_thankyou_lifetime($order_id) {
+        $order = wc_get_order($order_id);
+        if (!$order || !$this->order_contains_lifetime($order)) {
+            return;
+        }
+        $granted = (bool) $order->get_meta('_ultra_card_lifetime_granted');
+        $dashboard = home_url('/dashboard/');
+        $paid_statuses = array('processing', 'completed');
+        $is_paid = $order->has_status($paid_statuses);
+
+        echo '<div class="uc-lifetime-thankyou" style="margin:0 0 28px;padding:24px 26px;border-radius:16px;background:linear-gradient(135deg,#1c1f3a,#2b1f4d);color:#eef0f6;border:1px solid rgba(165,180,252,.35)">';
+        echo '<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a5b4fc;font-weight:700;margin-bottom:6px">Ultra Card Pro</div>';
+        if ($granted || $is_paid) {
+            echo '<h2 style="margin:0 0 10px;font-size:26px;color:#fff">You&rsquo;re Lifetime.</h2>';
+            echo '<p style="margin:0 0 8px;color:#d6dbea;line-height:1.55">Ultra Card Pro is yours for the life of Ultra Card. Every Pro module, cloud backups, snapshots and priority support &mdash; with no renewals to manage.</p>';
+            echo '<p style="margin:0 0 16px;color:#d6dbea;line-height:1.55">If you had a monthly or yearly Pro subscription it has been cancelled automatically, so you will not be billed again. Your Home Assistant card picks up Lifetime the next time it syncs (or click <em>Refresh</em> in the Account tab).</p>';
+        } else {
+            echo '<h2 style="margin:0 0 10px;font-size:26px;color:#fff">Almost there.</h2>';
+            echo '<p style="margin:0 0 16px;color:#d6dbea;line-height:1.55">Lifetime activates automatically the moment your payment is confirmed. Any monthly or yearly subscription is cancelled at the same time.</p>';
+        }
+        echo '<a href="' . esc_url($dashboard) . '" style="display:inline-block;padding:11px 18px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;text-decoration:none">Open your dashboard</a>';
+        echo '</div>';
+    }
+
+    public function email_lifetime_note($order, $sent_to_admin, $plain_text, $email = null) {
+        if ($sent_to_admin || !$order || !is_a($order, 'WC_Order') || !$this->order_contains_lifetime($order)) {
+            return;
+        }
+        $text = 'Welcome to Ultra Card Pro Lifetime. Pro is yours for the life of Ultra Card with no renewals. '
+            . 'If you had a monthly or yearly Pro subscription it has been cancelled so you will not be billed again. '
+            . 'Manage your account at ' . home_url('/dashboard/');
+        if ($plain_text) {
+            echo "\n" . $text . "\n\n";
+            return;
+        }
+        echo '<p style="margin:0 0 20px;padding:14px 16px;border-radius:10px;background:#f1f0ff;border:1px solid #d9d6fb;color:#2b2b45;line-height:1.5">' . esc_html($text) . '</p>';
+    }
+
+    /**
+     * Small CSS/JS layer for the storefront. Everything here is opt-out via
+     * `add_filter('ultra_card_storefront_polish', '__return_false')`.
+     */
+    public function enqueue_storefront_polish() {
+        if (is_admin() || !apply_filters('ultra_card_storefront_polish', true)) {
+            return;
+        }
+
+        $css = '';
+
+        // Impreza paints the checkout order summary on the dark alt background
+        // but leaves the text dark, so totals were unreadable.
+        if (function_exists('is_checkout') && is_checkout()) {
+            $css .= '
+body.woocommerce-checkout .woocommerce-checkout-review-order,
+body.woocommerce-checkout #order_review{background:#f5f6fa!important;color:#15161a!important;border:1px solid #e1e4ee;border-radius:14px;padding:22px 24px}
+body.woocommerce-checkout #order_review table,body.woocommerce-checkout #order_review th,body.woocommerce-checkout #order_review td,
+body.woocommerce-checkout #order_review .woocommerce-Price-amount,body.woocommerce-checkout #order_review .product-name,
+body.woocommerce-checkout #order_review .recurring-totals th,body.woocommerce-checkout #order_review .first-payment-date,
+body.woocommerce-checkout #payment,body.woocommerce-checkout #payment label,body.woocommerce-checkout #payment p,
+body.woocommerce-checkout .woocommerce-privacy-policy-text,body.woocommerce-checkout .woocommerce-terms-and-conditions-wrapper{color:#15161a!important}
+body.woocommerce-checkout #order_review th,body.woocommerce-checkout #order_review td{border-color:rgba(0,0,0,.08)}
+body.woocommerce-checkout #order_review tr.fee th,body.woocommerce-checkout #order_review tr.fee td{color:#0f7a4f!important;font-weight:600}
+body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14px;padding:10px 12px;border-radius:10px;background:#eef0ff;border:1px solid #d9dcfb;font-size:.9em;line-height:1.45}
+';
+        }
+
+        if ($css) {
+            wp_register_style('uc-storefront-polish', false, array(), ULTRA_CARD_INTEGRATION_VERSION);
+            wp_enqueue_style('uc-storefront-polish');
+            wp_add_inline_style('uc-storefront-polish', $css);
+        }
+
+        // Header "Get Ultra Card PRO" button lives in the Impreza header builder;
+        // point it at the pricing page (three plans) instead of the product page.
+        if (apply_filters('ultra_card_header_pro_button_to_pricing', true)) {
+            $pricing = esc_url($this->get_pricing_url());
+            $js = '(function(){try{var p=' . wp_json_encode($pricing) . ';document.querySelectorAll(".l-header a.w-btn[href]").forEach(function(a){try{var u=new URL(a.href,location.href);if(/^\/product\/ultra-card-pro\/?$/.test(u.pathname)&&!u.search){a.href=p;}}catch(e){}});}catch(e){}})();';
+            wp_register_script('uc-header-pro-button', false, array(), ULTRA_CARD_INTEGRATION_VERSION, true);
+            wp_enqueue_script('uc-header-pro-button');
+            wp_add_inline_script('uc-header-pro-button', $js);
+        }
+    }
+
+    /**
+     * Add "Pricing" to the header menu (before FAQs) unless the menu already
+     * links to the pricing page. Opt out with
+     * `add_filter('ultra_card_inject_pricing_menu_item', '__return_false')`.
+     */
+    public function inject_pricing_menu_item($items, $args) {
+        if (is_admin() || !is_array($items) || empty($items)) {
+            return $items;
+        }
+        if (!apply_filters('ultra_card_inject_pricing_menu_item', true)) {
+            return $items;
+        }
+
+        // Only the primary header menu.
+        $menu = isset($args->menu) ? $args->menu : null;
+        $slug = '';
+        if ($menu instanceof WP_Term) {
+            $slug = $menu->slug;
+        } elseif (is_numeric($menu)) {
+            $term = get_term((int) $menu, 'nav_menu');
+            $slug = ($term && !is_wp_error($term)) ? $term->slug : '';
+        } elseif (is_string($menu) && $menu !== '') {
+            $term = get_term_by('slug', $menu, 'nav_menu');
+            if (!$term) {
+                $term = get_term_by('name', $menu, 'nav_menu');
+            }
+            $slug = ($term && !is_wp_error($term)) ? $term->slug : '';
+        }
+        $target_slugs = (array) apply_filters('ultra_card_pricing_menu_slugs', array('header-menu', 'main-menu', 'primary'));
+        if (!$slug || !in_array($slug, $target_slugs, true)) {
+            return $items;
+        }
+
+        $pricing_page = get_page_by_path('pricing', OBJECT, 'page');
+        if (!$pricing_page || $pricing_page->post_status !== 'publish') {
+            return $items;
+        }
+        $pricing_url = get_permalink($pricing_page->ID);
+
+        $template = null;
+        $insert_at = count($items);
+        foreach ($items as $i => $item) {
+            if (!empty($item->url) && (untrailingslashit($item->url) === untrailingslashit($pricing_url) || (int) $item->object_id === (int) $pricing_page->ID)) {
+                return $items; // already present
+            }
+            if ((int) $item->menu_item_parent === 0) {
+                if ($template === null) {
+                    $template = $item;
+                }
+                if (stripos((string) $item->title, 'faq') !== false) {
+                    $insert_at = $i;
+                }
+            }
+        }
+        if ($template === null) {
+            return $items;
+        }
+
+        $new = clone $template;
+        $new->ID = 90000000 + (int) $pricing_page->ID;
+        $new->db_id = $new->ID;
+        $new->menu_item_parent = 0;
+        $new->object_id = (int) $pricing_page->ID;
+        $new->object = 'page';
+        $new->type = 'post_type';
+        $new->type_label = 'Page';
+        $new->title = __('Pricing', 'ultra-card-integration');
+        $new->url = $pricing_url;
+        $new->target = '';
+        $new->attr_title = '';
+        $new->description = '';
+        $new->xfn = '';
+        $new->post_title = $new->title;
+        $new->post_name = 'pricing';
+        $new->menu_order = isset($template->menu_order) ? (int) $template->menu_order : 0;
+        $is_current = is_page($pricing_page->ID);
+        $new->current = $is_current;
+        $new->current_item_ancestor = false;
+        $new->current_item_parent = false;
+        $classes = array('menu-item', 'menu-item-type-post_type', 'menu-item-object-page', 'menu-item-' . $new->ID);
+        if ($is_current) {
+            $classes[] = 'current-menu-item';
+            $classes[] = 'current_page_item';
+        }
+        $new->classes = $classes;
+        // Clear any mega-menu / column flags copied from the template item.
+        foreach (array('us_mega_menu', 'us_columns', 'us_mega_menu_layout', 'us_mega_menu_width', 'us_mega_menu_columns') as $prop) {
+            if (isset($new->$prop)) {
+                unset($new->$prop);
+            }
+        }
+
+        array_splice($items, $insert_at, 0, array($new));
+        // Re-index menu_order so walkers relying on it keep the new position.
+        $order = 1;
+        foreach ($items as $item) {
+            if ((int) $item->menu_item_parent === 0) {
+                $item->menu_order = $order++;
+            }
+        }
+        return $items;
     }
 
     /**
@@ -92,8 +424,19 @@ class UltraCardLifetime {
         $credit = $loyalty ? floatval($loyalty['credit']) : 0;
         $already = $user_id ? $this->user_has_lifetime($user_id) : false;
 
-        $add_url = esc_url(add_query_arg('add-to-cart', $lifetime_id, home_url('/')));
-        $product_url = esc_url($this->get_product_url());
+        // Adds Lifetime and lands on checkout: loyalty credit is applied there
+        // and an account is created from the email for first-time buyers.
+        $add_url = esc_url($this->get_checkout_url());
+        $product_url = esc_url($this->get_pro_page_url('Lifetime'));
+
+        $loyalty_note = $credit > 0
+            ? sprintf(
+                /* translators: 1: credit amount, 2: amount paid so far */
+                __('Loyalty credit applied: %1$s off for the %2$s you have already paid toward Pro.', 'ultra-card-integration'),
+                wc_price($credit),
+                wc_price($loyalty['paid'])
+            )
+            : __('One payment, no renewals. Your Pro is yours for the life of Ultra Card.', 'ultra-card-integration');
 
         $cfg = array(
             'optionValue' => 'Lifetime',
@@ -105,16 +448,15 @@ class UltraCardLifetime {
             'loggedIn' => (bool) $user_id,
             'addToCartUrl' => $add_url,
             'productUrl' => $product_url,
-            'loginUrl' => esc_url(wp_login_url($product_url)),
             'currencySymbol' => function_exists('get_woocommerce_currency_symbol')
                 ? html_entity_decode(get_woocommerce_currency_symbol(), ENT_QUOTES, 'UTF-8')
                 : '$',
             'i18n' => array(
                 'priceOnce' => __('once', 'ultra-card-integration'),
-                'loyaltyNote' => __('Your prior Pro payments are credited at checkout.', 'ultra-card-integration'),
-                'loginNote' => __('Log in at checkout to apply loyalty credit.', 'ultra-card-integration'),
+                'loyaltyNote' => wp_strip_all_tags($loyalty_note),
+                'loginNote' => __('Already a Pro subscriber? Log in at checkout and every payment you have made is credited automatically (minimum $29 due).', 'ultra-card-integration'),
                 'alreadyNote' => __('You already have Ultra Card Pro Lifetime.', 'ultra-card-integration'),
-                'blurb' => __('One payment. Pro for the life of Ultra Card — no renewals.', 'ultra-card-integration'),
+                'blurb' => __('Every Pro module, cloud backups, snapshots and priority support. Pay once — no renewals, ever.', 'ultra-card-integration'),
                 'button' => __('Go Lifetime', 'ultra-card-integration'),
             ),
         );
@@ -192,10 +534,6 @@ class UltraCardLifetime {
       $btn.off('click.ucLifetime').on('click.ucLifetime', function (e) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        if (!cfg.loggedIn) {
-          window.location.href = cfg.loginUrl;
-          return false;
-        }
         window.location.href = cfg.addToCartUrl;
         return false;
       });
@@ -361,7 +699,7 @@ JS;
             $product->set_name(self::PRODUCT_NAME);
             $product->set_slug(self::PRODUCT_SLUG);
             $product->set_status('publish');
-            $product->set_catalog_visibility('visible');
+            $product->set_catalog_visibility('hidden');
             $product->set_description(
                 'Unlock Ultra Card Pro permanently — for the life of Ultra Card. '
                 . 'Includes every Pro module, cloud backups, snapshots, and priority support. '
@@ -381,11 +719,20 @@ JS;
             $product->set_reviews_allowed(false);
             $product_id = $product->save();
         } else {
-            // Keep price in sync with the setting.
+            // Keep price in sync with the setting, and keep the product out of
+            // shop / search listings: the Pro page dropdown is the storefront.
             $price = (string) $this->get_price();
+            $dirty = false;
             if ($product->get_regular_price() !== $price) {
                 $product->set_regular_price($price);
                 $product->set_price($price);
+                $dirty = true;
+            }
+            if ($product->get_catalog_visibility() !== 'hidden') {
+                $product->set_catalog_visibility('hidden');
+                $dirty = true;
+            }
+            if ($dirty) {
                 $product->save();
             }
             $product_id = $product->get_id();
@@ -515,6 +862,9 @@ JS;
             'qualifies_grandfather' => $paid >= $this->get_grandfather_min(),
             'product_url' => $this->get_product_url(),
             'product_id' => $this->get_product_id(),
+            'checkout_url' => $this->get_checkout_url(),
+            'pro_page_url' => $this->get_pro_page_url('Lifetime'),
+            'pricing_url' => $this->get_pricing_url(),
         );
     }
 
@@ -755,19 +1105,67 @@ JS;
     // ------------------------------------------------------------------
 
     public function validate_lifetime_cart($passed, $product_id) {
-        if (!$this->is_lifetime_product($product_id)) {
+        $adding_lifetime = $this->is_lifetime_product($product_id);
+        $adding_pro_sub = false;
+        if (!$adding_lifetime && function_exists('wc_get_product')) {
+            $product = wc_get_product($product_id);
+            $adding_pro_sub = $product && stripos($product->get_name(), 'Ultra Card Pro') !== false;
+        }
+        if (!$adding_lifetime && !$adding_pro_sub) {
             return $passed;
         }
-        if (!is_user_logged_in()) {
-            wc_add_notice(__('Please log in to purchase Ultra Card Pro Lifetime so we can apply your loyalty credit.', 'ultra-card-integration'), 'error');
-            return false;
-        }
-        $user_id = get_current_user_id();
-        if ($this->user_has_lifetime($user_id)) {
+
+        // Guests may buy Lifetime: an account is created at checkout and any
+        // credit is applied once they log in there.
+        if ($adding_lifetime && is_user_logged_in() && $this->user_has_lifetime(get_current_user_id())) {
             wc_add_notice(__('You already have Ultra Card Pro Lifetime.', 'ultra-card-integration'), 'error');
             return false;
         }
+
+        // Lifetime and a Monthly / Yearly subscription never belong in the same
+        // order: keep whichever the shopper just chose.
+        if (function_exists('WC') && WC() && !empty(WC()->cart)) {
+            foreach (WC()->cart->get_cart() as $key => $item) {
+                $pid = isset($item['product_id']) ? $item['product_id'] : 0;
+                $is_lifetime_item = $this->is_lifetime_product($pid);
+                if ($adding_lifetime && !$is_lifetime_item) {
+                    $existing = isset($item['data']) ? $item['data'] : null;
+                    if ($existing && stripos($existing->get_name(), 'Ultra Card Pro') !== false) {
+                        WC()->cart->remove_cart_item($key);
+                        wc_add_notice(__('Switched your cart to Ultra Card Pro Lifetime.', 'ultra-card-integration'), 'notice');
+                    }
+                } elseif ($adding_pro_sub && $is_lifetime_item) {
+                    WC()->cart->remove_cart_item($key);
+                    wc_add_notice(__('Removed Lifetime from your cart so you can subscribe instead.', 'ultra-card-integration'), 'notice');
+                }
+            }
+        }
         return $passed;
+    }
+
+    /**
+     * Inside the checkout order summary, explain the Lifetime price the
+     * shopper is looking at.
+     */
+    public function render_checkout_lifetime_note() {
+        if (!$this->cart_has_lifetime()) {
+            return;
+        }
+        if (is_user_logged_in()) {
+            $info = $this->get_loyalty_credit(get_current_user_id());
+            if ($info['credit'] > 0) {
+                $text = sprintf(
+                    __('Loyalty credit applied: %1$s off for the %2$s you have already paid toward Pro. Your monthly or yearly plan is cancelled automatically once this order completes.', 'ultra-card-integration'),
+                    wc_price($info['credit']),
+                    wc_price($info['paid'])
+                );
+            } else {
+                $text = __('One payment for Ultra Card Pro, for the life of Ultra Card. No renewals.', 'ultra-card-integration');
+            }
+        } else {
+            $text = __('Already a Pro subscriber? Log in above and your prior Pro payments are credited to this total automatically. New here? Your account is created from the email you enter.', 'ultra-card-integration');
+        }
+        echo '<div class="uc-lifetime-checkout-note">' . wp_kses_post($text) . '</div>';
     }
 
     public function apply_loyalty_credit($cart) {
