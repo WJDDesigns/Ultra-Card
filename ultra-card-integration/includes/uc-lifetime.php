@@ -358,6 +358,38 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
             wp_add_inline_style('uc-storefront-polish', $css);
         }
 
+        // Footer legal links: Pricing, Terms, Privacy, Refund Policy. Inserted
+        // above the copyright line of the Impreza footer block. Only published
+        // pages are listed, so Privacy / Refund appear once they go live.
+        if (apply_filters('ultra_card_footer_legal_links', true)) {
+            $links = array();
+            $candidates = array(
+                array(__('Pricing', 'ultra-card-integration'), 'pricing'),
+                array(__('Terms of Service', 'ultra-card-integration'), 'terms-and-conditions'),
+                array(__('Privacy Policy', 'ultra-card-integration'), 'privacy-policy'),
+                array(__('Refund Policy', 'ultra-card-integration'), 'refund-policy'),
+            );
+            foreach ($candidates as $c) {
+                $page = get_page_by_path($c[1], OBJECT, 'page');
+                if ($page && $page->post_status === 'publish') {
+                    $links[] = array('label' => $c[0], 'url' => get_permalink($page->ID));
+                }
+            }
+            if ($links) {
+                $footer_js = '(function(){try{var L=' . wp_json_encode($links) . ';'
+                    . 'var row=document.createElement("p");row.className="uc-footer-legal";row.style.cssText="text-align:center;margin:0 0 10px;font-size:14px;line-height:1.6";'
+                    . 'L.forEach(function(l,i){if(i){var s=document.createElement("span");s.textContent=" \u00b7 ";s.style.opacity=".5";row.appendChild(s);}var a=document.createElement("a");a.href=l.url;a.textContent=l.label;a.style.cssText="color:inherit;text-decoration:none";a.onmouseenter=function(){a.style.textDecoration="underline"};a.onmouseleave=function(){a.style.textDecoration="none"};row.appendChild(a);});'
+                    . 'var footer=document.getElementById("page-footer")||document.querySelector(".l-footer");if(!footer)return;'
+                    . 'var walker=document.createTreeWalker(footer,NodeFilter.SHOW_TEXT),n,hit=null;while((n=walker.nextNode())){if(/Copyright/i.test(n.nodeValue)){hit=n;break;}}'
+                    . 'var p=hit?hit.parentElement:null;while(p&&p.tagName!=="P"&&p.parentElement!==footer)p=p.parentElement;'
+                    . 'if(p&&p.parentElement){p.parentElement.insertBefore(row,p);}else{row.style.padding="12px 0";footer.appendChild(row);}'
+                    . '}catch(e){}})();';
+                wp_register_script('uc-footer-legal', false, array(), ULTRA_CARD_INTEGRATION_VERSION, true);
+                wp_enqueue_script('uc-footer-legal');
+                wp_add_inline_script('uc-footer-legal', $footer_js);
+            }
+        }
+
         // Header "Get Ultra Card PRO" button lives in the Impreza header builder;
         // point it at the pricing page (three plans) instead of the product page.
         if (apply_filters('ultra_card_header_pro_button_to_pricing', true)) {

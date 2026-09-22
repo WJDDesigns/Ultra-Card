@@ -1,8 +1,10 @@
 <style>
 /* Ultra Card Pro product page. Full-bleed dark section rendered in place of the
    WooCommerce long description. Scoped under .ucpro. */
-.l-section:has(> .l-section-h .ucpro){padding-top:0!important;padding-bottom:0!important;background:#0e1015}
-.ucpro{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);background:#0e1015;color:#e8eaef;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+/* The product summary (title, price, Billing Cycle) shares this section, so only
+   trim the bottom padding; the fragment paints its own dark background. */
+.l-section:has(> .l-section-h .ucpro){padding-bottom:0!important}
+.ucpro{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);margin-top:40px;background:#0e1015;color:#e8eaef;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
 .ucpro *{box-sizing:border-box}
 .ucpro a{text-decoration:none;color:inherit}
 .ucpro h2,.ucpro h3,.ucpro h4{color:#f4f6fb;font-family:inherit;margin:0}
