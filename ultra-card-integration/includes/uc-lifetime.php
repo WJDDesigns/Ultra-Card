@@ -99,30 +99,45 @@ class UltraCardLifetime {
      * `add_filter('ultra_card_pro_description_fragment', '__return_false')`,
      * or paste [ultra_card_page id="pro"] into the description yourself.
      */
+    /**
+     * Pages whose body is rendered from a website fragment when the editor
+     * content does not already carry an [ultra_card_page] shortcode.
+     * slug => fragment id.
+     */
+    public function fragment_pages() {
+        return apply_filters('ultra_card_fragment_pages', array(
+            'ultra-card-pro' => 'pro',
+            'terms-and-conditions' => 'terms',
+            'privacy-policy' => 'privacy',
+            'refund-policy' => 'refunds',
+            'refund_returns' => 'refunds',
+        ));
+    }
+
     public function replace_pro_product_description($content) {
-        if (is_admin() || !function_exists('is_product') || !is_product()) {
+        if (is_admin() || !is_singular() || !shortcode_exists('ultra_card_page')) {
             return $content;
         }
         if (!apply_filters('ultra_card_pro_description_fragment', true)) {
             return $content;
         }
-        if (!shortcode_exists('ultra_card_page')) {
+        $queried = get_post(get_queried_object_id());
+        if (!$queried) {
             return $content;
         }
-        $product_post = get_post(get_queried_object_id());
-        if (!$product_post || $product_post->post_name !== 'ultra-card-pro') {
+        $map = $this->fragment_pages();
+        if (!isset($map[$queried->post_name])) {
             return $content;
         }
         // The theme runs the_content for page blocks too (header, footer,
-        // related products). Only swap when this is the product's own
-        // description text.
-        if (trim((string) $content) !== trim((string) $product_post->post_content)) {
+        // related products). Only swap when this is the page's own body.
+        if (trim((string) $content) !== trim((string) $queried->post_content)) {
             return $content;
         }
         if (has_shortcode($content, 'ultra_card_page')) {
             return $content;
         }
-        return '[ultra_card_page id="pro"]';
+        return '[ultra_card_page id="' . esc_attr($map[$queried->post_name]) . '"]';
     }
 
     /**

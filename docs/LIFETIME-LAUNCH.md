@@ -4,7 +4,7 @@ Code + product + pricing shortcode are in place. Finish these after uploading th
 
 ## 1. Upload plugin (required)
 
-Upload `ultra-card-integration.zip` (v1.3.56) via **Plugins → Add New → Upload Plugin → Replace**.
+Upload `ultra-card-integration.zip` (v1.3.57) via **Plugins → Add New → Upload Plugin → Replace**.
 
 This enables:
 - `[ultra_card_page id="pricing"]` on `/pricing/`
@@ -40,9 +40,9 @@ The live Terms page is a placeholder and Privacy / Refund are unpublished sample
 
 | Page | What to do |
 |------|------------|
-| **Terms and Conditions** (ID 460, published) | Replace the body with a WPBakery Text Block containing `[ultra_card_page id="terms"]`. The plugin then sets it as the WooCommerce Terms page, which adds the "I have read and agree" checkbox at checkout. |
-| **Privacy Policy** (ID 3, draft) | Body: `[ultra_card_page id="privacy"]`. **Publish it.** It is already the WordPress privacy page, so the checkout privacy link starts working. |
-| **Refund and Returns Policy** (ID 483, draft) | Rename to "Refund Policy", set slug to `refund-policy`, body: `[ultra_card_page id="refunds"]`. **Publish it.** |
+| **Terms and Conditions** (ID 460, published) | Nothing to paste: the plugin renders the Terms fragment on this page and has set it as the WooCommerce Terms page, so checkout shows the "I have read and agree" checkbox. |
+| **Privacy Policy** (ID 3, draft) | **Publish it.** The plugin renders the Privacy fragment on it automatically. It is already the WordPress privacy page, so the checkout privacy link starts working. |
+| **Refund and Returns Policy** (ID 483, draft) | Rename to "Refund Policy", set slug to `refund-policy`, **publish it**. The plugin renders the Refund fragment on it automatically. |
 
 Then add Terms, Privacy and Refund Policy to the footer menu. Read all three once: they name WJD Designs (Granger, Indiana), Indiana governing law, wayne@wjddesigns.com as contact, a 14-day refund window on Yearly and Lifetime, and "for the life of Ultra Card" defined as "as long as Ultra Card Pro is offered" with 90 days' notice if it ever ends. Change anything you are not comfortable committing to before publishing.
 
