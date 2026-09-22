@@ -83,6 +83,69 @@ class UltraCardLifetime {
         // menu, header "Get Ultra Card PRO" button to /pricing/.
         add_action('wp_enqueue_scripts', array($this, 'enqueue_storefront_polish'), 40);
         add_filter('wp_nav_menu_objects', array($this, 'inject_pricing_menu_item'), 10, 2);
+
+        // The Pro product's long description is rendered from the designed
+        // website fragment (website/pro-page-embed.html) instead of the
+        // WPBakery text that lives in the product editor.
+        add_filter('the_content', array($this, 'replace_pro_product_description'), 1);
+
+        // Legal pages: make WooCommerce ask for terms acceptance at checkout
+        // once a published Terms page exists.
+        add_action('init', array($this, 'maybe_wire_terms_page'), 40);
+    }
+
+    /**
+     * Swap the Pro product description for the harness fragment. Opt out with
+     * `add_filter('ultra_card_pro_description_fragment', '__return_false')`,
+     * or paste [ultra_card_page id="pro"] into the description yourself.
+     */
+    public function replace_pro_product_description($content) {
+        if (is_admin() || !function_exists('is_product') || !is_product()) {
+            return $content;
+        }
+        if (!apply_filters('ultra_card_pro_description_fragment', true)) {
+            return $content;
+        }
+        if (!shortcode_exists('ultra_card_page')) {
+            return $content;
+        }
+        $product_post = get_post(get_queried_object_id());
+        if (!$product_post || $product_post->post_name !== 'ultra-card-pro') {
+            return $content;
+        }
+        // The theme runs the_content for page blocks too (header, footer,
+        // related products). Only swap when this is the product's own
+        // description text.
+        if (trim((string) $content) !== trim((string) $product_post->post_content)) {
+            return $content;
+        }
+        if (has_shortcode($content, 'ultra_card_page')) {
+            return $content;
+        }
+        return '[ultra_card_page id="pro"]';
+    }
+
+    /**
+     * Point WooCommerce at the Terms page so checkout shows the
+     * "I have read and agree" checkbox. Runs once per plugin version and
+     * never overrides a value the store owner already set.
+     */
+    public function maybe_wire_terms_page() {
+        if (!function_exists('wc_get_page_id')) {
+            return;
+        }
+        if (get_option('ultra_card_terms_wired_version', '') === ULTRA_CARD_INTEGRATION_VERSION) {
+            return;
+        }
+        update_option('ultra_card_terms_wired_version', ULTRA_CARD_INTEGRATION_VERSION, false);
+
+        if ((int) get_option('woocommerce_terms_page_id', 0) > 0) {
+            return;
+        }
+        $terms = get_page_by_path('terms-and-conditions', OBJECT, 'page');
+        if ($terms && $terms->post_status === 'publish') {
+            update_option('woocommerce_terms_page_id', (int) $terms->ID);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -222,7 +285,7 @@ class UltraCardLifetime {
         echo '<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a5b4fc;font-weight:700;margin-bottom:6px">Ultra Card Pro</div>';
         if ($granted || $is_paid) {
             echo '<h2 style="margin:0 0 10px;font-size:26px;color:#fff">You&rsquo;re Lifetime.</h2>';
-            echo '<p style="margin:0 0 8px;color:#d6dbea;line-height:1.55">Ultra Card Pro is yours for the life of Ultra Card. Every Pro module, cloud backups, snapshots and priority support &mdash; with no renewals to manage.</p>';
+            echo '<p style="margin:0 0 8px;color:#d6dbea;line-height:1.55">Ultra Card Pro is yours for the life of Ultra Card. Every Pro module, cloud backups, snapshots and priority support, with no renewals to manage.</p>';
             echo '<p style="margin:0 0 16px;color:#d6dbea;line-height:1.55">If you had a monthly or yearly Pro subscription it has been cancelled automatically, so you will not be billed again. Your Home Assistant card picks up Lifetime the next time it syncs (or click <em>Refresh</em> in the Account tab).</p>';
         } else {
             echo '<h2 style="margin:0 0 10px;font-size:26px;color:#fff">Almost there.</h2>';
@@ -439,7 +502,7 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
             $price_html = '<span class="price">' . wc_price($list_price) . $once . '</span>';
         }
 
-        $blurb = esc_html__('Every Pro module, cloud backups, snapshots and priority support. Pay once — no renewals, ever.', 'ultra-card-integration');
+        $blurb = esc_html__('Every Pro module, cloud backups, snapshots and priority support. Pay once, no renewals, ever.', 'ultra-card-integration');
         if ($already) {
             $note = esc_html__('You already have Ultra Card Pro Lifetime.', 'ultra-card-integration');
         } elseif ($credit > 0) {
@@ -701,7 +764,7 @@ JS;
             $product->set_status('publish');
             $product->set_catalog_visibility('hidden');
             $product->set_description(
-                'Unlock Ultra Card Pro permanently — for the life of Ultra Card. '
+                'Unlock Ultra Card Pro permanently, for the life of Ultra Card. '
                 . 'Includes every Pro module, cloud backups, snapshots, and priority support. '
                 . 'Prior Pro subscription payments are credited toward this price (minimum $'
                 . number_format($this->get_credit_floor(), 2) . '). '

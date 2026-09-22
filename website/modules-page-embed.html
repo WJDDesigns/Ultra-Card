@@ -912,7 +912,7 @@ reg(['camera'],(el)=>{
 reg(['graphs'],(el)=>{
   const pts=Array.from({length:24},(_,i)=>30+22*Math.sin(i/3.4)+rnd(-4,4));
   const line=pts.map((p,i)=>`${8+i*(184/23)},${64-p*0.62}`).join(' ');
-  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between">Energy — today <b id="gnow" style="color:#6fd4ff">2.1 kW</b></div>
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between">Energy today <b id="gnow" style="color:#6fd4ff">2.1 kW</b></div>
     <svg viewBox="0 0 200 70" style="width:100%">
       <polyline points="${line}" fill="none" stroke="#29b6f6" stroke-width="2.5" stroke-linecap="round"
         stroke-dasharray="420" stroke-dashoffset="420" style="animation:ucmDraw 2.2s ease forwards"/>

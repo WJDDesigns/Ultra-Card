@@ -42,6 +42,34 @@ const PAGES = [
     needsDemoBundle: false,
     path: '/pricing/',
   },
+  {
+    id: 'pro',
+    file: 'pro-page-embed.html',
+    title: 'Ultra Card Pro (product description)',
+    needsDemoBundle: false,
+    path: '/product/ultra-card-pro/',
+  },
+  {
+    id: 'terms',
+    file: 'terms-page-embed.html',
+    title: 'Terms of Service',
+    needsDemoBundle: false,
+    path: '/terms-and-conditions/',
+  },
+  {
+    id: 'privacy',
+    file: 'privacy-page-embed.html',
+    title: 'Privacy Policy',
+    needsDemoBundle: false,
+    path: '/privacy-policy/',
+  },
+  {
+    id: 'refunds',
+    file: 'refund-page-embed.html',
+    title: 'Refund Policy',
+    needsDemoBundle: false,
+    path: '/refund-policy/',
+  },
 ];
 
 const pages = PAGES.map(p => {

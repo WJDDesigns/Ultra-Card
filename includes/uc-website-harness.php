@@ -216,6 +216,30 @@ class UltraCardWebsiteHarness {
                 'needs_bundle' => false,
                 'path' => '/pricing/',
             ),
+            'pro' => array(
+                'file' => 'website/pro-page-embed.html',
+                'title' => 'Ultra Card Pro (product description)',
+                'needs_bundle' => false,
+                'path' => '/product/ultra-card-pro/',
+            ),
+            'terms' => array(
+                'file' => 'website/terms-page-embed.html',
+                'title' => 'Terms of Service',
+                'needs_bundle' => false,
+                'path' => '/terms-and-conditions/',
+            ),
+            'privacy' => array(
+                'file' => 'website/privacy-page-embed.html',
+                'title' => 'Privacy Policy',
+                'needs_bundle' => false,
+                'path' => '/privacy-policy/',
+            ),
+            'refunds' => array(
+                'file' => 'website/refund-page-embed.html',
+                'title' => 'Refund Policy',
+                'needs_bundle' => false,
+                'path' => '/refund-policy/',
+            ),
         );
     }
 
@@ -687,7 +711,7 @@ class UltraCardWebsiteHarness {
                                 <a href="<?php echo esc_url($page['post']['edit']); ?>"><?php echo esc_html($page['post']['title']); ?></a>
                                 <br><span class="description"><?php echo esc_html($page['post']['status']); ?> · #<?php echo (int) $page['post']['ID']; ?></span>
                             <?php else : ?>
-                                <span style="color:#b32d2e">Shortcode not found — paste into a Text Block</span>
+                                <span style="color:#b32d2e">Shortcode not found. Paste it into a Text Block</span>
                             <?php endif; ?>
                         </td>
                         <td><code style="word-break:break-all"><?php echo esc_html($page['url']); ?></code></td>

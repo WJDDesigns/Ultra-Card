@@ -1344,7 +1344,7 @@ class UltraCardPresetAuthoring {
     } else if (!state.loggedIn) {
       widget.msg.innerHTML = '<a href="' + widget.escape(state.loginUrl) + '">Sign in</a> to rate this preset.';
     } else if (mine) {
-      widget.msg.textContent = 'Your rating: ' + mine + ' of 5 — click to change it.';
+      widget.msg.textContent = 'Your rating: ' + mine + ' of 5. Click to change it.';
     } else {
       widget.msg.textContent = 'Pick a rating from 1 to 5.';
     }

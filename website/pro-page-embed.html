@@ -1,0 +1,279 @@
+<style>
+/* Ultra Card Pro product page. Full-bleed dark section rendered in place of the
+   WooCommerce long description. Scoped under .ucpro. */
+.l-section:has(> .l-section-h .ucpro){padding-top:0!important;padding-bottom:0!important;background:#0e1015}
+.ucpro{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);background:#0e1015;color:#e8eaef;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.ucpro *{box-sizing:border-box}
+.ucpro a{text-decoration:none;color:inherit}
+.ucpro h2,.ucpro h3,.ucpro h4{color:#f4f6fb;font-family:inherit;margin:0}
+.ucpro p{margin:0}
+.ucpro .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+.ucpro .eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#a5b4fc;margin-bottom:12px}
+.ucpro .sec{padding:72px 0}
+.ucpro .sec + .sec{padding-top:0}
+.ucpro .sec-head{max-width:640px;margin:0 auto 36px;text-align:center}
+.ucpro .sec-head h2{font-size:clamp(1.6rem,3.2vw,2.3rem);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:12px}
+.ucpro .sec-head p{color:#a0a8b8;font-size:1.02rem}
+.ucpro .grad{background:linear-gradient(135deg,#a5b4fc,#67e8f9 55%,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* intro */
+.ucpro-intro{position:relative;text-align:center;padding:80px 0 56px;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(99,102,241,.28),transparent 60%),#0e1015}
+.ucpro-intro h2{font-size:clamp(2rem,4.4vw,3.1rem);font-weight:800;letter-spacing:-.03em;line-height:1.12;max-width:820px;margin:0 auto 16px}
+.ucpro-intro p{max-width:600px;margin:0 auto;color:#a0a8b8;font-size:1.08rem}
+.ucpro-stats{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:32px}
+.ucpro-stat{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:12px;padding:12px 18px;min-width:150px}
+.ucpro-stat b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em;color:#fff}
+.ucpro-stat span{font-size:.8rem;color:#94a3b8}
+
+/* feature cards */
+.ucpro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:900px){.ucpro-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.ucpro-grid{grid-template-columns:1fr}}
+.ucpro-card{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px 22px;background:rgba(255,255,255,.03)}
+.ucpro-card .ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(99,102,241,.16);color:#a5b4fc;margin-bottom:16px}
+.ucpro-card .ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ucpro-card h3{font-size:1.05rem;font-weight:700;margin-bottom:8px}
+.ucpro-card p{color:#94a3b8;font-size:.92rem}
+
+/* module groups */
+.ucpro-groups{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+@media(max-width:800px){.ucpro-groups{grid-template-columns:1fr}}
+.ucpro-group{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px;background:rgba(255,255,255,.02)}
+.ucpro-group h3{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#a5b4fc;margin-bottom:14px}
+.ucpro-chips{display:flex;flex-wrap:wrap;gap:8px}
+.ucpro-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:999px;padding:7px 12px 7px 9px;font-size:.86rem;color:#dfe3ec}
+.ucpro-chip:before{content:"";width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#67e8f9);flex:none}
+.ucpro-note{margin-top:18px;text-align:center;color:#94a3b8;font-size:.92rem}
+.ucpro-note a{color:#a5b4fc;text-decoration:underline}
+
+/* steps */
+.ucpro-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:800px){.ucpro-steps{grid-template-columns:1fr}}
+.ucpro-step{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px 22px;background:rgba(255,255,255,.02)}
+.ucpro-step .n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#6366f1;color:#fff;font-size:13px;font-weight:700;margin-bottom:14px}
+.ucpro-step h3{font-size:1.02rem;font-weight:700;margin-bottom:8px}
+.ucpro-step p{color:#94a3b8;font-size:.92rem}
+.ucpro-step code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;color:#e8eaef}
+
+/* compare */
+.ucpro-compare{border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.02)}
+.ucpro-compare table{width:100%;border-collapse:collapse;font-size:.94rem}
+.ucpro-compare th,.ucpro-compare td{padding:14px 18px;text-align:left;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}
+.ucpro-compare th{font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;background:rgba(255,255,255,.03)}
+.ucpro-compare th.pro{color:#a5b4fc}
+.ucpro-compare tr:last-child td{border-bottom:none}
+.ucpro-compare td:first-child{color:#e8eaef;font-weight:600;width:28%}
+.ucpro-compare td{color:#b6bdcc}
+.ucpro-compare td.pro{color:#f4f6fb}
+.ucpro-compare .no{color:#6b7280}
+@media(max-width:640px){.ucpro-compare th,.ucpro-compare td{padding:12px 12px;font-size:.86rem}}
+
+/* trust */
+.ucpro-trust{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:800px){.ucpro-trust{grid-template-columns:1fr}}
+.ucpro-trust div{border-left:2px solid #6366f1;padding:4px 0 4px 18px}
+.ucpro-trust h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+.ucpro-trust p{color:#94a3b8;font-size:.92rem}
+
+/* plans */
+.ucpro-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin:0 auto}
+@media(max-width:800px){.ucpro-plans{grid-template-columns:1fr;max-width:420px}}
+.ucpro-plan{position:relative;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px 22px;background:rgba(255,255,255,.03);text-align:center}
+.ucpro-plan.featured{border-color:rgba(129,140,248,.55);background:linear-gradient(180deg,rgba(99,102,241,.16),rgba(255,255,255,.03))}
+.ucpro-plan .badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#6366f1;color:#fff;padding:4px 12px;border-radius:999px;white-space:nowrap}
+.ucpro-plan h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+.ucpro-plan .price{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1;margin:8px 0 6px;color:#fff}
+.ucpro-plan .price span{font-size:.9rem;font-weight:500;color:#94a3b8}
+.ucpro-plan p{color:#94a3b8;font-size:.88rem;margin-bottom:18px;min-height:2.6em}
+.ucpro-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px 16px;border-radius:10px;font-weight:700;font-size:.92rem;transition:transform .15s,border-color .15s}
+.ucpro-btn:hover{transform:translateY(-1px)}
+.ucpro-btn-pro{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+.ucpro-btn-ghost{background:transparent;color:#e8eaef;border:1px solid rgba(255,255,255,.18)}
+.ucpro-btn-ghost:hover{border-color:rgba(255,255,255,.4)}
+.ucpro-fine{text-align:center;color:#6b7280;font-size:.84rem;margin-top:22px}
+.ucpro-fine a{color:#a5b4fc;text-decoration:underline}
+</style>
+<!-- ======================= UCP:EMBED-START =======================
+     Rendered by the plugin in place of the Ultra Card Pro product
+     description, or paste [ultra_card_page id="pro"] into it.
+     ================================================================ -->
+<div class="ucpro" id="ucpro">
+
+  <section class="ucpro-intro">
+    <div class="wrap">
+      <span class="eyebrow">Ultra Card Pro</span>
+      <h2>Every module. Automatic backups. <span class="grad">One account on every device.</span></h2>
+      <p>Pro unlocks the modules that make a dashboard feel finished, keeps a rolling backup of every card, and syncs your work across every screen in the house.</p>
+      <div class="ucpro-stats">
+        <div class="ucpro-stat"><b>31</b><span>Pro modules</span></div>
+        <div class="ucpro-stat"><b>30 days</b><span>Automatic backups</span></div>
+        <div class="ucpro-stat"><b>30</b><span>Named snapshots per card</span></div>
+        <div class="ucpro-stat"><b>2 min</b><span>To set up</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">What Pro adds</span>
+        <h2>Protection for the work you have already put in</h2>
+        <p>The free card stays free. Pro is the safety net and the finishing layer on top of it.</p>
+      </div>
+      <div class="ucpro-grid">
+        <div class="ucpro-card">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+          <h3>Automatic daily backups</h3>
+          <p>Every card on every dashboard is backed up each day and kept for a rolling 30 days. Break something at 2 AM and roll back in seconds.</p>
+        </div>
+        <div class="ucpro-card">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2M21 12a9 9 0 1 1-3-6.7M21 3v5h-5"/></svg></div>
+          <h3>Named snapshots</h3>
+          <p>Save up to 30 named versions per card. Seasonal layouts, safe experiments, milestones before a big change. Restore any of them with one click.</p>
+        </div>
+        <div class="ucpro-card">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.6 1.5A3.5 3.5 0 0 1 17.5 18H7z"/></svg></div>
+          <h3>Cloud sync across devices</h3>
+          <p>Edit on the desktop, check the tablet, glance at your phone. Every device stays in step through your ultracard.io account.</p>
+        </div>
+        <div class="ucpro-card">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3M12 4v11m0 0 4-4m-4 4-4-4"/></svg></div>
+          <h3>One-click export and import</h3>
+          <p>Export a whole card as a single compressed file. Share it, keep a local copy, or import a layout from the community and make it yours.</p>
+        </div>
+        <div class="ucpro-card">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg></div>
+          <h3>Web dashboard</h3>
+          <p>Browse backups and snapshots, restore versions, manage billing and invoices from any browser at ultracard.io.</p>
+        </div>
+        <div class="ucpro-card">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg></div>
+          <h3>Priority support</h3>
+          <p>A private channel on the Ultra Card Discord where Pro members get answers first, directly from the developer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Pro modules</span>
+        <h2>31 modules you will not find anywhere else</h2>
+        <p>Built for Ultra Card, styled by your theme, and configured from the same editor as everything else.</p>
+      </div>
+      <div class="ucpro-groups">
+        <div class="ucpro-group">
+          <h3>Ambience and motion</h3>
+          <div class="ucpro-chips">
+            <span class="ucpro-chip">Animated Clock</span><span class="ucpro-chip">Animated Weather</span><span class="ucpro-chip">Animated Forecast</span><span class="ucpro-chip">Video Background</span><span class="ucpro-chip">Dynamic Weather</span><span class="ucpro-chip">Living Canvas</span><span class="ucpro-chip">Screensaver</span><span class="ucpro-chip">Badge of Honor</span><span class="ucpro-chip">Virtual Pet</span>
+          </div>
+        </div>
+        <div class="ucpro-group">
+          <h3>Home control and energy</h3>
+          <div class="ucpro-chips">
+            <span class="ucpro-chip">Climate Control</span><span class="ucpro-chip">Vacuum Control</span><span class="ucpro-chip">Alarm Panel</span><span class="ucpro-chip">Boiler</span><span class="ucpro-chip">Energy Display</span><span class="ucpro-chip">Solar Analytics</span><span class="ucpro-chip">Vampire Power</span><span class="ucpro-chip">Battery Fleet</span>
+          </div>
+        </div>
+        <div class="ucpro-group">
+          <h3>Life and schedules</h3>
+          <div class="ucpro-chips">
+            <span class="ucpro-chip">Calendar</span><span class="ucpro-chip">Train Departures</span><span class="ucpro-chip">Sports Score</span><span class="ucpro-chip">Activity Feed</span><span class="ucpro-chip">Time Machine</span><span class="ucpro-chip">Lunar Phase</span><span class="ucpro-chip">QR Code</span>
+          </div>
+        </div>
+        <div class="ucpro-group">
+          <h3>Care, maintenance and hardware</h3>
+          <div class="ucpro-chips">
+            <span class="ucpro-chip">Plant Care</span><span class="ucpro-chip">Laundry Tracker</span><span class="ucpro-chip">Vehicle Maintenance</span><span class="ucpro-chip">Cleaning Zones</span><span class="ucpro-chip">Dog Duty</span><span class="ucpro-chip">UniFi Network</span><span class="ucpro-chip">Bambu Lab</span>
+          </div>
+        </div>
+      </div>
+      <p class="ucpro-note">Pro also unlocks options inside free modules, such as advanced Bar styles and embedding any third-party card in your layout. <a href="https://ultracard.io/modules/">See every module with live previews</a></p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Setup</span>
+        <h2>Up and running in about two minutes</h2>
+      </div>
+      <div class="ucpro-steps">
+        <div class="ucpro-step"><span class="n">1</span><h3>Choose a plan</h3><p>Pick Monthly, Yearly or Lifetime in the Billing Cycle box above. Your ultracard.io account is created at checkout if you do not have one yet.</p></div>
+        <div class="ucpro-step"><span class="n">2</span><h3>Install the cloud integration</h3><p>In Home Assistant, add <code>Ultra Card Pro Cloud</code> from HACS, then sign in once with your ultracard.io login.</p></div>
+        <div class="ucpro-step"><span class="n">3</span><h3>Pro unlocks everywhere</h3><p>Every device on your Home Assistant instance gets Pro automatically. No per-device login, and the token refreshes itself.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Compare</span>
+        <h2>Free and Pro, side by side</h2>
+      </div>
+      <div class="ucpro-compare">
+        <table>
+          <thead><tr><th></th><th>Free</th><th class="pro">Pro</th></tr></thead>
+          <tbody>
+            <tr><td>Modules</td><td>68 core modules</td><td class="pro">All 99, including the 31 Pro modules</td></tr>
+            <tr><td>Backups</td><td>Manual copy of your YAML</td><td class="pro">Automatic daily backups, 30-day history</td></tr>
+            <tr><td>Snapshots</td><td><span class="no">Not included</span></td><td class="pro">30 named snapshots per card, one-click restore</td></tr>
+            <tr><td>Cloud sync</td><td><span class="no">Not included</span></td><td class="pro">Every device in step through your account</td></tr>
+            <tr><td>Export and import</td><td><span class="no">Not included</span></td><td class="pro">Single-file export, one-click import</td></tr>
+            <tr><td>Themes and presets</td><td>Full community gallery</td><td class="pro">Full community gallery</td></tr>
+            <tr><td>Support</td><td>Community Discord and GitHub</td><td class="pro">Private priority channel</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Your data</span>
+        <h2>Your backups belong to you</h2>
+      </div>
+      <div class="ucpro-trust">
+        <div><h3>Stored under your account</h3><p>Backups and snapshots live in your ultracard.io account. Export or delete them whenever you like.</p></div>
+        <div><h3>Never sold or analyzed</h3><p>We do not mine, profile or sell your dashboard data. It is there so you can restore it, nothing else.</p></div>
+        <div><h3>Verified, not spoofable</h3><p>Pro status is checked against ultracard.io through the integration, with encrypted credentials kept in your Home Assistant config.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Plans</span>
+        <h2>Pay the way you prefer</h2>
+        <p>Every Pro payment counts toward Lifetime. Cancel Monthly or Yearly at any time from your dashboard.</p>
+      </div>
+      <div class="ucpro-plans">
+        <div class="ucpro-plan">
+          <h3>Monthly</h3>
+          <div class="price">$4.99<span>/mo</span></div>
+          <p>Maximum flexibility.</p>
+          <a class="ucpro-btn ucpro-btn-ghost" href="https://ultracard.io/product/ultra-card-pro/?attribute_billing-cycle=Monthly#billing-cycle">Choose Monthly</a>
+        </div>
+        <div class="ucpro-plan featured">
+          <span class="badge">Most popular</span>
+          <h3>Yearly</h3>
+          <div class="price">$45<span>/yr</span></div>
+          <p>About 25% less than monthly.</p>
+          <a class="ucpro-btn ucpro-btn-pro" href="https://ultracard.io/product/ultra-card-pro/?attribute_billing-cycle=Yearly#billing-cycle">Choose Yearly</a>
+        </div>
+        <div class="ucpro-plan">
+          <h3>Lifetime</h3>
+          <div class="price">$99<span> once</span></div>
+          <p>For the life of Ultra Card. Prior payments credited.</p>
+          <a class="ucpro-btn ucpro-btn-ghost" href="https://ultracard.io/product/ultra-card-pro/?attribute_billing-cycle=Lifetime#billing-cycle">Choose Lifetime</a>
+        </div>
+      </div>
+      <p class="ucpro-fine">Requires Home Assistant 2024.1 or newer, Ultra Card from HACS, and the Ultra Card Pro Cloud integration. Backups stay available for 30 days after a cancellation. See the <a href="https://ultracard.io/pricing/">pricing page</a>, <a href="https://ultracard.io/terms-and-conditions/">terms</a> and <a href="https://ultracard.io/refund-policy/">refund policy</a>.</p>
+    </div>
+  </section>
+
+</div>
+<!-- ======================= UCP:EMBED-END ======================= -->

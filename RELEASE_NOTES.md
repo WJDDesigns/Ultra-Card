@@ -2,7 +2,7 @@
 
 ## Version 3.12.0
 
-Stable 3.12.0 ships the Camera Grid module, Hub Sections view width, UniFi Protect-only UNVR/ENVR as NVRs, overlay HVAC layout fixes from the betas, and **Ultra Card Pro Lifetime** — $99 once, with loyalty credit for what you have already paid. Thanks to everyone who tested the betas.
+Stable 3.12.0 ships the Camera Grid module, Hub Sections view width, UniFi Protect-only UNVR/ENVR as NVRs, overlay HVAC layout fixes from the betas, and **Ultra Card Pro Lifetime**: $99 once, with loyalty credit for what you have already paid. Thanks to everyone who tested the betas.
 
 **If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
 
@@ -12,7 +12,7 @@ Stable 3.12.0 ships the Camera Grid module, Hub Sections view width, UniFi Prote
 
 - **Added Hub Sections view width** - Home Assistant caps each Sections column at 500px, so a two-column view on a wide screen leaves empty space on both sides. Hub → Themes now has HA default, Full width, or a custom max column width, plus optional column gap / side padding. It is per browser, applies to every dashboard, and Masonry / Panel views are unchanged
 
-- **Added Ultra Card Pro Lifetime** - One $99 payment for Pro for the life of Ultra Card. Every Pro payment you have already made counts as loyalty credit (minimum $29 remaining). Hit $99 cumulative paid and you convert automatically — billing stops. Early supporters at $60+ paid are grandfathered at launch. Pricing and the Hub account tab show your personal Lifetime price when logged in
+- **Added Ultra Card Pro Lifetime** - One $99 payment for Pro for the life of Ultra Card. Every Pro payment you have already made counts as loyalty credit (minimum $29 remaining). Hit $99 cumulative paid and you convert automatically and billing stops. Early supporters at $60+ paid are grandfathered at launch. Pricing and the Hub account tab show your personal Lifetime price when logged in
 
 ### 🔧 Improvements
 

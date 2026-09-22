@@ -33,6 +33,10 @@ Do **not** use a Raw HTML element — it base64-encodes content and does not exp
 | Template Mode | `[ultra_card_page id="template-mode"]` | `/template-mode/` |
 | Presets | `[ultra_card_page id="presets"]` (or keep the native archive) | `/presets/` |
 | Pricing | `[ultra_card_page id="pricing"]` | `/pricing/` |
+| Ultra Card Pro product description | rendered automatically by the plugin (or paste `[ultra_card_page id="pro"]` into the product description) | `/product/ultra-card-pro/` |
+| Terms of Service | `[ultra_card_page id="terms"]` | `/terms-and-conditions/` |
+| Privacy Policy | `[ultra_card_page id="privacy"]` | `/privacy-policy/` |
+| Refund Policy | `[ultra_card_page id="refunds"]` | `/refund-policy/` |
 
 ## 4. Verify
 

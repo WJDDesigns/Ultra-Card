@@ -1202,7 +1202,7 @@ export class HubAccountTab extends LitElement {
                 </div>
                 <p class="billing-note">
                   ${isLifetime
-                    ? 'Lifetime has no renewals — Pro stays yours for the life of Ultra Card.'
+                    ? 'Lifetime has no renewals. Pro stays yours for the life of Ultra Card.'
                     : 'Payment changes and cancellations are completed securely on ultracard.io. Every Pro payment counts toward Lifetime.'}
                 </p>
               `}
@@ -1423,7 +1423,7 @@ export class HubAccountTab extends LitElement {
         </h3>
         <p class="card-lead">
           Ultra Card uses the <strong>Ultra Card Connect</strong> integration to securely
-          store your account credentials in Home Assistant — so your login persists across
+          store your account credentials in Home Assistant, so your login persists across
           any device and browser, with no local storage needed.
         </p>
         <div class="setup-steps">
@@ -1437,7 +1437,7 @@ export class HubAccountTab extends LitElement {
           </div>
           <div class="setup-step">
             <ha-icon icon="mdi:numeric-3-circle"></ha-icon>
-            <span>Come back here to sign in — your account stays signed in until you sign out</span>
+            <span>Come back here to sign in. Your account stays signed in until you sign out</span>
           </div>
         </div>
         <a class="setup-cta" href="/config/integrations/integration/ultra_card_pro_cloud">

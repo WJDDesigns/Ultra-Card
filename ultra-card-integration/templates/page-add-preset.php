@@ -1,6 +1,6 @@
 <?php
 /**
- * Native Add / Edit Preset form — replaces Gravity Forms on /add-preset/
+ * Native Add / Edit Preset form. replaces Gravity Forms on /add-preset/
  *
  * @package UltraCardIntegration
  */
@@ -45,7 +45,7 @@ if (file_exists($partial)) {
     <div class="ucp-wrap">
       <div class="ucp-eyebrow"><span class="ucp-pulse"></span> <?php echo $edit_id ? 'Edit preset' : 'Submit a preset'; ?><?php if ($version) : ?> · v<?php echo esc_html($version); ?><?php endif; ?></div>
       <h1 class="ucp-h1" id="ucp-add-title"><?php echo $edit_id ? 'Update your layout.' : 'Share a layout.'; ?><br><span class="ucp-grad-text"><?php echo $edit_id ? 'Queued for review.' : 'Ready for the gallery.'; ?></span></h1>
-      <p class="ucp-sub">Same fields as the Ultra Card Hub. Prefer submitting from Home Assistant when you have the card open — code arrives prefilled and privacy-sanitized.</p>
+      <p class="ucp-sub">Same fields as the Ultra Card Hub. Prefer submitting from Home Assistant when you have the card open. code arrives prefilled and privacy-sanitized.</p>
     </div>
   </header>
 

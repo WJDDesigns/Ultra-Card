@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-21T23:18:26.634Z",
+  "generatedAt": "2026-09-22T00:14:16.397Z",
   "repo": "WJDDesigns/Ultra-Card",
   "demoBundle": "dist-demo/ultra-card-demo.js",
   "pages": [
@@ -9,8 +9,8 @@
       "title": "Modules",
       "path": "/modules/",
       "needsDemoBundle": true,
-      "bytes": 158982,
-      "sha256": "8cf86c756e42c55d44f8dbfaae7a7fcde817979813a3c9d448e2004d146c669c"
+      "bytes": 158978,
+      "sha256": "03da7d83122520fc24440ed43d430ee2b5b6ccf40e8617d318d1c1ae21fc2d9a"
     },
     {
       "id": "template-mode",
@@ -36,8 +36,44 @@
       "title": "Pricing",
       "path": "/pricing/",
       "needsDemoBundle": false,
-      "bytes": 11163,
-      "sha256": "3ed8c23f32a22e903857b37eb0c5ef35ca8d6d0824bfa490c1b0930da796b4bf"
+      "bytes": 11165,
+      "sha256": "a58c84095f1ebc14c36012d05364f4f860db322e16a0182521d799f1aa792532"
+    },
+    {
+      "id": "pro",
+      "file": "website/pro-page-embed.html",
+      "title": "Ultra Card Pro (product description)",
+      "path": "/product/ultra-card-pro/",
+      "needsDemoBundle": false,
+      "bytes": 18587,
+      "sha256": "d952b6ed40c5468b568c6d3be55c628a6f758e2638d3c651ea2929c73625076d"
+    },
+    {
+      "id": "terms",
+      "file": "website/terms-page-embed.html",
+      "title": "Terms of Service",
+      "path": "/terms-and-conditions/",
+      "needsDemoBundle": false,
+      "bytes": 12436,
+      "sha256": "6743285506ff328830603ab613afcff3e415833f0d6acbdf63a846db0f462902"
+    },
+    {
+      "id": "privacy",
+      "file": "website/privacy-page-embed.html",
+      "title": "Privacy Policy",
+      "path": "/privacy-policy/",
+      "needsDemoBundle": false,
+      "bytes": 9221,
+      "sha256": "e73cca6680e4e78140a07a1557a0558376607381c4fc861df1d7b14dcd19af6e"
+    },
+    {
+      "id": "refunds",
+      "file": "website/refund-page-embed.html",
+      "title": "Refund Policy",
+      "path": "/refund-policy/",
+      "needsDemoBundle": false,
+      "bytes": 5606,
+      "sha256": "438c2646cac759b232a04238944690b9edac301a3eb3d5ed76db702407503c24"
     }
   ]
 }

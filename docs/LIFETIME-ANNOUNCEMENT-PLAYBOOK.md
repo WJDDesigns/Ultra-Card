@@ -1,4 +1,4 @@
-# Ultra Card Pro Lifetime — Announcement Playbook
+# Ultra Card Pro Lifetime: Announcement Playbook
 
 Use this after the plugin is uploaded, `/pricing/` shows three tiers, and grandfathering is applied.
 
@@ -10,7 +10,7 @@ Use this after the plugin is uploaded, `/pricing/` shows three tiers, and grandf
 - Modules: https://ultracard.io/modules/
 
 **One-line pitch**
-> Pro once. $99. For the life of Ultra Card — and every dollar you’ve already paid counts.
+> Pro once. $99. For the life of Ultra Card, and every dollar you’ve already paid counts.
 
 **Three fairness rules (always mention at least #1 and #2)**
 1. Loyalty credit: Lifetime costs `$99 − what you’ve paid` (floor $29).
@@ -25,32 +25,32 @@ Use this after the plugin is uploaded, `/pricing/` shows three tiers, and grandf
 
 1. Upload `ultra-card-integration.zip` and confirm **Ultra Card → Lifetime** works.
 2. Dry-run + Apply grandfathering.
-3. Hard-refresh https://ultracard.io/pricing/ — Monthly / Yearly / Lifetime visible.
-4. Hard-refresh Lifetime product — Add to cart works while logged in.
+3. Hard-refresh https://ultracard.io/pricing/: Monthly / Yearly / Lifetime visible.
+4. Hard-refresh the Pro product page: Lifetime appears in Billing Cycle.
 5. Test as yourself: cart shows loyalty credit (negative fee) if you’ve paid before.
 6. Pin a Discord `#announcements` (or equivalent) channel ready.
-7. Have this doc open; copy blocks below — don’t rewrite on the fly.
+7. Have this doc open; copy the blocks below rather than rewriting on the fly.
 
-### Hour 0 — Own community first
+### Hour 0: Own community first
 
 1. Discord announcement (primary).
 2. Discord short follow-up in general / support: “Questions about credit? Log into your dashboard.”
 3. Optional: sticky a FAQ reply under the announcement.
 
-### Hour 1–2 — Existing customers
+### Hour 1–2: Existing customers
 
-1. Email **yearly renewers Oct–Jan** (highest urgency — 46 people, ~$2,070).
+1. Email **yearly renewers Oct–Jan** (highest urgency: 46 people, ~$2,070).
 2. Email **all active Pro** (shorter blast).
 3. Optional: WooCommerce note / dashboard banner if you use one.
 
-### Hour 2–6 — Public HA community
+### Hour 2–6: Public HA community
 
-1. Reddit r/homeassistant (honest, not salesy — see tone notes).
+1. Reddit r/homeassistant (honest, not salesy: see tone notes).
 2. Reddit r/homeassistant if rules allow self-promo; otherwise r/HomeAssistantCommunity or your usual thread style.
 3. GitHub Discussion / release note if you ship a card release same week (optional).
-4. Personal / WJD social (X, Facebook HA groups) — short + link.
+4. Personal / WJD social (X, Facebook HA groups): short + link.
 
-### Day 2–7 — Follow-through
+### Day 2–7: Follow-through
 
 1. Reply to every credit / “is this forever?” question with the exact wording below.
 2. Mid-week Discord bump: one proof (screenshot of pricing or “loyalty credit at checkout”).
@@ -62,22 +62,22 @@ Use this after the plugin is uploaded, `/pricing/` shows three tiers, and grandf
 
 - Lead with **fairness to existing subscribers**, not “limited time scam energy.”
 - Say **“for the life of Ultra Card”**, not “forever forever.”
-- Free tier stays free — say it once so you don’t get IFTTT flashbacks.
-- Don’t dunk on Mushroom/Bubble — position as payoff for people who want Pro modules + cloud.
+- Free tier stays free: say it once so you don’t get IFTTT flashbacks.
+- Don’t dunk on Mushroom/Bubble: position as payoff for people who want Pro modules + cloud.
 - Acknowledge subscriptions were polarizing; Lifetime is the answer to that feedback.
 
 ---
 
-## 1. Discord — main announcement
+## 1. Discord: main announcement
 
 ```
 🚀 Ultra Card Pro Lifetime is live
 
 A lot of you asked for a one-time option. Here it is.
 
-• Monthly — $4.99/mo
-• Yearly — $45/yr (save ~25%)
-• Lifetime — $99 once, for the life of Ultra Card
+• Monthly: $4.99/mo
+• Yearly: $45/yr (save ~25%)
+• Lifetime: $99 once, for the life of Ultra Card
 
 Fairness for people already on Pro:
 • Every Pro payment you’ve made is loyalty credit toward Lifetime (you’ll pay $99 minus what you’ve already paid, minimum $29)
@@ -91,19 +91,19 @@ Log in → Dashboard to see your personal Lifetime price.
 Free modules stay free. Pro is for the flagship modules, cloud backups, and snapshots.
 ```
 
-### Discord — short follow-up (same day, different channel)
+### Discord: short follow-up (same day, different channel)
 
 ```
 Lifetime FAQ in one line: log into ultracard.io → Dashboard. Your loyalty credit and “Go Lifetime for $X” are there. Pricing page: https://ultracard.io/pricing/
 ```
 
-### Discord — sticky FAQ reply (post under announcement)
+### Discord: sticky FAQ reply (post under announcement)
 
 ```
 FAQ
 
 Q: Is Lifetime really forever?
-A: For the life of the Ultra Card product — Pro features as long as Ultra Card is offered.
+A: For the life of the Ultra Card product, meaning Pro features for as long as Ultra Card is offered.
 
 Q: I already pay yearly ($45). What do I pay for Lifetime?
 A: $54 ($99 − $45 credit). Checkout applies the credit automatically when you’re logged in.
@@ -114,17 +114,17 @@ A: Yes. Every completed Pro payment counts. At $99 total, you auto-convert and w
 Q: Does free Ultra Card change?
 A: No. Free modules stay free via HACS.
 
-Q: I was grandfathered / got Lifetime free — do I need to do anything?
+Q: I was grandfathered / got Lifetime free, do I need to do anything?
 A: No. Refresh your dashboard; you should show as Lifetime. Subscriptions are cancelled if you had one.
 ```
 
 ---
 
-## 2. Email — yearly renewers (Oct–Jan) — send first
+## 2. Email: yearly renewers (Oct–Jan): send first
 
 **Subject options** (pick one)
-- Renew Ultra Card Pro — or go Lifetime for $54
-- Your Pro renewal is coming — Lifetime is available
+- Renew Ultra Card Pro, or go Lifetime for $54
+- Your Pro renewal is coming: Lifetime is available
 - One more year, or own it: Lifetime for existing members
 
 **Body**
@@ -134,7 +134,7 @@ Hi {first_name},
 
 Your Ultra Card Pro yearly plan renews on {renewal_date} for $45.
 
-You now have a third option: Ultra Card Pro Lifetime — $99 once, for the life of Ultra Card.
+You now have a third option: Ultra Card Pro Lifetime. $99 once, for the life of Ultra Card.
 
 Because you’ve already paid $45, your loyalty credit brings Lifetime to ${due} at checkout (usually $54). Same Pro features. No more yearly renewals.
 
@@ -154,10 +154,10 @@ Wayne / WJD Designs
 
 ---
 
-## 3. Email — all active Pro (broader)
+## 3. Email: all active Pro (broader)
 
 **Subject**
-- Ultra Card Pro Lifetime is here — your payments count
+- Ultra Card Pro Lifetime is here: your payments count
 
 **Body**
 
@@ -168,7 +168,7 @@ Ultra Card Pro Lifetime is live: $99 once, for the life of Ultra Card.
 
 If you’re already on monthly or yearly, you don’t start from zero.
 • Loyalty credit = what you’ve already paid (Lifetime due is $99 minus that, min $29)
-• Hit $99 total paid and you convert automatically — billing stops
+• Hit $99 total paid and you convert automatically and billing stops
 
 Monthly and yearly stay available.
 
@@ -182,25 +182,25 @@ Wayne
 
 ---
 
-## 4. Reddit — r/homeassistant
+## 4. Reddit: r/homeassistant
 
 **Title options**
-- Ultra Card now has a Lifetime Pro option ($99) — existing payments count as credit
+- Ultra Card now has a Lifetime Pro option ($99): existing payments count as credit
 - Feedback heard: Ultra Card Pro Lifetime is live (one-time, loyalty credit for current subs)
 
 **Body**
 
 ```
-Hey all —
+Hey all,
 
 When Ultra Card Pro launched, a lot of feedback (here and elsewhere) was that a subscription felt wrong for a dashboard card, even with a free tier. Fair.
 
 I’ve added a Lifetime option:
 
-• Free — still free via HACS (core modules)
-• Pro Monthly — $4.99
-• Pro Yearly — $45
-• Pro Lifetime — $99 once, for the life of Ultra Card
+• Free: still free via HACS (core modules)
+• Pro Monthly: $4.99
+• Pro Yearly: $45
+• Pro Lifetime: $99 once, for the life of Ultra Card
 
 For people already subscribed:
 - Prior Pro payments are loyalty credit toward Lifetime
@@ -208,7 +208,7 @@ For people already subscribed:
 
 Details / comparison: https://ultracard.io/pricing/
 
-Happy to answer questions. Not trying to hard-sell — wanted the pricing model to match how a lot of this community prefers to pay.
+Happy to answer questions. Not trying to hard-sell. I wanted the pricing model to match how a lot of this community prefers to pay.
 ```
 
 **Reply you’ll need ready**
@@ -222,7 +222,7 @@ Lifetime wording is “for the life of Ultra Card” (as long as the product is 
 ## 5. Short social (X / Facebook / HA groups)
 
 ```
-Ultra Card Pro Lifetime is live — $99 once.
+Ultra Card Pro Lifetime is live. $99 once.
 
 Monthly & yearly still there. Existing Pro payments count as credit toward Lifetime. Auto-converts at $99 paid.
 
@@ -254,10 +254,10 @@ Use these if you post a temporary site banner or Discord embed title:
 
 | Place | Copy |
 |-------|------|
-| Banner | Lifetime is here — $99 · your Pro payments count |
+| Banner | Lifetime is here: $99 · your Pro payments count |
 | Button | See Lifetime price |
 | Checkout trust line | Logged-in members: loyalty credit applied at checkout |
-| Cancelled sub note | Upgraded to Lifetime — no further renewals |
+| Cancelled sub note | Upgraded to Lifetime: no further renewals |
 
 ---
 
