@@ -4,7 +4,7 @@ Code + product + pricing shortcode are in place. Finish these after uploading th
 
 ## 1. Upload plugin (required)
 
-Upload `ultra-card-integration.zip` (v1.3.58) via **Plugins → Add New → Upload Plugin → Replace**.
+Upload `ultra-card-integration.zip` (v1.3.59) via **Plugins → Add New → Upload Plugin → Replace**.
 
 This enables:
 - `[ultra_card_page id="pricing"]` on `/pricing/`
@@ -36,15 +36,9 @@ Optional manual polish (theme content, not plugin): the Pro product long descrip
 
 ## 2b. Legal pages (required before announcing)
 
-The live Terms page is a placeholder and Privacy / Refund are unpublished sample text. Real versions ship as harness fragments; wire them up in wp-admin:
+Handled by the plugin on upload: Terms, Privacy Policy and Refund Policy render from the fragments in `website/`, missing pages are created and published (Privacy was trashed, so a new `/privacy-policy/` page is made), WordPress's privacy page and WooCommerce's Terms page are pointed at them, and the links are added to the Footer Menu next to your own items. The Refund page keeps whatever title and slug it has (`/refund_returns/` works); rename it to "Refund Policy" in wp-admin if you prefer.
 
-| Page | What to do |
-|------|------------|
-| **Terms and Conditions** (ID 460, published) | Nothing to paste: the plugin renders the Terms fragment on this page and has set it as the WooCommerce Terms page, so checkout shows the "I have read and agree" checkbox. |
-| **Privacy Policy** (ID 3, draft) | **Publish it.** The plugin renders the Privacy fragment on it automatically. It is already the WordPress privacy page, so the checkout privacy link starts working. |
-| **Refund and Returns Policy** (ID 483, draft) | Rename to "Refund Policy", set slug to `refund-policy`, **publish it**. The plugin renders the Refund fragment on it automatically. |
-
-Then add Terms, Privacy and Refund Policy to the footer menu. Read all three once: they name WJD Designs (Granger, Indiana), Indiana governing law, wayne@wjddesigns.com as contact, a 14-day refund window on Yearly and Lifetime, and "for the life of Ultra Card" defined as "as long as Ultra Card Pro is offered" with 90 days' notice if it ever ends. Change anything you are not comfortable committing to before publishing.
+Read all three once: they name WJD Designs (Granger, Indiana), Indiana governing law, wayne@wjddesigns.com as contact, a 14-day refund window on Yearly and Lifetime, and "for the life of Ultra Card" defined as "as long as Ultra Card Pro is offered" with 90 days' notice if it ever ends. Edit the fragment files and push if you want different positions.
 
 ## 2c. Pro product page
 

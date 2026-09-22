@@ -108,9 +108,11 @@ class UltraCardLifetime {
         return apply_filters('ultra_card_fragment_pages', array(
             'ultra-card-pro' => 'pro',
             'terms-and-conditions' => 'terms',
+            'terms-of-service' => 'terms',
             'privacy-policy' => 'privacy',
             'refund-policy' => 'refunds',
             'refund_returns' => 'refunds',
+            'refund-and-returns-policy' => 'refunds',
         ));
     }
 
@@ -146,20 +148,87 @@ class UltraCardLifetime {
      * never overrides a value the store owner already set.
      */
     public function maybe_wire_terms_page() {
-        if (!function_exists('wc_get_page_id')) {
-            return;
-        }
         if (get_option('ultra_card_terms_wired_version', '') === ULTRA_CARD_INTEGRATION_VERSION) {
             return;
         }
         update_option('ultra_card_terms_wired_version', ULTRA_CARD_INTEGRATION_VERSION, false);
+        $this->ensure_legal_pages();
+    }
 
-        if ((int) get_option('woocommerce_terms_page_id', 0) > 0) {
-            return;
+    /**
+     * Published legal page for a fragment, if any. Accepts the legacy
+     * WooCommerce sample slug for the refund page.
+     */
+    public function find_legal_page($fragment) {
+        $slugs = array(
+            'terms' => array('terms-and-conditions', 'terms-of-service', 'terms'),
+            'privacy' => array('privacy-policy'),
+            'refunds' => array('refund-policy', 'refund_returns', 'refund-and-returns-policy'),
+        );
+        if (!isset($slugs[$fragment])) {
+            return null;
         }
-        $terms = get_page_by_path('terms-and-conditions', OBJECT, 'page');
-        if ($terms && $terms->post_status === 'publish') {
-            update_option('woocommerce_terms_page_id', (int) $terms->ID);
+        foreach ($slugs[$fragment] as $slug) {
+            $page = get_page_by_path($slug, OBJECT, 'page');
+            if ($page && $page->post_status === 'publish') {
+                return $page;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Make sure Terms, Privacy and Refund pages exist and are published, and
+     * that WordPress / WooCommerce point at them. Creates a page only when no
+     * published one exists; never edits a page the store owner wrote.
+     */
+    public function ensure_legal_pages() {
+        $defs = array(
+            'terms' => array('title' => 'Terms of Service', 'slug' => 'terms-and-conditions'),
+            'privacy' => array('title' => 'Privacy Policy', 'slug' => 'privacy-policy'),
+            'refunds' => array('title' => 'Refund Policy', 'slug' => 'refund-policy'),
+        );
+        $author = 0;
+        $admin = get_user_by('email', get_option('admin_email'));
+        if ($admin) {
+            $author = (int) $admin->ID;
+        }
+        $pages = array();
+        foreach ($defs as $fragment => $def) {
+            $page = $this->find_legal_page($fragment);
+            if (!$page) {
+                $id = wp_insert_post(array(
+                    'post_type' => 'page',
+                    'post_status' => 'publish',
+                    'post_title' => $def['title'],
+                    'post_name' => $def['slug'],
+                    'post_content' => '[ultra_card_page id="' . $fragment . '"]',
+                    'post_author' => $author,
+                    'comment_status' => 'closed',
+                    'ping_status' => 'closed',
+                ), true);
+                if (!is_wp_error($id) && $id) {
+                    $page = get_post($id);
+                }
+            }
+            if ($page) {
+                $pages[$fragment] = $page;
+            }
+        }
+
+        if (isset($pages['terms'])) {
+            $current = (int) get_option('woocommerce_terms_page_id', 0);
+            $current_post = $current ? get_post($current) : null;
+            if (!$current_post || $current_post->post_status !== 'publish') {
+                update_option('woocommerce_terms_page_id', (int) $pages['terms']->ID);
+            }
+        }
+        if (isset($pages['privacy'])) {
+            $current = (int) get_option('wp_page_for_privacy_policy', 0);
+            $current_post = $current ? get_post($current) : null;
+            if (!$current_post || $current_post->post_status !== 'publish') {
+                update_option('wp_page_for_privacy_policy', (int) $pages['privacy']->ID);
+            }
         }
     }
 
@@ -361,18 +430,25 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
         // Footer legal links: Pricing, Terms, Privacy, Refund Policy. Inserted
         // above the copyright line of the Impreza footer block. Only published
         // pages are listed, so Privacy / Refund appear once they go live.
-        if (apply_filters('ultra_card_footer_legal_links', true)) {
+        // When the site has a Footer Menu the links are injected into it via
+        // wp_nav_menu_objects instead (see inject_pricing_menu_item).
+        $has_footer_menu = false;
+        foreach ((array) apply_filters('ultra_card_footer_menu_slugs', array('footer-menu', 'footer')) as $fslug) {
+            if (get_term_by('slug', $fslug, 'nav_menu')) {
+                $has_footer_menu = true;
+                break;
+            }
+        }
+        if (!$has_footer_menu && apply_filters('ultra_card_footer_legal_links', true)) {
             $links = array();
-            $candidates = array(
-                array(__('Pricing', 'ultra-card-integration'), 'pricing'),
-                array(__('Terms of Service', 'ultra-card-integration'), 'terms-and-conditions'),
-                array(__('Privacy Policy', 'ultra-card-integration'), 'privacy-policy'),
-                array(__('Refund Policy', 'ultra-card-integration'), 'refund-policy'),
-            );
-            foreach ($candidates as $c) {
-                $page = get_page_by_path($c[1], OBJECT, 'page');
-                if ($page && $page->post_status === 'publish') {
-                    $links[] = array('label' => $c[0], 'url' => get_permalink($page->ID));
+            $pricing = get_page_by_path('pricing', OBJECT, 'page');
+            if ($pricing && $pricing->post_status === 'publish') {
+                $links[] = array('label' => __('Pricing', 'ultra-card-integration'), 'url' => get_permalink($pricing->ID));
+            }
+            foreach (array('terms' => __('Terms of Service', 'ultra-card-integration'), 'privacy' => __('Privacy Policy', 'ultra-card-integration'), 'refunds' => __('Refund Policy', 'ultra-card-integration')) as $fragment => $label) {
+                $page = $this->find_legal_page($fragment);
+                if ($page) {
+                    $links[] = array('label' => $label, 'url' => get_permalink($page->ID));
                 }
             }
             if ($links) {
@@ -402,8 +478,11 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
     }
 
     /**
-     * Add "Pricing" to the header menu (before FAQs) unless the menu already
-     * links to the pricing page. Opt out with
+     * Menu injection.
+     *  - Header menu: "Pricing" before FAQs.
+     *  - Footer menu: Pricing, Terms, Privacy, Refund Policy (published pages
+     *    only), appended after the owner's own items.
+     * Existing links are never duplicated. Opt out with
      * `add_filter('ultra_card_inject_pricing_menu_item', '__return_false')`.
      */
     public function inject_pricing_menu_item($items, $args) {
@@ -414,12 +493,50 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
             return $items;
         }
 
-        // Only the primary header menu.
-        $menu = isset($args->menu) ? $args->menu : null;
+        $slug = $this->resolve_menu_slug(isset($args->menu) ? $args->menu : null, isset($args->theme_location) ? $args->theme_location : '');
+        $header_slugs = (array) apply_filters('ultra_card_pricing_menu_slugs', array('header-menu', 'main-menu', 'primary'));
+        $footer_slugs = (array) apply_filters('ultra_card_footer_menu_slugs', array('footer-menu', 'footer'));
+
+        if ($slug && in_array($slug, $header_slugs, true)) {
+            $pricing = get_page_by_path('pricing', OBJECT, 'page');
+            if ($pricing && $pricing->post_status === 'publish') {
+                $items = $this->menu_add_page($items, $pricing, __('Pricing', 'ultra-card-integration'), 'faq');
+            }
+            return $items;
+        }
+
+        if ($slug && in_array($slug, $footer_slugs, true)) {
+            $wanted = array();
+            $pricing = get_page_by_path('pricing', OBJECT, 'page');
+            if ($pricing && $pricing->post_status === 'publish') {
+                $wanted[] = array($pricing, __('Pricing', 'ultra-card-integration'));
+            }
+            $terms = $this->find_legal_page('terms');
+            if ($terms) {
+                $wanted[] = array($terms, __('Terms of Service', 'ultra-card-integration'));
+            }
+            $privacy = $this->find_legal_page('privacy');
+            if ($privacy) {
+                $wanted[] = array($privacy, __('Privacy Policy', 'ultra-card-integration'));
+            }
+            $refunds = $this->find_legal_page('refunds');
+            if ($refunds) {
+                $wanted[] = array($refunds, __('Refund Policy', 'ultra-card-integration'));
+            }
+            foreach ($wanted as $w) {
+                $items = $this->menu_add_page($items, $w[0], $w[1], '');
+            }
+            return $items;
+        }
+
+        return $items;
+    }
+
+    private function resolve_menu_slug($menu, $theme_location = '') {
         $slug = '';
         if ($menu instanceof WP_Term) {
             $slug = $menu->slug;
-        } elseif (is_numeric($menu)) {
+        } elseif (is_numeric($menu) && (int) $menu > 0) {
             $term = get_term((int) $menu, 'nav_menu');
             $slug = ($term && !is_wp_error($term)) ? $term->slug : '';
         } elseif (is_string($menu) && $menu !== '') {
@@ -429,28 +546,36 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
             }
             $slug = ($term && !is_wp_error($term)) ? $term->slug : '';
         }
-        $target_slugs = (array) apply_filters('ultra_card_pricing_menu_slugs', array('header-menu', 'main-menu', 'primary'));
-        if (!$slug || !in_array($slug, $target_slugs, true)) {
-            return $items;
+        if (!$slug && $theme_location) {
+            $locations = get_nav_menu_locations();
+            if (!empty($locations[$theme_location])) {
+                $term = get_term((int) $locations[$theme_location], 'nav_menu');
+                $slug = ($term && !is_wp_error($term)) ? $term->slug : '';
+            }
         }
+        return $slug;
+    }
 
-        $pricing_page = get_page_by_path('pricing', OBJECT, 'page');
-        if (!$pricing_page || $pricing_page->post_status !== 'publish') {
-            return $items;
-        }
-        $pricing_url = get_permalink($pricing_page->ID);
-
+    /**
+     * Append (or insert before the first top-level item whose title contains
+     * $before_title_match) a synthetic menu item for a page, unless the menu
+     * already links to that page.
+     */
+    private function menu_add_page($items, $page, $title, $before_title_match = '') {
+        $url = get_permalink($page->ID);
         $template = null;
         $insert_at = count($items);
         foreach ($items as $i => $item) {
-            if (!empty($item->url) && (untrailingslashit($item->url) === untrailingslashit($pricing_url) || (int) $item->object_id === (int) $pricing_page->ID)) {
+            $same_url = !empty($item->url) && untrailingslashit($item->url) === untrailingslashit($url);
+            $same_obj = isset($item->object) && $item->object === 'page' && (int) $item->object_id === (int) $page->ID;
+            if ($same_url || $same_obj) {
                 return $items; // already present
             }
             if ((int) $item->menu_item_parent === 0) {
                 if ($template === null) {
                     $template = $item;
                 }
-                if (stripos((string) $item->title, 'faq') !== false) {
+                if ($before_title_match !== '' && stripos((string) $item->title, $before_title_match) !== false) {
                     $insert_at = $i;
                 }
             }
@@ -460,23 +585,23 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
         }
 
         $new = clone $template;
-        $new->ID = 90000000 + (int) $pricing_page->ID;
+        $new->ID = 90000000 + (int) $page->ID;
         $new->db_id = $new->ID;
         $new->menu_item_parent = 0;
-        $new->object_id = (int) $pricing_page->ID;
+        $new->object_id = (int) $page->ID;
         $new->object = 'page';
         $new->type = 'post_type';
         $new->type_label = 'Page';
-        $new->title = __('Pricing', 'ultra-card-integration');
-        $new->url = $pricing_url;
+        $new->title = $title;
+        $new->url = $url;
         $new->target = '';
         $new->attr_title = '';
         $new->description = '';
         $new->xfn = '';
-        $new->post_title = $new->title;
-        $new->post_name = 'pricing';
+        $new->post_title = $title;
+        $new->post_name = $page->post_name;
         $new->menu_order = isset($template->menu_order) ? (int) $template->menu_order : 0;
-        $is_current = is_page($pricing_page->ID);
+        $is_current = is_page($page->ID);
         $new->current = $is_current;
         $new->current_item_ancestor = false;
         $new->current_item_parent = false;
@@ -486,7 +611,6 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
             $classes[] = 'current_page_item';
         }
         $new->classes = $classes;
-        // Clear any mega-menu / column flags copied from the template item.
         foreach (array('us_mega_menu', 'us_columns', 'us_mega_menu_layout', 'us_mega_menu_width', 'us_mega_menu_columns') as $prop) {
             if (isset($new->$prop)) {
                 unset($new->$prop);
@@ -494,7 +618,6 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
         }
 
         array_splice($items, $insert_at, 0, array($new));
-        // Re-index menu_order so walkers relying on it keep the new position.
         $order = 1;
         foreach ($items as $item) {
             if ((int) $item->menu_item_parent === 0) {
