@@ -7,6 +7,8 @@
  * (`--ha-view-sections-column-max-width`, `--ha-view-sections-column-gap`),
  * which normally means editing a theme YAML file. This service sets those
  * variables on the nearest `hui-root` instead, from a switch in Hub > Themes.
+ * FreeSpace views also honor the same setting (full width fills the content
+ * column instead of letterboxing to a fixed canvas).
  *
  * Precedence is HA's: a `theme:` on the view sets the same variables on
  * `hui-view`, which is closer to the content and therefore wins. Masonry and

@@ -26,6 +26,32 @@ export function isVisuallyBlankLabel(label: string | undefined | null): boolean 
   return /^[\s\u2800]*$/.test(label);
 }
 
+/** Triggers narrower than this let the open menu size to its options. */
+export const MENU_MIN_CONTENT_WIDTH_PX = 160;
+const MENU_MAX_CONTENT_WIDTH_PX = 280;
+const MENU_VIEWPORT_GUTTER_PX = 8;
+
+export function resolveDropdownMenuPlacement(
+  triggerLeft: number,
+  triggerWidth: number,
+  contentWidth: number,
+  viewportWidth: number
+): { left: number; width: number } {
+  if (triggerWidth >= MENU_MIN_CONTENT_WIDTH_PX || contentWidth <= triggerWidth) {
+    return { left: triggerLeft, width: triggerWidth };
+  }
+  let width = Math.min(contentWidth, MENU_MAX_CONTENT_WIDTH_PX);
+  if (viewportWidth > 0) {
+    width = Math.min(width, Math.max(triggerWidth, viewportWidth - MENU_VIEWPORT_GUTTER_PX * 2));
+  }
+  let left = triggerLeft + triggerWidth / 2 - width / 2;
+  if (viewportWidth > 0) {
+    const maxLeft = viewportWidth - MENU_VIEWPORT_GUTTER_PX - width;
+    left = Math.max(MENU_VIEWPORT_GUTTER_PX, Math.min(left, maxLeft));
+  }
+  return { left: Math.round(left), width: Math.ceil(width) };
+}
+
 /**
  * Unified-template keys the dropdown module reads: a top-level `options` array
  * (or a bare JSON array) of option objects plus an optional `display` object.
@@ -2466,9 +2492,10 @@ export class UltraDropdownModule extends BaseUltraModule {
     const downOverlapPx = 0;
     const upOverlapPx = 1;
     dropdownElement.style.position = 'fixed';
-    dropdownElement.style.left = `${triggerRect.left - hostRect.left}px`;
-    dropdownElement.style.width = `${triggerRect.width}px`;
     dropdownElement.style.right = 'auto';
+    const { left, width } = this.resolveMenuHorizontalPlacement(dropdownElement, triggerRect);
+    dropdownElement.style.left = `${left - hostRect.left}px`;
+    dropdownElement.style.width = `${width}px`;
 
     if (direction === 'up') {
       const bottom = Math.max(
@@ -2484,6 +2511,36 @@ export class UltraDropdownModule extends BaseUltraModule {
       dropdownElement.style.bottom = 'auto';
       dropdownElement.style.transformOrigin = 'top center';
     }
+  }
+
+  /**
+   * The menu matches the trigger width, but a chevron-only trigger is too
+   * narrow for option labels, so the menu grows to its content (capped) and
+   * centres under the trigger, clamped to the viewport.
+   */
+  private resolveMenuHorizontalPlacement(
+    dropdownElement: HTMLElement,
+    triggerRect: DOMRect
+  ): { left: number; width: number } {
+    const triggerWidth = triggerRect.width;
+    let contentWidth = 0;
+    if (triggerWidth < MENU_MIN_CONTENT_WIDTH_PX) {
+      const prev = {
+        display: dropdownElement.style.display,
+        width: dropdownElement.style.width,
+      };
+      dropdownElement.style.display = 'block';
+      dropdownElement.style.width = 'max-content';
+      contentWidth = dropdownElement.scrollWidth || dropdownElement.offsetWidth || 0;
+      dropdownElement.style.display = prev.display;
+      dropdownElement.style.width = prev.width;
+    }
+    return resolveDropdownMenuPlacement(
+      triggerRect.left,
+      triggerWidth,
+      contentWidth,
+      typeof window !== 'undefined' ? window.innerWidth : 0
+    );
   }
 
   private getFixedHostRect(host: Element | null): { left: number; top: number } {

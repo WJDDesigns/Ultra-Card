@@ -14,6 +14,8 @@ import {
   runUltraCardVersionBanner,
 } from './utils/uc-pro-banner';
 import { registerUltraDashboardStrategy } from './strategy/ultra-dashboard-strategy';
+import { registerUltraFreeSpaceView } from './freespace/ultra-freespace-view';
+import { installFreeSpaceViewEditorPatch } from './freespace/uc-freespace-view-editor-patch';
 import { ucSectionsLayoutService } from './services/uc-sections-layout-service';
 
 // The English dictionary is its own chunk; start it now so it is in memory
@@ -58,6 +60,11 @@ window.customCards.push({
 
 // "Ultra Dashboard" in the new-dashboard dialog (Community dashboards, HA 2026.5+).
 registerUltraDashboardStrategy();
+
+// FreeSpace custom Lovelace view (type: custom:ultra-freespace-view). The tag
+// must exist at resource load; the Lit impl is a lazy uc-freespace chunk.
+registerUltraFreeSpaceView();
+installFreeSpaceViewEditorPatch();
 
 // Hub > Themes "Sections view width": widens Sections views on every dashboard,
 // including views that have no Ultra Card on them.

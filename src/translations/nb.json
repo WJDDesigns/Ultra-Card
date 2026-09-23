@@ -5715,6 +5715,47 @@
       "success_edit_saved": "Saved.",
       "got_it": "Got it"
     },
-    "subtitle": "Hub"
+    "subtitle": "Hub",
+    "freespace": {
+      "title": "Enable FreeSpace",
+      "desc": "Add a free-form dashboard layout: drag, resize, rotate, and layer any card anywhere. Looks like Home Assistant Sections, with full canvas freedom.",
+      "needs_connect": "Install Ultra Card Connect to unlock FreeSpace. Existing FreeSpace views still render without it.",
+      "install_connect": "Install guide",
+      "step1": "Open a dashboard and tap Edit dashboard",
+      "step2": "Pencil the view → Layout → FreeSpace (Ultra Card)",
+      "step3": "Drag cards freely; use corner icons to rotate; layer them as you like"
+    },
+    "sections_width": "Sections & FreeSpace width",
+    "sections_width_desc": "Widen Sections columns and FreeSpace to fill the screen, or keep Home Assistant’s default centred layout. Applies to every dashboard in this browser. Masonry and Panel views are not affected.",
+    "sections_width_default": "Home Assistant default",
+    "sections_width_default_hint": "500px per column, centred",
+    "sections_width_full": "Full width",
+    "sections_width_full_hint": "Sections columns and FreeSpace fill the whole screen",
+    "sections_width_custom": "Custom",
+    "sections_width_custom_hint": "Pick a max width per column",
+    "sections_column_width": "Max width per column (px)",
+    "sections_gap": "Column gap and side padding (px)",
+    "sections_gap_placeholder": "HA default (32)"
+  },
+  "freespace": {
+    "import_sections": "This view still has {count} cards in Sections. Import them into FreeSpace?",
+    "import_sections_action": "Import sections",
+    "requires_connect": "Install Ultra Card Connect to arrange FreeSpace cards.",
+    "enable_in_hub": "Enable FreeSpace in Ultra Card Hub → Home to unlock arranging tools.",
+    "narrow_hint": "Switch to a wider screen to arrange FreeSpace. Cards are stacked for readability.",
+    "empty": "Add a card to start building.",
+    "add_card": "Add card",
+    "breakpoints": "Breakpoints",
+    "bp_desktop": "Desktop",
+    "bp_laptop": "Laptop",
+    "bp_tablet": "Tablet",
+    "bp_phone": "Phone",
+    "copy_from_desktop": "Copy from Desktop",
+    "bp_explicit": "{count} cards with {bp} layout",
+    "select_hint": "Click a card to select it. Double-click to edit. Right-click for the card menu. Click empty space to deselect.",
+    "device_preview_hint": "Showing {bp} at true size (not stretched to the desktop).",
+    "width_bound": "Design canvas edge",
+    "width_bounds_hint": "Dashed lines mark the design canvas width (Hub → Themes → Full width is off).",
+    "outside_bounds_hint": "Some cards sit outside the lines — they still work; drag them back to keep them inside the canvas."
   }
 }

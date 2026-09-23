@@ -172,8 +172,10 @@ async function renderOverlay(page, columnWidth) {
       border_color: 'transparent',
       current_selection: 'off',
       options: [
-        { id: 'opt-off', label: 'off', icon: 'mdi:power' },
-        { id: 'opt-heat', label: 'heat', icon: 'mdi:heat-wave' },
+        { id: 'opt-heat', label: 'heat', icon: 'mdi:heat-wave', icon_color: '#FF0000' },
+        { id: 'opt-cool', label: 'cool', icon: 'mdi:snowflake' },
+        { id: 'opt-dry', label: 'dry', icon: 'mdi:water-opacity', icon_color: '#FFCC99' },
+        { id: 'opt-off', label: 'off', icon: 'mdi:power', icon_color: '#666666' },
       ],
       design: {
         smart_scaling: false,
@@ -307,6 +309,63 @@ async function measure(page) {
   });
 }
 
+async function openMenu(page) {
+  const trigger = page.locator('.dropdown-selected').first();
+  await trigger.click();
+  await page.waitForTimeout(350);
+  return page.evaluate(() => {
+    const round = n => Math.round(n * 10) / 10;
+    const menu = [...document.querySelectorAll('.dropdown-options')].find(
+      el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0
+    );
+    if (!menu) return { found: false };
+    const r = menu.getBoundingClientRect();
+    const trig = document.querySelector('.dropdown-selected').getBoundingClientRect();
+    const options = [...menu.querySelectorAll('.dropdown-option')].map(opt => {
+      const label = [...opt.querySelectorAll('span')].find(s =>
+        /^(heat|cool|dry|off)$/i.test((s.textContent || '').trim())
+      );
+      const lr = label ? label.getBoundingClientRect() : null;
+      return {
+        text: (opt.textContent || '').trim(),
+        labelRight: lr ? round(lr.right) : null,
+        labelWidth: lr ? round(lr.width) : null,
+      };
+    });
+    return {
+      found: true,
+      left: round(r.left),
+      right: round(r.right),
+      width: round(r.width),
+      top: round(r.top),
+      triggerBottom: round(trig.bottom),
+      triggerMid: round(trig.left + trig.width / 2),
+      viewportWidth: window.innerWidth,
+      options,
+    };
+  });
+}
+
+function assertMenu(name, m) {
+  const errors = [];
+  if (!m.found) return [`${name}: dropdown menu did not open`];
+  if (m.options.length !== 4) errors.push(`${name}: expected 4 options, saw ${m.options.length}`);
+  for (const o of m.options) {
+    if (o.labelRight === null) {
+      errors.push(`${name}: option "${o.text}" has no visible label`);
+    } else if (o.labelRight > m.right + 0.5) {
+      errors.push(`${name}: option "${o.text}" label clipped (label right ${o.labelRight} > menu right ${m.right})`);
+    }
+  }
+  if (m.left < 0 || m.right > m.viewportWidth) {
+    errors.push(`${name}: menu leaves the viewport (${m.left}–${m.right} of ${m.viewportWidth})`);
+  }
+  if (Math.abs(m.top - m.triggerBottom) > 4) {
+    errors.push(`${name}: menu top ${m.top} is not attached to the trigger (${m.triggerBottom})`);
+  }
+  return errors;
+}
+
 function assertViewport(name, m) {
   const errors = [];
   if (!m.off) errors.push(`${name}: Off label not found. Body: ${m.bodyText}`);
@@ -363,6 +422,21 @@ async function main() {
       console.log(
         `${vp.name} (${vp.width}px): Off→chevron gap=${metrics.gap}px overlap=${metrics.overlap} off/temp=${metrics.offTempGap}px clusterOffset=${metrics.clusterOffset}px infoW=${metrics.infoWidth} dropW=${metrics.dropdownWidth} selW=${metrics.selectionWidth}`
       );
+
+      const menu = await openMenu(page);
+      results[results.length - 1].menu = menu;
+      errors.push(...assertMenu(vp.name, menu));
+      await page.screenshot({
+        path: path.join(OUT_DIR, `${vp.name}-open.png`),
+        fullPage: true,
+      });
+      console.log(
+        `${vp.name} menu: width=${menu.width}px left=${menu.left} right=${menu.right} options=${(menu.options || [])
+          .map(o => `${o.text}:${o.labelWidth}`)
+          .join(',')}`
+      );
+      await page.keyboard.press('Escape');
+      await page.mouse.click(5, 5);
     }
 
     if (results.length === 2 && results[0].gap !== null && results[1].gap !== null) {

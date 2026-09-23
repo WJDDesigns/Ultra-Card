@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.0-beta1
+
+The first 3.13.0 beta introduces **FreeSpace**, a free-form dashboard view where you can drag, resize, rotate and layer any card anywhere, with its own Desktop, Laptop, Tablet and Phone layouts. Full width now lives in Hub → Home and covers both Sections and FreeSpace. The chevron-only HVAC mode dropdown opens wide enough to read again. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added FreeSpace** - A custom Lovelace view layout (`custom:ultra-freespace-view`) for free-form dashboards. Drag, resize, rotate and layer any card, native or custom, on a canvas that looks like Home Assistant Sections. Click to select, double-click to open the card editor, right-click for edit, duplicate, layer and delete. Alignment guides and snap-to-grid help you line things up. Turn it on in Hub → Home when Ultra Card Connect is installed, then pick **FreeSpace (Ultra Card)** as the view's layout. Existing FreeSpace views keep rendering without Connect. [Docs](docs/freespace.md)
+- **Separate layouts per screen size** - FreeSpace has a Desktop / Laptop / Tablet / Phone bar in edit mode. Each size keeps its own positions, and a size you have not arranged falls back to the next larger one. **Copy from Desktop** seeds a smaller size so you only have to tweak it. On phones, cards stack in reading order until you arrange a Phone layout
+- **FreeSpace settings in the view editor** - Canvas width for each screen size, minimum height, snap grid and phone behaviour are set under **FreeSpace view specific settings** when you edit the view
+- **Import from Sections** - Switch a Sections view to FreeSpace and a banner offers to move its cards onto the canvas in one save
+
+### 🔧 Improvements
+
+- **Layout width moved to Hub → Home** - The HA default / Full width / Custom width setting moved from Hub → Themes into its own **Layout width** card on Hub → Home, above FreeSpace. It now covers FreeSpace as well as Sections: with Full width on, every screen size fills the view, and with it off the canvas stays centred at its design width
+- **FreeSpace looks the same in edit mode and on the dashboard** - Cards keep a 1:1 size when you press Done, and Phone or Tablet previews on a wide screen show at true device size instead of being blown up. The dot grid covers the whole background while editing, and dashed lines mark the canvas edges when Full width is off. Cards placed outside the lines keep working
+
+### 🐛 Bug Fixes
+
+- **Fixed the HVAC mode dropdown clipping its options** - After the overlay layout fix, a chevron-only dropdown opened a menu as narrow as the chevron, so heat / cool / dry / off were cut off. A narrow trigger now opens a menu sized to its options, centred under the chevron and kept on screen. Full-width dropdowns are unchanged, and so is the card YAML
+
+---
+
 ## Version 3.12.0
 
 Stable 3.12.0 ships the Camera Grid module, Hub Sections view width, UniFi Protect-only UNVR/ENVR as NVRs, overlay HVAC layout fixes from the betas, and **Ultra Card Pro Lifetime**: $99 once, with loyalty credit for what you have already paid. Thanks to everyone who tested the betas.

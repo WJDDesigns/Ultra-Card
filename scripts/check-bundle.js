@@ -134,6 +134,8 @@ if (!singleFile) {
     'uc-locale-en.',
     // Ultra Dashboard strategy: only the element shim lives in the entry.
     'uc-strategy.',
+    // FreeSpace custom view: only the element shim + editor patch live in the entry.
+    'uc-freespace.',
   ]) {
     if (!chunks.some(c => c.startsWith(prefix))) {
       errors.push(
@@ -156,6 +158,11 @@ if (!singleFile) {
   if (entrySource.includes('Home overview page')) {
     errors.push(
       'ultra-card.js contains the dashboard strategy editor (uc-strategy folded back in).'
+    );
+  }
+  if (entrySource.includes('Switch to a wider screen to arrange FreeSpace')) {
+    errors.push(
+      'ultra-card.js contains the FreeSpace view implementation (uc-freespace folded back in).'
     );
   }
   const moduleChunks = chunks.filter(c => c.startsWith('uc-m-')).length;

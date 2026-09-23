@@ -1,7 +1,7 @@
 /**
  * Ultra Card Hub – Dashboard tab (welcome, stats, changelog).
  */
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -9,6 +9,19 @@ import { panelStyles } from '../panel-styles';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
 import { ucCloudAuthService, type CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucPresetAuthorService, type AuthorPreset } from '../../services/uc-preset-author-service';
+import {
+  ucFreeSpaceSettingsService,
+} from '../../services/uc-freespace-settings-service';
+import {
+  ucSectionsLayoutService,
+  UC_SECTIONS_COLUMN_WIDTH_DEFAULT,
+  UC_SECTIONS_COLUMN_WIDTH_MAX,
+  UC_SECTIONS_COLUMN_WIDTH_MIN,
+  UC_SECTIONS_GAP_MAX,
+  UC_SECTIONS_GAP_MIN,
+  type UcSectionsWidthMode,
+} from '../../services/uc-sections-layout-service';
+import { isConnectInstalled } from '../../services/uc-connect-compatibility';
 import { VERSION } from '../../version';
 import { dispatchHubNavigate } from '../hub-navigation';
 import { formatRelativeTime } from '../hub-format';
@@ -38,8 +51,12 @@ export class HubDashboardTab extends LitElement {
   @state() private _changelogTitle = '';
   @state() private _authorPresets: AuthorPreset[] = [];
   @state() private _authorPresetsLoaded = false;
+  @state() private _freespaceEnabled = false;
+  @state() private _sectionsWidthTick = 0;
 
   private _authListener: ((user: CloudUser | null) => void) | undefined;
+  private _freespaceUnsub: (() => void) | undefined;
+  private _sectionsWidthUnsub: (() => void) | undefined;
   static override styles = [
     panelStyles,
     css`
@@ -452,6 +469,154 @@ export class HubDashboardTab extends LitElement {
       .author-prompt-body button:hover {
         background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
       }
+
+      .freespace-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .freespace-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .freespace-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .freespace-text strong {
+        display: block;
+        font-size: 15px;
+        color: var(--primary-text-color);
+      }
+      .freespace-text small {
+        display: block;
+        margin-top: 4px;
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
+      }
+      .freespace-steps {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--secondary-text-color);
+      }
+      .freespace-steps li {
+        margin-bottom: 4px;
+      }
+      .freespace-warn {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.12);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .freespace-warn ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--warning-color, #ff9800);
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .sections-width {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .sections-width-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .sections-width-text strong {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .sections-width-text small {
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
+      }
+      .sections-width-modes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .sections-width-modes .mode {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 10px 12px;
+        text-align: left;
+        font: inherit;
+        color: var(--primary-text-color);
+        background: var(--ha-card-background, var(--card-background-color));
+        border: 1px solid var(--divider-color);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .sections-width-modes .mode:hover {
+        border-color: var(--primary-color);
+      }
+      .sections-width-modes .mode:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+      .sections-width-modes .mode.active {
+        border-color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
+      }
+      .sections-width-modes .mode-label {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .sections-width-modes .mode-hint {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+      .sections-width-fields {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .sections-width-fields .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1 1 200px;
+        min-width: 0;
+      }
+      .sections-width-fields .field span {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+      }
+      .sections-width-fields input {
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 10px;
+        color: var(--primary-text-color);
+        background: var(--ha-card-background, var(--card-background-color));
+        border: 1px solid var(--divider-color);
+        border-radius: 10px;
+        outline: none;
+      }
+      .sections-width-fields input:focus-visible {
+        border-color: var(--primary-color);
+      }
+      @media (max-width: 700px) {
+        .sections-width-modes {
+          grid-template-columns: 1fr;
+        }
+      }
     `,
   ];
 
@@ -459,6 +624,13 @@ export class HubDashboardTab extends LitElement {
     super.connectedCallback();
     this._loadStats();
     this._loadChangelog();
+    this._freespaceEnabled = ucFreeSpaceSettingsService.isEnabled();
+    this._freespaceUnsub = ucFreeSpaceSettingsService.subscribe(() => {
+      this._freespaceEnabled = ucFreeSpaceSettingsService.isEnabled();
+    });
+    this._sectionsWidthUnsub = ucSectionsLayoutService.subscribe(() => {
+      this._sectionsWidthTick++;
+    });
     this._authListener = () => {
       void this._loadAuthorPresets();
     };
@@ -468,6 +640,10 @@ export class HubDashboardTab extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._freespaceUnsub?.();
+    this._freespaceUnsub = undefined;
+    this._sectionsWidthUnsub?.();
+    this._sectionsWidthUnsub = undefined;
     if (this._authListener) {
       ucCloudAuthService.removeListener(this._authListener);
       this._authListener = undefined;
@@ -480,6 +656,113 @@ export class HubDashboardTab extends LitElement {
 
   private _t(key: string, fallback: string): string {
     return localize(key, this._lang(), fallback);
+  }
+
+  private _renderSectionsWidth(): TemplateResult {
+    // Touch tick so layout-service updates re-render this block.
+    void this._sectionsWidthTick;
+    const layout = ucSectionsLayoutService.get();
+    const modes: { id: UcSectionsWidthMode; label: string; hint: string }[] = [
+      {
+        id: 'default',
+        label: this._t('hub.sections_width_default', 'Home Assistant default'),
+        hint: this._t(
+          'hub.sections_width_default_hint',
+          `${UC_SECTIONS_COLUMN_WIDTH_DEFAULT}px per column, centred`
+        ),
+      },
+      {
+        id: 'full',
+        label: this._t('hub.sections_width_full', 'Full width'),
+        hint: this._t(
+          'hub.sections_width_full_hint',
+          'Sections columns and FreeSpace fill the whole screen'
+        ),
+      },
+      {
+        id: 'custom',
+        label: this._t('hub.sections_width_custom', 'Custom'),
+        hint: this._t('hub.sections_width_custom_hint', 'Pick a max width per column'),
+      },
+    ];
+    const gapPlaceholder = this._t('hub.sections_gap_placeholder', 'HA default (32)');
+
+    return html`
+      <div class="sections-width">
+        <div class="sections-width-text">
+          <strong>${this._t('hub.sections_width', 'Sections & FreeSpace width')}</strong>
+          <small>
+            ${this._t(
+              'hub.sections_width_desc',
+              'Widen Sections columns and FreeSpace to fill the screen, or keep Home Assistant’s default centred layout. Applies to every dashboard in this browser. Masonry and Panel views are not affected.'
+            )}
+          </small>
+        </div>
+        <div
+          class="sections-width-modes"
+          role="radiogroup"
+          aria-label=${this._t('hub.sections_width', 'Sections & FreeSpace width')}
+        >
+          ${modes.map(
+            m => html`
+              <button
+                type="button"
+                role="radio"
+                class="mode ${layout.mode === m.id ? 'active' : ''}"
+                aria-checked=${layout.mode === m.id ? 'true' : 'false'}
+                @click=${() => ucSectionsLayoutService.set({ mode: m.id })}
+              >
+                <span class="mode-label">${m.label}</span>
+                <span class="mode-hint">${m.hint}</span>
+              </button>
+            `
+          )}
+        </div>
+        ${layout.mode !== 'default'
+          ? html`
+              <div class="sections-width-fields">
+                ${layout.mode === 'custom'
+                  ? html`
+                      <label class="field">
+                        <span>${this._t('hub.sections_column_width', 'Max width per column (px)')}</span>
+                        <input
+                          type="number"
+                          inputmode="numeric"
+                          min=${UC_SECTIONS_COLUMN_WIDTH_MIN}
+                          max=${UC_SECTIONS_COLUMN_WIDTH_MAX}
+                          step="10"
+                          .value=${String(layout.column_max_width)}
+                          @change=${(e: Event) =>
+                            ucSectionsLayoutService.set({
+                              column_max_width: Number((e.target as HTMLInputElement).value),
+                            })}
+                        />
+                      </label>
+                    `
+                  : nothing}
+                <label class="field">
+                  <span>${this._t('hub.sections_gap', 'Column gap and side padding (px)')}</span>
+                  <input
+                    type="number"
+                    inputmode="numeric"
+                    min=${UC_SECTIONS_GAP_MIN}
+                    max=${UC_SECTIONS_GAP_MAX}
+                    step="4"
+                    placeholder=${gapPlaceholder}
+                    .value=${layout.column_gap === undefined ? '' : String(layout.column_gap)}
+                    @change=${(e: Event) => {
+                      const raw = (e.target as HTMLInputElement).value.trim();
+                      ucSectionsLayoutService.set({
+                        column_gap: raw === '' ? undefined : Number(raw),
+                      });
+                    }}
+                  />
+                </label>
+              </div>
+            `
+          : nothing}
+      </div>
+    `;
   }
 
   private async _loadAuthorPresets(): Promise<void> {
@@ -810,6 +1093,88 @@ export class HubDashboardTab extends LitElement {
             </button>
           </div>
         </div>
+      </div>
+
+      <div class="dash-card">
+        <h3><ha-icon icon="mdi:arrow-expand-horizontal"></ha-icon> Layout width</h3>
+        ${this._renderSectionsWidth()}
+      </div>
+
+      <div class="dash-card">
+        <h3><ha-icon icon="mdi:vector-square"></ha-icon> FreeSpace</h3>
+        ${(() => {
+          const connectOk = isConnectInstalled(this.hass);
+          return html`
+            <div class="freespace-card">
+              ${!connectOk
+                ? html`
+                    <div class="freespace-warn">
+                      <ha-icon icon="mdi:puzzle-outline"></ha-icon>
+                      <span>
+                        ${this._t(
+                          'hub.freespace.needs_connect',
+                          'Install Ultra Card Connect to unlock FreeSpace. Existing FreeSpace views still render without it.'
+                        )}
+                      </span>
+                    </div>
+                    <div class="quick-links">
+                      <button
+                        class="hub-btn hub-btn--sm hub-btn--outline"
+                        @click=${() => this._nav('docs', 'installation')}
+                      >
+                        <ha-icon icon="mdi:download"></ha-icon>
+                        ${this._t('hub.freespace.install_connect', 'Install guide')}
+                      </button>
+                    </div>
+                  `
+                : nothing}
+              <div class="freespace-row">
+                <div class="freespace-text">
+                  <strong>${this._t('hub.freespace.title', 'Enable FreeSpace')}</strong>
+                  <small>
+                    ${this._t(
+                      'hub.freespace.desc',
+                      'Add a free-form dashboard layout: drag, resize, rotate, and layer any card anywhere. Looks like Home Assistant Sections, with full canvas freedom.'
+                    )}
+                  </small>
+                </div>
+                <ha-switch
+                  .checked=${this._freespaceEnabled}
+                  .disabled=${!connectOk}
+                  @change=${(e: Event) => {
+                    const on = !!(e.target as HTMLInputElement).checked;
+                    ucFreeSpaceSettingsService.setEnabled(on);
+                    this._freespaceEnabled = on;
+                  }}
+                ></ha-switch>
+              </div>
+              ${this._freespaceEnabled && connectOk
+                ? html`
+                    <ol class="freespace-steps">
+                      <li>
+                        ${this._t(
+                          'hub.freespace.step1',
+                          'Open a dashboard and tap Edit dashboard'
+                        )}
+                      </li>
+                      <li>
+                        ${this._t(
+                          'hub.freespace.step2',
+                          'Pencil the view → Layout → FreeSpace (Ultra Card)'
+                        )}
+                      </li>
+                      <li>
+                        ${this._t(
+                          'hub.freespace.step3',
+                          'Drag cards freely; use corner icons to rotate; layer them as you like'
+                        )}
+                      </li>
+                    </ol>
+                  `
+                : nothing}
+            </div>
+          `;
+        })()}
       </div>
 
       <div class="dash-card">

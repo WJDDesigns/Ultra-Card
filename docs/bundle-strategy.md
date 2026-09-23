@@ -63,6 +63,11 @@
     using it opens, so the tag must exist at resource load; its static
     `generate()` / `getConfigElement()` import the chunk. See
     `docs/ultra-dashboard.md`.
+  - **`uc-freespace.*`:** FreeSpace custom Lovelace view implementation (artboard,
+    drag/resize/rotate, item chrome). Only the element shim
+    (`src/freespace/ultra-freespace-view.ts`) and the `hui-view-editor` schema
+    patch live in the entry so `type: custom:ultra-freespace-view` resolves at
+    resource load. See `docs/freespace.md`.
   - The editor (`uc-editor.*`, ~1.9 MB), one chunk per non-English locale,
     the Dynamic Weather worker, and Hub panel tabs, as in Phase 1.
   - **Module settings tabs live in the editor chunk (beta2).** `src/tabs/` keeps
