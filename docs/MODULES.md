@@ -1,6 +1,6 @@
 # Ultra Card module gallery
 
-_Generated from v3.12.0-beta2 on 2026-09-21 — do not edit by hand._
+_Generated from v3.13.0-beta1 on 2026-09-23 — do not edit by hand._
 
 **99 modules** · 68 free · 31 PRO
 
