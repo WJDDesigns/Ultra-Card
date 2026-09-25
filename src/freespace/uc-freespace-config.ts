@@ -7,7 +7,9 @@ import {
   DEFAULT_CARD_H,
   DEFAULT_CARD_W,
   DEFAULT_FREESPACE_OPTIONS,
+  FREESPACE_PINS,
   type FreeSpaceCardLayout,
+  type FreeSpacePin,
   type FreeSpaceViewOptions,
 } from './types';
 import {
@@ -105,14 +107,19 @@ export function normalizeCardLayout(input: unknown): FreeSpaceCardLayout | null 
   if (!hasValidLayout(input)) return null;
   const r = num(input.r, 0);
   const z = Math.round(num(input.z, 0));
-  return clampLayout({
+  const layout: FreeSpaceCardLayout = {
     x: Number(input.x),
     y: Number(input.y),
     w: Number(input.w),
     h: Number(input.h),
     r,
     z,
-  });
+  };
+  if ((FREESPACE_PINS as readonly unknown[]).includes(input.pin)) {
+    layout.pin = input.pin as FreeSpacePin;
+    layout.ref_w = num(input.ref_w, NaN);
+  }
+  return clampLayout(layout);
 }
 
 /**
@@ -191,6 +198,29 @@ export function readCardLayout(
 }
 
 /**
+ * A pin's `ref_w` belongs to the breakpoint it was set on. When another
+ * breakpoint borrows the layout, measure the pin from that breakpoint's canvas
+ * instead, so a Desktop pin does not stretch or shift by the full
+ * Desktop-to-Tablet width difference.
+ */
+export function rebasePin(layout: FreeSpaceCardLayout, canvasWidth: number): FreeSpaceCardLayout {
+  if (!layout.pin || layout.pin === 'left' || !(canvasWidth > 0)) return layout;
+  return { ...layout, ref_w: Math.round(canvasWidth) };
+}
+
+/** Layout for a card at `bp`; borrowed (fallback) layouts get their pins re-based. */
+export function readCardLayoutAt(
+  cardConfig: unknown,
+  bp: FreeSpaceBreakpoint,
+  canvasWidth: number
+): FreeSpaceCardLayout | null {
+  if (!isRecord(cardConfig)) return null;
+  const resolved = resolveLayoutForBreakpoint(parseViewLayoutStore(cardConfig.view_layout), bp);
+  if (!resolved) return null;
+  return resolved.from === bp ? resolved.layout : rebasePin(resolved.layout, canvasWidth);
+}
+
+/**
  * Assign default layouts for one breakpoint.
  * Does not mutate; returns a parallel array of layouts (one per card).
  */
@@ -204,7 +234,7 @@ export function assignDefaultLayouts(
   const placed: FreeSpaceCardLayout[] = [];
   for (let i = 0; i < cards.length; i++) {
     const fromExisting = existing?.[i] ?? null;
-    const fromConfig = fromExisting ?? readCardLayout(cards[i], bp);
+    const fromConfig = fromExisting ?? readCardLayoutAt(cards[i], bp, canvas);
     if (fromConfig) {
       placed.push(fromConfig);
       continue;
@@ -290,13 +320,14 @@ export function copyBreakpointLayouts(
   const views = Array.isArray(config?.views) ? [...config.views] : [];
   const view = isRecord(views[viewIndex]) ? { ...views[viewIndex] } : {};
   const cards = Array.isArray(view.cards) ? [...view.cards] : [];
+  const toCanvas = effectiveCanvasWidth(readFreeSpaceOptions(view), to);
   for (let i = 0; i < cards.length; i++) {
     const card = isRecord(cards[i]) ? { ...cards[i] } : {};
     const store = parseViewLayoutStore(card.view_layout);
     if (!force && store[to]) continue;
     const resolved = resolveLayoutForBreakpoint(store, from);
     if (!resolved) continue;
-    store[to] = { ...resolved.layout };
+    store[to] = rebasePin(resolved.layout, toCanvas);
     card.view_layout = serializeViewLayoutStore(store);
     cards[i] = card;
   }
@@ -396,6 +427,50 @@ function renormZ(layouts: FreeSpaceCardLayout[]): void {
 export function nextZ(layouts: FreeSpaceCardLayout[]): number {
   if (!layouts.length) return 0;
   return Math.max(...layouts.map(l => l.z)) + 1;
+}
+
+/**
+ * A breakpoint is Custom when any card stores its own layout for it; otherwise
+ * it uses the Desktop layout. Desktop is always its own layout.
+ */
+export function isBreakpointCustom(cards: unknown[], bp: FreeSpaceBreakpoint): boolean {
+  if (bp === 'desktop') return true;
+  return cards.some(
+    card => isRecord(card) && hasExplicitBreakpointLayout(parseViewLayoutStore(card.view_layout), bp)
+  );
+}
+
+/** Remove every card's layout for `bp` so the breakpoint uses Desktop again. */
+export function clearBreakpointLayouts(
+  config: any,
+  viewIndex: number,
+  bp: FreeSpaceBreakpoint
+): any {
+  if (bp === 'desktop') return config;
+  const views = Array.isArray(config?.views) ? [...config.views] : [];
+  const view = isRecord(views[viewIndex]) ? { ...views[viewIndex] } : {};
+  const cards = Array.isArray(view.cards) ? [...view.cards] : [];
+  for (let i = 0; i < cards.length; i++) {
+    if (!isRecord(cards[i])) continue;
+    const store = parseViewLayoutStore(cards[i].view_layout);
+    if (!store[bp]) continue;
+    delete store[bp];
+    cards[i] = { ...cards[i], view_layout: serializeViewLayoutStore(store) };
+  }
+  view.cards = cards;
+  views[viewIndex] = view;
+  return { ...config, views };
+}
+
+/** Remove cards (by index) from a view in one config change. */
+export function removeCards(config: any, viewIndex: number, indices: number[]): any {
+  const drop = new Set(indices);
+  const views = Array.isArray(config?.views) ? [...config.views] : [];
+  const view = isRecord(views[viewIndex]) ? { ...views[viewIndex] } : {};
+  const cards = Array.isArray(view.cards) ? view.cards : [];
+  view.cards = cards.filter((_: unknown, i: number) => !drop.has(i));
+  views[viewIndex] = view;
+  return { ...config, views };
 }
 
 /**

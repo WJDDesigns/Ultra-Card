@@ -7,7 +7,9 @@ import {
   DEFAULT_CARD_W,
   MIN_CARD_H,
   MIN_CARD_W,
+  type FreeSpaceAlign,
   type FreeSpaceCardLayout,
+  type FreeSpacePin,
   type ResizeHandle,
 } from './types';
 
@@ -32,7 +34,7 @@ export function snapLayout(layout: FreeSpaceCardLayout, grid: number): FreeSpace
 }
 
 export function clampLayout(layout: FreeSpaceCardLayout): FreeSpaceCardLayout {
-  return {
+  const out: FreeSpaceCardLayout = {
     x: Number.isFinite(layout.x) ? layout.x : 0,
     y: Number.isFinite(layout.y) ? Math.max(0, layout.y) : 0,
     w: Number.isFinite(layout.w) ? Math.max(MIN_CARD_W, layout.w) : DEFAULT_CARD_W,
@@ -40,6 +42,144 @@ export function clampLayout(layout: FreeSpaceCardLayout): FreeSpaceCardLayout {
     r: Number.isFinite(layout.r) ? normalizeAngle(layout.r) : 0,
     z: Number.isFinite(layout.z) ? Math.round(layout.z) : 0,
   };
+  if (layout.pin && layout.pin !== 'left' && Number.isFinite(layout.ref_w) && layout.ref_w! > 0) {
+    out.pin = layout.pin;
+    out.ref_w = Math.round(layout.ref_w!);
+  }
+  return out;
+}
+
+/**
+ * Position a pinned card for the current artboard width. Returns layout in
+ * current-width coordinates with `ref_w` set to `width`, so it can be saved
+ * as-is after the user edits it.
+ */
+export function resolvePinnedLayout(
+  layout: FreeSpaceCardLayout,
+  width: number
+): FreeSpaceCardLayout {
+  if (!layout.pin || layout.pin === 'left' || !layout.ref_w || !(width > 0)) return layout;
+  const delta = width - layout.ref_w;
+  if (delta === 0) return layout;
+  const next: FreeSpaceCardLayout = { ...layout, ref_w: Math.round(width) };
+  if (layout.pin === 'right') next.x = layout.x + delta;
+  else if (layout.pin === 'center') next.x = layout.x + delta / 2;
+  else if (layout.pin === 'stretch') next.w = Math.max(MIN_CARD_W, layout.w + delta);
+  return next;
+}
+
+export function resolvePinnedLayouts(
+  layouts: FreeSpaceCardLayout[],
+  width: number
+): FreeSpaceCardLayout[] {
+  return layouts.map(l => resolvePinnedLayout(l, width));
+}
+
+/** Set (or clear, for `left`) a card's pin at the current artboard width. */
+export function withPin(
+  layout: FreeSpaceCardLayout,
+  pin: FreeSpacePin,
+  width: number
+): FreeSpaceCardLayout {
+  const { pin: _p, ref_w: _r, ...rest } = layout;
+  if (pin === 'left' || !(width > 0)) return rest;
+  return { ...rest, pin, ref_w: Math.round(width) };
+}
+
+/** Inset used when aligning a card to the artboard edges. */
+export const ALIGN_INSET = 16;
+
+/** Align a card within the artboard (ignores rotation; uses the unrotated box). */
+export function alignInArtboard(
+  layout: FreeSpaceCardLayout,
+  align: FreeSpaceAlign,
+  width: number
+): FreeSpaceCardLayout {
+  let { x, y } = layout;
+  if (align === 'left') x = ALIGN_INSET;
+  else if (align === 'right') x = width - layout.w - ALIGN_INSET;
+  else if (align === 'center') x = (width - layout.w) / 2;
+  else if (align === 'top') y = ALIGN_INSET;
+  return clampLayout({ ...layout, x: Math.round(x), y: Math.round(y) });
+}
+
+/** Bounding box of several layouts (unrotated boxes). */
+export function selectionBounds(layouts: FreeSpaceCardLayout[]): {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+} {
+  return {
+    left: Math.min(...layouts.map(l => l.x)),
+    top: Math.min(...layouts.map(l => l.y)),
+    right: Math.max(...layouts.map(l => l.x + l.w)),
+    bottom: Math.max(...layouts.map(l => l.y + l.h)),
+  };
+}
+
+/** Align the cards at `indices` to their shared bounding box. */
+export function alignGroup(
+  layouts: FreeSpaceCardLayout[],
+  indices: number[],
+  align: FreeSpaceAlign
+): FreeSpaceCardLayout[] {
+  const picked = indices.map(i => layouts[i]).filter(Boolean) as FreeSpaceCardLayout[];
+  if (picked.length < 2) return layouts;
+  const b = selectionBounds(picked);
+  const set = new Set(indices);
+  return layouts.map((l, i) => {
+    if (!set.has(i)) return l;
+    let { x, y } = l;
+    if (align === 'left') x = b.left;
+    else if (align === 'right') x = b.right - l.w;
+    else if (align === 'center') x = (b.left + b.right) / 2 - l.w / 2;
+    else if (align === 'top') y = b.top;
+    else if (align === 'bottom') y = b.bottom - l.h;
+    else if (align === 'middle') y = (b.top + b.bottom) / 2 - l.h / 2;
+    return clampLayout({ ...l, x: Math.round(x), y: Math.round(y) });
+  });
+}
+
+/** Space the cards at `indices` evenly between the outermost two (needs 3+). */
+export function distributeGroup(
+  layouts: FreeSpaceCardLayout[],
+  indices: number[],
+  axis: 'horizontal' | 'vertical'
+): FreeSpaceCardLayout[] {
+  if (indices.length < 3) return layouts;
+  const pos = axis === 'horizontal' ? 'x' : 'y';
+  const size = axis === 'horizontal' ? 'w' : 'h';
+  const order = [...indices]
+    .filter(i => layouts[i])
+    .sort((a, b) => layouts[a][pos] - layouts[b][pos]);
+  const first = layouts[order[0]];
+  const last = layouts[order[order.length - 1]];
+  const span = last[pos] + last[size] - first[pos];
+  const total = order.reduce((sum, i) => sum + layouts[i][size], 0);
+  const gap = (span - total) / (order.length - 1);
+  const next = [...layouts];
+  let cursor = first[pos];
+  for (const i of order) {
+    next[i] = clampLayout({ ...layouts[i], [pos]: Math.round(cursor) });
+    cursor += layouts[i][size] + gap;
+  }
+  return next;
+}
+
+/** Indices of cards whose box intersects a rectangle (marquee selection). */
+export function cardsInRect(
+  layouts: FreeSpaceCardLayout[],
+  rect: { left: number; top: number; right: number; bottom: number }
+): number[] {
+  const out: number[] = [];
+  layouts.forEach((l, i) => {
+    const a = layoutAabb(l);
+    if (a.left < rect.right && a.right > rect.left && a.top < rect.bottom && a.bottom > rect.top) {
+      out.push(i);
+    }
+  });
+  return out;
 }
 
 /** Normalise degrees into (-180, 180]. */

@@ -17,12 +17,15 @@ export const FREESPACE_BREAKPOINTS: readonly FreeSpaceBreakpoint[] = [
   'phone',
 ] as const;
 
-/** Fallback order when a breakpoint has no explicit layout (closest larger → desktop). */
+/**
+ * Fallback order when a card has no layout for a breakpoint. A breakpoint is
+ * either Custom or "Use Desktop", so it falls straight back to desktop.
+ */
 export const BREAKPOINT_FALLBACK: Record<FreeSpaceBreakpoint, FreeSpaceBreakpoint[]> = {
   desktop: ['desktop'],
   laptop: ['laptop', 'desktop'],
-  tablet: ['tablet', 'laptop', 'desktop'],
-  phone: ['phone', 'tablet', 'laptop', 'desktop'],
+  tablet: ['tablet', 'desktop'],
+  phone: ['phone', 'desktop'],
 };
 
 export interface BreakpointSpec {

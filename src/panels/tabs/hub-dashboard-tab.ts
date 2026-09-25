@@ -10,9 +10,6 @@ import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-s
 import { ucCloudAuthService, type CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucPresetAuthorService, type AuthorPreset } from '../../services/uc-preset-author-service';
 import {
-  ucFreeSpaceSettingsService,
-} from '../../services/uc-freespace-settings-service';
-import {
   ucSectionsLayoutService,
   UC_SECTIONS_COLUMN_WIDTH_DEFAULT,
   UC_SECTIONS_COLUMN_WIDTH_MAX,
@@ -51,11 +48,9 @@ export class HubDashboardTab extends LitElement {
   @state() private _changelogTitle = '';
   @state() private _authorPresets: AuthorPreset[] = [];
   @state() private _authorPresetsLoaded = false;
-  @state() private _freespaceEnabled = false;
   @state() private _sectionsWidthTick = 0;
 
   private _authListener: ((user: CloudUser | null) => void) | undefined;
-  private _freespaceUnsub: (() => void) | undefined;
   private _sectionsWidthUnsub: (() => void) | undefined;
   static override styles = [
     panelStyles,
@@ -624,10 +619,6 @@ export class HubDashboardTab extends LitElement {
     super.connectedCallback();
     this._loadStats();
     this._loadChangelog();
-    this._freespaceEnabled = ucFreeSpaceSettingsService.isEnabled();
-    this._freespaceUnsub = ucFreeSpaceSettingsService.subscribe(() => {
-      this._freespaceEnabled = ucFreeSpaceSettingsService.isEnabled();
-    });
     this._sectionsWidthUnsub = ucSectionsLayoutService.subscribe(() => {
       this._sectionsWidthTick++;
     });
@@ -640,8 +631,6 @@ export class HubDashboardTab extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this._freespaceUnsub?.();
-    this._freespaceUnsub = undefined;
     this._sectionsWidthUnsub?.();
     this._sectionsWidthUnsub = undefined;
     if (this._authListener) {
@@ -1130,25 +1119,20 @@ export class HubDashboardTab extends LitElement {
                 : nothing}
               <div class="freespace-row">
                 <div class="freespace-text">
-                  <strong>${this._t('hub.freespace.title', 'Enable FreeSpace')}</strong>
+                  <strong>
+                    ${connectOk
+                      ? this._t('hub.freespace.ready', 'FreeSpace is ready')
+                      : this._t('hub.freespace.title', 'FreeSpace')}
+                  </strong>
                   <small>
                     ${this._t(
                       'hub.freespace.desc',
-                      'Add a free-form dashboard layout: drag, resize, rotate, and layer any card anywhere. Looks like Home Assistant Sections, with full canvas freedom.'
+                      'A free-form dashboard layout: drag, resize, rotate, and layer any card anywhere. Looks like Home Assistant Sections, with full canvas freedom. Included with Ultra Card Connect.'
                     )}
                   </small>
                 </div>
-                <ha-switch
-                  .checked=${this._freespaceEnabled}
-                  .disabled=${!connectOk}
-                  @change=${(e: Event) => {
-                    const on = !!(e.target as HTMLInputElement).checked;
-                    ucFreeSpaceSettingsService.setEnabled(on);
-                    this._freespaceEnabled = on;
-                  }}
-                ></ha-switch>
               </div>
-              ${this._freespaceEnabled && connectOk
+              ${connectOk
                 ? html`
                     <ol class="freespace-steps">
                       <li>

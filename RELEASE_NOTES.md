@@ -1,5 +1,34 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.0-beta2
+
+The second 3.13.0 beta turns FreeSpace into a proper canvas editor. A toolbar across the top holds the screen sizes and changes with what you select: exact position fields, alignment, layering, and pins that keep cards stuck to the left or right edge as the screen gets wider. You can select several cards at once to align, distribute or move them together, and each screen size can follow the Desktop layout or have its own. FreeSpace is also on for everyone with Ultra Card Connect, with no switch to find. It includes everything from beta1. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the FreeSpace toolbar** - A toolbar at the top of the view in edit mode. It always shows Desktop / Laptop / Tablet / Phone. With nothing selected it offers Snap to grid and Add card. Select a card to get X / Y / W / H / rotation fields, align to the canvas edges, bring forward or send back, and Edit, Duplicate and Delete. Button labels collapse to icons with tooltips when space is tight
+- **Added pins** - Pin a card Left (the default), Right, Center, or Left & right from the toolbar or the right-click menu. A right-pinned card keeps its distance from the right edge as the screen gets wider, and Left & right stretches with it. Pins work with Full width on, and a dashed line shows which edge the selected card is pinned to. Existing cards stay pinned left, so nothing moves on update
+- **Added multi-select** - Shift-, Ctrl- or Cmd-click cards, drag a box on empty space, or press Cmd/Ctrl+A. Drag any selected card to move the group, nudge it with the arrow keys, and use the toolbar to align to the selection (left, center, right, top, middle, bottom), distribute evenly, pin, or delete them all at once
+- **Added Use Desktop / Custom for each screen size** - Laptop, Tablet and Phone start on **Use Desktop** and show the Desktop layout. Move or resize a card there and that screen size switches to **Custom**, copying the Desktop positions for every card first so nothing else jumps. Choose Use Desktop again to reset it. This replaces the Copy from Desktop button
+
+### 🔧 Improvements
+
+- **FreeSpace is on with Ultra Card Connect** - The Enable FreeSpace switch is gone. If Connect is installed, FreeSpace is in the view Layout dropdown and Hub → Home shows **FreeSpace is ready**
+- **Device edges when editing smaller screens** - Editing Phone, Tablet or Laptop on a bigger screen shows a centered frame at that device's width with dashed lines on both sides, whether Full width is on or off, so cards are placed within the real device instead of across the monitor
+- **FreeSpace loads before anything else in Ultra Card** - The FreeSpace view is registered first thing at startup, so an unrelated startup problem can no longer leave a FreeSpace view showing "Configuration error". If a phone still shows it after updating, reset the Companion app's frontend cache so it picks up the new files
+
+### 🐛 Bug Fixes
+
+- **Fixed the selection border staying on a card after pressing Done** - Leaving edit mode now clears the selection and any open card menu
+
+### ⚠️ Breaking Changes
+
+- **Screen sizes follow Desktop directly** - A screen size without its own layout now always uses the Desktop layout. In beta1, Phone fell back to a Tablet layout (then Laptop) when one existed. If you arranged Tablet but not Phone, pick **Custom** on Phone and arrange it
+
+---
+
 ## Version 3.13.0-beta1
 
 The first 3.13.0 beta introduces **FreeSpace**, a free-form dashboard view where you can drag, resize, rotate and layer any card anywhere, with its own Desktop, Laptop, Tablet and Phone layouts. Full width now lives in Hub → Home and covers both Sections and FreeSpace. The chevron-only HVAC mode dropdown opens wide enough to read again. This is a pre-release for testing — please report anything odd on GitHub or Discord.

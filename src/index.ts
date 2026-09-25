@@ -18,6 +18,12 @@ import { registerUltraFreeSpaceView } from './freespace/ultra-freespace-view';
 import { installFreeSpaceViewEditorPatch } from './freespace/uc-freespace-view-editor-patch';
 import { ucSectionsLayoutService } from './services/uc-sections-layout-service';
 
+// Custom view/strategy tags must be defined before anything below can throw:
+// Home Assistant shows "Configuration error" for a view whose element never
+// gets defined.
+registerUltraFreeSpaceView();
+registerUltraDashboardStrategy();
+
 // The English dictionary is its own chunk; start it now so it is in memory
 // before the first card renders (call sites carry the same text as fallbacks).
 void preloadDefaultLocale();
@@ -58,12 +64,6 @@ window.customCards.push({
   version: VERSION,
 } as CustomCard);
 
-// "Ultra Dashboard" in the new-dashboard dialog (Community dashboards, HA 2026.5+).
-registerUltraDashboardStrategy();
-
-// FreeSpace custom Lovelace view (type: custom:ultra-freespace-view). The tag
-// must exist at resource load; the Lit impl is a lazy uc-freespace chunk.
-registerUltraFreeSpaceView();
 installFreeSpaceViewEditorPatch();
 
 // Hub > Themes "Sections view width": widens Sections views on every dashboard,

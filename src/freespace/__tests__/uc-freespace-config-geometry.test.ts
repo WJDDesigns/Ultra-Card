@@ -118,13 +118,17 @@ describe('setCardLayout / applyLayoutsToView', () => {
 });
 
 describe('breakpoint fallback', () => {
-  it('falls back phone → tablet → laptop → desktop', () => {
+  it('falls back straight to desktop (Use Desktop), not through other breakpoints', () => {
     const card = {
       type: 'tile',
-      view_layout: { desktop: { x: 1, y: 2, w: 100, h: 80, r: 0, z: 0 } },
+      view_layout: {
+        desktop: { x: 1, y: 2, w: 100, h: 80, r: 0, z: 0 },
+        tablet: { x: 9, y: 9, w: 100, h: 80, r: 0, z: 0 },
+      },
     };
     expect(readCardLayout(card, 'phone')).toMatchObject({ x: 1, y: 2 });
     expect(readCardLayout(card, 'laptop')).toMatchObject({ x: 1, y: 2 });
+    expect(readCardLayout(card, 'tablet')).toMatchObject({ x: 9, y: 9 });
   });
 
   it('treats flat legacy layout as desktop', () => {

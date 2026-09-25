@@ -17,12 +17,25 @@ import {
   mdiArrangeSendToBack,
   mdiRotateLeft,
   mdiCursorMove,
+  mdiFormatHorizontalAlignLeft,
+  mdiFormatHorizontalAlignCenter,
+  mdiFormatHorizontalAlignRight,
+  mdiArrowExpandHorizontal,
 } from '@mdi/js';
 import {
   FREESPACE_ITEM_TAG,
+  FREESPACE_PINS,
   type FreeSpaceCardLayout,
+  type FreeSpacePin,
   type ResizeHandle,
 } from './types';
+
+const PIN_MENU: Record<FreeSpacePin, { icon: string; label: string }> = {
+  left: { icon: mdiFormatHorizontalAlignLeft, label: 'Left' },
+  center: { icon: mdiFormatHorizontalAlignCenter, label: 'Center' },
+  right: { icon: mdiFormatHorizontalAlignRight, label: 'Right' },
+  stretch: { icon: mdiArrowExpandHorizontal, label: 'Left & right' },
+};
 
 const RESIZE_HANDLES: ResizeHandle[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
@@ -193,6 +206,17 @@ export class UcFreeSpaceItem extends LitElement {
     .menu button.danger {
       color: var(--error-color, #db4437);
     }
+    .menu button.active {
+      color: var(--primary-color);
+    }
+    .menu .menu-label {
+      padding: 6px 12px 2px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--secondary-text-color);
+    }
     .menu button svg {
       width: 18px;
       height: 18px;
@@ -330,8 +354,9 @@ export class UcFreeSpaceItem extends LitElement {
       if (this.editMode && this.editingAllowed) this.setAttribute('tabindex', '0');
       else this.removeAttribute('tabindex');
     }
-    if (changed.has('selected')) {
-      this.toggleAttribute('selected', this.selected);
+    if (changed.has('selected') || changed.has('editMode')) {
+      this.toggleAttribute('selected', this.selected && this.editMode);
+      if (!this.editMode) this._menuOpen = false;
     }
     if (changed.has('stacked')) {
       this.toggleAttribute('stacked', this.stacked);
@@ -458,6 +483,12 @@ export class UcFreeSpaceItem extends LitElement {
     document.addEventListener('click', this._documentClicked);
   };
 
+  private _setPin(pin: FreeSpacePin, ev: Event): void {
+    ev.stopPropagation();
+    this._menuOpen = false;
+    this._fire('fs-set-pin', { cardIndex: this.cardIndex, pin });
+  }
+
   private _menuAction(action: string, ev: Event): void {
     ev.stopPropagation();
     this._menuOpen = false;
@@ -573,6 +604,23 @@ export class UcFreeSpaceItem extends LitElement {
                             ${this._icon(mdiRotateLeft)} Reset rotation
                           </button>
                         </li>
+                        <li class="divider" role="separator"></li>
+                        <li class="menu-label" role="presentation">Pin to</li>
+                        ${FREESPACE_PINS.map(
+                          p => html`
+                            <li>
+                              <button
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked=${(this.layout?.pin ?? 'left') === p ? 'true' : 'false'}
+                                class=${(this.layout?.pin ?? 'left') === p ? 'active' : ''}
+                                @click=${(e: Event) => this._setPin(p, e)}
+                              >
+                                ${this._icon(PIN_MENU[p].icon)} ${PIN_MENU[p].label}
+                              </button>
+                            </li>
+                          `
+                        )}
                         <li class="divider" role="separator"></li>
                         <li>
                           <button

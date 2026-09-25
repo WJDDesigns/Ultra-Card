@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 
 **Ultra Dashboard** - A complete dashboard from your areas in one click (Settings → Dashboards → Add dashboard → Community dashboards). Pick a style, take control, and every card opens in the visual editor. [Read more](docs/ultra-dashboard.md).
 
-**FreeSpace** - A free-form dashboard view (drag, resize, rotate, layer any card). Enable it in Ultra Card Hub → Home when Ultra Card Connect is installed. [Read more](docs/freespace.md).
+**FreeSpace** - A free-form dashboard view (drag, resize, rotate, layer any card). Available automatically when Ultra Card Connect is installed. [Read more](docs/freespace.md).
 
 **96 modules** - Layouts, gauges, graphs, controls, media, and more. Drag-and-drop columns with nesting so you can build the layout you want.
 

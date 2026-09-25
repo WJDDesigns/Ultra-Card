@@ -28,7 +28,17 @@ export interface FreeSpaceCardLayout {
   r: number;
   /** Layer order (higher = on top). */
   z: number;
+  /** Horizontal pin when the artboard width changes. Omitted = left. */
+  pin?: FreeSpacePin;
+  /** Artboard width the x/w were saved at; required for non-left pins. */
+  ref_w?: number;
 }
+
+export type FreeSpacePin = 'left' | 'right' | 'center' | 'stretch';
+
+export const FREESPACE_PINS: readonly FreeSpacePin[] = ['left', 'center', 'right', 'stretch'];
+
+export type FreeSpaceAlign = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
 
 export const FREESPACE_VIEW_TYPE = 'custom:ultra-freespace-view';
 export const FREESPACE_ELEMENT_TAG = 'ultra-freespace-view';

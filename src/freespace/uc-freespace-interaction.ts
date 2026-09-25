@@ -26,8 +26,11 @@ export interface InteractionCallbacks {
   onStart?: (state: InteractionState) => void;
   onMove: (state: InteractionState) => void;
   onEnd: (state: InteractionState, cancelled: boolean) => void;
-  /** Click / tap without drag → select only (does not open edit). */
-  onClick?: (cardIndex: number) => void;
+  /**
+   * Click / tap without drag → select only (does not open edit). `additive`
+   * is true when Shift, Ctrl or Cmd was held (toggle in a multi-selection).
+   */
+  onClick?: (cardIndex: number, additive: boolean) => void;
   /** Second click within the double-click window → open edit. */
   onDoubleClick?: (cardIndex: number) => void;
 }
@@ -43,6 +46,7 @@ export class FreeSpaceInteractionEngine {
   private _onKeyDown: (ev: KeyboardEvent) => void;
   private _onKeyUp: (ev: KeyboardEvent) => void;
   private _lastClick: { index: number; time: number } | null = null;
+  private _additive = false;
 
   constructor(callbacks: InteractionCallbacks) {
     this._callbacks = callbacks;
@@ -94,6 +98,7 @@ export class FreeSpaceInteractionEngine {
     if (this._state) return;
     const isTouch = ev.pointerType === 'touch';
     this._shiftKey = ev.shiftKey;
+    this._additive = ev.shiftKey || ev.ctrlKey || ev.metaKey;
 
     const start = (): void => {
       const centre = cardCentre(opts.origin);
@@ -228,6 +233,11 @@ export class FreeSpaceInteractionEngine {
   }
 
   private _emitClick(cardIndex: number): void {
+    if (this._additive) {
+      this._lastClick = null;
+      this._callbacks.onClick?.(cardIndex, true);
+      return;
+    }
     const now = Date.now();
     const prev = this._lastClick;
     if (prev && prev.index === cardIndex && now - prev.time <= DOUBLE_CLICK_MS) {
@@ -236,7 +246,7 @@ export class FreeSpaceInteractionEngine {
       return;
     }
     this._lastClick = { index: cardIndex, time: now };
-    this._callbacks.onClick?.(cardIndex);
+    this._callbacks.onClick?.(cardIndex, false);
   }
 
   cancel(): void {
