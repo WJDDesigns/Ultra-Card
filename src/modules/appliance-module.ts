@@ -8,30 +8,18 @@ import {
   ApplianceCardType,
   UltraCardConfig,
 } from '../types';
-
-type AppliancePhase = 'running' | 'paused' | 'done' | 'idle' | 'off' | 'error' | 'unavailable';
+import {
+  AppliancePhase,
+  RUN_STATES,
+  resolveAppliancePhase,
+  stripStatePrefix,
+} from './appliance-phase';
 
 interface EntityRef {
   id: string;
   state: string;
   attrs: Record<string, any>;
 }
-
-// Covers SmartThings (run/pause/stop), LG ThinQ (running/wash/drying/cooling),
-// Miele (in_use/program_running), and common generic integrations.
-const RUN_STATES = new Set([
-  'run', 'running', 'wash', 'washing', 'dry', 'drying', 'active', 'rinse', 'rinsing',
-  'spin', 'spinning', 'busy', 'in_use', 'working', 'cleaning', 'heating', 'cooling',
-  'cooldown', 'steam', 'prewash', 'pre_wash', 'refreshing', 'program_running', 'on',
-  'preheat', 'preheating', 'cooking', 'baking', 'roasting', 'broiling', 'warming',
-]);
-const PAUSE_STATES = new Set(['pause', 'paused', 'hold', 'program_interrupted', 'delayed_start', 'delay_wash']);
-const DONE_STATES = new Set([
-  'finish', 'finished', 'done', 'complete', 'completed', 'end', 'ended',
-  'program_ended', 'wrinkle_prevent', 'anticrease',
-]);
-const IDLE_STATES = new Set(['stop', 'stopped', 'idle', 'ready', 'standby', 'none', 'off', 'inactive', 'not_running', 'waiting_to_start']);
-const ERROR_STATES = new Set(['error', 'fault', 'failure', 'problem', 'failure_mode']);
 
 function formatLabel(raw: string): string {
   return raw
@@ -41,17 +29,6 @@ function formatLabel(raw: string): string {
     .filter(Boolean)
     .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
     .join(' ');
-}
-
-function resolvePhase(state: string): AppliancePhase {
-  const s = state.toLowerCase().trim();
-  if (!s || s === 'unavailable' || s === 'unknown') return 'unavailable';
-  if (ERROR_STATES.has(s)) return 'error';
-  if (DONE_STATES.has(s)) return 'done';
-  if (PAUSE_STATES.has(s)) return 'paused';
-  if (RUN_STATES.has(s)) return 'running';
-  if (IDLE_STATES.has(s)) return 'idle';
-  return 'idle';
 }
 
 /**
@@ -139,7 +116,7 @@ const COMPACT_SIZE = 40;
 const LINK_SUFFIX_PATTERNS: RegExp[] = [
   /machine_state/, /run_state/, /operating_state/, /job_state/, /program_phase/,
   /completion_time/, /remain(ing)?_time/, /(^|_)door/, /temperature/,
-  /(^|_)power/, /(^|_)energy/, /filter_status/, /child_lock/, /remote_control/,
+  /(^|_)power/, /(^|_)energy/, /filter_status/, /child_lock/, /remote_control/, /sub_?state/,
 ];
 
 /**
@@ -403,6 +380,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       /program_phase(_\d+)?$/,
       /(^|_)phase(_\d+)?$/,
       /current_course(_\d+)?$/,
+      /sub_?state(_\d+)?$/,
     ]);
     const completion = L(m.completion_time_entity, ['sensor'], [
       /completion_time(_\d+)?$/,
@@ -1596,7 +1574,9 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
 
     // ── Phase / status ──
     const machineRaw = links.machineState?.state ?? main.state;
-    let phase: AppliancePhase = isFridge ? 'running' : resolvePhase(machineRaw);
+    let phase: AppliancePhase = isFridge
+      ? 'running'
+      : resolveAppliancePhase(machineRaw, isRange ? null : links.jobState?.state);
     const powerBinary = !isFridge
       ? this.autoFind(hass, links.pool, links.prefix, ['binary_sensor'], [
           new RegExp(`^${links.prefix}_power(_\\d+)?$`),
@@ -1611,7 +1591,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       (isRange ? links.ovenMode?.state || links.jobState?.state : links.jobState?.state) || '';
     const jobLabel =
       jobRaw && !['none', 'unknown', 'unavailable', 'off'].includes(jobRaw.toLowerCase())
-        ? formatLabel(jobRaw)
+        ? formatLabel(stripStatePrefix(jobRaw))
         : null;
 
     const completionDate = resolveCompletion(links.completion);
