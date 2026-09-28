@@ -3,6 +3,7 @@
  * so Lit can upgrade and tests can dispatch events on them.
  */
 import { afterEach } from 'vitest';
+import { resetPreviewUpdateScheduler } from '../utils/uc-preview-update';
 
 const STUB_TAGS = [
   'ha-icon',
@@ -67,4 +68,6 @@ if (!window.matchMedia) {
 
 afterEach(() => {
   document.body.innerHTML = '';
+  // A pending preview repaint would otherwise fire after jsdom is torn down.
+  resetPreviewUpdateScheduler();
 });
