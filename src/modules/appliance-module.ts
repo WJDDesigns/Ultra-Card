@@ -116,7 +116,7 @@ const COMPACT_SIZE = 40;
 const LINK_SUFFIX_PATTERNS: RegExp[] = [
   /machine_state/, /run_state/, /operating_state/, /job_state/, /program_phase/,
   /completion_time/, /remain(ing)?_time/, /(^|_)door/, /temperature/,
-  /(^|_)power/, /(^|_)energy/, /filter_status/, /child_lock/, /remote_control/,
+  /(^|_)power/, /(^|_)energy/, /filter_status/, /child_lock/, /remote_control/, /sub_?state/,
 ];
 
 /**
