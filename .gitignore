@@ -98,6 +98,10 @@ directories-pro-presets-service-update.ts
 # Temp changelog input files used by scripts/release.js --changelog-file
 .release-changelog-*.txt
 
+# Release / plugin archives (built locally, attached to releases or uploaded to WP)
+/ultra-card-v*.zip
+/ultra-card-integration.zip
+
 # Playwright layout-harness screenshots / metrics
 .harness-output/
 
