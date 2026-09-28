@@ -6,40 +6,100 @@
  * works. Failures are swallowed so a HA schema change never breaks the card.
  */
 
+import { localize } from '../localize/localize';
 import { ucFreeSpaceSettingsService } from '../services/uc-freespace-settings-service';
-import { BREAKPOINT_SPECS } from './uc-freespace-breakpoints';
-import { FREESPACE_VIEW_TYPE } from './types';
+import { BREAKPOINT_SPECS, type FreeSpaceBreakpoint } from './uc-freespace-breakpoints';
+import { DEFAULT_GRID, DEFAULT_MIN_HEIGHT, FREESPACE_VIEW_TYPE } from './types';
 
 const FREESPACE_OPTION = {
   value: FREESPACE_VIEW_TYPE,
   label: 'FreeSpace (Ultra Card)',
 };
 
-const LABEL_MAP: Record<string, string> = {
-  freespace_specifics: 'FreeSpace view specific settings',
-  freespace: 'FreeSpace',
-  canvas_widths: 'Breakpoint canvas sizes',
-  desktop: `Desktop (≥ ${BREAKPOINT_SPECS.desktop.minWidth}px)`,
-  laptop: `Laptop (≥ ${BREAKPOINT_SPECS.laptop.minWidth}px)`,
-  tablet: `Tablet (≥ ${BREAKPOINT_SPECS.tablet.minWidth}px)`,
-  phone: 'Phone',
-  min_height: 'Minimum artboard height',
-  grid: 'Snap grid (0 = off)',
-  narrow: 'Phone without layout',
-  canvas_width: 'Desktop canvas width (legacy)',
-};
+function lang(): string {
+  const ha = document.querySelector('home-assistant') as any;
+  return ha?.hass?.locale?.language ?? 'en';
+}
 
-const HELPER_MAP: Record<string, string> = {
-  canvas_widths:
-    'Artboard design width per breakpoint (defaults: Desktop 1400, Laptop 1100, Tablet 768, Phone 390). On screen, FreeSpace fills the view at 1:1 like Sections — it does not stretch a small canvas to enlarge cards.',
-  desktop: 'Default 1400. Cards use this layout on wide screens.',
-  laptop: 'Default 1100.',
-  tablet: 'Default 768.',
-  phone: 'Default 390. If empty and “stack” is on, cards stack until you arrange a Phone layout.',
-  min_height: 'Artboard grows with content; this is the floor (default 800).',
-  grid: 'Snap step in artboard units while dragging and resizing.',
-  narrow: 'When no Phone layout exists: stack cards for readability, or keep scaling the artboard.',
-};
+function t(key: string, fallback: string): string {
+  return localize(`freespace.${key}`, lang(), fallback);
+}
+
+function bpLabel(bp: FreeSpaceBreakpoint): string {
+  const name = t(`bp_${bp}`, BREAKPOINT_SPECS[bp].label);
+  return bp === 'phone' ? name : `${name} (≥ ${BREAKPOINT_SPECS[bp].minWidth}px)`;
+}
+
+function defaultNote(bp: FreeSpaceBreakpoint): string {
+  return t('editor_default', 'Default {value}.').replace(
+    '{value}',
+    String(BREAKPOINT_SPECS[bp].canvasWidth)
+  );
+}
+
+function label(name: string): string | undefined {
+  switch (name) {
+    case 'freespace_specifics':
+      return t('editor_section', 'FreeSpace view specific settings');
+    case 'freespace':
+      return 'FreeSpace';
+    case 'canvas_widths':
+      return t('editor_canvas_widths', 'Breakpoint canvas sizes');
+    case 'desktop':
+    case 'laptop':
+    case 'tablet':
+    case 'phone':
+      return bpLabel(name);
+    case 'min_height':
+      return t('editor_min_height', 'Minimum artboard height');
+    case 'grid':
+      return t('editor_grid', 'Snap grid (0 = off)');
+    case 'narrow':
+      return t('editor_narrow', 'Phone without layout');
+    case 'canvas_width':
+      return t('editor_canvas_width_legacy', 'Desktop canvas width (legacy)');
+    default:
+      return undefined;
+  }
+}
+
+function helper(name: string): string | undefined {
+  switch (name) {
+    case 'canvas_widths':
+      return t(
+        'editor_canvas_widths_help',
+        'Artboard design width per breakpoint (defaults: Desktop {desktop}, Laptop {laptop}, Tablet {tablet}, Phone {phone}). On screen, FreeSpace fills the view at 1:1 like Sections. It does not stretch a small canvas to enlarge cards.'
+      )
+        .replace('{desktop}', String(BREAKPOINT_SPECS.desktop.canvasWidth))
+        .replace('{laptop}', String(BREAKPOINT_SPECS.laptop.canvasWidth))
+        .replace('{tablet}', String(BREAKPOINT_SPECS.tablet.canvasWidth))
+        .replace('{phone}', String(BREAKPOINT_SPECS.phone.canvasWidth));
+    case 'desktop':
+      return `${defaultNote('desktop')} ${t('editor_desktop_help', 'Cards use this layout on wide screens.')}`;
+    case 'laptop':
+    case 'tablet':
+      return defaultNote(name);
+    case 'phone':
+      return `${defaultNote('phone')} ${t(
+        'editor_phone_help',
+        'If Phone uses Desktop and “stack” is on, cards stack until you choose Custom and arrange a Phone layout.'
+      )}`;
+    case 'min_height':
+      return t(
+        'editor_min_height_help',
+        'Artboard grows with content; this is the floor (default {value}).'
+      ).replace('{value}', String(DEFAULT_MIN_HEIGHT));
+    case 'grid':
+      return t('editor_grid_help', 'Snap step in artboard units while dragging and resizing.');
+    case 'narrow':
+      return t(
+        'editor_narrow_help',
+        'When Phone uses the Desktop layout: stack cards for readability, or keep scaling the artboard.'
+      );
+    default:
+      return undefined;
+  }
+}
 
 let installed = false;
 
@@ -102,12 +162,12 @@ function buildFreeSpaceExpandable(): Record<string, unknown> {
           },
           {
             name: 'min_height',
-            default: 800,
+            default: DEFAULT_MIN_HEIGHT,
             selector: numberSelector(200, 8000),
           },
           {
             name: 'grid',
-            default: 8,
+            default: DEFAULT_GRID,
             selector: numberSelector(0, 64),
           },
           {
@@ -117,8 +177,8 @@ function buildFreeSpaceExpandable(): Record<string, unknown> {
               select: {
                 mode: 'dropdown',
                 options: [
-                  { value: 'stack', label: 'Stack cards (recommended)' },
-                  { value: 'scale', label: 'Keep scaled artboard' },
+                  { value: 'stack', label: t('editor_narrow_stack', 'Stack cards (recommended)') },
+                  { value: 'scale', label: t('editor_narrow_scale', 'Keep scaled artboard') },
                 ],
               },
             },
@@ -171,12 +231,14 @@ function patchEditorInstance(editor: any): void {
   // Labels / helpers for our custom schema names
   const origLabel = editor._computeLabel?.bind(editor);
   editor._computeLabel = (schema: { name?: string }) => {
-    if (schema?.name && LABEL_MAP[schema.name]) return LABEL_MAP[schema.name];
+    const ours = schema?.name ? label(schema.name) : undefined;
+    if (ours) return ours;
     return origLabel?.(schema) ?? schema?.name;
   };
   const origHelper = editor._computeHelper?.bind(editor);
   editor._computeHelper = (schema: { name?: string }) => {
-    if (schema?.name && HELPER_MAP[schema.name]) return HELPER_MAP[schema.name];
+    const ours = schema?.name ? helper(schema.name) : undefined;
+    if (ours) return ours;
     return origHelper?.(schema);
   };
 

@@ -10,6 +10,7 @@
  * Usage:
  *   node scripts/translate-locale.js --lang de [--limit 100] [--batch-size 20] [--model gpt-4o-mini]
  *   node scripts/translate-locale.js --all [--delay 0] [--dry-run]
+ *   node scripts/translate-locale.js --all --prefix freespace.   (only keys under one section)
  *
  * en-GB is skipped here; use: node scripts/translate-en-gb.js (if/when present).
  */
@@ -41,6 +42,7 @@ function parseArgs(argv) {
     else if (a === '--batch-size') o.batchSize = Math.max(1, Number(argv[++i]) || 20);
     else if (a === '--model') o.model = argv[++i] || DEFAULT_MODEL;
     else if (a === '--dry-run') o.dryRun = true;
+    else if (a === '--prefix') o.prefix = argv[++i];
   }
   return o;
 }
@@ -225,7 +227,9 @@ async function translateLocale(lang, opts, client) {
   const glossary = loadGlossary();
   const formalityHint = glossary.per_lang?.[lang]?.formality || '';
   const keysToFix = Object.keys(enFlat).filter(
-    k => !(k in locFlat) || locFlat[k] === enFlat[k]
+    k =>
+      (!opts.prefix || k.startsWith(opts.prefix)) &&
+      (!(k in locFlat) || locFlat[k] === enFlat[k])
   );
   const missingCount = Object.keys(enFlat).filter(k => !(k in locFlat)).length;
   const capped = keysToFix.slice(0, opts.limit);

@@ -13,7 +13,7 @@ export interface FreeSpaceViewOptions {
   grid: number;
   /**
    * When phone has no explicit layout: `stack` stacks cards in reading order;
-   * `scale` keeps the scaled artboard (fallback layout from larger breakpoints).
+   * `scale` keeps the scaled artboard (the Desktop layout).
    */
   narrow: 'stack' | 'scale';
 }

@@ -2,11 +2,11 @@
  * FreeSpace responsive breakpoints: Desktop, Laptop, Tablet, Phone.
  *
  * Each card can store a different layout per breakpoint under `view_layout`.
- * Missing breakpoints fall back upward (phone → tablet → laptop → desktop).
+ * A breakpoint without its own layout uses the desktop layout.
  * Legacy flat `view_layout: { x, y, w, h, … }` is treated as desktop.
  */
 
-import type { FreeSpaceCardLayout } from './types';
+import { DEFAULT_CANVAS_WIDTH, type FreeSpaceCardLayout } from './types';
 
 export type FreeSpaceBreakpoint = 'desktop' | 'laptop' | 'tablet' | 'phone';
 
@@ -46,7 +46,7 @@ export const BREAKPOINT_SPECS: Record<FreeSpaceBreakpoint, BreakpointSpec> = {
   desktop: {
     id: 'desktop',
     minWidth: 1440,
-    canvasWidth: 1400,
+    canvasWidth: DEFAULT_CANVAS_WIDTH,
     label: 'Desktop',
     icon: 'mdi:monitor',
   },

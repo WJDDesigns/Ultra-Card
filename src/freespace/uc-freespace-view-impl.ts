@@ -160,14 +160,21 @@ export class UltraFreeSpaceViewImpl extends LitElement {
 
   private _engine: FreeSpaceInteractionEngine;
   private _resizeObserver: ResizeObserver | null = null;
-  /** Optimistic layouts keyed by `${breakpoint}:${cardIndex}`. */
+  /**
+   * Optimistic layouts keyed by `${breakpoint}:${cardIndex}`, held only until
+   * their save lands. Keys are index-based, so they are dropped whenever the
+   * card count changes.
+   */
   private _optimistic: Map<string, FreeSpaceCardLayout> = new Map();
+  private _optimisticCardCount = -1;
   private _saving = false;
   private _pendingSave: {
     cardIndex: number;
     layout: FreeSpaceCardLayout;
     breakpoint: FreeSpaceBreakpoint;
   } | null = null;
+  private _savingAll = false;
+  private _pendingAll: { layouts: FreeSpaceCardLayout[]; bp: FreeSpaceBreakpoint } | null = null;
   /** Cached fill height in CSS px — must not track our own expanding content. */
   private _fillHeightPx = 0;
   /** Stored layouts (before pins are applied). */
@@ -695,6 +702,10 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const view = this._viewConfig();
     const cardConfigs = Array.isArray(view.cards) ? view.cards : [];
     const count = Math.max(this.cards?.length ?? 0, cardConfigs.length);
+    if (count !== this._optimisticCardCount) {
+      this._optimistic.clear();
+      this._optimisticCardCount = count;
+    }
     const configs = Array.from({ length: count }, (_, i) => cardConfigs[i] ?? {});
     const optimistic = Array.from(
       { length: count },
@@ -905,6 +916,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
           breakpoint
         );
         await this.lovelace.saveConfig(next);
+        this._dropOptimistic(this._optKey(cardIndex, breakpoint), layout);
         pending = this._pendingSave;
       }
     } catch (err) {
@@ -921,13 +933,35 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const bp = this._activeBreakpoint();
     layouts.forEach((l, i) => this._optimistic.set(this._optKey(i, bp), l));
     this._commitLayouts(layouts);
-    try {
-      const base = this._breakpointBase(this.lovelace.config, bp);
-      const next = applyLayoutsToView(base, this.index, layouts, bp);
-      await this.lovelace.saveConfig(next);
-    } catch (err) {
-      console.warn('[FreeSpace] save failed', err);
+    if (this._savingAll) {
+      this._pendingAll = { layouts, bp };
+      return;
     }
+    this._savingAll = true;
+    let pending: typeof this._pendingAll = { layouts, bp };
+    try {
+      while (pending) {
+        const job: NonNullable<typeof this._pendingAll> = pending;
+        this._pendingAll = null;
+        try {
+          const base = this._breakpointBase(this.lovelace.config, job.bp);
+          await this.lovelace.saveConfig(applyLayoutsToView(base, this.index, job.layouts, job.bp));
+          job.layouts.forEach((l, i) => this._dropOptimistic(this._optKey(i, job.bp), l));
+        } catch (err) {
+          console.warn('[FreeSpace] save failed', err);
+          job.layouts.forEach((l, i) => this._dropOptimistic(this._optKey(i, job.bp), l));
+          this._rebuildLayouts();
+        }
+        pending = this._pendingAll;
+      }
+    } finally {
+      this._savingAll = false;
+    }
+  }
+
+  /** Forget an optimistic layout once saved, unless a newer edit replaced it. */
+  private _dropOptimistic(key: string, layout: FreeSpaceCardLayout): void {
+    if (this._optimistic.get(key) === layout) this._optimistic.delete(key);
   }
 
   private _isCustom(bp: FreeSpaceBreakpoint, config: any = this.lovelace?.config): boolean {
@@ -1781,7 +1815,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
                 this._showWidthBounds && this._cardsOutsideWidthBounds()
                   ? ` ${this._t(
                       'outside_bounds_hint',
-                      'Some cards sit outside the lines — they still work; drag them back to keep them inside the canvas.'
+                      'Some cards sit outside the lines. They still work; drag them back to keep them inside the canvas.'
                     )}`
                   : ''
               }
@@ -1828,6 +1862,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
                     .selected=${this._selection.includes(i)}
                     .stacked=${stacked}
                     .scale=${this._scale}
+                    .language=${this._lang()}
                     @focus=${() => {
                       if (!this._selection.includes(i)) this._selected = i;
                     }}

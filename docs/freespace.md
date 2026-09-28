@@ -55,21 +55,21 @@ A pin controls what happens to a card when the screen is wider or narrower than 
 
 Pins only change anything when **Full width** is on (Hub → Home → Layout width), because that is when the canvas width follows the screen. With Full width off the canvas has a fixed width and every pin looks the same. While editing, a dashed line connects the selected card to the edge it is pinned to. Pinned cards can overlap on a much narrower screen; they are not reflowed.
 
-In YAML a pin looks like `pin: right` with `ref_w: 1920` (the canvas width the card was placed at) next to `x`/`y`/`w`/`h`.
+In YAML a pin looks like `pin: right` with `ref_w: 1920` (the canvas width the card was placed at) next to `x`/`y`/`w`/`h`. The toolbar writes `ref_w` for you. If you write a pin by hand, include `ref_w`; a pin without it is ignored and the card stays pinned left.
 
 ### Breakpoints
 
 Edit mode shows a **Desktop / Laptop / Tablet / Phone** bar. Each breakpoint has its own artboard width. Laptop, Tablet and Phone are each either **Use Desktop** or **Custom**:
 
 - **Use Desktop** (default): the breakpoint shows the Desktop layout.
-- **Custom**: the breakpoint has its own positions. Moving, resizing, aligning or pinning any card on a breakpoint that uses Desktop switches it to Custom automatically, copying the Desktop layout for every card first so nothing else jumps.
+- **Custom**: the breakpoint has its own positions. Moving, resizing, aligning, layering or pinning any card on a breakpoint that uses Desktop switches it to Custom automatically, copying the Desktop layout for every card first so nothing else jumps.
 - Choosing **Use Desktop** again (it asks first) removes that breakpoint's positions so it follows Desktop again.
 
 A card with no layout for a breakpoint always falls back to its Desktop layout, never to another breakpoint.
 
 | Breakpoint | Min width | Default artboard |
 |------------|-----------|------------------|
-| Desktop    | ≥ 1440px  | 1400             |
+| Desktop    | ≥ 1440px  | 1200             |
 | Laptop     | ≥ 1024px  | 1100             |
 | Tablet     | ≥ 768px   | 768              |
 | Phone      | &lt; 768px    | 390              |
@@ -83,7 +83,7 @@ type: custom:ultra-freespace-view
 title: Living room
 freespace:
   canvas_widths: # set these in View settings → FreeSpace view specific settings
-    desktop: 1400
+    desktop: 1200
     laptop: 1100
     tablet: 768
     phone: 390

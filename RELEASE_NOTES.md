@@ -1,5 +1,26 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.0-beta3
+
+The third 3.13.0 beta is a FreeSpace polish pass before the stable release. Deleting a card no longer moves a different one, dragging and resizing should now work on touch screens, and the card menu and view settings can be translated. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord, especially from tablets and phones.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **FreeSpace card menu and view settings are translatable** - The right-click menu and the FreeSpace settings in the view editor were English only. They now use Ultra Card's translations, so they will follow your Home Assistant language as translations land
+- **Faster group moves** - Nudging several selected cards with the arrow keys now saves once when you let go instead of on every key repeat
+
+### 🐛 Bug Fixes
+
+- **Fixed a card jumping to another card's spot after a delete** - After moving a card and then deleting any card before it, a different card could appear in the moved card's position, and the next align or layer action saved it there. Positions now come from your saved dashboard as soon as each save finishes
+- **Fixed dragging, resizing and rotating on touch screens** - On tablets and phones the browser took a drag on a selected card as a page scroll and cancelled it. Press and hold a selected card to move it, or drag its handles to resize or rotate
+- **Fixed Edit in the card menu** - Choosing Edit from the right-click or ⋮ menu also sent a malformed edit request. It now opens the card editor once, like double-click does
+- **Fixed the Desktop canvas default shown in the view editor** - The editor and docs said Desktop defaults to 1400, but FreeSpace has always used 1200. They now say 1200. Nothing moves on existing views
+- **Fixed outdated FreeSpace hints in other languages** - Some languages still pointed to Hub → Themes for Full width. They now show the current wording
+
+---
+
 ## Version 3.13.0-beta2
 
 The second 3.13.0 beta turns FreeSpace into a proper canvas editor. A toolbar across the top holds the screen sizes and changes with what you select: exact position fields, alignment, layering, and pins that keep cards stuck to the left or right edge as the screen gets wider. You can select several cards at once to align, distribute or move them together, and each screen size can follow the Desktop layout or have its own. FreeSpace is also on for everyone with Ultra Card Connect, with no switch to find. It includes everything from beta1. This is a pre-release for testing — please report anything odd on GitHub or Discord.

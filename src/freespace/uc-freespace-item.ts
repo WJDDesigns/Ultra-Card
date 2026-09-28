@@ -22,6 +22,7 @@ import {
   mdiFormatHorizontalAlignRight,
   mdiArrowExpandHorizontal,
 } from '@mdi/js';
+import { localize } from '../localize/localize';
 import {
   FREESPACE_ITEM_TAG,
   FREESPACE_PINS,
@@ -30,11 +31,11 @@ import {
   type ResizeHandle,
 } from './types';
 
-const PIN_MENU: Record<FreeSpacePin, { icon: string; label: string }> = {
-  left: { icon: mdiFormatHorizontalAlignLeft, label: 'Left' },
-  center: { icon: mdiFormatHorizontalAlignCenter, label: 'Center' },
-  right: { icon: mdiFormatHorizontalAlignRight, label: 'Right' },
-  stretch: { icon: mdiArrowExpandHorizontal, label: 'Left & right' },
+const PIN_MENU: Record<FreeSpacePin, { icon: string; key: string; label: string }> = {
+  left: { icon: mdiFormatHorizontalAlignLeft, key: 'menu_pin_left', label: 'Left' },
+  center: { icon: mdiFormatHorizontalAlignCenter, key: 'menu_pin_center', label: 'Center' },
+  right: { icon: mdiFormatHorizontalAlignRight, key: 'menu_pin_right', label: 'Right' },
+  stretch: { icon: mdiArrowExpandHorizontal, key: 'menu_pin_stretch', label: 'Left & right' },
 };
 
 const RESIZE_HANDLES: ResizeHandle[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
@@ -49,6 +50,7 @@ export class UcFreeSpaceItem extends LitElement {
   @property({ type: Boolean }) public stacked = false;
   @property({ type: Boolean }) public editingAllowed = true;
   @property({ type: Number }) public scale = 1;
+  @property({ attribute: false }) public language = 'en';
 
   @state() private _hover = false;
   @state() private _menuOpen = false;
@@ -116,6 +118,8 @@ export class UcFreeSpaceItem extends LitElement {
     .overlay.visible {
       opacity: 1;
       pointer-events: auto;
+      /* Without this the browser claims touch drags for scrolling and cancels the pointer. */
+      touch-action: none;
     }
     .control-overlay {
       position: absolute;
@@ -238,6 +242,7 @@ export class UcFreeSpaceItem extends LitElement {
       border-radius: 2px;
       z-index: 3;
       box-sizing: border-box;
+      touch-action: none;
     }
     .handle.n {
       top: -5px;
@@ -294,6 +299,7 @@ export class UcFreeSpaceItem extends LitElement {
       justify-content: center;
       color: var(--primary-color);
       cursor: grab;
+      touch-action: none;
       /* Only when the item is selected (highlighted) */
       opacity: 0;
       pointer-events: none;
@@ -419,6 +425,10 @@ export class UcFreeSpaceItem extends LitElement {
     return html`<svg viewBox="0 0 24 24"><path d=${path}></path></svg>`;
   }
 
+  private _t(key: string, fallback: string): string {
+    return localize(`freespace.${key}`, this.language, fallback);
+  }
+
   private _fire(name: string, detail?: unknown): void {
     this.dispatchEvent(
       new CustomEvent(name, { detail, bubbles: true, composed: true })
@@ -494,7 +504,6 @@ export class UcFreeSpaceItem extends LitElement {
     this._menuOpen = false;
     switch (action) {
       case 'edit':
-        this._fire('ll-edit-card', { path: [/* filled by view */ this.cardIndex] });
         this._fire('fs-edit-card', { cardIndex: this.cardIndex });
         break;
       case 'duplicate':
@@ -537,7 +546,7 @@ export class UcFreeSpaceItem extends LitElement {
                 <button
                   type="button"
                   class="more"
-                  aria-label="Card options"
+                  aria-label=${this._t('menu_options', 'Card options')}
                   @click=${this._toggleMenu}
                   @pointerdown=${(e: Event) => e.stopPropagation()}
                 >
@@ -548,7 +557,7 @@ export class UcFreeSpaceItem extends LitElement {
                       <ul class="menu" role="menu">
                         <li>
                           <button type="button" @click=${(e: Event) => this._menuAction('edit', e)}>
-                            ${this._icon(mdiPencil)} Edit
+                            ${this._icon(mdiPencil)} ${this._t('menu_edit', 'Edit')}
                           </button>
                         </li>
                         <li>
@@ -556,17 +565,17 @@ export class UcFreeSpaceItem extends LitElement {
                             type="button"
                             @click=${(e: Event) => this._menuAction('duplicate', e)}
                           >
-                            ${this._icon(mdiPlusCircleMultipleOutline)} Duplicate
+                            ${this._icon(mdiPlusCircleMultipleOutline)} ${this._t('tb_duplicate', 'Duplicate')}
                           </button>
                         </li>
                         <li>
                           <button type="button" @click=${(e: Event) => this._menuAction('copy', e)}>
-                            ${this._icon(mdiContentCopy)} Copy
+                            ${this._icon(mdiContentCopy)} ${this._t('menu_copy', 'Copy')}
                           </button>
                         </li>
                         <li>
                           <button type="button" @click=${(e: Event) => this._menuAction('cut', e)}>
-                            ${this._icon(mdiContentCut)} Cut
+                            ${this._icon(mdiContentCut)} ${this._t('menu_cut', 'Cut')}
                           </button>
                         </li>
                         <li class="divider" role="separator"></li>
@@ -575,7 +584,7 @@ export class UcFreeSpaceItem extends LitElement {
                             type="button"
                             @click=${(e: Event) => this._menuAction('forward', e)}
                           >
-                            ${this._icon(mdiArrangeBringForward)} Bring forward
+                            ${this._icon(mdiArrangeBringForward)} ${this._t('tb_forward', 'Bring forward')}
                           </button>
                         </li>
                         <li>
@@ -583,17 +592,17 @@ export class UcFreeSpaceItem extends LitElement {
                             type="button"
                             @click=${(e: Event) => this._menuAction('backward', e)}
                           >
-                            ${this._icon(mdiArrangeSendBackward)} Send backward
+                            ${this._icon(mdiArrangeSendBackward)} ${this._t('tb_backward', 'Send backward')}
                           </button>
                         </li>
                         <li>
                           <button type="button" @click=${(e: Event) => this._menuAction('front', e)}>
-                            ${this._icon(mdiArrangeBringToFront)} Bring to front
+                            ${this._icon(mdiArrangeBringToFront)} ${this._t('tb_front', 'Bring to front')}
                           </button>
                         </li>
                         <li>
                           <button type="button" @click=${(e: Event) => this._menuAction('back', e)}>
-                            ${this._icon(mdiArrangeSendToBack)} Send to back
+                            ${this._icon(mdiArrangeSendToBack)} ${this._t('tb_back', 'Send to back')}
                           </button>
                         </li>
                         <li>
@@ -601,11 +610,11 @@ export class UcFreeSpaceItem extends LitElement {
                             type="button"
                             @click=${(e: Event) => this._menuAction('reset-rotation', e)}
                           >
-                            ${this._icon(mdiRotateLeft)} Reset rotation
+                            ${this._icon(mdiRotateLeft)} ${this._t('menu_reset_rotation', 'Reset rotation')}
                           </button>
                         </li>
                         <li class="divider" role="separator"></li>
-                        <li class="menu-label" role="presentation">Pin to</li>
+                        <li class="menu-label" role="presentation">${this._t('menu_pin_to', 'Pin to')}</li>
                         ${FREESPACE_PINS.map(
                           p => html`
                             <li>
@@ -616,7 +625,7 @@ export class UcFreeSpaceItem extends LitElement {
                                 class=${(this.layout?.pin ?? 'left') === p ? 'active' : ''}
                                 @click=${(e: Event) => this._setPin(p, e)}
                               >
-                                ${this._icon(PIN_MENU[p].icon)} ${PIN_MENU[p].label}
+                                ${this._icon(PIN_MENU[p].icon)} ${this._t(PIN_MENU[p].key, PIN_MENU[p].label)}
                               </button>
                             </li>
                           `
@@ -628,7 +637,7 @@ export class UcFreeSpaceItem extends LitElement {
                             class="danger"
                             @click=${(e: Event) => this._menuAction('delete', e)}
                           >
-                            ${this._icon(mdiDelete)} Delete
+                            ${this._icon(mdiDelete)} ${this._t('tb_delete', 'Delete')}
                           </button>
                         </li>
                       </ul>
@@ -651,7 +660,7 @@ export class UcFreeSpaceItem extends LitElement {
                 ? html`
                     <div
                       class="rotate-zone nw"
-                      title="Rotate"
+                      title=${this._t('menu_rotate', 'Rotate')}
                       @pointerdown=${this._onRotatePointerDown}
                     >
                       ${this._icon(mdiRotateLeft)}
