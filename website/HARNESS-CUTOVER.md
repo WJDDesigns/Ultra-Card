@@ -21,6 +21,7 @@ On each live page, remove the old Raw HTML block and add a **WPBakery Text Block
 ```
 [ultra_card_page id="modules"]
 [ultra_card_page id="template-mode"]
+[ultra_card_page id="freespace"]
 [ultra_card_page id="presets"]
 [ultra_card_page id="pricing"]
 ```
@@ -31,6 +32,7 @@ Do **not** use a Raw HTML element — it base64-encodes content and does not exp
 |------|-----------|------|
 | Modules | `[ultra_card_page id="modules"]` | `/modules/` |
 | Template Mode | `[ultra_card_page id="template-mode"]` | `/template-mode/` |
+| FreeSpace | `[ultra_card_page id="freespace"]` (auto-created when missing) | `/freespace/` |
 | Presets | `[ultra_card_page id="presets"]` (or keep the native archive) | `/presets/` |
 | Pricing | `[ultra_card_page id="pricing"]` | `/pricing/` |
 | Ultra Card Pro product description | rendered automatically by the plugin (or paste `[ultra_card_page id="pro"]` into the product description) | `/product/ultra-card-pro/` |

@@ -5,9 +5,10 @@
  * Server-side delivery of website/*.html fragments for ultracard.io, plus
  * admin diagnostics and a secret-guarded flush endpoint for CI.
  *
- * Shortcode: [ultra_card_page id="modules|template-mode|presets|pricing"]
+ * Shortcode: [ultra_card_page id="modules|template-mode|freespace|presets|pricing"]
  * Paste into a WPBakery Text Block (not Raw HTML — Raw HTML base64-encodes
- * content and does not expand shortcodes).
+ * content and does not expand shortcodes). FreeSpace is also auto-created as
+ * /freespace/ when missing (see ensure_doc_pages).
  */
 
 if (!defined('ABSPATH')) {
@@ -48,6 +49,7 @@ class UltraCardWebsiteHarness {
         add_action('wp_ajax_ultra_card_harness_test', array($this, 'ajax_test'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_init', array($this, 'maybe_seed_options'));
+        add_action('init', array($this, 'maybe_ensure_doc_pages'), 45);
         add_action('update_option_' . self::OPTION_CHANNEL, array($this, 'on_channel_change'), 10, 0);
         add_action('update_option_' . self::OPTION_REF, array($this, 'on_channel_change'), 10, 0);
         add_action('update_option_' . self::OPTION_LOCAL_URL, array($this, 'on_channel_change'), 10, 0);
@@ -64,6 +66,60 @@ class UltraCardWebsiteHarness {
             // Use add_option so we don't fire update_option_* hooks on first create.
             add_option(self::OPTION_CHANNEL, 'main', '', false);
         }
+    }
+
+    /**
+     * Create published WP pages for harness fragments marked auto_create when
+     * none exist yet. Never edits a page the store owner already wrote.
+     */
+    public function maybe_ensure_doc_pages() {
+        if (is_admin() && !wp_doing_ajax() && !wp_doing_cron()) {
+            // Still run in admin so uploading a new plugin zip creates the page
+            // without waiting for a public hit.
+        }
+        $this->ensure_doc_pages();
+    }
+
+    /**
+     * @return array<string, WP_Post|null>
+     */
+    public function ensure_doc_pages() {
+        $created = array();
+        $author = 0;
+        $admin = get_user_by('email', get_option('admin_email'));
+        if ($admin) {
+            $author = (int) $admin->ID;
+        }
+        foreach ($this->known_pages() as $id => $meta) {
+            if (empty($meta['auto_create'])) {
+                continue;
+            }
+            $slug = !empty($meta['slug']) ? $meta['slug'] : $id;
+            $page = get_page_by_path($slug, OBJECT, 'page');
+            if (!$page) {
+                $posts = $this->find_shortcode_posts();
+                if (!empty($posts[$id])) {
+                    $page = get_post((int) $posts[$id]['ID']);
+                }
+            }
+            if (!$page) {
+                $new_id = wp_insert_post(array(
+                    'post_type' => 'page',
+                    'post_status' => 'publish',
+                    'post_title' => isset($meta['title']) ? $meta['title'] : ucfirst($id),
+                    'post_name' => $slug,
+                    'post_content' => '[ultra_card_page id="' . $id . '"]',
+                    'post_author' => $author,
+                    'comment_status' => 'closed',
+                    'ping_status' => 'closed',
+                ), true);
+                if (!is_wp_error($new_id) && $new_id) {
+                    $page = get_post($new_id);
+                }
+            }
+            $created[$id] = $page ? $page : null;
+        }
+        return $created;
     }
 
     public function register_settings() {
@@ -203,6 +259,14 @@ class UltraCardWebsiteHarness {
                 'title' => 'Template Mode',
                 'needs_bundle' => true,
                 'path' => '/template-mode/',
+            ),
+            'freespace' => array(
+                'file' => 'website/freespace-page-embed.html',
+                'title' => 'FreeSpace',
+                'needs_bundle' => false,
+                'path' => '/freespace/',
+                'slug' => 'freespace',
+                'auto_create' => true,
             ),
             'presets' => array(
                 'file' => 'website/presets-page-embed.html',
@@ -619,9 +683,9 @@ class UltraCardWebsiteHarness {
         ?>
         <div class="uc-harness-admin">
             <h2><span class="dashicons dashicons-admin-site-alt3"></span> Website Harness</h2>
-            <p>Serves the modules, template-mode, presets and pricing page fragments from the Ultra Card repo.
+            <p>Serves the modules, template-mode, freespace, presets and pricing page fragments from the Ultra Card repo.
                Paste <code>[ultra_card_page id="modules"]</code> into a <strong>WPBakery Text Block</strong>
-               (not Raw HTML). After the first paste, CI keeps the live page current.</p>
+               (not Raw HTML). FreeSpace auto-creates <code>/freespace/</code> when missing. After the first paste, CI keeps the live page current.</p>
 
             <?php if (!empty($status['last_error'])) : ?>
                 <div class="notice notice-warning"><p><strong>Last error:</strong> <?php echo esc_html($status['last_error']); ?></p></div>

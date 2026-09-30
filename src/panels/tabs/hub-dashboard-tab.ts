@@ -1154,6 +1154,17 @@ export class HubDashboardTab extends LitElement {
                         )}
                       </li>
                     </ol>
+                    <div class="quick-links">
+                      <a
+                        class="hub-btn hub-btn--sm hub-btn--outline"
+                        href="https://ultracard.io/freespace/"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        <ha-icon icon="mdi:book-open-page-variant"></ha-icon>
+                        ${this._t('hub.freespace.read_docs', 'FreeSpace docs')}
+                      </a>
+                    </div>
                   `
                 : nothing}
             </div>
