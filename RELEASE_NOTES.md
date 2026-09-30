@@ -1,5 +1,46 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.0
+
+Stable 3.13.0 ships **FreeSpace**, a free-form dashboard view where you can drag, resize, rotate and layer any card on a canvas, with a toolbar, pins, multi-select and per-screen layouts. Layout width now lives in Hub → Home and covers FreeSpace and Sections, and the chevron-only HVAC mode dropdown opens wide enough to read again. This is the foundation — FreeSpace will keep getting more amazing over time. Thanks to everyone who tested the betas.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added FreeSpace** - A custom Lovelace view layout (`custom:ultra-freespace-view`) for free-form dashboards. Drag, resize, rotate and layer any card, native or custom, on a canvas that looks like Home Assistant Sections. Click to select, double-click to open the card editor, right-click for edit, duplicate, layer, pin and delete. Alignment guides and snap-to-grid help you line things up. With Ultra Card Connect installed, FreeSpace is in the view Layout dropdown and Hub → Home shows **FreeSpace is ready**. Existing FreeSpace views keep rendering without Connect. [Docs](docs/freespace.md)
+- **Added the FreeSpace toolbar** - A toolbar at the top of the view in edit mode. It always shows Desktop / Laptop / Tablet / Phone. With nothing selected it offers Snap to grid and Add card. Select a card to get X / Y / W / H / rotation fields, pin, align to the canvas edges, bring forward or send back, and Edit, Duplicate and Delete. Button labels collapse to icons with tooltips when space is tight
+- **Added pins** - Pin a card Left (the default), Right, Center, or Left & right from the toolbar or the right-click menu. A right-pinned card keeps its distance from the right edge as the screen gets wider, and Left & right stretches with it. Pins work with Full width on, and a dashed line shows which edge the selected card is pinned to. Existing cards stay pinned left, so nothing moves on update
+- **Added multi-select** - Shift-, Ctrl- or Cmd-click cards, drag a box on empty space, or press Cmd/Ctrl+A. Drag any selected card to move the group, nudge it with the arrow keys, and use the toolbar to align to the selection (left, center, right, top, middle, bottom), distribute evenly, pin, or delete them all at once
+- **Added Use Desktop / Custom for each screen size** - Laptop, Tablet and Phone start on **Use Desktop** and show the Desktop layout. Move or resize a card there and that screen size switches to **Custom**, copying the Desktop positions for every card first so nothing else jumps. Choose Use Desktop again to reset it
+- **FreeSpace settings in the view editor** - Canvas width for each screen size, minimum height, snap grid and phone behaviour are set under **FreeSpace view specific settings** when you edit the view
+- **Import from Sections** - Switch a Sections view to FreeSpace and a banner offers to move its cards onto the canvas in one save
+
+### 🔧 Improvements
+
+- **Layout width moved to Hub → Home** - The HA default / Full width / Custom width setting moved from Hub → Themes into its own **Layout width** card on Hub → Home, above FreeSpace. It now covers FreeSpace as well as Sections: with Full width on, every screen size fills the view, and with it off the canvas stays centred at its design width
+- **FreeSpace looks the same in edit mode and on the dashboard** - Cards keep a 1:1 size when you press Done, and Phone or Tablet previews on a wide screen show at true device size instead of being blown up. The dot grid covers the whole background while editing, and dashed lines mark the canvas edges when Full width is off
+- **Device edges when editing smaller screens** - Editing Phone, Tablet or Laptop on a bigger screen shows a centered frame at that device's width with dashed lines on both sides, whether Full width is on or off, so cards are placed within the real device instead of across the monitor
+- **FreeSpace loads before anything else in Ultra Card** - The FreeSpace view is registered first thing at startup, so an unrelated startup problem can no longer leave a FreeSpace view showing "Configuration error". If a phone still shows it after updating, reset the Companion app's frontend cache so it picks up the new files
+- **FreeSpace card menu and view settings are translatable** - The right-click menu and the FreeSpace settings in the view editor use Ultra Card's translations, so they follow your Home Assistant language as translations land
+- **Faster group moves** - Nudging several selected cards with the arrow keys now saves once when you let go instead of on every key repeat
+
+### 🐛 Bug Fixes
+
+- **Fixed the HVAC mode dropdown clipping its options** - After the overlay layout fix, a chevron-only dropdown opened a menu as narrow as the chevron, so heat / cool / dry / off were cut off. A narrow trigger now opens a menu sized to its options, centred under the chevron and kept on screen. Full-width dropdowns are unchanged, and so is the card YAML
+- **Fixed the selection border staying on a card after pressing Done** - Leaving edit mode now clears the selection and any open card menu
+- **Fixed a card jumping to another card's spot after a delete** - After moving a card and then deleting any card before it, a different card could appear in the moved card's position, and the next align or layer action saved it there. Positions now come from your saved dashboard as soon as each save finishes
+- **Fixed dragging, resizing and rotating on touch screens** - On tablets and phones the browser took a drag on a selected card as a page scroll and cancelled it. Press and hold a selected card to move it, or drag its handles to resize or rotate
+- **Fixed Edit in the card menu** - Choosing Edit from the right-click or ⋮ menu also sent a malformed edit request. It now opens the card editor once, like double-click does
+- **Fixed the Desktop canvas default shown in the view editor** - The editor and docs said Desktop defaults to 1400, but FreeSpace has always used 1200. They now say 1200. Nothing moves on existing views
+- **Fixed outdated FreeSpace hints in other languages** - Some languages still pointed to Hub → Themes for Full width. They now show the current wording
+
+### ⚠️ Breaking Changes
+
+- **Screen sizes follow Desktop directly** - A screen size without its own layout now always uses the Desktop layout. In 3.13.0-beta1, Phone fell back to a Tablet layout (then Laptop) when one existed. If you arranged Tablet but not Phone during the betas, pick **Custom** on Phone and arrange it
+
+---
+
 ## Version 3.13.0-beta3
 
 The third 3.13.0 beta is a FreeSpace polish pass before the stable release. Deleting a card no longer moves a different one, dragging and resizing should now work on touch screens, and the card menu and view settings can be translated. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord, especially from tablets and phones.
