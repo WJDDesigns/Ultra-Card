@@ -5,6 +5,7 @@ Help make Ultra Card accessible to users worldwide! We welcome translation contr
 ## 🌍 Currently Supported Languages
 
 - 🇪🇺 Catalan (`ca.json`)
+- 🇨🇳 Chinese Simplified (`zh.json`)
 - 🇨🇿 Czech (`cs.json`)
 - 🇩🇰 Danish (`da.json`)
 - 🇩🇪 German (`de.json`)
@@ -93,7 +94,9 @@ Help make Ultra Card accessible to users worldwide! We welcome translation contr
 ## 🆕 Adding a New Language
 
 1. **Copy base file**: Copy `src/translations/en.json` to `src/translations/[language-code].json`
-2. **Use ISO 639-1 codes**: `de` (German), `fr` (French), `pt` (Portuguese), etc.
+2. **Use ISO 639-1 codes**: `de` (German), `fr` (French), `pt` (Portuguese), etc. Use the
+   region-stripped code where one exists: Home Assistant reports Simplified Chinese as
+   `zh-Hans`, and `localize.ts` resolves it down to `zh.json`.
 3. **Translate all values**: Go through each section systematically
 4. **Submit PR**: Create pull request with title "Translation: Add [Language] support"
 

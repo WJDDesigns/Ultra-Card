@@ -2,6 +2,8 @@
 
 # Ultra Card
 
+**English** · [简体中文](README.zh-CN.md)
+
 ## The Visual Dashboard Builder for Home Assistant
 
 **Build Home Assistant dashboards without writing YAML.** Ultra Card is a modular card builder with a drag-and-drop layout engine, a large module library, and a full visual editor. You design in the UI; the card handles the rest.
@@ -137,8 +139,9 @@ Browse and install community presets from inside the editor (**Presets** tab →
 
 ## Translations
 
-Supported languages: Catalan, Czech, Danish, German, English, British English, Spanish, French, Italian, Dutch, Norwegian, Norwegian Bokmål, Norwegian Nynorsk, Polish, Swedish.
+Supported languages: Catalan, Czech, Danish, German, English, British English, Spanish, French, Italian, Dutch, Norwegian, Norwegian Bokmål, Norwegian Nynorsk, Polish, Swedish, Chinese Simplified.
 
+The card follows your Home Assistant language (Simplified Chinese maps to `zh-Hans`).
 To contribute translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md). You can edit files in `src/translations/` on GitHub and open a pull request.
 
 ---
