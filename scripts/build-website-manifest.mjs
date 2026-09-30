@@ -29,6 +29,13 @@ const PAGES = [
     path: '/template-mode/',
   },
   {
+    id: 'freespace',
+    file: 'freespace-page-embed.html',
+    title: 'FreeSpace',
+    needsDemoBundle: false,
+    path: '/freespace/',
+  },
+  {
     id: 'presets',
     file: 'presets-page-embed.html',
     title: 'Presets',
