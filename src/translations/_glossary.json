@@ -203,6 +203,9 @@
     },
     "ca": {
       "formality": "Use informal \"tu\" for UI."
+    },
+    "zh": {
+      "formality": "Use concise Simplified Chinese following Home Assistant zh-Hans terminology; prefer noun phrases for labels (\"标题\" not \"请设置标题\") and drop English plural 's' artifacts."
     }
   }
 }

@@ -128,6 +128,7 @@ const LANG_NAMES = {
   nn: 'Norwegian Nynorsk',
   cs: 'Czech',
   ca: 'Catalan',
+  zh: 'Simplified Chinese',
 };
 
 const ALL_LANGS = Object.keys(LANG_NAMES);
