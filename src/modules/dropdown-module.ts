@@ -53,6 +53,71 @@ export function resolveDropdownMenuPlacement(
 }
 
 /**
+ * Intrinsic width of a dropdown menu, including option labels and icons.
+ * Portaled clones are often measured while `display:none` / `overflow-x:hidden`
+ * and before custom `ha-icon` elements finish laying out, which used to size
+ * HVAC chevron menus to the icon column and clip "heat" / "cool" to "he" / "co".
+ */
+export function measureDropdownMenuContentWidth(el: HTMLElement): number {
+  const prev = {
+    display: el.style.display,
+    visibility: el.style.visibility,
+    position: el.style.position,
+    left: el.style.left,
+    top: el.style.top,
+    width: el.style.width,
+    maxWidth: el.style.maxWidth,
+    height: el.style.height,
+    maxHeight: el.style.maxHeight,
+    overflow: el.style.overflow,
+    overflowX: el.style.overflowX,
+    overflowY: el.style.overflowY,
+  };
+
+  el.style.display = 'block';
+  el.style.visibility = 'hidden';
+  el.style.position = 'fixed';
+  el.style.left = '0px';
+  el.style.top = '0px';
+  el.style.width = 'max-content';
+  el.style.maxWidth = 'none';
+  el.style.height = 'auto';
+  el.style.maxHeight = 'none';
+  el.style.overflow = 'visible';
+  el.style.overflowX = 'visible';
+  el.style.overflowY = 'visible';
+
+  void el.offsetWidth;
+
+  let width = Math.max(el.scrollWidth || 0, el.offsetWidth || 0);
+  let collapsedIconSlot = 0;
+  el.querySelectorAll('.dropdown-option').forEach(node => {
+    const opt = node as HTMLElement;
+    width = Math.max(width, opt.scrollWidth || 0, opt.offsetWidth || 0);
+    const icon = opt.querySelector('ha-icon') as HTMLElement | null;
+    if (icon && icon.getBoundingClientRect().width < 8) {
+      collapsedIconSlot = 24;
+    }
+  });
+  width += collapsedIconSlot;
+
+  el.style.display = prev.display;
+  el.style.visibility = prev.visibility;
+  el.style.position = prev.position;
+  el.style.left = prev.left;
+  el.style.top = prev.top;
+  el.style.width = prev.width;
+  el.style.maxWidth = prev.maxWidth;
+  el.style.height = prev.height;
+  el.style.maxHeight = prev.maxHeight;
+  el.style.overflow = prev.overflow;
+  el.style.overflowX = prev.overflowX;
+  el.style.overflowY = prev.overflowY;
+
+  return width;
+}
+
+/**
  * Unified-template keys the dropdown module reads: a top-level `options` array
  * (or a bare JSON array) of option objects plus an optional `display` object.
  * Option/display keys are included because the key scanner also sees nested keys.
@@ -2496,6 +2561,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     const { left, width } = this.resolveMenuHorizontalPlacement(dropdownElement, triggerRect);
     dropdownElement.style.left = `${left - hostRect.left}px`;
     dropdownElement.style.width = `${width}px`;
+    dropdownElement.style.minWidth = `${width}px`;
 
     if (direction === 'up') {
       const bottom = Math.max(
@@ -2523,18 +2589,10 @@ export class UltraDropdownModule extends BaseUltraModule {
     triggerRect: DOMRect
   ): { left: number; width: number } {
     const triggerWidth = triggerRect.width;
-    let contentWidth = 0;
-    if (triggerWidth < MENU_MIN_CONTENT_WIDTH_PX) {
-      const prev = {
-        display: dropdownElement.style.display,
-        width: dropdownElement.style.width,
-      };
-      dropdownElement.style.display = 'block';
-      dropdownElement.style.width = 'max-content';
-      contentWidth = dropdownElement.scrollWidth || dropdownElement.offsetWidth || 0;
-      dropdownElement.style.display = prev.display;
-      dropdownElement.style.width = prev.width;
-    }
+    const contentWidth =
+      triggerWidth < MENU_MIN_CONTENT_WIDTH_PX
+        ? measureDropdownMenuContentWidth(dropdownElement)
+        : 0;
     return resolveDropdownMenuPlacement(
       triggerRect.left,
       triggerWidth,
@@ -2694,18 +2752,23 @@ export class UltraDropdownModule extends BaseUltraModule {
             // ancestor instead of the viewport. Subtracting hostRect makes the
             // dropdown render at the correct viewport coordinates in either case.
             const hostRect = this.getFixedHostRect(overlayHost);
-            this.positionDropdownFromTrigger(portaledDropdown, rect, hostRect, menuDirection);
-            
+            // Lay the clone out before measuring option labels. Sizing while
+            // display:none made HVAC chevron menus as narrow as the icon column.
             portaledDropdown.style.display = 'block';
             portaledDropdown.style.pointerEvents = 'auto';
             portaledDropdown.style.visibility = 'visible';
+            portaledDropdown.style.overflowX = 'visible';
+            this.positionDropdownFromTrigger(portaledDropdown, rect, hostRect, menuDirection);
             portaledDropdown.style.zIndex = overlayZIndex.toString();
             portaledDropdown.style.maxHeight = `${dropdownMaxHeight}px`;
             this.applyDropdownOpenAnimation(portaledDropdown, menuDirection);
-            
-            // Ensure scrollbar is interactive
+
+            // Ensure scrollbar is interactive. overflow-x stays visible on
+            // chevron-sized menus so a slightly short measure cannot clip labels.
             portaledDropdown.style.overflowY = 'auto';
-            portaledDropdown.style.overflowX = 'hidden';
+            if (rect.width >= MENU_MIN_CONTENT_WIDTH_PX) {
+              portaledDropdown.style.overflowX = 'hidden';
+            }
 
             // Hide the original dropdown
             dropdownElement.style.display = 'none';
@@ -3921,6 +3984,15 @@ export class UltraDropdownModule extends BaseUltraModule {
         font-weight: inherit;
         color: inherit;
         text-align: inherit;
+        white-space: nowrap;
+      }
+
+      .dropdown-option ha-icon {
+        display: inline-flex;
+        flex-shrink: 0;
+        width: 24px;
+        min-width: 24px;
+        height: 24px;
       }
 
       .dropdown-option:hover {
