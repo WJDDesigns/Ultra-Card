@@ -17,6 +17,11 @@ import { ucToastService } from '../services/uc-toast-service';
 import { autoMigrateCardModule } from '../utils/template-migration';
 import { getControlSurfaceStyles } from '../utils/uc-surface-recipes';
 import { resolveThemedModuleStyle } from '../services/uc-theme-service';
+import {
+  ucTriggerAlignStyle,
+  ucTriggerIconChromeStyle,
+  ucTriggerIconGlyphStyle,
+} from '../utils/uc-trigger-icon';
 
 // Global store to persist popup state across module re-instantiation/reloads
 // This survives HA preview/dash re-renders because it's kept on window
@@ -3201,10 +3206,10 @@ export class UltraPopupModule extends BaseUltraModule {
         return html``;
       }
 
-      // Get alignment
-      const alignment = popupModule.trigger_alignment || 'center';
-      const justifyContent =
-        alignment === 'left' ? 'flex-start' : alignment === 'right' ? 'flex-end' : 'center';
+      // Get alignment. Width must stay 100% for left/right: inline-flex +
+      // width:auto shrinks to the icon, so flex-end never moves it
+      // (Discord: "Rechts" still sat on the left).
+      const alignStyle = ucTriggerAlignStyle(popupModule.trigger_alignment, 'center');
 
       let triggerElement = html``;
 
@@ -3353,31 +3358,23 @@ export class UltraPopupModule extends BaseUltraModule {
         }
       } else if (triggerType === 'icon') {
         const triggerIcon = popupModule.trigger_icon || 'mdi:information';
-        const triggerIconSize = popupModule.trigger_icon_size || 24;
         const triggerIconColor =
           this._getTriggerIconEntityColor(popupModule, hass, config) ||
           popupModule.trigger_icon_color ||
           'var(--primary-color)';
-        const iconBackground = popupModule.trigger_icon_background || 'none';
+        const iconChrome = {
+          iconSize: popupModule.trigger_icon_size || 24,
+          iconColor: triggerIconColor,
+          background: popupModule.trigger_icon_background || 'none',
+          backgroundColor: popupModule.trigger_icon_background_color,
+          backgroundPadding: popupModule.trigger_icon_background_padding,
+        };
         const iconWrapperStyle = [
-          'display: inline-flex',
-          'align-items: center',
-          'justify-content: center',
+          ucTriggerIconChromeStyle(iconChrome),
           'cursor: pointer',
           'transition: transform 0.2s ease',
           'touch-action: manipulation',
           'pointer-events: auto',
-          iconBackground !== 'none'
-            ? `background: ${popupModule.trigger_icon_background_color || 'var(--secondary-background-color)'}`
-            : '',
-          iconBackground !== 'none'
-            ? `padding: ${popupModule.trigger_icon_background_padding ?? 8}px`
-            : '',
-          iconBackground === 'circle'
-            ? 'border-radius: 50%'
-            : iconBackground === 'rounded-square'
-              ? 'border-radius: var(--uc-r-8, 8px)'
-              : '',
         ]
           .filter(Boolean)
           .join('; ');
@@ -3399,7 +3396,7 @@ export class UltraPopupModule extends BaseUltraModule {
           >
             <ha-icon
               icon="${triggerIcon}"
-              style="--mdc-icon-size: ${triggerIconSize}px; color: ${triggerIconColor}; display: flex;"
+              style="${ucTriggerIconGlyphStyle(iconChrome)}"
             ></ha-icon>
           </div>
         `;
@@ -3413,7 +3410,7 @@ export class UltraPopupModule extends BaseUltraModule {
       return html`
         <div
           class="swiper-no-swiping popup-trigger-align"
-          style="display: flex; justify-content: ${justifyContent}; width: 100%; pointer-events: auto; box-sizing: border-box;"
+          style="${alignStyle}"
         >
           ${triggerElement}
         </div>

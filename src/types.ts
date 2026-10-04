@@ -1834,6 +1834,12 @@ export interface DrawerModule extends BaseModule {
   trigger_icon?: string | undefined;
   trigger_color?: string | undefined;
   trigger_background?: string | undefined;
+  /** Default left so existing cards keep their place; Popup defaults to center. */
+  trigger_alignment?: 'left' | 'center' | 'right' | undefined;
+  trigger_icon_size?: number | undefined;
+  trigger_icon_background?: 'none' | 'circle' | 'rounded-square' | undefined;
+  trigger_icon_background_color?: string | undefined;
+  trigger_icon_background_padding?: number | undefined;
 }
 
 // Scroll Row — horizontally scrollable row with CSS scroll-snap and item peek

@@ -54,6 +54,32 @@ describe('applyDrawerTriggerDesignDefaults', () => {
     expect(styles.width).toBeUndefined();
     expect(styles.height).toBeUndefined();
   });
+
+  it('sizes from icon size instead of 42px when Design is empty', () => {
+    const styles = applyDrawerTriggerDesignDefaults('icon', {}, { iconSize: 32 });
+    expect(styles.width).toBe('32px');
+    expect(styles.height).toBe('32px');
+  });
+
+  it('adds well padding to the intrinsic size for a shaped background', () => {
+    const styles = applyDrawerTriggerDesignDefaults(
+      'icon',
+      {},
+      { iconSize: 24, background: 'circle', backgroundPadding: 8 }
+    );
+    expect(styles.width).toBe('40px');
+    expect(styles.height).toBe('40px');
+  });
+
+  it('keeps Design size even when icon size is set', () => {
+    const styles = applyDrawerTriggerDesignDefaults(
+      'icon',
+      { width: '1000px', height: '1000px' },
+      { iconSize: 24, background: 'circle' }
+    );
+    expect(styles.width).toBe('1000px');
+    expect(styles.height).toBe('1000px');
+  });
 });
 
 describe('drawer module: icon-only trigger size', () => {
@@ -66,7 +92,7 @@ describe('drawer module: icon-only trigger size', () => {
     const iconBtnBlock = css.match(/\.drawer-trigger-icon-btn\s*\{[^}]+\}/)?.[0] ?? '';
     expect(iconBtnBlock).toContain('width: 100%');
     expect(iconBtnBlock).toContain('height: 100%');
-    expect(iconBtnBlock).toContain(`min-width: ${DRAWER_ICON_TRIGGER_DEFAULT_PX}px`);
+    expect(iconBtnBlock).not.toMatch(/min-width:/);
     expect(iconBtnBlock).not.toMatch(/(?:^|[^\w-])width:\s*42px/);
   });
 

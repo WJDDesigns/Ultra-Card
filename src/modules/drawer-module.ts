@@ -6,6 +6,14 @@ import { getModuleRegistry } from './module-registry';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { UcAlignment } from '../utils/uc-alignment';
+import {
+  UcTriggerIconChrome,
+  ucTriggerAlignStyle,
+  ucTriggerIconChromeStyle,
+  ucTriggerIconGlyphStyle,
+  ucTriggerIconIntrinsicPx,
+} from '../utils/uc-trigger-icon';
 import { renderChildModulePreview } from './layout-container-utils';
 
 const DRAWER_TRANSITION_MS = 280;
@@ -15,15 +23,18 @@ export const DRAWER_ICON_TRIGGER_DEFAULT_PX = 42;
 /**
  * Icon-only triggers used to ignore Design tab size (hardcoded 42px), so switching
  * from Button to Icon Only looked like the size "reset". Fill the wrapper instead,
- * and only default to 42px when width/height were never set.
+ * and only default to 42px when width/height were never set. If the user set an
+ * icon size (Popup-style chrome), size the box from that instead of 42px.
  */
 export function applyDrawerTriggerDesignDefaults(
   triggerStyle: 'button' | 'icon',
-  styles: Record<string, string | undefined>
+  styles: Record<string, string | undefined>,
+  chrome?: UcTriggerIconChrome
 ): Record<string, string | undefined> {
   if (triggerStyle === 'icon') {
-    if (!styles.width) styles.width = `${DRAWER_ICON_TRIGGER_DEFAULT_PX}px`;
-    if (!styles.height) styles.height = `${DRAWER_ICON_TRIGGER_DEFAULT_PX}px`;
+    const fallback = `${ucTriggerIconIntrinsicPx(chrome, DRAWER_ICON_TRIGGER_DEFAULT_PX)}px`;
+    if (!styles.width) styles.width = fallback;
+    if (!styles.height) styles.height = fallback;
   }
   return styles;
 }
@@ -83,6 +94,7 @@ export class UltraDrawerModule extends BaseUltraModule {
       trigger_style: 'button',
       trigger_label: 'Open',
       trigger_icon: 'mdi:menu-open',
+      trigger_alignment: 'left',
       display_mode: 'always',
       display_conditions: [],
     };
@@ -228,6 +240,33 @@ export class UltraDrawerModule extends BaseUltraModule {
             ],
             next => updateModule({ trigger_style: next as 'button' | 'icon' })
           )}
+          ${this.renderSegmentedField(
+            localize('editor.popup.trigger.alignment', lang, 'Alignment'),
+            localize(
+              'editor.popup.trigger.alignment_help',
+              lang,
+              'Align the trigger element to the left, center, or right.'
+            ),
+            drawerModule.trigger_alignment || 'left',
+            [
+              {
+                value: 'left',
+                label: localize('editor.common.left', lang, 'Left'),
+                icon: 'mdi:align-horizontal-left',
+              },
+              {
+                value: 'center',
+                label: localize('editor.common.center', lang, 'Center'),
+                icon: 'mdi:align-horizontal-center',
+              },
+              {
+                value: 'right',
+                label: localize('editor.common.right', lang, 'Right'),
+                icon: 'mdi:align-horizontal-right',
+              },
+            ],
+            next => updateModule({ trigger_alignment: next as UcAlignment })
+          )}
           ${(drawerModule.trigger_style || 'button') === 'button'
             ? this.renderFieldSection(
                 localize('editor.drawer.trigger.label', lang, 'Trigger Label'),
@@ -248,13 +287,98 @@ export class UltraDrawerModule extends BaseUltraModule {
             drawerModule.trigger_icon || 'mdi:menu-open',
             next => updateModule({ trigger_icon: next })
           )}
+          ${(drawerModule.trigger_style || 'button') === 'icon'
+            ? html`
+                ${this.renderSliderField(
+                  localize('editor.popup.trigger.icon_size', lang, 'Trigger Icon Size'),
+                  localize(
+                    'editor.popup.trigger.icon_size_desc',
+                    lang,
+                    'Size of the trigger icon in pixels.'
+                  ),
+                  drawerModule.trigger_icon_size || 24,
+                  24,
+                  10,
+                  100,
+                  1,
+                  (value: number) => updateModule({ trigger_icon_size: value })
+                )}
+                ${this.renderSegmentedField(
+                  localize('editor.popup.trigger.icon_background', lang, 'Icon Background'),
+                  localize(
+                    'editor.popup.trigger.icon_background_desc',
+                    lang,
+                    'Shape drawn behind the icon, like the Icon module.'
+                  ),
+                  drawerModule.trigger_icon_background || 'none',
+                  [
+                    {
+                      value: 'none',
+                      label: localize(
+                        'editor.popup.trigger.icon_background_none',
+                        lang,
+                        'None'
+                      ),
+                      icon: 'mdi:close',
+                    },
+                    {
+                      value: 'circle',
+                      label: localize(
+                        'editor.popup.trigger.icon_background_circle',
+                        lang,
+                        'Circle'
+                      ),
+                      icon: 'mdi:circle-outline',
+                    },
+                    {
+                      value: 'rounded-square',
+                      label: localize(
+                        'editor.popup.trigger.icon_background_rounded',
+                        lang,
+                        'Rounded'
+                      ),
+                      icon: 'mdi:square-rounded-outline',
+                    },
+                  ],
+                  next =>
+                    updateModule({
+                      trigger_icon_background: next as DrawerModule['trigger_icon_background'],
+                    })
+                )}
+                ${(drawerModule.trigger_icon_background || 'none') !== 'none'
+                  ? this.renderSliderField(
+                      localize(
+                        'editor.popup.trigger.icon_background_padding',
+                        lang,
+                        'Icon Background Padding'
+                      ),
+                      localize(
+                        'editor.popup.trigger.icon_background_padding_desc',
+                        lang,
+                        'Space between the icon and the edge of its background.'
+                      ),
+                      drawerModule.trigger_icon_background_padding ?? 8,
+                      8,
+                      0,
+                      40,
+                      1,
+                      (value: number) =>
+                        updateModule({ trigger_icon_background_padding: value })
+                    )
+                  : ''}
+              `
+            : ''}
           ${this.renderColorField(
             localize('editor.drawer.trigger.bg', lang, 'Trigger Background'),
             '',
             hass,
-            drawerModule.trigger_background || '',
+            drawerModule.trigger_background || drawerModule.trigger_icon_background_color || '',
             'var(--primary-color)',
-            next => updateModule({ trigger_background: next })
+            next =>
+              updateModule({
+                trigger_background: next,
+                trigger_icon_background_color: next,
+              })
           )}
           ${this.renderColorField(
             localize('editor.drawer.trigger.color', lang, 'Trigger Text/Icon Color'),
@@ -277,13 +401,44 @@ export class UltraDrawerModule extends BaseUltraModule {
   ): TemplateResult {
     const drawerModule = module as DrawerModule;
     const triggerStyle = drawerModule.trigger_style || 'button';
+    const iconChrome: UcTriggerIconChrome = {
+      iconSize: drawerModule.trigger_icon_size,
+      background: drawerModule.trigger_icon_background,
+      backgroundColor:
+        drawerModule.trigger_icon_background_color || drawerModule.trigger_background,
+      backgroundPadding: drawerModule.trigger_icon_background_padding,
+    };
     const designStyles = applyDrawerTriggerDesignDefaults(
       triggerStyle,
-      this.buildDesignStyles(module, hass)
+      this.buildDesignStyles(module, hass),
+      iconChrome
     );
+    const alignment = (drawerModule.trigger_alignment || 'left') as UcAlignment;
+    // Default left + no Design width kept the button full-bleed. Center/right
+    // hug content so justify-content can actually move it.
+    const hugButton =
+      triggerStyle === 'button' && !designStyles.width && alignment !== 'left';
+    if (triggerStyle === 'button' && !designStyles.width && alignment === 'left') {
+      designStyles.width = '100%';
+    }
     const hoverClass = this.getHoverEffectClass(module);
     const triggerBg = drawerModule.trigger_background || 'var(--primary-color)';
     const triggerColor = drawerModule.trigger_color || 'var(--text-primary-color, #fff)';
+    const iconBackground = drawerModule.trigger_icon_background || 'none';
+    const iconBtnStyle =
+      iconBackground !== 'none'
+        ? `${ucTriggerIconChromeStyle({
+            background: iconBackground,
+            backgroundColor: iconChrome.backgroundColor || triggerBg,
+            backgroundPadding: drawerModule.trigger_icon_background_padding,
+          })}; color: ${triggerColor}; width: 100%; height: 100%;`
+        : `background: ${triggerBg}; color: ${triggerColor};`;
+    const glyphStyle = drawerModule.trigger_icon_size
+      ? ucTriggerIconGlyphStyle({
+          iconSize: drawerModule.trigger_icon_size,
+          iconColor: triggerColor,
+        })
+      : `color: ${triggerColor};`;
 
     // Keep the portal in sync while open (hass/config updates re-render content)
     if (this._openStates.get(drawerModule.id)) {
@@ -294,38 +449,43 @@ export class UltraDrawerModule extends BaseUltraModule {
 
     return this.wrapWithAnimation(
       html`
-        <div class="drawer-trigger-wrapper ${hoverClass}" style="${this.buildStyleString(designStyles)}">
-          ${triggerStyle === 'icon'
-            ? html`
-                <button
-                  type="button"
-                  class="drawer-trigger-icon-btn"
-                  style="background: ${triggerBg}; color: ${triggerColor};"
-                  aria-label="${drawerModule.drawer_title || drawerModule.trigger_label || 'Open drawer'}"
-                  @click=${openDrawer}
-                >
-                  <ha-icon
-                    icon="${drawerModule.trigger_icon || 'mdi:menu-open'}"
-                    style="color: ${triggerColor};"
-                  ></ha-icon>
-                </button>
-              `
-            : html`
-                <button
-                  type="button"
-                  class="drawer-trigger-btn"
-                  style="background: ${triggerBg}; color: ${triggerColor};"
-                  @click=${openDrawer}
-                >
-                  ${drawerModule.trigger_icon
-                    ? html`<ha-icon
-                        icon="${drawerModule.trigger_icon}"
-                        style="color: ${triggerColor}; --mdc-icon-size: 18px;"
-                      ></ha-icon>`
-                    : ''}
-                  <span>${drawerModule.trigger_label || 'Open'}</span>
-                </button>
-              `}
+        <div class="drawer-trigger-align" style="${ucTriggerAlignStyle(alignment, 'left')}">
+          <div
+            class="drawer-trigger-wrapper ${hoverClass}${hugButton ? ' drawer-trigger-hug' : ''}"
+            style="${this.buildStyleString(designStyles)}"
+          >
+            ${triggerStyle === 'icon'
+              ? html`
+                  <button
+                    type="button"
+                    class="drawer-trigger-icon-btn"
+                    style="${iconBtnStyle}"
+                    aria-label="${drawerModule.drawer_title || drawerModule.trigger_label || 'Open drawer'}"
+                    @click=${openDrawer}
+                  >
+                    <ha-icon
+                      icon="${drawerModule.trigger_icon || 'mdi:menu-open'}"
+                      style="${glyphStyle}"
+                    ></ha-icon>
+                  </button>
+                `
+              : html`
+                  <button
+                    type="button"
+                    class="drawer-trigger-btn"
+                    style="background: ${triggerBg}; color: ${triggerColor};"
+                    @click=${openDrawer}
+                  >
+                    ${drawerModule.trigger_icon
+                      ? html`<ha-icon
+                          icon="${drawerModule.trigger_icon}"
+                          style="color: ${triggerColor}; --mdc-icon-size: 18px;"
+                        ></ha-icon>`
+                      : ''}
+                    <span>${drawerModule.trigger_label || 'Open'}</span>
+                  </button>
+                `}
+          </div>
         </div>
       `,
       module,
@@ -607,10 +767,20 @@ export class UltraDrawerModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      .drawer-trigger-align {
+        display: flex;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
       .drawer-trigger-wrapper {
         display: flex;
         align-items: stretch;
         box-sizing: border-box;
+      }
+
+      .drawer-trigger-wrapper.drawer-trigger-hug .drawer-trigger-btn {
+        width: auto;
       }
 
       .drawer-trigger-btn {
@@ -645,8 +815,6 @@ export class UltraDrawerModule extends BaseUltraModule {
         justify-content: center;
         width: 100%;
         height: 100%;
-        min-width: ${DRAWER_ICON_TRIGGER_DEFAULT_PX}px;
-        min-height: ${DRAWER_ICON_TRIGGER_DEFAULT_PX}px;
         box-sizing: border-box;
         border: none;
         border-radius: 50%;
