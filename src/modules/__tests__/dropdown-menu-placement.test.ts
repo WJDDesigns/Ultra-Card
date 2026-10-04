@@ -7,6 +7,10 @@ describe('resolveDropdownMenuPlacement', () => {
     expect(resolveDropdownMenuPlacement(20, 300, 420, 1100)).toEqual({ left: 20, width: 300 });
   });
 
+  it('does not grow a 120px compact trigger when content already fits', () => {
+    expect(resolveDropdownMenuPlacement(40, 120, 90, 1100)).toEqual({ left: 40, width: 120 });
+  });
+
   it('keeps narrow triggers unchanged when the options already fit', () => {
     expect(resolveDropdownMenuPlacement(100, 120, 90, 1100)).toEqual({ left: 100, width: 120 });
   });
@@ -63,7 +67,8 @@ describe('measureDropdownMenuContentWidth', () => {
     menu.appendChild(opt);
     document.body.appendChild(menu);
 
-    expect(measureDropdownMenuContentWidth(menu)).toBe(87);
+    expect(measureDropdownMenuContentWidth(menu, 30)).toBe(87);
+    expect(measureDropdownMenuContentWidth(menu, 120)).toBe(63);
     expect(opt.style.whiteSpace).toBe('pre-wrap');
     menu.remove();
   });

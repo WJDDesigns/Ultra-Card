@@ -28,6 +28,8 @@ export function isVisuallyBlankLabel(label: string | undefined | null): boolean 
 
 /** Triggers narrower than this let the open menu size to its options. */
 export const MENU_MIN_CONTENT_WIDTH_PX = 160;
+/** Chevron-only HVAC overlays are ~30px. Do not pad icon slots on larger controls. */
+export const CHEVRON_TRIGGER_MAX_PX = 48;
 const MENU_MAX_CONTENT_WIDTH_PX = 280;
 const MENU_VIEWPORT_GUTTER_PX = 8;
 
@@ -57,8 +59,14 @@ export function resolveDropdownMenuPlacement(
  * Portaled clones are often measured while `display:none` / `overflow-x:hidden`
  * and before custom `ha-icon` elements finish laying out, which used to size
  * HVAC chevron menus to the icon column and clip "heat" / "cool" to "he" / "co".
+ *
+ * The collapsed-icon pad applies only to chevron-sized triggers so a normal
+ * compact control (100–159px) is not grown by 24px.
  */
-export function measureDropdownMenuContentWidth(el: HTMLElement): number {
+export function measureDropdownMenuContentWidth(
+  el: HTMLElement,
+  triggerWidth = 0
+): number {
   const prev = {
     display: el.style.display,
     visibility: el.style.visibility,
@@ -73,59 +81,65 @@ export function measureDropdownMenuContentWidth(el: HTMLElement): number {
     overflowX: el.style.overflowX,
     overflowY: el.style.overflowY,
   };
-
-  el.style.display = 'block';
-  el.style.visibility = 'hidden';
-  el.style.position = 'fixed';
-  el.style.left = '0px';
-  el.style.top = '0px';
-  el.style.width = 'max-content';
-  el.style.maxWidth = 'none';
-  el.style.height = 'auto';
-  el.style.maxHeight = 'none';
-  el.style.overflow = 'visible';
-  el.style.overflowX = 'visible';
-  el.style.overflowY = 'visible';
-
-  void el.offsetWidth;
-
   const optionPrev: Array<{ el: HTMLElement; whiteSpace: string }> = [];
-  el.querySelectorAll('.dropdown-option').forEach(node => {
-    const opt = node as HTMLElement;
-    optionPrev.push({ el: opt, whiteSpace: opt.style.whiteSpace });
-    opt.style.whiteSpace = 'nowrap';
-  });
 
-  let width = Math.max(el.scrollWidth || 0, el.offsetWidth || 0);
-  let collapsedIconSlot = 0;
-  el.querySelectorAll('.dropdown-option').forEach(node => {
-    const opt = node as HTMLElement;
-    width = Math.max(width, opt.scrollWidth || 0, opt.offsetWidth || 0);
-    const icon = opt.querySelector('ha-icon') as HTMLElement | null;
-    if (icon && icon.getBoundingClientRect().width < 8) {
-      collapsedIconSlot = 24;
+  const restore = () => {
+    optionPrev.forEach(({ el: opt, whiteSpace }) => {
+      opt.style.whiteSpace = whiteSpace;
+    });
+    el.style.display = prev.display;
+    el.style.visibility = prev.visibility;
+    el.style.position = prev.position;
+    el.style.left = prev.left;
+    el.style.top = prev.top;
+    el.style.width = prev.width;
+    el.style.maxWidth = prev.maxWidth;
+    el.style.height = prev.height;
+    el.style.maxHeight = prev.maxHeight;
+    el.style.overflow = prev.overflow;
+    el.style.overflowX = prev.overflowX;
+    el.style.overflowY = prev.overflowY;
+  };
+
+  try {
+    el.style.display = 'block';
+    el.style.visibility = 'hidden';
+    el.style.position = 'fixed';
+    el.style.left = '0px';
+    el.style.top = '0px';
+    el.style.width = 'max-content';
+    el.style.maxWidth = 'none';
+    el.style.height = 'auto';
+    el.style.maxHeight = 'none';
+    el.style.overflow = 'visible';
+    el.style.overflowX = 'visible';
+    el.style.overflowY = 'visible';
+
+    void el.offsetWidth;
+
+    el.querySelectorAll('.dropdown-option').forEach(node => {
+      const opt = node as HTMLElement;
+      optionPrev.push({ el: opt, whiteSpace: opt.style.whiteSpace });
+      opt.style.whiteSpace = 'nowrap';
+    });
+
+    let width = Math.max(el.scrollWidth || 0, el.offsetWidth || 0);
+    let collapsedIconSlot = 0;
+    el.querySelectorAll('.dropdown-option').forEach(node => {
+      const opt = node as HTMLElement;
+      width = Math.max(width, opt.scrollWidth || 0, opt.offsetWidth || 0);
+      const icon = opt.querySelector('ha-icon') as HTMLElement | null;
+      if (icon && icon.getBoundingClientRect().width < 8) {
+        collapsedIconSlot = 24;
+      }
+    });
+    if (collapsedIconSlot && triggerWidth > 0 && triggerWidth <= CHEVRON_TRIGGER_MAX_PX) {
+      width += collapsedIconSlot;
     }
-  });
-  width += collapsedIconSlot;
-
-  optionPrev.forEach(({ el: opt, whiteSpace }) => {
-    opt.style.whiteSpace = whiteSpace;
-  });
-
-  el.style.display = prev.display;
-  el.style.visibility = prev.visibility;
-  el.style.position = prev.position;
-  el.style.left = prev.left;
-  el.style.top = prev.top;
-  el.style.width = prev.width;
-  el.style.maxWidth = prev.maxWidth;
-  el.style.height = prev.height;
-  el.style.maxHeight = prev.maxHeight;
-  el.style.overflow = prev.overflow;
-  el.style.overflowX = prev.overflowX;
-  el.style.overflowY = prev.overflowY;
-
-  return width;
+    return width;
+  } finally {
+    restore();
+  }
 }
 
 /**
@@ -2572,9 +2586,9 @@ export class UltraDropdownModule extends BaseUltraModule {
     const { left, width } = this.resolveMenuHorizontalPlacement(dropdownElement, triggerRect);
     dropdownElement.style.left = `${left - hostRect.left}px`;
     dropdownElement.style.width = `${width}px`;
-    // Only lock min-width on chevron-sized menus. Full-width dropdowns must
-    // keep matching the trigger so long labels wrap inside the control.
-    if (triggerRect.width < MENU_MIN_CONTENT_WIDTH_PX) {
+    // Only lock min-width when we actually grew past the trigger. Full-width
+    // and compact controls must keep matching the trigger so labels wrap.
+    if (triggerRect.width < MENU_MIN_CONTENT_WIDTH_PX && width > triggerRect.width) {
       dropdownElement.style.minWidth = `${width}px`;
     } else {
       dropdownElement.style.minWidth = '';
@@ -2608,7 +2622,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     const triggerWidth = triggerRect.width;
     const contentWidth =
       triggerWidth < MENU_MIN_CONTENT_WIDTH_PX
-        ? measureDropdownMenuContentWidth(dropdownElement)
+        ? measureDropdownMenuContentWidth(dropdownElement, triggerWidth)
         : 0;
     return resolveDropdownMenuPlacement(
       triggerRect.left,
