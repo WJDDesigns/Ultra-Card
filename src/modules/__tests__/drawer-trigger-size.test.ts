@@ -70,6 +70,15 @@ describe('drawer module: icon-only trigger size', () => {
     expect(iconBtnBlock).not.toMatch(/(?:^|[^\w-])width:\s*42px/);
   });
 
+  it('sizes the inner ha-svg-icon to the ha-icon box so the glyph can centre', () => {
+    const css = getModuleRegistry().getModule('drawer')!.getStyles!();
+    const haIconBlock = css.match(/\.drawer-trigger-icon-btn ha-icon\s*\{[^}]+\}/)?.[0] ?? '';
+    expect(haIconBlock).toContain('display: flex');
+    expect(haIconBlock).toContain('align-items: center');
+    expect(haIconBlock).toContain('--mdc-icon-size: 100%');
+    expect(haIconBlock).not.toMatch(/--mdc-icon-size:\s*60%/);
+  });
+
   it('renders Design tab size on the icon-only wrapper', () => {
     const host = renderDrawer({
       id: 'd-sized',

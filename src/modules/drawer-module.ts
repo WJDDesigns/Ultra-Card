@@ -650,14 +650,20 @@ export class UltraDrawerModule extends BaseUltraModule {
         box-sizing: border-box;
         border: none;
         border-radius: 50%;
+        padding: 0;
         cursor: pointer;
         transition: filter 0.15s ease, transform 0.1s ease;
       }
 
       .drawer-trigger-icon-btn ha-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 60%;
         height: 60%;
-        --mdc-icon-size: 60%;
+        /* Fill this box. Nested 60% on --mdc-icon-size shrank the SVG and
+           left it at the top of the circle because ha-icon is not flex. */
+        --mdc-icon-size: 100%;
       }
 
       .drawer-trigger-icon-btn:hover {
