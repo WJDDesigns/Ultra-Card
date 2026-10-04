@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.1-beta4
+
+The fourth 3.13.1 beta gives Drawer triggers the same alignment and icon styling Popup already has: left / centre / right, plus icon size, colour, and a none / circle / rounded background. Existing Drawer cards stay left-aligned, and Icon Only still uses the circular fill when background is none. It includes everything from beta1–beta3. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added left / centre / right alignment on Drawer triggers** - Popup already had this. Drawer now has the same row, so Icon Only and the button can sit left, centre or right. Existing cards stay on the left
+- **Added icon size, colour and background shape on Drawer Icon Only** - Size, colour, and none / circle / rounded (with padding) match the Popup trigger icon. This is not the Icon module tab: no active / inactive, entity colour, or templates. With background set to none, the circular fill from Trigger Background and Design size is unchanged
+
+---
+
 ## Version 3.13.1-beta3
 
 The third 3.13.1 beta centres the glyph in a Drawer Icon Only trigger. After beta2, a large circular button still sat the icon in the top half of the circle. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord.
