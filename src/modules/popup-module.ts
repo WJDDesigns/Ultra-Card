@@ -3405,17 +3405,15 @@ export class UltraPopupModule extends BaseUltraModule {
         `;
       }
 
-      // Wrap trigger in alignment container
-      // Use inline-flex to minimize space taken, only expand if needed
+      // Wrap trigger in alignment container. Width must stay 100% for left/right:
+      // inline-flex + width:auto shrinks to the icon, so flex-end never moves it
+      // (Discord: "Rechts" still sat on the left).
       // CRITICAL: Add swiper-no-swiping class to container to prevent swipe interference
       // pointer-events: auto ensures clicks work in preview contexts where parent may have pointer-events: none
       return html`
         <div
-          class="swiper-no-swiping"
-          style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment ===
-            'left' || alignment === 'right'
-            ? 'auto'
-            : '100%'}; pointer-events: auto;"
+          class="swiper-no-swiping popup-trigger-align"
+          style="display: flex; justify-content: ${justifyContent}; width: 100%; pointer-events: auto; box-sizing: border-box;"
         >
           ${triggerElement}
         </div>
