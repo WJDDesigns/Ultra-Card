@@ -37,6 +37,7 @@
     "test:run": "vitest run",
     "test:hvac-overlay": "node scripts/hvac-overlay-harness.mjs",
     "test:drawer-icon-center": "node scripts/drawer-icon-center-harness.mjs",
+    "test:drawer-trigger-icon": "node scripts/drawer-trigger-icon-harness.mjs",
     "test:coverage": "vitest run --coverage",
     "audit:module-tabs": "node scripts/audit-module-tabs.cjs",
     "previews": "node scripts/capture-previews.mjs",

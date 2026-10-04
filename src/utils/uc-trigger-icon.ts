@@ -60,7 +60,7 @@ export function ucTriggerIconIntrinsicPx(
   chrome: UcTriggerIconChrome = {},
   fallbackPx: number = UC_TRIGGER_ICON_SIZE_DEFAULT
 ): number {
-  if (chrome.iconSize != null && chrome.iconSize > 0) {
+  if (typeof chrome.iconSize === 'number' && chrome.iconSize > 0) {
     const shaped = !!chrome.background && chrome.background !== 'none';
     const pad = shaped
       ? (chrome.backgroundPadding ?? UC_TRIGGER_ICON_BACKGROUND_PADDING_DEFAULT) * 2
