@@ -63,10 +63,11 @@ describe('drawer module: icon-only trigger size', () => {
 
   it('does not hardcode 42px on the icon button class', () => {
     const css = getModuleRegistry().getModule('drawer')!.getStyles!();
-    expect(css).toContain('.drawer-trigger-icon-btn');
-    expect(css).toMatch(/\.drawer-trigger-icon-btn[\s\S]*width:\s*100%/);
-    expect(css).toMatch(/\.drawer-trigger-icon-btn[\s\S]*height:\s*100%/);
-    expect(css).not.toMatch(/\.drawer-trigger-icon-btn\s*\{[^}]*width:\s*42px/);
+    const iconBtnBlock = css.match(/\.drawer-trigger-icon-btn\s*\{[^}]+\}/)?.[0] ?? '';
+    expect(iconBtnBlock).toContain('width: 100%');
+    expect(iconBtnBlock).toContain('height: 100%');
+    expect(iconBtnBlock).toContain(`min-width: ${DRAWER_ICON_TRIGGER_DEFAULT_PX}px`);
+    expect(iconBtnBlock).not.toMatch(/(?:^|[^\w-])width:\s*42px/);
   });
 
   it('renders Design tab size on the icon-only wrapper', () => {
