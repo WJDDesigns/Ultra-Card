@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.1-beta3
+
+The third 3.13.1 beta centres the glyph in a Drawer Icon Only trigger. After beta2, a large circular button still sat the icon in the top half of the circle. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed the Drawer Icon Only glyph sitting above centre** - A large circular trigger kept the icon in the top half of the circle. The icon now fills the inner box and sits on the midline. Design size from beta2 is unchanged
+
+---
+
 ## Version 3.13.1-beta2
 
 The second 3.13.1 beta fixes two Discord layout bugs: a Drawer set to Icon Only no longer ignores the Design tab size, and a Popup trigger set to Right actually sits on the right. It includes everything from beta1. This is a pre-release for testing — please report anything odd on GitHub or Discord.
