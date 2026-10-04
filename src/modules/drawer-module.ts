@@ -9,6 +9,24 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { renderChildModulePreview } from './layout-container-utils';
 
 const DRAWER_TRANSITION_MS = 280;
+/** Default icon-only trigger size when the Design tab has no width/height. */
+export const DRAWER_ICON_TRIGGER_DEFAULT_PX = 42;
+
+/**
+ * Icon-only triggers used to ignore Design tab size (hardcoded 42px), so switching
+ * from Button to Icon Only looked like the size "reset". Fill the wrapper instead,
+ * and only default to 42px when width/height were never set.
+ */
+export function applyDrawerTriggerDesignDefaults(
+  triggerStyle: 'button' | 'icon',
+  styles: Record<string, string | undefined>
+): Record<string, string | undefined> {
+  if (triggerStyle === 'icon') {
+    if (!styles.width) styles.width = `${DRAWER_ICON_TRIGGER_DEFAULT_PX}px`;
+    if (!styles.height) styles.height = `${DRAWER_ICON_TRIGGER_DEFAULT_PX}px`;
+  }
+  return styles;
+}
 
 // Module-scope state so the host card can tear down open drawers when the
 // drawer module is removed or hidden by logic (renderPreview is skipped then).
@@ -258,9 +276,12 @@ export class UltraDrawerModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const drawerModule = module as DrawerModule;
-    const designStyles = this.buildDesignStyles(module, hass);
-    const hoverClass = this.getHoverEffectClass(module);
     const triggerStyle = drawerModule.trigger_style || 'button';
+    const designStyles = applyDrawerTriggerDesignDefaults(
+      triggerStyle,
+      this.buildDesignStyles(module, hass)
+    );
+    const hoverClass = this.getHoverEffectClass(module);
     const triggerBg = drawerModule.trigger_background || 'var(--primary-color)';
     const triggerColor = drawerModule.trigger_color || 'var(--text-primary-color, #fff)';
 
@@ -588,6 +609,8 @@ export class UltraDrawerModule extends BaseUltraModule {
     return `
       .drawer-trigger-wrapper {
         display: flex;
+        align-items: stretch;
+        box-sizing: border-box;
       }
 
       .drawer-trigger-btn {
@@ -595,6 +618,9 @@ export class UltraDrawerModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         gap: 8px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
         padding: 10px 18px;
         border: none;
         border-radius: var(--uc-r-10, 10px);
@@ -617,12 +643,21 @@ export class UltraDrawerModule extends BaseUltraModule {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 42px;
-        height: 42px;
+        width: 100%;
+        height: 100%;
+        min-width: ${DRAWER_ICON_TRIGGER_DEFAULT_PX}px;
+        min-height: ${DRAWER_ICON_TRIGGER_DEFAULT_PX}px;
+        box-sizing: border-box;
         border: none;
         border-radius: 50%;
         cursor: pointer;
         transition: filter 0.15s ease, transform 0.1s ease;
+      }
+
+      .drawer-trigger-icon-btn ha-icon {
+        width: 60%;
+        height: 60%;
+        --mdc-icon-size: 60%;
       }
 
       .drawer-trigger-icon-btn:hover {
