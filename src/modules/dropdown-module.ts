@@ -89,6 +89,13 @@ export function measureDropdownMenuContentWidth(el: HTMLElement): number {
 
   void el.offsetWidth;
 
+  const optionPrev: Array<{ el: HTMLElement; whiteSpace: string }> = [];
+  el.querySelectorAll('.dropdown-option').forEach(node => {
+    const opt = node as HTMLElement;
+    optionPrev.push({ el: opt, whiteSpace: opt.style.whiteSpace });
+    opt.style.whiteSpace = 'nowrap';
+  });
+
   let width = Math.max(el.scrollWidth || 0, el.offsetWidth || 0);
   let collapsedIconSlot = 0;
   el.querySelectorAll('.dropdown-option').forEach(node => {
@@ -100,6 +107,10 @@ export function measureDropdownMenuContentWidth(el: HTMLElement): number {
     }
   });
   width += collapsedIconSlot;
+
+  optionPrev.forEach(({ el: opt, whiteSpace }) => {
+    opt.style.whiteSpace = whiteSpace;
+  });
 
   el.style.display = prev.display;
   el.style.visibility = prev.visibility;
@@ -2561,7 +2572,13 @@ export class UltraDropdownModule extends BaseUltraModule {
     const { left, width } = this.resolveMenuHorizontalPlacement(dropdownElement, triggerRect);
     dropdownElement.style.left = `${left - hostRect.left}px`;
     dropdownElement.style.width = `${width}px`;
-    dropdownElement.style.minWidth = `${width}px`;
+    // Only lock min-width on chevron-sized menus. Full-width dropdowns must
+    // keep matching the trigger so long labels wrap inside the control.
+    if (triggerRect.width < MENU_MIN_CONTENT_WIDTH_PX) {
+      dropdownElement.style.minWidth = `${width}px`;
+    } else {
+      dropdownElement.style.minWidth = '';
+    }
 
     if (direction === 'up') {
       const bottom = Math.max(
@@ -2757,18 +2774,15 @@ export class UltraDropdownModule extends BaseUltraModule {
             portaledDropdown.style.display = 'block';
             portaledDropdown.style.pointerEvents = 'auto';
             portaledDropdown.style.visibility = 'visible';
-            portaledDropdown.style.overflowX = 'visible';
             this.positionDropdownFromTrigger(portaledDropdown, rect, hostRect, menuDirection);
             portaledDropdown.style.zIndex = overlayZIndex.toString();
             portaledDropdown.style.maxHeight = `${dropdownMaxHeight}px`;
             this.applyDropdownOpenAnimation(portaledDropdown, menuDirection);
 
-            // Ensure scrollbar is interactive. overflow-x stays visible on
-            // chevron-sized menus so a slightly short measure cannot clip labels.
+            // Clip to the measured box so a grown HVAC menu cannot paint into
+            // the neighbouring card. Full-width menus already match the trigger.
             portaledDropdown.style.overflowY = 'auto';
-            if (rect.width >= MENU_MIN_CONTENT_WIDTH_PX) {
-              portaledDropdown.style.overflowX = 'hidden';
-            }
+            portaledDropdown.style.overflowX = 'hidden';
 
             // Hide the original dropdown
             dropdownElement.style.display = 'none';
@@ -3984,15 +3998,6 @@ export class UltraDropdownModule extends BaseUltraModule {
         font-weight: inherit;
         color: inherit;
         text-align: inherit;
-        white-space: nowrap;
-      }
-
-      .dropdown-option ha-icon {
-        display: inline-flex;
-        flex-shrink: 0;
-        width: 24px;
-        min-width: 24px;
-        height: 24px;
       }
 
       .dropdown-option:hover {
