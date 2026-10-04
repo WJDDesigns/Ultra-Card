@@ -54,6 +54,33 @@ const SCENARIOS = [
     haCardChrome: true,
     kind: 'fullwidth',
   },
+  {
+    name: 'compact-120',
+    width: 420,
+    height: 720,
+    cards: 1,
+    context: 'dashboard',
+    haCardChrome: true,
+    kind: 'compact',
+  },
+  {
+    name: 'default-last-chosen',
+    width: 420,
+    height: 720,
+    cards: 1,
+    context: 'dashboard',
+    haCardChrome: true,
+    kind: 'default',
+  },
+  {
+    name: 'entity-select',
+    width: 420,
+    height: 720,
+    cards: 1,
+    context: 'dashboard',
+    haCardChrome: true,
+    kind: 'entity',
+  },
 ];
 
 const MAX_OFF_CHEVRON_GAP = 16;
@@ -171,25 +198,48 @@ async function renderOverlay(page, scenario) {
       return Object.assign(base, extra);
     };
 
-    if (opts.kind === 'fullwidth') {
-        const dropdown = mk('dropdown', `fullwidth-select-${opts.name}`, {
-        source_mode: 'manual',
-        closed_title_mode: 'custom',
-        closed_title_custom: 'Living room scene',
-        control_alignment: 'center',
-        current_selection: 'Evening movie night with dimmed lights',
-        options: [
-          { id: 'opt-a', label: 'Evening movie night with dimmed lights' },
-          { id: 'opt-b', label: 'Guests arriving — bright and welcoming' },
-          { id: 'opt-c', label: 'Good night' },
-        ],
-      });
+    if (opts.kind === 'fullwidth' || opts.kind === 'compact' || opts.kind === 'default' || opts.kind === 'entity') {
+      let dropdown;
+      if (opts.kind === 'fullwidth') {
+        dropdown = mk('dropdown', `fullwidth-select-${opts.name}`, {
+          source_mode: 'manual',
+          closed_title_mode: 'custom',
+          closed_title_custom: 'Living room scene',
+          control_alignment: 'center',
+          current_selection: 'Evening movie night with dimmed lights',
+          options: [
+            { id: 'opt-a', label: 'Evening movie night with dimmed lights' },
+            { id: 'opt-b', label: 'Guests arriving — bright and welcoming' },
+            { id: 'opt-c', label: 'Good night' },
+          ],
+        });
+      } else if (opts.kind === 'compact') {
+        dropdown = mk('dropdown', `compact-select-${opts.name}`, {
+          source_mode: 'manual',
+          closed_title_mode: 'last_chosen',
+          current_selection: 'On',
+          options: [
+            { id: 'opt-on', label: 'On' },
+            { id: 'opt-off', label: 'Off' },
+          ],
+        });
+      } else if (opts.kind === 'entity') {
+        dropdown = mk('dropdown', `entity-select-${opts.name}`, {
+          source_mode: 'entity',
+          source_entity: 'input_select.house_mode',
+          closed_title_mode: 'entity_state',
+          closed_title_entity: 'input_select.house_mode',
+        });
+      } else {
+        dropdown = mk('dropdown', `default-select-${opts.name}`);
+      }
       const handler = registry.getModule('dropdown');
       const stage = document.getElementById('stage');
       stage.replaceChildren();
       const holder = document.createElement('div');
       holder.id = 'hvac-holder';
-      holder.dataset.room = 'fullwidth';
+      holder.dataset.room = opts.kind;
+      if (opts.kind === 'compact') holder.style.width = '120px';
       const card = document.createElement('div');
       card.className = 'ha-card';
       card.appendChild(holder);
@@ -591,16 +641,16 @@ function assertMenu(name, m, kind = 'hvac') {
   if (!m.found) {
     return [`${name}: dropdown menu did not open ${JSON.stringify(m)}`];
   }
-  if (kind === 'fullwidth') {
+  if (kind === 'fullwidth' || kind === 'compact' || kind === 'default' || kind === 'entity') {
     if (Math.abs((m.width || 0) - (m.triggerWidth || 0)) > 2) {
       errors.push(
-        `${name}: full-width menu must match the trigger (menu ${m.width}px vs trigger ${m.triggerWidth}px)`
+        `${name}: ${kind} menu must match the trigger (menu ${m.width}px vs trigger ${m.triggerWidth}px)`
       );
     }
     if (m.minWidth) {
-      errors.push(`${name}: full-width menu should not lock min-width (got ${m.minWidth})`);
+      errors.push(`${name}: ${kind} menu should not lock min-width (got ${m.minWidth})`);
     }
-    if (m.options.length < 2) errors.push(`${name}: expected scene options, saw ${m.options.length}`);
+    if (m.options.length < 2) errors.push(`${name}: expected options, saw ${m.options.length}`);
   } else {
     if (m.options.length !== 4) errors.push(`${name}: expected 4 options, saw ${m.options.length}`);
     if (m.triggerWidth && m.triggerWidth < 160 && m.width < 70) {
@@ -693,13 +743,13 @@ async function main() {
       results.push({ scenario: scenario.name, width: scenario.width, ...metrics });
       for (const card of metrics.cards) {
         const label = `${scenario.name}${metrics.cards.length > 1 ? `#${card.room}` : ''}`;
-        if (scenario.kind !== 'fullwidth') {
+        if (!scenario.kind || scenario.kind === 'hvac') {
           errors.push(...assertCard(label, card, metrics.bodyText));
         }
         console.log(
           `${label} (${scenario.width}px ${scenario.context}): Off→chevron gap=${card.gap}px overlap=${card.overlap} off/temp=${card.offTempGap}px clusterOffset=${card.clusterOffset}px infoW=${card.infoWidth} dropW=${card.dropdownWidth} selW=${card.selectionWidth} temp="${card.temp?.text}"`
         );
-        if (scenario.cards === 1 && scenario.kind !== 'fullwidth') singleGaps.push(card.gap);
+        if (scenario.cards === 1 && (!scenario.kind || scenario.kind === 'hvac')) singleGaps.push(card.gap);
       }
 
       const menu = await openMenu(page, 0);
