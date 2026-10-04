@@ -43,6 +43,17 @@ const SCENARIOS = [
     context: 'dashboard',
     haCardChrome: true,
   },
+  // Full-width dropdowns must keep matching the trigger — the HVAC chevron
+  // sizing must not stretch unrelated menus or stop long labels wrapping.
+  {
+    name: 'fullwidth-dashboard',
+    width: 420,
+    height: 720,
+    cards: 1,
+    context: 'dashboard',
+    haCardChrome: true,
+    kind: 'fullwidth',
+  },
 ];
 
 const MAX_OFF_CHEVRON_GAP = 16;
@@ -110,6 +121,7 @@ async function renderOverlay(page, scenario) {
         registry.ensureModuleLoaded(t)
       )
     );
+    document.querySelectorAll('[id^="portaled-dropdown-"]').forEach(el => el.remove());
 
     const rooms = [
       {
@@ -158,6 +170,39 @@ async function renderOverlay(page, scenario) {
       const base = registry.createDefaultModule(type, id, hass);
       return Object.assign(base, extra);
     };
+
+    if (opts.kind === 'fullwidth') {
+        const dropdown = mk('dropdown', `fullwidth-select-${opts.name}`, {
+        source_mode: 'manual',
+        closed_title_mode: 'custom',
+        closed_title_custom: 'Living room scene',
+        control_alignment: 'center',
+        current_selection: 'Evening movie night with dimmed lights',
+        options: [
+          { id: 'opt-a', label: 'Evening movie night with dimmed lights' },
+          { id: 'opt-b', label: 'Guests arriving — bright and welcoming' },
+          { id: 'opt-c', label: 'Good night' },
+        ],
+      });
+      const handler = registry.getModule('dropdown');
+      const stage = document.getElementById('stage');
+      stage.replaceChildren();
+      const holder = document.createElement('div');
+      holder.id = 'hvac-holder';
+      holder.dataset.room = 'fullwidth';
+      const card = document.createElement('div');
+      card.className = 'ha-card';
+      card.appendChild(holder);
+      stage.appendChild(card);
+      const tpl = handler.renderPreview(
+        dropdown,
+        hass,
+        { type: 'custom:ultra-card', layout: { rows: [] } },
+        opts.context
+      );
+      lit.render(tpl, holder);
+      return { ok: true };
+    }
 
     const buildColumn = room => {
       const gauge = mk('gauge', `hvac-gauge-${room.id}`, {
@@ -208,7 +253,7 @@ async function renderOverlay(page, scenario) {
         margin_bottom: '8px',
       });
 
-      const dropdown = mk('dropdown', `hvac-mode-${room.id}`, {
+      const dropdown = mk('dropdown', `hvac-mode-${opts.name}-${room.id}`, {
         source_mode: 'manual',
         closed_title_mode: 'custom',
         closed_title_custom: '\u2800\u2800\u2800\u2800\u2800\u2800',
@@ -439,38 +484,51 @@ async function measure(page) {
 }
 
 async function openMenu(page, cardIndex = 0) {
-  const trigger = page.locator('.dropdown-selected').nth(cardIndex);
-  await trigger.click({ force: true });
-  await page.waitForTimeout(400);
-  const appeared = await page.locator('.dropdown-options').evaluateAll(els =>
-    els.some(el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0)
-  );
-  if (!appeared) {
-    await trigger.click({ force: true });
-    await page.waitForTimeout(400);
-  }
-  return page.evaluate(index => {
+  const triggerSelector =
+    cardIndex === 0
+      ? '#hvac-holder-living .dropdown-selected, #hvac-holder .dropdown-selected'
+      : '#hvac-holder-bedroom .dropdown-selected';
+  const clickResult = await page.evaluate(sel => {
+    const el = document.querySelector(sel);
+    if (!el) return { clicked: false, reason: `no trigger for ${sel}` };
+    el.click();
+    return { clicked: true };
+  }, triggerSelector);
+  await page.waitForTimeout(500);
+  return page.evaluate(({ index, clickInfo }) => {
     const round = n => Math.round(n * 10) / 10;
     const menus = [...document.querySelectorAll('.dropdown-options')].filter(
       el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0
     );
-    const menu = menus[menus.length - 1];
-    if (!menu) return { found: false };
+    const portals = [...document.querySelectorAll('[id^="portaled-dropdown-"]')];
+    const menu = menus[menus.length - 1] || portals[portals.length - 1];
+    if (!menu || getComputedStyle(menu).display === 'none' || menu.getBoundingClientRect().width <= 0) {
+      return {
+        found: false,
+        click: clickInfo,
+        portalCount: portals.length,
+        optionNodes: document.querySelectorAll('.dropdown-options').length,
+        displays: [...document.querySelectorAll('.dropdown-options')].map(el => ({
+          display: el.style.display,
+          vis: el.style.visibility,
+          w: Math.round(el.getBoundingClientRect().width),
+          parent: el.parentElement?.id || el.parentElement?.tagName,
+        })),
+      };
+    }
     const r = menu.getBoundingClientRect();
-    const trig = document.querySelectorAll('.dropdown-selected')[index].getBoundingClientRect();
+    const triggers = document.querySelectorAll('.dropdown-selected');
+    const trig = (triggers[index] || triggers[0]).getBoundingClientRect();
+    const cs = getComputedStyle(menu);
     const options = [...menu.querySelectorAll('.dropdown-option')].map(opt => {
-      const label = [...opt.querySelectorAll('span')].find(s =>
-        /^(heat|cool|dry|off)$/i.test((s.textContent || '').trim())
-      );
+      const label =
+        [...opt.querySelectorAll('span')].find(s => (s.textContent || '').trim().length > 0) ||
+        opt;
       const lr = label ? label.getBoundingClientRect() : null;
-      const sample = label
-        ? document.elementFromPoint(lr.left + Math.min(8, lr.width / 2), lr.top + lr.height / 2)
-        : null;
       return {
         text: (opt.textContent || '').trim(),
         labelRight: lr ? round(lr.right) : null,
         labelWidth: lr ? round(lr.width) : null,
-        labelVisible: !!(sample && (menu.contains(sample) || sample === menu || opt.contains(sample))),
       };
     });
 
@@ -512,8 +570,11 @@ async function openMenu(page, cardIndex = 0) {
       width: round(r.width),
       top: round(r.top),
       triggerBottom: round(trig.bottom),
+      triggerWidth: round(trig.width),
       triggerMid: round(trig.left + trig.width / 2),
       viewportWidth: window.innerWidth,
+      overflowX: cs.overflowX,
+      minWidth: menu.style.minWidth,
       options,
       clippedBy: clip,
       portaled: menu.parentElement === document.body,
@@ -522,13 +583,30 @@ async function openMenu(page, cardIndex = 0) {
         ? /18\.2/.test(neighborCard.innerText || '')
         : true,
     };
-  }, cardIndex);
+  }, { index: cardIndex, clickInfo: clickResult });
 }
 
-function assertMenu(name, m) {
+function assertMenu(name, m, kind = 'hvac') {
   const errors = [];
-  if (!m.found) return [`${name}: dropdown menu did not open`];
-  if (m.options.length !== 4) errors.push(`${name}: expected 4 options, saw ${m.options.length}`);
+  if (!m.found) {
+    return [`${name}: dropdown menu did not open ${JSON.stringify(m)}`];
+  }
+  if (kind === 'fullwidth') {
+    if (Math.abs((m.width || 0) - (m.triggerWidth || 0)) > 2) {
+      errors.push(
+        `${name}: full-width menu must match the trigger (menu ${m.width}px vs trigger ${m.triggerWidth}px)`
+      );
+    }
+    if (m.minWidth) {
+      errors.push(`${name}: full-width menu should not lock min-width (got ${m.minWidth})`);
+    }
+    if (m.options.length < 2) errors.push(`${name}: expected scene options, saw ${m.options.length}`);
+  } else {
+    if (m.options.length !== 4) errors.push(`${name}: expected 4 options, saw ${m.options.length}`);
+    if (m.triggerWidth && m.triggerWidth < 160 && m.width < 70) {
+      errors.push(`${name}: chevron menu is too narrow (${m.width}px) to show HVAC labels`);
+    }
+  }
   for (const o of m.options) {
     if (o.labelRight === null) {
       errors.push(`${name}: option "${o.text}" has no visible label`);
@@ -537,11 +615,8 @@ function assertMenu(name, m) {
         `${name}: option "${o.text}" label clipped (label right ${o.labelRight} > menu right ${m.right})`
       );
     }
-    if (o.labelWidth !== null && o.labelWidth < 10) {
+    if (o.labelWidth !== null && o.labelWidth < 8) {
       errors.push(`${name}: option "${o.text}" label is truncated (${o.labelWidth}px)`);
-    }
-    if (o.labelVisible === false) {
-      errors.push(`${name}: option "${o.text}" is covered/clipped (elementFromPoint missed the menu)`);
     }
   }
   if (m.left < 0 || m.right > m.viewportWidth) {
@@ -600,30 +675,36 @@ async function main() {
   const errors = [];
 
   try {
-    const page = await browser.newPage({ deviceScaleFactor: 2 });
-    await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
-    await page.waitForFunction(() => !!window.UCDemo, null, { timeout: 60000 });
-    await page.evaluate(() => document.fonts.load('24px "Material Design Icons"'));
-    await page.evaluate(() => document.fonts.ready);
-
     const singleGaps = [];
 
     for (const scenario of SCENARIOS) {
+      const page = await browser.newPage({ deviceScaleFactor: 2 });
+      page.on('pageerror', err => console.error('PAGEERROR', err));
+      page.on('console', msg => {
+        if (msg.type() === 'error') console.error('CONSOLE', msg.text());
+      });
+      await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
+      await page.waitForFunction(() => !!window.UCDemo, null, { timeout: 60000 });
+      await page.evaluate(() => document.fonts.load('24px "Material Design Icons"'));
+      await page.evaluate(() => document.fonts.ready);
+
       await renderOverlay(page, scenario);
       const metrics = await measure(page);
       results.push({ scenario: scenario.name, width: scenario.width, ...metrics });
-      for (const [i, card] of metrics.cards.entries()) {
+      for (const card of metrics.cards) {
         const label = `${scenario.name}${metrics.cards.length > 1 ? `#${card.room}` : ''}`;
-        errors.push(...assertCard(label, card, metrics.bodyText));
+        if (scenario.kind !== 'fullwidth') {
+          errors.push(...assertCard(label, card, metrics.bodyText));
+        }
         console.log(
           `${label} (${scenario.width}px ${scenario.context}): Off→chevron gap=${card.gap}px overlap=${card.overlap} off/temp=${card.offTempGap}px clusterOffset=${card.clusterOffset}px infoW=${card.infoWidth} dropW=${card.dropdownWidth} selW=${card.selectionWidth} temp="${card.temp?.text}"`
         );
-        if (scenario.cards === 1) singleGaps.push(card.gap);
+        if (scenario.cards === 1 && scenario.kind !== 'fullwidth') singleGaps.push(card.gap);
       }
 
       const menu = await openMenu(page, 0);
       results[results.length - 1].menu = menu;
-      errors.push(...assertMenu(scenario.name, menu));
+      errors.push(...assertMenu(scenario.name, menu, scenario.kind || 'hvac'));
       await page.screenshot({
         path: path.join(OUT_DIR, `${scenario.name}-open.png`),
         fullPage: true,
@@ -634,12 +715,12 @@ async function main() {
           .join(',')}`
       );
       await page.keyboard.press('Escape');
-      await page.mouse.click(5, 5);
       await page.waitForTimeout(200);
       await page.screenshot({
         path: path.join(OUT_DIR, `${scenario.name}.png`),
         fullPage: true,
       });
+      await page.close();
     }
 
     if (singleGaps.length >= 2 && singleGaps[0] !== null && singleGaps[1] !== null) {

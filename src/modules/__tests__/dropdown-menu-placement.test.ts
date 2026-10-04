@@ -56,6 +56,7 @@ describe('measureDropdownMenuContentWidth', () => {
     Object.defineProperty(menu, 'offsetWidth', { configurable: true, get: () => 63 });
     const opt = document.createElement('div');
     opt.className = 'dropdown-option';
+    opt.style.whiteSpace = 'pre-wrap';
     const icon = document.createElement('ha-icon');
     icon.getBoundingClientRect = () => ({ width: 0, height: 0, top: 0, left: 0, bottom: 0, right: 0, x: 0, y: 0, toJSON() {} });
     opt.appendChild(icon);
@@ -63,6 +64,7 @@ describe('measureDropdownMenuContentWidth', () => {
     document.body.appendChild(menu);
 
     expect(measureDropdownMenuContentWidth(menu)).toBe(87);
+    expect(opt.style.whiteSpace).toBe('pre-wrap');
     menu.remove();
   });
 });
