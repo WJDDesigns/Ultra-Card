@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.1-beta1
+
+The first 3.13.1 beta fixes overlay HVAC cards on the live dashboard. After 3.13.0, a chevron-only mode menu still clipped heat / cool / dry to "he" / "co" when the menu was portaled onto the page, because it was measured while hidden. The menu now sizes to its option labels, stays on screen, and does not change full-width or compact dropdowns. This is a pre-release for testing — please report anything odd on GitHub or Discord, especially overlay climate cards.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed overlay HVAC mode menus clipping on the dashboard** - Chevron-only dropdowns that portal to the page were measured before their icons laid out, so the menu stayed as narrow as the chevron and cut off heat / cool / dry / off. Those menus now open wide enough to read, centred under the chevron and kept on screen. Full-width and compact dropdowns still match the trigger, and the card YAML is unchanged
+
+---
+
 ## Version 3.13.0
 
 Stable 3.13.0 ships **FreeSpace**, a free-form dashboard view where you can drag, resize, rotate and layer any card on a canvas, with a toolbar, pins, multi-select and per-screen layouts. Layout width now lives in Hub → Home and covers FreeSpace and Sections, and the chevron-only HVAC mode dropdown opens wide enough to read again. This is the foundation — FreeSpace will keep getting more amazing over time. Thanks to everyone who tested the betas.
