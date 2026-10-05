@@ -7,7 +7,8 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { renderChildModulePreview } from './layout-container-utils';
-import { computeBackgroundStyles, computeIconForegroundStyles } from '../utils/uc-color-utils';
+import { computeBackgroundStyles, computeForegroundStyles } from '../utils/uc-color-utils';
+import { renderColoredIcon } from '../components/uc-gradient-icon';
 
 const DRAWER_TRANSITION_MS = 280;
 
@@ -343,7 +344,6 @@ export class UltraDrawerModule extends BaseUltraModule {
     const triggerIconSize = drawerModule.trigger_icon_size || 24;
     const iconBackground =
       triggerStyle === 'icon' ? drawerModule.trigger_icon_background ?? 'circle' : 'none';
-    const iconFg = computeIconForegroundStyles(triggerColor);
     const { styles: triggerBgStyles } = computeBackgroundStyles({
       color: triggerBg,
       fallback: 'var(--primary-color)',
@@ -380,37 +380,26 @@ export class UltraDrawerModule extends BaseUltraModule {
                   aria-label="${drawerModule.drawer_title || drawerModule.trigger_label || 'Open drawer'}"
                   @click=${openDrawer}
                 >
-                  <span
-                    class="drawer-trigger-icon-wrap"
-                    style="${this.buildStyleString(iconFg.wrap)}"
-                  >
-                    <ha-icon
-                      icon="${drawerModule.trigger_icon || 'mdi:menu-open'}"
-                      style="${this.buildStyleString({
-                        ...iconFg.icon,
-                        '--mdc-icon-size': `${triggerIconSize}px`,
-                      })}"
-                    ></ha-icon>
-                  </span>
+                  ${renderColoredIcon(
+                    drawerModule.trigger_icon || 'mdi:menu-open',
+                    triggerColor,
+                    triggerIconSize
+                  )}
                 </button>
               `
             : html`
                 <button
                   type="button"
                   class="drawer-trigger-btn"
-                  style="${this.buildStyleString({
-                    ...triggerBgStyles,
-                    color: triggerColor,
-                  })}"
+                  style="${this.buildStyleString(triggerBgStyles)}"
                   @click=${openDrawer}
                 >
                   ${drawerModule.trigger_icon
-                    ? html`<ha-icon
-                        icon="${drawerModule.trigger_icon}"
-                        style="color: ${triggerColor}; --mdc-icon-size: 18px;"
-                      ></ha-icon>`
+                    ? renderColoredIcon(drawerModule.trigger_icon, triggerColor, 18)
                     : ''}
-                  <span>${drawerModule.trigger_label || 'Open'}</span>
+                  <span style="${this.buildStyleString(computeForegroundStyles(triggerColor).styles)}"
+                    >${drawerModule.trigger_label || 'Open'}</span
+                  >
                 </button>
               `}
         </div>

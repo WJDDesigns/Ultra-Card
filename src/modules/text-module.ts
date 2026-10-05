@@ -7,11 +7,8 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
-import {
-  computeBackgroundStyles,
-  computeForegroundStyles,
-  computeIconForegroundStyles,
-} from '../utils/uc-color-utils';
+import { computeBackgroundStyles, computeForegroundStyles } from '../utils/uc-color-utils';
+import { renderColoredIcon } from '../components/uc-gradient-icon';
 import { localize } from '../localize/localize';
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
@@ -331,21 +328,10 @@ export class UltraTextModule extends BaseUltraModule {
 
     const effectiveIcon = displayIcon || textModule.icon;
     const effectiveIconColor = displayIconColor || textModule.icon_color || 'var(--primary-color)';
-    const iconFg = computeIconForegroundStyles(effectiveIconColor);
-    const iconSize = `${textModule.icon_size || 24}px`;
     const iconElement = effectiveIcon
-      ? html`<span
-          class="text-module-icon${iconFg.isGradient ? ' text-module-icon-gradient' : ''}"
-          style=${this.styleObjectToCss(iconFg.wrap)}
-        >
-          <ha-icon
-            icon="${effectiveIcon}"
-            style="${this.styleObjectToCss({
-              ...iconFg.icon,
-              '--mdc-icon-size': iconSize,
-            })}"
-          ></ha-icon>
-        </span>`
+      ? html`<span class="text-module-icon"
+          >${renderColoredIcon(effectiveIcon, effectiveIconColor, textModule.icon_size || 24)}</span
+        >`
       : '';
 
     // When in template mode and the template hasn't resolved yet (no cached or

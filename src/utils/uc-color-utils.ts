@@ -163,57 +163,6 @@ export const computeForegroundStyles = (
   return { isGradient: false, styles: { color: value } };
 };
 
-export interface ComputeIconForegroundStylesResult {
-  wrap: Record<string, string>;
-  icon: Record<string, string>;
-  isGradient: boolean;
-}
-
-const ICON_WRAP_BASE: Record<string, string> = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  lineHeight: '0',
-  flexShrink: '0',
-};
-
-/**
- * Fill an `ha-icon` with a solid color or a CSS gradient.
- * SVG icons ignore `background-clip: text`, so gradients use the wrapper as
- * the paint source and `mix-blend-mode: destination-in` on the glyph.
- */
-export const computeIconForegroundStyles = (
-  color?: string | null,
-  fallback?: string
-): ComputeIconForegroundStylesResult => {
-  const value = color?.trim() || fallback?.trim() || '';
-  if (value && isGradient(value)) {
-    return {
-      isGradient: true,
-      wrap: {
-        ...ICON_WRAP_BASE,
-        background: value,
-        isolation: 'isolate',
-      },
-      icon: {
-        color: '#000',
-        mixBlendMode: 'destination-in',
-        display: 'flex',
-        lineHeight: '0',
-      },
-    };
-  }
-  return {
-    isGradient: false,
-    wrap: ICON_WRAP_BASE,
-    icon: {
-      ...(value ? { color: value } : {}),
-      display: 'flex',
-      lineHeight: '0',
-    },
-  };
-};
-
 /**
  * Allowlist of CSS color shapes that are safe to interpolate into generated
  * markup (SVG/HTML strings that later go through `unsafeHTML` or `innerHTML`).

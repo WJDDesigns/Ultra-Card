@@ -41,15 +41,30 @@ describe('text module: colors, icon alignment, gradients', () => {
     host.remove();
   });
 
-  it('paints gradient icon color on the icon wrapper', () => {
+  it('renders a gradient icon color through uc-gradient-icon', () => {
     const host = renderText({
       rich_text_content: '<p>Hello</p>',
       icon: 'mdi:information',
       icon_color: GRADIENT,
     });
-    const wrap = host.querySelector<HTMLElement>('.text-module-icon')!;
-    expect(wrap.classList.contains('text-module-icon-gradient')).toBe(true);
-    expect(wrap.style.background).toContain('linear-gradient');
+    const icon = host.querySelector('.text-module-icon uc-gradient-icon') as
+      | (HTMLElement & { gradient: string; icon: string })
+      | null;
+    expect(icon).toBeTruthy();
+    expect(icon!.gradient).toBe(GRADIENT);
+    expect(icon!.icon).toBe('mdi:information');
+    host.remove();
+  });
+
+  it('keeps a plain ha-icon for solid icon colors', () => {
+    const host = renderText({
+      rich_text_content: '<p>Hello</p>',
+      icon: 'mdi:information',
+      icon_color: '#ffffff',
+    });
+    expect(host.querySelector('uc-gradient-icon')).toBeNull();
+    const icon = host.querySelector<HTMLElement>('.text-module-icon ha-icon')!;
+    expect(icon.style.color).toBe('rgb(255, 255, 255)');
     host.remove();
   });
 
@@ -61,9 +76,7 @@ describe('text module: colors, icon alignment, gradients', () => {
     });
     const preview = host.querySelector<HTMLElement>('.text-module-preview')!;
     expect(preview.style.alignItems).toBe('center');
-    const icon = host.querySelector<HTMLElement>('.text-module-icon')!;
-    expect(icon.style.display).toBe('inline-flex');
-    expect(icon.style.alignItems).toBe('center');
+    expect(preview.querySelector('.text-module-icon')).toBeTruthy();
     host.remove();
   });
 });

@@ -3,7 +3,6 @@ import {
   isGradient,
   computeBackgroundStyles,
   computeForegroundStyles,
-  computeIconForegroundStyles,
   sanitizeCssColor,
 } from './uc-color-utils';
 
@@ -101,22 +100,6 @@ describe('uc-color-utils', () => {
     it('falls back when color is empty', () => {
       const result = computeForegroundStyles('', 'inherit');
       expect(result.styles.color).toBe('inherit');
-    });
-  });
-
-  describe('computeIconForegroundStyles', () => {
-    it('sets icon color for solid values', () => {
-      const result = computeIconForegroundStyles('var(--primary-color)');
-      expect(result.isGradient).toBe(false);
-      expect(result.icon.color).toBe('var(--primary-color)');
-    });
-
-    it('paints gradient icons via the wrapper', () => {
-      const gradient = 'linear-gradient(90deg, red, blue)';
-      const result = computeIconForegroundStyles(gradient);
-      expect(result.isGradient).toBe(true);
-      expect(result.wrap.background).toBe(gradient);
-      expect(result.icon.mixBlendMode).toBe('destination-in');
     });
   });
 
