@@ -1352,7 +1352,11 @@
         "wobble": "Vakle",
         "buzz": "Vibrere",
         "fade": "Fade"
-      }
+      },
+      "animation_settings": "Animation Settings",
+      "duration": "Duration",
+      "timing": "Timing Function",
+      "intensity": "Intensity"
     },
     "design": {
       "copy": "Kopier",
@@ -5365,6 +5369,10 @@
       "camera_mode_desc": "Snapshots poll a still image (low data). Live streams the camera like Home Assistant does.",
       "camera_mode_snapshot": "Snapshots",
       "camera_mode_live": "Live"
+    },
+    "native_card": {
+      "settings_title": "{name} Settings",
+      "settings_desc": "Configure this native Home Assistant card using its built-in editor."
     }
   },
   "hub": {

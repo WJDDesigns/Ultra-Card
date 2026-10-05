@@ -806,6 +806,10 @@
       "description": "Configure visual effects that appear when hovering over this module, row, or column.",
       "effect": "Hover Effect",
       "effect_desc": "Select the visual effect to apply when hovering",
+      "animation_settings": "Animation Settings",
+      "duration": "Duration",
+      "timing": "Timing Function",
+      "intensity": "Intensity",
       "effects": {
         "none": "None",
         "highlight": "Highlight",
@@ -823,6 +827,10 @@
         "buzz": "Buzz",
         "fade": "Fade"
       }
+    },
+    "native_card": {
+      "settings_title": "{name} Settings",
+      "settings_desc": "Configure this native Home Assistant card using its built-in editor."
     },
     "about": {
       "developed_by": "Developed by",
