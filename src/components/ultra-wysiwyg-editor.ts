@@ -283,9 +283,9 @@ export class UltraWysiwygEditor extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.addEventListener('keydown', this._stopKeys, true);
-    this.addEventListener('keyup', this._stopKeys, true);
-    this.addEventListener('keypress', this._stopKeys, true);
+    this.addEventListener('keydown', this._stopKeys);
+    this.addEventListener('keyup', this._stopKeys);
+    this.addEventListener('keypress', this._stopKeys);
   }
 
   protected override firstUpdated(_changedProperties: PropertyValues): void {
@@ -318,9 +318,9 @@ export class UltraWysiwygEditor extends LitElement {
   }
 
   override disconnectedCallback(): void {
-    this.removeEventListener('keydown', this._stopKeys, true);
-    this.removeEventListener('keyup', this._stopKeys, true);
-    this.removeEventListener('keypress', this._stopKeys, true);
+    this.removeEventListener('keydown', this._stopKeys);
+    this.removeEventListener('keyup', this._stopKeys);
+    this.removeEventListener('keypress', this._stopKeys);
     super.disconnectedCallback();
     this._destroyEditor();
   }

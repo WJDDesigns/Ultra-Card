@@ -49,6 +49,35 @@ describe('ultra-wysiwyg-editor', () => {
     el.remove();
   });
 
+  it('applies the link on Enter without leaking the keydown to ancestors', async () => {
+    const el = await mountEditor('<p>Hello</p>');
+    const root = shadow(el);
+    let leaked = false;
+    const onDocKey = () => (leaked = true);
+    document.addEventListener('keydown', onDocKey);
+
+    const linkBtn = [...root.querySelectorAll('button')].find(btn =>
+      btn.getAttribute('title')?.toLowerCase().includes('link')
+    );
+    linkBtn!.click();
+    await (el as any).updateComplete;
+
+    const input = root.querySelector('.link-input-bar input') as HTMLInputElement;
+    input.value = 'https://example.com';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await (el as any).updateComplete;
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true, cancelable: true })
+    );
+    await (el as any).updateComplete;
+
+    expect(root.querySelector('.link-input-bar')).toBeNull();
+    expect(root.querySelector('.ProseMirror')?.innerHTML).toContain('href="https://example.com"');
+    expect(leaked).toBe(false);
+    document.removeEventListener('keydown', onDocKey);
+    el.remove();
+  });
+
   it('does not duplicate alignment controls in the toolbar', async () => {
     const el = await mountEditor();
     const titles = [...shadow(el).querySelectorAll('button')].map(btn => btn.getAttribute('title'));
