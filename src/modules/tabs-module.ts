@@ -118,6 +118,7 @@ export class UltraTabsModule extends BaseUltraModule {
           background: rgba(var(--rgb-primary-color), 0.1);
         }
         .drag-handle {
+          flex-shrink: 0;
           cursor: grab;
           color: var(--secondary-text-color);
           padding: 4px;
@@ -126,7 +127,10 @@ export class UltraTabsModule extends BaseUltraModule {
           cursor: grabbing;
         }
         .section-title-input {
-          flex: 1;
+          /* Keep the title editable even when a long custom icon id is selected */
+          flex: 1 1 0%;
+          min-width: 4.5rem;
+          width: 0;
           border: none;
           background: transparent;
           font-size: 14px;
@@ -140,9 +144,11 @@ export class UltraTabsModule extends BaseUltraModule {
         }
         .section-actions {
           display: flex;
+          flex-shrink: 0;
           gap: 4px;
         }
         .section-action-btn {
+          flex-shrink: 0;
           background: none;
           border: none;
           padding: 4px;
@@ -158,14 +164,21 @@ export class UltraTabsModule extends BaseUltraModule {
         .section-action-btn.delete:hover {
           color: var(--error-color);
         }
-        /* Fix icon picker dropdown visibility and width */
+        /* Cap the icon picker so long custom icon ids cannot push the title out */
         .section-icon-picker {
-          flex-shrink: 0;
+          flex: 0 0 48px;
+          width: 48px;
+          max-width: 48px;
+          min-width: 48px;
+          overflow: hidden;
         }
         .section-icon-picker ha-icon-picker {
           --mdc-icon-size: 20px;
           --text-field-padding: 0 8px;
-          width: 56px;
+          --ha-icon-picker-width: 48px;
+          width: 48px;
+          max-width: 48px;
+          display: block;
         }
         /* Target the vaadin combo box overlay for wider dropdown */
         .section-icon-picker vaadin-combo-box-overlay {
