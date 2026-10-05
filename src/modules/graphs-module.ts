@@ -49,6 +49,7 @@ export class UltraGraphsModule extends BaseUltraModule {
   private _historyError: { [moduleId: string]: string | null } = {};
   private _historyLoading: { [moduleId: string]: boolean } = {};
   private _deferredHistoryScheduled: { [moduleId: string]: boolean } = {};
+  private _historyFetchStartedAt: { [moduleId: string]: number } = {};
 
   // Template result cache - per module instance
   private _templateResults: { [moduleId: string]: any } = {};
@@ -4197,7 +4198,42 @@ export class UltraGraphsModule extends BaseUltraModule {
       // Load immediately after fast path renders (like mini-graph does)
       // Fetch immediately; we already rendered with fast-path if available
       this._fetchHistoryDataAsync(module, hass);
+    } else if (scrubMs == null && this._isHistoryStale(module)) {
+      // Long-lived dashboards (wall tablets, backgrounded app) would otherwise
+      // keep showing the window from first load. Old curve stays on screen.
+      this._historyLoading[module.id] = true;
+      this._fetchHistoryDataAsync(module, hass);
     }
+  }
+
+  private _historyMaxAgeMs(module: GraphsModule): number {
+    const minute = 60 * 1000;
+    if (module.data_source === 'forecast') return 30 * minute;
+    switch (module.time_period) {
+      case '1h':
+        return minute;
+      case '3h':
+        return 2 * minute;
+      case '6h':
+        return 3 * minute;
+      case '2d':
+      case '7d':
+        return 10 * minute;
+      case '30d':
+      case '90d':
+      case '365d':
+        return 30 * minute;
+      default:
+        return 5 * minute;
+    }
+  }
+
+  private _isHistoryStale(module: GraphsModule): boolean {
+    if (this._historyLoading[module.id] || !this._deferredHistoryScheduled[module.id]) {
+      return false;
+    }
+    const startedAt = this._historyFetchStartedAt[module.id];
+    return startedAt != null && Date.now() - startedAt > this._historyMaxAgeMs(module);
   }
 
   // Fast path method to use existing HA history data (like mini-graph does)
@@ -4263,6 +4299,7 @@ export class UltraGraphsModule extends BaseUltraModule {
   }
 
   private async _fetchHistoryDataAsync(module: GraphsModule, hass: HomeAssistant): Promise<void> {
+    this._historyFetchStartedAt[module.id] = Date.now();
     try {
       // Anchor the window on the Time Machine scrub position when active
       const tmScrubMs = this._tmScrubMs(hass);
@@ -4518,6 +4555,7 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       // Clear loading state
       this._historyLoading[module.id] = false;
+      delete this._historyError[module.id];
 
       // Persist real history to cache for instant future reloads (live only)
       if (tmScrubMs == null) {
@@ -4775,10 +4813,14 @@ export class UltraGraphsModule extends BaseUltraModule {
       this._deferredHistoryScheduled[module.id] = true;
       this._historyLoading[module.id] = true;
       this._fetchForecastDataAsync(module, hass);
+    } else if (this._isHistoryStale(module)) {
+      this._historyLoading[module.id] = true;
+      this._fetchForecastDataAsync(module, hass);
     }
   }
 
   private async _fetchForecastDataAsync(module: GraphsModule, hass: HomeAssistant): Promise<void> {
+    this._historyFetchStartedAt[module.id] = Date.now();
     try {
       let forecastData = await this._fetchForecastData(module, hass);
 
@@ -4790,6 +4832,7 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       this._historyData[module.id] = processed;
       this._historyLoading[module.id] = false;
+      delete this._historyError[module.id];
       this._writeCache(module, processed);
       this.requestUpdate();
 
