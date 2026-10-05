@@ -7,6 +7,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { renderChildModulePreview } from './layout-container-utils';
+import { computeBackgroundStyles, computeIconForegroundStyles } from '../utils/uc-color-utils';
 
 const DRAWER_TRANSITION_MS = 280;
 
@@ -230,6 +231,82 @@ export class UltraDrawerModule extends BaseUltraModule {
             drawerModule.trigger_icon || 'mdi:menu-open',
             next => updateModule({ trigger_icon: next })
           )}
+          ${(drawerModule.trigger_style || 'button') === 'icon'
+            ? html`
+                ${this.renderSliderField(
+                  localize('editor.drawer.trigger.icon_size', lang, 'Icon Size'),
+                  localize(
+                    'editor.drawer.trigger.icon_size_desc',
+                    lang,
+                    'Size of the trigger icon.'
+                  ),
+                  drawerModule.trigger_icon_size ?? 24,
+                  24,
+                  10,
+                  100,
+                  1,
+                  (value: number) => updateModule({ trigger_icon_size: value })
+                )}
+                ${this.renderSegmentedField(
+                  localize('editor.drawer.trigger.icon_background', lang, 'Icon Background'),
+                  localize(
+                    'editor.drawer.trigger.icon_background_desc',
+                    lang,
+                    'Shape drawn behind the icon, like the Icon module.'
+                  ),
+                  drawerModule.trigger_icon_background ?? 'circle',
+                  [
+                    {
+                      value: 'none',
+                      label: localize('editor.drawer.trigger.icon_background_none', lang, 'None'),
+                      icon: 'mdi:close',
+                    },
+                    {
+                      value: 'circle',
+                      label: localize(
+                        'editor.drawer.trigger.icon_background_circle',
+                        lang,
+                        'Circle'
+                      ),
+                      icon: 'mdi:circle-outline',
+                    },
+                    {
+                      value: 'rounded-square',
+                      label: localize(
+                        'editor.drawer.trigger.icon_background_rounded',
+                        lang,
+                        'Rounded'
+                      ),
+                      icon: 'mdi:square-rounded-outline',
+                    },
+                  ],
+                  next =>
+                    updateModule({
+                      trigger_icon_background: next as DrawerModule['trigger_icon_background'],
+                    })
+                )}
+                ${(drawerModule.trigger_icon_background ?? 'circle') !== 'none'
+                  ? this.renderSliderField(
+                      localize(
+                        'editor.drawer.trigger.icon_background_padding',
+                        lang,
+                        'Icon Background Padding (1px)'
+                      ),
+                      localize(
+                        'editor.drawer.trigger.icon_background_padding_desc',
+                        lang,
+                        'Space between the icon and the edge of its background.'
+                      ),
+                      drawerModule.trigger_icon_background_padding ?? 8,
+                      8,
+                      0,
+                      40,
+                      1,
+                      (value: number) => updateModule({ trigger_icon_background_padding: value })
+                    )
+                  : ''}
+              `
+            : ''}
           ${this.renderColorField(
             localize('editor.drawer.trigger.bg', lang, 'Trigger Background'),
             '',
@@ -263,6 +340,26 @@ export class UltraDrawerModule extends BaseUltraModule {
     const triggerStyle = drawerModule.trigger_style || 'button';
     const triggerBg = drawerModule.trigger_background || 'var(--primary-color)';
     const triggerColor = drawerModule.trigger_color || 'var(--text-primary-color, #fff)';
+    const triggerIconSize = drawerModule.trigger_icon_size || 24;
+    const iconBackground =
+      triggerStyle === 'icon' ? drawerModule.trigger_icon_background ?? 'circle' : 'none';
+    const iconFg = computeIconForegroundStyles(triggerColor);
+    const { styles: triggerBgStyles } = computeBackgroundStyles({
+      color: triggerBg,
+      fallback: 'var(--primary-color)',
+    });
+    const iconBtnStyle = this.buildStyleString({
+      ...(iconBackground !== 'none' ? triggerBgStyles : { background: 'transparent' }),
+      ...(iconBackground !== 'none'
+        ? { padding: `${drawerModule.trigger_icon_background_padding ?? 8}px` }
+        : { padding: '0' }),
+      borderRadius:
+        iconBackground === 'circle'
+          ? '50%'
+          : iconBackground === 'rounded-square'
+            ? 'var(--uc-r-8, 8px)'
+            : '0',
+    });
 
     // Keep the portal in sync while open (hass/config updates re-render content)
     if (this._openStates.get(drawerModule.id)) {
@@ -279,21 +376,32 @@ export class UltraDrawerModule extends BaseUltraModule {
                 <button
                   type="button"
                   class="drawer-trigger-icon-btn"
-                  style="background: ${triggerBg}; color: ${triggerColor};"
+                  style="${iconBtnStyle}"
                   aria-label="${drawerModule.drawer_title || drawerModule.trigger_label || 'Open drawer'}"
                   @click=${openDrawer}
                 >
-                  <ha-icon
-                    icon="${drawerModule.trigger_icon || 'mdi:menu-open'}"
-                    style="color: ${triggerColor};"
-                  ></ha-icon>
+                  <span
+                    class="drawer-trigger-icon-wrap"
+                    style="${this.buildStyleString(iconFg.wrap)}"
+                  >
+                    <ha-icon
+                      icon="${drawerModule.trigger_icon || 'mdi:menu-open'}"
+                      style="${this.buildStyleString({
+                        ...iconFg.icon,
+                        '--mdc-icon-size': `${triggerIconSize}px`,
+                      })}"
+                    ></ha-icon>
+                  </span>
                 </button>
               `
             : html`
                 <button
                   type="button"
                   class="drawer-trigger-btn"
-                  style="background: ${triggerBg}; color: ${triggerColor};"
+                  style="${this.buildStyleString({
+                    ...triggerBgStyles,
+                    color: triggerColor,
+                  })}"
                   @click=${openDrawer}
                 >
                   ${drawerModule.trigger_icon
@@ -617,11 +725,11 @@ export class UltraDrawerModule extends BaseUltraModule {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 42px;
-        height: 42px;
         border: none;
-        border-radius: 50%;
         cursor: pointer;
+        background: transparent;
+        padding: 0;
+        line-height: 0;
         transition: filter 0.15s ease, transform 0.1s ease;
       }
 

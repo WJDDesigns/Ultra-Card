@@ -1834,6 +1834,11 @@ export interface DrawerModule extends BaseModule {
   trigger_icon?: string | undefined;
   trigger_color?: string | undefined;
   trigger_background?: string | undefined;
+  /** Pixel size of the icon-only trigger glyph */
+  trigger_icon_size?: number | undefined;
+  /** Shape behind the icon-only trigger; omitted icon triggers keep a circle for backward compatibility */
+  trigger_icon_background?: 'none' | 'circle' | 'rounded-square' | undefined;
+  trigger_icon_background_padding?: number | undefined;
 }
 
 // Scroll Row — horizontally scrollable row with CSS scroll-snap and item peek
