@@ -1,5 +1,31 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.0-beta4
+
+The fourth 3.13.0 beta fixes the Text and Drawer module issues reported on Discord: the link box takes typing again, gradient colors work on text and icons, and the drawer's icon background now matches the popup. FreeSpace also gets better Laptop and Tablet handling, and graphs keep their history fresh on dashboards that stay open for days. It includes everything from beta1 to beta3. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **FreeSpace Laptop and Tablet fit the Desktop layout** - On Use Desktop, Laptop and Tablet now show the Desktop layout shrunk to fit the screen and centered. Cards are never made bigger. In edit mode this is a preview; choose Custom to arrange that screen size, and it starts from exactly what you saw
+- **FreeSpace Align to Canvas** - With several cards selected, the toolbar has a Selection / Canvas switch. Canvas moves the cards together as one block to the left, center, right or top of the canvas, keeping their spacing
+- **FreeSpace Reset to Desktop** - On Laptop, Tablet or Phone, the toolbar can put the selected cards back where Desktop has them, shrunk to fit that screen size
+- **Drawer icon size and background controls** - Icon-style drawer triggers have an Icon Size slider, an Icon Background choice (None, Circle, Rounded square) and a padding slider, like the popup trigger
+- **One place for text alignment** - The rich text toolbar no longer has its own alignment buttons. Alignment lives in the Design tab, so the two can't disagree. Existing aligned text still shows as before
+
+### 🐛 Bug Fixes
+
+- **Fixed the Text module link box** - The link field could not be typed into and sat out of place over the editor. It now opens as a full-width bar under the toolbar: type or paste a URL and press Enter or Apply. Remove takes a link off again
+- **Fixed keyboard shortcuts in the rich text editor** - Enter, Backspace and shortcuts like Cmd/Ctrl+B now work as expected inside the Text module editor
+- **Fixed gradient colors on text and icons** - Choosing a gradient for the Text module's text or icon, or for a drawer trigger, now shows the gradient instead of plain or missing color
+- **Fixed Text module icon and text alignment** - The icon now lines up with the middle of the text
+- **Fixed drawer icon background padding** - The drawer trigger's background now hugs the icon like the popup trigger's does, instead of a fixed oversized circle
+- **Fixed drawer Icon Background None** - Choosing None now really removes the background behind the drawer icon
+- **Fixed graphs not refreshing on long-open dashboards** - History graphs on wall tablets or dashboards left open stayed on the time window from first load. They now refetch in the background as the data ages (every minute for 1 hour graphs, up to every 30 minutes for long ranges and forecasts), keeping the old curve on screen while loading ([#154](https://github.com/WJDDesigns/Ultra-Card/issues/154))
+
+---
+
 ## Version 3.13.0-beta3
 
 The third 3.13.0 beta is a FreeSpace polish pass before the stable release. Deleting a card no longer moves a different one, dragging and resizing should now work on touch screens, and the card menu and view settings can be translated. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord, especially from tablets and phones.

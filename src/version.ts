@@ -4,7 +4,7 @@
  *
  * This is the single source of truth for version information
 
-* Build timestamp: 2026-09-28
+* Build timestamp: 2026-10-05
  */
 
-export const VERSION = '3.13.0-beta3';
+export const VERSION = '3.13.0-beta4';
