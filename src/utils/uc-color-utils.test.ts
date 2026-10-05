@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { isGradient, computeBackgroundStyles, sanitizeCssColor } from './uc-color-utils';
+import {
+  isGradient,
+  computeBackgroundStyles,
+  computeForegroundStyles,
+  computeIconForegroundStyles,
+  sanitizeCssColor,
+} from './uc-color-utils';
 
 describe('uc-color-utils', () => {
   describe('isGradient', () => {
@@ -72,6 +78,45 @@ describe('uc-color-utils', () => {
       });
       expect(result.hasImageLayer).toBe(true);
       expect(result.styles.background).toContain('url(');
+    });
+  });
+
+  describe('computeForegroundStyles', () => {
+    it('uses color for solid values', () => {
+      const result = computeForegroundStyles('#ff0000');
+      expect(result.isGradient).toBe(false);
+      expect(result.styles.color).toBe('#ff0000');
+      expect(result.styles.background).toBeUndefined();
+    });
+
+    it('clips a gradient to text', () => {
+      const gradient = 'linear-gradient(90deg, #ff0000 0%, #ffff00 100%)';
+      const result = computeForegroundStyles(gradient);
+      expect(result.isGradient).toBe(true);
+      expect(result.styles.background).toBe(gradient);
+      expect(result.styles['background-clip']).toBe('text');
+      expect(result.styles.color).toBe('transparent');
+    });
+
+    it('falls back when color is empty', () => {
+      const result = computeForegroundStyles('', 'inherit');
+      expect(result.styles.color).toBe('inherit');
+    });
+  });
+
+  describe('computeIconForegroundStyles', () => {
+    it('sets icon color for solid values', () => {
+      const result = computeIconForegroundStyles('var(--primary-color)');
+      expect(result.isGradient).toBe(false);
+      expect(result.icon.color).toBe('var(--primary-color)');
+    });
+
+    it('paints gradient icons via the wrapper', () => {
+      const gradient = 'linear-gradient(90deg, red, blue)';
+      const result = computeIconForegroundStyles(gradient);
+      expect(result.isGradient).toBe(true);
+      expect(result.wrap.background).toBe(gradient);
+      expect(result.icon.mixBlendMode).toBe('destination-in');
     });
   });
 

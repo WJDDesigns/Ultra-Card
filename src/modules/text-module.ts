@@ -7,7 +7,11 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
-import { computeBackgroundStyles } from '../utils/uc-color-utils';
+import {
+  computeBackgroundStyles,
+  computeForegroundStyles,
+  computeIconForegroundStyles,
+} from '../utils/uc-color-utils';
 import { localize } from '../localize/localize';
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
@@ -283,15 +287,12 @@ export class UltraTextModule extends BaseUltraModule {
         return 'clamp(18px, 4vw, 26px)';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
-      // Color: prioritize design properties, then template color, then module color, then inherit (to allow parent CSS variables)
-      // Use 'inherit' when no explicit color is set, allowing parent row/column CSS variables to work
-      color: designProperties.color || displayColor || textModule.color || 'inherit',
       textAlign: chosenAlign,
       fontWeight: designProperties.font_weight || moduleWithDesign.font_weight || 'inherit',
       fontStyle: designProperties.font_style || moduleWithDesign.font_style || 'inherit',
       textTransform: designProperties.text_transform || moduleWithDesign.text_transform || 'none',
       textDecoration: 'none',
-      lineHeight: designProperties.line_height || moduleWithDesign.line_height || 'inherit',
+      lineHeight: designProperties.line_height || moduleWithDesign.line_height || '1.2',
       letterSpacing:
         designProperties.letter_spacing || moduleWithDesign.letter_spacing || 'inherit',
       ...(designProperties.white_space !== undefined || moduleWithDesign.white_space !== undefined
@@ -320,13 +321,31 @@ export class UltraTextModule extends BaseUltraModule {
       // Note: Sizing and positioning properties are handled by containerStyles for design tab functionality
     } as Record<string, string>;
 
+    const resolvedTextColor =
+      designProperties.color || displayColor || textModule.color || '';
+    const textFg = computeForegroundStyles(
+      resolvedTextColor,
+      resolvedTextColor ? undefined : 'inherit'
+    );
+    const textFgCss = this.styleObjectToCss(textFg.styles);
+
     const effectiveIcon = displayIcon || textModule.icon;
     const effectiveIconColor = displayIconColor || textModule.icon_color || 'var(--primary-color)';
+    const iconFg = computeIconForegroundStyles(effectiveIconColor);
+    const iconSize = `${textModule.icon_size || 24}px`;
     const iconElement = effectiveIcon
-      ? html`<ha-icon
-          icon="${effectiveIcon}"
-          style="color: ${effectiveIconColor}; --mdc-icon-size: ${textModule.icon_size || 24}px;"
-        ></ha-icon>`
+      ? html`<span
+          class="text-module-icon${iconFg.isGradient ? ' text-module-icon-gradient' : ''}"
+          style=${this.styleObjectToCss(iconFg.wrap)}
+        >
+          <ha-icon
+            icon="${effectiveIcon}"
+            style="${this.styleObjectToCss({
+              ...iconFg.icon,
+              '--mdc-icon-size': iconSize,
+            })}"
+          ></ha-icon>
+        </span>`
       : '';
 
     // When in template mode and the template hasn't resolved yet (no cached or
@@ -334,12 +353,12 @@ export class UltraTextModule extends BaseUltraModule {
     // and we don't reflow the layout when the real value lands.
     const textPlaceholder =
       textModule.unified_template_mode && displayText === ''
-        ? html`<span style="visibility:hidden">&nbsp;</span>`
-        : html`<span>${displayText}</span>`;
+        ? html`<span class="text-module-label" style="visibility:hidden;${textFgCss}">&nbsp;</span>`
+        : html`<span class="text-module-label" style=${textFgCss}>${displayText}</span>`;
 
     const textElement =
       !textModule.unified_template_mode && effectiveContent
-        ? html`<span class="rich-text-content"
+        ? html`<span class="rich-text-content" style=${textFgCss}
             >${unsafeHTML(
               sanitizeRichTextHtml(effectiveContent, {
                 trusted: isLocallyAuthoredConfig(config),
@@ -820,8 +839,25 @@ export class UltraTextModule extends BaseUltraModule {
         word-wrap: break-word;
       }
 
+      .text-module-icon,
+      .text-module-icon ha-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        line-height: 0;
+      }
+
+      .text-module-label,
+      .rich-text-content {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+      }
+
       .rich-text-content p {
-        margin: 0 0 0.4em 0;
+        margin: 0;
+        line-height: inherit;
       }
 
       .rich-text-content p:last-child {
