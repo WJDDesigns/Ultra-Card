@@ -22,7 +22,6 @@ export class UltraWysiwygEditor extends LitElement {
   @state() private _isItalic = false;
   @state() private _isUnderline = false;
   @state() private _isStrike = false;
-  @state() private _textAlign = 'left';
   @state() private _isLink = false;
   @state() private _showLinkInput = false;
   @state() private _linkUrl = '';
@@ -33,6 +32,10 @@ export class UltraWysiwygEditor extends LitElement {
 
   private _isUpdating = false;
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _stopKeys = (e: KeyboardEvent): void => {
+    e.stopPropagation();
+  };
+  private _savedSelection: { from: number; to: number } | null = null;
 
   static override get styles() {
     return css`
@@ -44,7 +47,7 @@ export class UltraWysiwygEditor extends LitElement {
       .wysiwyg-container {
         border: 1px solid var(--divider-color);
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
         background: var(--card-background-color, #fff);
       }
 
@@ -61,6 +64,7 @@ export class UltraWysiwygEditor extends LitElement {
         background: var(--secondary-background-color);
         border-bottom: 1px solid var(--divider-color);
         align-items: center;
+        border-radius: 8px 8px 0 0;
       }
 
       .toolbar-group {
@@ -167,24 +171,18 @@ export class UltraWysiwygEditor extends LitElement {
         border: 1px solid var(--divider-color);
       }
 
-      .link-input-popup {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        z-index: ${Z_INDEX.AUTOCOMPLETE};
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 8px;
-        padding: 8px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      .link-input-bar {
         display: flex;
         gap: 6px;
         align-items: center;
-        min-width: 280px;
+        padding: 8px;
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--card-background-color);
       }
 
-      .link-input-popup input {
+      .link-input-bar input {
         flex: 1;
+        min-width: 0;
         padding: 6px 8px;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
@@ -194,11 +192,11 @@ export class UltraWysiwygEditor extends LitElement {
         outline: none;
       }
 
-      .link-input-popup input:focus {
+      .link-input-bar input:focus {
         border-color: var(--primary-color);
       }
 
-      .link-input-popup button {
+      .link-input-bar button {
         padding: 6px 12px;
         border: none;
         border-radius: 4px;
@@ -210,7 +208,7 @@ export class UltraWysiwygEditor extends LitElement {
         white-space: nowrap;
       }
 
-      .link-input-popup .remove-link-btn {
+      .link-input-bar .remove-link-btn {
         background: var(--error-color, #db4437);
       }
 
@@ -224,6 +222,7 @@ export class UltraWysiwygEditor extends LitElement {
         font-size: 16px;
         line-height: 1.6;
         color: var(--primary-text-color);
+        border-radius: 0 0 8px 8px;
       }
 
       .editor-content .ProseMirror {
@@ -282,6 +281,13 @@ export class UltraWysiwygEditor extends LitElement {
     '#D9EAD3', '#D0E0E3', '#C9DAF8', '#CFE2F3', '#D9D2E9', '#EAD1DC',
   ];
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.addEventListener('keydown', this._stopKeys, true);
+    this.addEventListener('keyup', this._stopKeys, true);
+    this.addEventListener('keypress', this._stopKeys, true);
+  }
+
   protected override firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties);
     this._initEditor();
@@ -289,6 +295,14 @@ export class UltraWysiwygEditor extends LitElement {
 
   protected override updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
+
+    if (changedProperties.has('_showLinkInput') && this._showLinkInput) {
+      const input = this.shadowRoot?.querySelector(
+        '.link-input-bar input'
+      ) as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
+    }
 
     if (this._isUpdating) return;
 
@@ -304,6 +318,9 @@ export class UltraWysiwygEditor extends LitElement {
   }
 
   override disconnectedCallback(): void {
+    this.removeEventListener('keydown', this._stopKeys, true);
+    this.removeEventListener('keyup', this._stopKeys, true);
+    this.removeEventListener('keypress', this._stopKeys, true);
     super.disconnectedCallback();
     this._destroyEditor();
   }
@@ -374,11 +391,6 @@ export class UltraWysiwygEditor extends LitElement {
     this._isLink = editor.isActive('link');
     this._currentColor = (editor.getAttributes('textStyle').color as string) || '';
     this._currentHighlight = (editor.getAttributes('highlight').color as string) || '';
-
-    if (editor.isActive({ textAlign: 'center' })) this._textAlign = 'center';
-    else if (editor.isActive({ textAlign: 'right' })) this._textAlign = 'right';
-    else if (editor.isActive({ textAlign: 'justify' })) this._textAlign = 'justify';
-    else this._textAlign = 'left';
   }
 
   private _emitContentDebounced(htmlContent: string): void {
@@ -400,10 +412,6 @@ export class UltraWysiwygEditor extends LitElement {
   private _toggleUnderline(): void { this._editor?.chain().focus().toggleUnderline().run(); }
   private _toggleStrike(): void { this._editor?.chain().focus().toggleStrike().run(); }
 
-  private _setAlign(align: string): void {
-    this._editor?.chain().focus().setTextAlign(align).run();
-  }
-
   private _setColor(color: string): void {
     if (color) {
       this._editor?.chain().focus().setColor(color).run();
@@ -423,24 +431,55 @@ export class UltraWysiwygEditor extends LitElement {
   }
 
   private _toggleLinkInput(): void {
-    if (this._isLink) {
-      this._editor?.chain().focus().unsetLink().run();
+    if (this._showLinkInput) {
       this._showLinkInput = false;
+      return;
+    }
+    if (this._editor) {
+      const { from, to } = this._editor.state.selection;
+      this._savedSelection = { from, to };
+      this._linkUrl = (this._editor.getAttributes('link').href as string) || '';
     } else {
+      this._savedSelection = null;
       this._linkUrl = '';
-      this._showLinkInput = !this._showLinkInput;
+    }
+    this._showLinkInput = true;
+  }
+
+  private _removeLink(): void {
+    this._restoreSelection();
+    this._editor?.chain().focus().extendMarkRange('link').unsetLink().run();
+    this._showLinkInput = false;
+    this._linkUrl = '';
+    this._savedSelection = null;
+  }
+
+  private _restoreSelection(): void {
+    if (this._editor && this._savedSelection) {
+      this._editor.commands.setTextSelection(this._savedSelection);
     }
   }
 
   private _applyLink(): void {
-    if (!this._linkUrl) return;
+    if (!this._linkUrl || !this._editor) return;
     let url = this._linkUrl.trim();
     if (url && !url.startsWith('http') && !url.startsWith('/') && !url.startsWith('#')) {
       url = `https://${url}`;
     }
-    this._editor?.chain().focus().setLink({ href: url }).run();
+    this._restoreSelection();
+    const { from, to } = this._editor.state.selection;
+    if (from === to) {
+      this._editor
+        .chain()
+        .focus()
+        .insertContent(`<a href="${url.replace(/"/g, '&quot;')}">${url}</a>`)
+        .run();
+    } else {
+      this._editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+    }
     this._showLinkInput = false;
     this._linkUrl = '';
+    this._savedSelection = null;
   }
 
   private _clearFormatting(): void {
@@ -596,73 +635,16 @@ export class UltraWysiwygEditor extends LitElement {
             </div>
           </div>
 
-          <!-- Alignment -->
-          <div class="toolbar-group">
-            <button
-              class="toolbar-btn ${this._textAlign === 'left' ? 'active' : ''}"
-              @click=${() => this._setAlign('left')}
-              title="Align left"
-              ?disabled=${this.disabled}
-            >
-              <ha-icon icon="mdi:format-align-left"></ha-icon>
-            </button>
-            <button
-              class="toolbar-btn ${this._textAlign === 'center' ? 'active' : ''}"
-              @click=${() => this._setAlign('center')}
-              title="Align center"
-              ?disabled=${this.disabled}
-            >
-              <ha-icon icon="mdi:format-align-center"></ha-icon>
-            </button>
-            <button
-              class="toolbar-btn ${this._textAlign === 'right' ? 'active' : ''}"
-              @click=${() => this._setAlign('right')}
-              title="Align right"
-              ?disabled=${this.disabled}
-            >
-              <ha-icon icon="mdi:format-align-right"></ha-icon>
-            </button>
-            <button
-              class="toolbar-btn ${this._textAlign === 'justify' ? 'active' : ''}"
-              @click=${() => this._setAlign('justify')}
-              title="Justify"
-              ?disabled=${this.disabled}
-            >
-              <ha-icon icon="mdi:format-align-justify"></ha-icon>
-            </button>
-          </div>
-
           <!-- Link -->
           <div class="toolbar-group">
-            <div class="popup-wrapper">
-              <button
-                class="toolbar-btn ${this._isLink ? 'active' : ''}"
-                @click=${this._toggleLinkInput}
-                title="Link"
-                ?disabled=${this.disabled}
-              >
-                <ha-icon icon="mdi:link-variant"></ha-icon>
-              </button>
-              ${this._showLinkInput
-                ? html`
-                    <div class="popup-backdrop" @click=${() => (this._showLinkInput = false)}></div>
-                    <div class="link-input-popup" @mousedown=${(e: Event) => e.preventDefault()}>
-                      <input
-                        type="text"
-                        placeholder="https://example.com"
-                        .value=${this._linkUrl}
-                        @input=${(e: Event) => (this._linkUrl = (e.target as HTMLInputElement).value)}
-                        @keydown=${(e: KeyboardEvent) => {
-                          e.stopPropagation();
-                          if (e.key === 'Enter') this._applyLink();
-                          if (e.key === 'Escape') this._showLinkInput = false;
-                        }}
-                      />
-                      <button @click=${this._applyLink}>Apply</button>
-                    </div>
-                  `
-                : ''}
-            </div>
+            <button
+              class="toolbar-btn ${this._isLink || this._showLinkInput ? 'active' : ''}"
+              @click=${this._toggleLinkInput}
+              title="Link"
+              ?disabled=${this.disabled}
+            >
+              <ha-icon icon="mdi:link-variant"></ha-icon>
+            </button>
           </div>
 
           <!-- Clear formatting -->
@@ -677,6 +659,39 @@ export class UltraWysiwygEditor extends LitElement {
             </button>
           </div>
         </div>
+
+        ${this._showLinkInput
+          ? html`
+              <div class="link-input-bar">
+                <input
+                  type="text"
+                  inputmode="url"
+                  placeholder="https://example.com"
+                  .value=${this._linkUrl}
+                  @mousedown=${(e: Event) => e.stopPropagation()}
+                  @input=${(e: Event) => (this._linkUrl = (e.target as HTMLInputElement).value)}
+                  @keydown=${(e: KeyboardEvent) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      this._applyLink();
+                    }
+                    if (e.key === 'Escape') this._showLinkInput = false;
+                  }}
+                />
+                <button type="button" @click=${this._applyLink}>Apply</button>
+                ${this._isLink
+                  ? html`<button
+                      type="button"
+                      class="remove-link-btn"
+                      @click=${this._removeLink}
+                    >
+                      Remove
+                    </button>`
+                  : ''}
+              </div>
+            `
+          : ''}
 
         <div class="editor-content" style=${this._computeEditorStyle()}></div>
       </div>
