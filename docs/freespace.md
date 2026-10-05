@@ -33,13 +33,16 @@ With **one card** selected:
 - **Pin**: Left, Center, Right, or Left & right (see below)
 - **Align**: left, center, right or top of the canvas (16px inset)
 - **Layer**: bring to front, forward, backward, send to back
+- **Reset to Desktop** (Laptop, Tablet, Phone): put the card back where Desktop has it, shrunk to fit this screen size
 - **Edit**, **Duplicate**, **Delete**
 
 With **two or more** selected:
 
-- **Align** to the selection: left, center, right, top, middle, bottom
+- **Align to Selection** (default): line the cards up with each other: left, center, right, top, middle, bottom
+- **Align to Canvas**: move the cards together as one block to the canvas left, center, right or top, keeping their spacing
 - **Distribute** horizontally or vertically (3 or more cards), spacing them evenly between the outermost two
 - **Pin** all selected cards at once
+- **Reset to Desktop** (Laptop, Tablet, Phone) for all selected cards
 - **Delete** all selected cards (asks first)
 
 ### Pins
@@ -61,8 +64,8 @@ In YAML a pin looks like `pin: right` with `ref_w: 1920` (the canvas width the c
 
 Edit mode shows a **Desktop / Laptop / Tablet / Phone** bar. Each breakpoint has its own artboard width. Laptop, Tablet and Phone are each either **Use Desktop** or **Custom**:
 
-- **Use Desktop** (default): the breakpoint shows the Desktop layout.
-- **Custom**: the breakpoint has its own positions. Moving, resizing, aligning, layering or pinning any card on a breakpoint that uses Desktop switches it to Custom automatically, copying the Desktop layout for every card first so nothing else jumps.
+- **Use Desktop** (default): Laptop and Tablet show the Desktop layout shrunk to fit the screen and centered. Cards are never enlarged. While editing, this is a preview: choose **Custom** to move cards.
+- **Custom**: the breakpoint has its own positions. Choosing Custom copies the shrunk, centered Desktop picture for every card, so nothing jumps.
 - Choosing **Use Desktop** again (it asks first) removes that breakpoint's positions so it follows Desktop again.
 
 A card with no layout for a breakpoint always falls back to its Desktop layout, never to another breakpoint.

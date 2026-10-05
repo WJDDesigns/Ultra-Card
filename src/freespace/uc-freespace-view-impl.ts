@@ -33,7 +33,10 @@ import {
   mdiMonitor,
   mdiPencil,
   mdiPlus,
+  mdiRestore,
+  mdiSelectionDrag,
   mdiTablet,
+  mdiViewDashboardOutline,
 } from '@mdi/js';
 import { ucFreeSpaceSettingsService } from '../services/uc-freespace-settings-service';
 import { ucSectionsLayoutService } from '../services/uc-sections-layout-service';
@@ -57,8 +60,9 @@ import {
   assignDefaultLayouts,
   clearBreakpointLayouts,
   computeArtboardHeight,
-  copyBreakpointLayouts,
+  copyDesktopLayoutsFitted,
   countSectionCards,
+  fittedDesktopLayouts,
   effectiveCanvasWidth,
   flattenSectionsToCards,
   isBreakpointCustom,
@@ -76,11 +80,14 @@ import {
 } from './uc-freespace-breakpoints';
 import {
   alignGroup,
+  alignGroupToArtboard,
   alignInArtboard,
   alignmentGuides,
   cardsInRect,
   clampLayout,
   distributeGroup,
+  fitLayoutsToWidth,
+  resolvePinnedLayout,
   resolvePinnedLayouts,
   snapLayout,
   snapToGuides,
@@ -112,6 +119,8 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   @state() private _options: FreeSpaceViewOptions = readFreeSpaceOptions(undefined);
   /** On-screen layouts: pins already applied for the current artboard width. */
   @state() private _layouts: FreeSpaceCardLayout[] = [];
+  /** What multi-select Align lines cards up against (toolbar toggle, this session only). */
+  @state() private _alignTarget: 'selection' | 'canvas' = 'selection';
   /** Snap to the view's grid while dragging (toolbar toggle, this session only). */
   @state() private _snapOn = true;
   @state() private _scale = 1;
@@ -123,6 +132,11 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   @state() private _devicePreview = false;
   /** Artboard is narrower than the viewport (full width off) — show width bounds. */
   @state() private _showWidthBounds = false;
+  /** Laptop/Tablet on "Use Desktop": the Desktop layout shrunk and centred to fit. */
+  @state() private _following = false;
+  /** Device / canvas frame the dashed width bounds are drawn at (viewport px). */
+  @state() private _frameLeft = 0;
+  @state() private _frameWidth = 0;
   /** Selected card indices; the last one is the primary (last clicked). */
   @state() private _selection: number[] = [];
   /** Marquee rectangle in artboard units while drag-selecting empty space. */
@@ -296,6 +310,10 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     }
     :host([edit]) .width-bound.visible {
       display: block;
+    }
+    /* "Use Desktop" preview in edit mode: look, don't operate the cards. */
+    :host([edit]) .artboard.following uc-freespace-item {
+      pointer-events: none;
     }
     .artboard.stacked {
       position: relative;
@@ -621,11 +639,14 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     }
     if (changed.has('lovelace')) {
       const editing = !!this.lovelace?.editMode;
+      const toggled = editing !== this.hasAttribute('edit');
       this.toggleAttribute('edit', editing);
       if (!editing) {
         this._selected = null;
         this._guides = { vertical: [], horizontal: [] };
       }
+      // Edit mode shows the toolbar's breakpoint, live shows the screen's.
+      if (toggled) this._rebuildLayouts();
     }
   }
 
@@ -683,7 +704,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   }
 
   private _editingAllowed(): boolean {
-    return this._editMode() && this._discoverable && !this._useStacked();
+    return this._editMode() && this._discoverable && !this._useStacked() && !this._following;
   }
 
   private _useStacked(): boolean {
@@ -698,7 +719,20 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   }
 
   private _rebuildLayouts(): void {
-    const bp = this._activeBreakpoint();
+    this._computeLayouts();
+    // Pins and height are finalized in _updateScale.
+    this._updateScale();
+  }
+
+  /** Laptop and Tablet show the Desktop layout until they have their own. */
+  private _followsDesktop(bp: FreeSpaceBreakpoint): boolean {
+    return (bp === 'laptop' || bp === 'tablet') && !this._isCustom(bp, { views: [this._viewConfig()] }, 0);
+  }
+
+  private _computeLayouts(): void {
+    const active = this._activeBreakpoint();
+    this._following = this._followsDesktop(active);
+    const bp = this._following ? 'desktop' : active;
     const view = this._viewConfig();
     const cardConfigs = Array.isArray(view.cards) ? view.cards : [];
     const count = Math.max(this.cards?.length ?? 0, cardConfigs.length);
@@ -714,8 +748,6 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     this._rawLayouts = assignDefaultLayouts(configs, this._options, optimistic, bp);
     this._layouts = this._rawLayouts;
     this._pinWidth = -1;
-    // Pins and height are finalized in _updateScale.
-    this._updateScale();
   }
 
   /** Replace layouts that are already in current-width coordinates. */
@@ -964,8 +996,12 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     if (this._optimistic.get(key) === layout) this._optimistic.delete(key);
   }
 
-  private _isCustom(bp: FreeSpaceBreakpoint, config: any = this.lovelace?.config): boolean {
-    const cards = config?.views?.[this.index]?.cards;
+  private _isCustom(
+    bp: FreeSpaceBreakpoint,
+    config: any = this.lovelace?.config,
+    viewIndex = this.index
+  ): boolean {
+    const cards = config?.views?.[viewIndex]?.cards;
     return isBreakpointCustom(Array.isArray(cards) ? cards : [], bp);
   }
 
@@ -976,7 +1012,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
    */
   private _breakpointBase(config: any, bp: FreeSpaceBreakpoint): any {
     if (bp === 'desktop' || this._isCustom(bp, config)) return config;
-    return copyBreakpointLayouts(config, this.index, 'desktop', bp);
+    return copyDesktopLayoutsFitted(config, this.index, bp);
   }
 
   private async _setBreakpointMode(mode: 'desktop' | 'custom'): Promise<void> {
@@ -1000,7 +1036,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       const config = this.lovelace.config;
       const next =
         mode === 'custom'
-          ? copyBreakpointLayouts(config, this.index, 'desktop', bp)
+          ? copyDesktopLayoutsFitted(config, this.index, bp)
           : clearBreakpointLayouts(config, this.index, bp);
       this._selection = [];
       this._optimistic.clear();
@@ -1030,7 +1066,38 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   }
 
   private _alignSelection(align: FreeSpaceAlign): void {
-    void this._persistAllLayouts(alignGroup(this._layouts, this._selection, align));
+    void this._persistAllLayouts(
+      this._alignTarget === 'canvas'
+        ? alignGroupToArtboard(this._layouts, this._selection, align, this._artboardWidth)
+        : alignGroup(this._layouts, this._selection, align)
+    );
+  }
+
+  /** Put the selected cards back where Desktop has them, shrunk to fit this breakpoint. */
+  private _resetSelectionToDesktop(): void {
+    const bp = this._activeBreakpoint();
+    if (bp === 'desktop' || !this._selection.length) return;
+    const fitted = fittedDesktopLayouts(this._viewConfig(), bp);
+    const sel = new Set(this._selection);
+    void this._persistAllLayouts(
+      this._layouts.map((l, i) =>
+        sel.has(i) && fitted[i] ? resolvePinnedLayout(fitted[i]!, this._artboardWidth) : l
+      )
+    );
+  }
+
+  private _resetDesktopButton() {
+    if (this._activeBreakpoint() === 'desktop') return nothing;
+    const bp = BREAKPOINT_SPECS[this._activeBreakpoint()].label;
+    return this._tbButton({
+      icon: mdiRestore,
+      label: this._t('tb_reset_desktop', 'Reset to Desktop'),
+      title: this._t(
+        'tb_reset_desktop_hint',
+        'Put the selected cards back where Desktop has them, shrunk to fit {bp}'
+      ).replace('{bp}', bp),
+      onClick: () => this._resetSelectionToDesktop(),
+    });
   }
 
   private _distributeSelection(axis: 'horizontal' | 'vertical'): void {
@@ -1092,20 +1159,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const live = resolveBreakpoint(width);
     if (live !== this._liveBreakpoint) {
       this._liveBreakpoint = live;
-      if (!this._editMode()) {
-        const bp = this._activeBreakpoint();
-        const view = this._viewConfig();
-        const cardConfigs = Array.isArray(view.cards) ? view.cards : [];
-        const count = Math.max(this.cards?.length ?? 0, cardConfigs.length);
-        const configs = Array.from({ length: count }, (_, i) => cardConfigs[i] ?? {});
-        const optimistic = Array.from(
-          { length: count },
-          (_, i) => this._optimistic.get(this._optKey(i, bp)) ?? null
-        );
-        this._rawLayouts = assignDefaultLayouts(configs, this._options, optimistic, bp);
-        this._layouts = this._rawLayouts;
-        this._pinWidth = -1;
-      }
+      if (!this._editMode()) this._computeLayouts();
     }
     if (this._useStacked()) {
       this._scale = 1;
@@ -1133,7 +1187,22 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       this._editMode() &&
       BREAKPOINT_SPECS[this._editBreakpoint].minWidth < BREAKPOINT_SPECS[live].minWidth;
 
-    if (devicePreview) {
+    if (this._following) {
+      // Shrink the Desktop cards to the device (or screen) width and centre them.
+      const frameWidth = devicePreview ? designCanvas : width;
+      const frameLeft = devicePreview ? Math.max(0, Math.round((width - frameWidth) / 2)) : 0;
+      const fit = fitLayoutsToWidth(this._rawLayouts, frameWidth);
+      this._devicePreview = devicePreview;
+      this._showWidthBounds = devicePreview;
+      this._frameLeft = frameLeft;
+      this._frameWidth = frameWidth;
+      this._scale = fit.scale;
+      this._artboardOffsetX = frameLeft + fit.tx;
+      this._artboardWidth = Math.max(fit.right, 1);
+      this._engine.setScale(this._scale);
+      this._pinWidth = -2;
+      this._layouts = this._rawLayouts;
+    } else if (devicePreview) {
       this._devicePreview = true;
       this._showWidthBounds = true;
       this._artboardWidth = designCanvas;
@@ -1161,10 +1230,14 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       this._scale = 1;
       this._artboardOffsetX = 0;
     }
-    this._engine.setScale(this._scale);
-    if (this._pinWidth !== this._artboardWidth) {
-      this._pinWidth = this._artboardWidth;
-      this._layouts = resolvePinnedLayouts(this._rawLayouts, this._artboardWidth);
+    if (!this._following) {
+      this._frameLeft = this._artboardOffsetX;
+      this._frameWidth = Math.round(this._artboardWidth * this._scale);
+      this._engine.setScale(this._scale);
+      if (this._pinWidth !== this._artboardWidth) {
+        this._pinWidth = this._artboardWidth;
+        this._layouts = resolvePinnedLayouts(this._rawLayouts, this._artboardWidth);
+      }
     }
 
     const contentHeight = computeArtboardHeight(this._layouts, this._options.min_height);
@@ -1525,6 +1598,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       </div>
       <span class="tb-sep"></span>
       <div class="tb-group">
+        ${this._resetDesktopButton()}
         ${this._tbButton({ icon: mdiPencil, label: this._t('tb_edit', 'Edit card'), onClick: () => this._editCard(idx) })}
         ${this._tbButton({
           icon: mdiContentDuplicate,
@@ -1572,6 +1646,8 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       ['bottom', mdiAlignVerticalBottom, this._t('tb_align_bottom', 'Align bottom')],
     ];
     const canDistribute = sel.length >= 3;
+    const toCanvas = this._alignTarget === 'canvas';
+    const shownAligns = toCanvas ? aligns.filter(([a]) => a !== 'middle' && a !== 'bottom') : aligns;
 
     return html`
       <span class="tb-sep"></span>
@@ -1579,8 +1655,27 @@ export class UltraFreeSpaceViewImpl extends LitElement {
         ${this._t('tb_selected', '{count} selected').replace('{count}', String(sel.length))}
       </span>
       <span class="tb-sep"></span>
+      <div class="tb-segment" role="radiogroup" aria-label=${this._t('tb_align_to', 'Align to')}>
+        ${this._tbButton({
+          icon: mdiSelectionDrag,
+          label: this._t('tb_align_selection', 'Selection'),
+          title: this._t('tb_align_selection_hint', 'Line the cards up with each other'),
+          active: !toCanvas,
+          onClick: () => (this._alignTarget = 'selection'),
+        })}
+        ${this._tbButton({
+          icon: mdiViewDashboardOutline,
+          label: this._t('tb_align_canvas', 'Canvas'),
+          title: this._t(
+            'tb_align_canvas_hint',
+            'Move the cards together against the canvas, keeping their spacing'
+          ),
+          active: toCanvas,
+          onClick: () => (this._alignTarget = 'canvas'),
+        })}
+      </div>
       <div class="tb-group" aria-label=${this._t('tb_align', 'Align')}>
-        ${aligns.map(([a, icon, label]) =>
+        ${shownAligns.map(([a, icon, label]) =>
           this._tbButton({ icon, label, onClick: () => this._alignSelection(a) })
         )}
       </div>
@@ -1621,6 +1716,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       </div>
       <span class="tb-sep"></span>
       <div class="tb-group">
+        ${this._resetDesktopButton()}
         ${this._tbButton({
           icon: mdiDelete,
           label: this._t('tb_delete', 'Delete'),
@@ -1668,7 +1764,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
                   label: this._t('use_desktop', 'Use Desktop'),
                   title: this._t(
                     'use_desktop_hint',
-                    'Follow the Desktop layout. Moving a card here switches to Custom.'
+                    'Show the Desktop layout, shrunk and centered to fit this screen size.'
                   ),
                   active: !custom,
                   showLabel: true,
@@ -1794,6 +1890,17 @@ export class UltraFreeSpaceViewImpl extends LitElement {
           `
         : nothing}
 
+      ${editMode && this._following && this._discoverable
+        ? html`
+            <p class="hint">
+              ${this._t(
+                'follow_hint',
+                '{bp} is using the Desktop layout, shrunk to fit. Choose Custom in the toolbar to arrange {bp} on its own.'
+              ).replace(/\{bp\}/g, BREAKPOINT_SPECS[this._activeBreakpoint()].label)}
+            </p>
+          `
+        : nothing}
+
       ${editMode && editingAllowed
         ? html`
             <p class="hint">
@@ -1828,18 +1935,18 @@ export class UltraFreeSpaceViewImpl extends LitElement {
           ? html`
               <div
                 class="width-bound visible"
-                style="left:${this._artboardOffsetX}px"
+                style="left:${this._frameLeft}px"
                 title=${this._t('width_bound', 'Design canvas edge')}
               ></div>
               <div
                 class="width-bound visible"
-                style="left:${this._artboardOffsetX + Math.round(this._artboardWidth * this._scale)}px"
+                style="left:${this._frameLeft + this._frameWidth}px"
                 title=${this._t('width_bound', 'Design canvas edge')}
               ></div>
             `
           : nothing}
         <div
-          class="artboard ${stacked ? 'stacked' : ''} ${editMode && this._devicePreview ? 'device-preview' : ''} ${editMode && this._showWidthBounds ? 'width-bounds' : ''}"
+          class="artboard ${stacked ? 'stacked' : ''} ${this._following ? 'following' : ''} ${editMode && this._devicePreview && !this._following ? 'device-preview' : ''} ${editMode && this._showWidthBounds && !this._following ? 'width-bounds' : ''}"
           style=${stacked
             ? ''
             : `width:${this._artboardWidth}px;height:${this._artboardHeight}px;transform:scale(${this._scale});left:${this._artboardOffsetX}px`}

@@ -141,6 +141,32 @@ export function alignGroup(
   });
 }
 
+/**
+ * Move the cards at `indices` as one block against the artboard (left, center,
+ * right or top), keeping their spacing.
+ */
+export function alignGroupToArtboard(
+  layouts: FreeSpaceCardLayout[],
+  indices: number[],
+  align: FreeSpaceAlign,
+  width: number
+): FreeSpaceCardLayout[] {
+  const picked = indices.map(i => layouts[i]).filter(Boolean) as FreeSpaceCardLayout[];
+  if (!picked.length) return layouts;
+  const b = selectionBounds(picked);
+  let dx = 0;
+  let dy = 0;
+  if (align === 'left') dx = ALIGN_INSET - b.left;
+  else if (align === 'center') dx = (width - (b.right - b.left)) / 2 - b.left;
+  else if (align === 'right') dx = width - ALIGN_INSET - b.right;
+  else if (align === 'top') dy = ALIGN_INSET - b.top;
+  else return layouts;
+  const set = new Set(indices);
+  return layouts.map((l, i) =>
+    set.has(i) ? clampLayout({ ...l, x: Math.round(l.x + dx), y: Math.round(l.y + dy) }) : l
+  );
+}
+
 /** Space the cards at `indices` evenly between the outermost two (needs 3+). */
 export function distributeGroup(
   layouts: FreeSpaceCardLayout[],
@@ -165,6 +191,46 @@ export function distributeGroup(
     cursor += layouts[i][size] + gap;
   }
   return next;
+}
+
+/** Space kept around the cards when a layout is fitted to a narrower width. */
+export const FIT_PADDING = 16;
+
+export interface LayoutFit {
+  /** Scale applied to the layout (never above 1). */
+  scale: number;
+  /** Horizontal offset, in target px, applied after scaling. */
+  tx: number;
+  /** Right edge of the cards plus padding, in layout units. */
+  right: number;
+}
+
+/**
+ * Shrink a layout's cards to fit `width` and centre them horizontally.
+ * A point `x` lands at `x * scale + tx`.
+ */
+export function fitLayoutsToWidth(layouts: FreeSpaceCardLayout[], width: number): LayoutFit {
+  if (!layouts.length || !(width > 0)) return { scale: 1, tx: 0, right: 0 };
+  const boxes = layouts.map(layoutAabb);
+  const left = Math.min(...boxes.map(b => b.left)) - FIT_PADDING;
+  const right = Math.max(...boxes.map(b => b.right)) + FIT_PADDING;
+  const contentW = right - left;
+  const scale = contentW > width ? width / contentW : 1;
+  const tx = (width - contentW * scale) / 2 - left * scale;
+  return { scale, tx, right };
+}
+
+/** A layout mapped through a fit, in target-width coordinates. */
+export function applyFit(layout: FreeSpaceCardLayout, fit: LayoutFit, width: number): FreeSpaceCardLayout {
+  const next: FreeSpaceCardLayout = {
+    ...layout,
+    x: Math.round(layout.x * fit.scale + fit.tx),
+    y: Math.round(layout.y * fit.scale),
+    w: Math.round(layout.w * fit.scale),
+    h: Math.round(layout.h * fit.scale),
+  };
+  if (next.pin && next.pin !== 'left') next.ref_w = Math.round(width);
+  return clampLayout(next);
 }
 
 /** Indices of cards whose box intersects a rectangle (marquee selection). */

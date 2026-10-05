@@ -22,7 +22,13 @@ import {
   type FreeSpaceBreakpoint,
   type FreeSpaceViewLayoutStore,
 } from './uc-freespace-breakpoints';
-import { autoPlace, clampLayout, snapLayout } from './uc-freespace-geometry';
+import {
+  applyFit,
+  autoPlace,
+  clampLayout,
+  fitLayoutsToWidth,
+  snapLayout,
+} from './uc-freespace-geometry';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
@@ -328,6 +334,48 @@ export function copyBreakpointLayouts(
     const resolved = resolveLayoutForBreakpoint(store, from);
     if (!resolved) continue;
     store[to] = rebasePin(resolved.layout, toCanvas);
+    card.view_layout = serializeViewLayoutStore(store);
+    cards[i] = card;
+  }
+  view.cards = cards;
+  views[viewIndex] = view;
+  return { ...config, views };
+}
+
+/**
+ * Every card's Desktop layout shrunk and centred to `bp`'s canvas width, in
+ * `bp` canvas coordinates (what "Use Desktop" shows for that breakpoint).
+ */
+export function fittedDesktopLayouts(viewConfig: unknown, bp: FreeSpaceBreakpoint): FreeSpaceCardLayout[] {
+  const view = isRecord(viewConfig) ? viewConfig : {};
+  const cards = Array.isArray(view.cards) ? view.cards : [];
+  const options = readFreeSpaceOptions(view);
+  const width = effectiveCanvasWidth(options, bp);
+  const desktop = assignDefaultLayouts(cards, options, undefined, 'desktop');
+  const fit = fitLayoutsToWidth(desktop, width);
+  return desktop.map(l => applyFit(l, fit, width));
+}
+
+/**
+ * Give `to` its own layout for every card that lacks one, taken from Desktop
+ * shrunk and centred to `to`'s canvas width: the same picture "Use Desktop"
+ * shows, so switching to Custom does not move anything.
+ */
+export function copyDesktopLayoutsFitted(
+  config: any,
+  viewIndex: number,
+  to: FreeSpaceBreakpoint
+): any {
+  if (to === 'desktop' || !isFreeSpaceBreakpoint(to)) return config;
+  const views = Array.isArray(config?.views) ? [...config.views] : [];
+  const view = isRecord(views[viewIndex]) ? { ...views[viewIndex] } : {};
+  const cards = Array.isArray(view.cards) ? [...view.cards] : [];
+  const fitted = fittedDesktopLayouts(view, to);
+  for (let i = 0; i < cards.length; i++) {
+    const card = isRecord(cards[i]) ? { ...cards[i] } : {};
+    const store = parseViewLayoutStore(card.view_layout);
+    if (store[to]) continue;
+    store[to] = fitted[i]!;
     card.view_layout = serializeViewLayoutStore(store);
     cards[i] = card;
   }

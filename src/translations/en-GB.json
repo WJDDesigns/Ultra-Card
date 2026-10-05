@@ -5791,7 +5791,7 @@
     "tb_multi_hint": "Shift-click or drag on empty space to select several",
     "bp_layout": "{bp} layout",
     "use_desktop": "Use Desktop",
-    "use_desktop_hint": "Follow the Desktop layout. Moving a card here switches to Custom.",
+    "use_desktop_hint": "Show the Desktop layout, shrunk and centred to fit this screen size.",
     "custom_layout": "Custom",
     "custom_layout_hint": "Arrange this screen size on its own",
     "reset_to_desktop_title": "Use the Desktop layout?",
@@ -5824,6 +5824,14 @@
     "editor_narrow_help": "When Phone uses the Desktop layout: stack cards for readability, or keep scaling the artboard.",
     "editor_narrow_stack": "Stack cards (recommended)",
     "editor_narrow_scale": "Keep scaled artboard",
-    "editor_canvas_width_legacy": "Desktop canvas width (legacy)"
+    "editor_canvas_width_legacy": "Desktop canvas width (legacy)",
+    "follow_hint": "{bp} is using the Desktop layout, shrunk to fit. Choose Custom in the toolbar to arrange {bp} on its own.",
+    "tb_align_to": "Align to",
+    "tb_align_selection": "Selection",
+    "tb_align_selection_hint": "Line the cards up with each other",
+    "tb_align_canvas": "Canvas",
+    "tb_align_canvas_hint": "Move the cards together against the canvas, keeping their spacing",
+    "tb_reset_desktop": "Reset to Desktop",
+    "tb_reset_desktop_hint": "Put the selected cards back where Desktop has them, shrunk to fit {bp}"
   }
 }
