@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.0-beta5
+
+The fifth 3.13.0 beta finishes the overlay HVAC dropdown fix from the "Layout bug on 3.10.0" Discord thread. Blank-glyph spacer titles work again, and dropdown menus open properly inside the card editor. It includes everything from beta1 to beta4. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed blank-glyph dropdown titles being ignored** - A closed title made of blank characters (such as Braille blanks) is a deliberate spacer that widens the tap area and the open menu. Since 3.12 it was dropped, so the menu shrank to the arrow alone. The spacer counts again, so the menu spans the label and arrow like it did in 3.10. The arrow still stays right next to the label, and no card changes are needed
+- **Fixed dropdown menus not showing in the card editor** - Home Assistant's newer editor dialog moved or clipped the open menu, so it landed under the wrong card or didn't appear at all. The menu now opens under its dropdown in the editor preview too
+
+---
+
 ## Version 3.13.0-beta4
 
 The fourth 3.13.0 beta fixes the Text and Drawer module issues reported on Discord: the link box takes typing again, gradient colors work on text and icons, and the drawer's icon background now matches the popup. FreeSpace also gets better Laptop and Tablet handling, and graphs keep their history fresh on dashboards that stay open for days. It includes everything from beta1 to beta3. This is a pre-release for testing — please report anything odd on GitHub or Discord.

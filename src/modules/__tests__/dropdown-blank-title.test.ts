@@ -37,7 +37,7 @@ describe('dropdown blank closed titles', () => {
     expect(isVisuallyBlankLabel('\u2800Off')).toBe(false);
   });
 
-  it('does not render Braille spacer titles next to the chevron', async () => {
+  it('keeps Braille spacer titles as out-of-flow reach, not beside the chevron', async () => {
     const reg = getModuleRegistry();
     await reg.ensureModuleLoaded('dropdown');
     const handler = reg.getModule('dropdown')!;
@@ -61,6 +61,10 @@ describe('dropdown blank closed titles', () => {
     expect(markup).toContain('uc-blank-closed-title');
     expect(markup).toContain('dropdown-chevron');
     expect(markup).toContain('padding: 8px 2px');
-    expect(markup).not.toContain('\u2800');
+    expect(markup).toContain('uc-blank-title-reach');
+    expect(markup).toContain('right: 100%');
+    expect(markup.split('\u2800\u2800\u2800\u2800\u2800\u2800').length - 1).toBe(1);
+    const reachIndex = markup.indexOf('uc-blank-title-reach');
+    expect(markup.indexOf('\u2800')).toBeGreaterThan(reachIndex);
   });
 });

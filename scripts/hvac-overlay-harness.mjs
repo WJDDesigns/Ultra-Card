@@ -265,7 +265,8 @@ async function measure(page) {
       '.horizontal-preview-content, .horizontal-module-preview'
     );
     const blankTitle = document.querySelector('.uc-blank-closed-title');
-    const braille = [...document.querySelectorAll('span')].some(el =>
+    const reach = document.querySelector('.uc-blank-title-reach');
+    const braille = [...document.querySelectorAll('.dropdown-selection span')].some(el =>
       /[\u2800]/.test(el.textContent || '')
     );
     const dump = el => {
@@ -301,6 +302,7 @@ async function measure(page) {
       clusterOffset: clusterMid !== null && rowMid !== null ? round(clusterMid - rowMid) : null,
       hasBlankTitleClass: !!blankTitle,
       hasBrailleTitle: braille,
+      reach: boxOf(reach),
       infoWidth: dump(infoRoot),
       dropdownWidth: dump(dropdownRoot),
       selectionWidth: dump(selection),
@@ -346,9 +348,12 @@ async function openMenu(page) {
   });
 }
 
-function assertMenu(name, m) {
+function assertMenu(name, m, closed) {
   const errors = [];
   if (!m.found) return [`${name}: dropdown menu did not open`];
+  if (closed?.off && m.left > closed.off.left + 2) {
+    errors.push(`${name}: menu (${m.left}) no longer spans under Off (${closed.off.left})`);
+  }
   if (m.options.length !== 4) errors.push(`${name}: expected 4 options, saw ${m.options.length}`);
   for (const o of m.options) {
     if (o.labelRight === null) {
@@ -373,6 +378,11 @@ function assertViewport(name, m) {
   if (!m.temp) errors.push(`${name}: gauge temperature not found`);
   if (m.hasBrailleTitle) errors.push(`${name}: Braille spacer title is still taking layout`);
   if (!m.hasBlankTitleClass) errors.push(`${name}: dropdown did not collapse the blank closed title`);
+  if (!m.reach || m.reach.w < 20) {
+    errors.push(`${name}: blank glyph title lost its reach (user spacer ignored)`);
+  } else if (m.off && m.reach.left > m.off.left + 2) {
+    errors.push(`${name}: blank glyph reach (${m.reach.left}) does not span over Off (${m.off.left})`);
+  }
   if (m.gap === null) {
     errors.push(`${name}: could not measure Off/chevron gap`);
   } else {
@@ -425,7 +435,7 @@ async function main() {
 
       const menu = await openMenu(page);
       results[results.length - 1].menu = menu;
-      errors.push(...assertMenu(vp.name, menu));
+      errors.push(...assertMenu(vp.name, menu, metrics));
       await page.screenshot({
         path: path.join(OUT_DIR, `${vp.name}-open.png`),
         fullPage: true,
@@ -438,6 +448,29 @@ async function main() {
       await page.keyboard.press('Escape');
       await page.mouse.click(5, 5);
     }
+
+    // HA's card editor dialog surface is transformed, which makes it the
+    // containing block for position:fixed. The menu must still attach.
+    await renderOverlay(page, 390);
+    await page.evaluate(() => {
+      const stage = document.getElementById('stage');
+      stage.style.transform = 'translate(0px, 0px)';
+      stage.style.overflow = 'hidden';
+      stage.style.minHeight = '420px';
+    });
+    const dialogClosed = await measure(page);
+    const dialogMenu = await openMenu(page);
+    errors.push(...assertMenu('editor-dialog', dialogMenu, dialogClosed));
+    await page.screenshot({ path: path.join(OUT_DIR, 'editor-dialog-open.png'), fullPage: true });
+    console.log(
+      `editor-dialog menu: width=${dialogMenu.width}px left=${dialogMenu.left} top=${dialogMenu.top} triggerBottom=${dialogMenu.triggerBottom}`
+    );
+    await page.evaluate(() => {
+      const stage = document.getElementById('stage');
+      stage.style.transform = '';
+      stage.style.overflow = 'visible';
+      stage.style.minHeight = '';
+    });
 
     if (results.length === 2 && results[0].gap !== null && results[1].gap !== null) {
       const delta = Math.abs(results[0].gap - results[1].gap);

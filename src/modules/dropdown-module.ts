@@ -26,6 +26,23 @@ export function isVisuallyBlankLabel(label: string | undefined | null): boolean 
   return /^[\s\u2800]*$/.test(label);
 }
 
+export interface MenuAnchorRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
+export function unionMenuAnchorRects(a: MenuAnchorRect, b: MenuAnchorRect): MenuAnchorRect {
+  const left = Math.min(a.left, b.left);
+  const top = Math.min(a.top, b.top);
+  const right = Math.max(a.right, b.right);
+  const bottom = Math.max(a.bottom, b.bottom);
+  return { left, top, right, bottom, width: right - left, height: bottom - top };
+}
+
 /** Triggers narrower than this let the open menu size to its options. */
 export const MENU_MIN_CONTENT_WIDTH_PX = 160;
 const MENU_MAX_CONTENT_WIDTH_PX = 280;
@@ -1974,8 +1991,22 @@ export class UltraDropdownModule extends BaseUltraModule {
       !closedTitleIcon;
 
     const triggerStyles = hideClosedTitle
-      ? `${dropdownStyles}; width: max-content; min-width: 0; padding: 8px 2px; gap: 0;`
+      ? `${dropdownStyles}; width: max-content; min-width: 0; padding: 8px 2px; gap: 0; position: relative;`
       : dropdownStyles;
+    // Blank glyph titles are a deliberate spacer: users pad them to widen the
+    // tap target and the open menu. Keep that reach without pushing the
+    // chevron away from neighbouring overlay content.
+    const blankTitleReach =
+      hideClosedTitle && closedTitleLabel
+        ? html`<span
+            class="uc-blank-title-reach"
+            aria-hidden="true"
+            style="position: absolute; top: 0; bottom: 0; ${dropdownModule.control_icon_side === 'left'
+              ? 'left: 100%; padding-left: 12px;'
+              : 'right: 100%; padding-right: 12px;'} display: flex; align-items: center; white-space: pre; color: transparent; cursor: pointer;"
+            >${closedTitleLabel}</span
+          >`
+        : '';
 
     return this.wrapWithAnimation(html`
       <style>
@@ -2169,6 +2200,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                     style="color: var(--secondary-text-color); transition: transform 0.2s ease; transform: ${this.dropdownOpenStates.get(dropdownModule.id) ? 'rotate(180deg)' : 'rotate(0deg)'}; pointer-events: none;"
                   ></ha-icon>
                 </div>
+                ${blankTitleReach}
               </div>
 
               <div
@@ -2470,7 +2502,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
   private resolveMenuDirection(
     module: DropdownModule | undefined,
-    triggerRect: DOMRect,
+    triggerRect: MenuAnchorRect,
     menuMaxHeight: number
   ): 'up' | 'down' {
     const configuredDirection = module?.menu_direction || 'auto';
@@ -2485,8 +2517,8 @@ export class UltraDropdownModule extends BaseUltraModule {
 
   private positionDropdownFromTrigger(
     dropdownElement: HTMLElement,
-    triggerRect: DOMRect,
-    hostRect: { left: number; top: number },
+    triggerRect: MenuAnchorRect,
+    hostRect: { left: number; top: number; bottom?: number },
     direction: 'up' | 'down'
   ): void {
     const downOverlapPx = 0;
@@ -2500,7 +2532,9 @@ export class UltraDropdownModule extends BaseUltraModule {
     if (direction === 'up') {
       const bottom = Math.max(
         0,
-        window.innerHeight - triggerRect.top + hostRect.top - upOverlapPx
+        hostRect.bottom !== undefined
+          ? hostRect.bottom - triggerRect.top - upOverlapPx
+          : window.innerHeight - triggerRect.top + hostRect.top - upOverlapPx
       );
       dropdownElement.style.bottom = `${bottom}px`;
       dropdownElement.style.top = 'auto';
@@ -2520,7 +2554,7 @@ export class UltraDropdownModule extends BaseUltraModule {
    */
   private resolveMenuHorizontalPlacement(
     dropdownElement: HTMLElement,
-    triggerRect: DOMRect
+    triggerRect: MenuAnchorRect
   ): { left: number; width: number } {
     const triggerWidth = triggerRect.width;
     let contentWidth = 0;
@@ -2541,6 +2575,46 @@ export class UltraDropdownModule extends BaseUltraModule {
       contentWidth,
       typeof window !== 'undefined' ? window.innerWidth : 0
     );
+  }
+
+  /** Trigger box, widened to include a blank-glyph title's reach. */
+  private getMenuAnchorRect(trigger: HTMLElement): MenuAnchorRect {
+    const rect = trigger.getBoundingClientRect();
+    const reach = trigger.querySelector('.uc-blank-title-reach') as HTMLElement | null;
+    const reachRect = reach?.getBoundingClientRect();
+    if (!reachRect || reachRect.width <= 0) return rect;
+    return unionMenuAnchorRects(rect, reachRect);
+  }
+
+  /**
+   * Where `position: fixed` coordinates actually start for this element. A
+   * transformed ancestor (HA's editor dialog surface) becomes the containing
+   * block, so viewport coordinates would land offset and get clipped.
+   */
+  private measureFixedContainingBlock(el: HTMLElement): {
+    left: number;
+    top: number;
+    bottom: number;
+  } {
+    const prev = {
+      display: el.style.display,
+      left: el.style.left,
+      top: el.style.top,
+      bottom: el.style.bottom,
+      animation: el.style.animation,
+    };
+    el.style.position = 'fixed';
+    el.style.display = 'block';
+    el.style.animation = 'none';
+    el.style.left = '0px';
+    el.style.top = '0px';
+    el.style.bottom = 'auto';
+    const origin = el.getBoundingClientRect();
+    el.style.top = 'auto';
+    el.style.bottom = '0px';
+    const end = el.getBoundingClientRect();
+    Object.assign(el.style, prev);
+    return { left: origin.left || 0, top: origin.top || 0, bottom: end.bottom || window.innerHeight };
   }
 
   private getFixedHostRect(host: Element | null): { left: number; top: number } {
@@ -2620,7 +2694,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       if (newState) {
         // Get position of the selected element
         if (selectedElement) {
-          const rect = selectedElement.getBoundingClientRect();
+          const rect = this.getMenuAnchorRect(selectedElement);
           const moduleContext = this.moduleContexts.get(instanceId);
           const moduleVisibleItems = (moduleContext?.module as DropdownModule)?.visible_items ?? 5;
           const dropdownMaxHeight = moduleVisibleItems * 44; // Match calculated max-height
@@ -2642,7 +2716,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             this.positionDropdownFromTrigger(
               dropdownElement,
               rect,
-              { left: 0, top: 0 },
+              this.measureFixedContainingBlock(dropdownElement),
               menuDirection
             );
             dropdownElement.style.zIndex = overlayZIndex.toString();
@@ -3115,7 +3189,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     if (portaledDropdown.style.display !== 'block') return;
 
     try {
-      const rect = trigger.getBoundingClientRect();
+      const rect = this.getMenuAnchorRect(trigger);
       // Get module context for visible_items setting
       const moduleContext = this.moduleContexts.get(instanceId);
       const moduleVisibleItems = (moduleContext?.module as DropdownModule)?.visible_items ?? 5;

@@ -1,6 +1,21 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect } from 'vitest';
-import { resolveDropdownMenuPlacement } from '../dropdown-module';
+import { resolveDropdownMenuPlacement, unionMenuAnchorRects } from '../dropdown-module';
+
+describe('unionMenuAnchorRects', () => {
+  it('widens a chevron trigger to cover a blank-glyph spacer on its left', () => {
+    const trigger = { left: 457, top: 165, right: 487, bottom: 207, width: 30, height: 42 };
+    const reach = { left: 389, top: 166, right: 458, bottom: 206, width: 69, height: 40 };
+    expect(unionMenuAnchorRects(trigger, reach)).toEqual({
+      left: 389,
+      top: 165,
+      right: 487,
+      bottom: 207,
+      width: 98,
+      height: 42,
+    });
+  });
+});
 
 describe('resolveDropdownMenuPlacement', () => {
   it('keeps full-width triggers exactly as wide as the trigger', () => {
