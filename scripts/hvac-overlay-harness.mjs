@@ -289,8 +289,15 @@ async function measure(page) {
     const clusterMid = offBox && chevronBox ? round((offBox.left + chevronBox.right) / 2) : null;
     const rowMid = rowBox ? round(rowBox.left + rowBox.w / 2) : null;
 
+    const offHit = offBox
+      ? document.elementFromPoint(offBox.left + offBox.w / 2, offBox.top + offBox.h / 2)
+      : null;
+    const offTapsDropdown = !!offHit?.closest?.('.dropdown-selected');
+
     return {
       off: offBox,
+      offTapsDropdown,
+      offHit: offHit ? offHit.className || offHit.tagName : null,
       chevron: chevronBox,
       temp: tempBox,
       row: rowBox,
@@ -378,6 +385,9 @@ function assertViewport(name, m) {
   if (!m.temp) errors.push(`${name}: gauge temperature not found`);
   if (m.hasBrailleTitle) errors.push(`${name}: Braille spacer title is still taking layout`);
   if (!m.hasBlankTitleClass) errors.push(`${name}: dropdown did not collapse the blank closed title`);
+  if (m.off && !m.offTapsDropdown) {
+    errors.push(`${name}: tapping Off hits "${m.offHit}" instead of the dropdown (glyph spacer is underneath)`);
+  }
   if (!m.reach || m.reach.w < 20) {
     errors.push(`${name}: blank glyph title lost its reach (user spacer ignored)`);
   } else if (m.off && m.reach.left > m.off.left + 2) {
@@ -447,6 +457,22 @@ async function main() {
       );
       await page.keyboard.press('Escape');
       await page.mouse.click(5, 5);
+      await page.waitForTimeout(250);
+
+      if (metrics.off) {
+        await page.mouse.click(metrics.off.left + metrics.off.w / 2, metrics.off.top + metrics.off.h / 2);
+        await page.waitForTimeout(350);
+        const openedFromOff = await page.evaluate(() =>
+          [...document.querySelectorAll('.dropdown-options')].some(
+            el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0
+          )
+        );
+        if (!openedFromOff) errors.push(`${vp.name}: tapping Off did not open the mode menu`);
+        console.log(`${vp.name} tap Off opens menu: ${openedFromOff}`);
+        await page.keyboard.press('Escape');
+        await page.mouse.click(5, 5);
+        await page.waitForTimeout(250);
+      }
     }
 
     // HA's card editor dialog surface is transformed, which makes it the

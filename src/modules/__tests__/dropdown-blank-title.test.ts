@@ -63,6 +63,8 @@ describe('dropdown blank closed titles', () => {
     expect(markup).toContain('padding: 8px 2px');
     expect(markup).toContain('uc-blank-title-reach');
     expect(markup).toContain('right: 100%');
+    // The trigger turns off pointer events on its children; the spacer must stay tappable.
+    expect(markup).toMatch(/uc-blank-title-reach[^>]*pointer-events: auto/);
     expect(markup.split('\u2800\u2800\u2800\u2800\u2800\u2800').length - 1).toBe(1);
     const reachIndex = markup.indexOf('uc-blank-title-reach');
     expect(markup.indexOf('\u2800')).toBeGreaterThan(reachIndex);

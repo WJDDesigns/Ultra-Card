@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.0-beta6
+
+The sixth 3.13.0 beta makes blank-glyph dropdown spacers tappable again, so an overlay label like "Off" opens the dropdown it sits under. It includes everything from beta1 to beta5. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed taps on a blank-glyph spacer going to the module underneath** - Beta5 brought the spacer back, but it didn't receive taps, so tapping a label it covered (like "Off" over an HVAC gauge) opened that entity's more-info instead of the dropdown. The spacer is part of the dropdown button again, like in 3.10, so tapping the label opens the mode menu. No card changes are needed
+
+---
+
 ## Version 3.13.0-beta5
 
 The fifth 3.13.0 beta finishes the overlay HVAC dropdown fix from the "Layout bug on 3.10.0" Discord thread. Blank-glyph spacer titles work again, and dropdown menus open properly inside the card editor. It includes everything from beta1 to beta4. This is a pre-release for testing — please report anything odd on GitHub or Discord.

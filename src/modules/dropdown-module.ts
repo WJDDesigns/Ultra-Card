@@ -2003,7 +2003,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             aria-hidden="true"
             style="position: absolute; top: 0; bottom: 0; ${dropdownModule.control_icon_side === 'left'
               ? 'left: 100%; padding-left: 12px;'
-              : 'right: 100%; padding-right: 12px;'} display: flex; align-items: center; white-space: pre; color: transparent; cursor: pointer;"
+              : 'right: 100%; padding-right: 12px;'} display: flex; align-items: center; white-space: pre; color: transparent; cursor: pointer; pointer-events: auto;"
             >${closedTitleLabel}</span
           >`
         : '';
@@ -3879,6 +3879,10 @@ export class UltraDropdownModule extends BaseUltraModule {
       .dropdown-option:focus-visible {
         outline: 2px solid var(--primary-color);
         outline-offset: -2px;
+      }
+
+      .dropdown-selected .uc-blank-title-reach {
+        pointer-events: auto;
       }
 
       .dropdown-selected * {
