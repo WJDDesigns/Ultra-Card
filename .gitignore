@@ -98,6 +98,9 @@ directories-pro-presets-service-update.ts
 # Temp changelog input files used by scripts/release.js --changelog-file
 .release-changelog-*.txt
 
+# Release archives (built locally and attached to GitHub releases)
+/ultra-card-v*.zip
+
 # Playwright layout-harness screenshots / metrics
 .harness-output/
 

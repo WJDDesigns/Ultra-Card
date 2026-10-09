@@ -3115,12 +3115,22 @@ export class LayoutTab extends LitElement {
           @dragover=${(e: DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
+            this._onTabsSectionNestedLayoutDragOver(
+              e,
+              childModule,
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex
+            );
           }}
           @dragenter=${(e: DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
-            this._onTreeTabsSectionChildDragEnter(
+            this._onTabsSectionNestedLayoutDragOver(
               e,
+              childModule,
               rowIndex,
               columnIndex,
               moduleIndex,
@@ -3132,6 +3142,16 @@ export class LayoutTab extends LitElement {
           @drop=${(e: DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
+            if (this._isTabsSectionNestedLayoutInsideDrop(e, childModule)) {
+              this._onTabsSectionNestedLayoutDrop(
+                rowIndex,
+                columnIndex,
+                moduleIndex,
+                sectionIndex,
+                childIndex
+              );
+              return;
+            }
             this._onTreeTabsSectionChildDrop(
               e,
               rowIndex,
@@ -6583,7 +6603,7 @@ export class LayoutTab extends LitElement {
       const registry = getModuleRegistry();
       const moduleHandler = registry.getModule(moduleType);
       if (!moduleHandler) return;
-      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      const newModule = this._createModuleForAdd(moduleHandler);
       current.modules.push(newModule);
       this._updateLayout(newLayout);
       this._deepNestedPath = null;
@@ -8146,6 +8166,7 @@ export class LayoutTab extends LitElement {
     this._selectedLayoutModuleIndex = -1; // Reset to indicate we're adding to a column, not a layout module
     this._selectedNestedChildIndex = -1; // Reset nested child index
     this._selectedNestedNestedChildIndex = -1; // Reset deep nested child index
+    this._clearNestedAddTargets();
     this._showModuleSelector = true;
 
     // Auto-focus search input after popup renders
@@ -8153,6 +8174,59 @@ export class LayoutTab extends LitElement {
       this._focusSearchInput();
     });
   }
+  /**
+   * A module built before routing (e.g. an external card with its card config).
+   * The nested add flows below take it instead of creating a default.
+   */
+  private _pendingAddModule: CardModule | null = null;
+
+  private _takePendingAddModule(type: string): CardModule | null {
+    const pending = this._pendingAddModule;
+    this._pendingAddModule = null;
+    return pending && pending.type === type ? pending : null;
+  }
+
+  private _createModuleForAdd(
+    handler: Pick<BaseUltraModule, 'createDefault' | 'metadata'>
+  ): CardModule {
+    return (
+      this._takePendingAddModule(handler.metadata.type) ??
+      handler.createDefault(undefined, this.hass ?? undefined)
+    );
+  }
+
+  /** Routes an already-built module (e.g. a card) to wherever the selector was opened from. */
+  private _addPrebuiltModule(module: CardModule): void {
+    this._pendingAddModule = module;
+    this._addModule(module.type);
+  }
+
+  /** True when the module selector was opened from inside a layout rather than a column. */
+  private _hasNestedAddTarget(): boolean {
+    return !!(
+      this._tabsSectionDeeplyNestedLayoutContext ||
+      this._tabsSectionNestedLayoutContext ||
+      this._nestedTabsSectionLayoutChildContext ||
+      this._deeplyNestedLayoutContext ||
+      this._level4NestedLayoutContext ||
+      this._deepNestedPath ||
+      this._nestedTabsSectionContext ||
+      this._tabsSectionContext ||
+      this._selectedLayoutModuleIndex >= 0
+    );
+  }
+
+  private _clearNestedAddTargets(): void {
+    this._tabsSectionDeeplyNestedLayoutContext = null;
+    this._tabsSectionNestedLayoutContext = null;
+    this._nestedTabsSectionLayoutChildContext = null;
+    this._deeplyNestedLayoutContext = null;
+    this._level4NestedLayoutContext = null;
+    this._deepNestedPath = null;
+    this._nestedTabsSectionContext = null;
+    this._tabsSectionContext = null;
+  }
+
   private _addModule(type: string): void {
     this._completeOnboardingStep('add_module');
     // Check if adding to a deeply nested layout inside a tabs section
@@ -8229,6 +8303,12 @@ export class LayoutTab extends LitElement {
 
     const column = row.columns[this._selectedColumnIndex];
     const lang = this.hass?.locale?.language || 'en';
+
+    const pending = this._takePendingAddModule(type);
+    if (pending) {
+      this._applyAddedModule(pending);
+      return;
+    }
 
     // Create a simple default module with proper typing
     let newModule: CardModule;
@@ -10790,13 +10870,10 @@ export class LayoutTab extends LitElement {
    * Creates a native_card module (not external_card)
    */
   private async _addNativeCard(cardType: string): Promise<void> {
-    if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
+    const nested = this._hasNestedAddTarget();
+    if (!nested && (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1)) {
       return;
     }
-
-    const layout = this._ensureLayout();
-    const row = layout.rows[this._selectedRowIndex];
-    const column = row.columns[this._selectedColumnIndex];
 
     let newModule: any;
 
@@ -10842,6 +10919,16 @@ export class LayoutTab extends LitElement {
         display_conditions: [],
       };
     }
+
+    if (nested) {
+      this._addPrebuiltModule(newModule);
+      this._showModuleSelector = false;
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const column = layout.rows[this._selectedRowIndex]?.columns[this._selectedColumnIndex];
+    if (!column) return;
 
     // Add to column
     const newLayout = {
@@ -18135,7 +18222,7 @@ export class LayoutTab extends LitElement {
       const registry = getModuleRegistry();
       const moduleHandler = registry.getModule(moduleType);
       if (!moduleHandler) return;
-      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      const newModule = this._createModuleForAdd(moduleHandler);
       if (!tabsModule.sections[sectionIndex].modules) {
         tabsModule.sections[sectionIndex].modules = [];
       }
@@ -18196,7 +18283,7 @@ export class LayoutTab extends LitElement {
       const moduleHandler = registry.getModule(moduleType);
       let newModule: any;
       if (moduleHandler?.createDefault) {
-        newModule = moduleHandler.createDefault(undefined, this.hass);
+        newModule = this._createModuleForAdd(moduleHandler);
       } else {
         newModule = { id: `${moduleType}-${Date.now()}`, type: moduleType };
       }
@@ -18272,7 +18359,7 @@ export class LayoutTab extends LitElement {
       const registry = getModuleRegistry();
       const moduleHandler = registry.getModule(moduleType);
       if (!moduleHandler) return;
-      const newModule = moduleHandler.createDefault(undefined, this.hass ?? undefined);
+      const newModule = this._createModuleForAdd(moduleHandler);
       layoutModule.modules.push(newModule);
       this._updateLayout(newLayout);
       this._tabsSectionNestedLayoutContext = null;
@@ -18376,7 +18463,7 @@ export class LayoutTab extends LitElement {
       const registry = getModuleRegistry();
       const moduleHandler = registry.getModule(moduleType);
       if (!moduleHandler) return;
-      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      const newModule = this._createModuleForAdd(moduleHandler);
       layoutModule.modules.push(newModule);
       this._updateLayout(newLayout);
       this._nestedTabsSectionLayoutChildContext = null;
@@ -18490,7 +18577,7 @@ export class LayoutTab extends LitElement {
       const registry = getModuleRegistry();
       const moduleHandler = registry.getModule(moduleType);
       if (!moduleHandler) return;
-      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      const newModule = this._createModuleForAdd(moduleHandler);
       deepLayout.modules.push(newModule);
       this._updateLayout(newLayout);
       this._deeplyNestedLayoutContext = null;
@@ -18575,7 +18662,7 @@ export class LayoutTab extends LitElement {
       const registry = getModuleRegistry();
       const moduleHandler = registry.getModule(moduleType);
       if (!moduleHandler) return;
-      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      const newModule = this._createModuleForAdd(moduleHandler);
       level4Layout.modules.push(newModule);
       this._updateLayout(newLayout);
       this._level4NestedLayoutContext = null;
@@ -18781,7 +18868,7 @@ export class LayoutTab extends LitElement {
       const registry = getModuleRegistry();
       const moduleHandler = registry.getModule(moduleType);
       if (!moduleHandler) return;
-      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      const newModule = this._createModuleForAdd(moduleHandler);
       deeplyNestedLayout.modules.push(newModule);
       this._updateLayout(newLayout);
       this._tabsSectionDeeplyNestedLayoutContext = null;
@@ -19466,6 +19553,130 @@ export class LayoutTab extends LitElement {
 
     this._draggedItem = null;
     this._dropTarget = null;
+  }
+
+  /**
+   * Whether a drop on a layout that lives in a tabs section should go *into* that layout.
+   * The top quarter of the header still reorders the section; the rest of the header and the
+   * layout's children area put the module inside.
+   */
+  private _isTabsSectionNestedLayoutInsideDrop(e: DragEvent, layoutModule: any): boolean {
+    const dragged = this._draggedItem as any;
+    if (!dragged || !layoutModule || layoutModule.type === 'tabs') return false;
+    if (!['tabs-section-child', 'module', 'layout-child'].includes(dragged.type)) return false;
+
+    const node = e.currentTarget as HTMLElement | null;
+    const pointEl = e.target as Element | null;
+    if (!node || !pointEl) return false;
+    // Never into itself or into a layout inside the dragged module
+    const source = this._dragSourceElement;
+    if (source && (source === node || source.contains(node))) return false;
+
+    const child = (parent: Element | undefined, cls: string) =>
+      parent ? Array.from(parent.children).find(c => c.classList.contains(cls)) : undefined;
+    const header = child(child(node, 'tree-node-content'), 'tree-node-header');
+    if (header?.contains(pointEl)) {
+      const rect = header.getBoundingClientRect();
+      return e.clientY >= rect.top + rect.height * 0.25;
+    }
+    return !!child(node, 'tree-node-children')?.contains(pointEl);
+  }
+
+  private _onTabsSectionNestedLayoutDragOver(
+    e: DragEvent,
+    layoutModule: any,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number,
+    childIndex: number
+  ): void {
+    if (!this._draggedItem) return;
+    const node = e.currentTarget as HTMLElement | null;
+    if (!node) return;
+
+    if (this._isTabsSectionNestedLayoutInsideDrop(e, layoutModule)) {
+      if (!node.classList.contains('drag-over')) {
+        this._clearTabsDropLines();
+        this.shadowRoot?.querySelectorAll('.drag-over').forEach(n => n.classList.remove('drag-over'));
+        node.classList.add('drag-over');
+        this._dropTargetOwner = node;
+      }
+      return;
+    }
+
+    node.classList.remove('drag-over');
+    if (!node.style.borderTop) {
+      this._onTreeTabsSectionChildDragEnter(
+        e,
+        rowIndex,
+        columnIndex,
+        moduleIndex,
+        sectionIndex,
+        childIndex
+      );
+    }
+  }
+
+  /** Moves the dragged module to the end of a layout that lives in a (top-level) tabs section. */
+  private _onTabsSectionNestedLayoutDrop(
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number,
+    layoutChildIndex: number
+  ): void {
+    this._clearAllDragStyles();
+    const dragged = this._draggedItem as any;
+    this._draggedItem = null;
+    this._dropTarget = null;
+    if (!dragged) return;
+
+    const newLayout = JSON.parse(JSON.stringify(this._ensureLayout()));
+    const targetLayout =
+      newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex]?.sections?.[sectionIndex]
+        ?.modules?.[layoutChildIndex];
+    if (!targetLayout || targetLayout.type === 'tabs') return;
+
+    const source = this._locateDraggedModule(newLayout, dragged);
+    if (!source) return;
+    const containsTarget = (m: any): boolean =>
+      m === targetLayout ||
+      (m?.modules || []).some(containsTarget) ||
+      (m?.sections || []).some((s: any) => (s?.modules || []).some(containsTarget));
+    if (containsTarget(source.list[source.index])) return;
+
+    const [moved] = source.list.splice(source.index, 1);
+    if (!targetLayout.modules) targetLayout.modules = [];
+    targetLayout.modules.push(moved);
+    this._updateLayout(newLayout);
+  }
+
+  /** The array + index a tree drag item currently lives at, within a cloned layout. */
+  private _locateDraggedModule(layout: any, dragged: any): { list: any[]; index: number } | null {
+    const column = layout.rows?.[dragged.rowIndex]?.columns?.[dragged.columnIndex];
+    let list: any[] | undefined;
+    let index: number | undefined;
+
+    if (dragged.type === 'tabs-section-child') {
+      const host = column?.modules?.[dragged.moduleIndex];
+      const tabs =
+        dragged.isNested && dragged.parentLayoutChildIndex !== undefined
+          ? host?.modules?.[dragged.parentLayoutChildIndex]
+          : host;
+      list = tabs?.sections?.[dragged.sectionIndex]?.modules;
+      index = dragged.childIndex;
+    } else if (dragged.type === 'module' && dragged.layoutChildIndex === undefined) {
+      list = column?.modules;
+      index = dragged.moduleIndex;
+    } else if (dragged.type === 'module' || dragged.type === 'layout-child') {
+      const parentIndex = dragged.parentModuleIndex ?? dragged.moduleIndex;
+      list = column?.modules?.[parentIndex]?.modules;
+      index = dragged.layoutChildIndex ?? dragged.childIndex;
+    }
+
+    if (!list || index === undefined || !list[index]) return null;
+    return { list, index };
   }
 
   /**
@@ -28576,6 +28787,7 @@ export class LayoutTab extends LitElement {
     this._selectedLayoutModuleIndex = -1;
     this._selectedNestedChildIndex = -1;
     this._selectedNestedNestedChildIndex = -1;
+    this._clearNestedAddTargets();
   }
 
   private _handleSelectorTabChange(
@@ -29455,7 +29667,10 @@ export class LayoutTab extends LitElement {
 
   private async _addCardFromTab(cardType: string): Promise<void> {
     // Check if a column is selected
-    if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
+    if (
+      !this._hasNestedAddTarget() &&
+      (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1)
+    ) {
       // Show error message to user
       const lang = this.hass?.locale?.language || 'en';
       this._showToast(
@@ -30108,16 +30323,13 @@ export class LayoutTab extends LitElement {
   }
 
   private async _add3rdPartyCard(cardType: string, skipProCheck: boolean = false): Promise<void> {
-    if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
+    const nested = this._hasNestedAddTarget();
+    if (!nested && (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1)) {
       return;
     }
 
     // Check if this is a native HA card (hui-* prefix)
     const isNativeCard = cardType.startsWith('hui-');
-
-    const layout = this._ensureLayout();
-    const row = layout.rows[this._selectedRowIndex];
-    const column = row.columns[this._selectedColumnIndex];
 
     // Ensure card type has custom: prefix if needed (but not for hui- cards)
     let fullCardType = cardType;
@@ -30154,6 +30366,23 @@ export class LayoutTab extends LitElement {
       card_config: normalizedConfig,
     };
 
+    const invalidateCardCache = () =>
+      import('../../modules/external-card-module').then(({ invalidateExternalCardCache }) => {
+        invalidateExternalCardCache();
+      });
+
+    if (nested) {
+      this._addPrebuiltModule(newModule as CardModule);
+      this._showModuleSelector = false;
+      invalidateCardCache();
+      await this._refreshGlobalExternalCardCount();
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const column = layout.rows[this._selectedRowIndex]?.columns[this._selectedColumnIndex];
+    if (!column) return;
+
     // Add to column
     const newLayout = {
       rows: layout.rows.map((r, rIndex) => {
@@ -30179,9 +30408,7 @@ export class LayoutTab extends LitElement {
     this._showModuleSelector = false;
 
     // Invalidate cache immediately for instant lock status update
-    import('../../modules/external-card-module').then(({ invalidateExternalCardCache }) => {
-      invalidateExternalCardCache();
-    });
+    invalidateCardCache();
 
     // Refresh the global count after adding
     await this._refreshGlobalExternalCardCount();
