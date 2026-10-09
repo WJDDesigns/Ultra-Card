@@ -1,5 +1,136 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.1
+
+Stable 3.13.1 brings every fix since 3.13.0 into one release, so beta and stable users are on the same build again. Overlay HVAC dropdowns open correctly and centred under what you see, Drawer triggers get Popup's alignment and icon styling, the Text module's link box and gradients work, graphs on long-open dashboards stay fresh, and FreeSpace handles Laptop and Tablet better. Thanks to everyone who tested the betas and reported issues on Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added left / centre / right alignment on Drawer triggers** - Drawer now has the same alignment row as Popup, so Icon Only and the button can sit left, centre or right. Existing cards stay on the left
+- **Added icon size, background and padding on Drawer Icon Only** - Set the icon size and choose None, Circle or Rounded square behind it, with a padding slider, like the Popup trigger. Existing Icon Only drawers keep their circle
+- **FreeSpace Laptop and Tablet fit the Desktop layout** - On Use Desktop, Laptop and Tablet now show the Desktop layout shrunk to fit the screen and centred. Cards are never made bigger. In edit mode this is a preview; choose Custom to arrange that screen size, and it starts from exactly what you saw
+- **FreeSpace Align to Canvas** - With several cards selected, the toolbar has a Selection / Canvas switch. Canvas moves the cards together as one block to the left, centre, right or top of the canvas, keeping their spacing
+- **FreeSpace Reset to Desktop** - On Laptop, Tablet or Phone, the toolbar can put the selected cards back where Desktop has them, shrunk to fit that screen size
+
+### 🔧 Improvements
+
+- **One place for text alignment** - The rich text toolbar no longer has its own alignment buttons. Alignment lives in the Design tab, so the two can't disagree. Existing aligned text still shows as before
+- **More editor text is translated** - Animation settings, Duration and the native card settings headers now follow your Home Assistant language, with German filled in
+
+### 🐛 Bug Fixes
+
+- **Fixed overlay HVAC mode menus clipping or landing in the wrong place** - Chevron-only dropdowns portaled onto the dashboard were measured before they laid out, so heat / cool / dry / off were cut off. They now open wide enough to read, stay on screen, and open under their dropdown in the card editor too. Full-width and compact dropdowns are unchanged
+- **Fixed blank-glyph dropdown spacers** - A closed title made of blank characters (such as Braille blanks) widens the tap area and the open menu again, and tapping a label it covers (like "Off" over an HVAC gauge) opens the dropdown instead of the entity's more-info. The open menu is centred under the icon, label and arrow you see rather than under the invisible spacer. No card changes are needed
+- **Fixed Drawer Icon Only ignoring Design size** - Width and height from the Design tab now size the Icon Only trigger, and the icon sits in the middle of it. 42px is only the default when width and height are empty
+- **Fixed Popup alignment Right sitting on the left** - Left, centre and right now use the full module width, so Right is on the right
+- **Fixed drawer icon backgrounds** - The background hugs the icon like the Popup trigger's instead of a fixed oversized circle, and None really removes it
+- **Fixed the Text module link box** - The link field can be typed into again. It opens as a full-width bar under the toolbar: type or paste a URL and press Enter or Apply. Remove takes a link off again
+- **Fixed keyboard shortcuts in the rich text editor** - Enter, Backspace and shortcuts like Cmd/Ctrl+B work as expected inside the Text module editor
+- **Fixed gradient colors on text and icons** - A gradient on the Text module's text or icon, or on a drawer trigger, now shows the gradient instead of plain or missing color
+- **Fixed Text module icon and text alignment** - The icon lines up with the middle of the text
+- **Fixed graphs not refreshing on long-open dashboards** - History graphs on wall tablets or dashboards left open now refetch in the background as the data ages (every minute for 1 hour graphs, up to every 30 minutes for long ranges and forecasts), keeping the old curve on screen while loading ([#154](https://github.com/WJDDesigns/Ultra-Card/issues/154))
+- **Fixed the Conditional card's Card tab staying empty** - Picking a nested card inside a native Conditional card works again
+- **Fixed Tabs section titles disappearing** - Choosing a long custom icon no longer hides the section title field
+
+### ⚠️ Breaking Changes
+
+- **Drawer Icon Background None now means no background** - In the 3.13.1 betas, None still drew the circular fill. It now shows the bare icon, like Popup. Icon Only drawers that never chose a background keep their circle; if you picked None during the betas and want the circle back, choose Circle
+
+---
+
+## Version 3.13.1-beta4
+
+The fourth 3.13.1 beta gives Drawer triggers the same alignment and icon styling Popup already has: left / centre / right, plus icon size, colour, and a none / circle / rounded background. Existing Drawer cards stay left-aligned, and Icon Only still uses the circular fill when background is none. It includes everything from beta1–beta3. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added left / centre / right alignment on Drawer triggers** - Popup already had this. Drawer now has the same row, so Icon Only and the button can sit left, centre or right. Existing cards stay on the left
+- **Added icon size, colour and background shape on Drawer Icon Only** - Size, colour, and none / circle / rounded (with padding) match the Popup trigger icon. This is not the Icon module tab: no active / inactive, entity colour, or templates. With background set to none, the circular fill from Trigger Background and Design size is unchanged
+
+---
+
+## Version 3.13.1-beta3
+
+The third 3.13.1 beta centres the glyph in a Drawer Icon Only trigger. After beta2, a large circular button still sat the icon in the top half of the circle. It includes everything from beta1 and beta2. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed the Drawer Icon Only glyph sitting above centre** - A large circular trigger kept the icon in the top half of the circle. The icon now fills the inner box and sits on the midline. Design size from beta2 is unchanged
+
+---
+
+## Version 3.13.1-beta2
+
+The second 3.13.1 beta fixes two Discord layout bugs: a Drawer set to Icon Only no longer ignores the Design tab size, and a Popup trigger set to Right actually sits on the right. It includes everything from beta1. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed Drawer Icon Only ignoring Design size** - Switching the trigger to Icon Only left width and height in the Design tab, but the button snapped to 42×42. The icon now fills the size you set. 42px is only the default when width and height are empty
+- **Fixed Popup alignment Right sitting on the left** - Ausrichtung **Rechts** still put the trigger on the left because the row shrank to the icon. Left, centre and right now use the full module width, so Right is on the right
+
+---
+
+## Version 3.13.1-beta1
+
+The first 3.13.1 beta fixes overlay HVAC cards on the live dashboard. After 3.13.0, a chevron-only mode menu still clipped heat / cool / dry to "he" / "co" when the menu was portaled onto the page, because it was measured while hidden. The menu now sizes to its option labels, stays on screen, and does not change full-width or compact dropdowns. This is a pre-release for testing — please report anything odd on GitHub or Discord, especially overlay climate cards.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Fixed overlay HVAC mode menus clipping on the dashboard** - Chevron-only dropdowns that portal to the page were measured before their icons laid out, so the menu stayed as narrow as the chevron and cut off heat / cool / dry / off. Those menus now open wide enough to read, centred under the chevron and kept on screen. Full-width and compact dropdowns still match the trigger, and the card YAML is unchanged
+
+---
+
+## Version 3.13.0
+
+Stable 3.13.0 ships **FreeSpace**, a free-form dashboard view where you can drag, resize, rotate and layer any card on a canvas, with a toolbar, pins, multi-select and per-screen layouts. Layout width now lives in Hub → Home and covers FreeSpace and Sections, and the chevron-only HVAC mode dropdown opens wide enough to read again. This is the foundation — FreeSpace will keep getting more amazing over time. Thanks to everyone who tested the betas.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added FreeSpace** - A custom Lovelace view layout (`custom:ultra-freespace-view`) for free-form dashboards. Drag, resize, rotate and layer any card, native or custom, on a canvas that looks like Home Assistant Sections. Click to select, double-click to open the card editor, right-click for edit, duplicate, layer, pin and delete. Alignment guides and snap-to-grid help you line things up. With Ultra Card Connect installed, FreeSpace is in the view Layout dropdown and Hub → Home shows **FreeSpace is ready**. Existing FreeSpace views keep rendering without Connect. [Docs](docs/freespace.md)
+- **Added the FreeSpace toolbar** - A toolbar at the top of the view in edit mode. It always shows Desktop / Laptop / Tablet / Phone. With nothing selected it offers Snap to grid and Add card. Select a card to get X / Y / W / H / rotation fields, pin, align to the canvas edges, bring forward or send back, and Edit, Duplicate and Delete. Button labels collapse to icons with tooltips when space is tight
+- **Added pins** - Pin a card Left (the default), Right, Center, or Left & right from the toolbar or the right-click menu. A right-pinned card keeps its distance from the right edge as the screen gets wider, and Left & right stretches with it. Pins work with Full width on, and a dashed line shows which edge the selected card is pinned to. Existing cards stay pinned left, so nothing moves on update
+- **Added multi-select** - Shift-, Ctrl- or Cmd-click cards, drag a box on empty space, or press Cmd/Ctrl+A. Drag any selected card to move the group, nudge it with the arrow keys, and use the toolbar to align to the selection (left, center, right, top, middle, bottom), distribute evenly, pin, or delete them all at once
+- **Added Use Desktop / Custom for each screen size** - Laptop, Tablet and Phone start on **Use Desktop** and show the Desktop layout. Move or resize a card there and that screen size switches to **Custom**, copying the Desktop positions for every card first so nothing else jumps. Choose Use Desktop again to reset it
+- **FreeSpace settings in the view editor** - Canvas width for each screen size, minimum height, snap grid and phone behaviour are set under **FreeSpace view specific settings** when you edit the view
+- **Import from Sections** - Switch a Sections view to FreeSpace and a banner offers to move its cards onto the canvas in one save
+
+### 🔧 Improvements
+
+- **Layout width moved to Hub → Home** - The HA default / Full width / Custom width setting moved from Hub → Themes into its own **Layout width** card on Hub → Home, above FreeSpace. It now covers FreeSpace as well as Sections: with Full width on, every screen size fills the view, and with it off the canvas stays centred at its design width
+- **FreeSpace looks the same in edit mode and on the dashboard** - Cards keep a 1:1 size when you press Done, and Phone or Tablet previews on a wide screen show at true device size instead of being blown up. The dot grid covers the whole background while editing, and dashed lines mark the canvas edges when Full width is off
+- **Device edges when editing smaller screens** - Editing Phone, Tablet or Laptop on a bigger screen shows a centered frame at that device's width with dashed lines on both sides, whether Full width is on or off, so cards are placed within the real device instead of across the monitor
+- **FreeSpace loads before anything else in Ultra Card** - The FreeSpace view is registered first thing at startup, so an unrelated startup problem can no longer leave a FreeSpace view showing "Configuration error". If a phone still shows it after updating, reset the Companion app's frontend cache so it picks up the new files
+- **FreeSpace card menu and view settings are translatable** - The right-click menu and the FreeSpace settings in the view editor use Ultra Card's translations, so they follow your Home Assistant language as translations land
+- **Faster group moves** - Nudging several selected cards with the arrow keys now saves once when you let go instead of on every key repeat
+
+### 🐛 Bug Fixes
+
+- **Fixed the HVAC mode dropdown clipping its options** - After the overlay layout fix, a chevron-only dropdown opened a menu as narrow as the chevron, so heat / cool / dry / off were cut off. A narrow trigger now opens a menu sized to its options, centred under the chevron and kept on screen. Full-width dropdowns are unchanged, and so is the card YAML
+- **Fixed the selection border staying on a card after pressing Done** - Leaving edit mode now clears the selection and any open card menu
+- **Fixed a card jumping to another card's spot after a delete** - After moving a card and then deleting any card before it, a different card could appear in the moved card's position, and the next align or layer action saved it there. Positions now come from your saved dashboard as soon as each save finishes
+- **Fixed dragging, resizing and rotating on touch screens** - On tablets and phones the browser took a drag on a selected card as a page scroll and cancelled it. Press and hold a selected card to move it, or drag its handles to resize or rotate
+- **Fixed Edit in the card menu** - Choosing Edit from the right-click or ⋮ menu also sent a malformed edit request. It now opens the card editor once, like double-click does
+- **Fixed the Desktop canvas default shown in the view editor** - The editor and docs said Desktop defaults to 1400, but FreeSpace has always used 1200. They now say 1200. Nothing moves on existing views
+- **Fixed outdated FreeSpace hints in other languages** - Some languages still pointed to Hub → Themes for Full width. They now show the current wording
+
+### ⚠️ Breaking Changes
+
+- **Screen sizes follow Desktop directly** - A screen size without its own layout now always uses the Desktop layout. In 3.13.0-beta1, Phone fell back to a Tablet layout (then Laptop) when one existed. If you arranged Tablet but not Phone during the betas, pick **Custom** on Phone and arrange it
+
+---
+
 ## Version 3.13.0-beta6
 
 The sixth 3.13.0 beta makes blank-glyph dropdown spacers tappable again, so an overlay label like "Off" opens the dropdown it sits under. It includes everything from beta1 to beta5. This is a pre-release for testing — please report anything odd on GitHub or Discord.
