@@ -10,7 +10,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const ARTIFACT_DIR = '/opt/cursor/artifacts/drawer-trigger-icon';
+const ARTIFACT_DIR =
+  process.env.HARNESS_ARTIFACT_DIR || path.join(ROOT, '.harness-output', 'drawer-trigger-icon');
 const PORT = 8796;
 
 const STYLES = {

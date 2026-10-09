@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = path.join(ROOT, '.harness-output', 'drawer-icon-center');
-const ARTIFACT_DIR = '/opt/cursor/artifacts/drawer-icon-center';
+const ARTIFACT_DIR = process.env.HARNESS_ARTIFACT_DIR || OUT_DIR;
 const PORT = 8795;
 const BUTTON_PX = 160;
 const TOL_PX = 2;
