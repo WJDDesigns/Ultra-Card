@@ -1,5 +1,26 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.2
+
+Stable 3.13.2 adds Simplified Chinese, fixes BEKO / HomeWhiz washers that always showed Idle, and lets you drop modules and cards into a Grid or other layout inside a Tabs section. Thanks to [@IBeanCN](https://github.com/IBeanCN) for the Chinese translation and to everyone who reported these issues.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🚀 New Features
+
+- **Added Simplified Chinese** - The editor and Hub follow Home Assistant when it's set to Chinese (Simplified) ([#151](https://github.com/WJDDesigns/Ultra-Card/pull/151))
+- **Added a FreeSpace docs link in the Hub** - The FreeSpace card on the Hub home tab links to the new guide at [ultracard.io/freespace](https://ultracard.io/freespace/)
+
+### 🔧 Improvements
+
+- **Appliance module understands more washer states** - States from integrations that prefix their values, like HomeWhiz's `device_state_running` or `washer_substate_remove_laundry`, are recognised. A `*_sub_state` sensor is linked as the job state automatically, and its label reads "Remove Laundry" instead of the raw value
+- **Updated libraries** - Lit, DOMPurify and the code editor are on their latest patch releases
+
+### 🐛 Bug Fixes
+
+- **Fixed BEKO / HomeWhiz washers always showing Idle** - The washer now shows Running, Paused and Done for HomeWhiz devices. A finished cycle shows Done until you empty it ([#147](https://github.com/WJDDesigns/Ultra-Card/issues/147))
+- **Fixed adding modules and cards to a layout inside a Tabs section** - Dragging a module onto a Grid, Horizontal or Vertical layout inside a Tabs section now drops it inside the layout. Cards picked from the Cards tab land there too, instead of in the column ([#148](https://github.com/WJDDesigns/Ultra-Card/issues/148))
+
 ## Version 3.13.1
 
 Stable 3.13.1 brings every fix since 3.13.0 into one release, so beta and stable users are on the same build again. Overlay HVAC dropdowns open correctly and centred under what you see, Drawer triggers get Popup's alignment and icon styling, the Text module's link box and gradients work, graphs on long-open dashboards stay fresh, and FreeSpace handles Laptop and Tablet better. Thanks to everyone who tested the betas and reported issues on Discord.
