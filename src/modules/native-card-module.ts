@@ -7,6 +7,8 @@ import { ucNativeCardsService } from '../services/uc-native-cards-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import yaml from 'js-yaml';
 import { UC_DEBUG } from '../utils/uc-debug';
+import { localize } from '../localize/localize';
+import { resolveEditorLovelaceConfig } from '../utils/uc-lovelace-config';
 
 const NO_VISUAL_EDITOR_MESSAGE = `
   <div data-uc-native-editor-fallback style="padding: 40px; text-align: center; color: var(--secondary-text-color);">
@@ -270,6 +272,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
 
     const cardInfo = ucNativeCardsService.getNativeCardInfo(module.card_type);
     const cardName = cardInfo?.name || module.name || 'Native Card';
+    const lang = hass?.locale?.language || 'en';
 
     // A card that was never configured only carries its `type`. Several HA editors
     // read their entity while rendering (thermostat, gauge, media-control, ...) and
@@ -312,15 +315,19 @@ export class UltraNativeCardModule extends BaseUltraModule {
         const editorIsMounted = container.contains(editor);
         const isDirectEditor = (editor as any)._ucIsDirectEditor;
 
-        // Provide necessary context - hui-card-element-editor needs lovelace
-        if ((hass as any).lovelace) {
-          (editor as any).lovelace = (hass as any).lovelace;
-        }
+        // Nested HA card pickers (Conditional, Stack, Grid, …) need a
+        // LovelaceConfig on `editor.lovelace`. hass.lovelace is not populated.
+        (editor as any).lovelace = resolveEditorLovelaceConfig();
 
         // Prepare config - MUST include type for hui-card-element-editor
         const editorConfig = { ...(module.card_config || {}) };
         if (!editorConfig.type) {
           editorConfig.type = ucNativeCardsService.elementNameToConfigType(module.card_type);
+        }
+        // Conditional (and similar) editors assert `card` exists; without it the
+        // Card tab never mounts the picker.
+        if (editorConfig.type === 'conditional' && !editorConfig.card) {
+          editorConfig.card = {};
         }
 
         // Check if config actually changed
@@ -574,13 +581,14 @@ export class UltraNativeCardModule extends BaseUltraModule {
             
             const isDirectEditor = (editor as any)._ucIsDirectEditor;
             
-            // Set hass and lovelace first - these are needed for editor initialization
+            // Set hass and lovelace first - these are needed for editor initialization.
+            // lovelace must be a LovelaceConfig ({ views }) so nested hui-card-picker
+            // instances can render; assigning only when hass.lovelace exists left
+            // Conditional/Stack/Grid Card tabs empty.
             if (hass) {
               (editor as any).hass = hass;
             }
-            if ((hass as any).lovelace) {
-              (editor as any).lovelace = (hass as any).lovelace;
-            }
+            (editor as any).lovelace = resolveEditorLovelaceConfig();
             
             // Small delay to let the element initialize
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -595,6 +603,9 @@ export class UltraNativeCardModule extends BaseUltraModule {
             const stubConfig = await ensureStubConfig();
             if (stubConfig && Object.keys(stubConfig).length > 1) {
               editorConfig = { ...stubConfig };
+            }
+            if (editorConfig.type === 'conditional' && !editorConfig.card) {
+              editorConfig.card = {};
             }
             
             UC_DEBUG &&
@@ -749,6 +760,12 @@ export class UltraNativeCardModule extends BaseUltraModule {
       }
     };
 
+    const settingsTitle = localize(
+      'editor.native_card.settings_title',
+      lang,
+      '{name} Settings'
+    ).replace('{name}', cardName);
+
     return html`
       <div class="native-card-general-tab">
         <div class="settings-section">
@@ -756,13 +773,17 @@ export class UltraNativeCardModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
           >
-            ${cardName.toUpperCase()} SETTINGS
+            ${settingsTitle}
           </div>
           <div
             class="section-description"
             style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;"
           >
-            Configure this native Home Assistant card using its built-in editor.
+            ${localize(
+              'editor.native_card.settings_desc',
+              lang,
+              'Configure this native Home Assistant card using its built-in editor.'
+            )}
           </div>
           <div class="native-editor-container" ${ref(setupEditor)}></div>
         </div>

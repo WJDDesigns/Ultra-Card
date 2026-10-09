@@ -297,6 +297,10 @@
       "description": "Konfigurieren Sie visuelle Effekte, die beim Bewegen des Mauszeigers über dieses Modul, diese Zeile oder Spalte angezeigt werden.",
       "effect": "Hover-Effekt",
       "effect_desc": "Wählen Sie den visuellen Effekt aus, der beim Hovern angewendet werden soll",
+      "animation_settings": "Animationseinstellungen",
+      "duration": "Dauer",
+      "timing": "Zeitfunktion",
+      "intensity": "Intensität",
       "effects": {
         "none": "Keine",
         "highlight": "Hervorheben",
@@ -314,6 +318,10 @@
         "buzz": "Vibrieren",
         "fade": "Ausblenden"
       }
+    },
+    "native_card": {
+      "settings_title": "{name}-Einstellungen",
+      "settings_desc": "Konfigurieren Sie diese native Home Assistant-Karte mit dem integrierten Editor."
     },
     "about": {
       "developed_by": "Entwickelt von",
