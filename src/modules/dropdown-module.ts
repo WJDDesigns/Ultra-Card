@@ -43,8 +43,53 @@ export function unionMenuAnchorRects(a: MenuAnchorRect, b: MenuAnchorRect): Menu
   return { left, top, right, bottom, width: right - left, height: bottom - top };
 }
 
+function centreInside(box: MenuAnchorRect, area: MenuAnchorRect): boolean {
+  const x = box.left + box.width / 2;
+  const y = box.top + box.height / 2;
+  return x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+}
+
+const COVERED_GRAPHIC_SELECTOR = 'ha-icon, ha-state-icon, ha-svg-icon, svg, img';
+
+/** Union of visible text and icon boxes in the trigger's card centred within `area`. */
+export function findVisibleTextUnder(
+  trigger: HTMLElement,
+  area: MenuAnchorRect
+): MenuAnchorRect | null {
+  const root = trigger.getRootNode();
+  const scope: Node =
+    root instanceof ShadowRoot ? root : trigger.closest('ultra-card') || trigger.ownerDocument.body;
+  const doc = trigger.ownerDocument;
+  const dropdown = trigger.closest('.dropdown-module-container') || trigger;
+  const range = doc.createRange();
+  let result: MenuAnchorRect | null = null;
+  const add = (box: MenuAnchorRect) => {
+    if (box.width <= 0 || box.height <= 0 || !centreInside(box, area)) return;
+    result = result ? unionMenuAnchorRects(result, box) : box;
+  };
+  const walker = doc.createTreeWalker(scope, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+    acceptNode: node => {
+      if (dropdown.contains(node)) return NodeFilter.FILTER_REJECT;
+      if (node instanceof Element && node.matches(COVERED_GRAPHIC_SELECTOR)) {
+        add(node.getBoundingClientRect());
+        return NodeFilter.FILTER_REJECT;
+      }
+      return node.nodeType === Node.TEXT_NODE ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    },
+  });
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (isVisuallyBlankLabel(node.textContent ?? '')) continue;
+    range.selectNodeContents(node);
+    for (const box of Array.from(range.getClientRects())) add(box);
+  }
+  range.detach();
+  return result;
+}
+
 /** Triggers narrower than this let the open menu size to its options. */
 export const MENU_MIN_CONTENT_WIDTH_PX = 160;
+/** Chevron-only HVAC overlays are ~30px. Do not pad icon slots on larger controls. */
+export const CHEVRON_TRIGGER_MAX_PX = 48;
 const MENU_MAX_CONTENT_WIDTH_PX = 280;
 const MENU_VIEWPORT_GUTTER_PX = 8;
 
@@ -67,6 +112,94 @@ export function resolveDropdownMenuPlacement(
     left = Math.max(MENU_VIEWPORT_GUTTER_PX, Math.min(left, maxLeft));
   }
   return { left: Math.round(left), width: Math.ceil(width) };
+}
+
+/**
+ * Intrinsic width of a dropdown menu, including option labels and icons.
+ * Portaled clones are often measured while `display:none` / `overflow-x:hidden`
+ * and before custom `ha-icon` elements finish laying out, which used to size
+ * HVAC chevron menus to the icon column and clip "heat" / "cool" to "he" / "co".
+ *
+ * The collapsed-icon pad applies only to chevron-sized triggers so a normal
+ * compact control (100–159px) is not grown by 24px.
+ */
+export function measureDropdownMenuContentWidth(
+  el: HTMLElement,
+  triggerWidth = 0
+): number {
+  const prev = {
+    display: el.style.display,
+    visibility: el.style.visibility,
+    position: el.style.position,
+    left: el.style.left,
+    top: el.style.top,
+    width: el.style.width,
+    maxWidth: el.style.maxWidth,
+    height: el.style.height,
+    maxHeight: el.style.maxHeight,
+    overflow: el.style.overflow,
+    overflowX: el.style.overflowX,
+    overflowY: el.style.overflowY,
+  };
+  const optionPrev: Array<{ el: HTMLElement; whiteSpace: string }> = [];
+
+  const restore = () => {
+    optionPrev.forEach(({ el: opt, whiteSpace }) => {
+      opt.style.whiteSpace = whiteSpace;
+    });
+    el.style.display = prev.display;
+    el.style.visibility = prev.visibility;
+    el.style.position = prev.position;
+    el.style.left = prev.left;
+    el.style.top = prev.top;
+    el.style.width = prev.width;
+    el.style.maxWidth = prev.maxWidth;
+    el.style.height = prev.height;
+    el.style.maxHeight = prev.maxHeight;
+    el.style.overflow = prev.overflow;
+    el.style.overflowX = prev.overflowX;
+    el.style.overflowY = prev.overflowY;
+  };
+
+  try {
+    el.style.display = 'block';
+    el.style.visibility = 'hidden';
+    el.style.position = 'fixed';
+    el.style.left = '0px';
+    el.style.top = '0px';
+    el.style.width = 'max-content';
+    el.style.maxWidth = 'none';
+    el.style.height = 'auto';
+    el.style.maxHeight = 'none';
+    el.style.overflow = 'visible';
+    el.style.overflowX = 'visible';
+    el.style.overflowY = 'visible';
+
+    void el.offsetWidth;
+
+    el.querySelectorAll('.dropdown-option').forEach(node => {
+      const opt = node as HTMLElement;
+      optionPrev.push({ el: opt, whiteSpace: opt.style.whiteSpace });
+      opt.style.whiteSpace = 'nowrap';
+    });
+
+    let width = Math.max(el.scrollWidth || 0, el.offsetWidth || 0);
+    let collapsedIconSlot = 0;
+    el.querySelectorAll('.dropdown-option').forEach(node => {
+      const opt = node as HTMLElement;
+      width = Math.max(width, opt.scrollWidth || 0, opt.offsetWidth || 0);
+      const icon = opt.querySelector('ha-icon') as HTMLElement | null;
+      if (icon && icon.getBoundingClientRect().width < 8) {
+        collapsedIconSlot = 24;
+      }
+    });
+    if (collapsedIconSlot && triggerWidth > 0 && triggerWidth <= CHEVRON_TRIGGER_MAX_PX) {
+      width += collapsedIconSlot;
+    }
+    return width;
+  } finally {
+    restore();
+  }
 }
 
 /**
@@ -2528,6 +2661,13 @@ export class UltraDropdownModule extends BaseUltraModule {
     const { left, width } = this.resolveMenuHorizontalPlacement(dropdownElement, triggerRect);
     dropdownElement.style.left = `${left - hostRect.left}px`;
     dropdownElement.style.width = `${width}px`;
+    // Only lock min-width when we actually grew past the trigger. Full-width
+    // and compact controls must keep matching the trigger so labels wrap.
+    if (triggerRect.width < MENU_MIN_CONTENT_WIDTH_PX && width > triggerRect.width) {
+      dropdownElement.style.minWidth = `${width}px`;
+    } else {
+      dropdownElement.style.minWidth = '';
+    }
 
     if (direction === 'up') {
       const bottom = Math.max(
@@ -2557,18 +2697,10 @@ export class UltraDropdownModule extends BaseUltraModule {
     triggerRect: MenuAnchorRect
   ): { left: number; width: number } {
     const triggerWidth = triggerRect.width;
-    let contentWidth = 0;
-    if (triggerWidth < MENU_MIN_CONTENT_WIDTH_PX) {
-      const prev = {
-        display: dropdownElement.style.display,
-        width: dropdownElement.style.width,
-      };
-      dropdownElement.style.display = 'block';
-      dropdownElement.style.width = 'max-content';
-      contentWidth = dropdownElement.scrollWidth || dropdownElement.offsetWidth || 0;
-      dropdownElement.style.display = prev.display;
-      dropdownElement.style.width = prev.width;
-    }
+    const contentWidth =
+      triggerWidth < MENU_MIN_CONTENT_WIDTH_PX
+        ? measureDropdownMenuContentWidth(dropdownElement, triggerWidth)
+        : 0;
     return resolveDropdownMenuPlacement(
       triggerRect.left,
       triggerWidth,
@@ -2577,13 +2709,18 @@ export class UltraDropdownModule extends BaseUltraModule {
     );
   }
 
-  /** Trigger box, widened to include a blank-glyph title's reach. */
+  /**
+   * Trigger box, widened by a blank-glyph title's reach. Blank glyphs are
+   * wider than the label they cover, so the anchor is the visible text under
+   * the reach when there is any, keeping the menu centred under what users see.
+   */
   private getMenuAnchorRect(trigger: HTMLElement): MenuAnchorRect {
     const rect = trigger.getBoundingClientRect();
     const reach = trigger.querySelector('.uc-blank-title-reach') as HTMLElement | null;
     const reachRect = reach?.getBoundingClientRect();
     if (!reachRect || reachRect.width <= 0) return rect;
-    return unionMenuAnchorRects(rect, reachRect);
+    const covered = findVisibleTextUnder(trigger, reachRect);
+    return unionMenuAnchorRects(rect, covered ?? reachRect);
   }
 
   /**
@@ -2768,16 +2905,18 @@ export class UltraDropdownModule extends BaseUltraModule {
             // ancestor instead of the viewport. Subtracting hostRect makes the
             // dropdown render at the correct viewport coordinates in either case.
             const hostRect = this.getFixedHostRect(overlayHost);
-            this.positionDropdownFromTrigger(portaledDropdown, rect, hostRect, menuDirection);
-            
+            // Lay the clone out before measuring option labels. Sizing while
+            // display:none made HVAC chevron menus as narrow as the icon column.
             portaledDropdown.style.display = 'block';
             portaledDropdown.style.pointerEvents = 'auto';
             portaledDropdown.style.visibility = 'visible';
+            this.positionDropdownFromTrigger(portaledDropdown, rect, hostRect, menuDirection);
             portaledDropdown.style.zIndex = overlayZIndex.toString();
             portaledDropdown.style.maxHeight = `${dropdownMaxHeight}px`;
             this.applyDropdownOpenAnimation(portaledDropdown, menuDirection);
-            
-            // Ensure scrollbar is interactive
+
+            // Clip to the measured box so a grown HVAC menu cannot paint into
+            // the neighbouring card. Full-width menus already match the trigger.
             portaledDropdown.style.overflowY = 'auto';
             portaledDropdown.style.overflowX = 'hidden';
 

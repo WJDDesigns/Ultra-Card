@@ -90,4 +90,30 @@ describe('popup module: trigger icon styling', () => {
     expect(fromMap.querySelector<HTMLElement>('.popup-trigger ha-icon')!.style.color).toBe('green');
     fromMap.remove();
   });
+
+  it('aligns the trigger to the right of the module, not the left', () => {
+    const host = renderTrigger({ id: 'p-right', trigger_alignment: 'right' });
+    const align = host.querySelector<HTMLElement>('.popup-trigger-align')!;
+    expect(align).toBeTruthy();
+    expect(align.style.display).toBe('flex');
+    expect(align.style.width).toBe('100%');
+    expect(align.style.justifyContent).toBe('flex-end');
+    host.remove();
+  });
+
+  it('aligns left and center with a full-width flex row', () => {
+    const left = renderTrigger({ id: 'p-left', trigger_alignment: 'left' });
+    expect(left.querySelector<HTMLElement>('.popup-trigger-align')!.style.justifyContent).toBe(
+      'flex-start'
+    );
+    expect(left.querySelector<HTMLElement>('.popup-trigger-align')!.style.width).toBe('100%');
+    left.remove();
+
+    const center = renderTrigger({ id: 'p-center', trigger_alignment: 'center' });
+    expect(center.querySelector<HTMLElement>('.popup-trigger-align')!.style.justifyContent).toBe(
+      'center'
+    );
+    expect(center.querySelector<HTMLElement>('.popup-trigger-align')!.style.width).toBe('100%');
+    center.remove();
+  });
 });

@@ -278,6 +278,9 @@ async function measure(page) {
     const dropdownRoot = document.querySelector('.dropdown-module-container');
     const selection = document.querySelector('.dropdown-selection');
 
+    const offIcon = document.querySelector(
+      '.info-module-container ha-icon, .info-module-container ha-state-icon'
+    );
     const offBox = boxOf(off);
     const chevronBox = boxOf(chevron);
     const tempBox = boxOf(temp);
@@ -296,6 +299,7 @@ async function measure(page) {
 
     return {
       off: offBox,
+      offIcon: boxOf(offIcon),
       offTapsDropdown,
       offHit: offHit ? offHit.className || offHit.tagName : null,
       chevron: chevronBox,
@@ -360,6 +364,14 @@ function assertMenu(name, m, closed) {
   if (!m.found) return [`${name}: dropdown menu did not open`];
   if (closed?.off && m.left > closed.off.left + 2) {
     errors.push(`${name}: menu (${m.left}) no longer spans under Off (${closed.off.left})`);
+  }
+  if (closed?.off && closed?.chevron) {
+    const groupLeft = Math.min(closed.off.left, closed.offIcon?.left ?? Infinity);
+    const groupMid = (groupLeft + closed.chevron.right) / 2;
+    const menuMid = (m.left + m.right) / 2;
+    if (Math.abs(menuMid - groupMid) > 3) {
+      errors.push(`${name}: menu centre ${menuMid} is not under the icon/Off/arrow group centre ${groupMid}`);
+    }
   }
   if (m.options.length !== 4) errors.push(`${name}: expected 4 options, saw ${m.options.length}`);
   for (const o of m.options) {
