@@ -730,16 +730,6 @@ export class UltraImageModule extends BaseUltraModule {
     return current;
   }
 
-  private styleObjectToCss(styleObj: Record<string, string>): string {
-    return Object.entries(styleObj)
-      .map(([key, value]) => {
-        // Convert camelCase to kebab-case
-        const kebabKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
-        return `${kebabKey}: ${value}`;
-      })
-      .join('; ');
-  }
-
   getStyles(): string {
     return `
       .image-module-preview {
@@ -856,27 +846,6 @@ export class UltraImageModule extends BaseUltraModule {
         box-sizing: border-box;
       }
     `;
-  }
-
-  // Helper method to ensure border radius values have proper units
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-
-    // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(value)) {
-      return `${value}px`;
-    }
-
-    // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (already has units like px, em, %, etc.)
-    return value;
   }
 
   // Standard border CSS generation like other modules

@@ -334,8 +334,4 @@ export class UltraSliderInputModule extends BaseUltraModule {
       'box-sizing': 'border-box',
     };
   }
-
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles).map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${v}`).join('; ');
-  }
 }

@@ -1745,40 +1745,6 @@ export class UltraInfoModule extends BaseUltraModule {
     return 'none';
   }
 
-  private styleObjectToCss(styleObj: Record<string, string>): string {
-    return Object.entries(styleObj)
-      .map(([key, value]) => {
-        // Convert camelCase to kebab-case
-        const kebabKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
-        return `${kebabKey}: ${value}`;
-      })
-      .join('; ');
-  }
-
-  // Helper method to ensure border radius values have proper units
-  private addPixelUnit(value: string | number | undefined): string | undefined {
-    if (!value && value !== 0) return value as string | undefined;
-
-    // Convert number to string
-    const valueStr = String(value);
-
-    // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(valueStr)) {
-      return `${valueStr}px`;
-    }
-
-    // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(valueStr)) {
-      return valueStr
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (already has units like px, em, %, etc.)
-    return valueStr;
-  }
-
   private _hashString(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i += 1) {

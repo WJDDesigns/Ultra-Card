@@ -553,28 +553,28 @@ export class UltraPeopleModule extends BaseUltraModule {
         </div>
 
         <!-- Background Type -->
-        <div class="field-container">
-          <div class="field-title">
-            ${localize('editor.modules.people.background_type', lang, 'Background Type')}
-          </div>
-          <div class="button-group">
-            ${(['image', 'gradient', 'color', 'entity'] as const).map(
-              type => html`
-                <button
-                  class="option-btn ${bannerSettings.background_type === type ? 'active' : ''}"
-                  @click=${() => {
-                    updateModule({
-                      banner_settings: { ...bannerSettings, background_type: type },
-                    });
-                    this.triggerPreviewUpdate();
-                  }}
-                >
-                  ${type.charAt(0).toUpperCase() + type.slice(1)}
-                </button>
-              `
-            )}
-          </div>
-        </div>
+        ${this.renderSegmentedField(
+          localize('editor.modules.people.background_type', lang, 'Background Type'),
+          '',
+          bannerSettings.background_type || 'image',
+          [
+            { value: 'image', label: localize('editor.modules.people.bg_image', lang, 'Image') },
+            {
+              value: 'gradient',
+              label: localize('editor.modules.people.bg_gradient', lang, 'Gradient'),
+            },
+            { value: 'color', label: localize('editor.modules.people.bg_color', lang, 'Color') },
+            { value: 'entity', label: localize('editor.modules.people.bg_entity', lang, 'Entity') },
+          ],
+          next =>
+            updateModule({
+              banner_settings: {
+                ...bannerSettings,
+                background_type: next as typeof bannerSettings.background_type,
+              },
+            }),
+          4
+        )}
 
         ${bannerSettings.background_type === 'image'
           ? html`

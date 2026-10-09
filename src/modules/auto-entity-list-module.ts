@@ -483,14 +483,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     const themeName = ucThemeService.resolveTheme(config)?.name;
     const themedRow = resolveThemedModuleStyle(config, 'auto_entity_list', 'row_style', 'theme', 'compact');
     const currentRow = m.row_style || 'theme';
-    return html`
-      <div class="settings-section">
-        <div class="section-title">
-          ${localize('editor.auto_entity_list.section_style', lang, 'Row Style')}
-        </div>
-        <div class="style-switcher">
-          ${(
-            [
+    const options = [
               {
                 k: 'theme' as const,
                 icon: 'mdi:palette-swatch-outline',
@@ -537,23 +530,19 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
                   'Pill rows with accent'
                 ),
               },
-            ] as const
-          ).map(
-            s => html`
-              <div
-                class="style-btn ${currentRow === s.k ? 'active' : ''}"
-                @click=${() => {
-                  updateModule({ row_style: s.k } as Partial<CardModule>);
-                  this.triggerPreviewUpdate();
-                }}
-              >
-                <ha-icon icon=${s.icon}></ha-icon>
-                <div class="st-title">${s.title}</div>
-                <div class="st-desc">${s.desc}</div>
-              </div>
-            `
-          )}
-        </div>
+    ];
+    const selected = options.find(o => o.k === currentRow);
+    // Canonical segmented control (was hand-made .style-btn cards). The chosen
+    // style's description shows under the control.
+    return html`
+      <div class="settings-section">
+        ${this.renderSegmentedField(
+          localize('editor.auto_entity_list.section_style', lang, 'Row Style'),
+          selected?.desc ?? '',
+          currentRow,
+          options.map(o => ({ value: o.k, label: o.title, icon: o.icon })),
+          next => updateModule({ row_style: next } as Partial<CardModule>)
+        )}
       </div>
     `;
   }

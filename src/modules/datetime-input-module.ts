@@ -574,10 +574,4 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
       console.error(`[DatetimeInput] Failed to set datetime for ${entity}:`, error);
     }
   }
-
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
-  }
 }

@@ -1728,7 +1728,11 @@
           "device_state": "Device State",
           "attribute": "Attribute",
           "toggle": "Toggle"
-        }
+        },
+        "bg_image": "Image",
+        "bg_gradient": "Gradient",
+        "bg_color": "Colour",
+        "bg_entity": "Entity"
       }
     },
     "dropdown": {

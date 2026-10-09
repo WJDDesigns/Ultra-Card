@@ -2398,7 +2398,11 @@
         "badge_top_left": "左上角",
         "badge_top_right": "右上角",
         "badge_bottom_left": "左下角",
-        "badge_bottom_right": "右下角"
+        "badge_bottom_right": "右下角",
+        "bg_image": "图片",
+        "bg_gradient": "渐变",
+        "bg_color": "颜色",
+        "bg_entity": "实体"
       },
       "no_text_configured": "未配置文本",
       "no_image_configured": "未配置图片",

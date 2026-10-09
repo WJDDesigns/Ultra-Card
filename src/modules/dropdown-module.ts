@@ -3830,25 +3830,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     );
   }
 
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (value === 'auto' || value === 'none' || value === 'inherit') return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-    return value;
-  }
-
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
-  }
-
   // Simple string hash function for template cache keys
   private _hashString(str: string): number {
     let hash = 0;

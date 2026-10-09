@@ -2334,7 +2334,11 @@
           "device_state": "Device State",
           "attribute": "Attribute",
           "toggle": "Toggle"
-        }
+        },
+        "bg_image": "Imatge",
+        "bg_gradient": "Degradat",
+        "bg_color": "Color",
+        "bg_entity": "Entitat"
       },
       "no_text_configured": "No s'ha configurat cap text",
       "no_image_configured": "No s'ha configurat cap imatge",

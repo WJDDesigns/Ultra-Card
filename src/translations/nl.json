@@ -1633,7 +1633,11 @@
           "device_state": "Apparaatstatus",
           "attribute": "Attribuut",
           "toggle": "Schakelaar"
-        }
+        },
+        "bg_image": "Afbeelding",
+        "bg_gradient": "Verloop",
+        "bg_color": "Kleur",
+        "bg_entity": "Entiteit"
       }
     },
     "common": {

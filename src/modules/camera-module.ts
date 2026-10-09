@@ -2938,24 +2938,6 @@ export class UltraCameraModule extends BaseUltraModule {
     );
   }
 
-  // Style utility methods
-  private styleObjectToCss(styles: Record<string, string>): string {
-    return Object.entries(styles)
-      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-  }
-
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    return value;
-  }
-
   // Design property helper methods
   private getPaddingWithDesign(designProperties: any, moduleWithDesign: any): string {
     // Only apply padding if explicitly set by user

@@ -351,13 +351,15 @@ export class UltraGaugeModule extends BaseUltraModule {
                 <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"></ha-icon>
               </button>
             </div>
-            <ha-switch
-              .checked=${gaugeModule.unified_template_mode || false}
-              @change=${(e: Event) => {
-                updateModule({ unified_template_mode: (e.target as any).checked });
+            ${this.renderUcForm(
+              hass,
+              { unified_template_mode: gaugeModule.unified_template_mode || false },
+              [this.booleanField('unified_template_mode')],
+              (e: CustomEvent) => {
+                updateModule({ unified_template_mode: e.detail.value.unified_template_mode });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }}
-            ></ha-switch>
+              }
+            )}
           </div>
           <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
             ${localize(
@@ -4933,30 +4935,6 @@ export class UltraGaugeModule extends BaseUltraModule {
         cursor: pointer;
       }
     `;
-  }
-
-  // Helper method to ensure values have proper units
-  private addPixelUnit(value: string | number | undefined): string | undefined {
-    if (!value && value !== 0) return value as string | undefined;
-
-    // Convert number to string
-    const valueStr = String(value);
-
-    // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(valueStr)) {
-      return `${valueStr}px`;
-    }
-
-    // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(valueStr)) {
-      return valueStr
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (already has units like px, em, %, etc.)
-    return valueStr;
   }
 
   private _hashString(str: string): number {

@@ -1727,7 +1727,11 @@
           "device_state": "Gerätestatus",
           "attribute": "Attribut",
           "toggle": "Umschalter"
-        }
+        },
+        "bg_image": "Bild",
+        "bg_gradient": "Verlauf",
+        "bg_color": "Farbe",
+        "bg_entity": "Entität"
       }
     },
     "dropdown": {

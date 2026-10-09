@@ -10,6 +10,7 @@ import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
 import { ucThemeService, withThemedStyles } from '../services/uc-theme-service';
 import { getControlSurfaceStyleString, type UcSurfaceRecipe } from '../utils/uc-surface-recipes';
+import '../components/ultra-icon-field';
 
 export class UltraTabsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -832,33 +833,16 @@ export class UltraTabsModule extends BaseUltraModule {
 
         <!-- Icon Picker (optional) -->
         <div class="section-icon-picker">
-          <ha-icon-picker
+          <ultra-icon-field
             .hass=${hass}
             .value=${section.icon || ''}
-            .label=${''}
-            @opened-changed=${(e: CustomEvent) => {
-              // Inject style to widen the dropdown when it opens
-              if (e.detail.value) {
-                requestAnimationFrame(() => {
-                  const overlay = document.querySelector('vaadin-combo-box-overlay');
-                  if (overlay) {
-                    (overlay as HTMLElement).style.setProperty(
-                      '--vaadin-combo-box-overlay-width',
-                      '320px'
-                    );
-                    (overlay as HTMLElement).style.width = '320px';
-                    (overlay as HTMLElement).style.minWidth = '320px';
-                  }
-                });
-              }
-            }}
             @value-changed=${(e: CustomEvent) => {
               const updatedSections = [...sections];
               updatedSections[index] = { ...section, icon: e.detail.value };
               updateModule({ sections: updatedSections });
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }}
-          ></ha-icon-picker>
+          ></ultra-icon-field>
         </div>
 
         <!-- Default Tab Indicator -->

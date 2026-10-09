@@ -1723,7 +1723,11 @@
           "device_state": "Stato dispositivo",
           "attribute": "Attributo",
           "toggle": "Interruttore"
-        }
+        },
+        "bg_image": "Immagine",
+        "bg_gradient": "Gradiente",
+        "bg_color": "Colore",
+        "bg_entity": "Entità"
       }
     },
     "dropdown": {

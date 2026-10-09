@@ -1396,23 +1396,6 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       .join('; ');
   }
 
-  // Helper method to add pixel unit if needed
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return undefined;
-    if (
-      typeof value === 'string' &&
-      (value.includes('px') ||
-        value.includes('%') ||
-        value.includes('em') ||
-        value.includes('rem') ||
-        value.includes('vh') ||
-        value.includes('vw'))
-    ) {
-      return value;
-    }
-    return `${value}px`;
-  }
-
   // Helper method to get background image CSS
   private getBackgroundImageCSS(moduleWithDesign: any, hass?: HomeAssistant): string {
     const backgroundType = moduleWithDesign.background_type || 'color';

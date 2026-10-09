@@ -1633,7 +1633,11 @@
           "device_state": "Device State",
           "attribute": "Attribute",
           "toggle": "Toggle"
-        }
+        },
+        "bg_image": "Obrázek",
+        "bg_gradient": "Přechod",
+        "bg_color": "Barva",
+        "bg_entity": "Entita"
       }
     },
     "common": {

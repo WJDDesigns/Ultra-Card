@@ -741,30 +741,6 @@ export class UltraVerticalModule extends BaseUltraModule {
     };
   }
 
-  // Helper methods for style conversion and design properties
-  private styleObjectToCss(styles: Record<string, string | undefined>): string {
-    return Object.entries(styles)
-      .filter(([, value]) => value !== undefined && value !== null && value !== '')
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-  }
-
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-    return value;
-  }
-
   private getPaddingCSS(moduleWithDesign: any): string {
     return moduleWithDesign.padding_top ||
       moduleWithDesign.padding_bottom ||

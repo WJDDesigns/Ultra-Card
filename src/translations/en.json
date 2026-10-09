@@ -2398,7 +2398,11 @@
         "badge_top_left": "Top Left",
         "badge_top_right": "Top Right",
         "badge_bottom_left": "Bottom Left",
-        "badge_bottom_right": "Bottom Right"
+        "badge_bottom_right": "Bottom Right",
+        "bg_image": "Image",
+        "bg_gradient": "Gradient",
+        "bg_color": "Color",
+        "bg_entity": "Entity"
       },
       "no_text_configured": "No text configured",
       "no_image_configured": "No image configured",

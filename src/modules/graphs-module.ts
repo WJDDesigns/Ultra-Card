@@ -5186,13 +5186,6 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
   }
 
-  // Helper methods for design properties
-  private styleObjectToCss(styles: Record<string, string>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
   // Resolve chart width as CSS, preferring percentage slider when present
   private _resolveChartWidth(module: GraphsModule): string {
     const percent = (module as any).chart_width_percent;
@@ -5203,22 +5196,6 @@ export class UltraGraphsModule extends BaseUltraModule {
     const width = (module as any).chart_width;
     if (typeof width === 'string' && width.trim() !== '') return width.trim();
     return '100%';
-  }
-
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-  }
-
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-    return value;
   }
 
   private getPaddingCSS(moduleWithDesign: any): string {

@@ -1118,39 +1118,6 @@ export class UltraTextModule extends BaseUltraModule {
     return path;
   }
 
-  // Helper method to convert style object to CSS string
-  private styleObjectToCss(styles: Record<string, string>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
-  // Helper method to convert camelCase to kebab-case
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-  }
-
-  // Helper method to ensure border radius values have proper units
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-
-    // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(value)) {
-      return `${value}px`;
-    }
-
-    // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (already has units like px, em, %, etc.)
-    return value;
-  }
-
   /**
    * Returns the effective rich text HTML content for this module.
    * Handles backward-compatibility migration from the legacy plain `text` field:

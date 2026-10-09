@@ -2,27 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-/**
- * Extract `renderGeneralTab` method body (brace-balanced) for static linting.
- */
-function extractRenderGeneralTabSource(fileContent: string): string | null {
-  const idx = fileContent.indexOf('renderGeneralTab');
-  if (idx === -1) return null;
-  const braceOpen = fileContent.indexOf('{', idx);
-  if (braceOpen === -1) return null;
-  let depth = 0;
-  for (let i = braceOpen; i < fileContent.length; i++) {
-    const c = fileContent[i];
-    if (c === '{') depth++;
-    else if (c === '}') {
-      depth--;
-      if (depth === 0) {
-        return fileContent.slice(braceOpen + 1, i);
-      }
-    }
-  }
-  return null;
-}
+import { generalTabSource } from './general-tab-source';
 
 const MODULES_DIR = path.join(__dirname, '..');
 
@@ -279,6 +259,7 @@ describe('shared settings-section CSS (regression guard)', () => {
 
 describe('module General tab canonical patterns (static)', () => {
   it('enforced modules must not use forbidden markup in renderGeneralTab', () => {
+    const violations: string[] = [];
     const files = fs.readdirSync(MODULES_DIR).filter(f => f.endsWith('-module.ts'));
 
     for (const file of files) {
@@ -286,14 +267,14 @@ describe('module General tab canonical patterns (static)', () => {
       if (!CANONICAL_ENFORCED_MODULES.has(file)) continue;
 
       const full = path.join(MODULES_DIR, file);
-      const content = fs.readFileSync(full, 'utf8');
-      const body = extractRenderGeneralTabSource(content);
+      const body = generalTabSource(full);
       expect(body, `${file}: renderGeneralTab body`).toBeTruthy();
 
       for (const { name, re } of FORBIDDEN) {
-        expect(re.test(body!), `${file}: forbidden "${name}" in renderGeneralTab`).toBe(false);
+        if (re.test(body!)) violations.push(`${file}: forbidden "${name}"`);
       }
     }
+    expect(violations).toEqual([]);
   });
 
   it('every module is either enforced or has a documented carve-out reason', () => {

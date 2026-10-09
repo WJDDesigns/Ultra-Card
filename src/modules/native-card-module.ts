@@ -216,9 +216,9 @@ export class UltraNativeCardModule extends BaseUltraModule {
     tags: ['native', 'home-assistant', 'card'],
   };
 
-  createDefault(): NativeCardModule {
+  createDefault(id?: string): NativeCardModule {
     return {
-      id: `native-card-${Date.now()}`,
+      id: id || `native-card-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: 'native_card',
       name: 'Native Card',
       card_type: 'hui-entities-card',

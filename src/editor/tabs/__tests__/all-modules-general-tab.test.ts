@@ -3,6 +3,7 @@ import {
   loadAllCoreModules,
   mountTemplateInDom,
   mockHass,
+  mockProHass,
   findFirstInteractableDeep,
   fireInteractFirstControl,
 } from './layout-tab-harness';
@@ -12,60 +13,30 @@ import type { UltraModule } from '../../../modules/base-module';
 import { BaseUltraModule } from '../../../modules/base-module';
 import type { UltraCardConfig } from '../../../types';
 
-/** Modules whose general tab is static or uses HA form elements without native inputs in test stubs. */
-const EMPTY_GENERAL_TAB = new Set([
-  'pagebreak',
-  'image',
-  'gauge',
-  // Default config renders only label/info pickers without a directly-interactable
-  // primitive control after the renderUcForm/booleanField + select migrations.
-  'dropdown',
+/**
+ * Modules whose General tab cannot be exercised by the jsdom stubs. Every entry
+ * says why. This was a 46-entry list; most entries only needed a Pro hass (Pro
+ * editors rendered the upgrade card) or support for the shared ultra-* fields.
+ */
+const EMPTY_GENERAL_TAB = new Set<string>([
+  // Default General tab is only HA pickers (ha-form / ha-selector / entity picker),
+  // which the jsdom stubs do not expand into native controls.
   'markdown',
-  'button',
   'stack',
-  'popup',
-  'map',
-  'background',
-  'badge_of_honor',
-  'sports_score',
-  'timer',
+  'external_card',
+  'native_card',
   'cover',
   'fan',
   'lock',
-  'humidifier',
-  'washer',
-  'dryer',
-  'dishwasher',
-  'fridge',
-  'range',
   'dynamic-list',
-  'dynamic_weather',
-  'qr_code',
-  'energy_display',
-  'living_canvas',
   'alarm_panel',
   'solar_analytics',
-  'lunar_phase',
-  'external_card',
-  'native_card',
-  'video_bg',
-  // First controls are ultra-segmented / ultra-color-picker custom elements
-  // without a directly-interactable primitive control in the test stubs.
-  'drawer',
-  'camera_grid',
-  // Pro-gated general tabs. `mockHass` has no Ultra Card Connect sensor, so these
-  // render the upgrade lock card, which intentionally has no config controls.
-  'boiler',
-  'train',
-  'dog_duty',
-  'cleaning_zones',
-  'battery_fleet',
-  'plant_care',
-  'laundry_tracker',
-  'vehicle_maintenance',
-  'vampire_power',
-  'unifi',
-  'bambu',
+  // Static: nothing to configure.
+  'pagebreak',
+  // The first control is editor-local state (marker draft / timer test controls),
+  // not a config field, so it does not call updateModule by design.
+  'map',
+  'timer',
 ]);
 
 const CONFIG: UltraCardConfig = {
@@ -83,10 +54,10 @@ describe('all modules: general tab invokes updateModule', () => {
       const reg = getModuleRegistry();
       const handler = reg.getModule(type) as UltraModule | undefined;
       expect(handler, `missing module ${type}`).toBeTruthy();
-      const module = reg.createDefaultModule(type, `id-${type}`, mockHass);
+      const module = reg.createDefaultModule(type, `id-${type}`, mockProHass);
       expect(module, `createDefault failed for ${type}`).toBeTruthy();
       const spy = vi.fn();
-      const tr = handler!.renderGeneralTab(module!, mockHass, CONFIG, spy);
+      const tr = handler!.renderGeneralTab(module!, mockProHass, CONFIG, spy);
       if (tr === null) {
         return;
       }

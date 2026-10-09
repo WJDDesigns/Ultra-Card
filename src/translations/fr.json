@@ -1723,7 +1723,11 @@
           "device_state": "État de l’appareil",
           "attribute": "Attribut",
           "toggle": "Bascule"
-        }
+        },
+        "bg_image": "Image",
+        "bg_gradient": "Dégradé",
+        "bg_color": "Couleur",
+        "bg_entity": "Entité"
       }
     },
     "dropdown": {

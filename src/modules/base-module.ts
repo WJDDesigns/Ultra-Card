@@ -17,6 +17,11 @@ import type { UltraSegmentedOption } from '../components/ultra-segmented';
 import { localize } from '../localize/localize';
 import { ucThemeService } from '../services/uc-theme-service';
 import { UC_THEME_INHERIT } from '../themes/uc-theme-types';
+import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import {
+  addPixelUnit as addPixelUnitToValue,
+  styleObjectToCss as styleObjectToCssText,
+} from '../utils/uc-css-text';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -247,9 +252,6 @@ export abstract class BaseUltraModule implements UltraModule {
       return entityValue;
     }
 
-    // Import dynamically to avoid circular dependencies
-    // eslint-disable-next-line @typescript-eslint/no-var-requires -- runtime require breaks circular import with uc-custom-variables-service
-    const { ucCustomVariablesService } = require('../services/uc-custom-variables-service');
     return ucCustomVariablesService.resolveEntityField(entityValue, config);
   }
 
@@ -1513,6 +1515,16 @@ export abstract class BaseUltraModule implements UltraModule {
   // ============================================
   // DESIGN PROPERTY UTILITIES
   // ============================================
+
+  /** Inline CSS text from a style object (shared helper; see utils/uc-css-text). */
+  protected styleObjectToCss(styles: Record<string, unknown>): string {
+    return styleObjectToCssText(styles);
+  }
+
+  /** Add `px` to unitless numbers (shared helper; see utils/uc-css-text). */
+  protected addPixelUnit(value: string | number | undefined | null): string | undefined {
+    return addPixelUnitToValue(value);
+  }
 
   /**
    * Convert a style object to an inline CSS string

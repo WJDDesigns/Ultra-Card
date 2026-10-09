@@ -1633,7 +1633,11 @@
           "device_state": "Device State",
           "attribute": "Attribute",
           "toggle": "Toggle"
-        }
+        },
+        "bg_image": "Bild",
+        "bg_gradient": "Gradient",
+        "bg_color": "Färg",
+        "bg_entity": "Entitet"
       }
     },
     "common": {
