@@ -339,8 +339,10 @@ async function openMenu(page) {
         /^(heat|cool|dry|off)$/i.test((s.textContent || '').trim())
       );
       const lr = label ? label.getBoundingClientRect() : null;
+      const ir = opt.querySelector('ha-icon')?.getBoundingClientRect();
       return {
         text: (opt.textContent || '').trim(),
+        iconLeft: ir ? round(ir.left) : null,
         labelRight: lr ? round(lr.right) : null,
         labelWidth: lr ? round(lr.width) : null,
       };
@@ -379,6 +381,14 @@ function assertMenu(name, m, closed) {
       errors.push(`${name}: option "${o.text}" has no visible label`);
     } else if (o.labelRight > m.right + 0.5) {
       errors.push(`${name}: option "${o.text}" label clipped (label right ${o.labelRight} > menu right ${m.right})`);
+    }
+  }
+  const widest = m.options.reduce((a, o) => (o.labelRight > (a?.labelRight ?? -Infinity) ? o : a), null);
+  if (widest?.iconLeft != null && widest.labelRight != null) {
+    const leftPad = widest.iconLeft - m.left;
+    const rightPad = m.right - widest.labelRight;
+    if (rightPad < leftPad - 4) {
+      errors.push(`${name}: option "${widest.text}" has ${leftPad}px left padding but only ${rightPad}px right`);
     }
   }
   if (m.left < 0 || m.right > m.viewportWidth) {

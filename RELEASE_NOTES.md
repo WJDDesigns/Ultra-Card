@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.13.3
+
+Stable 3.13.3 fixes overlay HVAC dropdown menus that opened too narrow. Thanks to Konijntje on Discord for spotting it.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🐛 Bug Fixes
+
+- **Fixed overlay dropdown menus cutting off their right padding** - When a dropdown's invisible title covers a label like "Off", the menu could open narrower than its options, so labels ran into the right edge. The menu is now wide enough for its options, with even padding on both sides, and stays centred under the label and arrow. No card changes are needed
+
 ## Version 3.13.2
 
 Stable 3.13.2 adds Simplified Chinese, fixes BEKO / HomeWhiz washers that always showed Idle, and lets you drop modules and cards into a Grid or other layout inside a Tabs section. Thanks to [@IBeanCN](https://github.com/IBeanCN) for the Chinese translation and to everyone who reported these issues.

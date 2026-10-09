@@ -33,6 +33,8 @@ export interface MenuAnchorRect {
   bottom: number;
   width: number;
   height: number;
+  /** Width of the dropdown control itself when the anchor is widened beyond it. */
+  controlWidth?: number;
 }
 
 export function unionMenuAnchorRects(a: MenuAnchorRect, b: MenuAnchorRect): MenuAnchorRect {
@@ -2699,7 +2701,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     const triggerWidth = triggerRect.width;
     const contentWidth =
       triggerWidth < MENU_MIN_CONTENT_WIDTH_PX
-        ? measureDropdownMenuContentWidth(dropdownElement, triggerWidth)
+        ? measureDropdownMenuContentWidth(dropdownElement, triggerRect.controlWidth ?? triggerWidth)
         : 0;
     return resolveDropdownMenuPlacement(
       triggerRect.left,
@@ -2720,7 +2722,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     const reachRect = reach?.getBoundingClientRect();
     if (!reachRect || reachRect.width <= 0) return rect;
     const covered = findVisibleTextUnder(trigger, reachRect);
-    return unionMenuAnchorRects(rect, covered ?? reachRect);
+    return { ...unionMenuAnchorRects(rect, covered ?? reachRect), controlWidth: rect.width };
   }
 
   /**
