@@ -31,6 +31,9 @@ const localeLoaders: Record<string, () => Promise<LocaleModule>> = {
   no: () => import(/* webpackChunkName: "locale-no" */ '../translations/no.json'),
   pl: () => import(/* webpackChunkName: "locale-pl" */ '../translations/pl.json'),
   sv: () => import(/* webpackChunkName: "locale-sv" */ '../translations/sv.json'),
+  // Home Assistant reports Simplified Chinese as `zh-Hans`; the resolver strips
+  // the region so both `zh` and `zh-Hans` land here.
+  zh: () => import(/* webpackChunkName: "locale-zh" */ '../translations/zh.json'),
 };
 
 const DEFAULT_LANG = 'en';
