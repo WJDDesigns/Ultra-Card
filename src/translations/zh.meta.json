@@ -5087,7 +5087,21 @@
     "freespace.editor_narrow_help",
     "freespace.editor_narrow_stack",
     "freespace.editor_narrow_scale",
-    "freespace.editor_canvas_width_legacy"
+    "freespace.editor_canvas_width_legacy",
+    "editor.hover_effects.animation_settings",
+    "editor.hover_effects.duration",
+    "editor.hover_effects.timing",
+    "editor.hover_effects.intensity",
+    "editor.native_card.settings_title",
+    "editor.native_card.settings_desc",
+    "freespace.follow_hint",
+    "freespace.tb_align_to",
+    "freespace.tb_align_selection",
+    "freespace.tb_align_selection_hint",
+    "freespace.tb_align_canvas",
+    "freespace.tb_align_canvas_hint",
+    "freespace.tb_reset_desktop",
+    "freespace.tb_reset_desktop_hint"
   ],
   "lastRun": "2026-09-30T06:46:18.527Z",
   "engine": "openai:gpt-4o-mini"

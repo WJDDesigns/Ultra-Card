@@ -806,6 +806,10 @@
       "description": "配置鼠标悬停在此模块、行或列上时出现的视觉效果。",
       "effect": "悬停效果",
       "effect_desc": "选择悬停时应用的视觉效果",
+      "animation_settings": "动画设置",
+      "duration": "时长",
+      "timing": "缓动函数",
+      "intensity": "强度",
       "effects": {
         "none": "无",
         "highlight": "高亮",
@@ -823,6 +827,10 @@
         "buzz": "抖动",
         "fade": "淡入淡出"
       }
+    },
+    "native_card": {
+      "settings_title": "{name} 设置",
+      "settings_desc": "使用此 Home Assistant 原生卡片自带的编辑器进行配置。"
     },
     "about": {
       "developed_by": "开发者",
@@ -5787,6 +5795,14 @@
     "editor_narrow_help": "当手机端使用桌面端布局时：堆叠卡片便于阅读，或者继续缩放画板。",
     "editor_narrow_stack": "堆叠卡片（推荐）",
     "editor_narrow_scale": "保持缩放画板",
-    "editor_canvas_width_legacy": "桌面端画布宽度（旧版）"
+    "editor_canvas_width_legacy": "桌面端画布宽度（旧版）",
+    "follow_hint": "{bp} 正在使用桌面端布局，并已缩小以适应屏幕。在工具栏中选择“自定义”，即可单独排列 {bp} 布局。",
+    "tb_align_to": "对齐到",
+    "tb_align_selection": "所选内容",
+    "tb_align_selection_hint": "让卡片彼此对齐",
+    "tb_align_canvas": "画布",
+    "tb_align_canvas_hint": "将卡片作为整体对齐到画布，并保持它们之间的间距",
+    "tb_reset_desktop": "重置为桌面端",
+    "tb_reset_desktop_hint": "将所选卡片放回桌面端中的位置，并缩小以适应 {bp}"
   }
 }
