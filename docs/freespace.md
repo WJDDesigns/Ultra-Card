@@ -4,6 +4,8 @@ FreeSpace is a custom Lovelace **view layout** shipped with Ultra Card. It lets 
 
 Requires **[Ultra Card Connect](https://github.com/WJDDesigns/ultra-card-connect)** for discoverability and edit tools. Existing FreeSpace views keep rendering without Connect.
 
+Also published on **[ultracard.io/freespace](https://ultracard.io/freespace/)** and the **[GitHub wiki](https://github.com/WJDDesigns/Ultra-Card/wiki/FreeSpace)**.
+
 ## Enable
 
 Install Ultra Card Connect (HACS → Integrations). That's it: FreeSpace is on for everyone who has Ultra Card and Connect installed, and there is no switch to turn on. Hub → Home shows **FreeSpace is ready** when Connect is detected.

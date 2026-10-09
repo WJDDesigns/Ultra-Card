@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 
 
 
-**[ultracard.io](https://ultracard.io)** · **[Modules](https://ultracard.io/modules/)** · **[Template Mode](https://ultracard.io/template-mode/)** · **[Preset Gallery](https://ultracard.io/presets/)** · **[Discord](https://discord.gg/6xVgHxzzBV)**
+**[ultracard.io](https://ultracard.io)** · **[Modules](https://ultracard.io/modules/)** · **[FreeSpace](https://ultracard.io/freespace/)** · **[Template Mode](https://ultracard.io/template-mode/)** · **[Preset Gallery](https://ultracard.io/presets/)** · **[Discord](https://discord.gg/6xVgHxzzBV)**
 
 ---
 
@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 
 **Ultra Dashboard** - A complete dashboard from your areas in one click (Settings → Dashboards → Add dashboard → Community dashboards). Pick a style, take control, and every card opens in the visual editor. [Read more](docs/ultra-dashboard.md).
 
-**FreeSpace** - A free-form dashboard view (drag, resize, rotate, layer any card). Available automatically when Ultra Card Connect is installed. [Read more](docs/freespace.md).
+**FreeSpace** - A free-form dashboard view (drag, resize, rotate, layer any card). Available automatically when Ultra Card Connect is installed. [Docs on GitHub](docs/freespace.md) · [ultracard.io/freespace](https://ultracard.io/freespace/).
 
 **96 modules** - Layouts, gauges, graphs, controls, media, and more. Drag-and-drop columns with nesting so you can build the layout you want.
 
@@ -40,11 +40,12 @@ https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 The site runs the real card, not mockups. Use it when you want to explore before installing, or when you need a deeper reference than this README.
 
 - **[Modules](https://ultracard.io/modules/)** - Live previews of every free and PRO module (66 free, 30 PRO)
+- **[FreeSpace](https://ultracard.io/freespace/)** - Free-form dashboard view docs (toolbar, pins, breakpoints)
 - **[Template Mode](https://ultracard.io/template-mode/)** - Interactive playground, property reference, and field notes
 - **[Preset Gallery](https://ultracard.io/presets/)** - Community layouts you can browse and install
 - **[FAQs](https://ultracard.io/faqs/)** - Common questions and troubleshooting
 
-Written how-to pages also live in the [GitHub wiki](https://github.com/WJDDesigns/Ultra-Card/wiki) and inside Home Assistant via Ultra Card Hub → Docs.
+Written how-to pages also live in the [GitHub wiki](https://github.com/WJDDesigns/Ultra-Card/wiki) (including [FreeSpace](https://github.com/WJDDesigns/Ultra-Card/wiki/FreeSpace)), in [`docs/freespace.md`](docs/freespace.md), and inside Home Assistant via Ultra Card Hub → Docs.
 
 ---
 
@@ -112,6 +113,14 @@ Try the live playground and property reference on **[ultracard.io/template-mode]
 
 ---
 
+## FreeSpace
+
+FreeSpace is a free-form Lovelace view layout: drag, resize, rotate and layer any card on a canvas, with Desktop / Laptop / Tablet / Phone layouts, pins, multi-select and a toolbar. It is available when **[Ultra Card Connect](https://github.com/WJDDesigns/ultra-card-connect)** is installed.
+
+Read the docs on **[ultracard.io/freespace](https://ultracard.io/freespace/)**, in [`docs/freespace.md`](docs/freespace.md), or on the **[wiki](https://github.com/WJDDesigns/Ultra-Card/wiki/FreeSpace)**.
+
+---
+
 ## Free vs Pro
 
 | Feature | Free | Pro |
@@ -148,7 +157,7 @@ To contribute translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRAN
 
 ## Community & Support
 
-- **[ultracard.io](https://ultracard.io)** - Website, modules, Template Mode, presets, Pro, and account
+- **[ultracard.io](https://ultracard.io)** - Website, modules, FreeSpace, Template Mode, presets, Pro, and account
 - **[Discord](https://discord.gg/6xVgHxzzBV)** - Help, sharing, discussion
 - **[GitHub Issues](https://github.com/WJDDesigns/Ultra-Card/issues)** - Bugs and feature requests
 - **[FAQs](https://ultracard.io/faqs/)** - Common questions

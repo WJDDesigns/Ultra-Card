@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T00:20:36.411Z",
+  "generatedAt": "2026-09-30T15:43:57.316Z",
   "repo": "WJDDesigns/Ultra-Card",
   "demoBundle": "dist-demo/ultra-card-demo.js",
   "pages": [
@@ -20,6 +20,15 @@
       "needsDemoBundle": true,
       "bytes": 85600,
       "sha256": "bc5515d97e96a0adf632b93115a7cda10e7df186bdfaf4940ff7794504c97fe7"
+    },
+    {
+      "id": "freespace",
+      "file": "website/freespace-page-embed.html",
+      "title": "FreeSpace",
+      "path": "/freespace/",
+      "needsDemoBundle": false,
+      "bytes": 13812,
+      "sha256": "e6bfc92c4dd0823f8a5b539a3e67a065f6fc78ec01e900b2069bb92e1eb594f4"
     },
     {
       "id": "presets",

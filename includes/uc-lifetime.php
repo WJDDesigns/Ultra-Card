@@ -498,6 +498,10 @@ body.woocommerce-checkout #order_review .uc-lifetime-checkout-note{margin:0 0 14
         $footer_slugs = (array) apply_filters('ultra_card_footer_menu_slugs', array('footer-menu', 'footer'));
 
         if ($slug && in_array($slug, $header_slugs, true)) {
+            $freespace = get_page_by_path('freespace', OBJECT, 'page');
+            if ($freespace && $freespace->post_status === 'publish') {
+                $items = $this->menu_add_page($items, $freespace, __('FreeSpace', 'ultra-card-integration'), 'faq');
+            }
             $pricing = get_page_by_path('pricing', OBJECT, 'page');
             if ($pricing && $pricing->post_status === 'publish') {
                 $items = $this->menu_add_page($items, $pricing, __('Pricing', 'ultra-card-integration'), 'faq');

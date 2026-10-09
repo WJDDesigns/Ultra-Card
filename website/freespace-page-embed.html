@@ -1,0 +1,272 @@
+<!--
+  Ultra Card: FreeSpace docs page embed.
+
+  Live delivery: paste [ultra_card_page id="freespace"] into a WPBakery
+  Text Block (or let the Website Harness auto-create /freespace/). The
+  plugin fetches this fragment from the repo.
+
+  Source of truth for the content also lives in docs/freespace.md on GitHub.
+-->
+<style>
+.l-section:has(> .l-section-h .ucfs){padding-top:0!important;padding-bottom:0!important;background:#0e1015}
+.ucfs{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);background:#0e1015;color:#d6dbea;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6}
+.ucfs *{box-sizing:border-box}
+.ucfs a{color:#a5b4fc;text-decoration:underline}
+.ucfs a:hover{color:#fff}
+.ucfs .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+.ucfs .eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#a5b4fc;margin-bottom:12px}
+.ucfs h1,.ucfs h2,.ucfs h3{color:#f4f6fb;font-family:inherit;margin:0}
+.ucfs p{margin:0 0 14px}
+.ucfs ul,.ucfs ol{margin:0 0 16px;padding-left:1.25em}
+.ucfs li{margin-bottom:7px}
+.ucfs code,.ucfs pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ucfs code{font-size:.88em;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;color:#e8eaef}
+.ucfs pre{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 18px;overflow:auto;font-size:.86rem;line-height:1.55;color:#dfe3ec;margin:0 0 18px}
+.ucfs pre code{background:transparent;padding:0;border-radius:0;font-size:inherit}
+.ucfs table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:.94rem}
+.ucfs th,.ucfs td{text-align:left;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top}
+.ucfs th{color:#94a3b8;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+.ucfs td{color:#c8ced9}
+.ucfs .hero{position:relative;padding:72px 0 48px;text-align:center;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(99,102,241,.28),transparent 60%),#0e1015}
+.ucfs .hero h1{font-size:clamp(2rem,4.4vw,3.1rem);font-weight:800;letter-spacing:-.03em;line-height:1.12;margin:0 0 14px}
+.ucfs .hero .grad{background:linear-gradient(135deg,#a5b4fc,#67e8f9 55%,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ucfs .hero p{max-width:640px;margin:0 auto 22px;color:#a0a8b8;font-size:1.06rem}
+.ucfs .hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.ucfs .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:10px;font-weight:700;font-size:.95rem;text-decoration:none;transition:transform .15s,border-color .15s,background .15s}
+.ucfs .btn:hover{transform:translateY(-1px)}
+.ucfs .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none}
+.ucfs .btn-ghost{background:transparent;color:#e8eaef;border:1px solid rgba(255,255,255,.18)}
+.ucfs .btn-ghost:hover{border-color:rgba(255,255,255,.4)}
+.ucfs .sec{padding:56px 0}
+.ucfs .sec + .sec{padding-top:0}
+.ucfs .sec-head{max-width:680px;margin:0 0 28px}
+.ucfs .sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.ucfs .sec-head h2{font-size:clamp(1.45rem,2.8vw,2rem);font-weight:800;letter-spacing:-.02em;line-height:1.2;margin:0 0 10px}
+.ucfs .sec-head p{color:#94a3b8;font-size:1rem;margin:0}
+.ucfs .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:0 0 8px}
+@media(max-width:800px){.ucfs .steps{grid-template-columns:1fr}}
+.ucfs .step{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px 20px;background:rgba(255,255,255,.02)}
+.ucfs .step .n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#6366f1;color:#fff;font-size:13px;font-weight:700;margin-bottom:12px}
+.ucfs .step h3{font-size:1.02rem;font-weight:700;margin:0 0 8px}
+.ucfs .step p{color:#94a3b8;font-size:.92rem;margin:0}
+.ucfs .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:720px){.ucfs .grid{grid-template-columns:1fr}}
+.ucfs .card{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px 20px;background:rgba(255,255,255,.03)}
+.ucfs .card h3{font-size:1.05rem;font-weight:700;margin:0 0 8px}
+.ucfs .card p,.ucfs .card li{color:#94a3b8;font-size:.92rem}
+.ucfs .card ul{margin:0;padding-left:1.15em}
+.ucfs .note{border:1px solid rgba(129,140,248,.35);background:rgba(99,102,241,.1);border-radius:14px;padding:16px 18px;margin:0 0 22px;font-size:.95rem;color:#c8ced9}
+.ucfs .note strong{color:#f4f6fb}
+.ucfs .toc{display:flex;flex-wrap:wrap;gap:10px 16px;margin:0 0 8px;padding:0;list-style:none}
+.ucfs .toc a{text-decoration:none;color:#c8ced9;font-size:.92rem}
+.ucfs .toc a:hover{color:#fff}
+.ucfs .foot{padding:8px 0 72px;text-align:center;color:#6b7280;font-size:.9rem}
+.ucfs .foot a{color:#a5b4fc}
+</style>
+
+<!-- ======================= UCFS:EMBED-START ======================= -->
+<div class="ucfs" id="ucfs">
+
+  <header class="hero">
+    <div class="wrap">
+      <span class="eyebrow">View layout · Free with Ultra Card Connect</span>
+      <h1>Place any card <span class="grad">anywhere.</span></h1>
+      <p>FreeSpace is Ultra Card’s free-form dashboard view. Drag, resize, rotate and layer any Lovelace card on a canvas — with Desktop, Laptop, Tablet and Phone layouts, pins, and a real editor toolbar.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#ucfs-start">Get started</a>
+        <a class="btn btn-ghost" href="https://github.com/WJDDesigns/Ultra-Card/blob/main/docs/freespace.md" target="_blank" rel="noopener">GitHub docs</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="sec" id="ucfs-start">
+    <div class="wrap">
+      <div class="sec-head center">
+        <h2>Turn it on in three steps</h2>
+        <p>No switch to hunt for. Install Connect, pick FreeSpace as the view layout, and start arranging cards.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="n">1</div>
+          <h3>Install Ultra Card Connect</h3>
+          <p>HACS → Integrations → Ultra Card Connect. Hub → Home then shows <strong>FreeSpace is ready</strong>.</p>
+        </div>
+        <div class="step">
+          <div class="n">2</div>
+          <h3>Pick FreeSpace</h3>
+          <p>Edit a dashboard → pencil the view → <strong>Layout</strong> → <strong>FreeSpace (Ultra Card)</strong>.</p>
+        </div>
+        <div class="step">
+          <div class="n">3</div>
+          <h3>Arrange freely</h3>
+          <p>Add cards with the FAB. Drag to move, use handles to resize, rotate from the top-left icon, and layer with the toolbar.</p>
+        </div>
+      </div>
+      <div class="note" style="margin-top:22px">
+        <strong>Already using FreeSpace?</strong> Existing FreeSpace views keep rendering even without Connect. Connect unlocks the layout dropdown and edit tools.
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="ucfs-edit">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Edit like a canvas</h2>
+        <p>FreeSpace keeps Home Assistant’s native card editors and a Sections-like look, with free placement on top.</p>
+      </div>
+      <ul class="toc">
+        <li><a href="#ucfs-toolbar">Toolbar</a></li>
+        <li><a href="#ucfs-pins">Pins</a></li>
+        <li><a href="#ucfs-breakpoints">Breakpoints</a></li>
+        <li><a href="#ucfs-config">YAML config</a></li>
+        <li><a href="#ucfs-import">Import from Sections</a></li>
+      </ul>
+      <div class="grid" style="margin-top:22px">
+        <div class="card">
+          <h3>Select &amp; move</h3>
+          <ul>
+            <li><strong>Click</strong> to select; empty space to deselect</li>
+            <li><strong>Shift / Ctrl / Cmd-click</strong> or drag a box for multi-select</li>
+            <li><strong>Cmd/Ctrl+A</strong> selects every card</li>
+            <li>Drag one selected card to move the whole group</li>
+            <li>Arrow keys nudge 1px (10px with Shift)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Edit &amp; transform</h3>
+          <ul>
+            <li><strong>Double-click</strong> opens HA’s card editor</li>
+            <li><strong>Right-click</strong> or ⋮ for edit, duplicate, layer, pin, delete</li>
+            <li>Edge and corner handles resize</li>
+            <li>Top-left rotate icon (Shift snaps 15°)</li>
+            <li>On touch: press and hold a selected card to move it</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="ucfs-toolbar">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Toolbar</h2>
+        <p>Always shows Desktop / Laptop / Tablet / Phone, plus <strong>Use Desktop / Custom</strong> on the smaller sizes.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>Nothing selected</h3>
+          <p>Snap to grid (this session only) and Add card.</p>
+        </div>
+        <div class="card">
+          <h3>One card</h3>
+          <p>X / Y / W / H / ° fields, Pin, Align to canvas, Layer, Edit, Duplicate, Delete.</p>
+        </div>
+        <div class="card">
+          <h3>Two or more</h3>
+          <p>Align to the selection, Distribute (3+), Pin all, or Delete all (asks first).</p>
+        </div>
+        <div class="card">
+          <h3>Tight space</h3>
+          <p>Button labels collapse to icons with tooltips when the toolbar gets narrow.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="ucfs-pins">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Pins</h2>
+        <p>Control what happens when the screen is wider or narrower than when you placed the card. Set per card, per breakpoint, from the toolbar or right-click menu.</p>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Pin</th><th>When the screen gets wider</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Left (default)</td><td>Keeps its distance from the left edge</td></tr>
+          <tr><td>Right</td><td>Keeps its distance from the right edge</td></tr>
+          <tr><td>Center</td><td>Stays the same distance from the middle</td></tr>
+          <tr><td>Left &amp; right</td><td>Keeps both edge distances and stretches (never below 80px)</td></tr>
+        </tbody>
+      </table>
+      <p>Pins only change the layout when <strong>Full width</strong> is on (Hub → Home → Layout width). With Full width off, the canvas width is fixed and every pin looks the same. While editing, a dashed line shows which edge the selected card is pinned to.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="ucfs-breakpoints">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Breakpoints</h2>
+        <p>Laptop, Tablet and Phone each start on <strong>Use Desktop</strong>. Move or resize a card there and that size switches to <strong>Custom</strong>, copying Desktop positions first so nothing else jumps.</p>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Breakpoint</th><th>Min width</th><th>Default artboard</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Desktop</td><td>≥ 1440px</td><td>1200</td></tr>
+          <tr><td>Laptop</td><td>≥ 1024px</td><td>1100</td></tr>
+          <tr><td>Tablet</td><td>≥ 768px</td><td>768</td></tr>
+          <tr><td>Phone</td><td>&lt; 768px</td><td>390</td></tr>
+        </tbody>
+      </table>
+      <p>A card with no layout for a breakpoint always falls back to its Desktop layout. On phones, while Phone uses Desktop and <code>narrow: stack</code> is set (the default), cards stack in reading order until you arrange a Phone layout.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="ucfs-config">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Config</h2>
+        <p>Most people never touch YAML — FreeSpace settings live under <strong>FreeSpace view specific settings</strong> in the view editor. The shape looks like this:</p>
+      </div>
+<pre><code>type: custom:ultra-freespace-view
+title: Living room
+freespace:
+  canvas_widths:
+    desktop: 1200
+    laptop: 1100
+    tablet: 768
+    phone: 390
+  min_height: 800
+  grid: 8
+  narrow: stack # stack | scale
+cards:
+  - type: tile
+    entity: light.sofa
+    view_layout:
+      desktop:
+        x: 96
+        y: 64
+        w: 320
+        h: 160
+        r: 0
+        z: 2</code></pre>
+      <p><strong>Sizing:</strong> Hub → Home → <strong>Layout width</strong> applies to FreeSpace and Sections. Full width fills the screen; otherwise the design canvas stays centred with dashed bounds in edit mode.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="ucfs-import">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Import from Sections</h2>
+        <p>Switch a Sections view to FreeSpace and an <strong>Import sections</strong> banner can flatten those cards onto the canvas in one save.</p>
+      </div>
+      <div class="note">
+        <strong>This is the foundation.</strong> FreeSpace ships in Ultra Card 3.13.0 and will keep getting more amazing over time. Feedback welcome on <a href="https://discord.gg/6xVgHxzzBV">Discord</a> and <a href="https://github.com/WJDDesigns/Ultra-Card/issues">GitHub Issues</a>.
+      </div>
+    </div>
+  </section>
+
+  <div class="foot wrap">
+    Full reference on
+    <a href="https://github.com/WJDDesigns/Ultra-Card/blob/main/docs/freespace.md">GitHub</a>
+    ·
+    <a href="https://github.com/WJDDesigns/Ultra-Card/wiki/FreeSpace">Wiki</a>
+    · Needs
+    <a href="https://github.com/WJDDesigns/ultra-card-connect">Ultra Card Connect</a>
+  </div>
+
+</div>
+<!-- ======================= UCFS:EMBED-END ======================= -->
