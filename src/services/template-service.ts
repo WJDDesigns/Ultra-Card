@@ -144,6 +144,10 @@ export class TemplateService {
   private _liveGenByKey: Map<string, number> = new Map();
   /** Serialize subscribe/unsubscribe per key to avoid overlapping WS operations. */
   private _subscribeChains: Map<string, Promise<void>> = new Map();
+  /** Keys whose subscribe chain has finished; only these can take the fast path. */
+  private _settledKeys: Set<string> = new Set();
+  /** Template text last requested per key. */
+  private _subscribedTemplates: Map<string, string> = new Map();
   /** Latest rendered value per key, kept off the hass object so a new hass tick cannot drop it. */
   private _lastResults: Map<string, unknown> = new Map();
   /** Entity IDs HA reported as render_template listeners for each key. */
@@ -200,6 +204,23 @@ export class TemplateService {
   ): void {
     const key = templateKey;
     if (onResultChanged) this._onResultChangedByKey.set(key, onResultChanged);
+
+    // Fast path for the call made on every render: an existing, settled subscription
+    // whose template and $var values are unchanged needs nothing new. Skipping the
+    // promise chain here avoids queueing async work per template per render.
+    if (
+      this._settledKeys.has(key) &&
+      this._templateSubscriptions.has(key) &&
+      this._subscribedTemplates.get(key) === template &&
+      !(entitySignature !== undefined && templateUsesVariableSnapshot(template, variables)) &&
+      this._customVarSignatures.get(key) === this._customVarSignature(template, cardConfig)
+    ) {
+      this._writeResultToHass(key, this._lastResults.get(key));
+      return;
+    }
+    this._settledKeys.delete(key);
+    this._subscribedTemplates.set(key, template);
+
     const prev = this._subscribeChains.get(key) ?? Promise.resolve();
     const next = prev
       .then(() =>
@@ -214,7 +235,10 @@ export class TemplateService {
       )
       .catch(err =>
         console.error(`[UltraCard] Template subscribe chain error [${templateKey}]:`, err)
-      );
+      )
+      .then(() => {
+        if (this._subscribeChains.get(key) === next) this._settledKeys.add(key);
+      });
     this._subscribeChains.set(key, next);
   }
 

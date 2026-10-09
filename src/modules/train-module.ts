@@ -1273,7 +1273,7 @@ export class UltraTrainModule extends BaseUltraModule {
   /** Re-render twice a minute so the countdown and "departed" state stay honest. */
   private _ensureTick(): void {
     if (this._tickTimer) return;
-    this._tickTimer = setInterval(() => this.triggerPreviewUpdate(), 30000);
+    this._tickTimer = setInterval(() => this.triggerPreviewUpdate(false, true), 30000);
   }
 
   destroy(): void {

@@ -73,4 +73,21 @@ describe('requestPreviewUpdate', () => {
     expect(events[0]?.moduleType).toBe('external_card');
     expect(typeof events[0]?.timestamp).toBe('number');
   });
+
+  it('keeps a scope only when every request in the burst shares it', () => {
+    requestPreviewUpdate({ source: 'clock', scopeModuleType: 'clock' });
+    requestPreviewUpdate({ source: 'clock', scopeModuleType: 'clock' });
+    vi.advanceTimersByTime(50);
+    expect(events[0]?.scopeModuleType).toBe('clock');
+
+    requestPreviewUpdate({ source: 'clock', scopeModuleType: 'clock' });
+    requestPreviewUpdate({ source: 'module-update' });
+    vi.advanceTimersByTime(50);
+    expect(events[1]?.scopeModuleType).toBeUndefined();
+
+    requestPreviewUpdate({ source: 'module-update' });
+    requestPreviewUpdate({ source: 'timer-tick', scopeModuleType: 'timer' });
+    vi.advanceTimersByTime(50);
+    expect(events[2]?.scopeModuleType).toBeUndefined();
+  });
 });

@@ -6,15 +6,18 @@ import { forEachLayoutModule } from './uc-layout-module-types';
  *
  * The card normally filters hass updates down to the entities its config
  * mentions. That filter is only valid when every source of change is
- * discoverable from the config. Three things break that assumption:
+ * discoverable from the config. Two things break that assumption:
  *
  *  1. Modules that build their content by scanning the whole state machine —
  *     an entity they care about may appear or change without ever being named
  *     in the config.
  *  2. Third-party cards embedded via `external_card`, which receive `hass` and
  *     decide for themselves what matters.
- *  3. Time-based display conditions, which change with the clock rather than
- *     with any entity, and rely on hass ticks to be re-evaluated.
+ *
+ * Time-based display conditions change with the clock, not with hass, so they
+ * are re-evaluated by a minute-aligned timer on the card instead
+ * (`layoutHasTimeConditions`). Treating them as broad made the card re-render
+ * on every state change in the house.
  *
  * Keep this list in step with modules that scan `hass.states` wholesale. A
  * module missing from here will appear to freeze; a module wrongly added here
@@ -72,6 +75,16 @@ function hasTimeCondition(conditions: unknown): boolean {
  */
 export function layoutRequiresBroadHassUpdates(layout: LayoutConfig | null | undefined): boolean {
   if (!layout?.rows) return false;
+  let broad = false;
+  forEachLayoutModule(layout, mod => {
+    if (!broad && moduleRequiresBroadHassUpdates(mod)) broad = true;
+  });
+  return broad;
+}
+
+/** True when any row, column or module (nested included) has a time display condition. */
+export function layoutHasTimeConditions(layout: LayoutConfig | null | undefined): boolean {
+  if (!layout?.rows) return false;
 
   for (const row of layout.rows) {
     if (hasTimeCondition(row.display_conditions)) return true;
@@ -80,17 +93,11 @@ export function layoutRequiresBroadHassUpdates(layout: LayoutConfig | null | und
     }
   }
 
-  let broad = false;
+  let found = false;
   forEachLayoutModule(layout, mod => {
-    if (broad) return;
-    if (moduleRequiresBroadHassUpdates(mod)) {
-      broad = true;
-      return;
-    }
-    if (hasTimeCondition((mod as unknown as Record<string, unknown>).display_conditions)) {
-      broad = true;
+    if (!found && hasTimeCondition((mod as unknown as Record<string, unknown>).display_conditions)) {
+      found = true;
     }
   });
-
-  return broad;
+  return found;
 }

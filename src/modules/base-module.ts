@@ -1337,15 +1337,21 @@ export abstract class BaseUltraModule implements UltraModule {
    * and the actual card listen for to trigger re-renders.
    *
    * @param immediate - If true, triggers update immediately without debouncing
+   * @param scoped - If true, only cards that contain this module type repaint.
+   *   Use for periodic ticks (clock, timer) that change nothing outside the module.
    */
-  protected triggerPreviewUpdate(immediate: boolean = false): void {
+  protected triggerPreviewUpdate(immediate: boolean = false, scoped: boolean = false): void {
     // Coalesce bursts of template callbacks (many modules can fire within the same
     // websocket tick). Never "skip" updates: a second callback while the debounce
     // timer is armed must reschedule so the final paint includes the latest
     // `hass.__uvc_template_strings` writes (skipping caused stale icon colors).
     // Rescheduling is bounded so a stream of callbacks cannot postpone the paint
     // forever — see `uc-preview-update`.
-    requestPreviewUpdate({ source: 'module-update', immediate });
+    requestPreviewUpdate({
+      source: 'module-update',
+      immediate,
+      scopeModuleType: scoped ? this.metadata?.type : undefined,
+    });
   }
 
   /**

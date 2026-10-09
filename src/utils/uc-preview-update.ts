@@ -19,6 +19,12 @@ export interface PreviewUpdateDetail {
   /** Listeners must not debounce further — user gestures need a same-frame paint. */
   immediate?: boolean;
   moduleType?: string;
+  /**
+   * Set when only cards containing this module type need to repaint (clock and
+   * timer ticks). Cards without that type ignore the event. Left unset, every
+   * card repaints.
+   */
+  scopeModuleType?: string | undefined;
 }
 
 /**
@@ -49,10 +55,16 @@ const scheduler = new UcMaxWaitDebounce(
  * Ask every card and open preview to repaint.
  *
  * Requests are coalesced, and the last caller's detail wins, so a burst that ends
- * with an `immediate` request is delivered as immediate.
+ * with an `immediate` request is delivered as immediate. A `scopeModuleType` only
+ * survives when every request in the burst shares it; otherwise the merged event
+ * goes to every card, so no request is lost to another one's scope.
  */
 export function requestPreviewUpdate(detail: Omit<PreviewUpdateDetail, 'timestamp'>): void {
-  latestDetail = { ...detail, timestamp: Date.now() };
+  const scopeModuleType =
+    latestDetail && latestDetail.scopeModuleType !== detail.scopeModuleType
+      ? undefined
+      : detail.scopeModuleType;
+  latestDetail = { ...detail, scopeModuleType, timestamp: Date.now() };
   if (detail.immediate) scheduler.scheduleNow();
   else scheduler.schedule();
 }

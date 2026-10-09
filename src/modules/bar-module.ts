@@ -56,6 +56,35 @@ export class UltraBarModule extends BaseUltraModule {
   private _timeProgressCleanup: (() => void) | null = null;
   private _scaleClampObservers = new WeakMap<Element, ResizeObserver>();
   private _scaleClampTimers = new WeakMap<Element, number>();
+  /**
+   * Stable ref callback. A new arrow per render made Lit call it on every render,
+   * which queued two rAFs, a 360 ms timer and a ResizeObserver rebuild each time.
+   */
+  private _barRootRef = (el?: Element): void => {
+    if (!el) return;
+
+    // After render, check if parent wrapper has flex constraint
+    // If constrained, ensure bar uses 100% to fill the constrained wrapper
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const parent = el.parentElement;
+        const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
+
+        if (isFlexConstrained) {
+          const barContainer = el.querySelector('.bar-container') as HTMLElement;
+          if (barContainer) {
+            // Parent wrapper has fixed width constraint (e.g., 80%)
+            // Set bar to 100% to fill that constrained space
+            barContainer.style.width = '100%';
+          }
+        }
+
+        // Apply edge clamp after layout settles and widths are final.
+        this.scheduleScaleEdgeLabelClamping(el);
+        this.ensureScaleClampObserver(el);
+      });
+    });
+  };
 
   /** Called by the module lifecycle service once no live card uses this module type. */
   destroy(): void {
@@ -329,11 +358,13 @@ export class UltraBarModule extends BaseUltraModule {
       return;
     }
 
-    // Rebind on each render: bar-scale nodes can be recreated during live edits.
+    // Already watching this root: only pick up bar-scale nodes recreated by a live
+    // edit (observe() is a no-op for targets already observed). Rebuilding the
+    // observer and re-walking ancestors on every render was the expensive part.
     const existing = this._scaleClampObservers.get(root);
     if (existing) {
-      existing.disconnect();
-      this._scaleClampObservers.delete(root);
+      root.querySelectorAll('.bar-scale').forEach(scale => existing.observe(scale));
+      return;
     }
 
     const observer = new ResizeObserver(() => {
@@ -2172,31 +2203,7 @@ export class UltraBarModule extends BaseUltraModule {
         class="bar-module-preview" data-uc-role="pane"
         data-layout-grow="${shouldGrow ? 'true' : 'false'}"
         style="${this.buildStyleString(containerStyles)}"
-        ${ref((el?: Element) => {
-          if (!el) return;
-
-          // After render, check if parent wrapper has flex constraint
-          // If constrained, ensure bar uses 100% to fill the constrained wrapper
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              const parent = el.parentElement;
-              const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
-
-              if (isFlexConstrained) {
-                const barContainer = el.querySelector('.bar-container') as HTMLElement;
-                if (barContainer) {
-                  // Parent wrapper has fixed width constraint (e.g., 80%)
-                  // Set bar to 100% to fill that constrained space
-                  barContainer.style.width = '100%';
-                }
-              }
-
-              // Apply edge clamp after layout settles and widths are final.
-              this.scheduleScaleEdgeLabelClamping(el);
-              this.ensureScaleClampObserver(el);
-            });
-          });
-        })}
+        ${ref(this._barRootRef)}
       >
         <!-- Bar Container -->
         <div 

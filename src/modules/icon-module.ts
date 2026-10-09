@@ -611,8 +611,11 @@ export class UltraIconModule extends BaseUltraModule {
 
     // Ensure animations/styles exist globally
     this._injectGlobalStyles();
-    // Ensure keyframes exist inside ha-icon shadow roots for Live Preview animations
-    this._injectKeyframesForAllSplitPreviewIcons();
+    // Ensure keyframes exist inside ha-icon shadow roots for Live Preview animations.
+    // Editor-only: on a dashboard this was a document query plus a timer per icon per render.
+    if (previewContext === 'live' || previewContext === 'ha-preview') {
+      this._injectKeyframesForAllSplitPreviewIcons();
+    }
 
     // Inject into local shadow DOM — include keyframes so animations work in shadow DOM context
     const localStyle = html`<style>

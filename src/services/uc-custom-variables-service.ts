@@ -468,25 +468,32 @@ class UcCustomVariablesService {
       return obj;
     }
 
-    // Handle arrays
+    // Arrays and objects are only copied when something inside them resolved, so a
+    // module with no $variables keeps its identity (no per-render deep clone, and
+    // child elements can still memoise on it).
     if (Array.isArray(obj)) {
-      return obj.map(item => this._deepResolveVariables(item, cardConfig));
+      let out: any[] | null = null;
+      for (let i = 0; i < obj.length; i++) {
+        const next = this._deepResolveVariables(obj[i], cardConfig);
+        if (next !== obj[i] && !out) out = obj.slice(0, i);
+        if (out) out.push(next);
+      }
+      return out ?? obj;
     }
 
-    // Handle objects
     if (typeof obj === 'object') {
-      const resolved: any = {};
+      let resolved: any = null;
       for (const key of Object.keys(obj)) {
         const value = obj[key];
-        
         // Special handling for entity-related keys
-        if (this._isEntityFieldKey(key) && typeof value === 'string' && value.startsWith('$')) {
-          resolved[key] = this.resolveEntityField(value, cardConfig) || value;
-        } else {
-          resolved[key] = this._deepResolveVariables(value, cardConfig);
-        }
+        const next =
+          this._isEntityFieldKey(key) && typeof value === 'string' && value.startsWith('$')
+            ? this.resolveEntityField(value, cardConfig) || value
+            : this._deepResolveVariables(value, cardConfig);
+        if (next !== value && !resolved) resolved = { ...obj };
+        if (resolved) resolved[key] = next;
       }
-      return resolved;
+      return resolved ?? obj;
     }
 
     // Return primitives as-is

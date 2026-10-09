@@ -1767,7 +1767,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
   /** Re-render once a minute so the live position, markers, and relative times stay fresh */
   private _ensureTick(): void {
     if (this._tickTimer) return;
-    this._tickTimer = setInterval(() => this.triggerPreviewUpdate(), 60000);
+    this._tickTimer = setInterval(() => this.triggerPreviewUpdate(false, true), 60000);
   }
 
   private _fontSize(value: string | undefined, autoPx: string): string {

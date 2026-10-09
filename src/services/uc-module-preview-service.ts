@@ -355,7 +355,7 @@ class UcModulePreviewService {
 
     // Step 1: Resolve all variable references in the module
     const resolvedModule = ucCustomVariablesService.resolveModuleVariables(module, config);
-    const migratedModule = autoMigrateCardModule(resolvedModule);
+    const migratedModule = this._migrateForRender(resolvedModule, previewContext);
     const moduleToRender =
       previewContext === 'live'
         ? this._applyPreviewBreakpointDesign(migratedModule)
@@ -368,6 +368,29 @@ class UcModulePreviewService {
     }
 
     return content;
+  }
+
+  /**
+   * Template migration builds new objects for some module types even when nothing
+   * changes. On dashboards configs are never mutated in place, so the result is
+   * memoised per module object; the editor still migrates on every render because
+   * it can edit modules in place.
+   */
+  private _migratedModules = new WeakMap<CardModule, CardModule>();
+
+  private _migrateForRender(
+    module: CardModule,
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
+  ): CardModule {
+    if (previewContext === 'live' || previewContext === 'ha-preview') {
+      return autoMigrateCardModule(module);
+    }
+    let migrated = this._migratedModules.get(module);
+    if (!migrated) {
+      migrated = autoMigrateCardModule(module);
+      this._migratedModules.set(module, migrated);
+    }
+    return migrated;
   }
 
   private _renderSkeleton(

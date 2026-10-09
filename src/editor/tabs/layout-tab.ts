@@ -68,8 +68,6 @@ import { treeDndNode } from '../utils/tree-dnd';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { directoriesProPresetsAPI } from '../../services/directories-pro-presets-api';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
-import { ThirdPartyLimitService, getCurrentDashboardId } from '../../pro/third-party-limit-service';
-import { isThirdParty } from '../../pro/is-third-party';
 import { ucExportImportService } from '../../services/uc-export-import-service';
 import { ucCustomVariablesService } from '../../services/uc-custom-variables-service';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
@@ -7766,10 +7764,6 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    // Notify the limit service to re-evaluate immediately (avoid stale lock state)
-    try {
-      ThirdPartyLimitService.trigger();
-    } catch {}
     this._completeOnboardingStep('add_row');
   }
 
@@ -7812,10 +7806,6 @@ export class LayoutTab extends LitElement {
     const newLayout = JSON.parse(JSON.stringify(layout));
     newLayout.rows.splice(rowIndex + 1, 0, duplicatedRow);
     this._updateLayout(newLayout);
-    // Trigger service update to ensure previews reflect unlock state while editing
-    try {
-      ThirdPartyLimitService.trigger();
-    } catch {}
   }
 
   private _addColumn(rowIndex: number): void {
@@ -10988,14 +10978,6 @@ export class LayoutTab extends LitElement {
 
     // Generate new IDs for the duplicated module and all nested content
     this._regenerateModuleIds(duplicatedModule);
-
-    // Invalidate external card cache if duplicating an external card
-    const isExternalCard = moduleToCopy && moduleToCopy.type === 'external_card';
-    if (isExternalCard) {
-      import('../../modules/external-card-module').then(({ invalidateExternalCardCache }) => {
-        invalidateExternalCardCache();
-      });
-    }
 
     // Create new layout with duplicated module
     const newLayout = {
@@ -30366,15 +30348,9 @@ export class LayoutTab extends LitElement {
       card_config: normalizedConfig,
     };
 
-    const invalidateCardCache = () =>
-      import('../../modules/external-card-module').then(({ invalidateExternalCardCache }) => {
-        invalidateExternalCardCache();
-      });
-
     if (nested) {
       this._addPrebuiltModule(newModule as CardModule);
       this._showModuleSelector = false;
-      invalidateCardCache();
       await this._refreshGlobalExternalCardCount();
       return;
     }
@@ -30408,7 +30384,6 @@ export class LayoutTab extends LitElement {
     this._showModuleSelector = false;
 
     // Invalidate cache immediately for instant lock status update
-    invalidateCardCache();
 
     // Refresh the global count after adding
     await this._refreshGlobalExternalCardCount();

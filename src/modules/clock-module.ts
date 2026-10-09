@@ -366,7 +366,7 @@ export class UltraClockModule extends BaseUltraModule {
     if (this._tickTimer) clearInterval(this._tickTimer);
     this._tickSeconds = needSeconds;
     this._tickTimer = setInterval(
-      () => this.triggerPreviewUpdate(),
+      () => this.triggerPreviewUpdate(false, true),
       needSeconds ? 1000 : 15000
     );
   }
