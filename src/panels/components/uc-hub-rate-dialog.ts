@@ -48,8 +48,9 @@ export class UcHubRateDialog extends LitElement {
       background: var(--ha-card-background, var(--card-background-color, #1c1c1e));
       border-radius: 16px;
       padding: 24px 28px;
-      min-width: 300px;
+      min-width: min(300px, calc(100vw - 32px));
       max-width: min(480px, 90vw);
+      box-sizing: border-box;
       box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
       animation: slideUp 0.18s ease;
     }

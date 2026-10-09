@@ -737,7 +737,10 @@
         "toggle": "模板模式",
         "cheatsheet_title": "模板速查表",
         "placeholder": "{ \"visible\": {{ states('input_boolean.show_row') == 'on' }} }"
-      }
+      },
+      "row_deleted": "行已删除",
+      "column_deleted": "列已删除",
+      "module_deleted": "模块已删除"
     },
     "entity_mapper": {
       "title": "映射实体",

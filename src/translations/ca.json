@@ -695,7 +695,10 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Fila eliminada",
+      "column_deleted": "Columna eliminada",
+      "module_deleted": "Mòdul eliminat"
     },
     "entity_mapper": {
       "title": "Assigna les entitats",

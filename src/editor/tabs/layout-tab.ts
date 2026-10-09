@@ -2,6 +2,7 @@ import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { keyed } from 'lit/directives/keyed.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
   UltraCardConfig,
@@ -62,7 +63,13 @@ import {
   shouldSkipDragAutoExpand,
   rowTreeNodeData,
 } from '../layout/layout-tree-dnd-bridge';
-import { moveModuleSibling, moveRowSibling, moveColumnSibling } from '../layout/layout-tree-keyboard-move';
+import {
+  canMoveNestedChild,
+  moveColumnSibling,
+  moveModuleSibling,
+  moveNestedChildSibling,
+  moveRowSibling,
+} from '../layout/layout-tree-keyboard-move';
 import { treeDndNode } from '../utils/tree-dnd';
 
 import { ucPresetsService } from '../../services/uc-presets-service';
@@ -148,6 +155,14 @@ const MODULE_LIKE_DRAG_TYPES = new Set([
 ]);
 const TREE_DROP_NODE_SELECTOR =
   '.tree-row, .tree-column, .tree-module, .tree-layout-module, .tree-layout-child, .tree-nested-layout, .tree-deep-child, [data-drop-type]';
+
+/**
+ * Key for tree rows, columns and modules. Keyed lists keep focus and open menus
+ * on the right item after a reorder; plain .map() reused DOM by position.
+ */
+function treeItemKey(item: { id?: string } | undefined, index: number): string {
+  return item?.id ? `id:${item.id}` : `i:${index}`;
+}
 
 @customElement('ultra-layout-tab')
 export class LayoutTab extends LitElement {
@@ -346,6 +361,7 @@ export class LayoutTab extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.addEventListener('focusout', this._flushOnFocusOut);
     this._templateUpdateListener = () => {
       // Debounce: only update once every 100ms to prevent animation loops
       const now = Date.now();
@@ -549,7 +565,8 @@ export class LayoutTab extends LitElement {
     }
     this._resizeTimeout = setTimeout(() => {
       // Reposition all visible popups to stay centered and within viewport
-      const popups = document.querySelectorAll('.draggable-popup');
+      // Popups render in this element's shadow root; document never found them.
+      const popups = this.shadowRoot?.querySelectorAll('.draggable-popup') ?? [];
       popups.forEach(popup => {
         const element = popup as HTMLElement;
         if (element.offsetParent !== null) {
@@ -1345,6 +1362,40 @@ export class LayoutTab extends LitElement {
         },
       ];
     }
+
+    // Move up/down for nested children: before this they could only be moved by
+    // HTML5 drag, which is unreliable on touch screens.
+    const layoutForMove = this._ensureLayout();
+    const nestedIdx = type === 'deep-nested-child' ? nestedLayoutIndex : undefined;
+    const moveItems = (['up', 'down'] as const)
+      .filter(direction =>
+        canMoveNestedChild(
+          layoutForMove,
+          rowIndex,
+          columnIndex,
+          parentModuleIndex,
+          childIndex,
+          direction,
+          nestedIdx
+        )
+      )
+      .map(direction => ({
+        icon: direction === 'up' ? 'mdi:arrow-up' : 'mdi:arrow-down',
+        label:
+          direction === 'up'
+            ? localize('editor.layout.move_up', lang, 'Move up')
+            : localize('editor.layout.move_down', lang, 'Move down'),
+        action: () =>
+          this._moveNestedChild(
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            childIndex,
+            direction,
+            nestedIdx
+          ),
+      }));
+    if (moveItems.length) menuItems.splice(1, 0, ...moveItems);
 
     return html`
       <div class="tree-overflow-container">
@@ -2293,7 +2344,7 @@ export class LayoutTab extends LitElement {
                       </div>
                     `
                   : row.columns && row.columns.length > 0
-                    ? row.columns.map((column, columnIndex) =>
+                    ? repeat(row.columns, treeItemKey, (column, columnIndex) =>
                         this._renderTreeColumn(column, rowIndex, columnIndex, row.columns!.length)
                       )
                     : ''}
@@ -2309,24 +2360,20 @@ export class LayoutTab extends LitElement {
                     <span>${localize('editor.layout.add_column', lang, 'Add Column')}</span>
                   </button>
                   <button
-                    class="tree-paste-column-btn ${this._hasColumnClipboard ||
-                    ucExportImportService.hasColumnInLocalStorage()
+                    class="tree-paste-column-btn ${this._canPasteColumn()
                       ? 'active'
                       : ''}"
-                    ?disabled=${!this._hasColumnClipboard &&
-                    !ucExportImportService.hasColumnInLocalStorage()}
+                    ?disabled=${!this._canPasteColumn()}
                     @click=${(e: Event) => {
                       e.stopPropagation();
                       if (
-                        this._hasColumnClipboard ||
-                        ucExportImportService.hasColumnInLocalStorage()
+                        this._canPasteColumn()
                       ) {
                         this._hasColumnClipboard = true;
                         this._pasteColumn(rowIndex);
                       }
                     }}
-                    title="${this._hasColumnClipboard ||
-                    ucExportImportService.hasColumnInLocalStorage()
+                    title="${this._canPasteColumn()
                       ? localize('editor.layout.paste_column', lang, 'Paste Column')
                       : localize('editor.layout.copy_column_first', lang, 'Copy a column first')}"
                   >
@@ -2488,7 +2535,7 @@ export class LayoutTab extends LitElement {
                       </div>
                     `
                   : column.modules && column.modules.length > 0
-                    ? column.modules.map((module, moduleIndex) =>
+                    ? repeat(column.modules, treeItemKey, (module, moduleIndex) =>
                         this._renderTreeModule(
                           module,
                           rowIndex,
@@ -2833,7 +2880,7 @@ export class LayoutTab extends LitElement {
                   : html`
                       ${hasChildren
                         ? html`
-                            ${layoutModule.modules.map(
+                            ${repeat(layoutModule.modules, treeItemKey, 
                               (childModule: CardModule, childIndex: number) =>
                                 this._renderTreeLayoutChild(
                                   childModule,
@@ -4201,7 +4248,7 @@ export class LayoutTab extends LitElement {
                   : html`
                       ${hasChildren
                         ? html`
-                            ${layoutModule.modules.map(
+                            ${repeat(layoutModule.modules, treeItemKey, 
                               (nestedChild: CardModule, nestedIndex: number) =>
                                 this._renderTreeDeepNestedChild(
                                   nestedChild,
@@ -4843,7 +4890,7 @@ export class LayoutTab extends LitElement {
                   : html`
                       ${hasChildren
                         ? html`
-                            ${layoutModule.modules.map(
+                            ${repeat(layoutModule.modules, treeItemKey, 
                               (nestedChild: CardModule, nestedIndex: number) =>
                                 this._renderTreeNestedTabsSectionLayoutChildChild(
                                   nestedChild,
@@ -4929,30 +4976,13 @@ export class LayoutTab extends LitElement {
     return html`
       <div
         class="tree-node tree-deep-child ${isLastChild ? 'last-node' : ''}"
-        draggable="true"
-        @dragstart=${(e: DragEvent) => {
-          e.stopPropagation();
-          // TODO: Implement drag start for deeply nested tabs section child
-        }}
-        @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragleave=${this._onDragLeave}
-        @drop=${(e: DragEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // TODO: Implement drop for deeply nested tabs section child
-        }}
       >
         <div class="tree-node-line"></div>
         <div class="tree-node-dot child-dot"></div>
         <div class="tree-node-content">
           <div class="tree-node-header child-header">
-            <div
-              class="tree-node-drag-handle"
-              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
-            >
-              <ha-icon icon="mdi:drag"></ha-icon>
-            </div>
             <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
             <div class="tree-node-info">
               <span class="tree-node-title">${moduleTitle}</span>
@@ -5072,28 +5102,11 @@ export class LayoutTab extends LitElement {
         class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
           ? 'last-node'
           : ''} ${isCollapsed ? 'collapsed' : ''}"
-        draggable="true"
-        @dragstart=${(e: DragEvent) => {
-          e.stopPropagation();
-          // TODO: Implement drag start for deeply nested layout
-        }}
-        @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragleave=${this._onDragLeave}
-        @drop=${(e: DragEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // TODO: Implement drop for deeply nested layout
-        }}
       >
         <div class="tree-node-content">
           <div class="tree-node-header layout-header">
-            <div
-              class="tree-node-drag-handle"
-              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
-            >
-              <ha-icon icon="mdi:drag"></ha-icon>
-            </div>
             <ha-icon
               icon="${metadata?.icon || 'mdi:view-sequential'}"
               class="tree-node-icon layout-icon"
@@ -5203,7 +5216,7 @@ export class LayoutTab extends LitElement {
             ? html`
                 ${hasChildren
                   ? html`
-                      ${layoutModule.modules.map(
+                      ${repeat(layoutModule.modules, treeItemKey, 
                         (deepChild: CardModule, deepIndex: number) => html`
                           <div
                             class="tree-node tree-deep-child ${deepIndex ===
@@ -5769,7 +5782,7 @@ export class LayoutTab extends LitElement {
                   : html`
                       ${hasChildren
                         ? html`
-                            ${layoutModule.modules.map((deepChild: CardModule, deepIndex: number) =>
+                            ${repeat(layoutModule.modules, treeItemKey, (deepChild: CardModule, deepIndex: number) =>
                               this._renderTreeLevel4Child(
                                 deepChild,
                                 rowIndex,
@@ -6153,7 +6166,7 @@ export class LayoutTab extends LitElement {
             ? html`
                 ${hasChildren
                   ? html`
-                      ${layoutModule.modules.map((deepChild: CardModule, deepIndex: number) =>
+                      ${repeat(layoutModule.modules, treeItemKey, (deepChild: CardModule, deepIndex: number) =>
                         this._renderTreeDeepChild(
                           deepChild,
                           deepIndex,
@@ -6446,7 +6459,7 @@ export class LayoutTab extends LitElement {
             ? html`
                 ${hasChildren && !isTabs
                   ? html`
-                      ${layoutModule.modules.map((nestedChild: CardModule, nestedIndex: number) =>
+                      ${repeat(layoutModule.modules, treeItemKey, (nestedChild: CardModule, nestedIndex: number) =>
                         this._renderTreeDeepChild(
                           nestedChild,
                           nestedIndex,
@@ -7054,6 +7067,8 @@ export class LayoutTab extends LitElement {
 
   // Component lifecycle
   override disconnectedCallback() {
+    this._flushConfigChanged();
+    this.removeEventListener('focusout', this._flushOnFocusOut);
     super.disconnectedCallback();
     if (this._treeDndCleanup) {
       this._treeDndCleanup();
@@ -7158,8 +7173,34 @@ export class LayoutTab extends LitElement {
    * This makes dropdowns use fixed positioning like HA's tile-card
    * Fixed positioning allows dropdowns to escape stacking contexts and appear above tabs
    */
+  private _columnClipboardCheckedAt = 0;
+
+  /**
+   * Paste Column state. Rows asked localStorage (and parsed it) three times each
+   * per render; another card's editor can fill the clipboard, so re-check at most
+   * once a second.
+   */
+  private _columnClipboardInStorage = false;
+
+  private _canPasteColumn(): boolean {
+    if (this._hasColumnClipboard) return true;
+    const now = Date.now();
+    if (now - this._columnClipboardCheckedAt > 1000) {
+      this._columnClipboardCheckedAt = now;
+      // Plain field, not @state: this runs during render.
+      this._columnClipboardInStorage = ucExportImportService.hasColumnInLocalStorage();
+    }
+    return this._columnClipboardInStorage;
+  }
+
+  private _fixedMenuSweepPending = false;
+
   private _addFixedMenuPositionToSelects(): void {
+    // Runs from updated(); one sweep per frame however many updates land in it.
+    if (this._fixedMenuSweepPending) return;
+    this._fixedMenuSweepPending = true;
     requestAnimationFrame(() => {
+      this._fixedMenuSweepPending = false;
       const selects = this.shadowRoot?.querySelectorAll('ha-select');
       selects?.forEach(select => {
         if (!select.hasAttribute('fixedmenuposition')) {
@@ -7219,8 +7260,10 @@ export class LayoutTab extends LitElement {
     };
 
     // Add global event listeners
-    document.addEventListener('mousemove', this._handlePopupDrag);
-    document.addEventListener('mouseup', this._endPopupDrag);
+    // Pointer events so touch and pen can drag too (mouse events were mouse-only).
+    document.addEventListener('pointermove', this._handlePopupDrag);
+    document.addEventListener('pointerup', this._endPopupDrag);
+    document.addEventListener('pointercancel', this._endPopupDrag);
 
     // Add dragging class for visual feedback
     element.classList.add('popup-dragging');
@@ -7267,8 +7310,9 @@ export class LayoutTab extends LitElement {
     };
 
     // Remove global event listeners
-    document.removeEventListener('mousemove', this._handlePopupDrag);
-    document.removeEventListener('mouseup', this._endPopupDrag);
+    document.removeEventListener('pointermove', this._handlePopupDrag);
+    document.removeEventListener('pointerup', this._endPopupDrag);
+    document.removeEventListener('pointercancel', this._endPopupDrag);
   };
   private _startPopupResize(e: MouseEvent, element: HTMLElement): void {
     // Disable resizing on mobile for predictable centered UX
@@ -7297,8 +7341,9 @@ export class LayoutTab extends LitElement {
     };
 
     // Add global event listeners
-    document.addEventListener('mousemove', this._handlePopupResize);
-    document.addEventListener('mouseup', this._endPopupResize);
+    document.addEventListener('pointermove', this._handlePopupResize);
+    document.addEventListener('pointerup', this._endPopupResize);
+    document.addEventListener('pointercancel', this._endPopupResize);
 
     // Add resizing class for visual feedback
     element.classList.add('popup-resizing');
@@ -7348,8 +7393,9 @@ export class LayoutTab extends LitElement {
     };
 
     // Remove global event listeners
-    document.removeEventListener('mousemove', this._handlePopupResize);
-    document.removeEventListener('mouseup', this._endPopupResize);
+    document.removeEventListener('pointermove', this._handlePopupResize);
+    document.removeEventListener('pointerup', this._endPopupResize);
+    document.removeEventListener('pointercancel', this._endPopupResize);
   };
 
   // Create visual column icon representation for popup
@@ -7592,6 +7638,12 @@ export class LayoutTab extends LitElement {
     return this.config.layout;
   }
 
+  /** Outgoing config-changed is debounced; the local config updates immediately. */
+  private static readonly CONFIG_EVENT_DEBOUNCE_MS = 200;
+  private _pendingConfigEvent: UltraCardConfig | null = null;
+  private _configEventTimer: number | undefined;
+  private readonly _flushOnFocusOut = (): void => this._flushConfigChanged();
+
   private _updateConfig(updates: Partial<UltraCardConfig>): void {
     const newConfig = { ...this.config, ...updates };
 
@@ -7599,22 +7651,57 @@ export class LayoutTab extends LitElement {
     // same-turn re-render read the updated layout (HA may re-assign config asynchronously).
     this.config = newConfig;
 
-    // Update hover styles when configuration changes
-    setTimeout(() => {
-      this._updateHoverEffectStyles();
-    }, 0);
+    // Typing used to send config-changed on every keystroke, and each one made HA,
+    // the editor and every card on the dashboard redo their work. Coalesce bursts;
+    // focusout and disconnect flush so Save never misses the last edit.
+    this._pendingConfigEvent = newConfig;
+    if (this._configEventTimer !== undefined) clearTimeout(this._configEventTimer);
+    this._configEventTimer = window.setTimeout(
+      () => this._flushConfigChanged(),
+      LayoutTab.CONFIG_EVENT_DEBOUNCE_MS
+    );
+  }
 
-    const event = new CustomEvent('config-changed', {
-      detail: { config: newConfig },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+  /**
+   * Send a full config straight away (variable/import paths that set more than the
+   * layout). Any pending debounced event is dropped: it carries an older config and
+   * would otherwise land afterwards and undo this one.
+   */
+  private _emitConfigNow(config: UltraCardConfig, isInternal = false): void {
+    if (this._configEventTimer !== undefined) {
+      clearTimeout(this._configEventTimer);
+      this._configEventTimer = undefined;
+    }
+    this._pendingConfigEvent = null;
+    this.config = config;
+    this.dispatchEvent(
+      new CustomEvent('config-changed', {
+        detail: isInternal ? { config, isInternal } : { config },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 
-    // Dispatch template update event to refresh live preview
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-    }, 0);
+  private _flushConfigChanged(): void {
+    if (this._configEventTimer !== undefined) {
+      clearTimeout(this._configEventTimer);
+      this._configEventTimer = undefined;
+    }
+    const config = this._pendingConfigEvent;
+    if (!config) return;
+    this._pendingConfigEvent = null;
+
+    this._updateHoverEffectStyles();
+    this.dispatchEvent(
+      new CustomEvent('config-changed', {
+        detail: { config },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    // Refresh the live preview once per burst, not once per keystroke.
+    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
   }
 
   private _updateLayout(layout: { rows: CardRow[] }): void {
@@ -7683,11 +7770,26 @@ export class LayoutTab extends LitElement {
   }
 
   // Undo/Redo functionality
+  /** Edits closer together than this share one undo step (typing, slider drags). */
+  private static readonly UNDO_COALESCE_MS = 750;
+  private _lastUndoSnapshotAt = 0;
+  private _lastUndoSnapshotJson = '';
+
   private _saveStateToUndoStack(): void {
+    // One step per burst: the snapshot taken at the start of a burst already holds
+    // the state before it, so later edits in the same burst add nothing. Previously
+    // every keystroke was a step and 50 of them wiped the real history.
+    const now = Date.now();
+    const inBurst = now - this._lastUndoSnapshotAt < LayoutTab.UNDO_COALESCE_MS;
+    this._lastUndoSnapshotAt = now;
+    if (inBurst && this._undoStack.length > 0) return;
+
     const layout = this._ensureLayout();
-    const currentState = {
-      rows: JSON.parse(JSON.stringify(layout.rows)), // Deep copy
-    };
+    const json = JSON.stringify(layout.rows);
+    // Skip no-op snapshots (nothing changed since the last step).
+    if (this._undoStack.length > 0 && json === this._lastUndoSnapshotJson) return;
+    this._lastUndoSnapshotJson = json;
+    const currentState = { rows: JSON.parse(json) };
 
     this._undoStack.push(currentState);
 
@@ -7695,6 +7797,28 @@ export class LayoutTab extends LitElement {
     if (this._undoStack.length > this._maxHistorySize) {
       this._undoStack.shift();
     }
+  }
+
+  /**
+   * Run a delete as its own undo step and offer Undo in a toast. Delete sits next
+   * to Duplicate on small buttons, so a mis-tap must be one click to reverse.
+   */
+  private _runDeleteWithUndo(run: () => void, key: string, fallback: string): void {
+    const before = this._undoStack.length;
+    this._lastUndoSnapshotAt = 0; // never merge a delete into a typing burst
+    run();
+    this._lastUndoSnapshotAt = 0;
+    if (this._undoStack.length === before) return; // nothing was deleted
+    const lang = this.hass?.locale?.language || 'en';
+    ucToastService.show({
+      message: localize(`editor.layout.${key}`, lang, fallback),
+      type: 'info',
+      duration: 6000,
+      action: {
+        label: localize('editor.layout.undo', lang, 'Undo'),
+        onClick: () => this._undo(),
+      },
+    });
   }
 
   private _canUndo(): boolean {
@@ -7707,6 +7831,8 @@ export class LayoutTab extends LitElement {
 
   private _undo(): void {
     if (!this._canUndo()) return;
+    this._lastUndoSnapshotAt = 0;
+    this._lastUndoSnapshotJson = '';
 
     const layout = this._ensureLayout();
     const currentState = {
@@ -7726,6 +7852,8 @@ export class LayoutTab extends LitElement {
 
   private _redo(): void {
     if (!this._canRedo()) return;
+    this._lastUndoSnapshotAt = 0;
+    this._lastUndoSnapshotJson = '';
 
     const layout = this._ensureLayout();
     const currentState = {
@@ -7768,6 +7896,10 @@ export class LayoutTab extends LitElement {
   }
 
   private _deleteRow(rowIndex: number): void {
+    this._runDeleteWithUndo(() => this._deleteRowNow(rowIndex), 'row_deleted', 'Row deleted');
+  }
+
+  private _deleteRowNow(rowIndex: number): void {
     const layout = this._ensureLayout();
 
     if (layout.rows.length > 1) {
@@ -7941,6 +8073,10 @@ export class LayoutTab extends LitElement {
   }
 
   private _deleteColumn(rowIndex: number, columnIndex: number): void {
+    this._runDeleteWithUndo(() => this._deleteColumnNow(rowIndex, columnIndex), 'column_deleted', 'Column deleted');
+  }
+
+  private _deleteColumnNow(rowIndex: number, columnIndex: number): void {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row) {
@@ -9347,13 +9483,7 @@ export class LayoutTab extends LitElement {
 
       this._updateLayout(layout);
       if (varsChanged) {
-        this.dispatchEvent(
-          new CustomEvent('config-changed', {
-            detail: { config: { ...this.config, layout, _customVariables: updatedCardVars } },
-            bubbles: true,
-            composed: true,
-          })
-        );
+        this._emitConfigNow({ ...this.config, layout, _customVariables: updatedCardVars });
       }
       this._showToast(
         `Entities remapped! ${result.mappings.length} mapping(s) applied.`,
@@ -9487,13 +9617,7 @@ export class LayoutTab extends LitElement {
         // Add card-specific variables to card config
         if (varResult.cardVarsToAdd.length > 0) {
           const updatedCardVars = [...currentCardVars, ...varResult.cardVarsToAdd];
-          this.dispatchEvent(
-            new CustomEvent('config-changed', {
-              detail: { config: { ...this.config, _customVariables: updatedCardVars } },
-              bubbles: true,
-              composed: true,
-            })
-          );
+          this._emitConfigNow({ ...this.config, _customVariables: updatedCardVars });
 
           // Show summary toast
           const { summary } = varResult;
@@ -10441,16 +10565,18 @@ export class LayoutTab extends LitElement {
     };
 
     const onUp = (): void => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
       document.body.style.removeProperty('user-select');
       document.body.style.removeProperty('cursor');
     };
 
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'ns-resize';
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
   };
 
   /**
@@ -10620,12 +10746,7 @@ export class LayoutTab extends LitElement {
         }
 
         // Fire config-changed event with the new full config
-        const event = new CustomEvent('config-changed', {
-          detail: { config: cardConfig, isInternal: true },
-          bubbles: true,
-          composed: true,
-        });
-        this.dispatchEvent(event);
+        this._emitConfigNow(cardConfig, true);
 
         this._showToast(
           localize(
@@ -11006,6 +11127,10 @@ export class LayoutTab extends LitElement {
   }
 
   private _deleteModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
+    this._runDeleteWithUndo(() => this._deleteModuleNow(rowIndex, columnIndex, moduleIndex), 'module_deleted', 'Module deleted');
+  }
+
+  private _deleteModuleNow(rowIndex: number, columnIndex: number, moduleIndex: number): void {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row || !row.columns[columnIndex]) return;
@@ -12945,7 +13070,12 @@ export class LayoutTab extends LitElement {
    * Positions the drop indicator line at the insertion point. The line is centred inside the
    * gap that opens on the target node and constrained to that node's width.
    */
+  private _dropIndicatorVisible = false;
+
   private _positionDropIndicator(): void {
+    // updated() calls this on every render; nothing to do unless a drag is showing it.
+    if (!this._dropTarget && !this._dropIndicatorVisible) return;
+    this._dropIndicatorVisible = !!this._dropTarget;
     const container = this.shadowRoot?.querySelector('.tree-view-container') as HTMLElement | null;
     const indicator = this.shadowRoot?.getElementById('tree-drop-indicator') as HTMLElement | null;
     if (!container || !indicator) return;
@@ -13518,6 +13648,35 @@ export class LayoutTab extends LitElement {
     direction: 'up' | 'down'
   ): void {
     const next = moveModuleSibling(this._ensureLayout(), rowIndex, columnIndex, moduleIndex, direction);
+    if (!next) return;
+    this._updateLayout(next);
+    const lang = this.hass?.locale?.language || 'en';
+    this._announceReorder(
+      localize(
+        direction === 'up' ? 'editor.layout.moved_up' : 'editor.layout.moved_down',
+        lang,
+        direction === 'up' ? 'Moved up' : 'Moved down'
+      )
+    );
+  }
+
+  private _moveNestedChild(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number,
+    direction: 'up' | 'down',
+    nestedLayoutIndex?: number
+  ): void {
+    const next = moveNestedChildSibling(
+      this._ensureLayout(),
+      rowIndex,
+      columnIndex,
+      parentModuleIndex,
+      childIndex,
+      direction,
+      nestedLayoutIndex
+    );
     if (!next) return;
     this._updateLayout(next);
     const lang = this.hass?.locale?.language || 'en';
@@ -22378,6 +22537,25 @@ export class LayoutTab extends LitElement {
     parentModuleIndex: number,
     childIndex: number
   ): void {
+    this._runDeleteWithUndo(
+      () =>
+        this._deleteLayoutChildModuleNow(
+          parentRowIndex,
+          parentColumnIndex,
+          parentModuleIndex,
+          childIndex
+        ),
+      'module_deleted',
+      'Module deleted'
+    );
+  }
+
+  private _deleteLayoutChildModuleNow(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number
+  ): void {
     const layout = this._ensureLayout();
     const row = layout.rows[parentRowIndex];
     if (!row || !row.columns[parentColumnIndex]) return;
@@ -23750,7 +23928,7 @@ export class LayoutTab extends LitElement {
         >
           <div
             class="popup-header"
-            @mousedown=${(e: MouseEvent) => {
+            @pointerdown=${(e: PointerEvent) => {
               const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
               if (popup) this._startPopupDrag(e, popup);
             }}
@@ -23905,7 +24083,7 @@ export class LayoutTab extends LitElement {
           <!-- Resize handle -->
           <div
             class="resize-handle"
-            @mousedown=${(e: MouseEvent) => {
+            @pointerdown=${(e: PointerEvent) => {
               const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
               if (popup) this._startPopupResize(e, popup);
             }}
@@ -27900,7 +28078,7 @@ export class LayoutTab extends LitElement {
                         lang,
                         'Drag to resize preview'
                       )}"
-                      @mousedown=${this._onPreviewResizeStart}
+                      @pointerdown=${this._onPreviewResizeStart}
                     >
                       <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
                     </div>
@@ -27922,7 +28100,7 @@ export class LayoutTab extends LitElement {
                       lang,
                       'Drag to resize preview'
                     )}"
-                    @mousedown=${this._onPreviewResizeStart}
+                    @pointerdown=${this._onPreviewResizeStart}
                   >
                     <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
                   </div>
@@ -28099,7 +28277,7 @@ export class LayoutTab extends LitElement {
 
         <div class="tree-view-container">
           <div id="tree-drop-indicator" class="tree-drop-indicator" aria-hidden="true"></div>
-          ${layout.rows.map((row, rowIndex) =>
+          ${repeat(layout.rows, treeItemKey, (row, rowIndex) =>
             this._renderTreeRow(row, rowIndex, layout.rows.length)
           )}
           <div class="tree-add-row-container">
@@ -28114,567 +28292,6 @@ export class LayoutTab extends LitElement {
               <span>${localize('editor.layout.add_row', lang, 'Add Row')}</span>
             </button>
           </div>
-        </div>
-
-        <!-- Legacy rows-container kept for compatibility with popups and dialogs -->
-        <div class="rows-container" style="display: none;">
-          ${layout.rows.map(
-            (row, rowIndex) => html`
-              <div
-                class="row-builder ${this._dropTarget?.type === 'row' &&
-                this._dropTarget?.rowIndex === rowIndex &&
-                this._dropTarget?.insertEdge === 'inside'
-                  ? 'drop-target'
-                  : ''}"
-                draggable="true"
-                @dragstart=${(e: DragEvent) => this._onDragStart(e, 'row', rowIndex)}
-                @dragend=${this._onDragEnd}
-                @dragover=${this._onDragOver}
-                @dragenter=${(e: DragEvent) => this._onDragEnter(e, 'row', rowIndex)}
-                @dragleave=${this._onDragLeave}
-                @drop=${(e: DragEvent) => this._onDrop(e, 'row', rowIndex)}
-              >
-                <div class="row-header">
-                  <div class="row-title">
-                    <div class="row-title-left">
-                      <div class="row-drag-handle" title="Drag to move row">
-                        <ha-icon icon="mdi:drag"></ha-icon>
-                      </div>
-                      <span class="row-name-top"
-                        >${(row as any).row_name || `Row ${rowIndex + 1}`}</span
-                      >
-                      <button
-                        class="column-layout-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._openColumnLayoutSelector(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Change Column Layout"
-                      >
-                        <span class="layout-icon">${this._getCurrentLayoutDisplay(row)}</span>
-                      </button>
-                      <span class="column-layout-text">${this._getCurrentLayoutText(row)}</span>
-                    </div>
-                    <div class="row-title-right">
-                      <button
-                        class="row-col-sizing-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._openColumnLayoutSelector(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Column Sizing"
-                      >
-                        <ha-icon icon="mdi:table-column"></ha-icon>
-                      </button>
-                      <button
-                        class="row-settings-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._openRowSettings(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="${localize(
-                          'editor.layout.row_settings',
-                          this.hass?.locale?.language || 'en',
-                          'Row Settings'
-                        )}"
-                      >
-                        <ha-icon icon="mdi:cog"></ha-icon>
-                      </button>
-                      <button
-                        class="row-collapse-btn"
-                        @click=${(e: Event) => this._toggleRowCollapsed(rowIndex, e)}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="${this._collapsedRows.has(rowIndex) ? 'Expand row' : 'Collapse row'}"
-                      >
-                        <ha-icon
-                          icon="mdi:chevron-down"
-                          style="transform: rotate(${this._collapsedRows.has(rowIndex)
-                            ? '-90deg'
-                            : '0deg'}); transition: transform 0.2s ease;"
-                        ></ha-icon>
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    class="row-bottom"
-                    style="display: ${this._collapsedRows.has(rowIndex) ? 'none' : 'flex'};"
-                  >
-                    <div class="row-actions-left">
-                      <button
-                        class="row-add-column-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._addColumn(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Add Column to Row"
-                      >
-                        <ha-icon icon="mdi:plus"></ha-icon>
-                      </button>
-                      <button
-                        class="row-export-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._exportRow(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Export row"
-                      >
-                        <ha-icon icon="mdi:export"></ha-icon>
-                      </button>
-                      <button
-                        class="row-paste-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._pasteRowFromClipboard(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Import from clipboard"
-                      >
-                        <ha-icon icon="mdi:clipboard-text"></ha-icon>
-                      </button>
-                    </div>
-                    <div class="row-actions-right">
-                      <button
-                        class="row-favorite-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._saveRowAsFavorite(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Save as favorite"
-                      >
-                        <ha-icon icon="mdi:heart"></ha-icon>
-                      </button>
-                      <button
-                        class="row-duplicate-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._duplicateRow(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Duplicate Row"
-                      >
-                        <ha-icon icon="mdi:content-duplicate"></ha-icon>
-                      </button>
-                      <button
-                        class="delete-row-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._deleteRow(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Delete Row"
-                      >
-                        <ha-icon icon="mdi:delete"></ha-icon>
-                      </button>
-                      <div class="row-more-container">
-                        <button
-                          class="row-more-btn"
-                          @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._toggleMoreMenu(rowIndex);
-                          }}
-                          @mousedown=${(e: Event) => e.stopPropagation()}
-                          @dragstart=${(e: Event) => e.preventDefault()}
-                          title="More actions"
-                        >
-                          <ha-icon icon="mdi:dots-vertical"></ha-icon>
-                        </button>
-                        ${this._openMoreMenuRowIndex === rowIndex
-                          ? html`
-                              <div
-                                class="row-more-menu"
-                                @click=${(e: Event) => e.stopPropagation()}
-                              >
-                                <button
-                                  class="more-menu-item paste"
-                                  @click=${() => {
-                                    this._pasteRowFromClipboard(rowIndex);
-                                    this._openMoreMenuRowIndex = -1;
-                                  }}
-                                >
-                                  <ha-icon icon="mdi:clipboard-text"></ha-icon>
-                                  <span>Paste from Clipboard</span>
-                                </button>
-                                <button
-                                  class="more-menu-item favorite"
-                                  @click=${() => {
-                                    this._saveRowAsFavorite(rowIndex);
-                                    this._openMoreMenuRowIndex = -1;
-                                  }}
-                                >
-                                  <ha-icon icon="mdi:heart"></ha-icon>
-                                  <span>Save as Favorite</span>
-                                </button>
-                                <button
-                                  class="more-menu-item export"
-                                  @click=${() => {
-                                    this._exportRow(rowIndex);
-                                    this._openMoreMenuRowIndex = -1;
-                                  }}
-                                >
-                                  <ha-icon icon="mdi:export"></ha-icon>
-                                  <span>Export Row</span>
-                                </button>
-                              </div>
-                            `
-                          : ''}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="columns-container"
-                  data-layout="${row.column_layout || '1-2-1-2'}"
-                  style="display: ${this._collapsedRows.has(rowIndex) ? 'none' : 'flex'};"
-                >
-                  ${row.columns && row.columns.length > 0
-                    ? row.columns.map(
-                        (column, columnIndex) => html`
-                          <div
-                            class="column-builder"
-                            draggable="true"
-                            @dragstart=${(e: DragEvent) =>
-                              this._onDragStart(e, 'column', rowIndex, columnIndex)}
-                            @dragend=${this._onDragEnd}
-                            @dragover=${this._onDragOver}
-                            @dragenter=${(e: DragEvent) =>
-                              this._onDragEnter(e, 'column', rowIndex, columnIndex)}
-                            @dragleave=${this._onDragLeave}
-                            @drop=${(e: DragEvent) =>
-                              this._onDrop(e, 'column', rowIndex, columnIndex)}
-                            class="${this._dropTarget?.type === 'column' &&
-                            this._dropTarget?.rowIndex === rowIndex &&
-                            this._dropTarget?.columnIndex === columnIndex &&
-                            this._dropTarget?.insertEdge === 'inside'
-                              ? 'drop-target'
-                              : ''}"
-                          >
-                            <div class="column-header">
-                              <div class="column-title">
-                                <div class="column-drag-handle" title="Drag to move column">
-                                  <ha-icon icon="mdi:drag"></ha-icon>
-                                </div>
-                                <button
-                                  class="column-collapse-btn"
-                                  @click=${(e: Event) =>
-                                    this._toggleColumnCollapsed(rowIndex, columnIndex, e)}
-                                  @mousedown=${(e: Event) => e.stopPropagation()}
-                                  @dragstart=${(e: Event) => e.preventDefault()}
-                                  title="${this._collapsedColumns.has(`${rowIndex}-${columnIndex}`)
-                                    ? 'Expand column'
-                                    : 'Collapse column'}"
-                                >
-                                  <ha-icon
-                                    icon="mdi:chevron-down"
-                                    style="transform: rotate(${this._collapsedColumns.has(
-                                      `${rowIndex}-${columnIndex}`
-                                    )
-                                      ? '-90deg'
-                                      : '0deg'}); transition: transform 0.2s ease;"
-                                  ></ha-icon>
-                                </button>
-                                <span>Column ${columnIndex + 1}</span>
-                              </div>
-                              <div class="column-actions">
-                                <button
-                                  class="column-add-module-btn"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation();
-                                    this._openModuleSelector(rowIndex, columnIndex);
-                                  }}
-                                  @mousedown=${(e: Event) => e.stopPropagation()}
-                                  @dragstart=${(e: Event) => e.preventDefault()}
-                                  title="Add Module to Column"
-                                >
-                                  <ha-icon icon="mdi:plus"></ha-icon>
-                                </button>
-                                <button
-                                  class="column-duplicate-btn"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation();
-                                    this._duplicateColumn(rowIndex, columnIndex);
-                                  }}
-                                  @mousedown=${(e: Event) => e.stopPropagation()}
-                                  @dragstart=${(e: Event) => e.preventDefault()}
-                                  title="Duplicate Column"
-                                >
-                                  <ha-icon icon="mdi:content-duplicate"></ha-icon>
-                                </button>
-                                <button
-                                  class="column-settings-btn"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation();
-                                    this._openColumnSettings(rowIndex, columnIndex);
-                                  }}
-                                  @mousedown=${(e: Event) => e.stopPropagation()}
-                                  @dragstart=${(e: Event) => e.preventDefault()}
-                                  title="${localize(
-                                    'editor.layout.column_settings',
-                                    this.hass?.locale?.language || 'en',
-                                    'Column Settings'
-                                  )}"
-                                >
-                                  <ha-icon icon="mdi:cog"></ha-icon>
-                                </button>
-                                <button
-                                  class="column-copy-btn"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation();
-                                    this._copyColumn(rowIndex, columnIndex);
-                                  }}
-                                  @mousedown=${(e: Event) => e.stopPropagation()}
-                                  @dragstart=${(e: Event) => e.preventDefault()}
-                                  title="${localize(
-                                    'editor.layout.copy_column',
-                                    this.hass?.locale?.language || 'en',
-                                    'Copy Column'
-                                  )}"
-                                >
-                                  <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
-                                </button>
-                                <button
-                                  class="column-delete-btn"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation();
-                                    this._deleteColumn(rowIndex, columnIndex);
-                                  }}
-                                  @mousedown=${(e: Event) => e.stopPropagation()}
-                                  @dragstart=${(e: Event) => e.preventDefault()}
-                                  title="Delete Column"
-                                >
-                                  <ha-icon icon="mdi:delete"></ha-icon>
-                                </button>
-                              </div>
-                            </div>
-                            <div
-                              class="modules-container ${this._dropTarget?.type === 'column' &&
-                              this._dropTarget?.rowIndex === rowIndex &&
-                              this._dropTarget?.columnIndex === columnIndex &&
-                              this._dropTarget?.insertEdge === 'inside'
-                                ? 'drop-target'
-                                : ''}"
-                              @dragover=${this._onDragOver}
-                              @dragenter=${(e: DragEvent) =>
-                                this._onDragEnter(e, 'column', rowIndex, columnIndex)}
-                              @dragleave=${this._onDragLeave}
-                              @drop=${(e: DragEvent) =>
-                                this._onDrop(e, 'column', rowIndex, columnIndex)}
-                              style="display: ${this._collapsedColumns.has(
-                                `${rowIndex}-${columnIndex}`
-                              )
-                                ? 'none'
-                                : 'block'};"
-                            >
-                              ${column.modules.map(
-                                (module, moduleIndex) => html`
-                                  <div
-                                    class="module-item ${this._dropTarget?.type === 'module' &&
-                                    this._dropTarget?.rowIndex === rowIndex &&
-                                    this._dropTarget?.columnIndex === columnIndex &&
-                                    this._dropTarget?.moduleIndex === moduleIndex &&
-                                    this._dropTarget?.insertEdge === 'inside'
-                                      ? 'drop-target'
-                                      : ''}"
-                                    draggable="true"
-                                    @dragstart=${(e: DragEvent) =>
-                                      this._onDragStart(
-                                        e,
-                                        'module',
-                                        rowIndex,
-                                        columnIndex,
-                                        moduleIndex
-                                      )}
-                                    @dragend=${this._onDragEnd}
-                                    @dragover=${this._onDragOver}
-                                    @dragenter=${(e: DragEvent) =>
-                                      this._onDragEnter(
-                                        e,
-                                        'module',
-                                        rowIndex,
-                                        columnIndex,
-                                        moduleIndex
-                                      )}
-                                    @dragleave=${this._onDragLeave}
-                                    @drop=${(e: DragEvent) =>
-                                      this._onDrop(e, 'module', rowIndex, columnIndex, moduleIndex)}
-                                  >
-                                    <div
-                                      class="module-content"
-                                      @click=${() =>
-                                        this._openModuleSettings(
-                                          rowIndex,
-                                          columnIndex,
-                                          moduleIndex
-                                        )}
-                                    >
-                                      ${this._renderSingleModule(
-                                        module,
-                                        rowIndex,
-                                        columnIndex,
-                                        moduleIndex
-                                      )}
-                                    </div>
-                                  </div>
-                                `
-                              )}
-                              <div class="add-module-area">
-                                <button
-                                  class="add-module-btn"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation();
-                                    this._openModuleSelector(rowIndex, columnIndex);
-                                  }}
-                                >
-                                  <ha-icon icon="mdi:plus"></ha-icon>
-                                  ${localize(
-                                    'editor.layout.add_module',
-                                    this.hass?.locale?.language || 'en',
-                                    'Add Module'
-                                  )}
-                                </button>
-                                ${this._hasModuleClipboard
-                                  ? html`
-                                      <button
-                                        class="paste-module-btn"
-                                        @click=${(e: Event) => {
-                                          e.stopPropagation();
-                                          this._pasteModule(rowIndex, columnIndex);
-                                        }}
-                                        title="${localize(
-                                          'editor.layout.paste_module',
-                                          this.hass?.locale?.language || 'en',
-                                          'Paste Module'
-                                        )}"
-                                      >
-                                        <ha-icon icon="mdi:content-paste"></ha-icon>
-                                        ${localize(
-                                          'editor.layout.paste_module',
-                                          this.hass?.locale?.language || 'en',
-                                          'Paste'
-                                        )}
-                                      </button>
-                                    `
-                                  : ''}
-                              </div>
-                            </div>
-                          </div>
-                        `
-                      )
-                    : html`
-                        <div class="empty-row-message">
-                          <p>This row has no columns.</p>
-                          <div class="add-module-area">
-                            <button
-                              class="add-module-btn"
-                              @click=${(e: Event) => {
-                                e.stopPropagation();
-                                this._openModuleSelector(rowIndex, 0);
-                              }}
-                              style="margin-top: 8px;"
-                            >
-                              <ha-icon icon="mdi:plus"></ha-icon>
-                              ${localize(
-                                'editor.layout.add_module_auto_column',
-                                this.hass?.locale?.language || 'en',
-                                'Add Module (will create column automatically)'
-                              )}
-                            </button>
-                            ${this._hasModuleClipboard
-                              ? html`
-                                  <button
-                                    class="paste-module-btn"
-                                    @click=${(e: Event) => {
-                                      e.stopPropagation();
-                                      this._pasteModule(rowIndex, 0);
-                                    }}
-                                    style="margin-top: 8px;"
-                                    title="${localize(
-                                      'editor.layout.paste_module',
-                                      this.hass?.locale?.language || 'en',
-                                      'Paste Module'
-                                    )}"
-                                  >
-                                    <ha-icon icon="mdi:content-paste"></ha-icon>
-                                    ${localize(
-                                      'editor.layout.paste_module',
-                                      this.hass?.locale?.language || 'en',
-                                      'Paste'
-                                    )}
-                                  </button>
-                                `
-                              : ''}
-                          </div>
-                        </div>
-                      `}
-                  <div class="add-column-container">
-                    <button
-                      class="add-column-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._addColumn(rowIndex);
-                      }}
-                      title="Add Column"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                      Add Column
-                    </button>
-                    <button
-                      class="paste-column-btn ${this._hasColumnClipboard ||
-                      ucExportImportService.hasColumnInLocalStorage()
-                        ? 'paste-column-btn--active'
-                        : 'paste-column-btn--empty'}"
-                      ?disabled=${!this._hasColumnClipboard &&
-                      !ucExportImportService.hasColumnInLocalStorage()}
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        if (
-                          this._hasColumnClipboard ||
-                          ucExportImportService.hasColumnInLocalStorage()
-                        ) {
-                          this._hasColumnClipboard = true;
-                          this._pasteColumn(rowIndex);
-                        }
-                      }}
-                      title="${this._hasColumnClipboard ||
-                      ucExportImportService.hasColumnInLocalStorage()
-                        ? localize(
-                            'editor.layout.paste_column',
-                            this.hass?.locale?.language || 'en',
-                            'Paste Column'
-                          )
-                        : localize(
-                            'editor.layout.copy_column_first',
-                            this.hass?.locale?.language || 'en',
-                            'Copy a column first'
-                          )}"
-                    >
-                      <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
-                      ${localize(
-                        'editor.layout.paste_column',
-                        this.hass?.locale?.language || 'en',
-                        'Paste Column'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
-          )}
         </div>
 
         ${this._showModuleSelector ? this._renderModuleSelector() : ''}
@@ -29757,18 +29374,10 @@ export class LayoutTab extends LitElement {
             }));
 
             // Update config with new card-specific variables
-            this.dispatchEvent(
-              new CustomEvent('config-changed', {
-                detail: {
-                  config: {
-                    ...this.config,
-                    _customVariables: [...currentCardVars, ...newCardVars],
-                  },
-                },
-                bubbles: true,
-                composed: true,
-              })
-            );
+            this._emitConfigNow({
+              ...this.config,
+              _customVariables: [...currentCardVars, ...newCardVars],
+            });
           }
 
           this._showVariableMappingDialog = false;
@@ -30559,7 +30168,7 @@ export class LayoutTab extends LitElement {
         <div class="selector-content draggable-popup" id="column-layout-selector-popup">
           <div
             class="selector-header"
-            @mousedown=${(e: MouseEvent) => {
+            @pointerdown=${(e: PointerEvent) => {
               const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
               if (popup) this._startPopupDrag(e, popup);
             }}
@@ -30736,7 +30345,7 @@ export class LayoutTab extends LitElement {
           <!-- Resize handle -->
           <div
             class="resize-handle"
-            @mousedown=${(e: MouseEvent) => {
+            @pointerdown=${(e: PointerEvent) => {
               const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
               if (popup) this._startPopupResize(e, popup);
             }}
@@ -31677,6 +31286,15 @@ export class LayoutTab extends LitElement {
         cursor: pointer;
         transition: all 0.15s ease;
         --mdc-icon-size: 15px;
+      }
+
+      /* Touch screens: 26px is too small to hit reliably next to Delete. */
+      @media (pointer: coarse) {
+        .tree-action-btn,
+        .tree-overflow-btn {
+          min-width: 36px;
+          min-height: 36px;
+        }
       }
 
       .tree-action-btn.layout-btn {
@@ -32693,6 +32311,7 @@ export class LayoutTab extends LitElement {
       }
 
       .layout-builder.fullscreen .fullscreen-preview-resize-handle {
+        touch-action: none;
         position: absolute;
         bottom: 0;
         right: 0;
@@ -35219,7 +34838,8 @@ export class LayoutTab extends LitElement {
         background: var(--card-background-color);
         border-radius: 8px;
         width: 720px;
-        min-height: 480px;
+        /* min() so a landscape phone (~360px tall) does not overflow */
+        min-height: min(480px, 90vh);
         max-width: 98vw;
         max-height: 98vh;
         overflow: visible; /* allow resize handle to be positioned relative to this container */
@@ -35456,6 +35076,7 @@ export class LayoutTab extends LitElement {
       }
 
       .resize-handle {
+        touch-action: none;
         position: absolute;
         bottom: 0px;
         right: 0px;

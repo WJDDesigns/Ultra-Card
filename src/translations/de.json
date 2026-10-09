@@ -261,7 +261,10 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Zeile gelöscht",
+      "column_deleted": "Spalte gelöscht",
+      "module_deleted": "Modul gelöscht"
     },
     "layout_logic": {
       "display_title": "Dieses Element anzeigen",

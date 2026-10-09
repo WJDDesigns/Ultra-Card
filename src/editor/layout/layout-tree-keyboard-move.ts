@@ -79,3 +79,65 @@ export function moveColumnSibling(
     { type: 'column', rowIndex, columnIndex: targetIndex }
   );
 }
+
+/**
+ * Children of a layout module (horizontal, vertical, …) live in its `modules`
+ * array. Returns that array for a parent module, or for a nested layout inside it
+ * when `nestedLayoutIndex` is given. Tabs and other section-based parents return
+ * null: their children are not a single ordered list.
+ */
+function nestedChildList(
+  layout: { rows: any[] },
+  rowIndex: number,
+  columnIndex: number,
+  parentModuleIndex: number,
+  nestedLayoutIndex?: number
+): any[] | null {
+  const parent = layout.rows[rowIndex]?.columns?.[columnIndex]?.modules?.[parentModuleIndex];
+  const owner = nestedLayoutIndex === undefined ? parent : parent?.modules?.[nestedLayoutIndex];
+  return Array.isArray(owner?.modules) ? owner.modules : null;
+}
+
+export function canMoveNestedChild(
+  layout: { rows: any[] },
+  rowIndex: number,
+  columnIndex: number,
+  parentModuleIndex: number,
+  childIndex: number,
+  direction: SiblingMoveDirection,
+  nestedLayoutIndex?: number
+): boolean {
+  const list = nestedChildList(layout, rowIndex, columnIndex, parentModuleIndex, nestedLayoutIndex);
+  if (!list) return false;
+  return direction === 'up' ? childIndex > 0 : childIndex < list.length - 1;
+}
+
+/** Swap a nested child with its neighbour. Returns a new layout, or null if it cannot move. */
+export function moveNestedChildSibling(
+  layout: { rows: any[] },
+  rowIndex: number,
+  columnIndex: number,
+  parentModuleIndex: number,
+  childIndex: number,
+  direction: SiblingMoveDirection,
+  nestedLayoutIndex?: number
+): { rows: any[] } | null {
+  if (
+    !canMoveNestedChild(
+      layout,
+      rowIndex,
+      columnIndex,
+      parentModuleIndex,
+      childIndex,
+      direction,
+      nestedLayoutIndex
+    )
+  ) {
+    return null;
+  }
+  const next = JSON.parse(JSON.stringify(layout));
+  const list = nestedChildList(next, rowIndex, columnIndex, parentModuleIndex, nestedLayoutIndex)!;
+  const target = direction === 'up' ? childIndex - 1 : childIndex + 1;
+  [list[childIndex], list[target]] = [list[target], list[childIndex]];
+  return next;
+}

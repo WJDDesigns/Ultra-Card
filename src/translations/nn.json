@@ -189,7 +189,10 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Rad sletta",
+      "column_deleted": "Kolonne sletta",
+      "module_deleted": "Modul sletta"
     },
     "about": {
       "developed_by": "Utvikla av",

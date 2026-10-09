@@ -737,7 +737,10 @@
         "toggle": "Template Mode",
         "cheatsheet_title": "Template cheatsheet",
         "placeholder": "{ \"visible\": {{ states('input_boolean.show_row') == 'on' }} }"
-      }
+      },
+      "row_deleted": "Row deleted",
+      "column_deleted": "Column deleted",
+      "module_deleted": "Module deleted"
     },
     "entity_mapper": {
       "title": "Map Entities",

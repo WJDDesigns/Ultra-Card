@@ -135,7 +135,16 @@ export class UltraCardEditor extends LitElement {
 
   private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
+  /** Last config this editor sent out; HA hands it straight back via setConfig. */
+  private _lastEmittedConfig: UltraCardConfig | null = null;
+
   public setConfig(config: UltraCardConfig): void {
+    // Our own config coming back: it was migrated and checked before we sent it, so
+    // skip the migration pass and the two JSON.stringify diffs on every edit.
+    if (config && config === this._lastEmittedConfig) {
+      this.config = config;
+      return;
+    }
     const incomingConfig =
       config || {
         type: 'custom:ultra-card',
@@ -597,6 +606,7 @@ export class UltraCardEditor extends LitElement {
       this._updateHoverEffectStyles();
       // Only re-dispatch if this isn't already a bubbled event to prevent infinite loops
       if (!ev.detail.isInternal) {
+        this._lastEmittedConfig = ev.detail.config;
         const event = new CustomEvent('config-changed', {
           detail: { config: ev.detail.config, isInternal: true },
           bubbles: true,

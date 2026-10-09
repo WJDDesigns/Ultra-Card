@@ -189,7 +189,10 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Rad slettet",
+      "column_deleted": "Kolonne slettet",
+      "module_deleted": "Modul slettet"
     },
     "about": {
       "developed_by": "Utviklet av",

@@ -261,7 +261,10 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Ligne supprimée",
+      "column_deleted": "Colonne supprimée",
+      "module_deleted": "Module supprimé"
     },
     "layout_logic": {
       "display_title": "Afficher cet élément",

@@ -189,7 +189,10 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Řádek smazán",
+      "column_deleted": "Sloupec smazán",
+      "module_deleted": "Modul smazán"
     },
     "about": {
       "developed_by": "Vyvinuto",

@@ -189,7 +189,10 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Rij verwijderd",
+      "column_deleted": "Kolom verwijderd",
+      "module_deleted": "Module verwijderd"
     },
     "about": {
       "developed_by": "Ontwikkeld door",
