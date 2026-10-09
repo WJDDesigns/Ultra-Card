@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { EntityReference, EntityMapping } from '../types';
 import { entityMapper } from '../services/uc-entity-mapper';
 import { inferEntityDomainFromReference } from '../utils/uc-preset-wizard-auto';

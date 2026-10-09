@@ -3,7 +3,7 @@
  * OctoPrint, Moonraker/Klipper, and PrusaLink device registries.
  */
 
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { Printer3dModule } from '../types';
 
 export type PrinterAutofillSource = 'octoprint' | 'moonraker' | 'prusalink';

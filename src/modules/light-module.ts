@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, LightModule, UltraCardConfig, EntityMapping, EntityReference } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
@@ -1940,7 +1940,7 @@ export class UltraLightModule extends BaseUltraModule {
     // Trigger haptic feedback for preset button press
     const hapticEnabled = config?.haptic_feedback !== false;
     if (hapticEnabled) {
-      const { forwardHaptic } = await import('custom-card-helpers');
+      const { forwardHaptic } = await import('../ha/helpers');
       forwardHaptic('medium'); // Use medium haptic for preset actions
     }
 

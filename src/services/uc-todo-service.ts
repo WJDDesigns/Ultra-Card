@@ -1,9 +1,9 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 /**
  * Extended HomeAssistant interface for todo item cache (parallel to __uvc_template_strings).
  */
-declare module 'custom-card-helpers' {
+declare module '../ha/types' {
   interface HomeAssistant {
     __uvc_todo_cache?: { [entityId: string]: TodoItem[] } | undefined;
   }

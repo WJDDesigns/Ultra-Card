@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { UltraCardConfig } from '../types';
@@ -7,7 +7,7 @@ import { UltraCardConfig } from '../types';
  * Extended HomeAssistant interface to store template string results
  * This is declared in the main file as well for backwards compatibility
  */
-declare module 'custom-card-helpers' {
+declare module '../ha/types' {
   interface HomeAssistant {
     __uvc_template_strings?: { [key: string]: string } | undefined;
   }

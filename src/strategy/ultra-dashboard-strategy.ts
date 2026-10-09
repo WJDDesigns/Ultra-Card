@@ -1,4 +1,4 @@
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
 import {
   ULTRA_DASHBOARD_PREVIEW_DARK,

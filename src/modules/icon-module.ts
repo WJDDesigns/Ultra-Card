@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { formatEntityState } from '../utils/number-format';
 import { CardModule, IconModule, IconConfig, UltraCardConfig } from '../types';

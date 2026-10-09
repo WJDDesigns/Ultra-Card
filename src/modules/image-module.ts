@@ -1,6 +1,6 @@
 import { TemplateResult, html, nothing } from 'lit';
 import { until } from 'lit/directives/until.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { createLazySettings } from './uc-lazy-settings';
 import { CardModule, ImageModule, UltraCardConfig } from '../types';

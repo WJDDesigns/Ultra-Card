@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 import { CardModule, UltraCardConfig } from '../types';
 

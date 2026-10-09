@@ -1,11 +1,26 @@
-import { HomeAssistant } from 'custom-card-helpers';
-import { computeStateDisplay } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 /**
  * Format an entity's state or a provided numeric state using Home Assistant's
  * computeStateDisplay() so that locale, number formatting, and entity-level
  * display precision are respected. Optionally include or strip the unit.
  */
+/** For HA versions without hass.formatEntityState (pre-2023.9): number + unit. */
+function fallbackStateDisplay(
+  hass: HomeAssistant,
+  stateObj: { state: string; attributes?: Record<string, any> },
+  override?: string | number
+): string {
+  const state = override !== undefined ? String(override) : stateObj.state;
+  const unit = stateObj.attributes?.unit_of_measurement;
+  const num = Number(state);
+  const text =
+    state !== '' && !isNaN(num)
+      ? new Intl.NumberFormat(hass.locale?.language || hass.language || undefined).format(num)
+      : state;
+  return unit ? `${text} ${unit}` : text;
+}
+
 export const formatEntityState = (
   hass: HomeAssistant,
   entityId: string,
@@ -23,12 +38,7 @@ export const formatEntityState = (
     | undefined;
   const raw = haFormatter
     ? haFormatter(stateObj, options?.state !== undefined ? String(options.state) : undefined)
-    : computeStateDisplay(
-        (hass as any).localize,
-        stateObj as any,
-        (hass as any).locale,
-        options?.state as any
-      );
+    : fallbackStateDisplay(hass, stateObj, options?.state);
 
   if (includeUnit) return raw;
 

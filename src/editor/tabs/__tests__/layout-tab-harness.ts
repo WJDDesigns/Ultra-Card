@@ -4,6 +4,7 @@ import type { UltraCardConfig, CardRow, CardColumn, CardModule } from '../../../
 import type { LayoutTab } from '../layout-tab';
 import { getModuleRegistry } from '../../../modules/module-registry';
 import { coreLoaders } from '../../../modules/module-loaders';
+import '../../../components/ultra-link-editor';
 
 export const mockHass = {
   states: {},

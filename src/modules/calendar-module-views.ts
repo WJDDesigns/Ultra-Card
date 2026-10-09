@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { CalendarModule, ProcessedCalendarEvent } from '../types';
 import { CalendarService } from '../services/calendar-service';
 

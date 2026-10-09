@@ -1,4 +1,5 @@
-import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
+import { forwardHaptic } from '../ha/helpers';
 import { html, render, TemplateResult } from 'lit';
 import {
   NavigationModule,

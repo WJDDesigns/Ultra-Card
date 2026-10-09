@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import {
   discoverBambuPrinters,
   forgetBambuTopology,

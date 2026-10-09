@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { UltraBarModule, BAR_TEMPLATE_KEYS } from '../bar-module';
 import { installSettingsMethods } from '../uc-lazy-settings';
 import { CardModule, BarModule, UltraCardConfig } from '../../types';

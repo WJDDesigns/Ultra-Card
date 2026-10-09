@@ -2,7 +2,7 @@ import { html, TemplateResult, css, CSSResult } from 'lit';
 import { ref } from 'lit/directives/ref.js';
 import { cache } from 'lit/directives/cache.js';
 import { guard } from 'lit/directives/guard.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ExternalCardModule, UltraCardConfig, CardModule } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {

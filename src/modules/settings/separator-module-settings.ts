@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { UltraSeparatorModule } from '../separator-module';
 import { installSettingsMethods } from '../uc-lazy-settings';
 import { CardModule, SeparatorModule, UltraCardConfig } from '../../types';

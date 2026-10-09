@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { UltraCardConfig, HoverEffectConfig } from '../types';
 import { configValidationService } from '../services/config-validation-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
@@ -51,6 +51,8 @@ import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
 import { localize, onLocaleLoaded } from '../localize/localize';
 import { ucToastService } from '../services/uc-toast-service';
 import { installKeyboardActivation } from '../utils/uc-keyboard-activation';
+// Actions-tab editor UI; kept out of the dashboard bundle (registers on UltraLinkComponent).
+import '../components/ultra-link-editor';
 import { UcFormUtils } from '../utils/uc-form-utils';
 
 installKeyboardActivation();

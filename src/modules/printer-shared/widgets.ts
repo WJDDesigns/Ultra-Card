@@ -4,7 +4,7 @@
  */
 
 import { TemplateResult, html, nothing, svg } from 'lit';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import {
   PrinterSnapshot,
   PrinterTray,

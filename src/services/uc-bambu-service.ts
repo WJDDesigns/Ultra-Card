@@ -8,7 +8,7 @@
  * then unique_id / entity_id suffix matching so renamed devices still work.
  */
 
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import {
   PrinterSnapshot,

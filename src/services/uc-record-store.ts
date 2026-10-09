@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { UltraCardTodoService, TodoItem } from './uc-todo-service';
 
 /**

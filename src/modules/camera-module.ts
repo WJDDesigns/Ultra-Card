@@ -1,7 +1,7 @@
 import { html, TemplateResult } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
 import { ref } from 'lit/directives/ref.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ucToastService } from '../services/uc-toast-service';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, CameraModule, UltraCardConfig } from '../types';
@@ -2010,7 +2010,7 @@ export class UltraCameraModule extends BaseUltraModule {
     // Trigger haptic feedback for fullscreen action
     const hapticEnabled = config?.haptic_feedback !== false;
     if (hapticEnabled) {
-      import('custom-card-helpers').then(({ forwardHaptic }) => {
+      import('../ha/helpers').then(({ forwardHaptic }) => {
         forwardHaptic('medium'); // Use medium haptic for fullscreen action
       });
     }

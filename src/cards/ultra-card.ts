@@ -1,7 +1,7 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import {
   UltraCardConfig,
   CardModule,
@@ -39,13 +39,13 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
-import { ucVideoBgService } from '../services/uc-video-bg-service';
 import {
   lazyDynamicWeatherService,
   lazyLivingCanvasService,
+  lazyVideoBgService,
+  lazyBackgroundService,
   lazyNavigationService,
 } from '../services/uc-heavy-services';
-import { ucBackgroundService } from '../services/uc-background-service';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { UcGestureService } from '../services/uc-gesture-service';
 import { Z_INDEX } from '../utils/uc-z-index';
@@ -3799,29 +3799,33 @@ export class UltraCard extends LitElement {
    */
   private _registerVideoBgModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id, module } of cache.videoBgModules) {
-      ucVideoBgService.registerModule(
-        this._instanceId!,
-        id,
-        module as any,
-        this.hass!,
-        this.config!,
-        this as any
-      );
-    }
+    if (this._getConfigCache().videoBgModules.length === 0) return;
+    // Loaded on demand: most dashboards have no such module.
+    void lazyVideoBgService
+      .load()
+      .then(svc => {
+        if (!this.isConnected || !this.config || !this.hass || !this._instanceId) return;
+        for (const { id, module } of this._getConfigCache().videoBgModules) {
+          svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+        }
+      })
+      // createLazyService already reports chunk-load failures.
+      .catch(() => undefined);
   }
+
 
   /**
    * Unregister all video background modules from the video background service
    */
   private _unregisterVideoBgModules(): void {
     if (!this.config || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id } of cache.videoBgModules) {
-      ucVideoBgService.unregisterModule(this._instanceId!, id);
+    const svc = lazyVideoBgService.peek();
+    if (!svc) return;
+    for (const { id } of this._getConfigCache().videoBgModules) {
+      svc.unregisterModule(this._instanceId, id);
     }
   }
+
 
   /**
    * Register all dynamic weather modules with the dynamic weather service
@@ -3907,29 +3911,33 @@ export class UltraCard extends LitElement {
    */
   private _registerBackgroundModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id, module } of cache.backgroundModules) {
-      ucBackgroundService.registerModule(
-        this._instanceId!,
-        id,
-        module as any,
-        this.hass!,
-        this.config!,
-        this as any
-      );
-    }
+    if (this._getConfigCache().backgroundModules.length === 0) return;
+    // Loaded on demand: most dashboards have no such module.
+    void lazyBackgroundService
+      .load()
+      .then(svc => {
+        if (!this.isConnected || !this.config || !this.hass || !this._instanceId) return;
+        for (const { id, module } of this._getConfigCache().backgroundModules) {
+          svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+        }
+      })
+      // createLazyService already reports chunk-load failures.
+      .catch(() => undefined);
   }
+
 
   /**
    * Unregister all background modules from the background service
    */
   private _unregisterBackgroundModules(): void {
     if (!this.config || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id } of cache.backgroundModules) {
-      ucBackgroundService.unregisterModule(this._instanceId!, id);
+    const svc = lazyBackgroundService.peek();
+    if (!svc) return;
+    for (const { id } of this._getConfigCache().backgroundModules) {
+      svc.unregisterModule(this._instanceId, id);
     }
   }
+
 
   /**
    * Register all navigation modules with the navigation service

@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { keyed } from 'lit/directives/keyed.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { UltraCardConfig, CardRow, CardColumn, CardModule, TextModule, SeparatorModule, ImageModule, BarModule, LayoutConfig, DeviceBreakpoint } from '../../types';
 import '../../components/uc-breakpoint-preview';
 import { PREVIEW_WIDTHS } from '../../components/uc-breakpoint-preview';

@@ -4,7 +4,7 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { panelStyles } from '../panel-styles';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
 import { ucCloudAuthService, type CloudUser } from '../../services/uc-cloud-auth-service';

@@ -4,7 +4,7 @@
  * Handles priority resolution, conditional logic, and weather effect rendering
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { DynamicWeatherModule, UltraCardConfig, WeatherEffectType } from '../types';
 import { logicService } from './logic-service';
 import { WeatherEffectsEngine } from '../utils/weather-effects-engine';

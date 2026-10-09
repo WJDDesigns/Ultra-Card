@@ -4,7 +4,7 @@
  */
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ucExternalCardsService } from '../services/uc-external-cards-service';
 import { ucNativeCardsService } from '../services/uc-native-cards-service';
 import { localize } from '../localize/localize';

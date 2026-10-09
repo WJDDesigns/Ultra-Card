@@ -1,6 +1,6 @@
 import { TemplateResult, html, nothing } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AreaSummaryModule, AreaSummaryStylePreset, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';

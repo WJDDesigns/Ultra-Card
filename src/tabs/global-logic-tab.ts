@@ -1,5 +1,5 @@
 import { html, TemplateResult } from 'lit';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { CardModule, CardColumn, CardRow } from '../types';
 
 export type GlobalLogicTarget = 'module' | 'row' | 'column';

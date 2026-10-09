@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { localize } from '../localize/localize';
 import { ucCardBackupService } from '../services/uc-card-backup-service';

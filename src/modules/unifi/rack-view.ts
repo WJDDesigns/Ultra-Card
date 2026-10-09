@@ -4,7 +4,7 @@
  */
 
 import { TemplateResult, html, nothing } from 'lit';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import type { UnifiModule } from '../../types';
 import type { UnifiDevice, UnifiTopology } from '../../services/uc-unifi-service';
 import { orderDevices } from '../../services/uc-unifi-service';

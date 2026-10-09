@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, DropdownModule, DropdownOption, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
@@ -3776,7 +3776,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Trigger haptic feedback if enabled (default: true)
     const hapticEnabled = config?.haptic_feedback !== false;
     if (hapticEnabled) {
-      import('custom-card-helpers').then(({ forwardHaptic }) => {
+      import('../ha/helpers').then(({ forwardHaptic }) => {
         forwardHaptic('selection'); // Use selection haptic for dropdown selections
       });
     }

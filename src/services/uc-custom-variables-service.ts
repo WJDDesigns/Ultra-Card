@@ -1,5 +1,5 @@
 import { CustomVariable, UltraCardConfig } from '../types';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 import { UC_DEBUG } from '../utils/uc-debug';
 

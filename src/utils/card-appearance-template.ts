@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { UltraCardConfig } from '../types';
 import { TemplateService } from '../services/template-service';
 import { preprocessTemplateVariables } from './uc-template-processor';

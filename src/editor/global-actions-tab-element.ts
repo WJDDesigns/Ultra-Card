@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { fireEvent } from 'custom-card-helpers';
-import type { HomeAssistant } from 'custom-card-helpers';
+import { fireEvent } from '../ha/helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { CardModule, HoverEffectConfig, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 import { UcFormUtils } from '../utils/uc-form-utils';

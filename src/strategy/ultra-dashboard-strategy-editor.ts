@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ULTRA_DASHBOARD_STYLES, DEFAULT_DASHBOARD_STYLE } from './uc-dashboard-styles';
 import type { UltraDashboardStrategyConfig, UltraDashboardStyleId } from './types';
 

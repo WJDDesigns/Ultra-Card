@@ -5,7 +5,7 @@
  * the first eligible instance in DOM order wins; extras are ignored (see conflict warn).
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { LivingCanvasModule, UltraCardConfig } from '../types';
 import { logicService } from './logic-service';
 import { ucCloudAuthService } from './uc-cloud-auth-service';

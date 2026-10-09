@@ -1,6 +1,7 @@
 import { TemplateResult, html, nothing, svg, SVGTemplateResult } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
+import { fireEvent } from '../ha/helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, VacuumModule, UltraCardConfig, VacuumRoom, VacuumZone, VacuumDisplaySection, VacuumSectionType } from '../types';
 

@@ -7,7 +7,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Z_INDEX } from '../utils/uc-z-index';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ucSnapshotService, SnapshotListItem } from '../services/uc-snapshot-service';
 import { ucCardBackupService, CardBackup } from '../services/uc-card-backup-service';
 import { UserSubscription } from '../services/uc-cloud-auth-service';

@@ -1,4 +1,4 @@
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { EntityReference, PresetWizardConfig, PresetWizardField } from '../types';
 
 /**

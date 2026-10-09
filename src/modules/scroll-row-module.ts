@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig, ScrollRowModule } from '../types';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';

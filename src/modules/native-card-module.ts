@@ -1,6 +1,6 @@
 import { html, TemplateResult, css, CSSResult } from 'lit';
 import { ref } from 'lit/directives/ref.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { NativeCardModule, UltraCardConfig } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { ucNativeCardsService } from '../services/uc-native-cards-service';

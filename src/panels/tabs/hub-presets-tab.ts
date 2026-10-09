@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { PresetDefinition } from '../../types';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';

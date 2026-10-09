@@ -7,7 +7,7 @@
  * @author WJD Designs
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import {
   ucDashboardScannerService,
   DashboardSnapshot,

@@ -18,6 +18,16 @@ type NavigationServiceApi = Pick<
   'registerModule' | 'unregisterModule'
 >;
 
+type VideoBgServiceApi = Pick<
+  typeof import('./uc-video-bg-service').ucVideoBgService,
+  'registerModule' | 'unregisterModule'
+>;
+
+type BackgroundServiceApi = Pick<
+  typeof import('./uc-background-service').ucBackgroundService,
+  'registerModule' | 'unregisterModule'
+>;
+
 type LivingCanvasServiceApi = Pick<
   typeof import('./uc-living-canvas-service').ucLivingCanvasService,
   'registerModule' | 'unregisterModule'
@@ -44,4 +54,20 @@ export const lazyLivingCanvasService: LazyService<LivingCanvasServiceApi> = crea
     m => m.ucLivingCanvasService
   ),
   'living canvas service'
+);
+
+/** Only cards with a video background module need it (~18 KB minified source). */
+export const lazyVideoBgService: LazyService<VideoBgServiceApi> = createLazyService(() =>
+  import(/* webpackChunkName: "svc-video-bg" */ './uc-video-bg-service').then(
+    m => m.ucVideoBgService
+  ),
+  'video background service'
+);
+
+/** Only cards with a background module need it. */
+export const lazyBackgroundService: LazyService<BackgroundServiceApi> = createLazyService(() =>
+  import(/* webpackChunkName: "svc-background" */ './uc-background-service').then(
+    m => m.ucBackgroundService
+  ),
+  'background service'
 );

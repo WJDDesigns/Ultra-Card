@@ -2,7 +2,7 @@
 // Comprehensive editor UI for the Animated Forecast Module
 
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { AnimatedForecastModule, UltraCardConfig, CardModule } from '../types';
 import { localize } from '../localize/localize';
 import { BaseUltraModule } from './base-module';

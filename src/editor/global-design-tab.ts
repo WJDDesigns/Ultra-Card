@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import '../components/ultra-color-picker';
 import '../components/uc-device-selector';
 import '../components/ultra-file-picker';
