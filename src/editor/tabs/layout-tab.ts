@@ -106,6 +106,7 @@ import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
 import type { SubmitPresetDialogPayload } from '../../panels/components/uc-hub-submit-preset-dialog';
+import { UcFormUtils } from '../../utils/uc-form-utils';
 
 /** Node kinds the tree-view drag and drop can target (mirrors `data-drop-type`). */
 type TreeDropType = 'row' | 'column' | 'module' | 'layout' | 'nested-layout' | 'layout-child';
@@ -836,7 +837,6 @@ export class LayoutTab extends LitElement {
 
   // Render breadcrumbs for timeline tree view
   private _renderBreadcrumbs(): TemplateResult {
-    const lang = this.hass?.locale?.language || 'en';
 
     if (this._breadcrumbPath.length === 0) {
       return html``;
@@ -1075,6 +1075,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -1084,11 +1086,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       @click=${() => {
                         item.action();
@@ -1341,6 +1348,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -1350,11 +1359,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       @click=${() => {
                         item.action();
@@ -1462,6 +1476,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -1471,11 +1487,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       @click=${() => {
                         item.action();
@@ -1591,6 +1612,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container tabs-section-child-overflow">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -1600,11 +1623,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       @click=${() => {
                         item.action();
@@ -1666,6 +1694,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container tabs-section-overflow">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -1675,11 +1705,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       ?disabled=${item.disabled}
                       @click=${() => {
@@ -1761,6 +1796,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container tabs-section-overflow">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -1770,11 +1807,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       ?disabled=${item.disabled}
                       @click=${() => {
@@ -2088,6 +2130,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container tabs-section-child-overflow">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -2097,11 +2141,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       @click=${() => {
                         item.action();
@@ -2247,7 +2296,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children ${this.isFullScreen ? 'columns-horizontal' : ''}">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleRowCollapsed(rowIndex, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -2438,7 +2487,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children tree-column-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleColumnCollapsed(rowIndex, columnIndex, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -2776,7 +2825,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -2981,7 +3030,7 @@ export class LayoutTab extends LitElement {
             this._onTabsSectionContentDrop(e, rowIndex, columnIndex, moduleIndex, sectionIndex);
           }}
         >
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -3256,7 +3305,7 @@ export class LayoutTab extends LitElement {
           ${childModule.type !== 'tabs'
             ? html`
                 <div class="tree-node-children">
-                  <div
+                  <div role="button" tabindex="0" data-uc-activate
                     class="tree-track-collapse"
                     @click=${(e: Event) => this._toggleLayoutModuleCollapsed(layoutKey, e)}
                     title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -3572,7 +3621,7 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
           <div class="tree-node-children">
-            <div
+            <div role="button" tabindex="0" data-uc-activate
               class="tree-track-collapse"
               @click=${(e: Event) => this._toggleLayoutModuleCollapsed(layoutKey, e)}
               title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -4143,7 +4192,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -4377,7 +4426,7 @@ export class LayoutTab extends LitElement {
             );
           }}
         >
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -4783,7 +4832,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -5141,7 +5190,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -5294,7 +5343,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children tree-tabs-section-children" style="margin-left: 16px;">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -5671,7 +5720,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -6086,7 +6135,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -6379,7 +6428,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -6482,6 +6531,8 @@ export class LayoutTab extends LitElement {
       <div class="tree-overflow-container deep-nested-overflow">
         <button
           class="tree-overflow-btn"
+          aria-haspopup="menu"
+          aria-label=${localize('editor.layout.more_actions', this.hass?.locale?.language || 'en', 'More actions')}
           @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
           @mousedown=${(e: Event) => e.stopPropagation()}
           @dragstart=${(e: Event) => e.preventDefault()}
@@ -6491,11 +6542,16 @@ export class LayoutTab extends LitElement {
         </button>
         ${isOpen
           ? html`
-              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+              <div
+                class="tree-overflow-menu"
+                role="menu"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
                 ${menuItems.map(
                   (item, index) => html`
                     ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
                     <button
+                      role="menuitem"
                       class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
                       @click=${() => {
                         item.action();
@@ -6672,7 +6728,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children tree-tabs-section-children" style="margin-left: 16px;">
-          <div
+          <div role="button" tabindex="0" data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -8130,7 +8186,6 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    const column = row.columns[this._selectedColumnIndex];
     const lang = this.hass?.locale?.language || 'en';
 
     const pending = this._takePendingAddModule(type);
@@ -12392,7 +12447,6 @@ export class LayoutTab extends LitElement {
     };
 
     const draggedLevel = getHierarchyLevel(draggedType);
-    const targetLevel = getHierarchyLevel(type);
 
     // Only expand if target is at a HIGHER level (lower number) in the hierarchy
     // e.g., dragging a column (level 2) over a row (level 1) -> expand row
@@ -13245,7 +13299,7 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-        <div
+        <div role="button" tabindex="0" data-uc-activate
           class="preview-header"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -13260,7 +13314,7 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-icon
+            <ha-icon role="button" tabindex="0" data-uc-activate
               class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
               icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
               @click=${(e: Event) => {
@@ -17281,7 +17335,7 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-        <div
+        <div role="button" tabindex="0" data-uc-activate
           class="preview-header"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -17296,7 +17350,7 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-icon
+            <ha-icon role="button" tabindex="0" data-uc-activate
               class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
               icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
               @click=${(e: Event) => {
@@ -17908,7 +17962,7 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-        <div
+        <div role="button" tabindex="0" data-uc-activate
           class="preview-header"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -17923,7 +17977,7 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-icon
+            <ha-icon role="button" tabindex="0" data-uc-activate
               class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
               icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
               @click=${(e: Event) => {
@@ -19131,9 +19185,9 @@ export class LayoutTab extends LitElement {
               )}
             </div>
             <div class="gap-control-container">
-              <input
-                type="range"
-                class="gap-slider"
+              <ha-slider
+                class="gap-slider uc-ha-slider"
+                labeled
                 min="0"
                 max="50"
                 step="1"
@@ -19143,7 +19197,7 @@ export class LayoutTab extends LitElement {
                   const value = Number(target.value);
                   this._updateRow({ gap: value });
                 }}
-              />
+              ></ha-slider>
               <input
                 type="number"
                 class="gap-input"
@@ -19183,13 +19237,14 @@ export class LayoutTab extends LitElement {
                   'Full Width'
                 )}
               </div>
-              <ha-switch
-                .checked=${row.full_width !== false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  this._updateRow({ full_width: target.checked });
-                }}
-              ></ha-switch>
+              ${UcFormUtils.renderForm(
+                this.hass,
+                { v: Boolean(row.full_width !== false) },
+                [UcFormUtils.boolean('v')],
+                (e: CustomEvent) => {
+                  this._updateRow({ full_width: e.detail.value.v });
+                }
+              )}
             </div>
             <div class="field-description">
               ${localize(
@@ -19216,9 +19271,9 @@ export class LayoutTab extends LitElement {
                       )}
                     </div>
                     <div class="gap-control-container">
-                      <input
-                        type="range"
-                        class="gap-slider"
+                      <ha-slider
+                        class="gap-slider uc-ha-slider"
+                        labeled
                         min="0"
                         max="100"
                         step="1"
@@ -19228,7 +19283,7 @@ export class LayoutTab extends LitElement {
                           const value = Number(target.value);
                           this._updateRow({ width_percent: value });
                         }}
-                      />
+                      ></ha-slider>
                       <input
                         type="number"
                         class="gap-input"
@@ -19341,47 +19396,42 @@ export class LayoutTab extends LitElement {
                 'Set the vertical alignment for all columns in this row. This controls how content is aligned vertically within each column.'
               )}
             </div>
-            <select
-              .value=${this._getColumnVerticalAlignment(row) || 'center'}
-              @change=${(e: Event) => {
-                const value = (e.target as HTMLSelectElement).value as
+            ${UcFormUtils.renderForm(
+              this.hass,
+              { v: this._getColumnVerticalAlignment(row) || 'center' },
+              [
+                UcFormUtils.select('v', [
+                { value: 'top', label: localize(
+                  'editor.layout.alignment_top',
+                  this.hass?.locale?.language || 'en',
+                  'Top'
+                ) },
+                { value: 'center', label: localize(
+                  'editor.layout.alignment_center',
+                  this.hass?.locale?.language || 'en',
+                  'Center'
+                ) },
+                { value: 'bottom', label: localize(
+                  'editor.layout.alignment_bottom',
+                  this.hass?.locale?.language || 'en',
+                  'Bottom'
+                ) },
+                { value: 'stretch', label: localize(
+                  'editor.layout.alignment_stretch',
+                  this.hass?.locale?.language || 'en',
+                  'Stretch'
+                ) },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const value = e.detail.value.v as
                   | 'top'
                   | 'center'
                   | 'bottom'
                   | 'stretch';
                 this._updateAllColumnsVerticalAlignment(row, value);
-              }}
-              style="width: 100%; padding: 8px 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px;"
-            >
-              <option value="top">
-                ${localize(
-                  'editor.layout.alignment_top',
-                  this.hass?.locale?.language || 'en',
-                  'Top'
-                )}
-              </option>
-              <option value="center">
-                ${localize(
-                  'editor.layout.alignment_center',
-                  this.hass?.locale?.language || 'en',
-                  'Center'
-                )}
-              </option>
-              <option value="bottom">
-                ${localize(
-                  'editor.layout.alignment_bottom',
-                  this.hass?.locale?.language || 'en',
-                  'Bottom'
-                )}
-              </option>
-              <option value="stretch">
-                ${localize(
-                  'editor.layout.alignment_stretch',
-                  this.hass?.locale?.language || 'en',
-                  'Stretch'
-                )}
-              </option>
-            </select>
+              }
+            )}
           </div>
         </div>
       </div>
@@ -19430,7 +19480,6 @@ export class LayoutTab extends LitElement {
 
   private _renderRowActionsTab(row: CardRow): TemplateResult {
     const actions = row as any as { tap_action?: any; hold_action?: any; double_tap_action?: any };
-    const updateRow = (updates: Partial<CardRow>) => this._updateRow(updates);
     const handler = new (class extends (BaseUltraModule as any) {})();
     // Use GlobalActionsTab through BaseUltraModule default
     return (handler as any).renderActionsTab(
@@ -19547,38 +19596,34 @@ export class LayoutTab extends LitElement {
             'Vertical Alignment'
           )}:</label
         >
-        <select
-          .value=${column.vertical_alignment || 'center'}
-          @change=${(e: Event) =>
-            this._updateColumn({
-              vertical_alignment: (e.target as HTMLSelectElement).value as any,
-            })}
-        >
-          <option value="top">
-            ${localize('editor.layout.alignment_top', this.hass?.locale?.language || 'en', 'Top')}
-          </option>
-          <option value="center">
-            ${localize(
+        ${UcFormUtils.renderForm(
+          this.hass,
+          { v: column.vertical_alignment || 'center' },
+          [
+            UcFormUtils.select('v', [
+            { value: 'top', label: localize('editor.layout.alignment_top', this.hass?.locale?.language || 'en', 'Top') },
+            { value: 'center', label: localize(
               'editor.layout.alignment_center',
               this.hass?.locale?.language || 'en',
               'Center'
-            )}
-          </option>
-          <option value="bottom">
-            ${localize(
+            ) },
+            { value: 'bottom', label: localize(
               'editor.layout.alignment_bottom',
               this.hass?.locale?.language || 'en',
               'Bottom'
-            )}
-          </option>
-          <option value="stretch">
-            ${localize(
+            ) },
+            { value: 'stretch', label: localize(
               'editor.layout.alignment_stretch',
               this.hass?.locale?.language || 'en',
               'Stretch'
-            )}
-          </option>
-        </select>
+            ) },
+            ]),
+          ],
+          (e: CustomEvent) =>
+            this._updateColumn({
+              vertical_alignment: e.detail.value.v as any,
+            })
+        )}
       </div>
       <div class="settings-section">
         <label
@@ -19588,55 +19633,45 @@ export class LayoutTab extends LitElement {
             'Horizontal Alignment'
           )}:</label
         >
-        <select
-          .value=${column.horizontal_alignment || 'center'}
-          @change=${(e: Event) =>
-            this._updateColumn({
-              horizontal_alignment: (e.target as HTMLSelectElement).value as any,
-            })}
-        >
-          <option value="left">
-            ${localize('editor.layout.alignment_left', this.hass?.locale?.language || 'en', 'Left')}
-          </option>
-          <option value="center">
-            ${localize(
+        ${UcFormUtils.renderForm(
+          this.hass,
+          { v: column.horizontal_alignment || 'center' },
+          [
+            UcFormUtils.select('v', [
+            { value: 'left', label: localize('editor.layout.alignment_left', this.hass?.locale?.language || 'en', 'Left') },
+            { value: 'center', label: localize(
               'editor.layout.alignment_center',
               this.hass?.locale?.language || 'en',
               'Center'
-            )}
-          </option>
-          <option value="right">
-            ${localize(
+            ) },
+            { value: 'right', label: localize(
               'editor.layout.alignment_right',
               this.hass?.locale?.language || 'en',
               'Right'
-            )}
-          </option>
-          <option value="space-between">
-            ${localize(
+            ) },
+            { value: 'space-between', label: localize(
               'editor.common.space_between',
               this.hass?.locale?.language || 'en',
               'Space Between'
-            )}
-          </option>
-          <option value="space-around">
-            ${localize(
+            ) },
+            { value: 'space-around', label: localize(
               'editor.common.space_around',
               this.hass?.locale?.language || 'en',
               'Space Around'
-            )}
-          </option>
-          <option value="justify">
-            ${localize('editor.common.justify', this.hass?.locale?.language || 'en', 'Justify')}
-          </option>
-          <option value="stretch">
-            ${localize(
+            ) },
+            { value: 'justify', label: localize('editor.common.justify', this.hass?.locale?.language || 'en', 'Justify') },
+            { value: 'stretch', label: localize(
               'editor.layout.alignment_stretch',
               this.hass?.locale?.language || 'en',
               'Stretch'
-            )}
-          </option>
-        </select>
+            ) },
+            ]),
+          ],
+          (e: CustomEvent) =>
+            this._updateColumn({
+              horizontal_alignment: e.detail.value.v as any,
+            })
+        )}
       </div>
     `;
   }
@@ -22009,6 +22044,13 @@ export class LayoutTab extends LitElement {
   }
   static override get styles() {
     return css`
+      /* Keyboard focus must be visible. Many controls set outline: none; this
+         restores a ring for keyboard users only (not on mouse clicks). */
+      :focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4) !important;
+        outline-offset: 2px;
+      }
+
       :host {
         display: block;
         /*
@@ -22480,7 +22522,8 @@ export class LayoutTab extends LitElement {
 
       /* Column header - orange background */
       .tree-column > .tree-node-content > .tree-node-header {
-        background: #ff9800;
+        /* Darker than the #ff9800 track so white text meets WCAG AA (5.0:1, was 2.2:1) */
+        background: #a85c00;
         color: white;
       }
 
@@ -22497,7 +22540,8 @@ export class LayoutTab extends LitElement {
 
       /* Layout module header - solid green to match nested layouts */
       .tree-layout-module > .tree-node-content > .tree-node-header {
-        background: #4caf50;
+        /* Darker than the #4caf50 track so white text meets WCAG AA (5.1:1, was 2.8:1) */
+        background: #2e7d32;
         color: white;
         border-radius: 8px;
       }
@@ -23347,14 +23391,14 @@ export class LayoutTab extends LitElement {
       }
 
       .tree-nested-layout > .tree-node-content > .tree-node-header {
-        background: #4caf50;
+        background: #2e7d32;
         color: white;
         border-radius: 8px;
       }
 
       /* Layout header class - same green as nested layouts */
       .tree-node-header.layout-header {
-        background: #4caf50 !important;
+        background: #2e7d32 !important;
         color: white;
         border-radius: 8px;
       }

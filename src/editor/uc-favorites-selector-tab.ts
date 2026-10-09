@@ -6,6 +6,7 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { FavoriteRow } from '../types';
 import { ucFavoritesService } from '../services/uc-favorites-service';
+import { localize, uiLanguage } from '../localize/localize';
 
 @customElement('uc-favorites-selector-tab')
 export class UcFavoritesSelectorTab extends LitElement {
@@ -284,10 +285,10 @@ export class UcFavoritesSelectorTab extends LitElement {
     return html`
       <div class="favorites-container">
         <div class="favorites-header">
-          <h4>Saved Favorites</h4>
+          <h4>${localize('editor.ui.favorites_selector_tab.saved_favorites', uiLanguage(), 'Saved Favorites')}</h4>
           <button class="import-btn" @click=${this._emitImport}>
             <ha-icon icon="mdi:import"></ha-icon>
-            <span>Import</span>
+            <span>${localize('editor.ui.favorites_selector_tab.import', uiLanguage(), 'Import')}</span>
           </button>
         </div>
 
@@ -297,7 +298,7 @@ export class UcFavoritesSelectorTab extends LitElement {
             <input
               id="favorites-search-input"
               type="text"
-              placeholder="Search favorites..."
+              placeholder=${localize('editor.ui.favorites_selector_tab.search_favorites', uiLanguage(), 'Search favorites...')}
               .value=${this._favoritesSearchQuery}
               @input=${(e: Event) => {
                 const target = e.target as HTMLInputElement;
@@ -317,7 +318,7 @@ export class UcFavoritesSelectorTab extends LitElement {
                         input?.focus();
                       });
                     }}
-                    title="Clear search"
+                    title=${localize('editor.ui.favorites_selector_tab.clear_search', uiLanguage(), 'Clear search')}
                   >
                     <ha-icon icon="mdi:close"></ha-icon>
                   </button>
@@ -336,7 +337,7 @@ export class UcFavoritesSelectorTab extends LitElement {
                     class="clear-search-btn-large"
                     @click=${() => (this._favoritesSearchQuery = '')}
                   >
-                    Clear search
+                    ${localize('editor.ui.favorites_selector_tab.clear_search', uiLanguage(), 'Clear search')}
                   </button>
                 </div>
               `
@@ -351,21 +352,21 @@ export class UcFavoritesSelectorTab extends LitElement {
                         <button
                           class="action-btn"
                           @click=${() => this._emitAdd(favorite)}
-                          title="Add to layout"
+                          title=${localize('editor.ui.favorites_selector_tab.add_to_layout', uiLanguage(), 'Add to layout')}
                         >
                           <ha-icon icon="mdi:plus"></ha-icon>
                         </button>
                         <button
                           class="action-btn"
                           @click=${() => this._emitExport(favorite)}
-                          title="Export"
+                          title=${localize('editor.ui.favorites_selector_tab.export', uiLanguage(), 'Export')}
                         >
                           <ha-icon icon="mdi:export"></ha-icon>
                         </button>
                         <button
                           class="action-btn delete"
                           @click=${() => this._emitDelete(favorite.id)}
-                          title="Delete"
+                          title=${localize('editor.ui.favorites_selector_tab.delete', uiLanguage(), 'Delete')}
                         >
                           <ha-icon icon="mdi:delete"></ha-icon>
                         </button>
@@ -392,8 +393,8 @@ export class UcFavoritesSelectorTab extends LitElement {
             : !hasSearch
               ? html`<div class="empty-state">
                   <ha-icon icon="mdi:heart-outline"></ha-icon>
-                  <p>No favorites saved yet</p>
-                  <p class="empty-hint">Use the heart icon on any row to save it as a favorite</p>
+                  <p>${localize('editor.ui.favorites_selector_tab.no_favorites_saved_yet', uiLanguage(), 'No favorites saved yet')}</p>
+                  <p class="empty-hint">${localize('editor.ui.favorites_selector_tab.use_the_heart_icon_on_any', uiLanguage(), 'Use the heart icon on any row to save it as a favorite')}</p>
                 </div>`
               : ''}
         </div>

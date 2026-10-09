@@ -289,7 +289,7 @@ export class UltraChipList extends LitElement {
           v => html`
             <div class="uc-cl-chip ${isExclude ? 'exclude' : ''}" title=${v}>
               <span class="uc-cl-chip-label">${v}</span>
-              <ha-icon
+              <ha-icon role="button" tabindex="0" data-uc-activate
                 class="uc-cl-chip-remove"
                 icon="mdi:close"
                 @click=${() => this._remove(v)}

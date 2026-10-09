@@ -7,6 +7,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import type { ModuleManifest } from '../modules/module-registry';
 import { VERSION } from '../version';
+import { localize } from '../localize/localize';
 
 const UC_DENSITY_KEY = 'ultra-card-module-picker-density';
 
@@ -178,7 +179,7 @@ export class UcModulesSelectorTab extends LitElement {
                     ${allowedLayoutModules.length > 0
                       ? html`
                           <div class="module-category layout-containers">
-                            <h4 class="category-title">Layout Containers</h4>
+                            <h4 class="category-title">${localize('editor.ui.modules_selector_tab.layout_containers', this.hass?.locale?.language || 'en', 'Layout Containers')}</h4>
                             <p class="category-description">
                               ${this.isAddingToLayoutModule
                                 ? 'Add layout or content modules at any nesting level'
@@ -364,7 +365,7 @@ export class UcModulesSelectorTab extends LitElement {
   private _renderTypeSwitch(standardCount: number, proCount: number): TemplateResult {
     const active = this._activeModuleCategoryTab;
     return html`
-      <div class="module-type-switch" role="tablist" aria-label="Module type">
+      <div class="module-type-switch" role="tablist" aria-label=${localize('editor.ui.modules_selector_tab.module_type', this.hass?.locale?.language || 'en', 'Module type')}>
         <button
           class="type-option ${active === 'standard' ? 'active' : ''}"
           role="tab"
@@ -372,7 +373,7 @@ export class UcModulesSelectorTab extends LitElement {
           @click=${() => (this._activeModuleCategoryTab = 'standard')}
         >
           <ha-icon icon="mdi:puzzle"></ha-icon>
-          <span class="type-label">Standard</span>
+          <span class="type-label">${localize('editor.ui.modules_selector_tab.standard', this.hass?.locale?.language || 'en', 'Standard')}</span>
           <span class="type-count">${standardCount}</span>
         </button>
         <button
@@ -382,7 +383,7 @@ export class UcModulesSelectorTab extends LitElement {
           @click=${() => (this._activeModuleCategoryTab = 'pro')}
         >
           <ha-icon icon="mdi:star-circle"></ha-icon>
-          <span class="type-label">PRO</span>
+          <span class="type-label">${localize('editor.ui.modules_selector_tab.pro', this.hass?.locale?.language || 'en', 'PRO')}</span>
           <span class="type-count">${proCount}</span>
         </button>
       </div>
@@ -414,7 +415,7 @@ export class UcModulesSelectorTab extends LitElement {
         <span class="density-label">${label}</span>
       </button>
     `;
-    return html`<div class="density-toggle" role="group" aria-label="Module layout">
+    return html`<div class="density-toggle" role="group" aria-label=${localize('editor.ui.modules_selector_tab.module_layout', this.hass?.locale?.language || 'en', 'Module layout')}>
       ${opt('gallery', 'mdi:view-grid-outline', 'Gallery View')}${opt(
         'list',
         'mdi:view-list-outline',
@@ -447,7 +448,7 @@ export class UcModulesSelectorTab extends LitElement {
                     this._moduleSearchQuery = '';
                     this.focusSearchInput();
                   }}
-                  title="Clear search"
+                  title=${localize('editor.ui.modules_selector_tab.clear_search_2', this.hass?.locale?.language || 'en', 'Clear search')}
                 >
                   <ha-icon icon="mdi:close"></ha-icon>
                 </button>
@@ -467,7 +468,7 @@ export class UcModulesSelectorTab extends LitElement {
           <ha-icon icon="mdi:magnify-close"></ha-icon>
           <p>No ${tierLabel} modules found matching "${this._moduleSearchQuery}"</p>
           <button class="clear-search-btn-large" @click=${() => (this._moduleSearchQuery = '')}>
-            Clear Search
+            ${localize('editor.ui.modules_selector_tab.clear_search', this.hass?.locale?.language || 'en', 'Clear Search')}
           </button>
         </div>
       `;
@@ -485,7 +486,7 @@ export class UcModulesSelectorTab extends LitElement {
             const hasAccess = !isProModule || this.isPro;
             const tierLabel = isProModule ? 'PRO' : 'Standard';
             return html`
-              <div
+              <div role="button" tabindex="0" data-uc-activate
                 class="search-result-item ${!hasAccess ? 'locked' : ''}"
                 @click=${() => {
                   if (hasAccess) this._emitModuleSelected(meta.type);
@@ -520,16 +521,15 @@ export class UcModulesSelectorTab extends LitElement {
         <div class="pro-icon">
           <ha-icon icon="mdi:star-circle"></ha-icon>
         </div>
-        <h3>Ultra Card PRO</h3>
+        <h3>${localize('editor.ui.modules_selector_tab.ultra_card_pro', this.hass?.locale?.language || 'en', 'Ultra Card PRO')}</h3>
         <p>
-          Access premium modules like Weather Forecast, advanced animations, and more exclusive
-          features.
+          ${localize('editor.ui.modules_selector_tab.access_premium_modules_like_weather_forecast', this.hass?.locale?.language || 'en', 'Access premium modules like Weather Forecast, advanced animations, and more exclusive features.')}
         </p>
         <ul class="pro-features">
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Premium Modules</li>
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Cloud Backups</li>
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Auto Snapshots</li>
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Priority Support</li>
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> ${localize('editor.ui.modules_selector_tab.premium_modules', this.hass?.locale?.language || 'en', 'Premium Modules')}</li>
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> ${localize('editor.ui.modules_selector_tab.cloud_backups', this.hass?.locale?.language || 'en', 'Cloud Backups')}</li>
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> ${localize('editor.ui.modules_selector_tab.auto_snapshots', this.hass?.locale?.language || 'en', 'Auto Snapshots')}</li>
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> ${localize('editor.ui.modules_selector_tab.priority_support', this.hass?.locale?.language || 'en', 'Priority Support')}</li>
         </ul>
         <button class="upgrade-btn" @click=${this._emitUpgradeClick}>
           ${this.isLoggedIn ? 'Upgrade to PRO' : 'Login or Upgrade'}

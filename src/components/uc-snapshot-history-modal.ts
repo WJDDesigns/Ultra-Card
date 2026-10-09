@@ -17,6 +17,8 @@ import { ucToastService } from '../services/uc-toast-service';
 import { ucConfirmService } from '../services/uc-confirm-service';
 import type { RestoreMethodChoice } from './uc-snapshot-restore-dialog';
 import { UC_DEBUG } from '../utils/uc-debug';
+import { ucDialog } from '../utils/uc-dialog-directive';
+import { localize } from '../localize/localize';
 
 type TabType = 'snapshots' | 'card-backups';
 
@@ -697,10 +699,10 @@ export class UcSnapshotHistoryModal extends LitElement {
 
     return html`
       <div class="modal-backdrop" @click="${this._close}">
-        <div class="modal-container" @click="${(e: Event) => e.stopPropagation()}">
+        <div class="modal-container" ${ucDialog(() => this._close())} @click="${(e: Event) => e.stopPropagation()}">
           <div class="modal-header">
-            <h2>Backup &amp; Snapshot History</h2>
-            <button class="close-btn" @click="${this._close}" aria-label="Close">&times;</button>
+            <h2>${localize('editor.ui.snapshot_history_modal.backup_amp_snapshot_history', this.hass?.locale?.language || 'en', 'Backup & Snapshot History')}</h2>
+            <button class="close-btn" @click="${this._close}" aria-label=${localize('editor.ui.snapshot_history_modal.close', this.hass?.locale?.language || 'en', 'Close')}>&times;</button>
           </div>
 
           <!-- TABS -->
@@ -709,20 +711,20 @@ export class UcSnapshotHistoryModal extends LitElement {
               class="tab ${this._activeTab === 'snapshots' ? 'active' : ''}"
               @click="${() => this._handleTabChange('snapshots')}"
             >
-              Dashboard Snapshots
+              ${localize('editor.ui.snapshot_history_modal.dashboard_snapshots', this.hass?.locale?.language || 'en', 'Dashboard Snapshots')}
             </button>
             <button
               class="tab ${this._activeTab === 'card-backups' ? 'active' : ''}"
               @click="${() => this._handleTabChange('card-backups')}"
             >
-              Manual Card Backups
+              ${localize('editor.ui.snapshot_history_modal.manual_card_backups', this.hass?.locale?.language || 'en', 'Manual Card Backups')}
             </button>
           </div>
 
           <!-- CONTENT -->
           <div class="modal-body">
             ${this._loading
-              ? html`<div class="loading">Loading...</div>`
+              ? html`<div class="loading">${localize('editor.ui.snapshot_history_modal.loading', this.hass?.locale?.language || 'en', 'Loading...')}</div>`
               : this._error
                 ? html`<div class="error">${this._error}</div>`
                 : this._activeTab === 'snapshots'
@@ -755,9 +757,9 @@ export class UcSnapshotHistoryModal extends LitElement {
       return html`
         <div class="empty-state">
           <div class="empty-icon">📸</div>
-          <p>No dashboard snapshots yet</p>
+          <p>${localize('editor.ui.snapshot_history_modal.no_dashboard_snapshots_yet', this.hass?.locale?.language || 'en', 'No dashboard snapshots yet')}</p>
           <p class="empty-hint">
-            Dashboard snapshots capture all Ultra Cards across your entire dashboard
+            ${localize('editor.ui.snapshot_history_modal.dashboard_snapshots_capture_all_ultra_cards', this.hass?.locale?.language || 'en', 'Dashboard snapshots capture all Ultra Cards across your entire dashboard')}
           </p>
         </div>
       `;
@@ -774,7 +776,7 @@ export class UcSnapshotHistoryModal extends LitElement {
 
     return html`
       <div class="list-item snapshot-item ${isExpanded ? 'expanded' : ''}">
-        <div class="item-header" @click="${() => this._toggleSnapshotExpand(snapshot.id)}">
+        <div role="button" tabindex="0" data-uc-activate class="item-header" @click="${() => this._toggleSnapshotExpand(snapshot.id)}">
           <div class="item-main">
             <div class="item-title">
               <span class="item-icon">${snapshot.type === 'auto' ? '🤖' : '⭐'}</span>
@@ -796,7 +798,7 @@ export class UcSnapshotHistoryModal extends LitElement {
           ? html`
               <div class="item-details">
                 <div class="details-section">
-                  <h4>Views Breakdown:</h4>
+                  <h4>${localize('editor.ui.snapshot_history_modal.views_breakdown', this.hass?.locale?.language || 'en', 'Views Breakdown:')}</h4>
                   <ul class="views-list">
                     ${viewsList.map(
                       ([viewName, count]) => html`
@@ -811,7 +813,7 @@ export class UcSnapshotHistoryModal extends LitElement {
                     class="btn btn-primary"
                     @click="${() => this._handleRestoreSnapshot(snapshot)}"
                   >
-                    🔄 Restore All
+                    ${localize('editor.ui.snapshot_history_modal.restore_all', this.hass?.locale?.language || 'en', '🔄 Restore All')}
                   </button>
                   ${snapshot.type === 'manual'
                     ? html`
@@ -819,7 +821,7 @@ export class UcSnapshotHistoryModal extends LitElement {
                           class="btn btn-danger"
                           @click="${() => this._handleDeleteSnapshot(snapshot)}"
                         >
-                          🗑️ Delete
+                          ${localize('editor.ui.snapshot_history_modal.delete', this.hass?.locale?.language || 'en', '🗑️ Delete')}
                         </button>
                       `
                     : ''}
@@ -836,8 +838,8 @@ export class UcSnapshotHistoryModal extends LitElement {
       return html`
         <div class="empty-state">
           <div class="empty-icon">💾</div>
-          <p>No card backups yet</p>
-          <p class="empty-hint">Card backups save individual Ultra Card configurations</p>
+          <p>${localize('editor.ui.snapshot_history_modal.no_card_backups_yet', this.hass?.locale?.language || 'en', 'No card backups yet')}</p>
+          <p class="empty-hint">${localize('editor.ui.snapshot_history_modal.card_backups_save_individual_ultra_card', this.hass?.locale?.language || 'en', 'Card backups save individual Ultra Card configurations')}</p>
         </div>
       `;
     }
@@ -846,8 +848,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       <div class="list">${this._cardBackups.map(backup => this._renderCardBackupItem(backup))}</div>
       <div class="backup-info">
         <p>
-          💡 You can have up to 30 card backups. Oldest backups are automatically removed when limit
-          is reached.
+          ${localize('editor.ui.snapshot_history_modal.you_can_have_up_to_30', this.hass?.locale?.language || 'en', '💡 You can have up to 30 card backups. Oldest backups are automatically removed when limit is reached.')}
         </p>
       </div>
     `;
@@ -872,19 +873,19 @@ export class UcSnapshotHistoryModal extends LitElement {
 
         <div class="item-actions">
           <button class="btn btn-primary" @click="${() => this._handleRestoreCardBackup(backup)}">
-            🔄 Restore
+            ${localize('editor.ui.snapshot_history_modal.restore', this.hass?.locale?.language || 'en', '🔄 Restore')}
           </button>
           <button class="btn btn-secondary" @click="${() => this._handleRenameCardBackup(backup)}">
-            ✏️ Rename
+            ${localize('editor.ui.snapshot_history_modal.rename', this.hass?.locale?.language || 'en', '✏️ Rename')}
           </button>
           <button
             class="btn btn-secondary"
             @click="${() => this._handleDownloadCardBackup(backup)}"
           >
-            ⬇️ Download
+            ${localize('editor.ui.snapshot_history_modal.download', this.hass?.locale?.language || 'en', '⬇️ Download')}
           </button>
           <button class="btn btn-danger" @click="${() => this._handleDeleteCardBackup(backup)}">
-            🗑️ Delete
+            ${localize('editor.ui.snapshot_history_modal.delete', this.hass?.locale?.language || 'en', '🗑️ Delete')}
           </button>
         </div>
       </div>

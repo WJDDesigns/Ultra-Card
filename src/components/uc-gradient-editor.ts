@@ -411,7 +411,7 @@ export class UCGradientEditor extends LitElement {
         </div>
 
         <!-- Color Preview & Picker -->
-        <div
+        <div role="button" tabindex="0" data-uc-activate
           class="color-preview color-circle"
           style="background-color: ${stop.color}; cursor: pointer;"
           @click=${() => this._openColorPicker(stop.id, stop.color)}

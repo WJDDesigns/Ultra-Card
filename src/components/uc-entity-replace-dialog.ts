@@ -5,6 +5,8 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { ucDialog } from '../utils/uc-dialog-directive';
+import { localize } from '../localize/localize';
 
 @customElement('uc-entity-replace-dialog')
 export class UcEntityReplaceDialog extends LitElement {
@@ -358,23 +360,22 @@ export class UcEntityReplaceDialog extends LitElement {
         class="dialog-overlay"
         @click=${(e: Event) => e.target === e.currentTarget && this._close()}
       >
-        <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
+        <div class="dialog" ${ucDialog(() => this._close())} @click=${(e: Event) => e.stopPropagation()}>
           <div class="dialog-header">
             <h3>
               <ha-icon icon="mdi:find-replace"></ha-icon>
-              Find &amp; replace entity
+              ${localize('editor.ui.entity_replace_dialog.find_amp_replace_entity', this.hass?.locale?.language || 'en', 'Find & replace entity')}
             </h3>
-            <button class="close-btn" @click=${this._close} aria-label="Close">
+            <button class="close-btn" @click=${this._close} aria-label=${localize('editor.ui.entity_replace_dialog.close', this.hass?.locale?.language || 'en', 'Close')}>
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
           </div>
           <div class="dialog-body">
             <p class="help">
-              Replaces every exact text match of the entity ID inside this card's layout (including
-              templates and nested modules). Use undo in the layout builder if needed.
+              ${localize('editor.ui.entity_replace_dialog.replaces_every_exact_text_match_of', this.hass?.locale?.language || 'en', 'Replaces every exact text match of the entity ID inside this card\'s layout (including templates and nested modules). Use undo in the layout builder if needed.')}
             </p>
             <div class="field">
-              <label>Find entity</label>
+              <label>${localize('editor.ui.entity_replace_dialog.find_entity', this.hass?.locale?.language || 'en', 'Find entity')}</label>
               <div class="suggestion-wrapper">
                 <div class="entity-input">
                   <input
@@ -400,7 +401,7 @@ export class UcEntityReplaceDialog extends LitElement {
               </div>
             </div>
             <div class="field">
-              <label>Replace with</label>
+              <label>${localize('editor.ui.entity_replace_dialog.replace_with', this.hass?.locale?.language || 'en', 'Replace with')}</label>
               <div class="suggestion-wrapper">
                 <div class="entity-input">
                   <input
@@ -430,14 +431,14 @@ export class UcEntityReplaceDialog extends LitElement {
             </div>
           </div>
           <div class="dialog-footer">
-            <button type="button" class="btn btn-secondary" @click=${this._close}>Cancel</button>
+            <button type="button" class="btn btn-secondary" @click=${this._close}>${localize('editor.ui.entity_replace_dialog.cancel', this.hass?.locale?.language || 'en', 'Cancel')}</button>
             <button
               type="button"
               class="btn btn-primary"
               @click=${this._apply}
               ?disabled=${!canApply}
             >
-              Replace all
+              ${localize('editor.ui.entity_replace_dialog.replace_all', this.hass?.locale?.language || 'en', 'Replace all')}
             </button>
           </div>
         </div>

@@ -50,6 +50,10 @@ import { collectConfigEntityIds, anyEntityChanged } from '../utils/uc-config-ent
 import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
 import { localize, onLocaleLoaded } from '../localize/localize';
 import { ucToastService } from '../services/uc-toast-service';
+import { installKeyboardActivation } from '../utils/uc-keyboard-activation';
+import { UcFormUtils } from '../utils/uc-form-utils';
+
+installKeyboardActivation();
 
 type EditorTab = 'layout' | 'settings';
 
@@ -1217,7 +1221,7 @@ export class UltraCardEditor extends LitElement {
     return html`
       <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''} ${this._moduleSettingsOpen ? 'module-settings-open' : ''}">
         ${showHubBanner ? this._renderHubDiscoveryBanner() : ''}
-        <div class="tabs">
+        <div class="tabs" role="tablist">
           ${this._isFullScreen
             ? html`
                 <button
@@ -1231,6 +1235,8 @@ export class UltraCardEditor extends LitElement {
             : ''}
           <button
             class="tab ${this._activeTab === 'layout' ? 'active' : ''}"
+            role="tab"
+            aria-selected=${this._activeTab === 'layout' ? 'true' : 'false'}
             @click=${() => this._setActiveTab('layout')}
           >
             ${this._isFullScreen
@@ -1241,6 +1247,8 @@ export class UltraCardEditor extends LitElement {
             ? html`
                 <button
                   class="tab ${this._activeTab === 'settings' ? 'active' : ''}"
+                  role="tab"
+                  aria-selected=${this._activeTab === 'settings' ? 'true' : 'false'}
                   @click=${() => this._setActiveTab('settings')}
                 >
                   ${localize('editor.tabs.card_settings', lang, 'Card Settings')}
@@ -1255,7 +1263,7 @@ export class UltraCardEditor extends LitElement {
           <slot name="ha-preview"></slot>
         </div>
 
-        <div class="tab-content">
+        <div class="tab-content" role="tabpanel">
           ${this._activeTab === 'layout'
             ? html`<ultra-layout-tab
                 .hass=${this.hass}
@@ -1343,13 +1351,14 @@ export class UltraCardEditor extends LitElement {
                       <label>
                         ${localize('editor.appearance.transparent_card', lang, 'Transparent Card')}
                       </label>
-                      <ha-switch
-                        .checked=${this.config.card_transparent || false}
-                        @change=${(e: Event) => {
-                          const target = e.target as any;
-                          this._updateConfig({ card_transparent: target.checked });
-                        }}
-                      ></ha-switch>
+                      ${UcFormUtils.renderForm(
+                        this.hass as HomeAssistant,
+                        { v: Boolean(this.config.card_transparent || false) },
+                        [UcFormUtils.boolean('v')],
+                        (e: CustomEvent) => {
+                          this._updateConfig({ card_transparent: e.detail.value.v });
+                        }
+                      )}
                     </div>
                     <div class="setting-description">
                       ${localize(
@@ -1404,15 +1413,16 @@ export class UltraCardEditor extends LitElement {
                           )}
                         </div>
                         <label class="switch-row" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                          <ha-switch
-                            .checked=${this.config.card_unified_template_mode || false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
+                          ${UcFormUtils.renderForm(
+                            this.hass as HomeAssistant,
+                            { v: Boolean(this.config.card_unified_template_mode || false) },
+                            [UcFormUtils.boolean('v')],
+                            (e: CustomEvent) => {
                               this._updateConfig({
-                                card_unified_template_mode: target.checked,
+                                card_unified_template_mode: e.detail.value.v,
                               });
-                            }}
-                          ></ha-switch>
+                            }
+                          )}
                           <span>${localize('editor.appearance.template_mode_enable', lang, 'Enable template mode')}</span>
                         </label>
                       </div>
@@ -1470,30 +1480,26 @@ export class UltraCardEditor extends LitElement {
                         'Background Image Type'
                       )}
                     </label>
-                    <select
-                      .value=${this.config.card_background_image_type || 'none'}
-                      @change=${(e: Event) => {
-                        const value = (e.target as HTMLSelectElement).value as
+                    ${UcFormUtils.renderForm(
+                      this.hass as HomeAssistant,
+                      { v: this.config.card_background_image_type || 'none' },
+                      [
+                        UcFormUtils.select('v', [
+                        { value: 'none', label: localize('editor.design.bg_none', lang, 'None') },
+                        { value: 'upload', label: localize('editor.design.bg_upload', lang, 'Upload Image') },
+                        { value: 'entity', label: localize('editor.design.bg_entity', lang, 'Entity Image') },
+                        { value: 'url', label: localize('editor.design.bg_url', lang, 'Image URL') },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const value = e.detail.value.v as
                           | 'none'
                           | 'upload'
                           | 'entity'
                           | 'url';
                         this._updateConfig({ card_background_image_type: value });
-                      }}
-                      class="property-select"
-                      style="width: 100%;"
-                    >
-                      <option value="none">${localize('editor.design.bg_none', lang, 'None')}</option>
-                      <option value="upload">
-                        ${localize('editor.design.bg_upload', lang, 'Upload Image')}
-                      </option>
-                      <option value="entity">
-                        ${localize('editor.design.bg_entity', lang, 'Entity Image')}
-                      </option>
-                      <option value="url">
-                        ${localize('editor.design.bg_url', lang, 'Image URL')}
-                      </option>
-                    </select>
+                      }
+                    )}
                   </div>
 
                   ${this.config.card_background_image_type === 'upload'
@@ -1607,22 +1613,24 @@ export class UltraCardEditor extends LitElement {
                           <div class="settings-grid">
                             <div class="setting-item">
                               <label>Background Size</label>
-                              <select
-                                .value=${this._getBackgroundSizeDropdownValue(
+                              ${UcFormUtils.renderForm(
+                                this.hass as HomeAssistant,
+                                { v: this._getBackgroundSizeDropdownValue(
                                   this.config.card_background_size
-                                )}
-                                @change=${(e: Event) => {
-                                  const value = (e.target as HTMLSelectElement).value;
+                                ) },
+                                [
+                                  UcFormUtils.select('v', [
+                                  { value: 'cover', label: 'Cover' },
+                                  { value: 'contain', label: 'Contain' },
+                                  { value: 'auto', label: 'Auto' },
+                                  { value: 'custom', label: 'Custom' },
+                                  ]),
+                                ],
+                                (e: CustomEvent) => {
+                                  const value = e.detail.value.v;
                                   this._updateConfig({ card_background_size: value });
-                                }}
-                                class="property-select"
-                                style="width: 100%;"
-                              >
-                                <option value="cover">Cover</option>
-                                <option value="contain">Contain</option>
-                                <option value="auto">Auto</option>
-                                <option value="custom">Custom</option>
-                              </select>
+                                }
+                              )}
                             </div>
 
                             ${this._getBackgroundSizeDropdownValue(this.config.card_background_size) ===
@@ -1683,47 +1691,51 @@ export class UltraCardEditor extends LitElement {
 
                             <div class="setting-item">
                               <label>Background Repeat</label>
-                              <select
-                                .value=${this.config.card_background_repeat || 'no-repeat'}
-                                @change=${(e: Event) => {
-                                  const value = (e.target as HTMLSelectElement).value as
+                              ${UcFormUtils.renderForm(
+                                this.hass as HomeAssistant,
+                                { v: this.config.card_background_repeat || 'no-repeat' },
+                                [
+                                  UcFormUtils.select('v', [
+                                  { value: 'no-repeat', label: 'No Repeat' },
+                                  { value: 'repeat', label: 'Repeat' },
+                                  { value: 'repeat-x', label: 'Repeat X' },
+                                  { value: 'repeat-y', label: 'Repeat Y' },
+                                  ]),
+                                ],
+                                (e: CustomEvent) => {
+                                  const value = e.detail.value.v as
                                     | 'repeat'
                                     | 'repeat-x'
                                     | 'repeat-y'
                                     | 'no-repeat';
                                   this._updateConfig({ card_background_repeat: value });
-                                }}
-                                class="property-select"
-                                style="width: 100%;"
-                              >
-                                <option value="no-repeat">No Repeat</option>
-                                <option value="repeat">Repeat</option>
-                                <option value="repeat-x">Repeat X</option>
-                                <option value="repeat-y">Repeat Y</option>
-                              </select>
+                                }
+                              )}
                             </div>
 
                             <div class="setting-item">
                               <label>Background Position</label>
-                              <select
-                                .value=${this.config.card_background_position || 'center center'}
-                                @change=${(e: Event) => {
-                                  const value = (e.target as HTMLSelectElement).value;
+                              ${UcFormUtils.renderForm(
+                                this.hass as HomeAssistant,
+                                { v: this.config.card_background_position || 'center center' },
+                                [
+                                  UcFormUtils.select('v', [
+                                  { value: 'left top', label: 'Left Top' },
+                                  { value: 'left center', label: 'Left Center' },
+                                  { value: 'left bottom', label: 'Left Bottom' },
+                                  { value: 'center top', label: 'Center Top' },
+                                  { value: 'center center', label: 'Center' },
+                                  { value: 'center bottom', label: 'Center Bottom' },
+                                  { value: 'right top', label: 'Right Top' },
+                                  { value: 'right center', label: 'Right Center' },
+                                  { value: 'right bottom', label: 'Right Bottom' },
+                                  ]),
+                                ],
+                                (e: CustomEvent) => {
+                                  const value = e.detail.value.v;
                                   this._updateConfig({ card_background_position: value });
-                                }}
-                                class="property-select"
-                                style="width: 100%;"
-                              >
-                                <option value="left top">Left Top</option>
-                                <option value="left center">Left Center</option>
-                                <option value="left bottom">Left Bottom</option>
-                                <option value="center top">Center Top</option>
-                                <option value="center center">Center</option>
-                                <option value="center bottom">Center Bottom</option>
-                                <option value="right top">Right Top</option>
-                                <option value="right center">Right Center</option>
-                                <option value="right bottom">Right Bottom</option>
-                              </select>
+                                }
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1741,28 +1753,22 @@ export class UltraCardEditor extends LitElement {
                         'How to handle content that extends beyond the card boundaries'
                       )}
                     </div>
-                    <select
-                      .value=${this.config.card_overflow || 'visible'}
-                      @change=${(e: Event) => {
-                        const value = (e.target as HTMLSelectElement).value as 'visible' | 'hidden' | 'scroll' | 'auto';
+                    ${UcFormUtils.renderForm(
+                      this.hass as HomeAssistant,
+                      { v: this.config.card_overflow || 'visible' },
+                      [
+                        UcFormUtils.select('v', [
+                        { value: 'visible', label: localize('editor.fields.overflow_visible', lang, 'Visible (default)') },
+                        { value: 'hidden', label: localize('editor.fields.overflow_hidden', lang, 'Hidden (clip content)') },
+                        { value: 'scroll', label: localize('editor.fields.overflow_scroll', lang, 'Scroll') },
+                        { value: 'auto', label: localize('editor.fields.overflow_auto', lang, 'Auto') },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const value = e.detail.value.v as 'visible' | 'hidden' | 'scroll' | 'auto';
                         this._updateConfig({ card_overflow: value === 'visible' ? undefined : value });
-                      }}
-                      class="property-select"
-                      style="width: 100%;"
-                    >
-                      <option value="visible">
-                        ${localize('editor.fields.overflow_visible', lang, 'Visible (default)')}
-                      </option>
-                      <option value="hidden">
-                        ${localize('editor.fields.overflow_hidden', lang, 'Hidden (clip content)')}
-                      </option>
-                      <option value="scroll">
-                        ${localize('editor.fields.overflow_scroll', lang, 'Scroll')}
-                      </option>
-                      <option value="auto">
-                        ${localize('editor.fields.overflow_auto', lang, 'Auto')}
-                      </option>
-                    </select>
+                      }
+                    )}
                   </div>
                 </div>
               </div>
@@ -1911,13 +1917,14 @@ export class UltraCardEditor extends LitElement {
                       <label>
                         ${localize('editor.fields.card_shadow_enabled', lang, 'Custom Drop Shadow')}
                       </label>
-                      <ha-switch
-                        .checked=${this.config.card_shadow_enabled || false}
-                        @change=${(e: Event) => {
-                          const target = e.target as any;
-                          this._updateConfig({ card_shadow_enabled: target.checked });
-                        }}
-                      ></ha-switch>
+                      ${UcFormUtils.renderForm(
+                        this.hass as HomeAssistant,
+                        { v: Boolean(this.config.card_shadow_enabled || false) },
+                        [UcFormUtils.boolean('v')],
+                        (e: CustomEvent) => {
+                          this._updateConfig({ card_shadow_enabled: e.detail.value.v });
+                        }
+                      )}
                     </div>
                     <div class="setting-description">
                       ${localize(
@@ -2426,6 +2433,13 @@ export class UltraCardEditor extends LitElement {
 
   static override get styles() {
     return css`
+      /* Keyboard focus must be visible. Many controls set outline: none; this
+         restores a ring for keyboard users only (not on mouse clicks). */
+      :focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4) !important;
+        outline-offset: 2px;
+      }
+
       .editor-loading {
         display: flex;
         flex-direction: column;

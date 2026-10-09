@@ -16,6 +16,9 @@ import {
   PENDING_DOCS_SLUG_KEY,
   type HubNavigateDetail,
 } from './hub-navigation';
+import { installKeyboardActivation } from '../utils/uc-keyboard-activation';
+
+installKeyboardActivation();
 
 // English is a chunk; the panel re-renders via onLocaleLoaded when it lands.
 void preloadDefaultLocale();

@@ -6,6 +6,7 @@ import { localize } from '../localize/localize';
 import { readHaSelectSelectedValue } from '../utils/form-utils';
 import { ucVariableValueTypeHaSelectOptions } from '../utils/uc-variable-value-type-options';
 import { promoteToTopLayer } from '../utils/uc-top-layer';
+import { ucDialog } from '../utils/uc-dialog-directive';
 
 export interface VariableMapping {
   variableName: string;
@@ -143,7 +144,7 @@ export class UcVariableMappingDialog extends LitElement {
 
     return html`
       <div class="dialog-overlay" @click=${this._handleCancel}>
-        <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
+        <div class="dialog" ${ucDialog(() => this._handleCancel())} @click=${(e: Event) => e.stopPropagation()}>
           <div class="dialog-header">
             <h2>${localize('editor.variable_mapping.title', lang, 'Map Missing Variables')}</h2>
             <button class="close-btn" @click=${this._handleCancel}>

@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import { entityMapper } from '../services/uc-entity-mapper';
 import { promoteToTopLayer } from '../utils/uc-top-layer';
+import { ucDialog } from '../utils/uc-dialog-directive';
 
 function findOverlayHost(): HTMLElement {
   const findOpenDialog = (root: Document | ShadowRoot): HTMLElement | null => {
@@ -1024,7 +1025,7 @@ export class UcPresetWizardDialog extends LitElement {
 
     return html`
       <div class="overlay" @click=${this._onCancel}>
-        <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
+        <div class="dialog" ${ucDialog(() => this._onCancel())} @click=${(e: Event) => e.stopPropagation()}>
 
           <!-- Header -->
           <div class="header">

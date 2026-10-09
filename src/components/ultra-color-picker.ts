@@ -1128,7 +1128,7 @@ export class UltraColorPicker extends LitElement {
                 <div class="palette-grid">
                   ${COLOR_PALETTE.map(
                     color => html`
-                      <div
+                      <div role="button" tabindex="0" data-uc-activate
                         class="color-swatch ${this._currentValue === color ? 'selected' : ''}"
                         style="background-color: ${color}"
                         @click=${(e: Event) => this._selectColor(color, e)}
@@ -1146,7 +1146,7 @@ export class UltraColorPicker extends LitElement {
                   <div class="gradient-presets-grid">
                     ${GRADIENT_PRESETS.map(
                       gradient => html`
-                        <div
+                        <div role="button" tabindex="0" data-uc-activate
                           class="gradient-preset-swatch ${this._currentValue === gradient.value
                             ? 'selected'
                             : ''}"
@@ -1185,7 +1185,7 @@ export class UltraColorPicker extends LitElement {
                         <div class="favorites-grid">
                           ${this._favoriteColors.map(
                             favorite => html`
-                              <div
+                              <div role="button" tabindex="0" data-uc-activate
                                 class="favorite-swatch ${this._currentValue === favorite.color
                                   ? 'selected'
                                   : ''}"

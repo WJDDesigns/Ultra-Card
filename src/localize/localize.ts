@@ -188,3 +188,18 @@ export function __resetLocalesForTests(): void {
   }
   failed.clear();
 }
+
+/**
+ * Language of the current HA user, for elements that are not handed `hass`
+ * (dialogs and pickers appended to the page). Falls back to English.
+ */
+export function uiLanguage(): string {
+  try {
+    const ha = document.querySelector('home-assistant') as
+      | (HTMLElement & { hass?: { locale?: { language?: string }; language?: string } })
+      | null;
+    return ha?.hass?.locale?.language || ha?.hass?.language || 'en';
+  } catch {
+    return 'en';
+  }
+}

@@ -8,6 +8,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { ucSnapshotService, SnapshotSettings } from '../services/uc-snapshot-service';
 import { UcCloudBackupService, ucCloudBackupService } from '../services/uc-cloud-backup-service';
+import { ucDialog } from '../utils/uc-dialog-directive';
+import { localize, uiLanguage } from '../localize/localize';
 
 @customElement('uc-snapshot-settings-dialog')
 export class UcSnapshotSettingsDialog extends LitElement {
@@ -135,15 +137,15 @@ export class UcSnapshotSettingsDialog extends LitElement {
 
     return html`
       <div class="modal-backdrop" @click="${this._close}">
-        <div class="modal-container" @click="${(e: Event) => e.stopPropagation()}">
+        <div class="modal-container" ${ucDialog(() => this._close())} @click="${(e: Event) => e.stopPropagation()}">
           <div class="modal-header">
-            <h2>⚙️ Snapshot Settings</h2>
+            <h2>${localize('editor.ui.snapshot_settings_dialog.snapshot_settings', uiLanguage(), '⚙️ Snapshot Settings')}</h2>
             <button class="close-btn" @click="${this._close}">✕</button>
           </div>
 
           <div class="modal-body">
             ${this._loading
-              ? html`<div class="loading">Loading settings...</div>`
+              ? html`<div class="loading">${localize('editor.ui.snapshot_settings_dialog.loading_settings', uiLanguage(), 'Loading settings...')}</div>`
               : this._error
                 ? html`<div class="error">${this._error}</div>`
                 : html`
@@ -157,10 +159,9 @@ export class UcSnapshotSettingsDialog extends LitElement {
                             @change="${this._handleRealtimeAutoSaveToggle}"
                           />
                           <span class="toggle-text">
-                            <strong>Enable Real-time Auto-save</strong>
+                            <strong>${localize('editor.ui.snapshot_settings_dialog.enable_real_time_auto_save', uiLanguage(), 'Enable Real-time Auto-save')}</strong>
                             <p class="help-text">
-                              Automatically save a cloud backup when you edit this card (debounced).
-                              Turn off if you prefer manual snapshots only.
+                              ${localize('editor.ui.snapshot_settings_dialog.automatically_save_a_cloud_backup_when', uiLanguage(), 'Automatically save a cloud backup when you edit this card (debounced). Turn off if you prefer manual snapshots only.')}
                             </p>
                           </span>
                         </label>
@@ -175,9 +176,9 @@ export class UcSnapshotSettingsDialog extends LitElement {
                             @change="${this._handleEnabledToggle}"
                           />
                           <span class="toggle-text">
-                            <strong>Enable Daily Auto-Snapshots</strong>
+                            <strong>${localize('editor.ui.snapshot_settings_dialog.enable_daily_auto_snapshots', uiLanguage(), 'Enable Daily Auto-Snapshots')}</strong>
                             <p class="help-text">
-                              Automatically backup all Ultra Cards in your dashboard every day
+                              ${localize('editor.ui.snapshot_settings_dialog.automatically_backup_all_ultra_cards_in', uiLanguage(), 'Automatically backup all Ultra Cards in your dashboard every day')}
                             </p>
                           </span>
                         </label>
@@ -188,9 +189,9 @@ export class UcSnapshotSettingsDialog extends LitElement {
                             <!-- SNAPSHOT TIME -->
                             <div class="form-group">
                               <label for="snapshot-time">
-                                <strong>Snapshot Time</strong>
+                                <strong>${localize('editor.ui.snapshot_settings_dialog.snapshot_time', uiLanguage(), 'Snapshot Time')}</strong>
                                 <p class="help-text">
-                                  What time should snapshots be created? (24-hour format)
+                                  ${localize('editor.ui.snapshot_settings_dialog.what_time_should_snapshots_be_created', uiLanguage(), 'What time should snapshots be created? (24-hour format)')}
                                 </p>
                               </label>
                               <input
@@ -204,25 +205,25 @@ export class UcSnapshotSettingsDialog extends LitElement {
                             <!-- TIMEZONE -->
                             <div class="form-group">
                               <label for="timezone">
-                                <strong>Timezone</strong>
-                                <p class="help-text">Snapshot time will use this timezone</p>
+                                <strong>${localize('editor.ui.snapshot_settings_dialog.timezone', uiLanguage(), 'Timezone')}</strong>
+                                <p class="help-text">${localize('editor.ui.snapshot_settings_dialog.snapshot_time_will_use_this_timezone', uiLanguage(), 'Snapshot time will use this timezone')}</p>
                               </label>
                               <select
                                 id="timezone"
                                 .value="${this._settings.timezone}"
                                 @change="${this._handleTimezoneChange}"
                               >
-                                <option value="UTC">UTC</option>
-                                <option value="America/New_York">Eastern Time (ET)</option>
-                                <option value="America/Chicago">Central Time (CT)</option>
-                                <option value="America/Denver">Mountain Time (MT)</option>
-                                <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                                <option value="Europe/London">London</option>
-                                <option value="Europe/Paris">Paris</option>
-                                <option value="Europe/Berlin">Berlin</option>
-                                <option value="Asia/Tokyo">Tokyo</option>
-                                <option value="Asia/Shanghai">Shanghai</option>
-                                <option value="Australia/Sydney">Sydney</option>
+                                <option value="UTC">${localize('editor.ui.snapshot_settings_dialog.utc', uiLanguage(), 'UTC')}</option>
+                                <option value="America/New_York">${localize('editor.ui.snapshot_settings_dialog.eastern_time_et', uiLanguage(), 'Eastern Time (ET)')}</option>
+                                <option value="America/Chicago">${localize('editor.ui.snapshot_settings_dialog.central_time_ct', uiLanguage(), 'Central Time (CT)')}</option>
+                                <option value="America/Denver">${localize('editor.ui.snapshot_settings_dialog.mountain_time_mt', uiLanguage(), 'Mountain Time (MT)')}</option>
+                                <option value="America/Los_Angeles">${localize('editor.ui.snapshot_settings_dialog.pacific_time_pt', uiLanguage(), 'Pacific Time (PT)')}</option>
+                                <option value="Europe/London">${localize('editor.ui.snapshot_settings_dialog.london', uiLanguage(), 'London')}</option>
+                                <option value="Europe/Paris">${localize('editor.ui.snapshot_settings_dialog.paris', uiLanguage(), 'Paris')}</option>
+                                <option value="Europe/Berlin">${localize('editor.ui.snapshot_settings_dialog.berlin', uiLanguage(), 'Berlin')}</option>
+                                <option value="Asia/Tokyo">${localize('editor.ui.snapshot_settings_dialog.tokyo', uiLanguage(), 'Tokyo')}</option>
+                                <option value="Asia/Shanghai">${localize('editor.ui.snapshot_settings_dialog.shanghai', uiLanguage(), 'Shanghai')}</option>
+                                <option value="Australia/Sydney">${localize('editor.ui.snapshot_settings_dialog.sydney', uiLanguage(), 'Sydney')}</option>
                               </select>
                             </div>
 
@@ -230,7 +231,7 @@ export class UcSnapshotSettingsDialog extends LitElement {
                             <div class="info-box">
                               <div class="info-icon">📅</div>
                               <div class="info-content">
-                                <strong>Next Snapshot:</strong>
+                                <strong>${localize('editor.ui.snapshot_settings_dialog.next_snapshot', uiLanguage(), 'Next Snapshot:')}</strong>
                                 <p>${this._getNextSnapshotTime()}</p>
                               </div>
                             </div>
@@ -240,8 +241,7 @@ export class UcSnapshotSettingsDialog extends LitElement {
                               <div class="info-icon">ℹ️</div>
                               <div class="info-content">
                                 <p>
-                                  Auto-snapshots are currently disabled. You can still create manual
-                                  snapshots anytime.
+                                  ${localize('editor.ui.snapshot_settings_dialog.auto_snapshots_are_currently_disabled_you', uiLanguage(), 'Auto-snapshots are currently disabled. You can still create manual snapshots anytime.')}
                                 </p>
                               </div>
                             </div>
@@ -251,11 +251,11 @@ export class UcSnapshotSettingsDialog extends LitElement {
                       <div class="info-box">
                         <div class="info-icon">💾</div>
                         <div class="info-content">
-                          <strong>Storage Policy:</strong>
+                          <strong>${localize('editor.ui.snapshot_settings_dialog.storage_policy', uiLanguage(), 'Storage Policy:')}</strong>
                           <ul>
-                            <li>Auto-snapshots are kept for <strong>30 days</strong></li>
-                            <li>Older snapshots are automatically deleted</li>
-                            <li>Manual snapshots are never automatically deleted</li>
+                            <li>${localize('editor.ui.snapshot_settings_dialog.auto_snapshots_are_kept_for', uiLanguage(), 'Auto-snapshots are kept for')} <strong>${localize('editor.ui.snapshot_settings_dialog.30_days', uiLanguage(), '30 days')}</strong></li>
+                            <li>${localize('editor.ui.snapshot_settings_dialog.older_snapshots_are_automatically_deleted', uiLanguage(), 'Older snapshots are automatically deleted')}</li>
+                            <li>${localize('editor.ui.snapshot_settings_dialog.manual_snapshots_are_never_automatically_deleted', uiLanguage(), 'Manual snapshots are never automatically deleted')}</li>
                           </ul>
                         </div>
                       </div>
@@ -265,7 +265,7 @@ export class UcSnapshotSettingsDialog extends LitElement {
 
           <div class="modal-footer">
             <button class="btn btn-secondary" @click="${this._close}" ?disabled="${this._saving}">
-              Cancel
+              ${localize('editor.ui.snapshot_settings_dialog.cancel', uiLanguage(), 'Cancel')}
             </button>
             <button
               class="btn btn-primary"

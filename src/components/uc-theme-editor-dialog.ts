@@ -18,6 +18,7 @@ import {
   type UcSurfaceRole,
 } from '../utils/uc-surface-recipes';
 import './uc-theme-swatch';
+import { ucDialog } from '../utils/uc-dialog-directive';
 
 const ROLE_LABELS: Record<UcSurfaceRole, string> = {
   control: 'Controls (buttons, chips)',
@@ -287,7 +288,7 @@ export class UcThemeEditorDialog extends LitElement {
 
     return html`
       <div class="backdrop" @click=${this._cancel}></div>
-      <div class="panel" role="dialog" aria-modal="true" aria-label=${isNew ? t('editor_title_new', 'New theme') : t('editor_title_edit', 'Edit theme')}>
+      <div class="panel" ${ucDialog(() => this._cancel())} role="dialog" aria-modal="true" aria-label=${isNew ? t('editor_title_new', 'New theme') : t('editor_title_edit', 'Edit theme')}>
         <header>
           <ha-icon icon="mdi:palette-swatch"></ha-icon>
           <h2>${isNew ? t('editor_title_new', 'New theme') : t('editor_title_edit', 'Edit theme')}</h2>
