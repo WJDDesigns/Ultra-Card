@@ -18,6 +18,7 @@ import {
   resolveControlButtonStyleString,
 } from '../utils/uc-control-style-resolve';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
   | 'onoff'
@@ -1875,7 +1876,7 @@ export class UltraLightModule extends BaseUltraModule {
       `Map Entities for Light Presets`,
       entityReferences,
       (mappings: EntityMapping[]) => {
-        console.log('✅ Apply light preset mappings:', mappings);
+        UC_DEBUG && console.log('✅ Apply light preset mappings:', mappings);
         // Apply mappings to presets
         const mappedPresets = this._applyMappingsToLightPresets(importedPresets, mappings);
 
@@ -1893,7 +1894,7 @@ export class UltraLightModule extends BaseUltraModule {
         document.dispatchEvent(event);
       },
       () => {
-        console.log('❌ Cancel light preset mapping');
+        UC_DEBUG && console.log('❌ Cancel light preset mapping');
         // Cancel - add presets with original entities (no mappings)
         const newPresets = [...(lightModule.presets || []), ...importedPresets];
         updateModule({ presets: newPresets });

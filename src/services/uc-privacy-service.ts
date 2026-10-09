@@ -1,3 +1,4 @@
+import { UC_DEBUG } from '../utils/uc-debug';
 /**
  * Privacy Protection Service for Ultra Card Exports
  * Sanitizes sensitive information before sharing presets
@@ -236,7 +237,7 @@ class UcPrivacyService {
    */
   async showPrivacyDialog(scanResult: PrivacyScanResult): Promise<boolean> {
     if (scanResult.found.length > 0) {
-      console.log(
+      UC_DEBUG && console.log(
         `🔒 Privacy Protection: Automatically sanitized ${scanResult.found.length} items`
       );
     }

@@ -159,7 +159,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       }
 
       UC_DEBUG &&
-        console.log(
+        UC_DEBUG && console.log(
           `  📝 Restoring ${snapshotCardsForView.length} cards in view: ${view.title || viewPath}`
         );
 
@@ -259,7 +259,7 @@ export class UcSnapshotHistoryModal extends LitElement {
     });
 
     UC_DEBUG &&
-      console.log(
+      UC_DEBUG && console.log(
         `📋 Indexed ${Object.keys(customNameIndex).length} custom-named cards and ${Object.keys(positionIndex).length} position-based cards`
       );
 
@@ -295,7 +295,7 @@ export class UcSnapshotHistoryModal extends LitElement {
 
                   if (snapshotCard) {
                     UC_DEBUG &&
-                      console.log(
+                      UC_DEBUG && console.log(
                         `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
                       );
                   }
@@ -308,7 +308,7 @@ export class UcSnapshotHistoryModal extends LitElement {
                   return snapshotCard.config;
                 } else {
                   UC_DEBUG &&
-                    console.log(
+                    UC_DEBUG && console.log(
                       `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
                     );
                   skipped++;
@@ -341,7 +341,7 @@ export class UcSnapshotHistoryModal extends LitElement {
 
               if (snapshotCard) {
                 UC_DEBUG &&
-                  console.log(
+                  UC_DEBUG && console.log(
                     `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
                   );
               }
@@ -354,7 +354,7 @@ export class UcSnapshotHistoryModal extends LitElement {
               return snapshotCard.config;
             } else {
               UC_DEBUG &&
-                console.log(
+                UC_DEBUG && console.log(
                   `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
                 );
               skipped++;
@@ -408,7 +408,7 @@ export class UcSnapshotHistoryModal extends LitElement {
               return true;
             });
             UC_DEBUG &&
-              console.log(
+              UC_DEBUG && console.log(
                 `  🗑️ Deleted ${before - section.cards.length} Ultra Cards from section in ${view.title || 'view'}`
               );
           }
@@ -423,7 +423,7 @@ export class UcSnapshotHistoryModal extends LitElement {
           return true;
         });
         UC_DEBUG &&
-          console.log(
+          UC_DEBUG && console.log(
             `  🗑️ Deleted ${before - view.cards.length} Ultra Cards from ${view.title || 'view'}`
           );
       }
@@ -449,7 +449,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       if (viewCards.length === 0) return;
 
       UC_DEBUG &&
-        console.log(`  ➕ Restoring ${viewCards.length} cards to ${view.title || viewPath}`);
+        UC_DEBUG && console.log(`  ➕ Restoring ${viewCards.length} cards to ${view.title || viewPath}`);
 
       if (view.type === 'sections' && view.sections) {
         // Check if snapshot has section information
@@ -494,7 +494,7 @@ export class UcSnapshotHistoryModal extends LitElement {
         } else {
           // OLD SNAPSHOTS: Intelligently distribute across existing sections
           UC_DEBUG &&
-            console.log(
+            UC_DEBUG && console.log(
               '    ⚠️ No section info - distributing evenly across sections (old snapshot format)'
             );
 

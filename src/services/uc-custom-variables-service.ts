@@ -761,16 +761,16 @@ class UcCustomVariablesService {
       if (stored) {
         const parsed = JSON.parse(stored);
         UC_DEBUG &&
-          console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+          UC_DEBUG && console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
         UC_DEBUG &&
-          console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+          UC_DEBUG && console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
       }
     } catch (error) {
       console.error('Storage Data Error:', error);
     }
 
     UC_DEBUG &&
-      console.log(
+      UC_DEBUG && console.log(
         'Variables List:',
         this._variables.map(v => ({
           id: v.id,
@@ -965,5 +965,7 @@ export const ucCustomVariablesService = new UcCustomVariablesService();
 // Make service and debug methods available globally for debugging
 if (typeof window !== 'undefined') {
   (window as any).ucCustomVariablesService = ucCustomVariablesService;
-  (window as any).debugUltraCardCustomVariables = () => ucCustomVariablesService.debugVariables();
+  if (UC_DEBUG) {
+    (window as any).debugUltraCardCustomVariables = () => ucCustomVariablesService.debugVariables();
+  }
 }

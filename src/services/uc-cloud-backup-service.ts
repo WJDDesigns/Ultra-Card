@@ -6,6 +6,7 @@
 import { ucCloudAuthService, CloudUser, UserSubscription } from './uc-cloud-auth-service';
 import { UltraCardConfig } from '../types';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 export interface CardStats {
   row_count: number;
   column_count: number;
@@ -116,12 +117,12 @@ export class UcCloudBackupService {
    */
   async autoSave(config: UltraCardConfig): Promise<void> {
     if (!ucCloudAuthService.isAuthenticated()) {
-      console.log('Auto-save skipped: not authenticated');
+      UC_DEBUG && console.log('Auto-save skipped: not authenticated');
       return;
     }
 
     if (!UcCloudBackupService.isAutoSaveEnabled()) {
-      console.log('Auto-save skipped: disabled in snapshot / backup settings');
+      UC_DEBUG && console.log('Auto-save skipped: disabled in snapshot / backup settings');
       return;
     }
 
@@ -475,7 +476,7 @@ export class UcCloudBackupService {
           this._pendingConfig &&
           UcCloudBackupService.isAutoSaveEnabled()
         ) {
-          console.log('Found pending backup, attempting to save...');
+          UC_DEBUG && console.log('Found pending backup, attempting to save...');
           this._executeSave(this._pendingConfig, 'auto').then(() => {
             this._pendingConfig = undefined;
             this._clearPendingBackup();

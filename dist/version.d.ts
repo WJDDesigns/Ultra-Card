@@ -1,9 +1,2 @@
-/**
- * Ultra Card Version
- *
- *
- * This is the single source of truth for version information
-
-* Build timestamp: 2026-01-27
- */
-export declare const VERSION = "3.1.0";
+export declare const version: string;
+export declare function setVersion(value: string): void;

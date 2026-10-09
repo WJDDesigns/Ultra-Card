@@ -49,7 +49,6 @@ import { ucBackgroundService } from '../services/uc-background-service';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { UcGestureService } from '../services/uc-gesture-service';
 import { Z_INDEX } from '../utils/uc-z-index';
-import { dbg3p } from '../utils/uc-debug';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { generateCSSVariables } from '../utils/css-variable-utils';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
@@ -650,7 +649,6 @@ export class UltraCard extends LitElement {
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._authListener = (user: CloudUser | null) => {
       this._cloudUser = user;
-      dbg3p('card:auth-changed');
       this._scheduleUpdate();
     };
     ucCloudAuthService.addListener(this._authListener);

@@ -1,5 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { getResolvedMediaUrlSync, isMediaSourceUri } from './media-resolver';
+import { UC_DEBUG } from './uc-debug';
 
 export interface ImageUploadResponse {
   path: string;
@@ -89,7 +90,7 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<stri
 
   // Try local media source first (preferred method)
   try {
-    console.log('[UPLOAD] Attempting upload to local media source...');
+    UC_DEBUG && console.log('[UPLOAD] Attempting upload to local media source...');
     const response = await fetch('/api/media_source/local/upload', {
       method: 'POST',
       body: formData,
@@ -101,7 +102,7 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<stri
     if (response.ok) {
       const result = await response.json();
       const imagePath = result.media_content_id || `/media/local/${file.name}`;
-      console.log(`[UPLOAD] Successfully uploaded to local media source: ${imagePath}`);
+      UC_DEBUG && console.log(`[UPLOAD] Successfully uploaded to local media source: ${imagePath}`);
       return imagePath;
     } else {
       console.warn(
@@ -114,7 +115,7 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<stri
 
   // Fallback to image API
   try {
-    console.log('[UPLOAD] Attempting upload to image API...');
+    UC_DEBUG && console.log('[UPLOAD] Attempting upload to image API...');
 
     let baseUrl = '';
     if (hass.connection && typeof (hass.connection as any).options?.url === 'string') {
@@ -153,7 +154,7 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<stri
     }
 
     const imagePath = `/api/image/serve/${result.id}`;
-    console.log(`[UPLOAD] Successfully uploaded to image API: ${imagePath}`);
+    UC_DEBUG && console.log(`[UPLOAD] Successfully uploaded to image API: ${imagePath}`);
     return imagePath;
   } catch (error) {
     console.error(`[UPLOAD] All upload methods failed:`, error);

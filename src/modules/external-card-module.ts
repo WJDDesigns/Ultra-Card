@@ -12,6 +12,7 @@ import {
 import { externalCardContainerService } from '../services/external-card-container-service';
 import yaml from 'js-yaml';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 // Debounce timers for editor config updates to prevent rapid re-render loops
 const updateDebounceTimers = new Map<string, number>();
 
@@ -529,7 +530,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
           
           // Check if card_type changed (or was empty before)
           if (module.card_type !== extractedCardType) {
-            console.log('[UC External Card] YAML type detected, updating card_type:', extractedCardType);
+            UC_DEBUG && console.log('[UC External Card] YAML type detected, updating card_type:', extractedCardType);
             updateModule({ 
               card_type: extractedCardType,
               card_config: newConfig 

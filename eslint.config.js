@@ -14,8 +14,6 @@ module.exports = tseslint.config(
       'src/node_modules/**',
       '--help/**',
       '**/*.js',
-      '**/*.bak',
-      '**/*.backup',
       'src/modules/_module-template.ts',
     ],
   },
