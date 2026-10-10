@@ -1150,6 +1150,35 @@ function sanitizePrinter3dModule(module: SmartModule, id: string): SmartModule |
   };
 }
 
+/** Energy Price & EV: the price sensor is the only field a prompt can usefully set. */
+function sanitizeEnergyPriceModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const priceEntity = String(module.price_entity || '');
+  const socEntity = String(module.ev_soc_entity || '');
+  const departure = String(module.ev_departure_time || '');
+  return {
+    id,
+    type: 'energy_price',
+    price_entity: priceEntity && entityExists(hass, priceEntity) ? priceEntity : '',
+    price_source: 'auto',
+    show_title: module.show_title !== false,
+    show_current: module.show_current !== false,
+    show_stats: module.show_stats !== false,
+    show_chart: module.show_chart !== false,
+    show_tomorrow: module.show_tomorrow !== false,
+    show_cheapest_window: module.show_cheapest_window !== false,
+    window_hours: numberInRange(module.window_hours, 0.25, 12, 3),
+    window_label: String(module.window_label || ''),
+    ev_enabled: Boolean(module.ev_enabled),
+    ev_soc_entity: socEntity && entityExists(hass, socEntity) ? socEntity : '',
+    ev_departure_time: /^\d{1,2}:\d{2}$/.test(departure) ? departure : '07:00',
+    ...defaultDisplayActions(),
+  };
+}
+
 export const supplementalSmartModuleHandlers = {
   bar: {
     sanitize: wrapSanitize(sanitizeBarModule),
@@ -1381,6 +1410,18 @@ export const supplementalSmartModuleHandlers = {
     sanitize: wrapSanitize((module, _hass, id) => sanitizePrinter3dModule(module, id)),
     defaultBuilder: (ctx: SmartBuildContext) =>
       sanitizePrinter3dModule({ type: 'printer_3d' } as SmartModule, ctx.id),
+  },
+  energy_price: {
+    sanitize: wrapSanitize(sanitizeEnergyPriceModule),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeEnergyPriceModule(
+        {
+          type: 'energy_price',
+          price_entity: ctx.entity?.entityId?.startsWith('sensor.') ? ctx.entity.entityId : '',
+        } as SmartModule,
+        ctx.hass,
+        ctx.id
+      ),
   },
   animated_weather: {
     sanitize: wrapSanitize(sanitizeAnimatedWeatherModule),
