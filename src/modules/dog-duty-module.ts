@@ -306,7 +306,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dog_duty.provider_section', lang, 'LLM Vision')}
           </div>
@@ -458,7 +458,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dog_duty.map_section', lang, 'Map')}
           </div>
@@ -660,7 +660,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.dog_duty.scan_mode_section', lang, 'How scanning works')}
         </div>
@@ -784,7 +784,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.dog_duty.detection_section', lang, 'Detection')}
         </div>
@@ -1142,7 +1142,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.dog_duty.wizard_title', lang, 'Setup wizard')}
         </div>

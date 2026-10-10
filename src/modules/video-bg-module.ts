@@ -124,7 +124,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             CORE SETTINGS
           </div>
@@ -191,7 +191,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             DEFAULT VIDEO SOURCE
           </div>
@@ -269,7 +269,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             VISUAL FILTERS
           </div>
@@ -327,7 +327,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             PERFORMANCE & ACCESSIBILITY
           </div>
@@ -472,7 +472,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px;"
         >
           GLOBAL CARD TRANSPARENCY
         </div>

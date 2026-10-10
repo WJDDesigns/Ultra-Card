@@ -222,7 +222,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
         >
           ${localize('editor.badge.size_title', lang, 'SIZE & LAYOUT')}
         </div>
@@ -266,7 +266,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
         >
           ${localize('editor.badge.colors_title', lang, 'GRADIENT COLORS')}
         </div>
@@ -410,7 +410,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
         >
           ${localize('editor.badge.animation_title', lang, 'ANIMATION')}
         </div>
@@ -548,7 +548,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
         >
           ${localize('editor.badge.inner_content_title', lang, 'INNER CONTENT')}
         </div>

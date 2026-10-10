@@ -30,7 +30,7 @@ export function renderAnimatedForecastModuleEditor(
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
         >
           ${localize('editor.animated_forecast.entities.title', lang, '⚙️ Forecast Entities')}
         </div>
@@ -88,7 +88,7 @@ export function renderAnimatedForecastModuleEditor(
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
         >
           ${localize('editor.animated_forecast.config.title', lang, '⚙️ Forecast Configuration')}
         </div>
@@ -116,7 +116,7 @@ export function renderAnimatedForecastModuleEditor(
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
         >
           ${localize('editor.animated_forecast.text_sizes.title', lang, '📏 Text Sizes')}
         </div>
@@ -165,7 +165,7 @@ export function renderAnimatedForecastModuleEditor(
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
         >
           ${localize('editor.animated_forecast.icon_settings.title', lang, '🎨 Icon Settings')}
         </div>
@@ -226,7 +226,7 @@ export function renderAnimatedForecastModuleEditor(
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
         >
           ${localize('editor.animated_forecast.colors.title', lang, '🎨 Colors')}
         </div>
@@ -275,7 +275,7 @@ export function renderAnimatedForecastModuleEditor(
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
         >
           ${localize('editor.animated_forecast.background.title', lang, '🎨 Background')}
         </div>

@@ -131,7 +131,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             CORE SETTINGS
           </div>
@@ -258,7 +258,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             DISPLAY SETTINGS
           </div>
@@ -296,7 +296,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             MOBILE & ACCESSIBILITY
           </div>

@@ -593,7 +593,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.area_summary.accent', lang, 'Accent color')}
           </div>
@@ -869,7 +869,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.area_summary.section_pin', lang, 'Pin & hide')}
           </div>

@@ -207,7 +207,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.appliances_section', lang, 'Appliances')}
         </div>
@@ -705,7 +705,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.display_section', lang, 'Display')}
         </div>
@@ -921,7 +921,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.history_section', lang, 'History & cost')}
         </div>
@@ -1003,7 +1003,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.notify_section', lang, 'Notifications')}
         </div>
@@ -1105,7 +1105,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.colors_section', lang, 'Colors')}
         </div>

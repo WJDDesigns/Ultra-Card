@@ -502,7 +502,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         <div class="settings-section">
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dropdown.source.title', lang, 'Dropdown Source')}
           </div>
@@ -623,7 +623,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div class="settings-section">
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
                 </div>
@@ -785,7 +785,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                     >
                       <div
                         class="section-title"
-                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
                       >
                         ${localize(
                           'editor.dropdown.unified_template_section.title',
@@ -922,7 +922,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div class="settings-section">
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.dropdown.options.title', lang, 'Dropdown Options')}
                 </div>
@@ -1081,7 +1081,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div class="settings-section">
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
                 </div>
@@ -1113,7 +1113,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         <div class="settings-section">
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dropdown.control_icon.section_title', lang, 'Dropdown Control Icon')}
           </div>
