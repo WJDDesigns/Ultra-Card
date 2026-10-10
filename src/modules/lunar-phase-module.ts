@@ -1926,6 +1926,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -2174,6 +2175,13 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
         background: var(--uc-lunar-line);
         cursor: pointer;
         transition: all 0.25s ease;
+        position: relative;
+      }
+      /* Tiny dots: pad the tap area without changing how they look. */
+      .uc-lunar-dot::after {
+        content: '';
+        position: absolute;
+        inset: -9px -3px;
       }
       .uc-lunar-dot--active {
         width: 16px;

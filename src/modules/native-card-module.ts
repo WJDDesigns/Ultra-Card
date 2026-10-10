@@ -771,7 +771,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
         <div class="settings-section">
           <div
             class="section-title"
-            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); text-transform: uppercase;"
           >
             ${settingsTitle}
           </div>
@@ -1048,7 +1048,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
         <div class="settings-section">
           <div
             class="section-title"
-            style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));"
           >
             CARD CONFIGURATION (YAML)
           </div>

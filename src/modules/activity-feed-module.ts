@@ -152,6 +152,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           font-weight: 700;
           text-transform: uppercase;
           color: var(--primary-color);
+          color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
           margin-bottom: 16px;
           padding-bottom: 8px;
           border-bottom: 2px solid var(--primary-color);
@@ -1096,7 +1097,11 @@ export class UltraActivityFeedModule extends BaseUltraModule {
             group => html`
               <div class="af-feed-group-label" style="color: ${accentColor};">
                 <span>${group.label}</span>
-                <span class="af-feed-group-count">${group.events.length}</span>
+                <span
+                  class="af-feed-group-count"
+                  style="color: color-mix(in srgb, ${accentColor} 60%, var(--primary-text-color));"
+                  >${group.events.length}</span
+                >
               </div>
               ${group.events.map(event =>
                 this._renderFeedCard(event, feedModule, cardBg, style, accentColor, textColor, secondaryColor)
@@ -1161,7 +1166,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
             <div class="af-feed-card-desc" style="color: ${secondaryColor};">
               ${feedModule.show_state_change
                 ? html`
-                    <span class="af-feed-state-badge" style="background: ${event.color}18; color: ${event.color};">
+                    <span class="af-feed-state-badge" style="background: ${event.color}18; color: color-mix(in srgb, ${event.color} 60%, var(--primary-text-color));">
                       ${this._formatState(event.newState)}
                     </span>
                   `

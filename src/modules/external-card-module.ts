@@ -458,7 +458,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
         <div class="settings-section">
           <div
             class="section-title"
-            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); text-transform: uppercase;"
           >
             USING ${cardName.toUpperCase()}'S NATIVE EDITOR
           </div>
@@ -561,7 +561,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
         <div class="settings-section" style="width: 100%; height: 100%; display: block;">
           <div
             class="section-title"
-            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); text-transform: uppercase;"
           >
             CARD CONFIGURATION (YAML)
           </div>

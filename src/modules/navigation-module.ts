@@ -1005,7 +1005,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
           >
             ${localize('editor.navigation.section_collapse', lang, 'COLLAPSE & AUTO-HIDE')}
           </div>
@@ -3592,6 +3592,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         font-size: 16px;
         font-weight: 700;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         margin-bottom: 8px;
         text-transform: uppercase;
         letter-spacing: 0.5px;

@@ -190,7 +190,7 @@ export class UcCloudBackupService {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Create snapshot failed' }));
-        throw new Error(error.message || `HTTP ${response.status}`);
+        throw new Error(error?.message || `HTTP ${response.status}`);
       }
 
       const backup: CloudBackup = await response.json();
@@ -382,7 +382,7 @@ export class UcCloudBackupService {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Auto-save failed' }));
-        throw new Error(error.message || `HTTP ${response.status}`);
+        throw new Error(error?.message || `HTTP ${response.status}`);
       }
 
       const backup: CloudBackup = await response.json();

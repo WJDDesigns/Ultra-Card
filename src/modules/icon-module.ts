@@ -3211,6 +3211,7 @@ export class UltraIconModule extends BaseUltraModule {
         font-size: 18px !important;
         font-weight: 700 !important;
         color: var(--primary-color) !important;
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
       }
@@ -3242,6 +3243,7 @@ export class UltraIconModule extends BaseUltraModule {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
         text-transform: uppercase;
         letter-spacing: 0.5px;

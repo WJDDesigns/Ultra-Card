@@ -126,7 +126,7 @@ export const PRINTER_SHARED_STYLES = `
     text-transform: uppercase;
     letter-spacing: 0.04em;
     background: color-mix(in srgb, var(--uc-status-color) 18%, transparent);
-    color: var(--uc-status-color);
+    color: color-mix(in srgb, var(--uc-status-color) 60%, var(--primary-text-color));
   }
   .uc-printer-status-pill .dot {
     width: 7px;

@@ -42,6 +42,7 @@ export function unifiModuleStyles(): string {
   font-size: 14px;
   font-weight: 700;
   color: var(--primary-color);
+  color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
   display: flex;
   align-items: center;
   gap: 8px;
@@ -114,9 +115,9 @@ export function unifiModuleStyles(): string {
   background: rgba(127,127,127,0.15);
   color: var(--secondary-text-color);
 }
-.uc-unifi-badge.ok { background: rgba(105,240,174,0.18); color: #69f0ae; }
-.uc-unifi-badge.warn { background: rgba(255,215,64,0.18); color: #ffd740; }
-.uc-unifi-badge.bad { background: rgba(255,82,82,0.18); color: #ff8a80; }
+.uc-unifi-badge.ok { background: rgba(105,240,174,0.18); color: color-mix(in srgb, #69f0ae 45%, var(--primary-text-color)); }
+.uc-unifi-badge.warn { background: rgba(255,215,64,0.18); color: color-mix(in srgb, #ffd740 45%, var(--primary-text-color)); }
+.uc-unifi-badge.bad { background: rgba(255,82,82,0.18); color: color-mix(in srgb, #ff8a80 45%, var(--primary-text-color)); }
 
 /* ── Empty ──────────────────────────────────────────────── */
 .uc-unifi-empty {

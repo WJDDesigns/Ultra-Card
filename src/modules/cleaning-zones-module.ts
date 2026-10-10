@@ -185,12 +185,9 @@ export class UltraCleaningZonesModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const m = module as CleaningZonesModule;
-    if (!module.id) errors.push('Module ID is required');
-    if (!module.type) errors.push('Module type is required');
-    if (!m.todo_entity) errors.push('Select a to-do list to store the cleaning history');
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow an empty to-do list - renderPreview shows a "Pick a cleaning
+    // history list" placeholder. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   override getRuntimeEntityIds(module: CardModule): string[] {

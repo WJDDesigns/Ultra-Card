@@ -87,7 +87,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.entity_section.title', lang, 'ENTITY CONFIGURATION')}
           </div>
@@ -127,7 +127,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.icon_section.title', lang, 'Icon Settings')}
           </div>
@@ -250,7 +250,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.name_section.title', lang, 'Name Settings')}
           </div>
@@ -350,7 +350,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.state_section.title', lang, 'State Settings')}
           </div>
@@ -479,7 +479,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.name_value_layout.title', lang, 'Name & Value Layout')}
           </div>
@@ -733,7 +733,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.size_section.title', lang, 'Size Settings')}
           </div>
@@ -845,7 +845,7 @@ export class UltraInfoModuleSettings extends UltraInfoModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.layout_section.title', lang, 'Layout & Positioning')}
           </div>

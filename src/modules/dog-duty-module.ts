@@ -112,13 +112,9 @@ export class UltraDogDutyModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const m = module as DogDutyModule;
-    if (!module.id) errors.push('Module ID is required');
-    if (!module.type) errors.push('Module type is required');
-    if (!m.camera_entity) errors.push('Select a camera entity');
-    if (!m.todo_entity) errors.push('Select a Dog Duty to-do list entity');
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow an empty camera / to-do list - the card renders its empty
+    // state until they are picked. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   override getRuntimeEntityIds(module: CardModule): string[] {
@@ -310,7 +306,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dog_duty.provider_section', lang, 'LLM Vision')}
           </div>
@@ -462,7 +458,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dog_duty.map_section', lang, 'Map')}
           </div>
@@ -664,7 +660,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.dog_duty.scan_mode_section', lang, 'How scanning works')}
         </div>
@@ -788,7 +784,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.dog_duty.detection_section', lang, 'Detection')}
         </div>
@@ -1146,7 +1142,7 @@ export class UltraDogDutyModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.dog_duty.wizard_title', lang, 'Setup wizard')}
         </div>

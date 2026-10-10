@@ -224,10 +224,10 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    const m = module as ApplianceModuleConfig;
     if (!module.id) errors.push('Module ID is required');
     if (module.type !== this.cardType) errors.push(`Module type must be ${this.cardType}`);
-    if (!m.entity?.trim()) errors.push('Select an appliance entity');
+    // LENIENT VALIDATION: Allow an empty entity - renderPreview shows a "Select an appliance"
+    // placeholder. A validation error here drops the whole card config (blank card).
     return { valid: errors.length === 0, errors };
   }
 

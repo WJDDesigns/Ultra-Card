@@ -3185,6 +3185,7 @@ export class UltraGridModule extends BaseUltraModule {
         font-weight: 700;
         text-transform: uppercase;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         margin-bottom: 16px;
         padding-bottom: 8px;
         border-bottom: 2px solid var(--primary-color);
@@ -3743,16 +3744,12 @@ export class UltraGridModule extends BaseUltraModule {
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 100%;
-        /* Allow wrapping for longer names in metro/masonry but truncate in regular grid */
+        /* Wrap longer names (clamped below) instead of cutting them to stubs */
         word-break: break-word;
       }
 
-      /* Regular grid: single line with ellipsis */
-      .uc-grid-mode-grid .grid-item-name {
-        white-space: nowrap;
-      }
-
-      /* Metro/Masonry: allow wrapping for larger tiles */
+      /* Grid/Metro/Masonry: wrap to at most 2 lines with ellipsis */
+      .uc-grid-mode-grid .grid-item-name,
       .uc-grid-mode-metro .grid-item-name,
       .uc-grid-mode-masonry .grid-item-name {
         white-space: normal;

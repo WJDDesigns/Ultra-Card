@@ -32,7 +32,7 @@ export class UltraImageModuleSettings extends UltraImageModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-color); letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-color); letter-spacing: 0.5px;"
           >
             ${localize('editor.image.settings', lang, 'Image Settings')}
           </div>

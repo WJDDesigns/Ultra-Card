@@ -39,6 +39,20 @@ scheduleBackgroundModulePreloads(moduleRegistry);
 
 const __ucModuleCount = moduleRegistry.getAllModuleMetadata().length;
 
+// UI harness hook (scripts/ui-harness): read-only access to the module registry
+// so the harness can build each module's default config against the live hass.
+// Only exposed when the harness opts in through localStorage.
+try {
+  if (localStorage.getItem('uc-ui-harness') === '1') {
+    (window as Window & { __UC_HARNESS__?: object }).__UC_HARNESS__ = {
+      registry: moduleRegistry,
+      version: VERSION,
+    };
+  }
+} catch {
+  /* storage blocked: no harness */
+}
+
 // One-shot Pro/Free console banner: prefer first hass (event) so we do not print "Free" before integration resolves.
 window.addEventListener(UC_ULTRA_CARD_HASS_READY, () =>
   runUltraCardVersionBanner(__ucModuleCount, { requireHass: false })

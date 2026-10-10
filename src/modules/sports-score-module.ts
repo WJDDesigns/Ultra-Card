@@ -328,7 +328,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
-        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
+        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;">
           ${localize('editor.sports.data_source', lang, 'DATA SOURCE')}
         </div>
         <div class="section-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;">
@@ -526,7 +526,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
-        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
+        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;">
           ${localize('editor.sports.display_settings', lang, 'DISPLAY SETTINGS')}
         </div>
 
@@ -609,7 +609,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
-        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
+        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;">
           ${localize('editor.sports.element_visibility', lang, 'ELEMENT VISIBILITY')}
         </div>
         <div class="section-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;">
@@ -675,7 +675,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section" style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 16px;">
-        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;">
+        <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;">
           ${localize('editor.sports.styling', lang, 'STYLING')}
         </div>
 
@@ -916,6 +916,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         font-weight: 700;
         text-transform: uppercase;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         margin-bottom: 16px;
       }
       .section-description {
@@ -2259,24 +2260,9 @@ export class UltraSportsScoreModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const baseValidation = super.validate(module);
-    const sportsModule = module as SportsScoreModule;
-    const errors = [...baseValidation.errors];
-
-    if (sportsModule.data_source === 'ha_sensor' && !sportsModule.sensor_entity) {
-      errors.push('Sensor entity is required when using HA sensor mode');
-    }
-
-    if (sportsModule.data_source === 'espn_api') {
-      if (!sportsModule.league) {
-        errors.push('League is required when using ESPN API mode');
-      }
-      if (!sportsModule.team_id) {
-        errors.push('Team is required when using ESPN API mode');
-      }
-    }
-
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow no team / league / sensor yet - renderPreview shows a
+    // "Select a team" state. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   getStyles(): string {

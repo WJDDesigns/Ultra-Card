@@ -736,7 +736,7 @@ export class UltraGlobalActionsTab extends LitElement {
             >
               <div
                 class="conditional-fields-header"
-                style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
+                style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
               >
                 ${actionLabel} - More Info Configuration
               </div>
@@ -789,7 +789,7 @@ export class UltraGlobalActionsTab extends LitElement {
             >
               <div
                 class="conditional-fields-header"
-                style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
+                style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
               >
                 ${actionLabel} - Toggle Configuration
               </div>
@@ -972,7 +972,7 @@ export class UltraGlobalActionsTab extends LitElement {
               >
                 <div
                   class="conditional-fields-header"
-                  style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
+                  style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.hover_effects.animation_settings', lang, 'Animation Settings')}
                 </div>
@@ -1186,6 +1186,7 @@ export class UltraGlobalActionsTab extends LitElement {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
         text-transform: uppercase;
         letter-spacing: 0.5px;

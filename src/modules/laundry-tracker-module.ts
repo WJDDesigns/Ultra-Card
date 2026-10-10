@@ -109,20 +109,10 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const m = module as LaundryTrackerModule;
-    if (!module.id) errors.push('Module ID is required');
-    if (!module.type) errors.push('Module type is required');
-    if (!m.appliances || m.appliances.length === 0) {
-      errors.push('Add at least one washer or dryer');
-    } else {
-      for (const appliance of m.appliances) {
-        if (!appliance.power_entity && !appliance.state_entity) {
-          errors.push(`${appliance.name || appliance.kind}: choose a power or state entity`);
-        }
-      }
-    }
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow no machines, or a machine without a power/state entity yet -
+    // renderPreview shows an "Add a washer or dryer" placeholder and the service treats an
+    // unwired machine as idle. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   override getRuntimeEntityIds(module: CardModule): string[] {
@@ -217,7 +207,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.appliances_section', lang, 'Appliances')}
         </div>
@@ -715,7 +705,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.display_section', lang, 'Display')}
         </div>
@@ -931,7 +921,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.history_section', lang, 'History & cost')}
         </div>
@@ -1013,7 +1003,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.notify_section', lang, 'Notifications')}
         </div>
@@ -1115,7 +1105,7 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.laundry_tracker.colors_section', lang, 'Colors')}
         </div>

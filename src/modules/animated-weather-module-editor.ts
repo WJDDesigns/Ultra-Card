@@ -310,6 +310,7 @@ export function renderAnimatedWeatherModuleEditor(
         font-weight: 700;
         text-transform: uppercase;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         margin-bottom: 16px;
         letter-spacing: 0.5px;
       }
@@ -342,6 +343,7 @@ export function renderAnimatedWeatherModuleEditor(
         font-weight: 700;
         text-transform: uppercase;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         letter-spacing: 0.5px;
         margin-bottom: 8px;
       }
