@@ -8,7 +8,7 @@
   "@typescript-eslint/no-unused-vars": 536,
   "eqeqeq": 193,
   "no-console": 536,
-  "no-empty": 29,
+  "no-empty": 28,
   "no-prototype-builtins": 109,
   "no-useless-assignment": 62,
   "no-useless-escape": 17,
