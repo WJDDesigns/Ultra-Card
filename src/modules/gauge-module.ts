@@ -4714,32 +4714,6 @@ export class UltraGaugeModule extends BaseUltraModule {
     return styles.join('; ');
   }
 
-  /**
-   * Vertical origin for a centered value. On arc gauges the needle hub sits at
-   * the arc's center, which is below 50% of the trimmed SVG, so a 50% value
-   * overlaps it. Lift the value until its bottom clears the hub (never lower
-   * than the old 50%).
-   */
-  private getCenterValueTop(gaugeModule: GaugeModule): string {
-    const style = gaugeModule.gauge_style || 'modern';
-    const pointerStyle = gaugeModule.pointer_style || 'needle';
-    if (
-      gaugeModule.pointer_enabled === false ||
-      pointerStyle !== 'needle' ||
-      ['radial', 'minimal', 'digital'].includes(style)
-    ) {
-      return '50%';
-    }
-    const center = (gaugeModule.gauge_size || 200) / 2;
-    const viewMinY = Number(this.getSvgViewBox(gaugeModule).split(' ')[1]) || 0;
-    const svgHeight = this.getSvgHeight(gaugeModule);
-    // Needle hub radius is pointer_width * 2 (see renderPointer), plus a small gap.
-    const hubTop = center - viewMinY - (gaugeModule.pointer_width || 4) * 2 - 4;
-    const hubTopPct = (hubTop / svgHeight) * 100;
-    const halfFont = (gaugeModule.value_font_size || 24) / 2;
-    return `min(50%, calc(${hubTopPct.toFixed(2)}% - ${halfFont}px))`;
-  }
-
   private getValueStyles(gaugeModule: GaugeModule): string {
     const styles: string[] = [
       `font-size: ${gaugeModule.value_font_size || 24}px`,
@@ -4769,9 +4743,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       // 3.10 used `top: calc(50% - 15px)` as the origin. Default gauges stay
       // optically centered (3.11). Custom y_offset keeps the 3.10 origin so
       // overlay cards that were tuned around a shifted value do not jump.
-      styles.push(
-        yOffset !== 0 ? 'top: calc(50% - 15px)' : `top: ${this.getCenterValueTop(gaugeModule)}`
-      );
+      styles.push(yOffset !== 0 ? 'top: calc(50% - 15px)' : 'top: 50%');
       styles.push('left: 50%');
       styles.push('line-height: 1');
       styles.push('display: flex');
