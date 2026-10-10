@@ -237,7 +237,8 @@ export interface BaseModule {
     | 'vampire_power'
     | 'unifi'
     | 'bambu'
-    | 'printer_3d';
+    | 'printer_3d'
+    | 'floorplan';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5617,7 +5618,8 @@ export type CardModule =
   | VampirePowerModule
   | UnifiModule
   | BambuModule
-  | Printer3dModule;
+  | Printer3dModule
+  | FloorplanModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -9196,6 +9198,110 @@ export interface Printer3dModule extends BaseModule {
   accent_color?: string | undefined;
   text_color?: string | undefined;
   secondary_text_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Floorplan (Free) — a picture of your home with entity markers and room zones
+// -------------------------------------------------------------------------
+
+/** Where a marker's name / state label sits relative to its icon. */
+export type FloorplanLabelPosition = 'below' | 'above' | 'left' | 'right';
+
+/** `badge` draws the icon on a round chip (readable on any image); `icon` is the bare glyph. */
+export type FloorplanMarkerStyle = 'badge' | 'icon';
+
+export type FloorplanAspectRatio = 'auto' | '16:9' | '4:3' | '3:2' | '1:1' | '3:4';
+
+export type FloorplanImageFit = 'contain' | 'cover' | 'fill';
+
+/** One entity placed on the floor plan. Positions are percentages (0–100) of the image frame. */
+export interface FloorplanMarker {
+  id: string;
+  entity: string;
+  x: number;
+  y: number;
+  name?: string | undefined;
+  icon?: string | undefined;
+  /** Icon to show while the entity is active (on / open / home …). */
+  active_icon?: string | undefined;
+  /** Icon size in px; falls back to the module's marker_size. */
+  size?: number | undefined;
+  /** Undefined = follow the module-level show_names / show_states. */
+  show_name?: boolean | undefined;
+  show_state?: boolean | undefined;
+  label_position?: FloorplanLabelPosition | undefined;
+  active_color?: string | undefined;
+  inactive_color?: string | undefined;
+  /** Treat this exact state as "active" instead of the domain default. */
+  active_state?: string | undefined;
+  /** Radial glow tinted by the light's color. Undefined = on for lights (module glow_lights). */
+  glow?: boolean | undefined;
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+/** A room-shaped region that fills with color while its entity is active. */
+export interface FloorplanZone {
+  id: string;
+  entity: string;
+  name?: string | undefined;
+  shape: 'rect' | 'polygon';
+  /** Rectangle, in percent of the image frame. */
+  x?: number | undefined;
+  y?: number | undefined;
+  width?: number | undefined;
+  height?: number | undefined;
+  /** Polygon points in percent, e.g. "10,10 40,10 40,35 10,35". */
+  points?: string | undefined;
+  /** Fill color; empty = the light's own color, or the theme accent. */
+  color?: string | undefined;
+  /** Fill opacity while active, 0–100. */
+  opacity?: number | undefined;
+  /** Fill opacity while inactive, 0–100 (usually 0). */
+  inactive_opacity?: number | undefined;
+  show_outline?: boolean | undefined;
+  active_state?: string | undefined;
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+export interface FloorplanModule extends BaseModule {
+  type: 'floorplan';
+
+  /** Uploaded path or URL of the floor plan picture. */
+  image?: string | undefined;
+  /** Optional picture used while Home Assistant is in dark mode. */
+  dark_image?: string | undefined;
+
+  markers: FloorplanMarker[];
+  zones?: FloorplanZone[] | undefined;
+
+  aspect_ratio?: FloorplanAspectRatio | undefined;
+  image_fit?: FloorplanImageFit | undefined;
+
+  marker_style?: FloorplanMarkerStyle | undefined;
+  marker_size?: number | undefined;
+  show_names?: boolean | undefined;
+  show_states?: boolean | undefined;
+  label_position?: FloorplanLabelPosition | undefined;
+  active_color?: string | undefined;
+  inactive_color?: string | undefined;
+
+  glow_lights?: boolean | undefined;
+  /** 0–100 */
+  glow_intensity?: number | undefined;
+  /** Glow radius as a multiple of the marker size. */
+  glow_size?: number | undefined;
+
+  dim_when_all_off?: boolean | undefined;
+  /** How much to darken the picture when everything is off, 0–90. */
+  dim_amount?: number | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
