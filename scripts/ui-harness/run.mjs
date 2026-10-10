@@ -294,6 +294,24 @@ async function renderCard(page, cfg, slotWidth) {
   await page.waitForTimeout(RENDER_SETTLE_MS);
 }
 
+/**
+ * Screenshot an element by its box. Locator screenshots wait for the element to
+ * stop moving, which an animated module (gauges, weather, boilers) never does,
+ * so each of those burned a 30s timeout.
+ */
+async function shoot(page, selector, file) {
+  const box = await page.locator(selector).first().boundingBox({ timeout: 5000 });
+  if (!box || box.width < 1 || box.height < 1) throw new Error(`${selector} has no box to capture`);
+  const vp = page.viewportSize();
+  const clip = {
+    x: Math.max(0, Math.floor(box.x)),
+    y: Math.max(0, Math.floor(box.y)),
+    width: Math.ceil(Math.min(box.width, vp.width - Math.max(0, box.x))),
+    height: Math.ceil(Math.min(box.height, vp.height - Math.max(0, box.y))),
+  };
+  await page.screenshot({ path: file, clip, timeout: 10000 });
+}
+
 async function checkSlot(page, selector, opts) {
   return page.evaluate(
     ({ selector, opts }) => {
@@ -356,7 +374,7 @@ async function cardPass(browser, token, kind, modules, configs) {
           await renderCard(page, cfg, slot);
           const res = await checkSlot(page, 'slot', { mode: 'card', mobile });
           const file = path.join(OUT, 'shots', `${meta.type}.card.${kind}.${theme}.png`);
-          await page.locator('#uc-harness .uch-slot').screenshot({ path: file });
+          await shoot(page, '#uc-harness .uch-slot', file);
           (r.card[kind] ||= {})[theme] = { shot: rel(file), ...res };
           if (!SKIP_INTERACTIONS && kind === 'desktop' && theme === THEMES[THEMES.length - 1]) {
             r.interactions = await interact(page, cfg, slot, meta.type);
@@ -524,10 +542,7 @@ async function editorPass(browser, token, modules, configs) {
               'shots',
               `${meta.type}.editor.${theme}.${ti}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`
             );
-            await page
-              .locator('#uc-harness .module-settings-panel')
-              .first()
-              .screenshot({ path: file });
+            await shoot(page, '#uc-harness .module-settings-panel', file);
             tabs.push({ name, shot: rel(file), ...res });
           }
           r.editor[theme] = { tabs };
