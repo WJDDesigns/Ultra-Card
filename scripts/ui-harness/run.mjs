@@ -301,7 +301,9 @@ async function renderCard(page, cfg, slotWidth) {
  */
 async function shoot(page, selector, file) {
   const box = await page.locator(selector).first().boundingBox({ timeout: 5000 });
-  if (!box || box.width < 1 || box.height < 1) throw new Error(`${selector} has no box to capture`);
+  // A module that renders at zero size is reported by the empty-render check;
+  // there is simply nothing to capture.
+  if (!box || box.width < 1 || box.height < 1) return false;
   const vp = page.viewportSize();
   const clip = {
     x: Math.max(0, Math.floor(box.x)),
@@ -310,6 +312,7 @@ async function shoot(page, selector, file) {
     height: Math.ceil(Math.min(box.height, vp.height - Math.max(0, box.y))),
   };
   await page.screenshot({ path: file, clip, timeout: 10000 });
+  return true;
 }
 
 async function checkSlot(page, selector, opts) {
@@ -374,8 +377,8 @@ async function cardPass(browser, token, kind, modules, configs) {
           await renderCard(page, cfg, slot);
           const res = await checkSlot(page, 'slot', { mode: 'card', mobile });
           const file = path.join(OUT, 'shots', `${meta.type}.card.${kind}.${theme}.png`);
-          await shoot(page, '#uc-harness .uch-slot', file);
-          (r.card[kind] ||= {})[theme] = { shot: rel(file), ...res };
+          const captured = await shoot(page, '#uc-harness .uch-slot', file);
+          (r.card[kind] ||= {})[theme] = { shot: captured ? rel(file) : null, ...res };
           if (!SKIP_INTERACTIONS && kind === 'desktop' && theme === THEMES[THEMES.length - 1]) {
             r.interactions = await interact(page, cfg, slot, meta.type);
           }
@@ -542,8 +545,8 @@ async function editorPass(browser, token, modules, configs) {
               'shots',
               `${meta.type}.editor.${theme}.${ti}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`
             );
-            await shoot(page, '#uc-harness .module-settings-panel', file);
-            tabs.push({ name, shot: rel(file), ...res });
+            const captured = await shoot(page, '#uc-harness .module-settings-panel', file);
+            tabs.push({ name, shot: captured ? rel(file) : null, ...res });
           }
           r.editor[theme] = { tabs };
           const bad = tabs.reduce(
