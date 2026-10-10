@@ -44,7 +44,10 @@ const __ucModuleCount = moduleRegistry.getAllModuleMetadata().length;
 // Only exposed when the harness opts in through localStorage.
 try {
   if (localStorage.getItem('uc-ui-harness') === '1') {
-    (window as any).__UC_HARNESS__ = { registry: moduleRegistry, version: VERSION };
+    (window as Window & { __UC_HARNESS__?: object }).__UC_HARNESS__ = {
+      registry: moduleRegistry,
+      version: VERSION,
+    };
   }
 } catch {
   /* storage blocked: no harness */
