@@ -237,7 +237,8 @@ export interface BaseModule {
     | 'vampire_power'
     | 'unifi'
     | 'bambu'
-    | 'printer_3d';
+    | 'printer_3d'
+    | 'linked_row';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -1856,6 +1857,22 @@ export interface ScrollRowModule extends BaseModule {
   show_scrollbar?: boolean | undefined;
   show_arrows?: boolean | undefined;
   fade_edges?: boolean | undefined;
+}
+
+// Linked Row (Pro) — a vertical container whose children are shared through
+// Ultra Card Connect, so editing it once updates every dashboard that uses it.
+// `modules` is always kept as a local copy so the row never renders blank when
+// Connect is missing, too old or offline.
+export interface LinkedRowModule extends Omit<VerticalModule, 'type'> {
+  type: 'linked_row';
+  /** Id of the shared row in the Connect library; empty = not linked yet. */
+  linked_id?: string | undefined;
+  /** Library name, cached locally for the editor and offline display. */
+  linked_name?: string | undefined;
+  /** Library revision the local `modules` copy was last synced with. */
+  linked_revision?: number | undefined;
+  /** ISO time of that revision, cached for the editor. */
+  linked_updated_at?: string | undefined;
 }
 
 // State Switcher — renders exactly one child: the first whose logic conditions match
@@ -5617,7 +5634,8 @@ export type CardModule =
   | VampirePowerModule
   | UnifiModule
   | BambuModule
-  | Printer3dModule;
+  | Printer3dModule
+  | LinkedRowModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
