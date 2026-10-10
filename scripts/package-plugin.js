@@ -16,9 +16,9 @@
  *    `ultra-card-integration.zip` is what lands it in plugins/ultra-card-integration/.
  *    Renaming the zip silently installs the plugin to the wrong directory.
  *
- * 2. `*.php` is gitignored repo-wide, so the plugin source has no git history.
- *    The committed zip is the only record of previous versions — commit it
- *    alongside the change it packages.
+ * 2. The plugin source (ultra-card-integration/, the root includes/ and
+ *    templates/ mirror) and this zip are kept locally only; they are
+ *    gitignored and never pushed to GitHub. Keep your own backup of them.
  */
 
 const fs = require('fs');
@@ -168,7 +168,7 @@ function main() {
   console.log(`  ${linted}/${fileCount} PHP files pass syntax checks`);
   if (synced.length) console.log(`  root mirror synced: ${synced.join(', ')}`);
   console.log(`\n  Upload via Plugins → Add New → Upload Plugin ("Replace current with uploaded").`);
-  console.log(`  Commit the zip — it is the only version history for the gitignored PHP.\n`);
+  console.log(`  The plugin and zip are local-only (gitignored); keep a backup.\n`);
 }
 
 main();
