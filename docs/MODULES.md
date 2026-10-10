@@ -1,8 +1,8 @@
 # Ultra Card module gallery
 
-_Generated from v3.14.0-beta1 on 2026-10-10 — do not edit by hand._
+_Generated from v3.14.0-beta2 on 2026-10-10 — do not edit by hand._
 
-**99 modules** · 68 free · 31 PRO
+**103 modules** · 70 free · 33 PRO
 
 ## content
 
@@ -88,8 +88,10 @@ _Generated from v3.14.0-beta1 on 2026-10-10 — do not edit by hand._
 <tr><td width="220"><img src="previews/dropdown.png" width="200" alt="Dropdown"></td><td><b>Dropdown</b><br>Interactive dropdown selector with Home Assistant actions</td></tr>
 <tr><td width="220"><img src="previews/dryer.png" width="200" alt="Dryer"></td><td><b>Dryer</b><br>Animated dryer card with cycle status, remaining time, controls, and energy use</td></tr>
 <tr><td width="220"><img src="previews/fan.png" width="200" alt="Fan Control"></td><td><b>Fan Control</b><br>Modern fan control with speed, presets, oscillation, and direction</td></tr>
+<tr><td width="220"><img src="previews/floorplan.png" width="200" alt="Floorplan"></td><td><b>Floorplan</b><br>A picture of your home with live entity markers, glowing lights and room zones — a friendly Picture Elements</td></tr>
 <tr><td width="220"><img src="previews/humidifier.png" width="200" alt="Humidifier Control"></td><td><b>Humidifier Control</b><br>Control humidifiers and dehumidifiers with target humidity, power, and modes</td></tr>
 <tr><td width="220"><img src="previews/icon.png" width="200" alt="Icons"></td><td><b>Icons</b><br>Interactive icon buttons</td></tr>
+<tr><td width="220"><img src="previews/irrigation.png" width="200" alt="Irrigation"></td><td><b>Irrigation</b><br>Sprinkler and valve zones for any integration with timed runs, rain delay, and moisture</td></tr>
 <tr><td width="220"><img src="previews/light.png" width="200" alt="Light Control"></td><td><b>Light Control</b><br>Advanced light control with color, brightness, and effects</td></tr>
 <tr><td width="220"><img src="previews/lock.png" width="200" alt="Lock Control"></td><td><b>Lock Control</b><br>Modern lock control with lock, unlock, and open when supported</td></tr>
 <tr><td width="220"><img src="previews/media_player.png" width="200" alt="Media Player"></td><td><b>Media Player</b><br>Control media players with album art, progress bar, and playback controls</td></tr>
@@ -112,6 +114,7 @@ _Generated from v3.14.0-beta1 on 2026-10-10 — do not edit by hand._
 <tr><td width="220"><img src="previews/flip_card.png" width="200" alt="Flip Card"></td><td><b>Flip Card</b><br>Two-sided container that flips between a front and back face</td></tr>
 <tr><td width="220"><img src="previews/grid_layout.png" width="200" alt="Grid Layout"></td><td><b>Grid Layout</b><br>True CSS-grid container with per-child column and row spans</td></tr>
 <tr><td width="220"><img src="previews/horizontal.png" width="200" alt="Horizontal Layout"></td><td><b>Horizontal Layout</b><br>Arrange modules in rows with flexible horizontal and vertical alignment and spacing</td></tr>
+<tr><td width="220"><img src="previews/linked_row.png" width="200" alt="Linked Row"></td><td><b>Linked Row</b> · <sub>PRO</sub><br>A shared block of modules: edit it once and it updates on every dashboard</td></tr>
 <tr><td width="220"><img src="previews/navigation.png" width="200" alt="Navigation"></td><td><b>Navigation</b><br>Add a global navigation bar with routes, popups, and media player controls</td></tr>
 <tr><td width="220"><img src="previews/pagebreak.png" width="200" alt="Page Break"></td><td><b>Page Break</b><br>Separates slider content into pages</td></tr>
 <tr><td width="220"><img src="previews/popup.png" width="200" alt="Popup"></td><td><b>Popup</b><br>Modal popup container with customizable trigger and content</td></tr>

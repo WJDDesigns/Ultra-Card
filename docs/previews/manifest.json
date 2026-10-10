@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-10T22:12:16.784Z",
-  "ultraCardVersion": "3.14.0-beta1",
+  "generatedAt": "2026-10-10T23:07:30.575Z",
+  "ultraCardVersion": "3.14.0-beta2",
   "counts": {
-    "total": 99,
-    "free": 68,
-    "pro": 31
+    "total": 103,
+    "free": 70,
+    "pro": 33
   },
   "modules": [
     {
@@ -731,6 +731,29 @@
       "status": "ok"
     },
     {
+      "type": "energy_price",
+      "title": "Energy Price & EV",
+      "description": "Electricity price curve with cheap and expensive hours, the cheapest time to run appliances, and a smart EV charge plan",
+      "category": "data",
+      "icon": "mdi:ev-station",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "energy",
+        "electricity price",
+        "nordpool",
+        "tibber",
+        "octopus",
+        "ev",
+        "charging",
+        "cheapest hours",
+        "tariff"
+      ],
+      "preview": "previews/energy_price.png",
+      "status": "needs-config"
+    },
+    {
       "type": "fan",
       "title": "Fan Control",
       "description": "Modern fan control with speed, presets, oscillation, and direction",
@@ -766,6 +789,26 @@
       ],
       "preview": "previews/flip_card.png",
       "status": "ok"
+    },
+    {
+      "type": "floorplan",
+      "title": "Floorplan",
+      "description": "A picture of your home with live entity markers, glowing lights and room zones — a friendly Picture Elements",
+      "category": "interactive",
+      "icon": "mdi:floor-plan",
+      "pro": false,
+      "tags": [
+        "floorplan",
+        "floor plan",
+        "picture elements",
+        "map",
+        "rooms",
+        "lights",
+        "markers",
+        "interactive"
+      ],
+      "preview": "previews/floorplan.png",
+      "status": "needs-config"
     },
     {
       "type": "gauge",
@@ -923,6 +966,27 @@
       "status": "ok"
     },
     {
+      "type": "irrigation",
+      "title": "Irrigation",
+      "description": "Sprinkler and valve zones for any integration with timed runs, rain delay, and moisture",
+      "category": "interactive",
+      "icon": "mdi:sprinkler-variant",
+      "pro": false,
+      "tags": [
+        "irrigation",
+        "sprinkler",
+        "garden",
+        "lawn",
+        "valve",
+        "watering",
+        "opensprinkler",
+        "rachio",
+        "interactive"
+      ],
+      "preview": "previews/irrigation.png",
+      "status": "ok"
+    },
+    {
       "type": "laundry_tracker",
       "title": "Laundry Tracker",
       "description": "Detects wash and dry cycles from power sensors and nags about forgotten loads",
@@ -957,6 +1021,26 @@
         "smart"
       ],
       "preview": "previews/light.png",
+      "status": "ok"
+    },
+    {
+      "type": "linked_row",
+      "title": "Linked Row",
+      "description": "A shared block of modules: edit it once and it updates on every dashboard",
+      "category": "layout",
+      "icon": "mdi:link-box-variant-outline",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "layout",
+        "container",
+        "shared",
+        "linked",
+        "sync",
+        "reuse"
+      ],
+      "preview": "previews/linked_row.png",
       "status": "ok"
     },
     {
