@@ -2092,7 +2092,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
         border-radius: 10px;
         border: 1px dashed var(--primary-color);
         background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.06);
-        color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         font: inherit;
         font-weight: 600;
         cursor: pointer;
@@ -2108,7 +2108,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
         margin-bottom: 8px;
         border: none;
         background: none;
-        color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         font: inherit;
         font-size: 13px;
         font-weight: 600;
