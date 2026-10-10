@@ -16538,7 +16538,8 @@ export class LayoutTab extends LitElement {
         module.type === 'flip_card' ||
         module.type === 'drawer' ||
         module.type === 'scroll_row' ||
-        module.type === 'state_switcher') &&
+        module.type === 'state_switcher' ||
+        module.type === 'linked_row') &&
       module.modules
     ) {
       module.modules.forEach((childModule: any) => {
