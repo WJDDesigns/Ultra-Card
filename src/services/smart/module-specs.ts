@@ -56,6 +56,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   unifi: ['unifi', 'ubiquiti', 'udm', 'network rack', 'switch ports', 'access point', 'unifi network'],
   bambu: ['bambu', 'bambu lab', 'x1c', 'p1s', 'a1', 'ams', '3d printer bambu', 'bambulab'],
   printer_3d: ['3d printer', 'octoprint', 'moonraker', 'klipper', 'prusa', 'prusalink', 'print progress'],
+  irrigation: ['irrigation', 'sprinkler', 'sprinklers', 'sprinkler zones', 'garden watering', 'lawn watering', 'opensprinkler', 'rachio'],
   calendar: ['events', 'schedule', 'agenda'],
   battery_monitor: ['battery', 'low battery', 'phone battery'],
   area_summary: ['room summary', 'room tile', 'floor plan'],
@@ -502,6 +503,20 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
       progress_entity: 'sensor.printer_progress',
     },
   },
+  irrigation: {
+    purpose:
+      'Sprinkler / irrigation control for any integration: one row per zone (switch or valve) with run/stop, run time, and remaining time. Optional master valve, rain delay, rain sensor, next run, flow, water used, and per-zone soil moisture.',
+    fields: ['zones', 'default_duration_minutes', 'layout', 'title', 'rain_delay_entity', 'master_entity'],
+    example: {
+      type: 'irrigation',
+      zones: [
+        { id: 'zone_front', entity: 'switch.front_lawn_sprinkler' },
+        { id: 'zone_back', entity: 'switch.back_yard_sprinkler' },
+      ],
+      default_duration_minutes: 10,
+      layout: 'full',
+    },
+  },
 };
 
 const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
@@ -559,6 +574,7 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   unifi: ['sensor', 'switch', 'button', 'device_tracker', 'light', 'update'],
   bambu: ['sensor', 'binary_sensor', 'button', 'fan', 'light', 'number', 'select', 'camera', 'image'],
   printer_3d: ['sensor', 'binary_sensor', 'button', 'switch', 'light', 'fan', 'camera', 'image', 'script'],
+  irrigation: ['switch', 'valve', 'binary_sensor', 'sensor', 'number', 'select', 'script'],
   animated_weather: ['weather'],
   animated_forecast: ['weather'],
   animated_clock: ['*'],

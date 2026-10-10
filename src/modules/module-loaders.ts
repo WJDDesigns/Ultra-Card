@@ -361,4 +361,8 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-printer-3d" */ './printer-3d-module').then(
       m => new m.UltraPrinter3dModule()
     ),
+  irrigation: () =>
+    import(/* webpackChunkName: "m-irrigation" */ './irrigation-module').then(
+      m => new m.UltraIrrigationModule()
+    ),
 };
