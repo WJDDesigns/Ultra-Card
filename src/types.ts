@@ -240,7 +240,8 @@ export interface BaseModule {
     | 'printer_3d'
     | 'floorplan'
     | 'irrigation'
-    | 'linked_row';
+    | 'linked_row'
+    | 'energy_price';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5639,7 +5640,8 @@ export type CardModule =
   | Printer3dModule
   | FloorplanModule
   | IrrigationModule
-  | LinkedRowModule;
+  | LinkedRowModule
+  | EnergyPriceModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -9414,6 +9416,103 @@ export interface IrrigationModule extends BaseModule {
   /** Soil moisture thresholds (percent). Below dry = dry, above wet = wet. */
   moisture_dry_threshold?: number | undefined;
   moisture_wet_threshold?: number | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Energy Price & EV (Pro) — electricity price curve, cheapest window, EV plan
+// -------------------------------------------------------------------------
+
+/** Price source. 'auto' detects the integration from the entity. */
+export type EnergyPriceSource =
+  | 'auto'
+  | 'nordpool'
+  | 'nordpool_core'
+  | 'tibber'
+  | 'energi_data_service'
+  | 'entsoe'
+  | 'octopus'
+  | 'amber'
+  | 'generic';
+
+export type EnergyPriceLevelMode = 'relative' | 'percentile' | 'absolute';
+
+/** What the user-tapped "apply plan" button does. 'none' hides it. */
+export type EnergyPriceEvApplyMode = 'none' | 'charger' | 'script' | 'datetime';
+
+export interface EnergyPriceModule extends BaseModule {
+  type: 'energy_price';
+
+  /** The only required field: a price sensor from any supported integration. */
+  price_entity: string;
+  price_source?: EnergyPriceSource | undefined;
+  /** Core Nord Pool config entry id (looked up automatically when blank). */
+  nordpool_config_entry?: string | undefined;
+  /** Nord Pool area or Tibber home name when the integration returns several. */
+  source_hint?: string | undefined;
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_current?: boolean | undefined;
+  show_stats?: boolean | undefined;
+  show_chart?: boolean | undefined;
+  show_tomorrow?: boolean | undefined;
+  /** 0 = today (+ tomorrow when published); otherwise a rolling number of hours. */
+  chart_hours?: number | undefined;
+  chart_height?: number | undefined;
+
+  show_cheapest_window?: boolean | undefined;
+  window_hours?: number | undefined;
+  /** e.g. "Dishwasher" — shown as "Dishwasher: start at 02:00". */
+  window_label?: string | undefined;
+
+  level_mode?: EnergyPriceLevelMode | undefined;
+  cheap_percent?: number | undefined;
+  expensive_percent?: number | undefined;
+  cheap_price?: number | undefined;
+  expensive_price?: number | undefined;
+
+  /** Displayed price = raw × multiplier + additive (VAT, grid fees, …). */
+  price_multiplier?: number | undefined;
+  price_additive?: number | undefined;
+  /** Overrides the sensor's unit, e.g. "€/kWh" or "p/kWh". */
+  unit_override?: string | undefined;
+  decimals?: number | undefined;
+
+  cheap_color?: string | undefined;
+  normal_color?: string | undefined;
+  expensive_color?: string | undefined;
+
+  ev_enabled?: boolean | undefined;
+  /** switch / input_boolean that starts and stops charging. */
+  ev_charger_entity?: string | undefined;
+  /** Battery level sensor (percent). */
+  ev_soc_entity?: string | undefined;
+  ev_target_soc?: number | undefined;
+  /** Optional number / input_number holding the target level. */
+  ev_target_soc_entity?: string | undefined;
+  ev_capacity_kwh?: number | undefined;
+  ev_power_kw?: number | undefined;
+  /** Optional charger power sensor (W or kW); used instead of ev_power_kw while it reports > 0. */
+  ev_power_entity?: string | undefined;
+  ev_efficiency?: number | undefined;
+  /** "HH:MM" */
+  ev_departure_time?: string | undefined;
+  /** Optional input_datetime / sensor holding the departure. */
+  ev_departure_entity?: string | undefined;
+  /** Hours to plan when there is no battery level sensor. */
+  ev_manual_hours?: number | undefined;
+  ev_allow_split?: boolean | undefined;
+  ev_apply_mode?: EnergyPriceEvApplyMode | undefined;
+  /** apply mode 'script': the script to run with the plan as variables. */
+  ev_script_entity?: string | undefined;
+  /** apply mode 'datetime': input_datetime set to the first planned start. */
+  ev_start_entity?: string | undefined;
+  /** apply mode 'datetime': optional input_datetime set to the last planned end. */
+  ev_end_entity?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

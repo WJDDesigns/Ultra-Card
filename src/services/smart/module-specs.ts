@@ -60,6 +60,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   printer_3d: ['3d printer', 'octoprint', 'moonraker', 'klipper', 'prusa', 'prusalink', 'print progress'],
   floorplan: ['floorplan', 'floor plan', 'house map', 'home map', 'room map', 'picture elements'],
   irrigation: ['irrigation', 'sprinkler', 'sprinklers', 'sprinkler zones', 'garden watering', 'lawn watering', 'opensprinkler', 'rachio'],
+  energy_price: ['energy price', 'electricity price', 'spot price', 'nordpool', 'nord pool', 'tibber', 'octopus agile', 'cheapest hours', 'ev charging plan', 'smart charging'],
   calendar: ['events', 'schedule', 'agenda'],
   battery_monitor: ['battery', 'low battery', 'phone battery'],
   area_summary: ['room summary', 'room tile', 'floor plan'],
@@ -534,6 +535,12 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
       zones: [],
     },
   },
+  energy_price: {
+    purpose:
+      'Electricity price curve for today and tomorrow from Nord Pool, Tibber, Octopus, ENTSO-e, Energi Data Service, Amber or a generic price sensor (format auto-detected), with the current price level, the cheapest window to run an appliance, and an optional EV charge plan.',
+    fields: ['price_entity', 'window_hours', 'window_label', 'ev_enabled', 'ev_soc_entity', 'ev_departure_time'],
+    example: { type: 'energy_price', price_entity: 'sensor.nordpool_kwh_se3_sek_3_10_025', window_hours: 3 },
+  },
 };
 
 const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
@@ -592,6 +599,7 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   bambu: ['sensor', 'binary_sensor', 'button', 'fan', 'light', 'number', 'select', 'camera', 'image'],
   printer_3d: ['sensor', 'binary_sensor', 'button', 'switch', 'light', 'fan', 'camera', 'image', 'script'],
   irrigation: ['switch', 'valve', 'binary_sensor', 'sensor', 'number', 'select', 'script'],
+  energy_price: ['sensor', 'event'],
   animated_weather: ['weather'],
   animated_forecast: ['weather'],
   animated_clock: ['*'],

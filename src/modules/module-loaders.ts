@@ -369,4 +369,8 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-floorplan" */ './floorplan-module').then(
       m => new m.UltraFloorplanModule()
     ),
+  energy_price: () =>
+    import(/* webpackChunkName: "m-energy-price" */ './energy-price-module').then(
+      m => new m.UltraEnergyPriceModule()
+    ),
 };

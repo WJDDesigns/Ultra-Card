@@ -122,6 +122,7 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'vehicle-maintenance-module.ts',
   'vampire-power-module.ts',
   'unifi-module.ts',
+  'energy-price-module.ts',
   // New layout containers
   'grid-layout-module.ts',
   'flip-card-module.ts',

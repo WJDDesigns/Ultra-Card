@@ -40,6 +40,7 @@ _Generated from v3.14.0-beta1 on 2026-10-10 — do not edit by hand._
 <tr><td width="220"><img src="previews/dog_duty.png" width="200" alt="Dog Duty"></td><td><b>Dog Duty</b> · <sub>PRO</sub><br>Yard map with AI-detected dog waste markers, time scrubber, and cleanup tracking</td></tr>
 <tr><td width="220"><img src="previews/dynamic-list.png" width="200" alt="Dynamic List"></td><td><b>Dynamic List</b><br>Generate a list of modules dynamically using a Jinja2 template</td></tr>
 <tr><td width="220"><img src="previews/energy_display.png" width="200" alt="Energy Display"></td><td><b>Energy Display</b> · <sub>PRO</sub><br>Visualize energy flow between grid, solar, battery, home and devices</td></tr>
+<tr><td width="220"><img src="previews/energy_price.png" width="200" alt="Energy Price & EV"></td><td><b>Energy Price & EV</b> · <sub>PRO</sub><br>Electricity price curve with cheap and expensive hours, the cheapest time to run appliances, and a smart EV charge plan</td></tr>
 <tr><td width="220"><img src="previews/graphs.png" width="200" alt="Graphs"></td><td><b>Graphs</b><br>Display interactive charts and graphs with Home Assistant data</td></tr>
 <tr><td width="220"><img src="previews/grid.png" width="200" alt="Grid"></td><td><b>Grid</b><br>Display entities in a customizable grid layout with multiple styles</td></tr>
 <tr><td width="220"><img src="previews/info.png" width="200" alt="Info Items"></td><td><b>Info Items</b><br>Show entity information values</td></tr>
