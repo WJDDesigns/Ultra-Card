@@ -81,6 +81,11 @@ const OVERLAY_TYPES = new Set([
   'navigation',
   'screensaver',
 ]);
+/** Modules that draw no text or media by design (a rule line, an invisible page marker). */
+const NO_TEXT_TYPES = new Map([
+  ['separator', 'Separator: draws a rule line, no text by design'],
+  ['pagebreak', 'Page break: only marks a split between slider pages, invisible by design'],
+]);
 const MAX_CLICKS = Number(opt('clicks', '6'));
 
 const VIEWPORTS = {
@@ -427,6 +432,12 @@ async function cardPass(browser, token, kind, modules, configs) {
             for (const f of res.findings.filter(f => f.check === 'empty-render')) {
               f.severity = 'info';
               f.message = 'Overlay module: draws behind or over the view, not inside the card';
+            }
+          }
+          if (NO_TEXT_TYPES.has(meta.type)) {
+            for (const f of res.findings.filter(f => f.check === 'empty-render')) {
+              f.severity = 'info';
+              f.message = NO_TEXT_TYPES.get(meta.type);
             }
           }
           const file = path.join(OUT, 'shots', `${meta.type}.card.${kind}.${theme}.png`);

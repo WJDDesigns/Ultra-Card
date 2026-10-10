@@ -112,13 +112,9 @@ export class UltraDogDutyModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const m = module as DogDutyModule;
-    if (!module.id) errors.push('Module ID is required');
-    if (!module.type) errors.push('Module type is required');
-    if (!m.camera_entity) errors.push('Select a camera entity');
-    if (!m.todo_entity) errors.push('Select a Dog Duty to-do list entity');
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow an empty camera / to-do list - the card renders its empty
+    // state until they are picked. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   override getRuntimeEntityIds(module: CardModule): string[] {

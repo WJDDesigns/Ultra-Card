@@ -2260,24 +2260,9 @@ export class UltraSportsScoreModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const baseValidation = super.validate(module);
-    const sportsModule = module as SportsScoreModule;
-    const errors = [...baseValidation.errors];
-
-    if (sportsModule.data_source === 'ha_sensor' && !sportsModule.sensor_entity) {
-      errors.push('Sensor entity is required when using HA sensor mode');
-    }
-
-    if (sportsModule.data_source === 'espn_api') {
-      if (!sportsModule.league) {
-        errors.push('League is required when using ESPN API mode');
-      }
-      if (!sportsModule.team_id) {
-        errors.push('Team is required when using ESPN API mode');
-      }
-    }
-
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow no team / league / sensor yet - renderPreview shows a
+    // "Select a team" state. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   getStyles(): string {

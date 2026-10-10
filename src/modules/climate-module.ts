@@ -1794,6 +1794,15 @@ export class UltraClimateModule extends BaseUltraModule {
         cursor: pointer;
         transition: all 0.2s ease;
         backdrop-filter: blur(10px);
+        position: relative;
+      }
+
+      /* The visible circle is small; give fingers a bigger hit area around it. */
+      .climate-control-btn-inline::after {
+        content: '';
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
       }
 
       .climate-control-btn-inline:hover:not(:disabled) {

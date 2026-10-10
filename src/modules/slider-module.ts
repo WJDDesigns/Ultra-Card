@@ -2413,6 +2413,13 @@ export class UltraSliderModule extends BaseUltraModule {
           transition: all 0.3s;
           pointer-events: all;
           display: inline-block;
+          position: relative;
+        }
+        /* Small bullets: pad the tap area without changing how they look. */
+        .ultra-slider-container .swiper-pagination-bullet::after {
+          content: '';
+          position: absolute;
+          inset: -8px -4px;
         }
         .ultra-slider-container .swiper-pagination-bullet-active {
           background: ${sliderModule.pagination_active_color || 'var(--primary-color)'};

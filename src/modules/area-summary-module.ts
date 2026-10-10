@@ -80,13 +80,9 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const base = super.validate(module);
-    const m = module as AreaSummaryModule;
-    const errors = [...base.errors];
-    if (!m.area_id?.trim()) {
-      errors.push('Select a Home Assistant area');
-    }
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow an empty area - renderPreview shows a "Select an area"
+    // placeholder. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   /**

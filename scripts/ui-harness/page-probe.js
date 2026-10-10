@@ -180,6 +180,42 @@
     return box;
   }
 
+  /** Tap area of `el`, including an absolutely positioned ::before/::after that pads it out. */
+  function hitRect(el) {
+    const r = el.getBoundingClientRect();
+    let w = r.width;
+    let h = r.height;
+    for (const pseudo of ['::before', '::after']) {
+      const ps = getComputedStyle(el, pseudo);
+      if (ps.content === 'none' || ps.position !== 'absolute') continue;
+      const px = v => (v.endsWith('px') ? parseFloat(v) : 0);
+      w = Math.max(w, r.width - px(ps.left) - px(ps.right));
+      h = Math.max(h, r.height - px(ps.top) - px(ps.bottom));
+    }
+    return { width: w, height: h };
+  }
+
+  /** Own-text box of `el`, clipped by `el` itself and every clipping ancestor below `root`. */
+  function paintedTextRect(el, root) {
+    let box = ownTextRect(el);
+    if (!box) return null;
+    const cs = getComputedStyle(el);
+    const self = el.getBoundingClientRect();
+    if (cs.overflowX !== 'visible')
+      box = { ...box, left: Math.max(box.left, self.left), right: Math.min(box.right, self.right) };
+    if (cs.overflowY !== 'visible')
+      box = { ...box, top: Math.max(box.top, self.top), bottom: Math.min(box.bottom, self.bottom) };
+    const clip = clippedRect(el, root);
+    if (!clip) return null;
+    box = {
+      left: Math.max(box.left, clip.left),
+      top: Math.max(box.top, clip.top),
+      right: Math.min(box.right, clip.right),
+      bottom: Math.min(box.bottom, clip.bottom),
+    };
+    return box.right - box.left > 1 && box.bottom - box.top > 1 ? box : null;
+  }
+
   /** Rect of `el` after clipping by every overflow:hidden/auto/clip ancestor below `root`. */
   function clippedRect(el, root) {
     const r = el.getBoundingClientRect();
@@ -301,6 +337,9 @@
       if (TEMPLATE_LEAK.test(text) && mode === 'card')
         add('template-leak', 'warn', `Template source is visible: “${sample}”`, el);
 
+      // Text inside a collapsed section (clipped to nothing) isn't on screen.
+      if (!clippedRect(el, root)) continue;
+
       const cs = getComputedStyle(el);
       // Clipped text with no ellipsis.
       if (
@@ -344,8 +383,10 @@
     }
 
     // Overlapping text (labels drawn on top of each other).
+    // Clip each text box to what actually paints: an ellipsized label's text range
+    // runs past its own box, which reads as an overlap that isn't on screen.
     const boxes = texts
-      .map(t => ({ ...t, box: ownTextRect(t.el) }))
+      .map(t => ({ ...t, box: paintedTextRect(t.el, root) }))
       .filter(t => t.box && effectiveOpacity(t.el) > 0.2);
     let overlaps = 0;
     for (let i = 0; i < boxes.length && overlaps < 4; i++) {
@@ -377,7 +418,7 @@
     let small = 0;
     for (const el of targets) {
       if (el.matches('input[type=range], [role=slider]')) continue;
-      const r = el.getBoundingClientRect();
+      const r = hitRect(el);
       if (r.width < min || r.height < min) {
         if (small++ < 4)
           add(

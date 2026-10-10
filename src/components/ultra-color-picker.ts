@@ -689,7 +689,10 @@ export class UltraColorPicker extends LitElement {
     if (isGradient(backgroundColor)) return 'dark';
     // Theme variables and named colours (`var(--primary-text-color)`, `white`) are
     // resolved to what they actually paint, so the label stays readable on them.
-    if (!backgroundColor.startsWith('#') && !backgroundColor.startsWith('rgb')) {
+    if (
+      (!backgroundColor.startsWith('#') && !backgroundColor.startsWith('rgb')) ||
+      backgroundColor.includes('var(')
+    ) {
       backgroundColor = this._resolveCSSColor(backgroundColor);
       if (!backgroundColor.startsWith('rgb')) return null;
     }
@@ -730,17 +733,19 @@ export class UltraColorPicker extends LitElement {
     if (!color) return color;
     const trimmed = color.trim();
 
-    // Fast-path: concrete colors (hex, rgb, rgba) don't need resolution
-    if (trimmed.startsWith('#') || trimmed.startsWith('rgb')) {
+    // Fast-path: concrete colors (hex, rgb, rgba) don't need resolution.
+    // `rgba(var(--rgb-primary-color), 0.1)` is not concrete: it needs resolving.
+    if ((trimmed.startsWith('#') || trimmed.startsWith('rgb')) && !trimmed.includes('var(')) {
       return trimmed;
     }
 
-    // Resolve CSS variables and named colors via a temporary element
+    // Resolve CSS variables and named colors via a temporary element. It goes in
+    // this picker's own shadow root so theme variables set on the dashboard apply.
     try {
       const probe = document.createElement('span');
       // Use backgroundColor to preserve alpha (color property may not preserve it)
       probe.style.backgroundColor = trimmed;
-      document.body.appendChild(probe);
+      (this.shadowRoot || document.body).appendChild(probe);
       const computed = getComputedStyle(probe).backgroundColor;
       probe.remove();
 

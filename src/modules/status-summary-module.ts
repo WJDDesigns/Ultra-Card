@@ -118,20 +118,13 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     const summaryModule = module as StatusSummaryModule;
     const errors = [...baseValidation.errors];
 
-    // If auto-filter is enabled, we don't require manual entities
-    // Auto-filtered entities will be synced automatically
+    // LENIENT VALIDATION: Allow no entities / an entity row without an entity ID yet -
+    // renderPreview skips unset rows and still shows the title/headers. A validation error here
+    // drops the whole card config (blank card).
     if (!summaryModule.enable_auto_filter) {
-      // Check that at least one entity is configured when auto-filter is off
-      if (!summaryModule.entities || summaryModule.entities.length === 0) {
-        errors.push('At least one entity must be configured, or auto-filter must be enabled');
-      }
-
       // Validate each manual entity
       if (summaryModule.entities) {
         summaryModule.entities.forEach((entity, index) => {
-          if (!entity.entity || entity.entity.trim() === '') {
-            errors.push(`Entity ${index + 1} must have an entity ID configured`);
-          }
           if (
             entity.color_mode === 'custom' &&
             !(String(

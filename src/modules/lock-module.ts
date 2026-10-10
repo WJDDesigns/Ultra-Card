@@ -588,10 +588,13 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock--standard { padding: 14px 16px; }
       .uc-lock-std__row {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 12px;
       }
-      .uc-lock-std__meta { flex: 1; min-width: 0; overflow: hidden; }
+      /* 140px basis: when the title can't get that much room (narrow cards), the
+         action buttons wrap onto their own line instead of truncating the title. */
+      .uc-lock-std__meta { flex: 1 1 140px; min-width: 0; overflow: hidden; }
       .uc-lock-std__actions {
         flex-shrink: 0;
         display: flex;

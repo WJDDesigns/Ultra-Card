@@ -117,9 +117,9 @@ export class UltraSolarAnalyticsModule extends BaseUltraModule {
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    const m = module as SolarAnalyticsModuleConfig;
     if (!module.id) errors.push('Module ID is required');
-    if (!m.solar_entity?.trim()) errors.push(localize('editor.solar_analytics.error_solar', 'en', 'Select a solar power sensor'));
+    // LENIENT VALIDATION: Allow an empty solar sensor - renderPreview shows a "Select a solar
+    // sensor" placeholder. A validation error here drops the whole card config (blank card).
     return { valid: errors.length === 0, errors };
   }
 
