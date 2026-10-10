@@ -237,7 +237,8 @@ export interface BaseModule {
     | 'vampire_power'
     | 'unifi'
     | 'bambu'
-    | 'printer_3d';
+    | 'printer_3d'
+    | 'irrigation';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5617,7 +5618,8 @@ export type CardModule =
   | VampirePowerModule
   | UnifiModule
   | BambuModule
-  | Printer3dModule;
+  | Printer3dModule
+  | IrrigationModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -9196,6 +9198,98 @@ export interface Printer3dModule extends BaseModule {
   accent_color?: string | undefined;
   text_color?: string | undefined;
   secondary_text_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Irrigation (Free) — integration-agnostic sprinkler / valve zone control
+// -------------------------------------------------------------------------
+
+/**
+ * How a zone's Run button starts watering.
+ * - auto: detect the integration; use its timed-run service when it has one,
+ *   otherwise plain on/off.
+ * - toggle: plain on/off (homeassistant.turn_on / valve.open_valve).
+ * - service: a known integration preset (see IrrigationServicePreset).
+ * - custom: a user-supplied service + data with duration placeholders.
+ */
+export type IrrigationRunMode = 'auto' | 'toggle' | 'service' | 'custom';
+
+export type IrrigationServicePreset =
+  | 'auto'
+  | 'opensprinkler'
+  | 'rachio'
+  | 'irrigation_unlimited'
+  | 'bhyve'
+  | 'valve'
+  | 'switch';
+
+export type IrrigationLayout = 'full' | 'compact';
+
+export type IrrigationRunAllMode = 'none' | 'script' | 'service';
+
+export interface IrrigationZone {
+  id: string;
+  /** switch.*, valve.*, or an integration status entity (binary_sensor / sensor). */
+  entity: string;
+  name?: string | undefined;
+  icon?: string | undefined;
+  color?: string | undefined;
+  /** Run duration in minutes; falls back to the module default. */
+  duration_minutes?: number | undefined;
+  run_mode?: IrrigationRunMode | undefined;
+  /** Used when run_mode is 'service'. 'auto' detects from the entity. */
+  preset?: IrrigationServicePreset | undefined;
+  /** run_mode 'custom': "domain.service". */
+  custom_service?: string | undefined;
+  /** run_mode 'custom': service data; string values may use {{ duration }} etc. */
+  custom_data?: Record<string, unknown> | undefined;
+  /** Optional custom stop service ("domain.service"); defaults to turning the entity off. */
+  custom_stop_service?: string | undefined;
+  custom_stop_data?: Record<string, unknown> | undefined;
+  /** Optional soil moisture sensor (percent). */
+  moisture_entity?: string | undefined;
+  /** Optional sensor reporting remaining run time (seconds / minutes / timestamp). */
+  remaining_entity?: string | undefined;
+}
+
+export interface IrrigationModule extends BaseModule {
+  type: 'irrigation';
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  zones: IrrigationZone[];
+  /** Default run duration in minutes for zones without their own. */
+  default_duration_minutes?: number | undefined;
+  layout?: IrrigationLayout | undefined;
+  show_remaining?: boolean | undefined;
+  show_duration_control?: boolean | undefined;
+  accent_color?: string | undefined;
+
+  /** Master valve / pump switch. */
+  master_entity?: string | undefined;
+  /** Rain delay: switch / input_boolean, number / input_number (hours), or select. */
+  rain_delay_entity?: string | undefined;
+  /** Rain sensor or skip indicator (binary_sensor / sensor). */
+  rain_sensor_entity?: string | undefined;
+  /** Next scheduled run (timestamp sensor). */
+  next_run_entity?: string | undefined;
+  /** Current flow rate sensor. */
+  flow_entity?: string | undefined;
+  /** Water used today (e.g. a daily utility_meter on a water meter). */
+  water_used_entity?: string | undefined;
+
+  /** Run all zones: only via a script or an integration service — never client-side. */
+  run_all_mode?: IrrigationRunAllMode | undefined;
+  run_all_entity?: string | undefined;
+  run_all_service?: string | undefined;
+  run_all_data?: Record<string, unknown> | undefined;
+
+  /** Soil moisture thresholds (percent). Below dry = dry, above wet = wet. */
+  moisture_dry_threshold?: number | undefined;
+  moisture_wet_threshold?: number | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

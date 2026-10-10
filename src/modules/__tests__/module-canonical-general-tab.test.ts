@@ -108,6 +108,7 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'train-module.ts',
   'bambu-module.ts',
   'printer-3d-module.ts',
+  'irrigation-module.ts',
   'appliance-module.ts',
   'todo-list-module.ts',
   'weather-module.ts',
