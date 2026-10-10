@@ -107,7 +107,7 @@ export class UltraClimateModule extends BaseUltraModule {
       >
         <div
           class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.climate.entity_config_title', lang, 'Entity Configuration')}
         </div>
@@ -1794,6 +1794,15 @@ export class UltraClimateModule extends BaseUltraModule {
         cursor: pointer;
         transition: all 0.2s ease;
         backdrop-filter: blur(10px);
+        position: relative;
+      }
+
+      /* The visible circle is small; give fingers a bigger hit area around it. */
+      .climate-control-btn-inline::after {
+        content: '';
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
       }
 
       .climate-control-btn-inline:hover:not(:disabled) {

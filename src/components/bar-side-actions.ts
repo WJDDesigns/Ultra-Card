@@ -33,6 +33,7 @@ export class BarSideActions extends LitElement {
       font-weight: 600;
       margin-bottom: 8px;
       color: var(--primary-color);
+      color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
     }
 
     .section-description {

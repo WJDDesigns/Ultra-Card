@@ -200,6 +200,7 @@ export class UltraSliderModule extends BaseUltraModule {
             font-weight: 700;
             text-transform: uppercase;
             color: var(--primary-color);
+            color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
             letter-spacing: 0.5px;
             margin-bottom: 0;
           }
@@ -238,7 +239,7 @@ export class UltraSliderModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
             ${localize('editor.slider.section_layout', lang, 'SLIDER LAYOUT')}
           </div>
@@ -746,7 +747,7 @@ export class UltraSliderModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
             ${localize('editor.slider.section_transition', lang, 'TRANSITION & ANIMATION')}
           </div>
@@ -837,7 +838,7 @@ export class UltraSliderModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
             ${localize('editor.slider.section_interaction', lang, 'INTERACTION')}
           </div>
@@ -905,7 +906,7 @@ export class UltraSliderModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
             ${localize('editor.slider.section_link_config', lang, 'LINK CONFIGURATION')}
           </div>
@@ -2412,6 +2413,13 @@ export class UltraSliderModule extends BaseUltraModule {
           transition: all 0.3s;
           pointer-events: all;
           display: inline-block;
+          position: relative;
+        }
+        /* Small bullets: pad the tap area without changing how they look. */
+        .ultra-slider-container .swiper-pagination-bullet::after {
+          content: '';
+          position: absolute;
+          inset: -8px -4px;
         }
         .ultra-slider-container .swiper-pagination-bullet-active {
           background: ${sliderModule.pagination_active_color || 'var(--primary-color)'};

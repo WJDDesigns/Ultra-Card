@@ -80,7 +80,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
           >
             ${localize('editor.bar.bar_settings.title', lang, 'Bar Settings')}
           </div>
@@ -673,7 +673,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
             ${localize('editor.bar.appearance.title', lang, 'Bar Appearance')}
           </div>
@@ -1533,7 +1533,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
                 >
                   <div
                     class="section-title"
-                    style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                    style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
                   >
                     ${localize('editor.bar.minimal.icon_config', lang, 'Minimal Style Icon')}
                   </div>
@@ -2271,7 +2271,7 @@ export class UltraBarModuleSettings extends UltraBarModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
             ${localize('editor.bar.colors.title', lang, 'Colors')}
           </div>

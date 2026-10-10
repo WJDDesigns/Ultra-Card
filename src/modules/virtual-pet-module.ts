@@ -1041,7 +1041,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
             <ultra-color-picker
               .label=${'Speech Bubble Text Color'}
               .value=${pet.bubble_color || ''}
-              .defaultValue=${'var(--secondary-text-color)'}
+              .defaultValue=${'rgba(197, 232, 191, 0.75)'}
               .hass=${hass}
               @value-changed=${(e: CustomEvent) => { updateModule({ bubble_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
             ></ultra-color-picker>
@@ -1050,7 +1050,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
             <ultra-color-picker
               .label=${'Stats Text Color'}
               .value=${pet.stats_color || ''}
-              .defaultValue=${'var(--secondary-text-color)'}
+              .defaultValue=${'rgba(197, 232, 191, 0.75)'}
               .hass=${hass}
               @value-changed=${(e: CustomEvent) => { updateModule({ stats_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
             ></ultra-color-picker>
@@ -1504,6 +1504,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         font-weight: 700;
         text-transform: uppercase;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         margin-bottom: 16px;
         padding-bottom: 8px;
         border-bottom: 2px solid var(--primary-color);
@@ -1725,7 +1726,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
       .vp-bubble-text {
         font-size: 10px;
         line-height: 1.5;
-        color: var(--vp-bubble-color, var(--secondary-text-color));
+        color: var(--vp-bubble-color, rgba(197, 232, 191, 0.75));
         letter-spacing: 0.3px;
         font-style: italic;
       }
@@ -1787,7 +1788,8 @@ export class UltraVirtualPetModule extends BaseUltraModule {
 
       .vp-name {
         font-size: 14px;
-        color: var(--primary-text-color);
+        /* Fixed LCD green: the screen is always dark, so theme text colours vanish in light mode */
+        color: #c5e8bf;
         text-transform: uppercase;
         letter-spacing: 3px;
       }
@@ -1818,7 +1820,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
       .vp-stat-lbl {
         font-size: 9px;
         width: 30px;
-        color: var(--vp-stats-color, var(--secondary-text-color));
+        color: var(--vp-stats-color, rgba(197, 232, 191, 0.75));
         text-transform: uppercase;
         flex-shrink: 0;
         letter-spacing: 0.5px;
@@ -1835,13 +1837,13 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         font-size: 9px;
         width: 28px;
         text-align: right;
-        color: var(--vp-stats-color, var(--secondary-text-color));
+        color: var(--vp-stats-color, rgba(197, 232, 191, 0.75));
         flex-shrink: 0;
       }
 
       .vp-seg {
         flex: 1;
-        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06);
+        background: rgba(197, 232, 191, 0.08);
       }
 
       .vp-seg.on {

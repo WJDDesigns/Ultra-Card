@@ -168,7 +168,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             ${localize('editor.living_canvas.display_section', lang, 'Display')}
           </div>
@@ -233,7 +233,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
             >
               <div
                 class="section-title"
-                style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px;"
+                style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px;"
               >
                 ${localize('editor.living_canvas.colors_section', lang, 'Colors')}
               </div>
@@ -343,7 +343,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             ${localize('editor.living_canvas.mobile_section', lang, 'Mobile')}
           </div>

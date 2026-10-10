@@ -80,13 +80,9 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const base = super.validate(module);
-    const m = module as AreaSummaryModule;
-    const errors = [...base.errors];
-    if (!m.area_id?.trim()) {
-      errors.push('Select a Home Assistant area');
-    }
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow an empty area - renderPreview shows a "Select an area"
+    // placeholder. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   /**
@@ -597,7 +593,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.area_summary.accent', lang, 'Accent color')}
           </div>
@@ -873,7 +869,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.area_summary.section_pin', lang, 'Pin & hide')}
           </div>

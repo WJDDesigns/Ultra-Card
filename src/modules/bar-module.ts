@@ -2817,7 +2817,7 @@ export class UltraBarModule extends BaseUltraModule {
                 font-style: ${barModule.percentage_text_italic ? 'italic' : 'normal'};
                 text-decoration: ${barModule.percentage_text_strikethrough ? 'line-through' : 'none'};
                 z-index: 10;
-                text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5));
+                text-shadow: var(--uc-bar-text-shadow, 0 0 3px rgba(0,0,0,0.75), 0 1px 2px rgba(0,0,0,0.5));
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -3345,6 +3345,7 @@ export class UltraBarModule extends BaseUltraModule {
         font-size: 18px !important;
         font-weight: 700 !important;
         color: var(--primary-color) !important;
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)) !important;
         margin-bottom: 12px !important;
         padding-bottom: 0 !important;
         border-bottom: none !important;
@@ -3448,6 +3449,7 @@ export class UltraBarModule extends BaseUltraModule {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -3747,6 +3749,7 @@ export class UltraBarModule extends BaseUltraModule {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
         text-transform: uppercase;
         letter-spacing: 0.5px;

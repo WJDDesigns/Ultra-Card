@@ -37,6 +37,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:hvac-overlay": "node scripts/hvac-overlay-harness.mjs",
+    "ui:harness": "node scripts/ui-harness/run.mjs",
     "test:coverage": "vitest run --coverage",
     "audit:module-tabs": "node scripts/audit-module-tabs.cjs",
     "previews": "node scripts/capture-previews.mjs",

@@ -41,7 +41,7 @@ export class UltraSeparatorModuleSettings extends UltraSeparatorModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
             ${localize('editor.separator.config.title', lang, 'Separator Configuration')}
           </div>
@@ -159,7 +159,7 @@ export class UltraSeparatorModuleSettings extends UltraSeparatorModule {
               >
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.separator.appearance.title', lang, 'Appearance')}
                 </div>
@@ -476,7 +476,7 @@ export class UltraSeparatorModuleSettings extends UltraSeparatorModule {
               >
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.separator.spacer.title', lang, 'Spacer Height')}
                 </div>

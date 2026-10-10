@@ -1457,7 +1457,9 @@ export class UltraBatteryFleetModule extends BaseUltraModule {
     }
     if (summary.low > 0) {
       parts.push(
-        html`<span class="uc-bf-sum-part" style="color:${colors.low};font-weight:600;"
+        html`<span
+          class="uc-bf-sum-part"
+          style="color:color-mix(in srgb, ${colors.low} 60%, ${colors.text});font-weight:600;"
           >${localize('editor.battery_fleet.sum_low', lang, '{count} low').replace(
             '{count}',
             String(summary.low)

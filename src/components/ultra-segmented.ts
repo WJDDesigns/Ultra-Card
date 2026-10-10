@@ -111,6 +111,7 @@ export class UltraSegmented extends LitElement {
       border-color: var(--primary-color);
       background: rgba(var(--rgb-primary-color), 0.12);
       color: var(--primary-color);
+      color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
     }
     .uc-seg-btn:disabled {
       opacity: 0.5;

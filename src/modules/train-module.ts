@@ -1284,16 +1284,10 @@ export class UltraTrainModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const m = module as TrainModule;
-    if (!module.id) errors.push('Module ID is required');
-    if (!module.type) errors.push('Module type is required');
-    if ((m.source || 'entities') === 'template') {
-      if (!(m.template || '').trim()) errors.push('Enter a departures template');
-    } else if (!(m.departure_entities || []).length) {
-      errors.push('Add at least one departure sensor');
-    }
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow no departure sensors / an empty template - renderPreview shows
+    // an "Add a departure sensor" placeholder. A validation error here drops the whole card
+    // config (blank card).
+    return super.validate(module);
   }
 
   getStyles(): string {

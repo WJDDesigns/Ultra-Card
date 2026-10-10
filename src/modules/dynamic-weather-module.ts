@@ -118,7 +118,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
           </div>
 
           <div
-            style="margin-top: 12px; padding: 10px; background: rgba(var(--rgb-warning-color), 0.12); border-radius: var(--uc-r-6, 6px); border-left: 4px solid var(--warning-color); color: var(--warning-color); font-size: 12px; line-height: 1.4;"
+            style="margin-top: 12px; padding: 10px; background: rgba(var(--rgb-warning-color), 0.12); border-radius: var(--uc-r-6, 6px); border-left: 4px solid var(--warning-color); color: color-mix(in srgb, var(--warning-color) 55%, var(--primary-text-color)); font-size: 12px; line-height: 1.4;"
           >
             ⚠️ Lightning effects (Rain Storm) include rapid flashes.
           </div>
@@ -131,7 +131,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             CORE SETTINGS
           </div>
@@ -258,7 +258,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             DISPLAY SETTINGS
           </div>
@@ -296,7 +296,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px;"
           >
             MOBILE & ACCESSIBILITY
           </div>

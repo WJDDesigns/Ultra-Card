@@ -502,7 +502,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         <div class="settings-section">
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dropdown.source.title', lang, 'Dropdown Source')}
           </div>
@@ -623,7 +623,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div class="settings-section">
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
                 </div>
@@ -785,7 +785,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                     >
                       <div
                         class="section-title"
-                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
                       >
                         ${localize(
                           'editor.dropdown.unified_template_section.title',
@@ -922,7 +922,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div class="settings-section">
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.dropdown.options.title', lang, 'Dropdown Options')}
                 </div>
@@ -1081,7 +1081,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               <div class="settings-section">
                 <div
                   class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
                 >
                   ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
                 </div>
@@ -1113,7 +1113,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         <div class="settings-section">
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
             ${localize('editor.dropdown.control_icon.section_title', lang, 'Dropdown Control Icon')}
           </div>
@@ -4257,6 +4257,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -4295,6 +4296,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         font-weight: 700 !important;
         text-transform: uppercase !important;
         color: var(--primary-color) !important;
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)) !important;
         margin-bottom: 16px !important;
         padding-bottom: 0 !important;
         border-bottom: none !important;

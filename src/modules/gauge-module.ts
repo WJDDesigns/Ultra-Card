@@ -1861,7 +1861,11 @@ export class UltraGaugeModule extends BaseUltraModule {
   private getDisplayName(gaugeModule: GaugeModule, hass: HomeAssistant): string {
     if (gaugeModule.name) return gaugeModule.name;
     const entityState = hass.states[gaugeModule.entity];
-    return entityState?.attributes.friendly_name || gaugeModule.entity;
+    const friendlyName = entityState?.attributes?.friendly_name;
+    if (typeof friendlyName === 'string' && friendlyName.trim()) return friendlyName;
+    // No friendly name (entity missing/unnamed): show a readable object id, not the raw slug.
+    const objectId = (gaugeModule.entity || '').split('.').pop() || '';
+    return objectId.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) || gaugeModule.entity;
   }
 
   private formatValue(value: number, gaugeModule: GaugeModule): string {

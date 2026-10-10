@@ -683,9 +683,22 @@ export class UltraColorPicker extends LitElement {
    * Returns 'light' when the swatch is light (use dark text), 'dark' when dark (use light text).
    * Used for favorite label pill/shadow styling so it works on light and dark themes and swatches.
    */
-  private _getContrastTheme(backgroundColor: string): 'light' | 'dark' | null {
+  private _getContrastTheme(swatch: string): 'light' | 'dark' | null {
+    let backgroundColor = swatch;
     if (!backgroundColor || backgroundColor === 'transparent') return null;
-    if (backgroundColor.startsWith('var(') || isGradient(backgroundColor)) return 'dark';
+    if (isGradient(backgroundColor)) return 'dark';
+    // Theme variables and named colours (`var(--primary-text-color)`, `white`) are
+    // resolved to what they actually paint, so the label stays readable on them.
+    if (
+      (!backgroundColor.startsWith('#') && !backgroundColor.startsWith('rgb')) ||
+      backgroundColor.includes('var(')
+    ) {
+      backgroundColor = this._resolveCSSColor(backgroundColor);
+      if (!backgroundColor.startsWith('rgb')) return null;
+    }
+    // A mostly transparent swatch shows the panel through it: theme text reads best.
+    const alpha = backgroundColor.match(/rgba\([^)]*,\s*([\d.]+)\s*\)/);
+    if (alpha && parseFloat(alpha[1]) < 0.5) return null;
 
     let r = 0, g = 0, b = 0;
     if (backgroundColor.startsWith('#')) {
@@ -720,17 +733,19 @@ export class UltraColorPicker extends LitElement {
     if (!color) return color;
     const trimmed = color.trim();
 
-    // Fast-path: concrete colors (hex, rgb, rgba) don't need resolution
-    if (trimmed.startsWith('#') || trimmed.startsWith('rgb')) {
+    // Fast-path: concrete colors (hex, rgb, rgba) don't need resolution.
+    // `rgba(var(--rgb-primary-color), 0.1)` is not concrete: it needs resolving.
+    if ((trimmed.startsWith('#') || trimmed.startsWith('rgb')) && !trimmed.includes('var(')) {
       return trimmed;
     }
 
-    // Resolve CSS variables and named colors via a temporary element
+    // Resolve CSS variables and named colors via a temporary element. It goes in
+    // this picker's own shadow root so theme variables set on the dashboard apply.
     try {
       const probe = document.createElement('span');
       // Use backgroundColor to preserve alpha (color property may not preserve it)
       probe.style.backgroundColor = trimmed;
-      document.body.appendChild(probe);
+      (this.shadowRoot || document.body).appendChild(probe);
       const computed = getComputedStyle(probe).backgroundColor;
       probe.remove();
 
@@ -1303,7 +1318,8 @@ export class UltraColorPicker extends LitElement {
       .color-value {
         flex: 1 1 0%;
         min-width: 0;
-        color: var(--primary-text-color);
+        /* Inherits the contrast colour the field picks for its swatch. */
+        color: inherit;
         font-family: var(--code-font-family, monospace);
         font-size: 14px;
         overflow: hidden;

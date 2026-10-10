@@ -1189,12 +1189,9 @@ export class UltraBoilerModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const m = module as BoilerModule;
-    if (!module.id) errors.push('Module ID is required');
-    if (!module.type) errors.push('Module type is required');
-    if (!m.entity) errors.push('Select a boiler entity');
-    return { valid: errors.length === 0, errors };
+    // LENIENT VALIDATION: Allow an empty entity - renderPreview shows a "Select a boiler"
+    // placeholder. A validation error here drops the whole card config (blank card).
+    return super.validate(module);
   }
 
   getStyles(): string {
