@@ -54,14 +54,11 @@ yarn-error.log*
 *_INSTRUCTIONS.md
 Animation_Accordion_Fix_Plan.md
 
-# WordPress files and snippets at the repo root (keep plugin package tracked)
+# WordPress plugin and snippets: kept locally, not on GitHub
 /*.php
-!ultra-card-integration/
-!ultra-card-integration/**/*.php
-!includes/
-!includes/**/*.php
-!templates/
-!templates/**/*.php
+/ultra-card-integration/
+/includes/
+/templates/
 
 # Debug and troubleshooting files
 debug-*.md
