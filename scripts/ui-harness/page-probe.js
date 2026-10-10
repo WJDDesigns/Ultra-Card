@@ -578,6 +578,22 @@
       window.addEventListener(type, h, true);
       return [type, h];
     });
+    // A plain link (a map attribution, an "open in app" button) would navigate
+    // the whole tab away and take the harness with it: record it instead.
+    const linkGuard = ev => {
+      const a = ev
+        .composedPath()
+        .find(n => n.tagName === 'A' && n.getAttribute && n.getAttribute('href'));
+      if (!a) return;
+      log.push({
+        kind: 'link',
+        type: 'opens link',
+        detail: String(a.href).slice(0, 120),
+        t: Date.now(),
+      });
+      ev.preventDefault();
+    };
+    window.addEventListener('click', linkGuard, true);
     const startUrl = location.href;
     const origOpen = window.open;
     window.open = url => {
@@ -595,6 +611,7 @@
     };
     return () => {
       handlers.forEach(([type, h]) => window.removeEventListener(type, h, true));
+      window.removeEventListener('click', linkGuard, true);
       window.open = origOpen;
       history.pushState = origPush;
       if (location.href !== startUrl) history.replaceState(null, '', startUrl);

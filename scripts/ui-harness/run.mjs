@@ -315,6 +315,15 @@ async function shoot(page, selector, file) {
   return true;
 }
 
+/** True while the harness overlay and probe are still in the tab (a stray navigation wipes both). */
+async function harnessAlive(page) {
+  return page
+    .evaluate(
+      () => !!document.getElementById('uc-harness') && !!window.__ucProbe && !!window.__UC_HARNESS__
+    )
+    .catch(() => false);
+}
+
 async function checkSlot(page, selector, opts) {
   return page.evaluate(
     ({ selector, opts }) => {
@@ -373,6 +382,12 @@ async function cardPass(browser, token, kind, modules, configs) {
         const r = resultFor(meta);
         const cfg = configs[meta.type];
         errorSink.current = `${meta.type} (card ${kind} ${theme})`;
+        if (!(await harnessAlive(page))) {
+          console.log('  ! tab lost the harness (navigated away); reopening');
+          await page.close().catch(() => {});
+          page = await openHa(context);
+          await setTheme(page, theme);
+        }
         try {
           await renderCard(page, cfg, slot);
           const res = await checkSlot(page, 'slot', { mode: 'card', mobile });
@@ -483,6 +498,12 @@ async function editorPass(browser, token, modules, configs) {
         i++;
         const r = resultFor(meta);
         errorSink.current = `${meta.type} (editor ${theme})`;
+        if (!(await harnessAlive(page))) {
+          console.log('  ! tab lost the harness (navigated away); reopening');
+          await page.close().catch(() => {});
+          page = await openHa(context);
+          await setTheme(page, theme);
+        }
         const tabs = [];
         try {
           const opened = await page.evaluate(
