@@ -3,7 +3,7 @@
  */
 import '../public-path';
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from '../ha/types';
 import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
@@ -60,7 +60,6 @@ function normalizeHubTab(tab: string | null): HubTab | null {
   return HUB_TABS.some(t => t.key === tab) ? (tab as HubTab) : null;
 }
 
-@customElement('ultra-card-panel')
 export class UltraCardPanel extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
@@ -682,6 +681,13 @@ export class UltraCardPanel extends LitElement {
         : nothing}
     `;
   }
+}
+
+// Defined only once: when Connect is upgraded while HA stays open, the frontend
+// loads the new panel module URL into a page that already has the old element,
+// and a second define() throws (seen as "ultra-card-panel has already been used").
+if (!customElements.get('ultra-card-panel')) {
+  customElements.define('ultra-card-panel', UltraCardPanel);
 }
 
 declare global {

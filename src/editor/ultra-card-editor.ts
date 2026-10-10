@@ -54,6 +54,8 @@ import { installKeyboardActivation } from '../utils/uc-keyboard-activation';
 // Actions-tab editor UI; kept out of the dashboard bundle (registers on UltraLinkComponent).
 import '../components/ultra-link-editor';
 import { UcFormUtils } from '../utils/uc-form-utils';
+import { VERSION } from '../version';
+import { staleBuildVersion } from '../utils/uc-update-check';
 
 installKeyboardActivation();
 
@@ -682,6 +684,45 @@ export class UltraCardEditor extends LitElement {
     this._updateConfig({ _customVariables: variables });
   }
 
+  @state() private _updateBannerDismissedFor: string | null = null;
+
+  /**
+   * HACS installed a newer Ultra Card than this page is running (old cached
+   * ultra-card.js). Saving now would use the old editor, so offer a reload.
+   */
+  private _renderUpdateReloadBanner(installed: string, lang: string): TemplateResult {
+    return html`
+      <div class="hub-discovery-banner update-reload-banner" role="status">
+        <div class="hub-discovery-content">
+          <ha-icon icon="mdi:update"></ha-icon>
+          <span>
+            ${localize(
+              'editor.update_banner.text',
+              lang,
+              'Ultra Card {installed} is installed, but this page is still running {running}. Reload to finish the update.'
+            )
+              .replace('{installed}', `v${installed}`)
+              .replace('{running}', `v${VERSION}`)}
+          </span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+          <button class="hub-discovery-activate" @click=${() => window.location.reload()}>
+            ${localize('editor.update_banner.reload', lang, 'Reload')}
+          </button>
+          <button
+            class="hub-discovery-dismiss"
+            aria-label=${localize('editor.update_banner.dismiss', lang, 'Dismiss')}
+            @click=${() => {
+              this._updateBannerDismissedFor = installed;
+            }}
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   private _renderHubDiscoveryBanner(): TemplateResult {
     const canActivate = this._connectHandlerAvailable === true;
     const installStateUnknown = this._connectHandlerAvailable === 'unknown';
@@ -1219,9 +1260,13 @@ export class UltraCardEditor extends LitElement {
     const lang = this.hass.locale?.language || 'en';
     const hubPanelExists = !!(this.hass as any).panels?.['ultra-card-hub'];
     const showHubBanner = !hubPanelExists && !this._hubBannerDismissed;
+    const staleInstalled = staleBuildVersion(this.hass, VERSION);
 
     return html`
       <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''} ${this._moduleSettingsOpen ? 'module-settings-open' : ''}">
+        ${staleInstalled && this._updateBannerDismissedFor !== staleInstalled
+          ? this._renderUpdateReloadBanner(staleInstalled, lang)
+          : ''}
         ${showHubBanner ? this._renderHubDiscoveryBanner() : ''}
         <div class="tabs" role="tablist">
           ${this._isFullScreen

@@ -269,7 +269,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Row deleted",
       "column_deleted": "Column deleted",
-      "module_deleted": "Module deleted"
+      "module_deleted": "Module deleted",
+      "browse_presets_tooltip": "Browse presets and add one to this card"
     },
     "layout_logic": {
       "display_title": "Display this Element",
@@ -1916,7 +1917,8 @@
         "desc": "JSON with value, button_background_color, button_text_color, value_color — or a plain numeric Jinja result.",
         "toggle": "Template mode",
         "cheatsheet": "Template cheatsheet"
-      }
+      },
+      "no_entity_hint": "No entity selected: the value only changes on this screen and is not saved."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2455,7 +2457,12 @@
     "pro": {
       "feature_locked": "Pro Feature",
       "sports_description": "Sports Score module requires an Ultra Card Pro subscription to display live sports scores and team information.",
-      "upgrade_button": "Upgrade to Pro"
+      "upgrade_button": "Upgrade to Pro",
+      "status_not_installed": "Already have Pro? Install Ultra Card Connect and sign in to unlock it here.",
+      "status_unreachable": "Ultra Card Connect can't reach ultracard.io right now. If you have Pro, it unlocks again when the connection is back.",
+      "status_reauth": "Ultra Card Connect needs you to sign in again (Settings → Devices & services → Ultra Card Connect).",
+      "status_signed_out": "Already have Pro? Sign in to Ultra Card Connect from the Ultra Card Hub in the sidebar.",
+      "status_inactive": "Your Pro subscription is {status}. Renew it on ultracard.io to unlock this."
     },
     "toggle": {
       "display_settings": "DISPLAY SETTINGS",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Smart Replace",
         "restore_dashboard_snapshot": "Restore Dashboard Snapshot"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} is installed, but this page is still running {running}. Reload to finish the update.",
+      "reload": "Reload",
+      "dismiss": "Dismiss"
+    },
+    "color_picker": {
+      "gradient_presets": "Gradient Presets"
     }
   },
   "hub": {

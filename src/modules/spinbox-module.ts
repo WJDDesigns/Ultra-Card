@@ -656,6 +656,30 @@ export class UltraSpinboxModule extends BaseUltraModule {
     config?: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
+    const content = this._renderSpinbox(module, hass, config, previewContext);
+    const spinbox = module as SpinboxModule;
+    // Without an entity the buttons only change a local value. That is a valid
+    // mode, but users read it as "the control does nothing", so say so in the editor.
+    const editing = previewContext === 'live' || previewContext === 'ha-preview';
+    if (editing && !spinbox.entity && !spinbox.unified_template_mode) {
+      const lang = hass?.locale?.language || 'en';
+      return html`${this.renderGradientWarningBanner(
+        localize(
+          'editor.spinbox.no_entity_hint',
+          lang,
+          'No entity selected: the value only changes on this screen and is not saved.'
+        )
+      )}${content}`;
+    }
+    return content;
+  }
+
+  private _renderSpinbox(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
+  ): TemplateResult {
     const spinboxModule = module as SpinboxModule;
     const lang = hass?.locale?.language || 'en';
 

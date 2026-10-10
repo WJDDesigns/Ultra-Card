@@ -74,5 +74,14 @@ module.exports = tseslint.config(
       'prefer-const': 'error',
       'no-var': 'error',
     },
+  },
+  {
+    // Tests build partial fixtures and assert on known-present values; casts and
+    // `!` are the normal tools there and only add noise to the warning ratchet.
+    files: ['**/*.test.ts', '**/__tests__/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+    },
   }
 );

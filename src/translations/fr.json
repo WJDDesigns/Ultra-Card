@@ -264,7 +264,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Ligne supprimée",
       "column_deleted": "Colonne supprimée",
-      "module_deleted": "Module supprimé"
+      "module_deleted": "Module supprimé",
+      "browse_presets_tooltip": "Parcourir les préréglages et en ajouter un à cette carte"
     },
     "layout_logic": {
       "display_title": "Afficher cet élément",
@@ -1911,7 +1912,8 @@
         "desc": "JSON avec valeur, couleur_de_fond_du_bouton, couleur_du_texte_du_bouton, couleur_de_valeur — ou un résultat numérique Jinja simple.",
         "toggle": "Mode Plaque Tem",
         "cheatsheet": "Feuille de Trucs Plaque Tem"
-      }
+      },
+      "no_entity_hint": "Aucune entité sélectionnée : la valeur ne change que sur cet écran et n'est pas enregistrée."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Fonctionnalité",
       "sports_description": "Le module de score sportif nécessite un abonnement Ultra Card Pro pour afficher les scores sportifs en direct et les informations sur les équipes.",
-      "upgrade_button": "Mettre à niveau vers Pro"
+      "upgrade_button": "Mettre à niveau vers Pro",
+      "status_not_installed": "Vous avez déjà Pro ? Installez Ultra Card Connect et connectez-vous pour le débloquer ici.",
+      "status_unreachable": "Ultra Card Connect ne parvient pas à joindre ultracard.io pour le moment. Si vous avez Pro, il se débloquera à nouveau dès le retour de la connexion.",
+      "status_reauth": "Ultra Card Connect a besoin que vous vous reconnectiez (Paramètres → Appareils et services → Ultra Card Connect).",
+      "status_signed_out": "Vous avez déjà Pro ? Connectez-vous à Ultra Card Connect depuis l'Ultra Card Hub dans la barre latérale.",
+      "status_inactive": "Votre abonnement Pro est {status}. Renouvelez-le sur ultracard.io pour débloquer ceci."
     },
     "toggle": {
       "display_settings": "PARAMÈTRES D'AFFICHAGE",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Remplacement intelligent",
         "restore_dashboard_snapshot": "Restaurer l'instantané du tableau de bord"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} est installé, mais cette page utilise encore {running}. Rechargez pour terminer la mise à jour.",
+      "reload": "Recharger",
+      "dismiss": "Ignorer"
+    },
+    "color_picker": {
+      "gradient_presets": "Dégradés prédéfinis"
     }
   },
   "hub": {

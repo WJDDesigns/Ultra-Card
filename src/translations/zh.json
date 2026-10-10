@@ -740,7 +740,8 @@
       },
       "row_deleted": "行已删除",
       "column_deleted": "列已删除",
-      "module_deleted": "模块已删除"
+      "module_deleted": "模块已删除",
+      "browse_presets_tooltip": "浏览预设并将其添加到此卡片"
     },
     "entity_mapper": {
       "title": "映射实体",
@@ -1928,7 +1929,8 @@
         "desc": "返回 JSON，包含 value、button_background_color、button_text_color、value_color，或一个简单的数值型 Jinja 结果。",
         "toggle": "模板模式",
         "cheatsheet": "模板速查表"
-      }
+      },
+      "no_entity_hint": "未选择实体：数值只在此屏幕上变化，不会被保存。"
     },
     "layout_extra": {
       "module_name": "模块名称：",
@@ -2839,7 +2841,12 @@
     "pro": {
       "feature_locked": "Pro 功能",
       "sports_description": "Sports Score 模块需要 Ultra Card Pro 订阅才能显示实时赛事比分和球队信息。",
-      "upgrade_button": "升级到 Pro"
+      "upgrade_button": "升级到 Pro",
+      "status_not_installed": "已经拥有 Pro？请安装 Ultra Card Connect 并登录以在此解锁。",
+      "status_unreachable": "Ultra Card Connect 目前无法连接 ultracard.io。如果您拥有 Pro，连接恢复后将再次解锁。",
+      "status_reauth": "Ultra Card Connect 需要您重新登录（设置 → 设备与服务 → Ultra Card Connect）。",
+      "status_signed_out": "已经拥有 Pro？请从侧边栏的 Ultra Card Hub 登录 Ultra Card Connect。",
+      "status_inactive": "您的 Pro 订阅状态为 {status}。请在 ultracard.io 续订以解锁此功能。"
     },
     "text_input": {
       "entity": {
@@ -5510,6 +5517,14 @@
         "smart_replace": "智能替换",
         "restore_dashboard_snapshot": "恢复仪表板快照"
       }
+    },
+    "update_banner": {
+      "text": "已安装 Ultra Card {installed}，但此页面仍在运行 {running}。请重新加载以完成更新。",
+      "reload": "重新加载",
+      "dismiss": "关闭"
+    },
+    "color_picker": {
+      "gradient_presets": "渐变预设"
     }
   },
   "hub": {

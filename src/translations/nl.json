@@ -192,7 +192,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Rij verwijderd",
       "column_deleted": "Kolom verwijderd",
-      "module_deleted": "Module verwijderd"
+      "module_deleted": "Module verwijderd",
+      "browse_presets_tooltip": "Presets bekijken en er een aan deze kaart toevoegen"
     },
     "about": {
       "developed_by": "Ontwikkeld door",
@@ -1911,7 +1912,8 @@
         "desc": "JSON met waarde, button_background_color, button_text_color, value_color — of een gewone numerieke Jinja-resultaat.",
         "toggle": "Templaatmodus",
         "cheatsheet": "Templaat spiekbriefje"
-      }
+      },
+      "no_entity_hint": "Geen entiteit geselecteerd: de waarde verandert alleen op dit scherm en wordt niet opgeslagen."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Kenmerk",
       "sports_description": "Sportscore-module vereist een Ultra Card Pro abonnement om live sportscores en teaminformatie weer te geven.",
-      "upgrade_button": "Upgrade naar Pro"
+      "upgrade_button": "Upgrade naar Pro",
+      "status_not_installed": "Heb je al Pro? Installeer Ultra Card Connect en meld je aan om het hier te ontgrendelen.",
+      "status_unreachable": "Ultra Card Connect kan ultracard.io nu niet bereiken. Als je Pro hebt, wordt het weer ontgrendeld zodra de verbinding terug is.",
+      "status_reauth": "Ultra Card Connect vraagt je opnieuw aan te melden (Instellingen → Apparaten en diensten → Ultra Card Connect).",
+      "status_signed_out": "Heb je al Pro? Meld je aan bij Ultra Card Connect via de Ultra Card Hub in de zijbalk.",
+      "status_inactive": "Je Pro-abonnement is {status}. Verleng het op ultracard.io om dit te ontgrendelen."
     },
     "toggle": {
       "display_settings": "WEERGAVE-INSTELLINGEN",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Slim vervangen",
         "restore_dashboard_snapshot": "Dashboard-snapshot herstellen"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} is geïnstalleerd, maar deze pagina draait nog {running}. Herlaad om de update af te ronden.",
+      "reload": "Herladen",
+      "dismiss": "Sluiten"
+    },
+    "color_picker": {
+      "gradient_presets": "Vooraf ingestelde verlopen"
     }
   },
   "hub": {

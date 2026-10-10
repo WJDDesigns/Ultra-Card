@@ -192,7 +192,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Rad sletta",
       "column_deleted": "Kolonne sletta",
-      "module_deleted": "Modul sletta"
+      "module_deleted": "Modul sletta",
+      "browse_presets_tooltip": "Bla gjennom førehandsinnstillingar og legg ei til dette kortet"
     },
     "about": {
       "developed_by": "Utvikla av",
@@ -1911,7 +1912,8 @@
         "desc": "JSON med verdi, button_background_color, button_text_color, value_color — eller eit enkelt numerisk Jinja-resultat.",
         "toggle": "Template-modus",
         "cheatsheet": "Template jukseark"
-      }
+      },
+      "no_entity_hint": "Inga eining vald: verdien endrar seg berre på denne skjermen og blir ikkje lagra."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funksjon",
       "sports_description": "Sportsresultatmodul krev eit Ultra Card Pro abonnement for å vise live sportsresultat og laginformasjon.",
-      "upgrade_button": "Oppgrader til Pro"
+      "upgrade_button": "Oppgrader til Pro",
+      "status_not_installed": "Har du alt Pro? Installer Ultra Card Connect og logg inn for å låse det opp her.",
+      "status_unreachable": "Ultra Card Connect får ikkje kontakt med ultracard.io akkurat no. Har du Pro, blir det låst opp igjen når sambandet er tilbake.",
+      "status_reauth": "Ultra Card Connect treng at du loggar inn på nytt (Innstillingar → Einingar og tenester → Ultra Card Connect).",
+      "status_signed_out": "Har du alt Pro? Logg inn på Ultra Card Connect frå Ultra Card Hub i sidepanelet.",
+      "status_inactive": "Pro-abonnementet ditt er {status}. Forny det på ultracard.io for å låse opp dette."
     },
     "toggle": {
       "display_settings": "VISNING INNSTILLINGER",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Smart erstatting",
         "restore_dashboard_snapshot": "Gjenopprett dashbord-augneblinksbilete"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} er installert, men denne sida køyrer framleis {running}. Last inn på nytt for å fullføre oppdateringa.",
+      "reload": "Last inn på nytt",
+      "dismiss": "Lukk"
+    },
+    "color_picker": {
+      "gradient_presets": "Førehandsinnstilte gradientar"
     }
   },
   "hub": {

@@ -192,7 +192,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Række slettet",
       "column_deleted": "Kolonne slettet",
-      "module_deleted": "Modul slettet"
+      "module_deleted": "Modul slettet",
+      "browse_presets_tooltip": "Gennemse forudindstillinger og tilføj en til dette kort"
     },
     "about": {
       "developed_by": "Udviklet af",
@@ -1911,7 +1912,8 @@
         "desc": "JSON med værdi, knap_baggrundsfarve, knap_tekstfarve, værdi_farve — eller et almindeligt numerisk Jinja resultat.",
         "toggle": "Templade tilstand",
         "cheatsheet": "Templade snydeark"
-      }
+      },
+      "no_entity_hint": "Ingen enhed valgt: værdien ændres kun på denne skærm og gemmes ikke."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funktion",
       "sports_description": "Sports Score modul kræver et Ultra Card Pro abonnement for at vise live sportsresultater og holdinformation.",
-      "upgrade_button": "Opgrader til Pro"
+      "upgrade_button": "Opgrader til Pro",
+      "status_not_installed": "Har du allerede Pro? Installér Ultra Card Connect, og log ind for at låse det op her.",
+      "status_unreachable": "Ultra Card Connect kan ikke nå ultracard.io lige nu. Har du Pro, låses det op igen, når forbindelsen er tilbage.",
+      "status_reauth": "Ultra Card Connect skal have dig til at logge ind igen (Indstillinger → Enheder og tjenester → Ultra Card Connect).",
+      "status_signed_out": "Har du allerede Pro? Log ind på Ultra Card Connect fra Ultra Card Hub i sidepanelet.",
+      "status_inactive": "Dit Pro-abonnement er {status}. Forny det på ultracard.io for at låse dette op."
     },
     "toggle": {
       "display_settings": "VIS INDSTILLINGER",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Smart erstatning",
         "restore_dashboard_snapshot": "Gendan dashboard-snapshot"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} er installeret, men denne side kører stadig {running}. Genindlæs for at fuldføre opdateringen.",
+      "reload": "Genindlæs",
+      "dismiss": "Afvis"
+    },
+    "color_picker": {
+      "gradient_presets": "Forudindstillede gradienter"
     }
   },
   "hub": {

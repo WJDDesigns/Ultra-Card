@@ -192,7 +192,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Řádek smazán",
       "column_deleted": "Sloupec smazán",
-      "module_deleted": "Modul smazán"
+      "module_deleted": "Modul smazán",
+      "browse_presets_tooltip": "Procházet předvolby a přidat jednu do této karty"
     },
     "about": {
       "developed_by": "Vyvinuto",
@@ -1911,7 +1912,8 @@
         "desc": "JSON s hodnotou, barva pozadí tlačítka, barva textu tlačítka, barva hodnoty — nebo prostý číselný výsledek Jinja.",
         "toggle": "Režim Template",
         "cheatsheet": "Příručka Template"
-      }
+      },
+      "no_entity_hint": "Není vybrána žádná entita: hodnota se mění jen na této obrazovce a neukládá se."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Funkce Pro",
       "sports_description": "Modul Sportovní Skóre vyžaduje předplatné Ultra Card Pro pro zobrazení živých sportovních skóre a informací o týmech.",
-      "upgrade_button": "Upgraduj na Pro"
+      "upgrade_button": "Upgraduj na Pro",
+      "status_not_installed": "Už máte Pro? Nainstalujte Ultra Card Connect a přihlaste se, abyste ho zde odemkli.",
+      "status_unreachable": "Ultra Card Connect se teď nemůže připojit k ultracard.io. Pokud máte Pro, odemkne se znovu, až se spojení obnoví.",
+      "status_reauth": "Ultra Card Connect vyžaduje nové přihlášení (Nastavení → Zařízení a služby → Ultra Card Connect).",
+      "status_signed_out": "Už máte Pro? Přihlaste se do Ultra Card Connect v Ultra Card Hubu na postranním panelu.",
+      "status_inactive": "Vaše předplatné Pro je {status}. Obnovte ho na ultracard.io a funkci odemknete."
     },
     "toggle": {
       "display_settings": "Nastavení Zobrazení",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Chytré nahrazení",
         "restore_dashboard_snapshot": "Obnovit snímek dashboardu"
       }
+    },
+    "update_banner": {
+      "text": "Je nainstalována Ultra Card {installed}, ale tato stránka stále používá {running}. Dokončete aktualizaci obnovením stránky.",
+      "reload": "Obnovit",
+      "dismiss": "Zavřít"
+    },
+    "color_picker": {
+      "gradient_presets": "Přednastavené přechody"
     }
   },
   "hub": {

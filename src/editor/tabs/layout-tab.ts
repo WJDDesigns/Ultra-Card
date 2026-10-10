@@ -8035,6 +8035,20 @@ export class LayoutTab extends LitElement {
     return `${row.columns.length} Column${row.columns.length !== 1 ? 's' : ''}`;
   }
 
+  /**
+   * Presets were only reachable through Add Module > Presets, which several users
+   * never found. This opens that tab directly, adding to the last column.
+   */
+  private _openPresetsBrowser(): void {
+    const layout = this._ensureLayout();
+    if (!layout.rows.length) this._addRow();
+    const rows = this._ensureLayout().rows;
+    const rowIndex = rows.length - 1;
+    const columns = rows[rowIndex]?.columns || [];
+    this._openModuleSelector(rowIndex, Math.max(0, columns.length - 1));
+    this._activeModuleSelectorTab = 'presets';
+  }
+
   private _openModuleSelector(rowIndex: number, columnIndex: number): void {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
@@ -20319,6 +20333,17 @@ export class LayoutTab extends LitElement {
             </div>
             <!-- Transfer group -->
             <div class="toolbar-group">
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openPresetsBrowser();
+                }}
+                title="${localize('editor.layout.browse_presets_tooltip', lang, 'Browse presets and add one to this card')}"
+                aria-label="${localize('editor.layout.browse_presets_tooltip', lang, 'Browse presets and add one to this card')}"
+              >
+                <ha-icon icon="mdi:puzzle-outline"></ha-icon>
+              </button>
               <button
                 class="tb-btn"
                 @click=${(e: Event) => {

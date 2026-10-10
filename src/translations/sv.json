@@ -192,7 +192,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Rad borttagen",
       "column_deleted": "Kolumn borttagen",
-      "module_deleted": "Modul borttagen"
+      "module_deleted": "Modul borttagen",
+      "browse_presets_tooltip": "Bläddra bland förinställningar och lägg till en på det här kortet"
     },
     "about": {
       "developed_by": "Utvecklad av",
@@ -1911,7 +1912,8 @@
         "desc": "JSON med värde, button_background_color, button_text_color, value_color — eller ett enkelt numeriskt Jinja-resultat.",
         "toggle": "Templåtläge",
         "cheatsheet": "Templåtschema"
-      }
+      },
+      "no_entity_hint": "Ingen entitet vald: värdet ändras bara på den här skärmen och sparas inte."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funktion",
       "sports_description": "Sports Score-modulen kräver en Ultra Card Pro prenumeration för att visa live sportsresultat och laginformation.",
-      "upgrade_button": "Uppgradera till Pro"
+      "upgrade_button": "Uppgradera till Pro",
+      "status_not_installed": "Har du redan Pro? Installera Ultra Card Connect och logga in för att låsa upp det här.",
+      "status_unreachable": "Ultra Card Connect når inte ultracard.io just nu. Har du Pro låses det upp igen när anslutningen är tillbaka.",
+      "status_reauth": "Ultra Card Connect behöver att du loggar in igen (Inställningar → Enheter och tjänster → Ultra Card Connect).",
+      "status_signed_out": "Har du redan Pro? Logga in på Ultra Card Connect från Ultra Card Hub i sidofältet.",
+      "status_inactive": "Din Pro-prenumeration är {status}. Förnya den på ultracard.io för att låsa upp detta."
     },
     "toggle": {
       "display_settings": "VISUALISERING AV INSTÄLLNINGAR",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Smart ersättning",
         "restore_dashboard_snapshot": "Återställ ögonblicksbild av instrumentpanelen"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} är installerat, men den här sidan kör fortfarande {running}. Ladda om för att slutföra uppdateringen.",
+      "reload": "Ladda om",
+      "dismiss": "Stäng"
+    },
+    "color_picker": {
+      "gradient_presets": "Förinställda gradienter"
     }
   },
   "hub": {

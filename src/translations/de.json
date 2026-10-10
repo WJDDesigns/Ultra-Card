@@ -264,7 +264,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Zeile gelöscht",
       "column_deleted": "Spalte gelöscht",
-      "module_deleted": "Modul gelöscht"
+      "module_deleted": "Modul gelöscht",
+      "browse_presets_tooltip": "Vorlagen durchsuchen und eine zu dieser Karte hinzufügen"
     },
     "layout_logic": {
       "display_title": "Dieses Element anzeigen",
@@ -1915,7 +1916,8 @@
         "desc": "JSON mit Wert, button_background_color, button_text_color, value_color — oder ein einfacher numerischer Jinja-Ergebnis.",
         "toggle": "Templatte-Modus",
         "cheatsheet": "Templatte-Spickzettel"
-      }
+      },
+      "no_entity_hint": "Keine Entität ausgewählt: Der Wert ändert sich nur auf diesem Bildschirm und wird nicht gespeichert."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2454,7 +2456,12 @@
     "pro": {
       "feature_locked": "Pro Funktion",
       "sports_description": "Das Sportergebnis-Modul erfordert ein Ultra Card Pro Abonnement, um Live-Sportergebnisse und Teaminformationen anzuzeigen.",
-      "upgrade_button": "Upgrade auf Pro"
+      "upgrade_button": "Upgrade auf Pro",
+      "status_not_installed": "Du hast schon Pro? Installiere Ultra Card Connect und melde dich an, um es hier freizuschalten.",
+      "status_unreachable": "Ultra Card Connect erreicht ultracard.io gerade nicht. Wenn du Pro hast, wird es wieder freigeschaltet, sobald die Verbindung zurück ist.",
+      "status_reauth": "Ultra Card Connect braucht eine erneute Anmeldung (Einstellungen → Geräte & Dienste → Ultra Card Connect).",
+      "status_signed_out": "Du hast schon Pro? Melde dich im Ultra Card Hub in der Seitenleiste bei Ultra Card Connect an.",
+      "status_inactive": "Dein Pro-Abo ist {status}. Verlängere es auf ultracard.io, um das freizuschalten."
     },
     "toggle": {
       "display_settings": "ANZEIGE-EINSTELLUNGEN",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Intelligentes Ersetzen",
         "restore_dashboard_snapshot": "Dashboard-Snapshot wiederherstellen"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} ist installiert, aber diese Seite verwendet noch {running}. Neu laden, um das Update abzuschließen.",
+      "reload": "Neu laden",
+      "dismiss": "Ausblenden"
+    },
+    "color_picker": {
+      "gradient_presets": "Verlaufsvorlagen"
     }
   },
   "hub": {

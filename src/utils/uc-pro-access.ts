@@ -34,8 +34,76 @@ export function hasProAccess(hass: HomeAssistant | undefined | null): boolean {
   return false;
 }
 
+const CONNECT_SENSOR = 'sensor.ultra_card_pro_cloud_authentication_status';
+
+/** The page's hass, for helpers whose callers do not pass one. */
+function pageHass(): HomeAssistant | undefined {
+  try {
+    return (document.querySelector('home-assistant') as (Element & { hass?: HomeAssistant }) | null)
+      ?.hass;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Why Pro is not active, in the user's words, or null when they are simply on
+ * the free tier. "Pro shows as not Pro" was the second most common Discord
+ * theme, and people blamed card or HA updates when the real cause was Connect
+ * being signed out, needing a new sign-in, or unable to reach ultracard.io.
+ */
+export function connectStatusNote(
+  hass: HomeAssistant | undefined | null,
+  lang: string
+): string | null {
+  const h = hass || pageHass();
+  if (!h?.states) return null;
+  const sensor = h.states[CONNECT_SENSOR];
+  if (!sensor) {
+    return localize(
+      'editor.pro.status_not_installed',
+      lang,
+      'Already have Pro? Install Ultra Card Connect and sign in to unlock it here.'
+    );
+  }
+  const a = (sensor.attributes || {}) as Record<string, unknown>;
+  if (sensor.state === 'unavailable' || sensor.state === 'unknown') {
+    return localize(
+      'editor.pro.status_unreachable',
+      lang,
+      "Ultra Card Connect can't reach ultracard.io right now. If you have Pro, it unlocks again when the connection is back."
+    );
+  }
+  if (sensor.state !== 'connected' || !a.authenticated) {
+    return a.needs_reauth
+      ? localize(
+          'editor.pro.status_reauth',
+          lang,
+          'Ultra Card Connect needs you to sign in again (Settings → Devices & services → Ultra Card Connect).'
+        )
+      : localize(
+          'editor.pro.status_signed_out',
+          lang,
+          'Already have Pro? Sign in to Ultra Card Connect from the Ultra Card Hub in the sidebar.'
+        );
+  }
+  if (a.subscription_tier === 'pro' && a.subscription_status && a.subscription_status !== 'active') {
+    return localize(
+      'editor.pro.status_inactive',
+      lang,
+      'Your Pro subscription is {status}. Renew it on ultracard.io to unlock this.'
+    ).replace('{status}', String(a.subscription_status));
+  }
+  return null;
+}
+
 /** Full-width lock card shown instead of a Pro module's General tab. */
-export function renderProLockUI(lang: string, description: string): TemplateResult {
+export function renderProLockUI(
+  lang: string,
+  description: string,
+  hass?: HomeAssistant | null
+): TemplateResult {
+  const note = connectStatusNote(hass, lang);
   return html`
     <div
       class="pro-lock-container"
@@ -63,6 +131,14 @@ export function renderProLockUI(lang: string, description: string): TemplateResu
       >
         ${description}
       </div>
+      ${note
+        ? html`<div
+            role="status"
+            style="font-size: 13px; color: var(--primary-text-color); margin-bottom: 16px; max-width: 340px; line-height: 1.5; padding: 8px 12px; border-radius: 8px; background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);"
+          >
+            ${note}
+          </div>`
+        : ''}
       <a
         href="https://ultracard.io/pro"
         target="_blank"

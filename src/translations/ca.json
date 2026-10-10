@@ -698,7 +698,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Fila eliminada",
       "column_deleted": "Columna eliminada",
-      "module_deleted": "Mòdul eliminat"
+      "module_deleted": "Mòdul eliminat",
+      "browse_presets_tooltip": "Explora predefinits i afegeix-ne un a aquesta targeta"
     },
     "entity_mapper": {
       "title": "Assigna les entitats",
@@ -1864,7 +1865,8 @@
         "desc": "JSON amb valor, button_background_color, button_text_color, value_color — o un resultat numèric Jinja senzill.",
         "toggle": "Mode Template",
         "cheatsheet": "Full de trucs Template"
-      }
+      },
+      "no_entity_hint": "No hi ha cap entitat seleccionada: el valor només canvia en aquesta pantalla i no es desa."
     },
     "layout_extra": {
       "module_name": "Nom del mòdul:",
@@ -2570,7 +2572,12 @@
     "pro": {
       "feature_locked": "Funció Pro",
       "sports_description": "El mòdul de marcadors esportius requereix una subscripció a Ultra Card Pro per a mostrar marcadors en directe i informació dels equips.",
-      "upgrade_button": "Passa a Pro"
+      "upgrade_button": "Passa a Pro",
+      "status_not_installed": "Ja tens Pro? Instal·la Ultra Card Connect i inicia la sessió per desbloquejar-lo aquí.",
+      "status_unreachable": "Ultra Card Connect no pot connectar amb ultracard.io ara mateix. Si tens Pro, es tornarà a desbloquejar quan torni la connexió.",
+      "status_reauth": "Ultra Card Connect necessita que tornis a iniciar la sessió (Configuració → Dispositius i serveis → Ultra Card Connect).",
+      "status_signed_out": "Ja tens Pro? Inicia la sessió a Ultra Card Connect des de l'Ultra Card Hub de la barra lateral.",
+      "status_inactive": "La teva subscripció Pro està {status}. Renova-la a ultracard.io per desbloquejar-ho."
     },
     "timer": {
       "basic": {
@@ -5543,6 +5550,14 @@
         "smart_replace": "Substitució intel·ligent",
         "restore_dashboard_snapshot": "Restaura la instantània del tauler"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} està instal·lat, però aquesta pàgina encara executa {running}. Torna a carregar per acabar l'actualització.",
+      "reload": "Torna a carregar",
+      "dismiss": "Descarta"
+    },
+    "color_picker": {
+      "gradient_presets": "Degradats predefinits"
     }
   },
   "hub": {

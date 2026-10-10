@@ -192,7 +192,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Wiersz usunięty",
       "column_deleted": "Kolumna usunięta",
-      "module_deleted": "Moduł usunięty"
+      "module_deleted": "Moduł usunięty",
+      "browse_presets_tooltip": "Przeglądaj presety i dodaj jeden do tej karty"
     },
     "about": {
       "developed_by": "Opracowane przez",
@@ -1911,7 +1912,8 @@
         "desc": "JSON z wartością, button_background_color, button_text_color, value_color — lub zwykły numeryczny wynik Jinja.",
         "toggle": "Tryb tempłytki",
         "cheatsheet": "Podręcznik tempłytki"
-      }
+      },
+      "no_entity_hint": "Nie wybrano encji: wartość zmienia się tylko na tym ekranie i nie jest zapisywana."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funkcja",
       "sports_description": "Moduł Wyników Sportowych wymaga subskrypcji Ultra Card Pro, aby wyświetlać na żywo wyniki sportowe i informacje o drużynach.",
-      "upgrade_button": "Zaktualizuj do Pro"
+      "upgrade_button": "Zaktualizuj do Pro",
+      "status_not_installed": "Masz już Pro? Zainstaluj Ultra Card Connect i zaloguj się, aby odblokować je tutaj.",
+      "status_unreachable": "Ultra Card Connect nie może teraz połączyć się z ultracard.io. Jeśli masz Pro, zostanie ponownie odblokowane po przywróceniu połączenia.",
+      "status_reauth": "Ultra Card Connect wymaga ponownego zalogowania (Ustawienia → Urządzenia i usługi → Ultra Card Connect).",
+      "status_signed_out": "Masz już Pro? Zaloguj się do Ultra Card Connect w Ultra Card Hub na pasku bocznym.",
+      "status_inactive": "Twoja subskrypcja Pro ma status {status}. Odnów ją na ultracard.io, aby to odblokować."
     },
     "toggle": {
       "display_settings": "USTAWIENIA WYŚWIETLANIA",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Inteligentne zastępowanie",
         "restore_dashboard_snapshot": "Przywróć migawkę pulpitu"
       }
+    },
+    "update_banner": {
+      "text": "Zainstalowano Ultra Card {installed}, ale ta strona nadal używa {running}. Odśwież, aby dokończyć aktualizację.",
+      "reload": "Odśwież",
+      "dismiss": "Zamknij"
+    },
+    "color_picker": {
+      "gradient_presets": "Gotowe gradienty"
     }
   },
   "hub": {

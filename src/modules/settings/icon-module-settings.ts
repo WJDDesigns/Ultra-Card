@@ -835,6 +835,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                                         )}
                                       </div>
                                       <ultra-color-picker
+                                        no-gradients
                                         .value=${icon.inactive_icon_color ||
                                         'var(--secondary-text-color)'}
                                         @value-changed=${(e: CustomEvent) =>
@@ -2293,6 +2294,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
             ${localize('editor.icon.icon_color_desc', lang, 'Color of the icon')}
           </div>
           <ultra-color-picker
+            no-gradients
             .value=${icon.inactive_icon_color || 'var(--primary-color)'}
             @value-changed=${(e: CustomEvent) => {
               // For static icons, sync both active and inactive colors
@@ -3063,6 +3065,7 @@ export class UltraIconModuleSettings extends UltraIconModule {
                   <ultra-color-picker
                     .value=${displayValue}
                     .disabled=${isLocked}
+                    .noGradients=${/(^|_)icon_color$/.test(activeProperty)}
                     @value-changed=${(e: CustomEvent) => {
                       if (!isLocked) {
                         const val =

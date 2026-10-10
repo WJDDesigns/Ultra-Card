@@ -5,6 +5,7 @@ import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service'
 import { FavoriteColor } from '../types';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { isGradient } from '../utils/uc-color-utils';
+import { localize, uiLanguage } from '../localize/localize';
 
 export interface ColorChangedEvent {
   detail: {
@@ -133,6 +134,11 @@ export class UltraColorPicker extends LitElement {
   @property() public label: string | undefined;
   @property() public defaultValue: string | undefined;
   @property({ type: Boolean }) public disabled = false;
+  /**
+   * Hide gradient presets where a gradient has no effect (icon colours: an icon
+   * is painted with `color`, which cannot be a gradient).
+   */
+  @property({ type: Boolean, attribute: 'no-gradients' }) public noGradients = false;
 
   @state() private _currentValue: string | undefined = undefined;
   @state() private _showPalette = false;
@@ -1139,9 +1145,13 @@ export class UltraColorPicker extends LitElement {
                 </div>
 
                 <!-- Gradient Presets Section -->
-                <div class="gradient-presets-section">
+                ${this.noGradients
+                  ? ''
+                  : html`<div class="gradient-presets-section">
                   <div class="gradient-presets-header">
-                    <label class="gradient-presets-label">Gradient Presets</label>
+                    <label class="gradient-presets-label"
+                          >${localize('editor.color_picker.gradient_presets', uiLanguage(), 'Gradient Presets')}</label
+                        >
                   </div>
                   <div class="gradient-presets-grid">
                     ${GRADIENT_PRESETS.map(
@@ -1159,7 +1169,7 @@ export class UltraColorPicker extends LitElement {
                       `
                     )}
                   </div>
-                </div>
+                </div>`}
 
                 <!-- Favorites Section (always visible so users can add favorites) -->
                 <div class="favorites-section">

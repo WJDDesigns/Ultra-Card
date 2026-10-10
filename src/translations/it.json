@@ -264,7 +264,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Riga eliminata",
       "column_deleted": "Colonna eliminata",
-      "module_deleted": "Modulo eliminato"
+      "module_deleted": "Modulo eliminato",
+      "browse_presets_tooltip": "Sfoglia i preset e aggiungine uno a questa scheda"
     },
     "layout_logic": {
       "display_title": "Mostra questo elemento",
@@ -1911,7 +1912,8 @@
         "desc": "JSON con valore, button_background_color, button_text_color, value_color — o un risultato numerico Jinja semplice.",
         "toggle": "Modalità Template",
         "cheatsheet": "Guida Template"
-      }
+      },
+      "no_entity_hint": "Nessuna entità selezionata: il valore cambia solo su questa schermata e non viene salvato."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Caratteristica Pro",
       "sports_description": "Il modulo Sports Score richiede un abbonamento Ultra Card Pro per visualizzare i punteggi sportivi dal vivo e le informazioni sulle squadre.",
-      "upgrade_button": "Aggiorna a Pro"
+      "upgrade_button": "Aggiorna a Pro",
+      "status_not_installed": "Hai già Pro? Installa Ultra Card Connect e accedi per sbloccarlo qui.",
+      "status_unreachable": "Ultra Card Connect non riesce a raggiungere ultracard.io al momento. Se hai Pro, si sbloccherà di nuovo quando la connessione tornerà.",
+      "status_reauth": "Ultra Card Connect richiede un nuovo accesso (Impostazioni → Dispositivi e servizi → Ultra Card Connect).",
+      "status_signed_out": "Hai già Pro? Accedi a Ultra Card Connect dall'Ultra Card Hub nella barra laterale.",
+      "status_inactive": "Il tuo abbonamento Pro è {status}. Rinnovalo su ultracard.io per sbloccarlo."
     },
     "toggle": {
       "display_settings": "IMPOSTAZIONI VISIVE",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Sostituzione intelligente",
         "restore_dashboard_snapshot": "Ripristina snapshot della dashboard"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} è installato, ma questa pagina usa ancora {running}. Ricarica per completare l'aggiornamento.",
+      "reload": "Ricarica",
+      "dismiss": "Ignora"
+    },
+    "color_picker": {
+      "gradient_presets": "Gradienti predefiniti"
     }
   },
   "hub": {

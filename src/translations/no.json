@@ -192,7 +192,8 @@
       "moved_down": "Moved down",
       "row_deleted": "Rad slettet",
       "column_deleted": "Kolonne slettet",
-      "module_deleted": "Modul slettet"
+      "module_deleted": "Modul slettet",
+      "browse_presets_tooltip": "Bla gjennom forhåndsinnstillinger og legg en til dette kortet"
     },
     "about": {
       "developed_by": "Utviklet av",
@@ -1911,7 +1912,8 @@
         "desc": "JSON med verdi, button_background_color, button_text_color, value_color — eller et enkelt numerisk Jinja-resultat.",
         "toggle": "Template-modus",
         "cheatsheet": "Template jukseark"
-      }
+      },
+      "no_entity_hint": "Ingen enhet valgt: verdien endres bare på denne skjermen og lagres ikke."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2450,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funksjon",
       "sports_description": "Sports Score-modulen krever et Ultra Card Pro-abonnement for å vise live sportsresultater og laginformasjon.",
-      "upgrade_button": "Oppgrader til Pro"
+      "upgrade_button": "Oppgrader til Pro",
+      "status_not_installed": "Har du allerede Pro? Installer Ultra Card Connect og logg inn for å låse det opp her.",
+      "status_unreachable": "Ultra Card Connect får ikke kontakt med ultracard.io akkurat nå. Har du Pro, låses det opp igjen når forbindelsen er tilbake.",
+      "status_reauth": "Ultra Card Connect trenger at du logger inn på nytt (Innstillinger → Enheter og tjenester → Ultra Card Connect).",
+      "status_signed_out": "Har du allerede Pro? Logg inn på Ultra Card Connect fra Ultra Card Hub i sidepanelet.",
+      "status_inactive": "Pro-abonnementet ditt er {status}. Forny det på ultracard.io for å låse opp dette."
     },
     "toggle": {
       "display_settings": "VISNING INNSTILLINGER",
@@ -5543,6 +5550,14 @@
         "smart_replace": "Smart erstatning",
         "restore_dashboard_snapshot": "Gjenopprett dashbord-øyeblikksbilde"
       }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} er installert, men denne siden kjører fortsatt {running}. Last inn på nytt for å fullføre oppdateringen.",
+      "reload": "Last inn på nytt",
+      "dismiss": "Lukk"
+    },
+    "color_picker": {
+      "gradient_presets": "Forhåndsinnstilte gradienter"
     }
   },
   "hub": {
