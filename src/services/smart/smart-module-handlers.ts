@@ -1091,6 +1091,42 @@ function sanitizeBambuModule(module: SmartModule, id: string): SmartModule | nul
   };
 }
 
+function sanitizeIrrigationModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const rawZones = Array.isArray(module.zones) ? (module.zones as unknown[]) : [];
+  const zones = rawZones
+    .map(zone => (zone && typeof zone === 'object' ? (zone as Record<string, unknown>) : null))
+    .filter((zone): zone is Record<string, unknown> => !!zone && entityExists(hass, String(zone.entity || '')))
+    .map((zone, index) => ({
+      id: String(zone.id || `zone_${index + 1}`),
+      entity: String(zone.entity),
+      ...(zone.name ? { name: String(zone.name) } : {}),
+    }));
+  if (zones.length === 0) return null;
+  const optionalEntity = (value: unknown): string => {
+    const entityId = String(value || '');
+    return entityId && entityExists(hass, entityId) ? entityId : '';
+  };
+  return {
+    id,
+    type: 'irrigation',
+    title: String(module.title || ''),
+    show_title: module.show_title !== false,
+    zones,
+    default_duration_minutes: numberInRange(module.default_duration_minutes, 1, 240, 10),
+    layout: oneOf(module.layout, ['full', 'compact'] as const, 'full'),
+    show_remaining: true,
+    show_duration_control: true,
+    run_all_mode: 'none',
+    master_entity: optionalEntity(module.master_entity),
+    rain_delay_entity: optionalEntity(module.rain_delay_entity),
+    ...defaultDisplayActions(),
+  };
+}
+
 function sanitizePrinter3dModule(module: SmartModule, id: string): SmartModule | null {
   return {
     id,
@@ -1146,6 +1182,35 @@ function sanitizePrinter3dModule(module: SmartModule, id: string): SmartModule |
     show_thumbnail: module.show_thumbnail !== false,
     camera_mode: oneOf(module.camera_mode, ['snapshot', 'live'] as const, 'snapshot'),
     camera_refresh_seconds: numberInRange(module.camera_refresh_seconds, 1, 120, 10),
+    ...defaultDisplayActions(),
+  };
+}
+
+/** Energy Price & EV: the price sensor is the only field a prompt can usefully set. */
+function sanitizeEnergyPriceModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const priceEntity = String(module.price_entity || '');
+  const socEntity = String(module.ev_soc_entity || '');
+  const departure = String(module.ev_departure_time || '');
+  return {
+    id,
+    type: 'energy_price',
+    price_entity: priceEntity && entityExists(hass, priceEntity) ? priceEntity : '',
+    price_source: 'auto',
+    show_title: module.show_title !== false,
+    show_current: module.show_current !== false,
+    show_stats: module.show_stats !== false,
+    show_chart: module.show_chart !== false,
+    show_tomorrow: module.show_tomorrow !== false,
+    show_cheapest_window: module.show_cheapest_window !== false,
+    window_hours: numberInRange(module.window_hours, 0.25, 12, 3),
+    window_label: String(module.window_label || ''),
+    ev_enabled: Boolean(module.ev_enabled),
+    ev_soc_entity: socEntity && entityExists(hass, socEntity) ? socEntity : '',
+    ev_departure_time: /^\d{1,2}:\d{2}$/.test(departure) ? departure : '07:00',
     ...defaultDisplayActions(),
   };
 }
@@ -1377,10 +1442,33 @@ export const supplementalSmartModuleHandlers = {
     defaultBuilder: (ctx: SmartBuildContext) =>
       sanitizeBambuModule({ type: 'bambu' } as SmartModule, ctx.id),
   },
+  irrigation: {
+    sanitize: wrapSanitize(sanitizeIrrigationModule),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      ctx.entity && /^(switch|valve)\./.test(ctx.entity.entityId)
+        ? sanitizeIrrigationModule(
+            { type: 'irrigation', zones: [{ id: 'zone_1', entity: ctx.entity.entityId }] } as SmartModule,
+            ctx.hass,
+            ctx.id
+          )
+        : null,
+  },
   printer_3d: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizePrinter3dModule(module, id)),
     defaultBuilder: (ctx: SmartBuildContext) =>
       sanitizePrinter3dModule({ type: 'printer_3d' } as SmartModule, ctx.id),
+  },
+  energy_price: {
+    sanitize: wrapSanitize(sanitizeEnergyPriceModule),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeEnergyPriceModule(
+        {
+          type: 'energy_price',
+          price_entity: ctx.entity?.entityId?.startsWith('sensor.') ? ctx.entity.entityId : '',
+        } as SmartModule,
+        ctx.hass,
+        ctx.id
+      ),
   },
   animated_weather: {
     sanitize: wrapSanitize(sanitizeAnimatedWeatherModule),

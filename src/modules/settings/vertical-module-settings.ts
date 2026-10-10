@@ -21,6 +21,8 @@ export class UltraVerticalModuleSettings extends UltraVerticalModule {
   ): TemplateResult {
     const verticalModule = module as VerticalModule;
     const lang = hass?.locale?.language || 'en';
+    // Linked Row reuses this tab; give it its own wording.
+    const isLinkedRow = (module as { type?: string }).type === 'linked_row';
 
     return html`
       ${this.injectUcFormStyles()}
@@ -29,11 +31,17 @@ export class UltraVerticalModuleSettings extends UltraVerticalModule {
         <!-- Layout Configuration Section -->
         ${this.renderSettingsSection(
           localize('editor.vertical.layout.title', lang, 'Layout Configuration'),
-          localize(
-            'editor.vertical.layout.desc',
-            lang,
-            'Configure alignment and spacing for items in a single column.'
-          ),
+          isLinkedRow
+            ? localize(
+                'editor.linked_row.layout_desc',
+                lang,
+                'Alignment and spacing of the modules in this shared row. These settings stay on this card and are not shared.'
+              )
+            : localize(
+                'editor.vertical.layout.desc',
+                lang,
+                'Configure alignment and spacing for items in a single column.'
+              ),
           [
             {
               title: localize('editor.vertical.alignment.horizontal', lang, 'Horizontal Alignment'),
@@ -162,11 +170,17 @@ export class UltraVerticalModuleSettings extends UltraVerticalModule {
               >
                 ${this.renderGapWithUnitField(
                   localize('editor.vertical.gap.between_items', lang, 'Gap Between Items'),
-                  localize(
-                    'editor.vertical.gap.desc',
-                    lang,
-                    'Set the spacing between vertical items. Use negative values to overlap items. Note: Gap is disabled when using Space Between or Space Around distribution.'
-                  ),
+                  isLinkedRow
+                    ? localize(
+                        'editor.linked_row.gap_desc',
+                        lang,
+                        'Space between the modules in this row. Use negative values to overlap them. Gap is off when using Space Between or Space Around.'
+                      )
+                    : localize(
+                        'editor.vertical.gap.desc',
+                        lang,
+                        'Set the spacing between vertical items. Use negative values to overlap items. Note: Gap is disabled when using Space Between or Space Around distribution.'
+                      ),
                   hass,
                   gapNum,
                   defaultVal,

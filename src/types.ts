@@ -237,7 +237,11 @@ export interface BaseModule {
     | 'vampire_power'
     | 'unifi'
     | 'bambu'
-    | 'printer_3d';
+    | 'printer_3d'
+    | 'floorplan'
+    | 'irrigation'
+    | 'linked_row'
+    | 'energy_price';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -1856,6 +1860,22 @@ export interface ScrollRowModule extends BaseModule {
   show_scrollbar?: boolean | undefined;
   show_arrows?: boolean | undefined;
   fade_edges?: boolean | undefined;
+}
+
+// Linked Row (Pro) — a vertical container whose children are shared through
+// Ultra Card Connect, so editing it once updates every dashboard that uses it.
+// `modules` is always kept as a local copy so the row never renders blank when
+// Connect is missing, too old or offline.
+export interface LinkedRowModule extends Omit<VerticalModule, 'type'> {
+  type: 'linked_row';
+  /** Id of the shared row in the Connect library; empty = not linked yet. */
+  linked_id?: string | undefined;
+  /** Library name, cached locally for the editor and offline display. */
+  linked_name?: string | undefined;
+  /** Library revision the local `modules` copy was last synced with. */
+  linked_revision?: number | undefined;
+  /** ISO time of that revision, cached for the editor. */
+  linked_updated_at?: string | undefined;
 }
 
 // State Switcher — renders exactly one child: the first whose logic conditions match
@@ -5617,7 +5637,11 @@ export type CardModule =
   | VampirePowerModule
   | UnifiModule
   | BambuModule
-  | Printer3dModule;
+  | Printer3dModule
+  | FloorplanModule
+  | IrrigationModule
+  | LinkedRowModule
+  | EnergyPriceModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -9196,6 +9220,299 @@ export interface Printer3dModule extends BaseModule {
   accent_color?: string | undefined;
   text_color?: string | undefined;
   secondary_text_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Floorplan (Free) — a picture of your home with entity markers and room zones
+// -------------------------------------------------------------------------
+
+/** Where a marker's name / state label sits relative to its icon. */
+export type FloorplanLabelPosition = 'below' | 'above' | 'left' | 'right';
+
+/** `badge` draws the icon on a round chip (readable on any image); `icon` is the bare glyph. */
+export type FloorplanMarkerStyle = 'badge' | 'icon';
+
+export type FloorplanAspectRatio = 'auto' | '16:9' | '4:3' | '3:2' | '1:1' | '3:4';
+
+export type FloorplanImageFit = 'contain' | 'cover' | 'fill';
+
+/** One entity placed on the floor plan. Positions are percentages (0–100) of the image frame. */
+export interface FloorplanMarker {
+  id: string;
+  entity: string;
+  x: number;
+  y: number;
+  name?: string | undefined;
+  icon?: string | undefined;
+  /** Icon to show while the entity is active (on / open / home …). */
+  active_icon?: string | undefined;
+  /** Icon size in px; falls back to the module's marker_size. */
+  size?: number | undefined;
+  /** Undefined = follow the module-level show_names / show_states. */
+  show_name?: boolean | undefined;
+  show_state?: boolean | undefined;
+  label_position?: FloorplanLabelPosition | undefined;
+  active_color?: string | undefined;
+  inactive_color?: string | undefined;
+  /** Treat this exact state as "active" instead of the domain default. */
+  active_state?: string | undefined;
+  /** Radial glow tinted by the light's color. Undefined = on for lights (module glow_lights). */
+  glow?: boolean | undefined;
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+/** A room-shaped region that fills with color while its entity is active. */
+export interface FloorplanZone {
+  id: string;
+  entity: string;
+  name?: string | undefined;
+  shape: 'rect' | 'polygon';
+  /** Rectangle, in percent of the image frame. */
+  x?: number | undefined;
+  y?: number | undefined;
+  width?: number | undefined;
+  height?: number | undefined;
+  /** Polygon points in percent, e.g. "10,10 40,10 40,35 10,35". */
+  points?: string | undefined;
+  /** Fill color; empty = the light's own color, or the theme accent. */
+  color?: string | undefined;
+  /** Fill opacity while active, 0–100. */
+  opacity?: number | undefined;
+  /** Fill opacity while inactive, 0–100 (usually 0). */
+  inactive_opacity?: number | undefined;
+  show_outline?: boolean | undefined;
+  active_state?: string | undefined;
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+export interface FloorplanModule extends BaseModule {
+  type: 'floorplan';
+
+  /** Uploaded path or URL of the floor plan picture. */
+  image?: string | undefined;
+  /** Optional picture used while Home Assistant is in dark mode. */
+  dark_image?: string | undefined;
+
+  markers: FloorplanMarker[];
+  zones?: FloorplanZone[] | undefined;
+
+  aspect_ratio?: FloorplanAspectRatio | undefined;
+  image_fit?: FloorplanImageFit | undefined;
+
+  marker_style?: FloorplanMarkerStyle | undefined;
+  marker_size?: number | undefined;
+  show_names?: boolean | undefined;
+  show_states?: boolean | undefined;
+  label_position?: FloorplanLabelPosition | undefined;
+  active_color?: string | undefined;
+  inactive_color?: string | undefined;
+
+  glow_lights?: boolean | undefined;
+  /** 0–100 */
+  glow_intensity?: number | undefined;
+  /** Glow radius as a multiple of the marker size. */
+  glow_size?: number | undefined;
+
+  dim_when_all_off?: boolean | undefined;
+  /** How much to darken the picture when everything is off, 0–90. */
+  dim_amount?: number | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Irrigation (Free) — integration-agnostic sprinkler / valve zone control
+// -------------------------------------------------------------------------
+
+/**
+ * How a zone's Run button starts watering.
+ * - auto: detect the integration; use its timed-run service when it has one,
+ *   otherwise plain on/off.
+ * - toggle: plain on/off (homeassistant.turn_on / valve.open_valve).
+ * - service: a known integration preset (see IrrigationServicePreset).
+ * - custom: a user-supplied service + data with duration placeholders.
+ */
+export type IrrigationRunMode = 'auto' | 'toggle' | 'service' | 'custom';
+
+export type IrrigationServicePreset =
+  | 'auto'
+  | 'opensprinkler'
+  | 'rachio'
+  | 'irrigation_unlimited'
+  | 'bhyve'
+  | 'valve'
+  | 'switch';
+
+export type IrrigationLayout = 'full' | 'compact';
+
+export type IrrigationRunAllMode = 'none' | 'script' | 'service';
+
+export interface IrrigationZone {
+  id: string;
+  /** switch.*, valve.*, or an integration status entity (binary_sensor / sensor). */
+  entity: string;
+  name?: string | undefined;
+  icon?: string | undefined;
+  color?: string | undefined;
+  /** Run duration in minutes; falls back to the module default. */
+  duration_minutes?: number | undefined;
+  run_mode?: IrrigationRunMode | undefined;
+  /** Used when run_mode is 'service'. 'auto' detects from the entity. */
+  preset?: IrrigationServicePreset | undefined;
+  /** run_mode 'custom': "domain.service". */
+  custom_service?: string | undefined;
+  /** run_mode 'custom': service data; string values may use {{ duration }} etc. */
+  custom_data?: Record<string, unknown> | undefined;
+  /** Optional custom stop service ("domain.service"); defaults to turning the entity off. */
+  custom_stop_service?: string | undefined;
+  custom_stop_data?: Record<string, unknown> | undefined;
+  /** Optional soil moisture sensor (percent). */
+  moisture_entity?: string | undefined;
+  /** Optional sensor reporting remaining run time (seconds / minutes / timestamp). */
+  remaining_entity?: string | undefined;
+}
+
+export interface IrrigationModule extends BaseModule {
+  type: 'irrigation';
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  zones: IrrigationZone[];
+  /** Default run duration in minutes for zones without their own. */
+  default_duration_minutes?: number | undefined;
+  layout?: IrrigationLayout | undefined;
+  show_remaining?: boolean | undefined;
+  show_duration_control?: boolean | undefined;
+  accent_color?: string | undefined;
+
+  /** Master valve / pump switch. */
+  master_entity?: string | undefined;
+  /** Rain delay: switch / input_boolean, number / input_number (hours), or select. */
+  rain_delay_entity?: string | undefined;
+  /** Rain sensor or skip indicator (binary_sensor / sensor). */
+  rain_sensor_entity?: string | undefined;
+  /** Next scheduled run (timestamp sensor). */
+  next_run_entity?: string | undefined;
+  /** Current flow rate sensor. */
+  flow_entity?: string | undefined;
+  /** Water used today (e.g. a daily utility_meter on a water meter). */
+  water_used_entity?: string | undefined;
+
+  /** Run all zones: only via a script or an integration service — never client-side. */
+  run_all_mode?: IrrigationRunAllMode | undefined;
+  run_all_entity?: string | undefined;
+  run_all_service?: string | undefined;
+  run_all_data?: Record<string, unknown> | undefined;
+
+  /** Soil moisture thresholds (percent). Below dry = dry, above wet = wet. */
+  moisture_dry_threshold?: number | undefined;
+  moisture_wet_threshold?: number | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Energy Price & EV (Pro) — electricity price curve, cheapest window, EV plan
+// -------------------------------------------------------------------------
+
+/** Price source. 'auto' detects the integration from the entity. */
+export type EnergyPriceSource =
+  | 'auto'
+  | 'nordpool'
+  | 'nordpool_core'
+  | 'tibber'
+  | 'energi_data_service'
+  | 'entsoe'
+  | 'octopus'
+  | 'amber'
+  | 'generic';
+
+export type EnergyPriceLevelMode = 'relative' | 'percentile' | 'absolute';
+
+/** What the user-tapped "apply plan" button does. 'none' hides it. */
+export type EnergyPriceEvApplyMode = 'none' | 'charger' | 'script' | 'datetime';
+
+export interface EnergyPriceModule extends BaseModule {
+  type: 'energy_price';
+
+  /** The only required field: a price sensor from any supported integration. */
+  price_entity: string;
+  price_source?: EnergyPriceSource | undefined;
+  /** Core Nord Pool config entry id (looked up automatically when blank). */
+  nordpool_config_entry?: string | undefined;
+  /** Nord Pool area or Tibber home name when the integration returns several. */
+  source_hint?: string | undefined;
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_current?: boolean | undefined;
+  show_stats?: boolean | undefined;
+  show_chart?: boolean | undefined;
+  show_tomorrow?: boolean | undefined;
+  /** 0 = today (+ tomorrow when published); otherwise a rolling number of hours. */
+  chart_hours?: number | undefined;
+  chart_height?: number | undefined;
+
+  show_cheapest_window?: boolean | undefined;
+  window_hours?: number | undefined;
+  /** e.g. "Dishwasher" — shown as "Dishwasher: start at 02:00". */
+  window_label?: string | undefined;
+
+  level_mode?: EnergyPriceLevelMode | undefined;
+  cheap_percent?: number | undefined;
+  expensive_percent?: number | undefined;
+  cheap_price?: number | undefined;
+  expensive_price?: number | undefined;
+
+  /** Displayed price = raw × multiplier + additive (VAT, grid fees, …). */
+  price_multiplier?: number | undefined;
+  price_additive?: number | undefined;
+  /** Overrides the sensor's unit, e.g. "€/kWh" or "p/kWh". */
+  unit_override?: string | undefined;
+  decimals?: number | undefined;
+
+  cheap_color?: string | undefined;
+  normal_color?: string | undefined;
+  expensive_color?: string | undefined;
+
+  ev_enabled?: boolean | undefined;
+  /** switch / input_boolean that starts and stops charging. */
+  ev_charger_entity?: string | undefined;
+  /** Battery level sensor (percent). */
+  ev_soc_entity?: string | undefined;
+  ev_target_soc?: number | undefined;
+  /** Optional number / input_number holding the target level. */
+  ev_target_soc_entity?: string | undefined;
+  ev_capacity_kwh?: number | undefined;
+  ev_power_kw?: number | undefined;
+  /** Optional charger power sensor (W or kW); used instead of ev_power_kw while it reports > 0. */
+  ev_power_entity?: string | undefined;
+  ev_efficiency?: number | undefined;
+  /** "HH:MM" */
+  ev_departure_time?: string | undefined;
+  /** Optional input_datetime / sensor holding the departure. */
+  ev_departure_entity?: string | undefined;
+  /** Hours to plan when there is no battery level sensor. */
+  ev_manual_hours?: number | undefined;
+  ev_allow_split?: boolean | undefined;
+  ev_apply_mode?: EnergyPriceEvApplyMode | undefined;
+  /** apply mode 'script': the script to run with the plan as variables. */
+  ev_script_entity?: string | undefined;
+  /** apply mode 'datetime': input_datetime set to the first planned start. */
+  ev_start_entity?: string | undefined;
+  /** apply mode 'datetime': optional input_datetime set to the last planned end. */
+  ev_end_entity?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

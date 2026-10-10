@@ -1,5 +1,32 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta2
+
+The second 3.14.0 beta adds four new modules: Floorplan and Irrigation for everyone, and Energy Price & EV and Linked Row for Pro. It also fixes a long list of editor and readability problems found by testing every module in light and dark themes on desktop and phone sizes. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the Floorplan module** - Upload a picture of your floor plan and drop entities on it; icons change with state, lights glow in their own colour, and rooms can fill with colour while something in them is on
+- **Added the Irrigation module** - Sprinkler and valve zones from any integration (OpenSprinkler, Rachio, Irrigation Unlimited, B-hyve or plain switches) with timed runs, remaining time, rain delay, rain sensor, next run, flow, water used and soil moisture
+- **Added the Energy Price & EV module (Pro)** - Pick your Nord Pool, Tibber, Octopus, ENTSO-e, Energi Data Service or Amber price sensor and get today's and tomorrow's price curve, cheap and expensive hours, the cheapest time to run an appliance, and an EV charge plan that reaches your target by departure
+- **Added the Linked Row module (Pro)** - Build a row of modules once, show it on any dashboard, and edit it in one place to update every copy; shared through Ultra Card Connect 1.10.0 or later, and it keeps working from its saved copy if Connect is missing or offline
+
+### 🔧 Improvements
+
+- **Easier to read in light themes** - Editor section headings, action headers and selected buttons use a deeper blue that reads on white, and colour picker values are readable in every module editor
+- **Better phone layouts** - Lock buttons drop under the title on phones so the full name shows, and grid names wrap to two lines instead of being cut off
+- **Bigger tap targets** - Climate +/−, moon-phase dots and slider dots are easier to tap
+- **New modules start ready to use** - Info binds a temperature sensor by default and Button has a default label
+- **Readable text in more places** - Bar percentage labels, the Virtual Pet screen, UniFi setup badges and labels on light themes, printer status pills, activity feed and alarm badges, and the battery fleet count
+
+### 🐛 Bug Fixes
+
+- **Fixed whole cards going blank before setup** - Area Summary, Boiler, Cleaning Zones, Dishwasher, Dryer, Range, Fridge, Washer, Dog Duty, Laundry Tracker, Plant Care, Solar Analytics, Sports Score, Status Summary and Train could make the entire card render nothing (and show an "invalid configuration" message) until they were configured; they now show their "Select a…" placeholder
+- **Fixed editor errors in 61 module editors** - Translation errors and snapshot/backup crashes in the editor are gone
+- **Fixed the Vertical layout gap description** - It no longer says the gap is in rem when the unit picker shows px
+
 ## Version 3.14.0-beta1
 
 The first 3.14.0 beta is a speed and polish release. Typing in the card editor no longer makes Home Assistant and every card on the dashboard redo their work on each keystroke, undo now steps back one edit instead of one letter, and dashboards with clocks, timers or embedded cards repaint far less. It also adds keyboard and screen reader support across the editor, a "reload to finish updating" notice, and clearer messages when Pro isn't unlocking. This is a pre-release for testing — please report anything odd on GitHub or Discord.

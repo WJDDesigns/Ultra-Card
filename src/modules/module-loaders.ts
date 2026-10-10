@@ -361,4 +361,20 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-printer-3d" */ './printer-3d-module').then(
       m => new m.UltraPrinter3dModule()
     ),
+  irrigation: () =>
+    import(/* webpackChunkName: "m-irrigation" */ './irrigation-module').then(
+      m => new m.UltraIrrigationModule()
+    ),
+  floorplan: () =>
+    import(/* webpackChunkName: "m-floorplan" */ './floorplan-module').then(
+      m => new m.UltraFloorplanModule()
+    ),
+  energy_price: () =>
+    import(/* webpackChunkName: "m-energy-price" */ './energy-price-module').then(
+      m => new m.UltraEnergyPriceModule()
+    ),
+  linked_row: () =>
+    import(/* webpackChunkName: "m-linked-row" */ './linked-row-module').then(
+      m => new m.UltraLinkedRowModule()
+    ),
 };

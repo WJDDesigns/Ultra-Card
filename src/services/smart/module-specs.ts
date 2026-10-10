@@ -15,6 +15,9 @@ const LIBRARY_ONLY_TYPES = new Set([
   'pagebreak',
   'navigation',
   'popup',
+  // Needs an uploaded floor plan picture and hand-placed markers.
+  'floorplan',
+  'linked_row',
 ]);
 
 const CONTAINER_TYPES = new Set([
@@ -30,6 +33,7 @@ const CONTAINER_TYPES = new Set([
   'drawer',
   'scroll_row',
   'state_switcher',
+  'linked_row',
 ]);
 
 const KEYWORD_OVERRIDES: Record<string, string[]> = {
@@ -56,6 +60,9 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   unifi: ['unifi', 'ubiquiti', 'udm', 'network rack', 'switch ports', 'access point', 'unifi network'],
   bambu: ['bambu', 'bambu lab', 'x1c', 'p1s', 'a1', 'ams', '3d printer bambu', 'bambulab'],
   printer_3d: ['3d printer', 'octoprint', 'moonraker', 'klipper', 'prusa', 'prusalink', 'print progress'],
+  floorplan: ['floorplan', 'floor plan', 'house map', 'home map', 'room map', 'picture elements'],
+  irrigation: ['irrigation', 'sprinkler', 'sprinklers', 'sprinkler zones', 'garden watering', 'lawn watering', 'opensprinkler', 'rachio'],
+  energy_price: ['energy price', 'electricity price', 'spot price', 'nordpool', 'nord pool', 'tibber', 'octopus agile', 'cheapest hours', 'ev charging plan', 'smart charging'],
   calendar: ['events', 'schedule', 'agenda'],
   battery_monitor: ['battery', 'low battery', 'phone battery'],
   area_summary: ['room summary', 'room tile', 'floor plan'],
@@ -502,6 +509,40 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
       progress_entity: 'sensor.printer_progress',
     },
   },
+  irrigation: {
+    purpose:
+      'Sprinkler / irrigation control for any integration: one row per zone (switch or valve) with run/stop, run time, and remaining time. Optional master valve, rain delay, rain sensor, next run, flow, water used, and per-zone soil moisture.',
+    fields: ['zones', 'default_duration_minutes', 'layout', 'title', 'rain_delay_entity', 'master_entity'],
+    example: {
+      type: 'irrigation',
+      zones: [
+        { id: 'zone_front', entity: 'switch.front_lawn_sprinkler' },
+        { id: 'zone_back', entity: 'switch.back_yard_sprinkler' },
+      ],
+      default_duration_minutes: 10,
+      layout: 'full',
+    },
+  },
+  floorplan: {
+    purpose:
+      'A picture of the home (floor plan) with entity markers placed by x/y percent, light glow, and optional room zones that fill with color while their entity is on. Needs an uploaded image.',
+    fields: ['image', 'markers', 'zones', 'show_names', 'show_states', 'glow_lights'],
+    example: {
+      type: 'floorplan',
+      image: '/local/floorplan.png',
+      markers: [
+        { id: 'm_lamp', entity: 'light.example_lamp', x: 30, y: 40 },
+        { id: 'm_door', entity: 'binary_sensor.example_door', x: 70, y: 85 },
+      ],
+      zones: [],
+    },
+  },
+  energy_price: {
+    purpose:
+      'Electricity price curve for today and tomorrow from Nord Pool, Tibber, Octopus, ENTSO-e, Energi Data Service, Amber or a generic price sensor (format auto-detected), with the current price level, the cheapest window to run an appliance, and an optional EV charge plan.',
+    fields: ['price_entity', 'window_hours', 'window_label', 'ev_enabled', 'ev_soc_entity', 'ev_departure_time'],
+    example: { type: 'energy_price', price_entity: 'sensor.nordpool_kwh_se3_sek_3_10_025', window_hours: 3 },
+  },
 };
 
 const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
@@ -559,6 +600,8 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   unifi: ['sensor', 'switch', 'button', 'device_tracker', 'light', 'update'],
   bambu: ['sensor', 'binary_sensor', 'button', 'fan', 'light', 'number', 'select', 'camera', 'image'],
   printer_3d: ['sensor', 'binary_sensor', 'button', 'switch', 'light', 'fan', 'camera', 'image', 'script'],
+  irrigation: ['switch', 'valve', 'binary_sensor', 'sensor', 'number', 'select', 'script'],
+  energy_price: ['sensor', 'event'],
   animated_weather: ['weather'],
   animated_forecast: ['weather'],
   animated_clock: ['*'],

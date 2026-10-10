@@ -657,7 +657,8 @@ function migrateModulesInList(
       mod.type === 'flip_card' ||
       mod.type === 'drawer' ||
       mod.type === 'scroll_row' ||
-      mod.type === 'state_switcher';
+      mod.type === 'state_switcher' ||
+      mod.type === 'linked_row';
 
     if (MODULES_WITH_LEGACY_8PX_MARGIN.has(mod.type)) {
       const explicit = getExplicitMarginDirs(mod);

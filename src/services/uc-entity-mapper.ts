@@ -229,7 +229,8 @@ class UcEntityMapperService {
       case 'flip_card':
       case 'drawer':
       case 'scroll_row':
-      case 'state_switcher': {
+      case 'state_switcher':
+      case 'linked_row': {
         const sm = module as any;
         mappedModule = {
           ...sm,

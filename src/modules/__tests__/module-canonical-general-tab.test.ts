@@ -108,6 +108,8 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'train-module.ts',
   'bambu-module.ts',
   'printer-3d-module.ts',
+  'irrigation-module.ts',
+  'floorplan-module.ts',
   'appliance-module.ts',
   'todo-list-module.ts',
   'weather-module.ts',
@@ -120,12 +122,14 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'vehicle-maintenance-module.ts',
   'vampire-power-module.ts',
   'unifi-module.ts',
+  'energy-price-module.ts',
   // New layout containers
   'grid-layout-module.ts',
   'flip-card-module.ts',
   'drawer-module.ts',
   'scroll-row-module.ts',
   'state-switcher-module.ts',
+  'linked-row-module.ts',
 ]);
 
 /**
