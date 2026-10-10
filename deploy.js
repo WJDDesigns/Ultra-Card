@@ -18,26 +18,43 @@ const path = require('path');
 const ROOT = __dirname;
 const DIST_DIR = path.join(ROOT, 'dist');
 
+/**
+ * Find where an HA host's `config` Samba share is mounted, from `mount` output
+ * (e.g. "//homeassistant@192.168.4.55/config on /Volumes/config (smbfs, …)").
+ * Mount names depend on which share Finder mounted first, so they are never
+ * assumed: a deploy once went to the wrong instance because of that.
+ */
+function mountForHost(host) {
+  try {
+    const out = execSync('mount', { encoding: 'utf8' });
+    for (const line of out.split('\n')) {
+      const m = line.match(/^\/\/[^@\s]*@?([^/\s]+)\/config on (.+?) \(/);
+      if (m && m[1] === host) return m[2];
+    }
+  } catch {
+    /* no mount command (not macOS/Linux) */
+  }
+  return null;
+}
+
+/** HA instances to deploy to, by host. Override with HA_DEPLOY_HOSTS="192.168.4.55,…". */
+const HOSTS = (process.env.HA_DEPLOY_HOSTS || '192.168.4.55,192.168.4.244')
+  .split(',')
+  .map(h => h.trim())
+  .filter(Boolean);
+
+const MOUNTED = HOSTS.map(host => ({ host, mount: mountForHost(host) })).filter(i => i.mount);
+
 const CONFIG = {
-  instances: [
-    {
-      name: 'HA Instance 1 (.244)',
-      url: 'http://192.168.4.244:8123/',
-      // Samba: //homeassistant@192.168.4.244/config
-      path: '/Volumes/config/www/community/Ultra-Card',
-    },
-    {
-      name: 'HA Instance 2 (.55 main)',
-      url: 'http://192.168.4.55:8123/',
-      // Samba: //homeassistant@192.168.4.55/config (often mounts as config-1 when .244 already owns /Volumes/config)
-      path: '/Volumes/config-1/www/community/Ultra-Card',
-    },
-  ],
+  instances: MOUNTED.map(({ host, mount }) => ({
+    name: `HA ${host}`,
+    url: `http://${host}:8123/`,
+    path: path.join(mount, 'www', 'community', 'Ultra-Card'),
+  })),
   // Live HA integration www (sidebar Hub assets) — one entry per mounted instance
-  integrationWwwPaths: [
-    '/Volumes/config/custom_components/ultra_card_pro_cloud/www',
-    '/Volumes/config-1/custom_components/ultra_card_pro_cloud/www',
-  ],
+  integrationWwwPaths: MOUNTED.map(({ mount }) =>
+    path.join(mount, 'custom_components', 'ultra_card_pro_cloud', 'www')
+  ),
   // Sibling Connect git repo (for shipping); override with INTEGRATION_WWW_PATH
   connectRepoWww:
     process.env.INTEGRATION_WWW_PATH ||
@@ -51,10 +68,9 @@ const CONFIG = {
     'ultra_card_pro_cloud'
   ),
   // Live HA integration directories on mounted config volumes (deploy to each that exists)
-  haIntegrationPaths: [
-    '/Volumes/config/custom_components/ultra_card_pro_cloud',
-    '/Volumes/config-1/custom_components/ultra_card_pro_cloud',
-  ],
+  haIntegrationPaths: MOUNTED.map(({ mount }) =>
+    path.join(mount, 'custom_components', 'ultra_card_pro_cloud')
+  ),
 };
 
 const CORE_FILES = [
@@ -88,11 +104,7 @@ function hasRsync() {
 }
 
 function isVolumeMounted() {
-  return (
-    fs.existsSync('/Volumes/config') ||
-    fs.existsSync('/Volumes/config-1') ||
-    (CONFIG.instances || []).some(i => fs.existsSync(path.dirname(i.path)) || fs.existsSync(i.path))
-  );
+  return MOUNTED.length > 0;
 }
 
 function checkInstance(url) {
@@ -399,12 +411,13 @@ function deploy() {
   console.log('');
 
   if (!isVolumeMounted()) {
-    console.log('⚠️  /Volumes/config not mounted — skipped live HA deploy.');
+    console.log(`⚠️  No HA config share mounted for ${HOSTS.join(', ')} — skipped live HA deploy.`);
     console.log(`✨ Done in ${Date.now() - t0}ms (Connect repo sync only)\n`);
     return;
   }
 
-  console.log('✅ Config volume mounted\n');
+  for (const { host, mount } of MOUNTED) console.log(`✅ ${host} config share: ${mount}`);
+  console.log('');
 
   // Deduplicate target paths (both instances may share the same SMB folder)
   const seenPaths = new Set();
