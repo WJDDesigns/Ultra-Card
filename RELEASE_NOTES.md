@@ -1,5 +1,44 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta1
+
+The first 3.14.0 beta is a speed and polish release. Typing in the card editor no longer makes Home Assistant and every card on the dashboard redo their work on each keystroke, undo now steps back one edit instead of one letter, and dashboards with clocks, timers or embedded cards repaint far less. It also adds keyboard and screen reader support across the editor, a "reload to finish updating" notice, and clearer messages when Pro isn't unlocking. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added a "reload to finish updating" notice** - When HACS has installed a newer Ultra Card than the page is still running (the usual "clear your cache" problem), the editor says so and offers a Reload button
+- **Added Undo after deleting** - Deleting a row, column or module shows a toast with Undo, so a mis-tap next to Duplicate is one click to reverse
+- **Added Move up / Move down for modules inside layouts** - Modules inside Horizontal, Vertical and nested layouts can be reordered from their ⋯ menu, which works on phones and tablets where dragging is unreliable
+- **Added a Presets button to the layout toolbar** - Opens the preset browser directly instead of only through Add Module
+- **Pro lock cards explain why Pro isn't unlocking** - When a Pro module is locked, the card says whether Ultra Card Connect isn't installed, is signed out, needs you to sign in again, can't reach ultracard.io, or the subscription isn't active
+
+### 🔧 Improvements
+
+- **Much faster typing in the editor** - Edits are sent to Home Assistant once you pause instead of on every keystroke (30 characters went from 30 updates to 1 in testing), and the dashboard behind the editor no longer redraws as you type
+- **Undo groups your typing** - Edits within a moment of each other are one undo step, so typing a label no longer fills the history one letter at a time
+- **Dashboards repaint less** - A clock showing seconds, a running timer, train or moon-phase module only refreshes its own card, not every Ultra Card on the page; a card with a time condition checks once a minute instead of on every state change; an embedded card no longer triggers a dashboard scan every few seconds. In testing, idle repaints dropped by about a quarter to a third
+- **Smaller download** - The main file is about 5% smaller and the editor about 11% smaller; video and background effects load only on cards that use them
+- **Keyboard and screen reader support in the editor** - Tree rows, colour swatches, chips and selector cards work with Enter and Space, menus and tabs are announced properly, there's a visible focus ring, and dialogs close with Escape and keep focus inside while open
+- **Easier to read layout tree** - Column and layout headers use darker orange and green so their white text meets contrast guidelines; buttons are larger on touch screens
+- **More of the editor is translated** - The Add Module, Cards, Presets and Favorites selectors, the find-and-replace and snapshot dialogs, and new messages are available in all 16 languages
+- **Consistent controls** - Row, column and card settings use the same switches, dropdowns and sliders as module settings; the icon colour picker no longer offers gradients, which icons can't show
+- **Spinbox without an entity says so** - In the editor, a spinbox with no entity notes that its value only changes on screen and isn't saved
+
+### 🐛 Bug Fixes
+
+- **Fixed animated clocks inside layouts not ticking** - Clocks nested in Horizontal, Tabs and other layouts now update
+- **Fixed duplicate Native Card ids** - Native cards added in quick succession could get the same id
+- **Fixed a broken style rule in the Icon module** - A stray brace could stop the toggle slider style that followed it from applying
+- **Fixed the responsive-scaling flash** - Cards with responsive scaling no longer flash to full size on every state change
+- **Fixed popups not repositioning when the window resizes**
+- **Fixed popup dragging and resizing on touch screens and with a pen**
+- **Fixed dialogs overflowing small phone screens**
+- **Fixed the Ultra Card Hub logging an error after Ultra Card Connect is updated** while Home Assistant stays open
+
+---
+
 ## Version 3.13.3
 
 Stable 3.13.3 fixes overlay HVAC dropdown menus that opened too narrow. Thanks to Konijntje on Discord for spotting it.
