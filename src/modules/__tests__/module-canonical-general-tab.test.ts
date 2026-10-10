@@ -129,6 +129,7 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'drawer-module.ts',
   'scroll-row-module.ts',
   'state-switcher-module.ts',
+  'linked-row-module.ts',
 ]);
 
 /**

@@ -13,6 +13,7 @@ export const LAYOUT_MODULE_TYPES = [
   'drawer',
   'scroll_row',
   'state_switcher',
+  'linked_row',
 ] as const;
 
 export function isLayoutModuleType(moduleType: string | undefined | null): boolean {

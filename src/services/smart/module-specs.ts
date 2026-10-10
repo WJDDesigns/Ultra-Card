@@ -17,6 +17,7 @@ const LIBRARY_ONLY_TYPES = new Set([
   'popup',
   // Needs an uploaded floor plan picture and hand-placed markers.
   'floorplan',
+  'linked_row',
 ]);
 
 const CONTAINER_TYPES = new Set([
@@ -32,6 +33,7 @@ const CONTAINER_TYPES = new Set([
   'drawer',
   'scroll_row',
   'state_switcher',
+  'linked_row',
 ]);
 
 const KEYWORD_OVERRIDES: Record<string, string[]> = {

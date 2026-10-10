@@ -84,7 +84,8 @@ function mapModuleRecursive(module: CardModule, mutator: (m: CardModule) => Card
     m.type === 'flip_card' ||
     m.type === 'drawer' ||
     m.type === 'scroll_row' ||
-    m.type === 'state_switcher'
+    m.type === 'state_switcher' ||
+    m.type === 'linked_row'
   ) {
     const h = m as any;
     if (Array.isArray(h.modules)) {

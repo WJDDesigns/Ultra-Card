@@ -373,4 +373,8 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-energy-price" */ './energy-price-module').then(
       m => new m.UltraEnergyPriceModule()
     ),
+  linked_row: () =>
+    import(/* webpackChunkName: "m-linked-row" */ './linked-row-module').then(
+      m => new m.UltraLinkedRowModule()
+    ),
 };

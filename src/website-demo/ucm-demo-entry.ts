@@ -206,6 +206,9 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.modules = [mk('text', { text: 'Everyone home — comfort mode', font_size: 15 })];
     c.fallback_mode = 'first';
   },
+  linked_row: c => {
+    c.modules = [mk('text', { text: 'Shared on every dashboard', font_size: 15 }), mk('info')];
+  },
   slider: c => {
     c.modules = [
       mk('text', { text: 'Page one', font_size: 18 }),
