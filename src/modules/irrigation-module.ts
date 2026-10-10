@@ -1648,7 +1648,7 @@ export class UltraIrrigationModule extends BaseUltraModule {
         padding: 4px 12px;
         border-radius: 18px;
         border: 1px solid var(--divider-color);
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         color: var(--primary-text-color);
         font: inherit;
         font-size: 13px;
@@ -1664,7 +1664,7 @@ export class UltraIrrigationModule extends BaseUltraModule {
         border: 1px solid var(--divider-color);
         border-radius: 8px;
         margin-bottom: 8px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
       }
       .uc-irr-ed-row.expanded { border-color: var(--primary-color); }
       .uc-irr-ed-row-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px; }

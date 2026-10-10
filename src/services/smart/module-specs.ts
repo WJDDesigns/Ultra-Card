@@ -15,6 +15,8 @@ const LIBRARY_ONLY_TYPES = new Set([
   'pagebreak',
   'navigation',
   'popup',
+  // Needs an uploaded floor plan picture and hand-placed markers.
+  'floorplan',
 ]);
 
 const CONTAINER_TYPES = new Set([
@@ -56,6 +58,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   unifi: ['unifi', 'ubiquiti', 'udm', 'network rack', 'switch ports', 'access point', 'unifi network'],
   bambu: ['bambu', 'bambu lab', 'x1c', 'p1s', 'a1', 'ams', '3d printer bambu', 'bambulab'],
   printer_3d: ['3d printer', 'octoprint', 'moonraker', 'klipper', 'prusa', 'prusalink', 'print progress'],
+  floorplan: ['floorplan', 'floor plan', 'house map', 'home map', 'room map', 'picture elements'],
   irrigation: ['irrigation', 'sprinkler', 'sprinklers', 'sprinkler zones', 'garden watering', 'lawn watering', 'opensprinkler', 'rachio'],
   calendar: ['events', 'schedule', 'agenda'],
   battery_monitor: ['battery', 'low battery', 'phone battery'],
@@ -515,6 +518,20 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
       ],
       default_duration_minutes: 10,
       layout: 'full',
+    },
+  },
+  floorplan: {
+    purpose:
+      'A picture of the home (floor plan) with entity markers placed by x/y percent, light glow, and optional room zones that fill with color while their entity is on. Needs an uploaded image.',
+    fields: ['image', 'markers', 'zones', 'show_names', 'show_states', 'glow_lights'],
+    example: {
+      type: 'floorplan',
+      image: '/local/floorplan.png',
+      markers: [
+        { id: 'm_lamp', entity: 'light.example_lamp', x: 30, y: 40 },
+        { id: 'm_door', entity: 'binary_sensor.example_door', x: 70, y: 85 },
+      ],
+      zones: [],
     },
   },
 };

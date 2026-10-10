@@ -1091,6 +1091,42 @@ function sanitizeBambuModule(module: SmartModule, id: string): SmartModule | nul
   };
 }
 
+function sanitizeIrrigationModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const rawZones = Array.isArray(module.zones) ? (module.zones as unknown[]) : [];
+  const zones = rawZones
+    .map(zone => (zone && typeof zone === 'object' ? (zone as Record<string, unknown>) : null))
+    .filter((zone): zone is Record<string, unknown> => !!zone && entityExists(hass, String(zone.entity || '')))
+    .map((zone, index) => ({
+      id: String(zone.id || `zone_${index + 1}`),
+      entity: String(zone.entity),
+      ...(zone.name ? { name: String(zone.name) } : {}),
+    }));
+  if (zones.length === 0) return null;
+  const optionalEntity = (value: unknown): string => {
+    const entityId = String(value || '');
+    return entityId && entityExists(hass, entityId) ? entityId : '';
+  };
+  return {
+    id,
+    type: 'irrigation',
+    title: String(module.title || ''),
+    show_title: module.show_title !== false,
+    zones,
+    default_duration_minutes: numberInRange(module.default_duration_minutes, 1, 240, 10),
+    layout: oneOf(module.layout, ['full', 'compact'] as const, 'full'),
+    show_remaining: true,
+    show_duration_control: true,
+    run_all_mode: 'none',
+    master_entity: optionalEntity(module.master_entity),
+    rain_delay_entity: optionalEntity(module.rain_delay_entity),
+    ...defaultDisplayActions(),
+  };
+}
+
 function sanitizePrinter3dModule(module: SmartModule, id: string): SmartModule | null {
   return {
     id,
@@ -1376,6 +1412,17 @@ export const supplementalSmartModuleHandlers = {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeBambuModule(module, id)),
     defaultBuilder: (ctx: SmartBuildContext) =>
       sanitizeBambuModule({ type: 'bambu' } as SmartModule, ctx.id),
+  },
+  irrigation: {
+    sanitize: wrapSanitize(sanitizeIrrigationModule),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      ctx.entity && /^(switch|valve)\./.test(ctx.entity.entityId)
+        ? sanitizeIrrigationModule(
+            { type: 'irrigation', zones: [{ id: 'zone_1', entity: ctx.entity.entityId }] } as SmartModule,
+            ctx.hass,
+            ctx.id
+          )
+        : null,
   },
   printer_3d: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizePrinter3dModule(module, id)),

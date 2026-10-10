@@ -1556,7 +1556,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
 
     if (!src) {
       return html`
-        <div class="uc-fp-wrapper ${hoverClass}" style=${designStyles}>
+        <div class="uc-fp-wrapper ${hoverClass}" data-uc-role="pane" style=${designStyles}>
           <div class="uc-fp-empty">
             <ha-icon icon="mdi:floor-plan"></ha-icon>
             <div class="uc-fp-empty-title">${t(lang, 'empty_title', 'Add your floor plan')}</div>
@@ -1627,7 +1627,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
     `;
 
     return html`
-      <div class="uc-fp-wrapper ${hoverClass}" style=${designStyles}>
+      <div class="uc-fp-wrapper ${hoverClass}" data-uc-role="pane" style=${designStyles}>
         ${this.wrapWithAnimation(stage, module, hass)}
       </div>
     `;
@@ -1873,7 +1873,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
         width: calc(var(--uc-fp-size, 24px) + 12px);
         height: calc(var(--uc-fp-size, 24px) + 12px);
         border-radius: 50%;
-        background: color-mix(in srgb, var(--card-background-color, #fff) 86%, transparent);
+        background: color-mix(in srgb, var(--uc-pane-bg, var(--card-background-color, #fff)) 86%, transparent);
         border: 1.5px solid color-mix(in srgb, var(--divider-color, rgba(0, 0, 0, 0.12)) 100%, transparent);
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
       }
@@ -1895,7 +1895,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
         gap: 1px;
         padding: 2px 7px;
         border-radius: 8px;
-        background: color-mix(in srgb, var(--card-background-color, #fff) 86%, transparent);
+        background: color-mix(in srgb, var(--uc-pane-bg, var(--card-background-color, #fff)) 86%, transparent);
         color: var(--primary-text-color);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         font-size: 11px;
@@ -1923,7 +1923,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
         gap: 6px;
         padding: 6px 12px;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--card-background-color, #fff) 90%, transparent);
+        background: color-mix(in srgb, var(--uc-pane-bg, var(--card-background-color, #fff)) 90%, transparent);
         color: var(--primary-text-color);
         font-size: 12px;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
@@ -1990,7 +1990,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--card-background-color, #fff);
+        background: var(--uc-pane-bg, var(--card-background-color, #fff));
         color: var(--primary-text-color);
         border: 2px solid var(--divider-color, rgba(0, 0, 0, 0.2));
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
@@ -2041,7 +2041,7 @@ export class UltraFloorplanModule extends BaseUltraModule {
         border: 1px solid var(--divider-color);
         border-radius: 10px;
         margin-bottom: 8px;
-        background: var(--card-background-color);
+        background: var(--uc-pane-bg, var(--card-background-color));
         overflow: hidden;
       }
       .uc-fp-row.selected { border-color: var(--primary-color); }

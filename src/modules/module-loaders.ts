@@ -365,4 +365,8 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-irrigation" */ './irrigation-module').then(
       m => new m.UltraIrrigationModule()
     ),
+  floorplan: () =>
+    import(/* webpackChunkName: "m-floorplan" */ './floorplan-module').then(
+      m => new m.UltraFloorplanModule()
+    ),
 };
