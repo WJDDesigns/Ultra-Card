@@ -4296,6 +4296,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         font-weight: 700 !important;
         text-transform: uppercase !important;
         color: var(--primary-color) !important;
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)) !important;
         margin-bottom: 16px !important;
         padding-bottom: 0 !important;
         border-bottom: none !important;

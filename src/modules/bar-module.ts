@@ -3345,6 +3345,7 @@ export class UltraBarModule extends BaseUltraModule {
         font-size: 18px !important;
         font-weight: 700 !important;
         color: var(--primary-color) !important;
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)) !important;
         margin-bottom: 12px !important;
         padding-bottom: 0 !important;
         border-bottom: none !important;

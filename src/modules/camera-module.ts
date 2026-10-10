@@ -3179,6 +3179,7 @@ export class UltraCameraModule extends BaseUltraModule {
         font-size: 18px !important;
         font-weight: 700 !important;
         color: var(--primary-color) !important;
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
       }

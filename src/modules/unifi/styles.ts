@@ -42,6 +42,7 @@ export function unifiModuleStyles(): string {
   font-size: 14px;
   font-weight: 700;
   color: var(--primary-color);
+  color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
   display: flex;
   align-items: center;
   gap: 8px;

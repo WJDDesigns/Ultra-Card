@@ -881,7 +881,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         letter-spacing: 0.04em;
         text-transform: uppercase;
         background: color-mix(in srgb, var(--alarm-color) 10%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
-        color: var(--alarm-color);
+        color: color-mix(in srgb, var(--alarm-color) 60%, var(--primary-text-color));
         border: 1px solid color-mix(in srgb, var(--alarm-color) 28%, transparent);
       }
       .uc-alarm-dot {

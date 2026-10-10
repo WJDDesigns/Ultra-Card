@@ -94,9 +94,9 @@ export class UltraStateSwitcherModule extends BaseUltraModule {
                       ></ha-icon>
                       <span style="flex: 1; color: var(--primary-text-color);">${name}</span>
                       <span
-                        style="font-size: 12px; color: ${hasConditions
+                        style="font-size: 12px; color: color-mix(in srgb, ${hasConditions
                           ? 'var(--success-color, #4caf50)'
-                          : 'var(--warning-color, #ff9800)'};"
+                          : 'var(--warning-color, #ff9800)'} 60%, var(--primary-text-color));"
                       >
                         ${hasConditions
                           ? localize(
