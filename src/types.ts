@@ -9322,6 +9322,13 @@ export interface FloorplanModule extends BaseModule {
   dim_when_all_off?: boolean | undefined;
   /** How much to darken the picture when everything is off, 0–90. */
   dim_amount?: number | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
 // Irrigation (Free) — integration-agnostic sprinkler / valve zone control
 // -------------------------------------------------------------------------
 
