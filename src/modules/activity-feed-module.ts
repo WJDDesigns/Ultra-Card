@@ -152,6 +152,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
           font-weight: 700;
           text-transform: uppercase;
           color: var(--primary-color);
+          color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
           margin-bottom: 16px;
           padding-bottom: 8px;
           border-bottom: 2px solid var(--primary-color);

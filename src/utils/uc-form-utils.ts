@@ -681,6 +681,7 @@ export class UcFormUtils {
         font-weight: 700;
         text-transform: uppercase;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         margin-bottom: 16px;
         letter-spacing: 0.5px;
       }
@@ -1014,6 +1015,7 @@ export class UcFormUtils {
         font-size: 14px;
         font-weight: 600;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
         text-transform: uppercase;
         letter-spacing: 0.5px;

@@ -3592,6 +3592,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         font-size: 16px;
         font-weight: 700;
         color: var(--primary-color);
+        color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
         margin-bottom: 8px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
