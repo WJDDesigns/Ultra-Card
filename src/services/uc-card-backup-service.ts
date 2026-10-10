@@ -10,6 +10,7 @@
 import { UltraCardConfig } from '../types';
 import { ucCloudAuthService } from './uc-cloud-auth-service';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 // Card backup data structure
 export interface CardBackup {
   id: number;
@@ -64,7 +65,7 @@ class UcCardBackupService {
     // Auto-generate name if not provided
     const cardName = name || this.generateCardName(config);
 
-    console.log(`💾 Creating card backup: "${cardName}"...`);
+    UC_DEBUG && console.log(`💾 Creating card backup: "${cardName}"...`);
 
     try {
       const response = await this.apiCall('/card-backups', {
@@ -138,7 +139,7 @@ class UcCardBackupService {
       throw new Error('Must be logged in to restore backups');
     }
 
-    console.log(`🔄 Restoring card backup ${backupId}...`);
+    UC_DEBUG && console.log(`🔄 Restoring card backup ${backupId}...`);
 
     try {
       const response = await this.apiCall(`/card-backups/${backupId}/restore`, {
@@ -165,7 +166,7 @@ class UcCardBackupService {
         method: 'DELETE',
       });
 
-      console.log(`🗑️ Card backup ${backupId} deleted`);
+      UC_DEBUG && console.log(`🗑️ Card backup ${backupId} deleted`);
     } catch (error) {
       console.error(`Failed to delete backup ${backupId}:`, error);
       throw error;
@@ -192,7 +193,7 @@ class UcCardBackupService {
         }),
       });
 
-      console.log(`✏️ Card backup ${backupId} renamed to "${newName}"`);
+      UC_DEBUG && console.log(`✏️ Card backup ${backupId} renamed to "${newName}"`);
     } catch (error) {
       console.error(`Failed to rename backup ${backupId}:`, error);
       throw error;
@@ -248,7 +249,7 @@ class UcCardBackupService {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log(`⬇️ Downloaded backup: ${backup.card_name}`);
+    UC_DEBUG && console.log(`⬇️ Downloaded backup: ${backup.card_name}`);
   }
 
   /**

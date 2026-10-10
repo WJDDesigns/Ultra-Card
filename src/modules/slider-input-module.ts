@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, SliderInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
@@ -333,9 +333,5 @@ export class UltraSliderInputModule extends BaseUltraModule {
         ? `${dp.border_width || '1px'} ${dp.border_style} ${dp.border_color || 'var(--divider-color)'}` : 'none',
       'box-sizing': 'border-box',
     };
-  }
-
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles).map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${v}`).join('; ');
   }
 }

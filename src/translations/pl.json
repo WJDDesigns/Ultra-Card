@@ -189,7 +189,11 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Wiersz usunięty",
+      "column_deleted": "Kolumna usunięta",
+      "module_deleted": "Moduł usunięty",
+      "browse_presets_tooltip": "Przeglądaj presety i dodaj jeden do tej karty"
     },
     "about": {
       "developed_by": "Opracowane przez",
@@ -1630,7 +1634,11 @@
           "device_state": "Device State",
           "attribute": "Attribute",
           "toggle": "Toggle"
-        }
+        },
+        "bg_image": "Obraz",
+        "bg_gradient": "Gradient",
+        "bg_color": "Kolor",
+        "bg_entity": "Encja"
       }
     },
     "common": {
@@ -1904,7 +1912,8 @@
         "desc": "JSON z wartością, button_background_color, button_text_color, value_color — lub zwykły numeryczny wynik Jinja.",
         "toggle": "Tryb tempłytki",
         "cheatsheet": "Podręcznik tempłytki"
-      }
+      },
+      "no_entity_hint": "Nie wybrano encji: wartość zmienia się tylko na tym ekranie i nie jest zapisywana."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2443,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funkcja",
       "sports_description": "Moduł Wyników Sportowych wymaga subskrypcji Ultra Card Pro, aby wyświetlać na żywo wyniki sportowe i informacje o drużynach.",
-      "upgrade_button": "Zaktualizuj do Pro"
+      "upgrade_button": "Zaktualizuj do Pro",
+      "status_not_installed": "Masz już Pro? Zainstaluj Ultra Card Connect i zaloguj się, aby odblokować je tutaj.",
+      "status_unreachable": "Ultra Card Connect nie może teraz połączyć się z ultracard.io. Jeśli masz Pro, zostanie ponownie odblokowane po przywróceniu połączenia.",
+      "status_reauth": "Ultra Card Connect wymaga ponownego zalogowania (Ustawienia → Urządzenia i usługi → Ultra Card Connect).",
+      "status_signed_out": "Masz już Pro? Zaloguj się do Ultra Card Connect w Ultra Card Hub na pasku bocznym.",
+      "status_inactive": "Twoja subskrypcja Pro ma status {status}. Odnów ją na ultracard.io, aby to odblokować."
     },
     "toggle": {
       "display_settings": "USTAWIENIA WYŚWIETLANIA",
@@ -5373,6 +5387,177 @@
     "native_card": {
       "settings_title": "{name} Settings",
       "settings_desc": "Configure this native Home Assistant card using its built-in editor."
+    },
+    "ui": {
+      "module_selector_shell": {
+        "drag_to_resize": "Przeciągnij, aby zmienić rozmiar",
+        "favorites": "Ulubione",
+        "smart": "Inteligentne",
+        "presets": "Szablony",
+        "cards": "Karty",
+        "modules": "Moduły",
+        "adding_to_layout_module_content_modules": "Dodawanie do modułu układu (moduły treści i moduły układu dozwolone do 2 poziomów zagnieżdżenia)",
+        "close": "Zamknij",
+        "add_module": "Dodaj moduł"
+      },
+      "card_selector_tab": {
+        "install_custom_cards_via_hacs": "Zainstaluj niestandardowe karty przez HACS",
+        "no_3rd_party_cards_installed": "Brak zainstalowanych kart innych firm",
+        "some_3rd_party_cards_may_not": "Niektóre karty innych firm mogą nie działać zgodnie z przeznaczeniem. Zgłaszaj wszelkie problemy.",
+        "compatibility_notice": "Informacja o zgodności:",
+        "get_pro": "Kup Pro",
+        "want_unlimited_3rd_party_cards": "Chcesz nieograniczoną liczbę kart innych firm?",
+        "unlimited": "Bez limitu",
+        "community_3rd_party": "Społeczność i inne firmy",
+        "no_native_cards_detected": "Nie wykryto natywnych kart",
+        "native_home_assistant": "Natywny Home Assistant",
+        "click_any_card_to_add_it": "Kliknij dowolną kartę, aby dodać ją do wybranej kolumny. Natywne karty HA i karty innych firm będą używać swoich natywnych edytorów, jeśli są dostępne.",
+        "how_to_use": "Jak używać:",
+        "refresh": "Odśwież",
+        "cards": "Karty",
+        "community_3rd_party_cards": "Karty społeczności i innych firm",
+        "native": "Natywne",
+        "native_home_assistant_cards": "Natywne karty Home Assistant",
+        "clear_search": "Wyczyść wyszukiwanie",
+        "clear_search_2": "Wyczyść wyszukiwanie",
+        "search_cards": "Szukaj kart..."
+      },
+      "favorites_selector_tab": {
+        "use_the_heart_icon_on_any": "Użyj ikony serca w dowolnym wierszu, aby zapisać go jako ulubiony",
+        "no_favorites_saved_yet": "Brak zapisanych ulubionych",
+        "delete": "Usuń",
+        "export": "Eksportuj",
+        "add_to_layout": "Dodaj do układu",
+        "clear_search": "Wyczyść wyszukiwanie",
+        "search_favorites": "Szukaj ulubionych...",
+        "import": "Importuj",
+        "saved_favorites": "Zapisane ulubione"
+      },
+      "modules_selector_tab": {
+        "priority_support": "Priorytetowe wsparcie",
+        "auto_snapshots": "Automatyczne migawki",
+        "cloud_backups": "Kopie zapasowe w chmurze",
+        "premium_modules": "Moduły premium",
+        "access_premium_modules_like_weather_forecast": "Uzyskaj dostęp do modułów premium, takich jak prognoza pogody, zaawansowane animacje i inne ekskluzywne funkcje.",
+        "ultra_card_pro": "Ultra Card PRO",
+        "clear_search": "Wyczyść wyszukiwanie",
+        "clear_search_2": "Wyczyść wyszukiwanie",
+        "module_layout": "Układ modułu",
+        "pro": "PRO",
+        "standard": "Standardowe",
+        "module_type": "Typ modułu",
+        "layout_containers": "Kontenery układu"
+      },
+      "presets_selector_tab": {
+        "reload": "Przeładuj",
+        "refresh_presets_from_server": "Odśwież szablony z serwera",
+        "no_presets_available_in_this_category": "Brak szablonów w tej kategorii",
+        "clear_search": "Wyczyść wyszukiwanie",
+        "requires": "Wymaga",
+        "included": "Uwzględnione",
+        "card_settings": "Ustawienia karty",
+        "variables": "Zmienne",
+        "rows": "Wiersze",
+        "version": "Wersja",
+        "category": "Kategoria",
+        "view_preset_details": "Pokaż szczegóły szablonu",
+        "add": "Dodaj",
+        "add_this_preset_to_your_card": "Dodaj ten szablon do swojej karty",
+        "new": "Nowe",
+        "retry": "Ponów",
+        "failed_to_load_presets": "Nie udało się wczytać szablonów",
+        "top_rated": "Najwyżej oceniane",
+        "date": "Data",
+        "name": "Nazwa",
+        "sort_by": "Sortuj według:",
+        "clear_search_2": "Wyczyść wyszukiwanie",
+        "search_presets": "Szukaj szablonów..."
+      },
+      "entity_replace_dialog": {
+        "replace_all": "Zamień wszystko",
+        "cancel": "Anuluj",
+        "replace_with": "Zamień na",
+        "find_entity": "Znajdź encję",
+        "replaces_every_exact_text_match_of": "Zastępuje każde dokładne dopasowanie tekstu identyfikatora encji w układzie tej karty (w tym szablony i zagnieżdżone moduły). W razie potrzeby użyj cofania w kreatorze układu.",
+        "close": "Zamknij",
+        "find_amp_replace_entity": "Znajdź i zamień encję"
+      },
+      "snapshot_history_modal": {
+        "delete": "🗑️ Usuń",
+        "download": "⬇️ Pobierz",
+        "rename": "✏️ Zmień nazwę",
+        "restore": "🔄 Przywróć",
+        "you_can_have_up_to_30": "💡 Możesz mieć do 30 kopii zapasowych kart. Najstarsze kopie są automatycznie usuwane po osiągnięciu limitu.",
+        "card_backups_save_individual_ultra_card": "Kopie zapasowe kart zapisują pojedyncze konfiguracje Ultra Card",
+        "no_card_backups_yet": "Brak kopii zapasowych kart",
+        "restore_all": "🔄 Przywróć wszystko",
+        "views_breakdown": "Podział widoków:",
+        "dashboard_snapshots_capture_all_ultra_cards": "Migawki pulpitu obejmują wszystkie Ultra Cards na całym pulpicie",
+        "no_dashboard_snapshots_yet": "Brak migawek pulpitu",
+        "loading": "Ładowanie...",
+        "manual_card_backups": "Ręczne kopie zapasowe kart",
+        "dashboard_snapshots": "Migawki pulpitu",
+        "close": "Zamknij",
+        "backup_amp_snapshot_history": "Historia kopii zapasowych i migawek"
+      },
+      "snapshot_settings_dialog": {
+        "cancel": "Anuluj",
+        "manual_snapshots_are_never_automatically_deleted": "Ręczne migawki nigdy nie są usuwane automatycznie",
+        "older_snapshots_are_automatically_deleted": "Starsze migawki są usuwane automatycznie",
+        "30_days": "30 dni",
+        "auto_snapshots_are_kept_for": "Automatyczne migawki są przechowywane przez",
+        "storage_policy": "Zasady przechowywania:",
+        "auto_snapshots_are_currently_disabled_you": "Automatyczne migawki są obecnie wyłączone. Nadal możesz w dowolnym momencie tworzyć ręczne migawki.",
+        "next_snapshot": "Następna migawka:",
+        "sydney": "Sydney",
+        "shanghai": "Szanghaj",
+        "tokyo": "Tokio",
+        "berlin": "Berlin",
+        "paris": "Paryż",
+        "london": "Londyn",
+        "pacific_time_pt": "Czas pacyficzny (PT)",
+        "mountain_time_mt": "Czas górski (MT)",
+        "central_time_ct": "Czas centralny (CT)",
+        "eastern_time_et": "Czas wschodni (ET)",
+        "utc": "UTC",
+        "snapshot_time_will_use_this_timezone": "Godzina migawki będzie używać tej strefy czasowej",
+        "timezone": "Strefa czasowa",
+        "what_time_should_snapshots_be_created": "O której godzinie tworzyć migawki? (format 24-godzinny)",
+        "snapshot_time": "Godzina migawki",
+        "automatically_backup_all_ultra_cards_in": "Automatycznie twórz codziennie kopię zapasową wszystkich Ultra Cards na pulpicie",
+        "enable_daily_auto_snapshots": "Włącz codzienne automatyczne migawki",
+        "automatically_save_a_cloud_backup_when": "Automatycznie zapisuj kopię zapasową w chmurze podczas edycji tej karty (z opóźnieniem). Wyłącz, jeśli wolisz tylko ręczne migawki.",
+        "enable_real_time_auto_save": "Włącz automatyczny zapis w czasie rzeczywistym",
+        "loading_settings": "Ładowanie ustawień...",
+        "snapshot_settings": "⚙️ Ustawienia migawek"
+      },
+      "snapshot_restore_dialog": {
+        "cancel": "Anuluj",
+        "affected_views": "Dotknięte widoki:",
+        "caution_deletes_all_ultra_cards_first": "Uwaga: najpierw usuwa wszystkie Ultra Cards",
+        "best_for_heavily_broken_dashboards": "Najlepsze dla mocno uszkodzonych pulpitów",
+        "exact_snapshot_state": "Dokładny stan migawki",
+        "fixes_duplicated_cards": "Naprawia zduplikowane karty",
+        "deletes_all_ultra_cards_first_then": "Najpierw usuwa WSZYSTKIE Ultra Cards, a następnie przywraca karty z migawki na ich dokładne pierwotne pozycje i w pierwotnej kolejności.",
+        "nuclear_option": "Opcja ostateczna",
+        "clean_restore": "Wyczyść i przywróć",
+        "can_run_multiple_times": "Można uruchamiać wielokrotnie",
+        "preserves_non_matching_cards": "Zachowuje niepasujące karty",
+        "works_with_named_or_unnamed_cards": "Działa z nazwanymi i nienazwanymi kartami",
+        "safe_no_duplicates": "Bezpieczne - bez duplikatów",
+        "intelligently_matches_cards_by_custom_name": "Inteligentnie dopasowuje karty według niestandardowej nazwy LUB pozycji, zastępując je w miejscu bez tworzenia duplikatów.",
+        "recommended": "Zalecane",
+        "smart_replace": "Inteligentne zastępowanie",
+        "restore_dashboard_snapshot": "Przywróć migawkę pulpitu"
+      }
+    },
+    "update_banner": {
+      "text": "Zainstalowano Ultra Card {installed}, ale ta strona nadal używa {running}. Odśwież, aby dokończyć aktualizację.",
+      "reload": "Odśwież",
+      "dismiss": "Zamknij"
+    },
+    "color_picker": {
+      "gradient_presets": "Gotowe gradienty"
     }
   },
   "hub": {

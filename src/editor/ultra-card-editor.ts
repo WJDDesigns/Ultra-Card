@@ -1,7 +1,7 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
-import { UltraCardConfig, HoverEffectConfig, CustomVariable, DeviceBreakpoint } from '../types';
+import type { HomeAssistant } from '../ha/types';
+import { UltraCardConfig, HoverEffectConfig } from '../types';
 import { configValidationService } from '../services/config-validation-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
 import { autoMigrateTemplatesInConfig } from '../utils/template-migration';
@@ -15,13 +15,10 @@ import { ucDashboardScannerService } from '../services/uc-dashboard-scanner-serv
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { ucEntityPickerEnhancer } from '../services/uc-entity-picker-enhancer';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
-import { ucExportImportService } from '../services/uc-export-import-service';
+import '../services/uc-export-import-service';
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
-import {
-  ucSnapshotSchedulerService,
-  SnapshotSchedulerStatus,
-} from '../services/uc-snapshot-scheduler-service';
-import { UcConfigEncoder } from '../utils/uc-config-encoder';
+import { ucSnapshotSchedulerService } from '../services/uc-snapshot-scheduler-service';
+import '../utils/uc-config-encoder';
 import { uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
@@ -40,7 +37,7 @@ import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service'
 import '../components/uc-variable-mapping-dialog';
 import '../components/uc-favorite-dialog';
 import '../components/uc-import-dialog';
-import { findMissingVariables, scanConfigForVariables } from '../utils/uc-template-processor';
+import '../utils/uc-template-processor';
 import '../components/uc-snapshot-history-modal';
 import '../components/uc-snapshot-settings-dialog';
 import '../components/uc-manual-backup-dialog';
@@ -53,6 +50,14 @@ import { collectConfigEntityIds, anyEntityChanged } from '../utils/uc-config-ent
 import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
 import { localize, onLocaleLoaded } from '../localize/localize';
 import { ucToastService } from '../services/uc-toast-service';
+import { installKeyboardActivation } from '../utils/uc-keyboard-activation';
+// Actions-tab editor UI; kept out of the dashboard bundle (registers on UltraLinkComponent).
+import '../components/ultra-link-editor';
+import { UcFormUtils } from '../utils/uc-form-utils';
+import { VERSION } from '../version';
+import { staleBuildVersion } from '../utils/uc-update-check';
+
+installKeyboardActivation();
 
 type EditorTab = 'layout' | 'settings';
 
@@ -92,23 +97,10 @@ export class UltraCardEditor extends LitElement {
 
   // Cloud sync state
   @state() private _cloudUser: CloudUser | null = null;
-  @state() private _syncStatus: SyncStatus | null = null;
-  @state() private _backupStatus: BackupStatus | null = null;
-  @state() private _showBackupHistory: boolean = false;
-  @state() private _showCreateSnapshot: boolean = false;
-  @state() private _showManualBackup: boolean = false;
-  @state() private _showSnapshotSettings: boolean = false;
-  @state() private _snapshotSchedulerStatus: SnapshotSchedulerStatus | null = null;
-  @state() private _skipDefaultModules: boolean = false;
-  @state() private _isCreatingManualSnapshot: boolean = false;
 
   // Variable mapping dialog state
   @state() private _showVariableMappingDialog: boolean = false;
   @state() private _missingVariables: string[] = [];
-  @state() private _pendingImportConfig: any = null;
-
-  // Preview breakpoint state - for simulating different device widths in Live Preview
-  @state() private _previewBreakpoint: DeviceBreakpoint = 'desktop';
 
   /** Hub sidebar discovery banner dismissed (persisted in localStorage) */
   @state() private _hubBannerDismissed = false;
@@ -118,9 +110,6 @@ export class UltraCardEditor extends LitElement {
    * null = not yet checked, 'unknown' = HA's flow-handlers endpoint could not be read.
    */
   @state() private _connectHandlerAvailable: boolean | 'unknown' | null = null;
-
-  /** (unused — kept for reference; activation now uses HA native navigation) */
-  @state() private _connectActivating = false;
 
   /** Aggregated lazy-module CSS; updated when implementations finish loading. */
   private _moduleStylesElement: HTMLStyleElement | null = null;
@@ -135,7 +124,16 @@ export class UltraCardEditor extends LitElement {
 
   private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
+  /** Last config this editor sent out; HA hands it straight back via setConfig. */
+  private _lastEmittedConfig: UltraCardConfig | null = null;
+
   public setConfig(config: UltraCardConfig): void {
+    // Our own config coming back: it was migrated and checked before we sent it, so
+    // skip the migration pass and the two JSON.stringify diffs on every edit.
+    if (config && config === this._lastEmittedConfig) {
+      this.config = config;
+      return;
+    }
     const incomingConfig =
       config || {
         type: 'custom:ultra-card',
@@ -392,20 +390,12 @@ export class UltraCardEditor extends LitElement {
     this._localeUnsub = onLocaleLoaded(() => this.requestUpdate());
     this._themeUnsub = ucThemeService.subscribe(() => this.requestUpdate());
 
-    // Initialize Pro settings from localStorage
-    this._skipDefaultModules = UltraCardEditor.getSkipDefaultModulesSetting();
     try {
       this._hubBannerDismissed = safeGetItem(UltraCardEditor.HUB_BANNER_DISMISSED_KEY) === 'true';
     } catch {
       /* ignore */
     }
 
-    try {
-      (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = true;
-      window.dispatchEvent(
-        new CustomEvent('uc-preview-suppress-locks-changed', { detail: { suppressed: true } })
-      );
-    } catch {}
     this.addEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.addEventListener('keydown', this._handleKeyDown as EventListener);
 
@@ -520,12 +510,6 @@ export class UltraCardEditor extends LitElement {
       clearTimeout(this._configDebounceTimeout);
       this._configDebounceTimeout = undefined;
     }
-    try {
-      (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = false;
-      window.dispatchEvent(
-        new CustomEvent('uc-preview-suppress-locks-changed', { detail: { suppressed: false } })
-      );
-    } catch {}
     this._unbindElementEditorHeight();
     this.removeEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.removeEventListener('keydown', this._handleKeyDown as EventListener);
@@ -609,6 +593,7 @@ export class UltraCardEditor extends LitElement {
       this._updateHoverEffectStyles();
       // Only re-dispatch if this isn't already a bubbled event to prevent infinite loops
       if (!ev.detail.isInternal) {
+        this._lastEmittedConfig = ev.detail.config;
         const event = new CustomEvent('config-changed', {
           detail: { config: ev.detail.config, isInternal: true },
           bubbles: true,
@@ -697,6 +682,45 @@ export class UltraCardEditor extends LitElement {
   private _handleCardVariablesChanged(e: CustomEvent): void {
     const variables = e.detail.variables;
     this._updateConfig({ _customVariables: variables });
+  }
+
+  @state() private _updateBannerDismissedFor: string | null = null;
+
+  /**
+   * HACS installed a newer Ultra Card than this page is running (old cached
+   * ultra-card.js). Saving now would use the old editor, so offer a reload.
+   */
+  private _renderUpdateReloadBanner(installed: string, lang: string): TemplateResult {
+    return html`
+      <div class="hub-discovery-banner update-reload-banner" role="status">
+        <div class="hub-discovery-content">
+          <ha-icon icon="mdi:update"></ha-icon>
+          <span>
+            ${localize(
+              'editor.update_banner.text',
+              lang,
+              'Ultra Card {installed} is installed, but this page is still running {running}. Reload to finish the update.'
+            )
+              .replace('{installed}', `v${installed}`)
+              .replace('{running}', `v${VERSION}`)}
+          </span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+          <button class="hub-discovery-activate" @click=${() => window.location.reload()}>
+            ${localize('editor.update_banner.reload', lang, 'Reload')}
+          </button>
+          <button
+            class="hub-discovery-dismiss"
+            aria-label=${localize('editor.update_banner.dismiss', lang, 'Dismiss')}
+            @click=${() => {
+              this._updateBannerDismissedFor = installed;
+            }}
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   private _renderHubDiscoveryBanner(): TemplateResult {
@@ -1236,11 +1260,15 @@ export class UltraCardEditor extends LitElement {
     const lang = this.hass.locale?.language || 'en';
     const hubPanelExists = !!(this.hass as any).panels?.['ultra-card-hub'];
     const showHubBanner = !hubPanelExists && !this._hubBannerDismissed;
+    const staleInstalled = staleBuildVersion(this.hass, VERSION);
 
     return html`
       <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''} ${this._moduleSettingsOpen ? 'module-settings-open' : ''}">
+        ${staleInstalled && this._updateBannerDismissedFor !== staleInstalled
+          ? this._renderUpdateReloadBanner(staleInstalled, lang)
+          : ''}
         ${showHubBanner ? this._renderHubDiscoveryBanner() : ''}
-        <div class="tabs">
+        <div class="tabs" role="tablist">
           ${this._isFullScreen
             ? html`
                 <button
@@ -1254,6 +1282,8 @@ export class UltraCardEditor extends LitElement {
             : ''}
           <button
             class="tab ${this._activeTab === 'layout' ? 'active' : ''}"
+            role="tab"
+            aria-selected=${this._activeTab === 'layout' ? 'true' : 'false'}
             @click=${() => this._setActiveTab('layout')}
           >
             ${this._isFullScreen
@@ -1264,6 +1294,8 @@ export class UltraCardEditor extends LitElement {
             ? html`
                 <button
                   class="tab ${this._activeTab === 'settings' ? 'active' : ''}"
+                  role="tab"
+                  aria-selected=${this._activeTab === 'settings' ? 'true' : 'false'}
                   @click=${() => this._setActiveTab('settings')}
                 >
                   ${localize('editor.tabs.card_settings', lang, 'Card Settings')}
@@ -1278,7 +1310,7 @@ export class UltraCardEditor extends LitElement {
           <slot name="ha-preview"></slot>
         </div>
 
-        <div class="tab-content">
+        <div class="tab-content" role="tabpanel">
           ${this._activeTab === 'layout'
             ? html`<ultra-layout-tab
                 .hass=${this.hass}
@@ -1366,13 +1398,14 @@ export class UltraCardEditor extends LitElement {
                       <label>
                         ${localize('editor.appearance.transparent_card', lang, 'Transparent Card')}
                       </label>
-                      <ha-switch
-                        .checked=${this.config.card_transparent || false}
-                        @change=${(e: Event) => {
-                          const target = e.target as any;
-                          this._updateConfig({ card_transparent: target.checked });
-                        }}
-                      ></ha-switch>
+                      ${UcFormUtils.renderForm(
+                        this.hass as HomeAssistant,
+                        { v: Boolean(this.config.card_transparent || false) },
+                        [UcFormUtils.boolean('v')],
+                        (e: CustomEvent) => {
+                          this._updateConfig({ card_transparent: e.detail.value.v });
+                        }
+                      )}
                     </div>
                     <div class="setting-description">
                       ${localize(
@@ -1427,15 +1460,16 @@ export class UltraCardEditor extends LitElement {
                           )}
                         </div>
                         <label class="switch-row" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                          <ha-switch
-                            .checked=${this.config.card_unified_template_mode || false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
+                          ${UcFormUtils.renderForm(
+                            this.hass as HomeAssistant,
+                            { v: Boolean(this.config.card_unified_template_mode || false) },
+                            [UcFormUtils.boolean('v')],
+                            (e: CustomEvent) => {
                               this._updateConfig({
-                                card_unified_template_mode: target.checked,
+                                card_unified_template_mode: e.detail.value.v,
                               });
-                            }}
-                          ></ha-switch>
+                            }
+                          )}
                           <span>${localize('editor.appearance.template_mode_enable', lang, 'Enable template mode')}</span>
                         </label>
                       </div>
@@ -1493,30 +1527,26 @@ export class UltraCardEditor extends LitElement {
                         'Background Image Type'
                       )}
                     </label>
-                    <select
-                      .value=${this.config.card_background_image_type || 'none'}
-                      @change=${(e: Event) => {
-                        const value = (e.target as HTMLSelectElement).value as
+                    ${UcFormUtils.renderForm(
+                      this.hass as HomeAssistant,
+                      { v: this.config.card_background_image_type || 'none' },
+                      [
+                        UcFormUtils.select('v', [
+                        { value: 'none', label: localize('editor.design.bg_none', lang, 'None') },
+                        { value: 'upload', label: localize('editor.design.bg_upload', lang, 'Upload Image') },
+                        { value: 'entity', label: localize('editor.design.bg_entity', lang, 'Entity Image') },
+                        { value: 'url', label: localize('editor.design.bg_url', lang, 'Image URL') },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const value = e.detail.value.v as
                           | 'none'
                           | 'upload'
                           | 'entity'
                           | 'url';
                         this._updateConfig({ card_background_image_type: value });
-                      }}
-                      class="property-select"
-                      style="width: 100%;"
-                    >
-                      <option value="none">${localize('editor.design.bg_none', lang, 'None')}</option>
-                      <option value="upload">
-                        ${localize('editor.design.bg_upload', lang, 'Upload Image')}
-                      </option>
-                      <option value="entity">
-                        ${localize('editor.design.bg_entity', lang, 'Entity Image')}
-                      </option>
-                      <option value="url">
-                        ${localize('editor.design.bg_url', lang, 'Image URL')}
-                      </option>
-                    </select>
+                      }
+                    )}
                   </div>
 
                   ${this.config.card_background_image_type === 'upload'
@@ -1630,22 +1660,24 @@ export class UltraCardEditor extends LitElement {
                           <div class="settings-grid">
                             <div class="setting-item">
                               <label>Background Size</label>
-                              <select
-                                .value=${this._getBackgroundSizeDropdownValue(
+                              ${UcFormUtils.renderForm(
+                                this.hass as HomeAssistant,
+                                { v: this._getBackgroundSizeDropdownValue(
                                   this.config.card_background_size
-                                )}
-                                @change=${(e: Event) => {
-                                  const value = (e.target as HTMLSelectElement).value;
+                                ) },
+                                [
+                                  UcFormUtils.select('v', [
+                                  { value: 'cover', label: 'Cover' },
+                                  { value: 'contain', label: 'Contain' },
+                                  { value: 'auto', label: 'Auto' },
+                                  { value: 'custom', label: 'Custom' },
+                                  ]),
+                                ],
+                                (e: CustomEvent) => {
+                                  const value = e.detail.value.v;
                                   this._updateConfig({ card_background_size: value });
-                                }}
-                                class="property-select"
-                                style="width: 100%;"
-                              >
-                                <option value="cover">Cover</option>
-                                <option value="contain">Contain</option>
-                                <option value="auto">Auto</option>
-                                <option value="custom">Custom</option>
-                              </select>
+                                }
+                              )}
                             </div>
 
                             ${this._getBackgroundSizeDropdownValue(this.config.card_background_size) ===
@@ -1706,47 +1738,51 @@ export class UltraCardEditor extends LitElement {
 
                             <div class="setting-item">
                               <label>Background Repeat</label>
-                              <select
-                                .value=${this.config.card_background_repeat || 'no-repeat'}
-                                @change=${(e: Event) => {
-                                  const value = (e.target as HTMLSelectElement).value as
+                              ${UcFormUtils.renderForm(
+                                this.hass as HomeAssistant,
+                                { v: this.config.card_background_repeat || 'no-repeat' },
+                                [
+                                  UcFormUtils.select('v', [
+                                  { value: 'no-repeat', label: 'No Repeat' },
+                                  { value: 'repeat', label: 'Repeat' },
+                                  { value: 'repeat-x', label: 'Repeat X' },
+                                  { value: 'repeat-y', label: 'Repeat Y' },
+                                  ]),
+                                ],
+                                (e: CustomEvent) => {
+                                  const value = e.detail.value.v as
                                     | 'repeat'
                                     | 'repeat-x'
                                     | 'repeat-y'
                                     | 'no-repeat';
                                   this._updateConfig({ card_background_repeat: value });
-                                }}
-                                class="property-select"
-                                style="width: 100%;"
-                              >
-                                <option value="no-repeat">No Repeat</option>
-                                <option value="repeat">Repeat</option>
-                                <option value="repeat-x">Repeat X</option>
-                                <option value="repeat-y">Repeat Y</option>
-                              </select>
+                                }
+                              )}
                             </div>
 
                             <div class="setting-item">
                               <label>Background Position</label>
-                              <select
-                                .value=${this.config.card_background_position || 'center center'}
-                                @change=${(e: Event) => {
-                                  const value = (e.target as HTMLSelectElement).value;
+                              ${UcFormUtils.renderForm(
+                                this.hass as HomeAssistant,
+                                { v: this.config.card_background_position || 'center center' },
+                                [
+                                  UcFormUtils.select('v', [
+                                  { value: 'left top', label: 'Left Top' },
+                                  { value: 'left center', label: 'Left Center' },
+                                  { value: 'left bottom', label: 'Left Bottom' },
+                                  { value: 'center top', label: 'Center Top' },
+                                  { value: 'center center', label: 'Center' },
+                                  { value: 'center bottom', label: 'Center Bottom' },
+                                  { value: 'right top', label: 'Right Top' },
+                                  { value: 'right center', label: 'Right Center' },
+                                  { value: 'right bottom', label: 'Right Bottom' },
+                                  ]),
+                                ],
+                                (e: CustomEvent) => {
+                                  const value = e.detail.value.v;
                                   this._updateConfig({ card_background_position: value });
-                                }}
-                                class="property-select"
-                                style="width: 100%;"
-                              >
-                                <option value="left top">Left Top</option>
-                                <option value="left center">Left Center</option>
-                                <option value="left bottom">Left Bottom</option>
-                                <option value="center top">Center Top</option>
-                                <option value="center center">Center</option>
-                                <option value="center bottom">Center Bottom</option>
-                                <option value="right top">Right Top</option>
-                                <option value="right center">Right Center</option>
-                                <option value="right bottom">Right Bottom</option>
-                              </select>
+                                }
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1764,28 +1800,22 @@ export class UltraCardEditor extends LitElement {
                         'How to handle content that extends beyond the card boundaries'
                       )}
                     </div>
-                    <select
-                      .value=${this.config.card_overflow || 'visible'}
-                      @change=${(e: Event) => {
-                        const value = (e.target as HTMLSelectElement).value as 'visible' | 'hidden' | 'scroll' | 'auto';
+                    ${UcFormUtils.renderForm(
+                      this.hass as HomeAssistant,
+                      { v: this.config.card_overflow || 'visible' },
+                      [
+                        UcFormUtils.select('v', [
+                        { value: 'visible', label: localize('editor.fields.overflow_visible', lang, 'Visible (default)') },
+                        { value: 'hidden', label: localize('editor.fields.overflow_hidden', lang, 'Hidden (clip content)') },
+                        { value: 'scroll', label: localize('editor.fields.overflow_scroll', lang, 'Scroll') },
+                        { value: 'auto', label: localize('editor.fields.overflow_auto', lang, 'Auto') },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const value = e.detail.value.v as 'visible' | 'hidden' | 'scroll' | 'auto';
                         this._updateConfig({ card_overflow: value === 'visible' ? undefined : value });
-                      }}
-                      class="property-select"
-                      style="width: 100%;"
-                    >
-                      <option value="visible">
-                        ${localize('editor.fields.overflow_visible', lang, 'Visible (default)')}
-                      </option>
-                      <option value="hidden">
-                        ${localize('editor.fields.overflow_hidden', lang, 'Hidden (clip content)')}
-                      </option>
-                      <option value="scroll">
-                        ${localize('editor.fields.overflow_scroll', lang, 'Scroll')}
-                      </option>
-                      <option value="auto">
-                        ${localize('editor.fields.overflow_auto', lang, 'Auto')}
-                      </option>
-                    </select>
+                      }
+                    )}
                   </div>
                 </div>
               </div>
@@ -1934,13 +1964,14 @@ export class UltraCardEditor extends LitElement {
                       <label>
                         ${localize('editor.fields.card_shadow_enabled', lang, 'Custom Drop Shadow')}
                       </label>
-                      <ha-switch
-                        .checked=${this.config.card_shadow_enabled || false}
-                        @change=${(e: Event) => {
-                          const target = e.target as any;
-                          this._updateConfig({ card_shadow_enabled: target.checked });
-                        }}
-                      ></ha-switch>
+                      ${UcFormUtils.renderForm(
+                        this.hass as HomeAssistant,
+                        { v: Boolean(this.config.card_shadow_enabled || false) },
+                        [UcFormUtils.boolean('v')],
+                        (e: CustomEvent) => {
+                          this._updateConfig({ card_shadow_enabled: e.detail.value.v });
+                        }
+                      )}
                     </div>
                     <div class="setting-description">
                       ${localize(
@@ -2340,47 +2371,6 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
-   * Set whether to skip default modules when creating new cards (Pro feature)
-   * Tries localStorage, sessionStorage, and window fallback
-   */
-  private _setSkipDefaultModulesSetting(enabled: boolean): void {
-    // Always set window fallback (works even when all storage is full)
-    (window as any)[UltraCardEditor.SKIP_DEFAULT_MODULES_WINDOW_KEY] = enabled;
-    this._skipDefaultModules = enabled;
-
-    let savedTo = 'memory only';
-
-    // Try sessionStorage first (separate quota, persists during browser session)
-    try {
-      sessionStorage.setItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
-      savedTo = 'sessionStorage';
-    } catch {
-      /* sessionStorage full or unavailable */
-    }
-
-    // Also try localStorage for persistence across browser restarts
-    try {
-      safeSetItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
-      savedTo = 'localStorage';
-    } catch {
-      /* localStorage full */
-    }
-
-    console.log(`[Ultra Card Pro] Skip default modules setting saved to ${savedTo}:`, enabled);
-  }
-
-  /**
-   * Handle the skip default modules toggle change
-   */
-  private _handleSkipDefaultModulesChange(e: Event): void {
-    e.stopPropagation();
-    const target = e.target as HTMLInputElement;
-    const checked = target.checked;
-    console.log('[Ultra Card Pro] Toggle changed to:', checked);
-    this._setSkipDefaultModulesSetting(checked);
-  }
-
-  /**
    * Handle card background image upload
    */
   private async _handleCardBackgroundImageUpload(event: Event): Promise<void> {
@@ -2490,6 +2480,13 @@ export class UltraCardEditor extends LitElement {
 
   static override get styles() {
     return css`
+      /* Keyboard focus must be visible. Many controls set outline: none; this
+         restores a ring for keyboard users only (not on mouse clicks). */
+      :focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4) !important;
+        outline-offset: 2px;
+      }
+
       .editor-loading {
         display: flex;
         flex-direction: column;
@@ -5035,9 +5032,6 @@ export class UltraCardEditor extends LitElement {
     }
     this._hasRegisteredListeners = true;
 
-    this._syncStatus = ucCloudSyncService.getSyncStatus();
-    this._backupStatus = ucCloudBackupService.getStatus();
-
     if (this._cloudUser) {
       try {
         await this._initializeProServices(this._cloudUser);
@@ -5056,15 +5050,13 @@ export class UltraCardEditor extends LitElement {
     ucCloudAuthService.addListener(this._authListener);
 
     // Setup sync listener
-    this._syncListener = (status: SyncStatus) => {
-      this._syncStatus = status;
+    this._syncListener = (_status: SyncStatus) => {
       this.requestUpdate();
     };
     ucCloudSyncService.addListener(this._syncListener);
 
     // Setup backup listener
-    this._backupListener = (status: BackupStatus) => {
-      this._backupStatus = status;
+    this._backupListener = (_status: BackupStatus) => {
       this.requestUpdate();
     };
     ucCloudBackupService.addListener(this._backupListener);
@@ -5089,1548 +5081,13 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
-   * Render PRO TAB (New dedicated tab for all Pro features)
-   */
-  private _renderProTab(): TemplateResult {
-    const lang = this.hass?.locale?.language || 'en';
-
-    // Check for Ultra Card Connect integration (only auth method)
-    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const isIntegrationInstalled = ucCloudAuthService.isIntegrationInstalled(this.hass);
-
-    // Pro access via integration only
-    const isPro = integrationUser?.subscription?.tier === 'pro';
-    const isLoggedIn = !!integrationUser;
-
-    return html`
-      <div class="pro-tab-content">
-        <!-- INTEGRATION STATUS (if installed) -->
-        ${this._renderIntegrationStatus(lang, integrationUser, isIntegrationInstalled)}
-
-        <!-- ULTRA CARD PRO BRANDED BANNER -->
-        ${this._renderProBanner(lang, isPro, isLoggedIn)}
-
-        <!-- AUTHENTICATION INFO (show if not authenticated via integration) -->
-        ${!integrationUser ? this._renderAuthInfo(isIntegrationInstalled) : ''}
-
-        <!-- PRO TOOLS SECTIONS (integration auth only) -->
-        ${isLoggedIn ? this._renderCardProTools(lang, isPro) : ''}
-        ${isLoggedIn && isPro ? this._renderDashboardProTools(lang) : ''}
-        ${isLoggedIn && isPro ? this._renderProSettings(lang) : ''}
-
-        <!-- MODALS -->
-        ${this._showBackupHistory && this._cloudUser
-          ? html`
-              <uc-snapshot-history-modal
-                .open="${this._showBackupHistory}"
-                .hass="${this.hass}"
-                .subscription="${this._cloudUser.subscription!}"
-                @close-modal="${() => (this._showBackupHistory = false)}"
-                @snapshot-restored="${this._handleSnapshotRestored}"
-                @card-backup-restored="${this._handleCardBackupRestored}"
-              ></uc-snapshot-history-modal>
-            `
-          : ''}
-        ${this._showManualBackup && this._cloudUser
-          ? html`
-              <uc-manual-backup-dialog
-                .open="${this._showManualBackup}"
-                .hass="${this.hass}"
-                .config="${this.config}"
-                @dialog-closed="${() => (this._showManualBackup = false)}"
-                @backup-created="${this._handleManualBackupCreated}"
-              ></uc-manual-backup-dialog>
-            `
-          : ''}
-        ${this._showSnapshotSettings
-          ? html`
-              <uc-snapshot-settings-dialog
-                .open="${this._showSnapshotSettings}"
-                @dialog-closed="${() => (this._showSnapshotSettings = false)}"
-                @settings-saved="${this._handleSnapshotSettingsSaved}"
-              ></uc-snapshot-settings-dialog>
-            `
-          : ''}
-      </div>
-    `;
-  }
-
-  /**
-   * Render Ultra Card Pro section (DEPRECATED - kept for backward compatibility)
-   */
-  private _renderCloudSyncSection(lang: string): TemplateResult {
-    // Use integration auth only
-    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const isIntegrationInstalled = ucCloudAuthService.isIntegrationInstalled(this.hass);
-    const isPro =
-      integrationUser?.subscription?.tier === 'pro' &&
-      integrationUser?.subscription?.status === 'active';
-    const isLoggedIn = !!integrationUser;
-
-    return html`
-      <div class="settings-section ultra-card-pro-section">
-        <!-- ULTRA CARD PRO BRANDED BANNER -->
-        ${this._renderProBanner(lang, isPro, isLoggedIn)}
-
-        <!-- AUTHENTICATION INFO (integration only) -->
-        ${!integrationUser ? this._renderAuthInfo(isIntegrationInstalled) : ''}
-
-        <!-- CARD NAME SETTING (Always visible when logged in) -->
-        ${isLoggedIn ? this._renderCardNameSetting(lang) : ''}
-
-        <!-- PRO TOOLS SECTIONS (integration auth only) -->
-        ${isLoggedIn ? this._renderCardProTools(lang, isPro) : ''}
-        ${isLoggedIn && isPro ? this._renderDashboardProTools(lang) : ''}
-
-        <!-- MODALS (integration auth only) -->
-        ${this._showBackupHistory && integrationUser
-          ? html`
-              <uc-snapshot-history-modal
-                .open="${this._showBackupHistory}"
-                .hass="${this.hass}"
-                .subscription="${integrationUser.subscription!}"
-                @close-modal="${() => (this._showBackupHistory = false)}"
-                @snapshot-restored="${this._handleSnapshotRestored}"
-                @card-backup-restored="${this._handleCardBackupRestored}"
-              ></uc-snapshot-history-modal>
-            `
-          : ''}
-        ${this._showManualBackup && integrationUser
-          ? html`
-              <uc-manual-backup-dialog
-                .open="${this._showManualBackup}"
-                .hass="${this.hass}"
-                .config="${this.config}"
-                @dialog-closed="${() => (this._showManualBackup = false)}"
-                @backup-created="${this._handleManualBackupCreated}"
-              ></uc-manual-backup-dialog>
-            `
-          : ''}
-      </div>
-    `;
-  }
-
-  /**
-   * Render Integration Status Section
-   */
-  private _renderIntegrationStatus(
-    lang: string,
-    integrationUser: CloudUser | null,
-    isIntegrationInstalled: boolean
-  ): TemplateResult {
-    // Integration installed and authenticated
-    if (integrationUser) {
-      const isPro = integrationUser.subscription?.tier === 'pro';
-      return html`
-        <div class="integration-status-card integration-authenticated">
-          <div class="status-icon">
-            <ha-icon icon="mdi:check-circle"></ha-icon>
-          </div>
-          <div class="status-content">
-            <h4>✅ PRO Features Unlocked via Ultra Card Connect</h4>
-            <p>
-              <strong
-                >${integrationUser.displayName}${integrationUser.email
-                  ? ` • ${integrationUser.email}`
-                  : ''}</strong
-              >
-            </p>
-            <p>
-              Subscription: <strong>${isPro ? 'PRO' : 'Free'}</strong>
-              ${isPro ? '⭐' : ''}
-            </p>
-            <p class="status-note">
-              All your devices are automatically unlocked. Manage this in Home Assistant Settings →
-              <a href="/config/integrations/integration/ultra_card_pro_cloud" target="_top">
-                Integrations
-              </a>
-            </p>
-          </div>
-        </div>
-      `;
-    }
-
-
-    // Integration not installed - show install instructions
-    if (!isIntegrationInstalled && !this._cloudUser) {
-      return html`
-        <div class="integration-status-card integration-not-installed">
-          <div class="status-icon">
-            <ha-icon icon="mdi:cloud-lock"></ha-icon>
-          </div>
-          <div class="status-content">
-            <h4>⭐ Unlock PRO Features Across All Devices</h4>
-            <p class="integration-subtitle">
-              Install <strong>Ultra Card Connect</strong> once, and every device
-              connected to this Home Assistant automatically gets PRO features.
-            </p>
-            <div class="benefits-list">
-              <div class="benefit-item">
-                <ha-icon icon="mdi:check-circle"></ha-icon>
-                <div>
-                  <strong>Login Once</strong>
-                  <span class="benefit-description">Works on desktop, mobile, tablet, TV</span>
-                </div>
-              </div>
-              <div class="benefit-item">
-                <ha-icon icon="mdi:sync"></ha-icon>
-                <div>
-                  <strong>Auto-Sync</strong>
-                  <span class="benefit-description">No per-device configuration needed</span>
-                </div>
-              </div>
-              <div class="benefit-item">
-                <ha-icon icon="mdi:shield-check"></ha-icon>
-                <div>
-                  <strong>Secure & Reliable</strong>
-                  <span class="benefit-description">Server-side auth, automatic token refresh</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="install-steps">
-              <h5>📋 Quick Install (2 minutes):</h5>
-              <ol>
-                <li>Click <strong>"Install via HACS"</strong> below</li>
-                <li>
-                  In HACS: Search "<strong>Ultra Card Connect</strong>"
-                </li>
-                <li>Click <strong>Download</strong> and restart Home Assistant</li>
-                <li>Open the <strong>Account</strong> tab and sign in — the integration is added for you automatically</li>
-              </ol>
-            </div>
-
-            <div class="status-actions">
-              <a
-                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
-                target="_blank"
-                class="integration-button integration-button-primary"
-              >
-                <ha-icon icon="mdi:cloud-download"></ha-icon>
-                Install via HACS
-              </a>
-              <a href="https://ultracard.io/product/ultra-card-pro/" target="_blank" class="integration-button">
-                <ha-icon icon="mdi:cart"></ha-icon>
-                Get PRO Subscription
-              </a>
-            </div>
-            <p class="status-note-small">
-              💡 Prefer single-device? Use the card login below instead.
-            </p>
-          </div>
-        </div>
-      `;
-    }
-
-    return html``;
-  }
-
-  /**
-   * Render Pro Banner (Free or Pro variant)
-   */
-  private _renderProBanner(lang: string, isPro: boolean, isLoggedIn: boolean): TemplateResult {
-    if (!isLoggedIn) {
-      // Show minimal banner for logged out users
-      return html`
-        <div class="ultra-pro-banner ultra-pro-banner-minimal">
-          <div class="banner-icon">
-            <ha-icon icon="mdi:star-circle"></ha-icon>
-          </div>
-          <div class="banner-content">
-            <h3>${localize('editor.ultra_card_pro.title', lang, 'Ultra Card Pro')}</h3>
-            <p>
-              ${localize(
-                'editor.ultra_card_pro.free_banner_subtitle',
-                lang,
-                'Professional card management and cloud backups'
-              )}
-            </p>
-          </div>
-        </div>
-      `;
-    }
-
-    if (isPro) {
-      // PRO USER BANNER
-      return html`
-        <div class="ultra-pro-banner ultra-pro-banner-pro">
-          <div class="banner-gradient"></div>
-          <div class="banner-icon">
-            <ha-icon icon="mdi:star-circle"></ha-icon>
-          </div>
-          <div class="banner-content">
-            <h3>
-              <ha-icon icon="mdi:star"></ha-icon>
-              ${localize('editor.ultra_card_pro.pro_banner_title', lang, 'Ultra Card Pro')}
-            </h3>
-            <p>
-              ${localize(
-                'editor.ultra_card_pro.pro_banner_subtitle',
-                lang,
-                'Thank you for being a Pro member!'
-              )}
-            </p>
-          </div>
-          <div class="pro-badge">
-            <ha-icon icon="mdi:check-decagram"></ha-icon>
-            PRO
-          </div>
-        </div>
-      `;
-    }
-
-    // FREE USER BANNER
-    return html`
-      <div class="ultra-pro-banner ultra-pro-banner-free">
-        <div class="banner-icon">
-          <ha-icon icon="mdi:star-circle-outline"></ha-icon>
-        </div>
-        <div class="banner-content">
-          <h3>${localize('editor.ultra_card_pro.free_banner_title', lang, 'Ultra Card Pro')}</h3>
-          <p>
-            ${localize(
-              'editor.ultra_card_pro.free_banner_subtitle',
-              lang,
-              'Professional card management and cloud backups'
-            )}
-          </p>
-        </div>
-        <div class="free-badge">FREE</div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render Auth Info (Integration-based authentication only)
-   */
-  private _renderAuthInfo(isIntegrationInstalled: boolean): TemplateResult {
-    return html`
-      <div class="auth-info-section">
-        <ha-icon icon="mdi:information-outline"></ha-icon>
-        <div class="info-content">
-          <h4>Ultra Card Pro Authentication</h4>
-          <p>
-            To unlock Pro features, install <strong>Ultra Card Connect</strong>
-            from HACS and sign in via the Account tab. The integration is added automatically
-            for seamless cross-device sync.
-          </p>
-          ${!isIntegrationInstalled
-            ? html`
-                <a
-                  href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
-                  target="_blank"
-                  rel="noopener"
-                  class="install-integration-link"
-                >
-                  <ha-icon icon="mdi:download"></ha-icon>
-                  Install Integration
-                </a>
-              `
-            : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render Card Name Setting
-   */
-  private _renderCardNameSetting(lang: string): TemplateResult {
-    return html`
-      <div class="ultra-pro-card-name">
-        <div class="setting-header">
-          <label for="card-name">
-            <ha-icon icon="mdi:card-text"></ha-icon>
-            ${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}
-          </label>
-          <p class="setting-description">
-            ${localize(
-              'editor.ultra_card_pro.card_name_desc',
-              lang,
-              'Give this card a name to identify it in your backups'
-            )}
-          </p>
-        </div>
-        <ha-textfield
-          id="card-name"
-          .value="${this.config.card_name || ''}"
-          @input="${this._handleCardNameChange}"
-          placeholder="${localize(
-            'editor.ultra_card_pro.card_name_placeholder',
-            lang,
-            'My Ultra Card'
-          )}"
-          maxlength="100"
-        ></ha-textfield>
-      </div>
-    `;
-  }
-
-  /**
-   * Render Card Pro Tools Section
-   */
-  private _renderCardProTools(lang: string, isPro: boolean): TemplateResult {
-    if (!isPro) {
-      // Show upgrade prompt for free users
-      return html`
-        <div class="ultra-pro-upgrade">
-          <div class="upgrade-content">
-            <ha-icon icon="mdi:star-box"></ha-icon>
-            <div class="upgrade-text">
-              <h4>
-                ${localize('editor.ultra_card_pro.upgrade_title', lang, 'Unlock Pro Features')}
-              </h4>
-              <p>
-                ${localize(
-                  'editor.ultra_card_pro.upgrade_subtitle',
-                  lang,
-                  'Get export, import, and manual backups for all your cards'
-                )}
-              </p>
-              <ul class="upgrade-features">
-                <li>
-                  <ha-icon icon="mdi:check"></ha-icon>
-                  ${localize(
-                    'editor.ultra_card_pro.features.export',
-                    lang,
-                    'Export full card configs'
-                  )}
-                </li>
-                <li>
-                  <ha-icon icon="mdi:check"></ha-icon>
-                  ${localize('editor.ultra_card_pro.features.import', lang, 'Import card configs')}
-                </li>
-                <li>
-                  <ha-icon icon="mdi:check"></ha-icon>
-                  ${localize(
-                    'editor.ultra_card_pro.features.backups',
-                    lang,
-                    '30 manual backups across all cards'
-                  )}
-                </li>
-                <li>
-                  <ha-icon icon="mdi:check"></ha-icon>
-                  ${localize(
-                    'editor.ultra_card_pro.features.naming',
-                    lang,
-                    'Name your cards and backups'
-                  )}
-                </li>
-                <li>
-                  <ha-icon icon="mdi:check"></ha-icon>
-                  ${localize('editor.ultra_card_pro.features.support', lang, 'Priority support')}
-                </li>
-              </ul>
-            </div>
-          </div>
-          <button
-            class="ultra-btn ultra-btn-upgrade"
-            @click="${() => window.open('https://ultracard.io/pro', '_blank')}"
-          >
-            <ha-icon icon="mdi:star"></ha-icon>
-            ${localize(
-              'editor.ultra_card_pro.upgrade_button',
-              lang,
-              'Upgrade to Pro - $4.99/month'
-            )}
-          </button>
-        </div>
-      `;
-    }
-
-    // PRO USER - Show Card Pro Tools
-    const subscription = this._cloudUser!.subscription!;
-    const backupCount = subscription.snapshot_count || 0;
-    const backupLimit = subscription.snapshot_limit || 30;
-    const canCreateBackup = backupCount < backupLimit;
-
-    return html`
-      <div class="pro-tools-section">
-        <div class="section-header">
-          <div class="header-icon">
-            <ha-icon icon="mdi:card"></ha-icon>
-          </div>
-          <div class="header-content">
-            <h3>Card Pro Tools</h3>
-            <p>Manage individual card configurations</p>
-          </div>
-        </div>
-
-        <div class="tools-grid">
-          <!-- Export Card -->
-          <button class="tool-card" @click="${this._handleExport}">
-            <div class="tool-icon export">
-              <ha-icon icon="mdi:export"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Export Card</h4>
-              <p>Download this card's configuration</p>
-            </div>
-          </button>
-
-          <!-- Import Card -->
-          <button class="tool-card" @click="${this._handleImport}">
-            <div class="tool-icon import">
-              <ha-icon icon="mdi:import"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Import Card</h4>
-              <p>Load configuration from file</p>
-            </div>
-          </button>
-
-          <!-- Backup Card -->
-          <button
-            class="tool-card"
-            @click="${this._handleCreateBackup}"
-            ?disabled="${!canCreateBackup}"
-          >
-            <div class="tool-icon backup">
-              <ha-icon icon="mdi:bookmark-plus"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Backup Card</h4>
-              <p>Save current card state</p>
-            </div>
-          </button>
-
-          <!-- Restore Card -->
-          <button class="tool-card" @click="${() => (this._showBackupHistory = true)}">
-            <div class="tool-icon restore">
-              <ha-icon icon="mdi:backup-restore"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Restore Card</h4>
-              <p>Restore from saved backup</p>
-            </div>
-          </button>
-
-          <!-- View All Backups -->
-          <button class="tool-card" @click="${() => (this._showBackupHistory = true)}">
-            <div class="tool-icon history">
-              <ha-icon icon="mdi:history"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>View All Backups</h4>
-              <p>Browse all card backups</p>
-            </div>
-          </button>
-        </div>
-
-        <!-- Backup Status -->
-        <div class="backup-status">
-          ${!canCreateBackup
-            ? html`
-                <div class="status-warning">
-                  <ha-icon icon="mdi:alert"></ha-icon>
-                  Backup limit reached (${backupCount}/${backupLimit})
-                </div>
-              `
-            : html`
-                <div class="status-info">
-                  <ha-icon icon="mdi:bookmark-multiple"></ha-icon>
-                  ${backupCount} / ${backupLimit} backups used
-                </div>
-              `}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render Dashboard Pro Tools Section
-   */
-  private _renderDashboardProTools(lang: string): TemplateResult {
-    const status = this._snapshotSchedulerStatus;
-
-    return html`
-      <div class="pro-tools-section">
-        <div class="section-header">
-          <div class="header-icon">
-            <ha-icon icon="mdi:view-dashboard"></ha-icon>
-          </div>
-          <div class="header-content">
-            <h3>Dashboard Pro Tools</h3>
-            <p>Manage entire dashboard snapshots</p>
-          </div>
-        </div>
-
-        <div class="tools-grid">
-          <!-- Export Dashboard -->
-          <button class="tool-card" @click="${this._handleExportDashboard}">
-            <div class="tool-icon export">
-              <ha-icon icon="mdi:export"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Export Dashboard</h4>
-              <p>Download entire dashboard config</p>
-            </div>
-          </button>
-
-          <!-- Import Dashboard -->
-          <button class="tool-card" @click="${this._handleImportDashboard}">
-            <div class="tool-icon import">
-              <ha-icon icon="mdi:import"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Import Dashboard</h4>
-              <p>Load dashboard from file</p>
-            </div>
-          </button>
-
-          <!-- Create Snapshot -->
-          <button class="tool-card" @click="${this._handleCreateSnapshot}">
-            <div class="tool-icon snapshot">
-              <ha-icon icon="mdi:camera-plus"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Create Snapshot</h4>
-              <p>Manual dashboard snapshot</p>
-            </div>
-          </button>
-
-          <!-- Restore Snapshot -->
-          <button class="tool-card" @click="${this._handleRestoreSnapshot}">
-            <div class="tool-icon restore">
-              <ha-icon icon="mdi:backup-restore"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Restore Snapshot</h4>
-              <p>Restore dashboard state</p>
-            </div>
-          </button>
-
-          <!-- View Snapshots -->
-          <button class="tool-card" @click="${this._handleViewSnapshots}">
-            <div class="tool-icon history">
-              <ha-icon icon="mdi:history"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>View Snapshots</h4>
-              <p>Browse dashboard snapshots</p>
-            </div>
-          </button>
-
-          <!-- Snapshot Settings -->
-          <button class="tool-card" @click="${() => (this._showSnapshotSettings = true)}">
-            <div class="tool-icon settings">
-              <ha-icon icon="mdi:cog"></ha-icon>
-            </div>
-            <div class="tool-content">
-              <h4>Snapshot Settings</h4>
-              <p>Configure auto-snapshots</p>
-            </div>
-          </button>
-        </div>
-
-        <!-- Snapshot Status -->
-        <div class="snapshot-status">
-          ${status
-            ? html`
-                <div class="status-card ${status.enabled ? 'enabled' : 'paused'}">
-                  <div class="status-primary">
-                    <ha-icon
-                      icon="${status.enabled ? 'mdi:check-circle' : 'mdi:pause-circle'}"
-                      class="status-icon"
-                    ></ha-icon>
-                    <div class="status-text">
-                      <strong>Auto-snapshots: ${status.enabled ? 'Enabled' : 'Paused'}</strong>
-                      <span class="status-desc">
-                        ${status.enabled
-                          ? 'Daily snapshots are active'
-                          : 'Daily snapshots are paused'}
-                      </span>
-                    </div>
-                  </div>
-
-                  ${status.enabled && status.nextSnapshotTime
-                    ? html`
-                        <div class="status-detail">
-                          <ha-icon icon="mdi:calendar-clock"></ha-icon>
-                          <span
-                            >Next: ${this._formatNextSnapshotTime(status.nextSnapshotTime)}</span
-                          >
-                        </div>
-                      `
-                    : ''}
-                  ${status.lastSnapshotTime
-                    ? html`
-                        <div class="status-detail">
-                          <ha-icon icon="mdi:history"></ha-icon>
-                          <span
-                            >Last: ${this._formatLastSnapshotTime(status.lastSnapshotTime)}</span
-                          >
-                        </div>
-                      `
-                    : ''}
-                </div>
-              `
-            : html`
-                <div class="status-loading">
-                  <ha-icon icon="mdi:loading"></ha-icon>
-                  Loading snapshot status...
-                </div>
-              `}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render View Backups Button
-   */
-  private _renderViewBackupsButton(lang: string): TemplateResult {
-    return html`
-      <div class="ultra-pro-view-backups">
-        <button
-          class="ultra-btn ultra-btn-view-backups"
-          @click="${() => (this._showBackupHistory = true)}"
-        >
-          <ha-icon icon="mdi:history"></ha-icon>
-          ${localize('editor.ultra_card_pro.view_backups', lang, 'View All Backups')}
-        </button>
-      </div>
-    `;
-  }
-
-  /**
-   * Render Snapshot Status Section (Pro only)
-   */
-  private _renderSnapshotStatusSection(lang: string): TemplateResult {
-    const status = this._snapshotSchedulerStatus;
-
-    return html`
-      <div class="ultra-pro-snapshot-section">
-        <div class="snapshot-header">
-          <div class="header-content">
-            <div class="header-icon">
-              <ha-icon icon="mdi:camera-timer"></ha-icon>
-            </div>
-            <div class="header-text">
-              <h3>Auto Dashboard Snapshots</h3>
-              <p>Automatic daily backups of your entire dashboard</p>
-            </div>
-          </div>
-          <button
-            class="snapshot-settings-btn"
-            @click="${() => (this._showSnapshotSettings = true)}"
-            title="Configure snapshot settings"
-          >
-            <ha-icon icon="mdi:cog"></ha-icon>
-          </button>
-        </div>
-
-        <div class="snapshot-status-container">
-          ${status
-            ? html`
-                <div class="status-card ${status.enabled ? 'enabled' : 'paused'}">
-                  <div class="status-primary">
-                    <ha-icon
-                      icon="${status.enabled ? 'mdi:check-circle' : 'mdi:pause-circle'}"
-                      class="status-icon"
-                    ></ha-icon>
-                    <div class="status-text">
-                      <strong>${status.enabled ? 'Enabled' : 'Paused'}</strong>
-                      <span class="status-desc">
-                        ${status.enabled
-                          ? 'Daily snapshots are active'
-                          : 'Daily snapshots are paused'}
-                      </span>
-                    </div>
-                  </div>
-
-                  ${status.enabled && status.nextSnapshotTime
-                    ? html`
-                        <div class="status-detail">
-                          <div class="detail-icon">
-                            <ha-icon icon="mdi:calendar-clock"></ha-icon>
-                          </div>
-                          <div class="detail-content">
-                            <span class="detail-label">Next Snapshot</span>
-                            <span class="detail-value">
-                              ${this._formatNextSnapshotTime(status.nextSnapshotTime)}
-                            </span>
-                          </div>
-                        </div>
-                      `
-                    : ''}
-                  ${status.lastSnapshotTime
-                    ? html`
-                        <div class="status-detail">
-                          <div class="detail-icon">
-                            <ha-icon icon="mdi:history"></ha-icon>
-                          </div>
-                          <div class="detail-content">
-                            <span class="detail-label">Last Snapshot</span>
-                            <span class="detail-value">
-                              ${this._formatLastSnapshotTime(status.lastSnapshotTime)}
-                            </span>
-                          </div>
-                        </div>
-                      `
-                    : ''}
-                  ${status.isRunning
-                    ? html`
-                        <div class="status-detail running">
-                          <div class="detail-icon">
-                            <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
-                          </div>
-                          <div class="detail-content">
-                            <span class="detail-value">Creating snapshot...</span>
-                          </div>
-                        </div>
-                      `
-                    : ''}
-                </div>
-              `
-            : html`
-                <div class="status-card loading">
-                  <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
-                  <span>Loading snapshot status...</span>
-                </div>
-              `}
-
-          <div class="manual-snapshot-action">
-            <button
-              class="ultra-btn ultra-btn-manual-snapshot"
-              @click="${this._handleManualSnapshot}"
-              ?disabled="${this._isCreatingManualSnapshot || status?.isRunning}"
-            >
-              <ha-icon
-                icon="${this._isCreatingManualSnapshot ? 'mdi:loading' : 'mdi:camera-plus'}"
-                class="${this._isCreatingManualSnapshot ? 'spinning' : ''}"
-              ></ha-icon>
-              ${this._isCreatingManualSnapshot
-                ? 'Creating Snapshot...'
-                : 'Perform Manual Dashboard Snapshot'}
-            </button>
-            <p class="manual-snapshot-note">
-              <ha-icon icon="mdi:information"></ha-icon>
-              Manual snapshots count towards your 30-day snapshot history.
-            </p>
-          </div>
-
-          <div class="snapshot-info-card">
-            <div class="info-icon-container">
-              <ha-icon icon="mdi:information-outline"></ha-icon>
-            </div>
-            <div class="info-content">
-              <h4>What are Dashboard Snapshots?</h4>
-              <p>
-                Automatically backs up <strong>all</strong> your Ultra Cards across your entire
-                dashboard once per day. Both auto and manual snapshots are kept for
-                <strong>30 days</strong> and include card positions for easy restoration.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <style>
-          .ultra-pro-snapshot-section {
-            margin: 16px 0;
-            padding: 20px;
-            background: var(--card-background-color);
-            border-radius: 12px;
-            border: 2px solid var(--primary-color, #03a9f4);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          }
-
-          .snapshot-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid var(--divider-color, #e0e0e0);
-          }
-
-          .header-content {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-          }
-
-          .header-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #0288d1 100%);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
-          }
-
-          .header-icon ha-icon {
-            --mdc-icon-size: 28px;
-            color: var(--text-primary-color, white);
-          }
-
-          .header-text h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--primary-text-color);
-          }
-
-          .header-text p {
-            margin: 4px 0 0 0;
-            font-size: 13px;
-            color: var(--secondary-text-color);
-            opacity: 0.8;
-          }
-
-          .snapshot-settings-btn {
-            padding: 10px;
-            background: var(--secondary-background-color, #f5f5f5);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: var(--primary-text-color);
-          }
-
-          .snapshot-settings-btn:hover {
-            background: var(--divider-color, #e0e0e0);
-            transform: rotate(90deg);
-          }
-
-          .snapshot-settings-btn ha-icon {
-            --mdc-icon-size: 20px;
-          }
-
-          .snapshot-status-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-          }
-
-          .status-card {
-            background: var(--secondary-background-color, #f5f5f5);
-            border-radius: 10px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-          }
-
-          .status-card.enabled {
-            border-left: 4px solid var(--success-color, #4caf50);
-          }
-
-          .status-card.paused {
-            border-left: 4px solid var(--warning-color, #ff9800);
-          }
-
-          .status-card.loading {
-            flex-direction: row;
-            align-items: center;
-            gap: 12px;
-            justify-content: center;
-            color: var(--secondary-text-color);
-          }
-
-          .status-primary {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-          }
-
-          .status-icon {
-            --mdc-icon-size: 32px;
-          }
-
-          .status-card.enabled .status-icon {
-            color: var(--success-color, #4caf50);
-          }
-
-          .status-card.paused .status-icon {
-            color: var(--warning-color, #ff9800);
-          }
-
-          .status-text {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-          }
-
-          .status-text strong {
-            font-size: 16px;
-            color: var(--primary-text-color);
-          }
-
-          .status-desc {
-            font-size: 13px;
-            color: var(--secondary-text-color);
-            opacity: 0.9;
-          }
-
-          .status-detail {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: var(--card-background-color);
-            border-radius: 8px;
-          }
-
-          .status-detail.running {
-            background: var(--primary-color, #03a9f4);
-            color: var(--text-primary-color, white);
-          }
-
-          .status-detail.running .detail-value {
-            color: var(--text-primary-color, white);
-          }
-
-          .detail-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            background: var(--secondary-background-color, #f5f5f5);
-            border-radius: 8px;
-          }
-
-          .status-detail.running .detail-icon {
-            background: rgba(255, 255, 255, 0.2);
-          }
-
-          .detail-icon ha-icon {
-            --mdc-icon-size: 20px;
-            color: var(--primary-color, #03a9f4);
-          }
-
-          .status-detail.running .detail-icon ha-icon {
-            color: var(--text-primary-color, white);
-          }
-
-          .detail-content {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-          }
-
-          .detail-label {
-            font-size: 12px;
-            color: var(--secondary-text-color);
-            opacity: 0.8;
-            text-transform: uppercase;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-          }
-
-          .detail-value {
-            font-size: 14px;
-            color: var(--primary-text-color);
-            font-weight: 500;
-          }
-
-          .manual-snapshot-action {
-            margin: 20px 0;
-            padding: 16px;
-            background: linear-gradient(
-              135deg,
-              rgba(3, 169, 244, 0.05) 0%,
-              rgba(2, 136, 209, 0.08) 100%
-            );
-            border-radius: 10px;
-            border: 2px dashed var(--primary-color, #03a9f4);
-          }
-
-          .ultra-btn-manual-snapshot {
-            width: 100%;
-            padding: 14px 20px;
-            font-size: 15px;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #0288d1 100%);
-            color: var(--text-primary-color, white);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
-          }
-
-          .ultra-btn-manual-snapshot:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(3, 169, 244, 0.4);
-          }
-
-          .ultra-btn-manual-snapshot:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-          }
-
-          .ultra-btn-manual-snapshot ha-icon {
-            --mdc-icon-size: 22px;
-          }
-
-          .manual-snapshot-note {
-            margin: 12px 0 0 0;
-            padding: 0;
-            font-size: 13px;
-            color: var(--secondary-text-color);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            justify-content: center;
-          }
-
-          .manual-snapshot-note ha-icon {
-            --mdc-icon-size: 16px;
-            color: var(--primary-color, #03a9f4);
-          }
-
-          .snapshot-info-card {
-            display: flex;
-            gap: 16px;
-            padding: 16px;
-            background: var(--secondary-background-color, #f5f5f5);
-            border-radius: 10px;
-            border-left: 4px solid var(--primary-color, #03a9f4);
-          }
-
-          .info-icon-container {
-            display: flex;
-            align-items: flex-start;
-            padding-top: 2px;
-          }
-
-          .info-icon-container ha-icon {
-            --mdc-icon-size: 24px;
-            color: var(--primary-color, #03a9f4);
-          }
-
-          .info-content {
-            flex: 1;
-          }
-
-          .info-content h4 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--primary-text-color);
-          }
-
-          .info-content p {
-            margin: 0;
-            font-size: 13px;
-            line-height: 1.5;
-            color: var(--secondary-text-color);
-          }
-
-          .info-content strong {
-            color: var(--primary-text-color);
-            font-weight: 600;
-          }
-
-          .spinning {
-            animation: spin 1s linear infinite;
-          }
-
-          @keyframes spin {
-            from {
-              transform: rotate(0deg);
-            }
-            to {
-              transform: rotate(360deg);
-            }
-          }
-
-          @media (max-width: 768px) {
-            .ultra-pro-snapshot-section {
-              padding: 16px;
-            }
-
-            .header-content {
-              gap: 12px;
-            }
-
-            .header-icon {
-              width: 40px;
-              height: 40px;
-            }
-
-            .header-icon ha-icon {
-              --mdc-icon-size: 24px;
-            }
-
-            .header-text h3 {
-              font-size: 16px;
-            }
-
-            .header-text p {
-              font-size: 12px;
-            }
-
-            .status-primary {
-              flex-direction: column;
-              align-items: flex-start;
-            }
-          }
-        </style>
-      </div>
-    `;
-  }
-
-  private _formatNextSnapshotTime(time: Date): string {
-    const now = new Date();
-    const isToday = time.getDate() === now.getDate();
-    const timeString = time.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-    return `${isToday ? 'Today' : 'Tomorrow'} at ${timeString}`;
-  }
-
-  private _formatLastSnapshotTime(time: Date): string {
-    const now = new Date();
-    const diffMs = now.getTime() - time.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return time.toLocaleDateString();
-  }
-
-  /**
-   * Render Pro Settings Section (Pro tab only)
-   */
-  private _renderProSettings(lang: string): TemplateResult {
-    return html`
-      <div class="pro-tools-section pro-settings-section">
-        <div class="section-header">
-          <div class="header-icon">
-            <ha-icon icon="mdi:cog"></ha-icon>
-          </div>
-          <div class="header-content">
-            <h3>${localize('editor.pro_settings.title', lang, 'Pro Settings')}</h3>
-            <p>
-              ${localize(
-                'editor.pro_settings.description',
-                lang,
-                'Exclusive settings for Ultra Card Pro subscribers'
-              )}
-            </p>
-          </div>
-        </div>
-
-        <div class="pro-settings-list">
-          <!-- Start with Empty Card Setting -->
-          <div class="pro-setting-item">
-            <div class="setting-icon">
-              <ha-icon icon="mdi:card-remove-outline"></ha-icon>
-            </div>
-            <div class="setting-content">
-              <h4>
-                ${localize(
-                  'editor.pro_settings.skip_default_modules',
-                  lang,
-                  'Start with Empty Card'
-                )}
-              </h4>
-              <p>
-                ${localize(
-                  'editor.pro_settings.skip_default_modules_desc',
-                  lang,
-                  'When adding a new Ultra Card, start with an empty layout instead of the default starter modules'
-                )}
-              </p>
-            </div>
-            <div class="setting-toggle">
-              <ha-switch
-                .checked=${this._skipDefaultModules}
-                @change=${this._handleSkipDefaultModulesChange}
-              ></ha-switch>
-            </div>
-          </div>
-        </div>
-
-        <style>
-          .pro-settings-section {
-            margin: 16px 0;
-            padding: 20px;
-            background: var(--card-background-color);
-            border-radius: 12px;
-            border: 2px solid var(--primary-color, #03a9f4);
-          }
-
-          .pro-settings-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-          }
-
-          .pro-setting-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            padding: 16px;
-            background: var(--secondary-background-color, #f5f5f5);
-            border-radius: 10px;
-            transition: all 0.2s ease;
-          }
-
-          .pro-setting-item:hover {
-            background: var(--divider-color, #e0e0e0);
-          }
-
-          .pro-setting-item .setting-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 44px;
-            min-width: 44px;
-            background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #0288d1 100%);
-            border-radius: 10px;
-            box-shadow: 0 3px 8px rgba(3, 169, 244, 0.25);
-          }
-
-          .pro-setting-item .setting-icon ha-icon {
-            --mdc-icon-size: 24px;
-            color: var(--text-primary-color, white);
-          }
-
-          .pro-setting-item .setting-content {
-            flex: 1;
-            min-width: 0;
-          }
-
-          .pro-setting-item .setting-content h4 {
-            margin: 0 0 4px 0;
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--primary-text-color);
-          }
-
-          .pro-setting-item .setting-content p {
-            margin: 0;
-            font-size: 13px;
-            line-height: 1.4;
-            color: var(--secondary-text-color);
-          }
-
-          .pro-setting-item .setting-toggle {
-            display: flex;
-            align-items: center;
-            padding-top: 4px;
-          }
-
-          .pro-setting-item .setting-toggle ha-switch {
-            --mdc-theme-secondary: var(--primary-color, #03a9f4);
-          }
-
-          @media (max-width: 480px) {
-            .pro-setting-item {
-              flex-wrap: wrap;
-            }
-
-            .pro-setting-item .setting-toggle {
-              width: 100%;
-              justify-content: flex-end;
-              padding-top: 8px;
-              border-top: 1px solid var(--divider-color);
-              margin-top: 8px;
-            }
-          }
-        </style>
-      </div>
-    `;
-  }
-
-  private _handleCardNameChange(e: Event) {
-    const input = e.target as HTMLInputElement;
-    const newConfig = { ...this.config, card_name: input.value };
-    this._updateConfig(newConfig);
-  }
-
-  /**
    * Handle preview breakpoint change from layout tab.
    * This only affects the Live Preview sections within the editor.
    * Note: The HA Preview panel is controlled by Home Assistant and cannot be resized from here.
    */
   private _handlePreviewBreakpointChanged(e: CustomEvent) {
-    const { breakpoint } = e.detail;
-    this._previewBreakpoint = breakpoint;
-  }
-
-  private async _handleExport() {
-    const lang = this.hass?.locale?.language || 'en';
-
-    try {
-      // Automatically scan for variables used in the config and include them
-      const usedVarNames = scanConfigForVariables(this.config);
-      const variablesToExport: CustomVariable[] = [];
-
-      for (const varName of usedVarNames) {
-        // Check card-specific variables first (they take priority)
-        const cardVar = this.config._customVariables?.find(
-          v => v.name.toLowerCase() === varName.toLowerCase()
-        );
-        if (cardVar) {
-          variablesToExport.push({ ...cardVar, isGlobal: false });
-          continue;
-        }
-
-        // Check global variables
-        const globalVar = ucCustomVariablesService.getVariableByName(varName);
-        if (globalVar) {
-          variablesToExport.push({ ...globalVar, isGlobal: true });
-        }
-      }
-
-      // Create export config with variables automatically included
-      const exportConfig = { ...this.config };
-      if (variablesToExport.length > 0) {
-        (exportConfig as any)._customVariables = variablesToExport;
-      }
-
-      // Use new encoded format (compressed + Base64)
-      UcConfigEncoder.exportToFile(
-        exportConfig,
-        `${(this.config.card_name || 'ultra-card').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.txt`
-      );
-
-      let successMsg = localize(
-        'editor.ultra_card_pro.export_success',
-        lang,
-        'Card configuration exported!'
-      );
-      if (variablesToExport.length > 0) {
-        successMsg += ` (including ${variablesToExport.length} variable(s))`;
-      }
-      ucToastService.success(successMsg);
-    } catch (error) {
-      console.error('Export failed:', error);
-      ucToastService.error('Failed to export card configuration');
-    }
-  }
-
-  private _handleImport() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.txt,.json'; // Accept both encoded (.txt) and plain JSON
-    const lang = this.hass?.locale?.language || 'en';
-
-    input.onchange = async (e: Event) => {
-      try {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-
-        const text = await file.text();
-        let data: any;
-
-        // Try to parse as JSON first (snapshot format)
-        try {
-          data = JSON.parse(text);
-        } catch {
-          // If JSON parsing fails, try as encoded format
-          data = await UcConfigEncoder.importFromFile(file);
-        }
-
-        // Check if this is a snapshot file (multiple cards)
-        if (data.cards && Array.isArray(data.cards)) {
-          this._handleSnapshotImport(data);
-          return;
-        }
-
-        // Single card config
-        const config = data.type ? data : await UcConfigEncoder.importFromFile(file);
-
-        // Validate it's an Ultra Card config
-        if (config.type !== 'custom:ultra-card' || !config.layout) {
-          throw new Error('Invalid Ultra Card configuration file');
-        }
-
-        // Check for custom variables in import
-        const importedVariables = config._customVariables;
-        let shouldImportVariables = false;
-
-        if (importedVariables && Array.isArray(importedVariables) && importedVariables.length > 0) {
-          // Ask user if they want to import the variables
-          shouldImportVariables = confirm(
-            localize(
-              'editor.export_import.import_variables',
-              lang,
-              `This card includes ${importedVariables.length} custom variable(s). Import them?`
-            )
-          );
-        }
-
-        if (confirm('Import this card configuration? Your current config will be replaced.')) {
-          // Remove the _customVariables from config before saving (it's metadata, not card config)
-          const cleanConfig = { ...config };
-          delete cleanConfig._customVariables;
-
-          // Import variables if user confirmed - always as card-specific (local)
-          // User can change to global later if needed
-          if (shouldImportVariables && importedVariables) {
-            const currentCardVars: CustomVariable[] = [];
-            const exportData = { customVariables: importedVariables } as any;
-            const varResult = ucExportImportService.importVariablesAsCardSpecific(
-              exportData,
-              currentCardVars
-            );
-
-            // Add imported variables to the clean config as card-specific
-            if (varResult.cardVarsToAdd.length > 0) {
-              cleanConfig._customVariables = varResult.cardVarsToAdd;
-
-              // Show summary
-              const { summary } = varResult;
-              let message = `Imported ${summary.added} variable(s) as card-specific`;
-              if (summary.renamed.length > 0) {
-                const renames = summary.renamed.map(r => `${r.from}→${r.to}`).join(', ');
-                message += ` (renamed: ${renames})`;
-              }
-              if (summary.skipped.length > 0) {
-                message += ` (${summary.skipped.length} skipped - already exist)`;
-              }
-              ucToastService.success(message);
-            }
-          }
-
-          this._updateConfig(cleanConfig);
-
-          // Scan imported config for variables that are used but not yet defined
-          // This handles cases where the user received a config that uses variables
-          // but didn't have the variable definitions included in the export
-          const missingVars = findMissingVariables(cleanConfig);
-
-          if (missingVars.length > 0) {
-            // Show the variable mapping dialog to let user create missing variables
-            this._missingVariables = missingVars;
-            this._pendingImportConfig = cleanConfig;
-            this._showVariableMappingDialog = true;
-          } else {
-            ucToastService.success(
-              localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!')
-            );
-          }
-        }
-      } catch (error) {
-        console.error('Import failed:', error);
-        ucToastService.error(
-          'Failed to import card configuration: ' +
-            (error instanceof Error ? error.message : 'Unknown error')
-        );
-      }
-    };
-
-    input.click();
+    // Live Preview reads the breakpoint from the layout tab; nothing to store here.
+    void e;
   }
 
   private _handleVariableMappingConfirm(e: CustomEvent): void {
@@ -6661,7 +5118,6 @@ export class UltraCardEditor extends LitElement {
 
     this._showVariableMappingDialog = false;
     this._missingVariables = [];
-    this._pendingImportConfig = null;
     ucToastService.success(
       localize(
         'editor.ultra_card_pro.import_success',
@@ -6675,423 +5131,7 @@ export class UltraCardEditor extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
     this._showVariableMappingDialog = false;
     this._missingVariables = [];
-    this._pendingImportConfig = null;
     ucToastService.success(localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!'));
-  }
-
-  private _handleSnapshotImport(snapshotData: any) {
-    const cards = snapshotData.cards || [];
-
-    if (cards.length === 0) {
-      ucToastService.error('No cards found in snapshot file');
-      return;
-    }
-
-    // Build selection message
-    let message = `📸 Snapshot Import\n\n`;
-    message += `Found ${cards.length} cards in this snapshot.\n\n`;
-    message += `Select a card to import:\n\n`;
-
-    // Group cards by view
-    const cardsByView: { [key: string]: any[] } = {};
-    cards.forEach((card: any, index: number) => {
-      const viewTitle = card.view_title || 'Unknown View';
-      if (!cardsByView[viewTitle]) {
-        cardsByView[viewTitle] = [];
-      }
-      cardsByView[viewTitle].push({ ...card, originalIndex: index });
-    });
-
-    // Build selection options
-    let cardIndex = 0;
-    const cardOptions: any[] = [];
-
-    Object.entries(cardsByView).forEach(([viewTitle, viewCards]) => {
-      message += `\n📋 ${viewTitle}:\n`;
-      viewCards.forEach((card: any) => {
-        cardIndex++;
-        const cardName = card.card_name || card.config?.card_name || `Card ${card.card_index + 1}`;
-        message += `  ${cardIndex}. ${cardName}\n`;
-        cardOptions.push(card);
-      });
-    });
-
-    message += `\n\nEnter the number of the card you want to import (1-${cardOptions.length}):`;
-
-    const selection = prompt(message);
-    if (!selection) return;
-
-    const selectedNum = parseInt(selection);
-    if (isNaN(selectedNum) || selectedNum < 1 || selectedNum > cardOptions.length) {
-      ucToastService.error('Invalid selection');
-      return;
-    }
-
-    const selectedCard = cardOptions[selectedNum - 1];
-    const config = selectedCard.config;
-
-    if (!config || config.type !== 'custom:ultra-card') {
-      ucToastService.error('Invalid card configuration in snapshot');
-      return;
-    }
-
-    if (
-      confirm(
-        `Import "${selectedCard.card_name || 'this card'}"?\n\nThis will replace your current card configuration.`
-      )
-    ) {
-      this._updateConfig(config);
-      ucToastService.success('Card imported successfully from snapshot!');
-    }
-  }
-
-  private _handleCreateBackup() {
-    this._showManualBackup = true;
-  }
-
-  // Dashboard Pro Tools Handlers
-  private _handleExportDashboard() {
-    try {
-      // Export current dashboard configuration
-      const dashboardConfig = {
-        views: this.hass?.panels?.['lovelace']?.config?.views || [],
-        dashboard_path: this.hass?.panels?.['lovelace']?.config?.dashboard_path || 'default',
-        exported_at: new Date().toISOString(),
-        exported_by: this._cloudUser?.username || 'Unknown',
-      };
-
-      const blob = new Blob([JSON.stringify(dashboardConfig, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `dashboard-export-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      ucToastService.success('Dashboard configuration exported successfully!');
-    } catch (error) {
-      console.error('Dashboard export failed:', error);
-      ucToastService.error('Failed to export dashboard configuration');
-    }
-  }
-
-  private _handleImportDashboard() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-
-    input.onchange = async (e: Event) => {
-      try {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        if (!data.views || !Array.isArray(data.views)) {
-          throw new Error('Invalid dashboard configuration file');
-        }
-
-        if (
-          confirm('Import this dashboard configuration? This will replace your current dashboard.')
-        ) {
-          // This would need to be implemented with proper Home Assistant API calls
-          ucToastService.info(
-            'Dashboard import requires Home Assistant API integration. Please use the Home Assistant UI to import dashboard configurations.'
-          );
-        }
-      } catch (error) {
-        console.error('Dashboard import failed:', error);
-        ucToastService.error(
-          'Failed to import dashboard configuration: ' +
-            (error instanceof Error ? error.message : 'Unknown error')
-        );
-      }
-    };
-
-    input.click();
-  }
-
-  private _handleCreateSnapshot() {
-    // Use the existing manual snapshot functionality
-    this._handleManualSnapshot();
-  }
-
-  private _handleRestoreSnapshot() {
-    // This will open the snapshot history modal for restoration
-    this._showBackupHistory = true;
-  }
-
-  private _handleViewSnapshots() {
-    // This will open the snapshot history modal
-    this._showBackupHistory = true;
-  }
-
-  private _handleManualBackupCreated(e: CustomEvent) {
-    const lang = 'en';
-    const { name } = e.detail;
-
-    // Refresh subscription to update count
-    if (this._cloudUser) {
-      ucCloudBackupService.getSubscription().then(subscription => {
-        if (this._cloudUser) {
-          this._cloudUser.subscription = subscription;
-          this.requestUpdate();
-        }
-      });
-    }
-
-    ucToastService.success(
-      localize('editor.ultra_card_pro.backup_created', lang, 'Backup created successfully!') +
-        ` "${name}"`
-    );
-  }
-
-  private _handleBackupRestored(e: CustomEvent) {
-    const { config } = e.detail;
-    this._updateConfig(config);
-    ucToastService.success('Backup restored successfully!');
-  }
-
-  private _handleSnapshotCreated(e: CustomEvent) {
-    if (this._cloudUser) {
-      ucCloudBackupService.getSubscription().then(subscription => {
-        if (this._cloudUser) {
-          this._cloudUser.subscription = subscription;
-          this.requestUpdate();
-        }
-      });
-    }
-    ucToastService.success('Snapshot created successfully!');
-  }
-
-  private _handleSnapshotRestored(e: CustomEvent) {
-    // Snapshot has been automatically restored to the dashboard
-  }
-
-  private _handleCardBackupRestored(e: CustomEvent) {
-    const { config } = e.detail;
-    this._updateConfig(config);
-    ucToastService.success('Card backup restored successfully!');
-  }
-
-  private async _handleSnapshotSettingsSaved() {
-    // Refresh scheduler status
-    this._updateSnapshotSchedulerStatus();
-  }
-
-  private async _updateSnapshotSchedulerStatus() {
-    try {
-      this._snapshotSchedulerStatus = await ucSnapshotSchedulerService.getStatus();
-    } catch (error) {
-      console.error('Failed to get snapshot scheduler status:', error);
-    }
-  }
-
-  /**
-   * Handle manual snapshot creation
-   */
-  private async _handleManualSnapshot(): Promise<void> {
-    if (this._isCreatingManualSnapshot) {
-      return;
-    }
-
-    try {
-      this._isCreatingManualSnapshot = true;
-
-      // Create the snapshot
-      await ucSnapshotService.createSnapshot();
-
-      // Update the last snapshot timestamp
-      ucSnapshotSchedulerService.updateLastSnapshotTime();
-
-      // Refresh the scheduler status to update the display
-      await this._updateSnapshotSchedulerStatus();
-
-      // Show success notification using HA toast
-      const event = new CustomEvent('hass-notification', {
-        detail: {
-          message: 'Manual dashboard snapshot created successfully.',
-          duration: 5000,
-        },
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    } catch (error) {
-      console.error('❌ Manual snapshot failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      ucToastService.error(`Failed to create manual snapshot: ${errorMessage}`);
-    } finally {
-      this._isCreatingManualSnapshot = false;
-    }
-  }
-
-  /**
-   * Render login section for unauthenticated users.
-   * Auth is via the Ultra Card hub (Account tab) or Ultra Card Connect integration only.
-   */
-  private _renderLoginSection(lang: string): TemplateResult {
-    return html`
-      <div class="login-section">
-        <div class="login-prompt">
-          <div class="login-benefits">
-            <h5>Benefits of Cloud Sync:</h5>
-            <ul>
-              <li>Access your favorites on any device</li>
-              <li>Automatic backup of your custom colors</li>
-              <li>Sync your preset reviews and ratings</li>
-              <li>Keep your configurations safe</li>
-            </ul>
-          </div>
-
-          <div class="login-actions">
-            <p class="login-note integration-only">
-              To sign in, open the <strong>Ultra Card hub</strong> and go to the <strong>Account</strong> tab,
-              or configure the <strong>Ultra Card Connect</strong> integration in Settings → Devices & Services.
-            </p>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render sync controls for authenticated users
-   */
-  private _renderSyncControls(lang: string): TemplateResult {
-    const lastSync = this._syncStatus?.lastSync;
-    const isSyncing = this._syncStatus?.isSyncing || false;
-    const pendingChanges = this._syncStatus?.pendingChanges || 0;
-    const conflicts = this._syncStatus?.conflicts || [];
-
-    return html`
-      <div class="sync-controls">
-        <div class="user-info">
-          <div class="user-details">
-            ${this._cloudUser?.avatar
-              ? html`<img src="${this._cloudUser.avatar}" alt="Avatar" class="user-avatar" />`
-              : html`<div class="user-avatar-placeholder">
-                  ${this._cloudUser?.displayName?.charAt(0) || '?'}
-                </div>`}
-            <div class="user-text">
-              <strong>${this._cloudUser?.displayName || 'Unknown User'}</strong>
-              <span class="user-email">${this._cloudUser?.email}</span>
-            </div>
-          </div>
-          <button class="logout-btn" @click=${this._handleLogout} title="Sign Out">
-            <ha-icon icon="mdi:logout"></ha-icon>
-          </button>
-        </div>
-
-        <div class="sync-status">
-          <div class="sync-info">
-            <div class="sync-stat">
-              <span class="stat-label">Last Sync:</span>
-              <span class="stat-value">
-                ${lastSync ? this._formatRelativeTime(lastSync) : 'Never'}
-              </span>
-            </div>
-            ${pendingChanges > 0
-              ? html`
-                  <div class="sync-stat pending">
-                    <span class="stat-label">Pending:</span>
-                    <span class="stat-value">${pendingChanges} changes</span>
-                  </div>
-                `
-              : ''}
-            ${conflicts.length > 0
-              ? html`
-                  <div class="sync-stat conflicts">
-                    <span class="stat-label">Conflicts:</span>
-                    <span class="stat-value">${conflicts.length} items</span>
-                  </div>
-                `
-              : ''}
-          </div>
-
-          <div class="sync-actions">
-            <button
-              class="sync-btn"
-              @click=${this._handleSyncNow}
-              ?disabled=${isSyncing}
-              title="Sync all data now"
-            >
-              <ha-icon icon="mdi:sync${isSyncing ? ' spin' : ''}"></ha-icon>
-              ${isSyncing ? 'Syncing...' : 'Sync Now'}
-            </button>
-          </div>
-        </div>
-
-        <div class="sync-settings">
-          <div class="sync-toggle">
-            <label class="toggle-label">
-              <input
-                type="checkbox"
-                ?checked=${this._syncStatus?.isEnabled}
-                @change=${this._handleSyncToggle}
-                ?disabled=${isSyncing}
-              />
-              <span class="toggle-text">
-                ${localize('editor.cloud_sync.auto_sync', lang, 'Automatic Sync')}
-              </span>
-            </label>
-            <p class="toggle-description">
-              ${localize(
-                'editor.cloud_sync.auto_sync_desc',
-                lang,
-                'Automatically sync changes in the background'
-              )}
-            </p>
-          </div>
-        </div>
-
-        ${conflicts.length > 0 ? this._renderConflicts(conflicts, lang) : ''}
-      </div>
-    `;
-  }
-
-  /**
-   * Render sync conflicts
-   */
-  private _renderConflicts(conflicts: any[], lang: string): TemplateResult {
-    return html`
-      <div class="sync-conflicts">
-        <h6>Sync Conflicts</h6>
-        <p>The following items have conflicts that need to be resolved:</p>
-
-        <div class="conflicts-list">
-          ${conflicts.map(
-            conflict => html`
-              <div class="conflict-item">
-                <div class="conflict-info">
-                  <strong>${conflict.type}: ${conflict.local.name || conflict.local.id}</strong>
-                  <span class="conflict-field">Field: ${conflict.field}</span>
-                </div>
-                <div class="conflict-actions">
-                  <button
-                    class="resolve-btn local"
-                    @click=${() => this._resolveConflict(conflict, 'local')}
-                  >
-                    Keep Local
-                  </button>
-                  <button
-                    class="resolve-btn remote"
-                    @click=${() => this._resolveConflict(conflict, 'remote')}
-                  >
-                    Keep Cloud
-                  </button>
-                </div>
-              </div>
-            `
-          )}
-        </div>
-      </div>
-    `;
   }
 
   /**
@@ -7114,94 +5154,6 @@ export class UltraCardEditor extends LitElement {
     // Start auto-snapshot scheduler for Pro users
     if (user?.subscription?.tier === 'pro') {
       ucSnapshotSchedulerService.start();
-      // Subscribe to status updates
-      ucSnapshotSchedulerService.subscribe(status => {
-        this._snapshotSchedulerStatus = status;
-      });
-      // Get initial status
-      this._updateSnapshotSchedulerStatus();
     }
-  }
-
-  /**
-   * Handle logout
-   */
-  private async _handleLogout(): Promise<void> {
-    try {
-      // Stop snapshot scheduler
-      ucSnapshotSchedulerService.stop();
-      this._snapshotSchedulerStatus = null;
-
-      if (this.hass && ucCloudAuthService.isIntegrationInstalled(this.hass)) {
-        await ucCloudAuthService.logoutViaHass(this.hass);
-      } else {
-        await ucCloudAuthService.logout();
-      }
-      console.log('✅ Successfully logged out');
-    } catch (error) {
-      console.error('❌ Logout failed:', error);
-    }
-  }
-
-  /**
-   * Handle sync now button
-   */
-  private async _handleSyncNow(): Promise<void> {
-    try {
-      const results = await ucCloudSyncService.syncAll();
-
-      // Show success message (could be enhanced with toast notification)
-      const totalSynced = results.favorites.synced + results.colors.synced + results.reviews.synced;
-      if (totalSynced > 0) {
-      }
-    } catch (error) {
-      console.error('❌ Sync failed:', error);
-      // Could show error toast here
-    }
-  }
-
-  /**
-   * Handle sync toggle
-   */
-  private async _handleSyncToggle(e: Event): Promise<void> {
-    const target = e.target as HTMLInputElement;
-    const enabled = target.checked;
-
-    try {
-      await ucCloudSyncService.setSyncEnabled(enabled);
-    } catch (error) {
-      console.error('❌ Failed to toggle sync:', error);
-      // Revert checkbox state
-      target.checked = !enabled;
-    }
-  }
-
-  /**
-   * Resolve a sync conflict
-   */
-  private async _resolveConflict(conflict: any, resolution: 'local' | 'remote'): Promise<void> {
-    try {
-      await ucCloudSyncService.resolveConflict(conflict, resolution);
-    } catch (error) {
-      console.error('❌ Failed to resolve conflict:', error);
-    }
-  }
-
-  /**
-   * Format relative time for last sync display
-   */
-  private _formatRelativeTime(date: Date): string {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-
-    return date.toLocaleDateString();
   }
 }

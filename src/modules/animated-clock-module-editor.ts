@@ -2,7 +2,7 @@
 // Clean, organized UI following Ultra Card design patterns
 
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { AnimatedClockModule, UltraCardConfig, CardModule } from '../types';
 import { localize } from '../localize/localize';
 import { uploadImage } from '../utils/image-upload';

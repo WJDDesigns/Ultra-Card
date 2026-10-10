@@ -1,7 +1,7 @@
 import { TemplateResult, html } from 'lit';
 import { ref, createRef, Ref } from 'lit/directives/ref.js';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, MapModule, MapMarker, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
@@ -997,28 +997,17 @@ export class UltraMapModule extends BaseUltraModule {
           ? html`
               <div style="margin-top: 16px;">
                 <div style="margin-bottom: 12px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 500; margin-bottom: 4px;"
-                  >
-                    ${localize('editor.map.marker.icon', lang, 'Marker Icon')}
-                  </div>
-                  <div
-                    style="font-size: 11px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.7;"
-                  >
-                    ${localize(
+                  ${this.renderIconField(
+                    localize('editor.map.marker.icon', lang, 'Marker Icon'),
+                    localize(
                       'editor.map.marker.icon_optional',
                       lang,
                       'Optional - Leave empty for solid color teardrop'
-                    )}
-                  </div>
-                  <ha-icon-picker
-                    .hass=${hass}
-                    .value=${marker.icon || ''}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateMarker({ icon: e.detail.value });
-                    }}
-                  ></ha-icon-picker>
+                    ),
+                    hass,
+                    marker.icon || '',
+                    icon => updateMarker({ icon })
+                  )}
                 </div>
 
                 <div style="margin-bottom: 12px;">

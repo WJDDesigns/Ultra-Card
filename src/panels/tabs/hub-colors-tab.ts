@@ -698,15 +698,15 @@ export class HubColorsTab extends LitElement {
 
     return html`
       <div class="color-card ${isEditing ? 'editing' : ''}">
-        <div
+        <div role="button" tabindex="0" data-uc-activate
           class="color-swatch-area"
           style="background: ${isEditing ? this._editColor : fav.color}"
           @click=${() => this._copyColor(fav.color)}
           title="Click to copy"
         >
           <div class="swatch-overlay">
-            <ha-icon icon="mdi:content-copy" @click=${(e: Event) => { e.stopPropagation(); this._copyColor(fav.color); }}></ha-icon>
-            <ha-icon icon="mdi:pencil" @click=${(e: Event) => { e.stopPropagation(); this._startEdit(fav); }}></ha-icon>
+            <ha-icon role="button" tabindex="0" data-uc-activate icon="mdi:content-copy" @click=${(e: Event) => { e.stopPropagation(); this._copyColor(fav.color); }}></ha-icon>
+            <ha-icon role="button" tabindex="0" data-uc-activate icon="mdi:pencil" @click=${(e: Event) => { e.stopPropagation(); this._startEdit(fav); }}></ha-icon>
           </div>
         </div>
 

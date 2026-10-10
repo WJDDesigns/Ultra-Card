@@ -1,6 +1,6 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import * as THREE from 'three';
 import type { LivingCanvasModule, LivingCanvasPreset } from '../types';
 import { getLivingCanvasPresetColors, resolveLivingCanvasColor } from '../utils/uc-living-canvas-colors';

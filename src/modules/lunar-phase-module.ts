@@ -1,7 +1,7 @@
 import { TemplateResult, html, svg, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
   CardModule,
@@ -1767,7 +1767,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
   /** Re-render once a minute so the live position, markers, and relative times stay fresh */
   private _ensureTick(): void {
     if (this._tickTimer) return;
-    this._tickTimer = setInterval(() => this.triggerPreviewUpdate(), 60000);
+    this._tickTimer = setInterval(() => this.triggerPreviewUpdate(false, true), 60000);
   }
 
   private _fontSize(value: string | undefined, autoPx: string): string {

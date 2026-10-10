@@ -4,7 +4,7 @@
  */
 
 import { WeatherEffectType } from '../types';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 /**
  * Map Home Assistant weather condition to effect type

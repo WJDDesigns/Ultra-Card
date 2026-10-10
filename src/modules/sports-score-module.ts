@@ -1,5 +1,5 @@
 import { TemplateResult, html, css } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
   CardModule,
@@ -1289,7 +1289,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
    * Convert style object to CSS string
    * Only filters out undefined/null - lets valid CSS values through
    */
-  private styleObjectToCss(styles: Record<string, any>): string {
+  /** Like styleObjectToCss, but also skips reset values (padding 0, border none, …). */
+  private styleObjectToCssSkippingDefaults(styles: Record<string, any>): string {
     return Object.entries(styles)
       .filter(([key, value]) => {
         // Skip undefined/null
@@ -2255,32 +2256,6 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       return fallback;
     }
     return String(score);
-  }
-
-  /**
-   * Helper to add pixel unit to numeric values
-   */
-  private addPixelUnit(value: string | number | undefined): string | undefined {
-    if (!value && value !== 0) return undefined;
-    
-    const valueStr = String(value);
-    
-    // Handle special CSS values
-    if (valueStr === 'auto' || valueStr === 'none' || valueStr === 'inherit' || valueStr === 'initial' || valueStr === 'unset') {
-      return valueStr;
-    }
-    
-    // If value is just a number, add px
-    if (/^\d+$/.test(valueStr)) {
-      return `${valueStr}px`;
-    }
-    
-    // If already has unit, return as-is
-    if (/[a-zA-Z%]/.test(valueStr)) {
-      return valueStr;
-    }
-    
-    return valueStr;
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {

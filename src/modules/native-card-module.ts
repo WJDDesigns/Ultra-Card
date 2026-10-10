@@ -1,6 +1,6 @@
 import { html, TemplateResult, css, CSSResult } from 'lit';
 import { ref } from 'lit/directives/ref.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { NativeCardModule, UltraCardConfig } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { ucNativeCardsService } from '../services/uc-native-cards-service';
@@ -216,9 +216,9 @@ export class UltraNativeCardModule extends BaseUltraModule {
     tags: ['native', 'home-assistant', 'card'],
   };
 
-  createDefault(): NativeCardModule {
+  createDefault(id?: string): NativeCardModule {
     return {
-      id: `native-card-${Date.now()}`,
+      id: id || `native-card-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: 'native_card',
       name: 'Native Card',
       card_type: 'hui-entities-card',
@@ -363,7 +363,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
                 } catch (e) {
                   // Expected for unconfigured cards (missing required fields)
                   UC_DEBUG &&
-                    console.log(
+                    UC_DEBUG && console.log(
                       '[UC Native Card] setConfig error (expected):',
                       (e as Error).message
                     );
@@ -425,7 +425,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
             const configType = ucNativeCardsService.elementNameToConfigType(module.card_type);
             const editorElementName = `${module.card_type}-editor`;
             UC_DEBUG &&
-              console.log(
+              UC_DEBUG && console.log(
                 '[UC Native Card] Creating editor for:',
                 module.card_type,
                 'config type:',
@@ -452,20 +452,20 @@ export class UltraNativeCardModule extends BaseUltraModule {
                   editorElement = result;
                   isDirectEditor = true;
                   UC_DEBUG &&
-                    console.log(
+                    UC_DEBUG && console.log(
                       '[UC Native Card] Got direct editor from getConfigElement:',
                       result.tagName
                     );
                 } else {
                   UC_DEBUG &&
-                    console.log(
+                    UC_DEBUG && console.log(
                       '[UC Native Card] getConfigElement returned invalid result:',
                       result
                     );
                 }
               } else if (customElements.get(editorElementName)) {
                 UC_DEBUG &&
-                  console.log(
+                  UC_DEBUG && console.log(
                     '[UC Native Card] Editor class found, creating directly:',
                     editorElementName
                   );
@@ -474,7 +474,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
               }
             } catch (e) {
               UC_DEBUG &&
-                console.log(
+                UC_DEBUG && console.log(
                   '[UC Native Card] Could not get direct editor, falling back to wrapper:',
                   e
                 );
@@ -609,7 +609,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
             }
             
             UC_DEBUG &&
-              console.log(
+              UC_DEBUG && console.log(
                 '[UC Native Card] Setting initial editor config (direct:',
                 isDirectEditor,
                 '):',
@@ -634,7 +634,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
                 if (typeof (editor as any).setConfig === 'function') {
                   (editor as any).setConfig(configWithDefaults);
                   UC_DEBUG &&
-                    console.log(
+                    UC_DEBUG && console.log(
                       '[UC Native Card] Direct editor setConfig succeeded with config:',
                       configWithDefaults
                     );
@@ -645,7 +645,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
                 // Many cards throw when required fields are missing - this is expected
                 // Try again with the original config (some editors handle empty better)
                 UC_DEBUG &&
-                  console.log(
+                  UC_DEBUG && console.log(
                     '[UC Native Card] Direct editor setConfig error:',
                     (e as Error).message
                   );
@@ -653,7 +653,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
                   (editor as any).setConfig(editorConfig);
                 } catch (e2) {
                   UC_DEBUG &&
-                    console.log(
+                    UC_DEBUG && console.log(
                       '[UC Native Card] Fallback setConfig also failed (expected for unconfigured cards)'
                     );
                 }
@@ -677,7 +677,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
                 const hasVisualEditor = ed.querySelector(':not(ha-code-editor)');
                 if (!hasVisualEditor) {
                   UC_DEBUG &&
-                    console.log('[UC Native Card] Editor may be in YAML mode, retrying...');
+                    UC_DEBUG && console.log('[UC Native Card] Editor may be in YAML mode, retrying...');
                   (ed as any).value = { ...wrapperConfig };
                 }
               }, 200);

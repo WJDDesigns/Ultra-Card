@@ -4,6 +4,7 @@ import type { UltraCardConfig, CardRow, CardColumn, CardModule } from '../../../
 import type { LayoutTab } from '../layout-tab';
 import { getModuleRegistry } from '../../../modules/module-registry';
 import { coreLoaders } from '../../../modules/module-loaders';
+import '../../../components/ultra-link-editor';
 
 export const mockHass = {
   states: {},
@@ -18,6 +19,27 @@ export const mockHass = {
   selectedTheme: null,
   panels: [],
   user: { is_admin: true },
+} as any;
+
+/**
+ * `mockHass` plus a connected Ultra Card Connect sensor on the Pro tier, so
+ * Pro-gated editors render their real controls instead of the upgrade card.
+ */
+export const mockProHass = {
+  ...mockHass,
+  states: {
+    'sensor.ultra_card_pro_cloud_authentication_status': {
+      entity_id: 'sensor.ultra_card_pro_cloud_authentication_status',
+      state: 'connected',
+      attributes: {
+        authenticated: true,
+        user_id: 1,
+        username: 'test',
+        subscription_tier: 'pro',
+        subscription_status: 'active',
+      },
+    },
+  },
 } as any;
 
 let modulesLoaded = false;
@@ -120,6 +142,11 @@ const INTERACTIVE_SELECTOR_ORDER = [
   'input[type="checkbox"]',
   'input[type="text"]',
   'input:not([type])',
+  // Shared Ultra Card field elements, tried after native controls. They emit
+  // `value-changed` like the HA pickers they replace.
+  'ultra-segmented',
+  'ultra-icon-field',
+  'ultra-color-picker',
 ];
 
 /** First native form control in `root` or any descendant shadow root. */
@@ -132,6 +159,19 @@ export function findFirstInteractableDeep(root: Document | ShadowRoot | Element)
 }
 
 export function fireInteractFirstControl(el: HTMLElement) {
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'ultra-segmented' || tag === 'ultra-icon-field' || tag === 'ultra-color-picker') {
+    const host = el as HTMLElement & { value?: string; options?: Array<{ value: string }> };
+    let value = tag === 'ultra-icon-field' ? 'mdi:test-tube' : '#ff0000';
+    if (tag === 'ultra-segmented') {
+      const other = (host.options || []).find(o => o.value !== host.value);
+      value = other?.value ?? 'x';
+    }
+    el.dispatchEvent(
+      new CustomEvent('value-changed', { detail: { value }, bubbles: true, composed: true })
+    );
+    return;
+  }
   // <ha-slider> exposes `.value` as a property; tests can bump it and dispatch
   // a synthetic change event to mimic user dragging.
   if (el.tagName.toLowerCase() === 'ha-slider') {

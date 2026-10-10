@@ -34,10 +34,12 @@ describe('layout-tab: column settings tabs', () => {
   it('general tab updates column.vertical_alignment', async () => {
     const el = await openColumn();
     const wait = nextConfigChanged(el);
-    const sel = el.shadowRoot!.querySelector('select') as HTMLSelectElement;
-    expect(sel).toBeTruthy();
-    sel.value = 'top';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    // Vertical alignment is the first ha-form (shared select) in the General tab.
+    const form = el.shadowRoot!.querySelector('ha-form') as HTMLElement;
+    expect(form).toBeTruthy();
+    form.dispatchEvent(
+      new CustomEvent('value-changed', { detail: { value: { v: 'top' } }, bubbles: true })
+    );
     const { config } = await wait;
     expect(config.layout.rows[0].columns[0].vertical_alignment).toBe('top');
   });

@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedClockModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
@@ -1394,23 +1394,6 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       .filter(([_, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
       .join('; ');
-  }
-
-  // Helper method to add pixel unit if needed
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return undefined;
-    if (
-      typeof value === 'string' &&
-      (value.includes('px') ||
-        value.includes('%') ||
-        value.includes('em') ||
-        value.includes('rem') ||
-        value.includes('vh') ||
-        value.includes('vw'))
-    ) {
-      return value;
-    }
-    return `${value}px`;
   }
 
   // Helper method to get background image CSS

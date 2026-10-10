@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import type { HomeAssistant } from './ha/types';
+import { fireEvent } from './ha/helpers';
 
 type EntityPickerFilter = (entityId: string) => boolean;
 

@@ -493,14 +493,14 @@ export class UltraWysiwygEditor extends LitElement {
   ): TemplateResult {
     return html`
       <div class="color-picker-popup" @mousedown=${(e: Event) => e.preventDefault()}>
-        <div
+        <div role="button" tabindex="0" data-uc-activate
           class="color-swatch clear-color ${!currentColor ? 'active' : ''}"
           @click=${() => onSelect('')}
           title="Remove color"
         ></div>
         ${colors.map(
           (c) => html`
-            <div
+            <div role="button" tabindex="0" data-uc-activate
               class="color-swatch ${currentColor === c ? 'active' : ''}"
               style="background: ${c}"
               @click=${() => onSelect(c)}

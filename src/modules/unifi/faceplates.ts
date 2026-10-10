@@ -13,7 +13,7 @@ import type { UnifiDevice, UnifiPort } from '../../services/uc-unifi-service';
 import { formatRate, linkSpeedColor, toMbps } from '../../services/uc-unifi-service';
 import { ucUnifiDeviceDb } from '../../services/uc-unifi-device-db';
 import { portMapForSku, type PortMap } from './port-maps';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 
 export interface FaceplateShape {
   widthU: number;

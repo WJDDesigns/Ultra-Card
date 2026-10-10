@@ -4,12 +4,13 @@
  * Handles priority resolution, conditional logic, and weather effect rendering
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { DynamicWeatherModule, UltraCardConfig, WeatherEffectType } from '../types';
 import { logicService } from './logic-service';
 import { WeatherEffectsEngine } from '../utils/weather-effects-engine';
 import { mapWeatherConditionToEffect } from '../utils/weather-condition-mapper';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 interface RegisteredModule {
   cardId: string;
   moduleId: string;
@@ -266,7 +267,7 @@ class UcDynamicWeatherService {
 
     // Handle reduced motion
     if (module.respect_reduced_motion && this.prefersReducedMotion()) {
-      console.log('Dynamic Weather: Reduced motion enabled, stopping');
+      UC_DEBUG && console.log('Dynamic Weather: Reduced motion enabled, stopping');
       viewLayer.engine.stop();
       this.hideWeatherLayer(viewLayer);
       return;

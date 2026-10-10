@@ -1,5 +1,6 @@
 import { TemplateResult, html, css, nothing } from 'lit';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
+import { fireEvent } from '../ha/helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ToggleModule, TogglePoint, UltraCardConfig } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';

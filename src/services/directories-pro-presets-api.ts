@@ -5,6 +5,7 @@
 
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 export interface WordPressPreset {
   id: number;
   name: string;
@@ -688,7 +689,7 @@ export class DirectoriesProPresetsAPI {
           }
 
           const data = await response.json();
-          console.log(`Successfully fetched via proxy: ${proxy}`);
+          UC_DEBUG && console.log(`Successfully fetched via proxy: ${proxy}`);
           return data;
         } catch (proxyError) {
           // Proxy failed silently, try next one

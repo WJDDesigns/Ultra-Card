@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, DatetimeInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
@@ -573,11 +573,5 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
     } catch (error) {
       console.error(`[DatetimeInput] Failed to set datetime for ${entity}:`, error);
     }
-  }
-
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
   }
 }

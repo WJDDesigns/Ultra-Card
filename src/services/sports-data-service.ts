@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { SportsGameData, SportsLeague, SportsGameStatus, SportsTeamInfo } from '../types';
 import { UC_DEBUG } from '../utils/uc-debug';
 

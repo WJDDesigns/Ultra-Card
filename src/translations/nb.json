@@ -189,7 +189,11 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Rad slettet",
+      "column_deleted": "Kolonne slettet",
+      "module_deleted": "Modul slettet",
+      "browse_presets_tooltip": "Bla gjennom forhåndsinnstillinger og legg en til dette kortet"
     },
     "about": {
       "developed_by": "Utviklet av",
@@ -1630,7 +1634,11 @@
           "device_state": "Device State",
           "attribute": "Attribute",
           "toggle": "Toggle"
-        }
+        },
+        "bg_image": "Bilde",
+        "bg_gradient": "Gradient",
+        "bg_color": "Farge",
+        "bg_entity": "Enhet"
       }
     },
     "common": {
@@ -1904,7 +1912,8 @@
         "desc": "JSON med verdi, button_background_color, button_text_color, value_color — eller et enkelt numerisk Jinja-resultat.",
         "toggle": "Template-modus",
         "cheatsheet": "Template jukseark"
-      }
+      },
+      "no_entity_hint": "Ingen enhet valgt: verdien endres bare på denne skjermen og lagres ikke."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2443,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funksjon",
       "sports_description": "Sports Score-modulen krever et Ultra Card Pro-abonnement for å vise live sportsresultater og laginformasjon.",
-      "upgrade_button": "Oppgrader til Pro"
+      "upgrade_button": "Oppgrader til Pro",
+      "status_not_installed": "Har du allerede Pro? Installer Ultra Card Connect og logg inn for å låse det opp her.",
+      "status_unreachable": "Ultra Card Connect får ikke kontakt med ultracard.io akkurat nå. Har du Pro, låses det opp igjen når forbindelsen er tilbake.",
+      "status_reauth": "Ultra Card Connect trenger at du logger inn på nytt (Innstillinger → Enheter og tjenester → Ultra Card Connect).",
+      "status_signed_out": "Har du allerede Pro? Logg inn på Ultra Card Connect fra Ultra Card Hub i sidepanelet.",
+      "status_inactive": "Pro-abonnementet ditt er {status}. Forny det på ultracard.io for å låse opp dette."
     },
     "toggle": {
       "display_settings": "VISNING INNSTILLINGER",
@@ -5373,6 +5387,177 @@
     "native_card": {
       "settings_title": "{name} Settings",
       "settings_desc": "Configure this native Home Assistant card using its built-in editor."
+    },
+    "ui": {
+      "module_selector_shell": {
+        "drag_to_resize": "Dra for å endre størrelse",
+        "favorites": "Favoritter",
+        "smart": "Smart",
+        "presets": "Forhåndsinnstillinger",
+        "cards": "Kort",
+        "modules": "Moduler",
+        "adding_to_layout_module_content_modules": "Legger til i layoutmodul (innholdsmoduler og layoutmoduler tillatt opptil 2 nivåer dypt)",
+        "close": "Lukk",
+        "add_module": "Legg til modul"
+      },
+      "card_selector_tab": {
+        "install_custom_cards_via_hacs": "Installer egendefinerte kort via HACS",
+        "no_3rd_party_cards_installed": "Ingen tredjepartskort installert",
+        "some_3rd_party_cards_may_not": "Noen tredjepartskort fungerer kanskje ikke som tiltenkt. Rapporter eventuelle problemer.",
+        "compatibility_notice": "Kompatibilitetsmerknad:",
+        "get_pro": "Få Pro",
+        "want_unlimited_3rd_party_cards": "Vil du ha ubegrensede tredjepartskort?",
+        "unlimited": "Ubegrenset",
+        "community_3rd_party": "Fellesskap og tredjepart",
+        "no_native_cards_detected": "Ingen innebygde kort funnet",
+        "native_home_assistant": "Innebygd Home Assistant",
+        "click_any_card_to_add_it": "Klikk på et kort for å legge det til i den valgte kolonnen. Innebygde HA-kort og tredjepartskort bruker sine egne redigeringsverktøy når de er tilgjengelige.",
+        "how_to_use": "Slik bruker du det:",
+        "refresh": "Oppdater",
+        "cards": "Kort",
+        "community_3rd_party_cards": "Fellesskaps- og tredjepartskort",
+        "native": "Innebygd",
+        "native_home_assistant_cards": "Innebygde Home Assistant-kort",
+        "clear_search": "Tøm søk",
+        "clear_search_2": "Tøm søk",
+        "search_cards": "Søk etter kort..."
+      },
+      "favorites_selector_tab": {
+        "use_the_heart_icon_on_any": "Bruk hjerteikonet på en rad for å lagre den som favoritt",
+        "no_favorites_saved_yet": "Ingen favoritter lagret ennå",
+        "delete": "Slett",
+        "export": "Eksporter",
+        "add_to_layout": "Legg til i layout",
+        "clear_search": "Tøm søk",
+        "search_favorites": "Søk i favoritter...",
+        "import": "Importer",
+        "saved_favorites": "Lagrede favoritter"
+      },
+      "modules_selector_tab": {
+        "priority_support": "Prioritert støtte",
+        "auto_snapshots": "Automatiske øyeblikksbilder",
+        "cloud_backups": "Skysikkerhetskopier",
+        "premium_modules": "Premium-moduler",
+        "access_premium_modules_like_weather_forecast": "Få tilgang til premium-moduler som værvarsel, avanserte animasjoner og flere eksklusive funksjoner.",
+        "ultra_card_pro": "Ultra Card PRO",
+        "clear_search": "Tøm søk",
+        "clear_search_2": "Tøm søk",
+        "module_layout": "Modullayout",
+        "pro": "PRO",
+        "standard": "Standard",
+        "module_type": "Modultype",
+        "layout_containers": "Layoutbeholdere"
+      },
+      "presets_selector_tab": {
+        "reload": "Last inn på nytt",
+        "refresh_presets_from_server": "Oppdater forhåndsinnstillinger fra server",
+        "no_presets_available_in_this_category": "Ingen forhåndsinnstillinger tilgjengelig i denne kategorien",
+        "clear_search": "Tøm søk",
+        "requires": "Krever",
+        "included": "Inkludert",
+        "card_settings": "Kortinnstillinger",
+        "variables": "Variabler",
+        "rows": "Rader",
+        "version": "Versjon",
+        "category": "Kategori",
+        "view_preset_details": "Vis detaljer om forhåndsinnstilling",
+        "add": "Legg til",
+        "add_this_preset_to_your_card": "Legg til denne forhåndsinnstillingen på kortet ditt",
+        "new": "Ny",
+        "retry": "Prøv igjen",
+        "failed_to_load_presets": "Kunne ikke laste inn forhåndsinnstillinger",
+        "top_rated": "Best vurdert",
+        "date": "Dato",
+        "name": "Navn",
+        "sort_by": "Sorter etter:",
+        "clear_search_2": "Tøm søk",
+        "search_presets": "Søk i forhåndsinnstillinger..."
+      },
+      "entity_replace_dialog": {
+        "replace_all": "Erstatt alle",
+        "cancel": "Avbryt",
+        "replace_with": "Erstatt med",
+        "find_entity": "Finn entitet",
+        "replaces_every_exact_text_match_of": "Erstatter hvert nøyaktige teksttreff av entitets-ID-en i dette kortets layout (inkludert maler og nestede moduler). Bruk angre i layoutbyggeren om nødvendig.",
+        "close": "Lukk",
+        "find_amp_replace_entity": "Finn og erstatt entitet"
+      },
+      "snapshot_history_modal": {
+        "delete": "🗑️ Slett",
+        "download": "⬇️ Last ned",
+        "rename": "✏️ Gi nytt navn",
+        "restore": "🔄 Gjenopprett",
+        "you_can_have_up_to_30": "💡 Du kan ha opptil 30 kortsikkerhetskopier. De eldste sikkerhetskopiene fjernes automatisk når grensen er nådd.",
+        "card_backups_save_individual_ultra_card": "Kortsikkerhetskopier lagrer individuelle Ultra Card-konfigurasjoner",
+        "no_card_backups_yet": "Ingen kortsikkerhetskopier ennå",
+        "restore_all": "🔄 Gjenopprett alle",
+        "views_breakdown": "Visningsoversikt:",
+        "dashboard_snapshots_capture_all_ultra_cards": "Dashbord-øyeblikksbilder fanger opp alle Ultra Cards på hele dashbordet ditt",
+        "no_dashboard_snapshots_yet": "Ingen dashbord-øyeblikksbilder ennå",
+        "loading": "Laster inn...",
+        "manual_card_backups": "Manuelle kortsikkerhetskopier",
+        "dashboard_snapshots": "Dashbord-øyeblikksbilder",
+        "close": "Lukk",
+        "backup_amp_snapshot_history": "Historikk for sikkerhetskopier og øyeblikksbilder"
+      },
+      "snapshot_settings_dialog": {
+        "cancel": "Avbryt",
+        "manual_snapshots_are_never_automatically_deleted": "Manuelle øyeblikksbilder slettes aldri automatisk",
+        "older_snapshots_are_automatically_deleted": "Eldre øyeblikksbilder slettes automatisk",
+        "30_days": "30 dager",
+        "auto_snapshots_are_kept_for": "Automatiske øyeblikksbilder beholdes i",
+        "storage_policy": "Lagringspolicy:",
+        "auto_snapshots_are_currently_disabled_you": "Automatiske øyeblikksbilder er for øyeblikket deaktivert. Du kan fortsatt opprette manuelle øyeblikksbilder når som helst.",
+        "next_snapshot": "Neste øyeblikksbilde:",
+        "sydney": "Sydney",
+        "shanghai": "Shanghai",
+        "tokyo": "Tokyo",
+        "berlin": "Berlin",
+        "paris": "Paris",
+        "london": "London",
+        "pacific_time_pt": "Stillehavstid (PT)",
+        "mountain_time_mt": "Mountain-tid (MT)",
+        "central_time_ct": "Central-tid (CT)",
+        "eastern_time_et": "Eastern-tid (ET)",
+        "utc": "UTC",
+        "snapshot_time_will_use_this_timezone": "Tidspunktet for øyeblikksbildet bruker denne tidssonen",
+        "timezone": "Tidssone",
+        "what_time_should_snapshots_be_created": "Når skal øyeblikksbilder opprettes? (24-timersformat)",
+        "snapshot_time": "Tidspunkt for øyeblikksbilde",
+        "automatically_backup_all_ultra_cards_in": "Sikkerhetskopier automatisk alle Ultra Cards på dashbordet ditt hver dag",
+        "enable_daily_auto_snapshots": "Aktiver daglige automatiske øyeblikksbilder",
+        "automatically_save_a_cloud_backup_when": "Lagre automatisk en skysikkerhetskopi når du redigerer dette kortet (forsinket). Slå av hvis du kun foretrekker manuelle øyeblikksbilder.",
+        "enable_real_time_auto_save": "Aktiver automatisk lagring i sanntid",
+        "loading_settings": "Laster inn innstillinger...",
+        "snapshot_settings": "⚙️ Innstillinger for øyeblikksbilder"
+      },
+      "snapshot_restore_dialog": {
+        "cancel": "Avbryt",
+        "affected_views": "Berørte visninger:",
+        "caution_deletes_all_ultra_cards_first": "Advarsel: sletter alle Ultra Cards først",
+        "best_for_heavily_broken_dashboards": "Best for svært ødelagte dashbord",
+        "exact_snapshot_state": "Nøyaktig tilstand for øyeblikksbildet",
+        "fixes_duplicated_cards": "Retter dupliserte kort",
+        "deletes_all_ultra_cards_first_then": "Sletter ALLE Ultra Cards først, og gjenoppretter deretter kortene fra øyeblikksbildet til nøyaktig opprinnelig plassering og rekkefølge.",
+        "nuclear_option": "Siste utvei",
+        "clean_restore": "Rydd og gjenopprett",
+        "can_run_multiple_times": "Kan kjøres flere ganger",
+        "preserves_non_matching_cards": "Bevarer kort som ikke samsvarer",
+        "works_with_named_or_unnamed_cards": "Fungerer med navngitte eller navnløse kort",
+        "safe_no_duplicates": "Trygt - ingen duplikater",
+        "intelligently_matches_cards_by_custom_name": "Matcher kort intelligent etter egendefinert navn ELLER plassering, og erstatter dem på stedet uten å lage duplikater.",
+        "recommended": "Anbefalt",
+        "smart_replace": "Smart erstatning",
+        "restore_dashboard_snapshot": "Gjenopprett dashbord-øyeblikksbilde"
+      }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} er installert, men denne siden kjører fortsatt {running}. Last inn på nytt for å fullføre oppdateringen.",
+      "reload": "Last inn på nytt",
+      "dismiss": "Lukk"
+    },
+    "color_picker": {
+      "gradient_presets": "Forhåndsinnstilte gradienter"
     }
   },
   "hub": {

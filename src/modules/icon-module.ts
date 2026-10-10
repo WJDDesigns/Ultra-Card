@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { formatEntityState } from '../utils/number-format';
 import { CardModule, IconModule, IconConfig, UltraCardConfig } from '../types';
@@ -611,8 +611,11 @@ export class UltraIconModule extends BaseUltraModule {
 
     // Ensure animations/styles exist globally
     this._injectGlobalStyles();
-    // Ensure keyframes exist inside ha-icon shadow roots for Live Preview animations
-    this._injectKeyframesForAllSplitPreviewIcons();
+    // Ensure keyframes exist inside ha-icon shadow roots for Live Preview animations.
+    // Editor-only: on a dashboard this was a document query plus a timer per icon per render.
+    if (previewContext === 'live' || previewContext === 'ha-preview') {
+      this._injectKeyframesForAllSplitPreviewIcons();
+    }
 
     // Inject into local shadow DOM — include keyframes so animations work in shadow DOM context
     const localStyle = html`<style>
@@ -4035,8 +4038,7 @@ export class UltraIconModule extends BaseUltraModule {
 
       .slider.round {
         border-radius: var(--uc-r-24, 24px);
-    max-width: 50px;
-}
+        max-width: 50px;
       }
 
       .slider.round:before {
@@ -4156,16 +4158,6 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     return 'none';
-  }
-
-  private styleObjectToCss(styleObj: Record<string, string>): string {
-    return Object.entries(styleObj)
-      .map(([key, value]) => {
-        // Convert camelCase to kebab-case
-        const kebabKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
-        return `${kebabKey}: ${value}`;
-      })
-      .join('; ');
   }
 
   private _updateIconAnimationClasses(
@@ -4299,67 +4291,6 @@ export class UltraIconModule extends BaseUltraModule {
     if (injected === 0) {
       setTimeout(() => collectAndInject(), 120);
     }
-  }
-
-  /**
-   * Helper method to add pixel unit if needed
-   * Handles edge cases like "20x" -> "20px" and validates unit strings
-   * Supports both string and number types for flexibility
-   */
-  private addPixelUnit(value: string | number | undefined): string | undefined {
-    if (!value && value !== 0) return value as string | undefined;
-
-    // Convert number to string
-    const valueStr = String(value);
-
-    // Handle special CSS values
-    if (
-      valueStr === 'auto' ||
-      valueStr === 'none' ||
-      valueStr === 'inherit' ||
-      valueStr === 'initial' ||
-      valueStr === 'unset'
-    ) {
-      return valueStr;
-    }
-
-    // Normalize "x" to "px" (common typo when users can't type "px")
-    if (valueStr.endsWith('x') && !valueStr.endsWith('px')) {
-      const normalized = valueStr.replace(/x$/, 'px');
-      return normalized;
-    }
-
-    // Check if value already has valid CSS units
-    if (
-      valueStr.includes('px') ||
-      valueStr.includes('%') ||
-      valueStr.includes('em') ||
-      valueStr.includes('rem') ||
-      valueStr.includes('vh') ||
-      valueStr.includes('vw') ||
-      valueStr.includes('ch') ||
-      valueStr.includes('ex') ||
-      valueStr.includes('vmin') ||
-      valueStr.includes('vmax')
-    ) {
-      return valueStr;
-    }
-
-    // If value is just a number (with optional decimal), add px
-    if (/^\d+(\.\d+)?$/.test(valueStr)) {
-      return `${valueStr}px`;
-    }
-
-    // If value is multiple numbers separated by spaces, add px to each
-    if (/^[\d\.\s]+$/.test(valueStr)) {
-      return valueStr
-        .split(' ')
-        .map(v => (v.trim() && /^\d+(\.\d+)?$/.test(v.trim()) ? `${v.trim()}px` : v.trim()))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (might be a CSS variable, calc(), etc.)
-    return valueStr;
   }
 
   /**

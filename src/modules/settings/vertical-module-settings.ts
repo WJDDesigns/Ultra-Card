@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { UltraVerticalModule } from '../vertical-module';
 import { installSettingsMethods } from '../uc-lazy-settings';
 import { CardModule, VerticalModule, UltraCardConfig } from '../../types';

@@ -3,7 +3,7 @@
  * to resolve entities assigned to an area (device area + entity-level area overrides).
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { AreaSummaryDiscoveryToggles, AreaSummaryModule } from '../types';
 
 export type RoomEntityRole =

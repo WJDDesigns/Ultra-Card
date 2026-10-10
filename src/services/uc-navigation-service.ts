@@ -1,4 +1,5 @@
-import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
+import { forwardHaptic } from '../ha/helpers';
 import { html, render, TemplateResult } from 'lit';
 import {
   NavigationModule,
@@ -172,72 +173,90 @@ class UcNavigationService {
         this.evaluateAndRender();
       });
 
-      // Listen for editor close events to clear preview overrides
-      // This uses MutationObserver to detect when editor dialogs are removed
-      const observeEditorDialogs = () => {
-        // Deferred by a timer: in a torn-down test DOM the global is gone by then.
-        if (typeof MutationObserver === 'undefined' || !document.body) return;
-        const observer = new MutationObserver(mutations => {
-          for (const mutation of mutations) {
-            for (const node of Array.from(mutation.removedNodes)) {
-              if (node instanceof HTMLElement) {
-                const tagName = node.tagName?.toLowerCase();
-                // Check if an editor dialog was removed
-                if (
-                  tagName === 'hui-dialog-edit-card' ||
-                  tagName === 'ha-dialog' ||
-                  node.querySelector?.('ultra-card-editor')
-                ) {
-                  if (this.previewOverrides.size > 0) {
-                    this.previewOverrides.clear();
-                    this.scheduleUpdate();
-                  }
+    }
+  }
+
+  /** Page-wide observers; only run while at least one navigation module is registered. */
+  private _observers: MutationObserver[] = [];
+  private _observerTimers: number[] = [];
+
+  private startObservers(): void {
+    if (typeof window === 'undefined') return;
+    if (this._observers.length || this._observerTimers.length) return;
+    // Listen for editor close events to clear preview overrides
+    // This uses MutationObserver to detect when editor dialogs are removed
+    const observeEditorDialogs = () => {
+      // Deferred by a timer: in a torn-down test DOM the global is gone by then.
+      if (typeof MutationObserver === 'undefined' || !document.body) return;
+      const observer = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          for (const node of Array.from(mutation.removedNodes)) {
+            if (node instanceof HTMLElement) {
+              const tagName = node.tagName?.toLowerCase();
+              // Check if an editor dialog was removed
+              if (
+                tagName === 'hui-dialog-edit-card' ||
+                tagName === 'ha-dialog' ||
+                node.querySelector?.('ultra-card-editor')
+              ) {
+                if (this.previewOverrides.size > 0) {
+                  this.previewOverrides.clear();
+                  this.scheduleUpdate();
                 }
               }
             }
           }
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-      };
-
-      // Start observing after a short delay
-      setTimeout(observeEditorDialogs, 1000);
-
-      // Watch HA shadow roots for dialogs, panel changes, and drawer so we can hide the navbar
-      const observeHaOverlays = () => {
-        if (typeof MutationObserver === 'undefined') return;
-        const ha = document.querySelector('home-assistant') as HTMLElement & { shadowRoot?: ShadowRoot } | null;
-        const haRoot = ha?.shadowRoot;
-        if (!haRoot) {
-          setTimeout(observeHaOverlays, 2000);
-          return;
         }
+      });
 
-        const observer = new MutationObserver(() => {
-          this.scheduleUpdate();
-        });
+      observer.observe(document.body, { childList: true, subtree: true });
+      this._observers.push(observer);
+    };
 
-        observer.observe(haRoot, {
+    // Start observing after a short delay
+    this._observerTimers.push(window.setTimeout(observeEditorDialogs, 1000));
+
+    // Watch HA shadow roots for dialogs, panel changes, and drawer so we can hide the navbar
+    const observeHaOverlays = () => {
+      if (typeof MutationObserver === 'undefined') return;
+      const ha = document.querySelector('home-assistant') as HTMLElement & { shadowRoot?: ShadowRoot } | null;
+      const haRoot = ha?.shadowRoot;
+      if (!haRoot) {
+        this._observerTimers.push(window.setTimeout(observeHaOverlays, 2000));
+        return;
+      }
+
+      const observer = new MutationObserver(() => {
+        this.scheduleUpdate();
+      });
+
+      this._observers.push(observer);
+      observer.observe(haRoot, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['open'],
+      });
+
+      const haMain = haRoot.querySelector('home-assistant-main');
+      const mainRoot = (haMain as HTMLElement & { shadowRoot?: ShadowRoot })?.shadowRoot;
+      if (mainRoot) {
+        observer.observe(mainRoot, {
           childList: true,
           subtree: true,
           attributes: true,
           attributeFilter: ['open'],
         });
+      }
+    };
+    this._observerTimers.push(window.setTimeout(observeHaOverlays, 2000));
+  }
 
-        const haMain = haRoot.querySelector('home-assistant-main');
-        const mainRoot = (haMain as HTMLElement & { shadowRoot?: ShadowRoot })?.shadowRoot;
-        if (mainRoot) {
-          observer.observe(mainRoot, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['open'],
-          });
-        }
-      };
-      setTimeout(observeHaOverlays, 2000);
-    }
+  private stopObservers(): void {
+    this._observerTimers.forEach(t => clearTimeout(t));
+    this._observerTimers = [];
+    this._observers.forEach(o => o.disconnect());
+    this._observers = [];
   }
 
   registerModule(
@@ -265,6 +284,7 @@ class UcNavigationService {
       registeredAt: existing?.registeredAt || Date.now(),
     });
 
+    this.startObservers();
     this.scheduleUpdate();
     // Start/stop the media player watcher as needed
     this.manageMediaPlayerWatcher();
@@ -783,6 +803,7 @@ class UcNavigationService {
   }
 
   private cleanup(): void {
+    this.stopObservers();
     // Stop media player watcher
     this.stopMediaPlayerWatcher();
 

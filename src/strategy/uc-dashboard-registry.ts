@@ -1,4 +1,4 @@
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 /**
  * Registry snapshot the dashboard generator works from: areas, floors and the

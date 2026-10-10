@@ -1,6 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
 import { ref, createRef, Ref } from 'lit/directives/ref.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig, SliderModule } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';

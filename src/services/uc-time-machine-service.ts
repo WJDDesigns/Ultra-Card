@@ -10,7 +10,7 @@
  * owning ultra-card syncs the context on every render via `syncCardContext`,
  * and subscribes for change notifications so scrubbing re-renders the card.
  */
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 const MS_PER_HOUR = 3_600_000;
 /** Cap entity history fetches to keep payloads reasonable. */

@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ucToastService } from '../services/uc-toast-service';
 import { resolveOverlayLayer } from './uc-overlay-host';
 import { Z_INDEX } from './uc-z-index';

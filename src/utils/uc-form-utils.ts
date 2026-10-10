@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { CardModule, CustomVariable, UltraCardConfig } from '../types';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 

@@ -2,7 +2,7 @@
 // Visual drag-and-drop editor with accordion items
 
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { AnimatedWeatherModule, UltraCardConfig, CardModule } from '../types';
 import { localize } from '../localize/localize';
 import { BaseUltraModule } from './base-module';

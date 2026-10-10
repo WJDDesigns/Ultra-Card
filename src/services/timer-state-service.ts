@@ -2,6 +2,7 @@
  * Global store for timer module state (idle / running / paused / expired).
  * Survives re-renders and preview updates; keyed by module id.
  */
+import { requestPreviewUpdate } from '../utils/uc-preview-update';
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'expired';
 
@@ -40,10 +41,9 @@ function getEntitySyncStore(): Map<string, EntitySyncRecord> {
   return w[ENTITY_SYNC_KEY];
 }
 
+/** Repaint only the cards that contain a timer module. */
 function dispatchUpdate(): void {
-  window.dispatchEvent(
-    new CustomEvent('ultra-card-template-update', { bubbles: true, composed: true })
-  );
+  requestPreviewUpdate({ source: 'timer-tick', scopeModuleType: 'timer' });
 }
 
 /**

@@ -6,6 +6,8 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { ucDialog } from '../utils/uc-dialog-directive';
+import { localize, uiLanguage } from '../localize/localize';
 
 export interface RestoreMethodChoice {
   method: 'smart' | 'clean' | null;
@@ -61,16 +63,17 @@ export class UcSnapshotRestoreDialog extends LitElement {
       <div class="backdrop" @click="${this._close}">
         <div
           class="dialog"
+          ${ucDialog(() => this._close())}
           role="dialog"
           aria-modal="true"
-          aria-label="Restore Dashboard Snapshot"
+          aria-label=${localize('editor.ui.snapshot_restore_dialog.restore_dashboard_snapshot', uiLanguage(), 'Restore Dashboard Snapshot')}
           @click="${(e: Event) => e.stopPropagation()}"
         >
           <!-- Header -->
           <div class="header">
             <div class="header-icon">📸</div>
             <div class="header-content">
-              <h2>Restore Dashboard Snapshot</h2>
+              <h2>${localize('editor.ui.snapshot_restore_dialog.restore_dashboard_snapshot', uiLanguage(), 'Restore Dashboard Snapshot')}</h2>
               <p class="header-subtitle">
                 ${this.cardCount} Ultra Cards • ${this.viewNames.length} Views
               </p>
@@ -81,7 +84,7 @@ export class UcSnapshotRestoreDialog extends LitElement {
           <!-- Method Cards -->
           <div class="methods">
             <!-- Smart Replace Method -->
-            <div
+            <div role="button" tabindex="0" data-uc-activate
               class="method-card ${this._selectedMethod === 'smart' ? 'selected' : ''}"
               @click="${() => this._handleMethodSelect('smart')}"
             >
@@ -94,24 +97,23 @@ export class UcSnapshotRestoreDialog extends LitElement {
                 />
                 <div class="method-icon smart">🧠</div>
                 <div class="method-title">
-                  <h3>Smart Replace</h3>
-                  <span class="badge recommended">Recommended</span>
+                  <h3>${localize('editor.ui.snapshot_restore_dialog.smart_replace', uiLanguage(), 'Smart Replace')}</h3>
+                  <span class="badge recommended">${localize('editor.ui.snapshot_restore_dialog.recommended', uiLanguage(), 'Recommended')}</span>
                 </div>
               </div>
               <p class="method-description">
-                Intelligently matches cards by custom name OR position, replacing them in-place
-                without creating duplicates.
+                ${localize('editor.ui.snapshot_restore_dialog.intelligently_matches_cards_by_custom_name', uiLanguage(), 'Intelligently matches cards by custom name OR position, replacing them in-place without creating duplicates.')}
               </p>
               <ul class="method-features">
-                <li>Safe - no duplicates</li>
-                <li>Works with named or unnamed cards</li>
-                <li>Preserves non-matching cards</li>
-                <li>Can run multiple times</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.safe_no_duplicates', uiLanguage(), 'Safe - no duplicates')}</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.works_with_named_or_unnamed_cards', uiLanguage(), 'Works with named or unnamed cards')}</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.preserves_non_matching_cards', uiLanguage(), 'Preserves non-matching cards')}</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.can_run_multiple_times', uiLanguage(), 'Can run multiple times')}</li>
               </ul>
             </div>
 
             <!-- Clean & Restore Method -->
-            <div
+            <div role="button" tabindex="0" data-uc-activate
               class="method-card ${this._selectedMethod === 'clean' ? 'selected' : ''}"
               @click="${() => this._handleMethodSelect('clean')}"
             >
@@ -124,26 +126,25 @@ export class UcSnapshotRestoreDialog extends LitElement {
                 />
                 <div class="method-icon clean">🧹</div>
                 <div class="method-title">
-                  <h3>Clean & Restore</h3>
-                  <span class="badge nuclear">Nuclear Option</span>
+                  <h3>${localize('editor.ui.snapshot_restore_dialog.clean_restore', uiLanguage(), 'Clean & Restore')}</h3>
+                  <span class="badge nuclear">${localize('editor.ui.snapshot_restore_dialog.nuclear_option', uiLanguage(), 'Nuclear Option')}</span>
                 </div>
               </div>
               <p class="method-description">
-                Deletes ALL Ultra Cards first, then restores snapshot cards to their exact original
-                positions and order.
+                ${localize('editor.ui.snapshot_restore_dialog.deletes_all_ultra_cards_first_then', uiLanguage(), 'Deletes ALL Ultra Cards first, then restores snapshot cards to their exact original positions and order.')}
               </p>
               <ul class="method-features">
-                <li>Fixes duplicated cards</li>
-                <li>Exact snapshot state</li>
-                <li>Best for heavily broken dashboards</li>
-                <li>Caution: deletes all Ultra Cards first</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.fixes_duplicated_cards', uiLanguage(), 'Fixes duplicated cards')}</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.exact_snapshot_state', uiLanguage(), 'Exact snapshot state')}</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.best_for_heavily_broken_dashboards', uiLanguage(), 'Best for heavily broken dashboards')}</li>
+                <li>${localize('editor.ui.snapshot_restore_dialog.caution_deletes_all_ultra_cards_first', uiLanguage(), 'Caution: deletes all Ultra Cards first')}</li>
               </ul>
             </div>
           </div>
 
           <!-- Views Preview -->
           <div class="views-preview">
-            <div class="preview-title">Affected Views:</div>
+            <div class="preview-title">${localize('editor.ui.snapshot_restore_dialog.affected_views', uiLanguage(), 'Affected Views:')}</div>
             <div class="view-chips">
               ${this.viewNames.map(viewName => html`<div class="view-chip">${viewName}</div>`)}
             </div>
@@ -151,7 +152,7 @@ export class UcSnapshotRestoreDialog extends LitElement {
 
           <!-- Footer Actions -->
           <div class="footer">
-            <button class="btn btn-secondary" @click="${this._close}">Cancel</button>
+            <button class="btn btn-secondary" @click="${this._close}">${localize('editor.ui.snapshot_restore_dialog.cancel', uiLanguage(), 'Cancel')}</button>
             <button
               class="btn btn-primary"
               ?disabled="${!this._selectedMethod}"

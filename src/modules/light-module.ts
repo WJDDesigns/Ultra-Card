@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, LightModule, UltraCardConfig, EntityMapping, EntityReference } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
@@ -18,6 +18,7 @@ import {
   resolveControlButtonStyleString,
 } from '../utils/uc-control-style-resolve';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
   | 'onoff'
@@ -1875,7 +1876,7 @@ export class UltraLightModule extends BaseUltraModule {
       `Map Entities for Light Presets`,
       entityReferences,
       (mappings: EntityMapping[]) => {
-        console.log('✅ Apply light preset mappings:', mappings);
+        UC_DEBUG && console.log('✅ Apply light preset mappings:', mappings);
         // Apply mappings to presets
         const mappedPresets = this._applyMappingsToLightPresets(importedPresets, mappings);
 
@@ -1893,7 +1894,7 @@ export class UltraLightModule extends BaseUltraModule {
         document.dispatchEvent(event);
       },
       () => {
-        console.log('❌ Cancel light preset mapping');
+        UC_DEBUG && console.log('❌ Cancel light preset mapping');
         // Cancel - add presets with original entities (no mappings)
         const newPresets = [...(lightModule.presets || []), ...importedPresets];
         updateModule({ presets: newPresets });
@@ -1939,7 +1940,7 @@ export class UltraLightModule extends BaseUltraModule {
     // Trigger haptic feedback for preset button press
     const hapticEnabled = config?.haptic_feedback !== false;
     if (hapticEnabled) {
-      const { forwardHaptic } = await import('custom-card-helpers');
+      const { forwardHaptic } = await import('../ha/helpers');
       forwardHaptic('medium'); // Use medium haptic for preset actions
     }
 
@@ -2395,29 +2396,6 @@ export class UltraLightModule extends BaseUltraModule {
       return `${this.addPixelUnit(moduleWithDesign.border_width) || '1px'} ${moduleWithDesign.border_style} ${moduleWithDesign.border_color || 'var(--divider-color)'}`;
     }
     return 'none';
-  }
-
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (value === 'auto' || value === 'none' || value === 'inherit') return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-    return value;
-  }
-
-  private styleObjectToCss(styles: Record<string, string>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
   }
 
   private getJustifyContent(alignment: string): string {

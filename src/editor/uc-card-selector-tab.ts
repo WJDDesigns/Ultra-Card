@@ -4,9 +4,10 @@
  */
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ucExternalCardsService } from '../services/uc-external-cards-service';
 import { ucNativeCardsService } from '../services/uc-native-cards-service';
+import { localize } from '../localize/localize';
 import {
   NATIVE_HA_CARDS,
   CUSTOM_YAML_CARD_ENTRY,
@@ -543,7 +544,7 @@ export class UcCardSelectorTab extends LitElement {
           <input
             id="card-search-input"
             type="text"
-            placeholder="Search cards..."
+            placeholder=${localize('editor.ui.card_selector_tab.search_cards', this.hass?.locale?.language || 'en', 'Search cards...')}
             .value=${this._cardSearchQuery}
             @input=${(e: Event) => {
               const target = e.target as HTMLInputElement;
@@ -558,7 +559,7 @@ export class UcCardSelectorTab extends LitElement {
                     this._cardSearchQuery = '';
                     this.focusSearchInput();
                   }}
-                  title="Clear search"
+                  title=${localize('editor.ui.card_selector_tab.clear_search_2', this.hass?.locale?.language || 'en', 'Clear search')}
                 >
                   <ha-icon icon="mdi:close"></ha-icon>
                 </button>
@@ -587,7 +588,7 @@ export class UcCardSelectorTab extends LitElement {
               this.focusSearchInput();
             }}
           >
-            Clear Search
+            ${localize('editor.ui.card_selector_tab.clear_search', this.hass?.locale?.language || 'en', 'Clear Search')}
           </button>
         </div>
       `;
@@ -603,18 +604,18 @@ export class UcCardSelectorTab extends LitElement {
             ? html`
                 <div class="search-category-header">
                   <ha-icon icon="mdi:home-assistant"></ha-icon>
-                  <span>Native Home Assistant Cards</span>
+                  <span>${localize('editor.ui.card_selector_tab.native_home_assistant_cards', this.hass?.locale?.language || 'en', 'Native Home Assistant Cards')}</span>
                 </div>
                 ${filteredNative.map(
                   card => html`
-                    <div class="search-result-item" @click=${() => this._emitCardSelected(card.type)}>
+                    <div role="button" tabindex="0" data-uc-activate class="search-result-item" @click=${() => this._emitCardSelected(card.type)}>
                       <div class="search-result-icon">
                         <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
                       </div>
                       <div class="search-result-content">
                         <div class="search-result-header-row">
                           <span class="search-result-title">${card.name}</span>
-                          <span class="search-result-tier standard">Native</span>
+                          <span class="search-result-tier standard">${localize('editor.ui.card_selector_tab.native', this.hass?.locale?.language || 'en', 'Native')}</span>
                         </div>
                         <p class="search-result-description">${card.description || card.type}</p>
                       </div>
@@ -628,12 +629,12 @@ export class UcCardSelectorTab extends LitElement {
             ? html`
                 <div class="search-category-header">
                   <ha-icon icon="mdi:puzzle"></ha-icon>
-                  <span>Community & 3rd Party Cards</span>
+                  <span>${localize('editor.ui.card_selector_tab.community_3rd_party_cards', this.hass?.locale?.language || 'en', 'Community & 3rd Party Cards')}</span>
                 </div>
                 ${filteredThirdParty.map(card => {
                   const actualCard = this._cachedCardsByType.get(card.type);
                   return html`
-                    <div class="search-result-item" @click=${() => this._emitCardSelected(card.type)}>
+                    <div role="button" tabindex="0" data-uc-activate class="search-result-item" @click=${() => this._emitCardSelected(card.type)}>
                       <div class="search-result-icon">
                         <ha-icon icon="mdi:card-bulleted"></ha-icon>
                       </div>
@@ -681,10 +682,10 @@ export class UcCardSelectorTab extends LitElement {
     return html`
       <div class="cards-tab-container">
         <div class="cards-header">
-          <h4>Cards</h4>
+          <h4>${localize('editor.ui.card_selector_tab.cards', this.hass?.locale?.language || 'en', 'Cards')}</h4>
           <button class="refresh-btn" @click=${() => this._emitRefresh()}>
             <ha-icon icon="mdi:refresh"></ha-icon>
-            <span>Refresh</span>
+            <span>${localize('editor.ui.card_selector_tab.refresh', this.hass?.locale?.language || 'en', 'Refresh')}</span>
           </button>
         </div>
 
@@ -693,10 +694,9 @@ export class UcCardSelectorTab extends LitElement {
         <div class="cards-info">
           <ha-icon icon="mdi:information"></ha-icon>
           <div class="info-content">
-            <strong>How to use:</strong>
+            <strong>${localize('editor.ui.card_selector_tab.how_to_use', this.hass?.locale?.language || 'en', 'How to use:')}</strong>
             <p>
-              Click any card to add it to your selected column. Native HA cards and 3rd party cards
-              will use their native editors when available.
+              ${localize('editor.ui.card_selector_tab.click_any_card_to_add_it', this.hass?.locale?.language || 'en', 'Click any card to add it to your selected column. Native HA cards and 3rd party cards will use their native editors when available.')}
             </p>
           </div>
         </div>
@@ -709,11 +709,11 @@ export class UcCardSelectorTab extends LitElement {
                 <div class="section-header">
                   <div class="section-title-row">
                     <ha-icon icon="mdi:home-assistant"></ha-icon>
-                    <h5>Native Home Assistant</h5>
+                    <h5>${localize('editor.ui.card_selector_tab.native_home_assistant', this.hass?.locale?.language || 'en', 'Native Home Assistant')}</h5>
                   </div>
                   <div class="unlimited-badge">
                     <ha-icon icon="mdi:infinity"></ha-icon>
-                    <span>Unlimited</span>
+                    <span>${localize('editor.ui.card_selector_tab.unlimited', this.hass?.locale?.language || 'en', 'Unlimited')}</span>
                   </div>
                 </div>
 
@@ -722,7 +722,7 @@ export class UcCardSelectorTab extends LitElement {
                       <div class="cards-grid">
                         ${nativeCards.map(
                           (card: NativeCardEntry) => html`
-                            <div
+                            <div role="button" tabindex="0" data-uc-activate
                               class="card-item native-card-item ${card.type === CUSTOM_YAML_CARD_TYPE
                                 ? 'yaml-card-item'
                                 : ''}"
@@ -750,7 +750,7 @@ export class UcCardSelectorTab extends LitElement {
                   : html`
                       <div class="empty-state-mini">
                         <ha-icon icon="mdi:information-outline"></ha-icon>
-                        <p>No native cards detected</p>
+                        <p>${localize('editor.ui.card_selector_tab.no_native_cards_detected', this.hass?.locale?.language || 'en', 'No native cards detected')}</p>
                       </div>
                     `}
               </div>
@@ -760,7 +760,7 @@ export class UcCardSelectorTab extends LitElement {
                 <div class="section-header">
                   <div class="section-title-row">
                     <ha-icon icon="mdi:puzzle"></ha-icon>
-                    <h5>Community & 3rd Party</h5>
+                    <h5>${localize('editor.ui.card_selector_tab.community_3rd_party', this.hass?.locale?.language || 'en', 'Community & 3rd Party')}</h5>
                   </div>
                   ${!this.isPro
                     ? html`
@@ -772,7 +772,7 @@ export class UcCardSelectorTab extends LitElement {
                     : html`
                         <div class="pro-badge-mini">
                           <ha-icon icon="mdi:crown"></ha-icon>
-                          <span>Unlimited</span>
+                          <span>${localize('editor.ui.card_selector_tab.unlimited', this.hass?.locale?.language || 'en', 'Unlimited')}</span>
                         </div>
                       `}
                 </div>
@@ -780,9 +780,9 @@ export class UcCardSelectorTab extends LitElement {
                 ${!this.isPro
                   ? html`
                       <div class="upgrade-notice">
-                        <span>Want unlimited 3rd party cards?</span>
+                        <span>${localize('editor.ui.card_selector_tab.want_unlimited_3rd_party_cards', this.hass?.locale?.language || 'en', 'Want unlimited 3rd party cards?')}</span>
                         <button class="get-pro-btn-mini" @click=${() => this._emitOpenPro()}>
-                          Get Pro
+                          ${localize('editor.ui.card_selector_tab.get_pro', this.hass?.locale?.language || 'en', 'Get Pro')}
                         </button>
                       </div>
                     `
@@ -791,8 +791,8 @@ export class UcCardSelectorTab extends LitElement {
                 <div class="thirdparty-notebox">
                   <ha-icon icon="mdi:alert-circle"></ha-icon>
                   <div class="notebox-content">
-                    <strong>Compatibility Notice:</strong>
-                    <p>Some 3rd party cards may not work as intended. Please report any issues.</p>
+                    <strong>${localize('editor.ui.card_selector_tab.compatibility_notice', this.hass?.locale?.language || 'en', 'Compatibility Notice:')}</strong>
+                    <p>${localize('editor.ui.card_selector_tab.some_3rd_party_cards_may_not', this.hass?.locale?.language || 'en', 'Some 3rd party cards may not work as intended. Please report any issues.')}</p>
                   </div>
                 </div>
 
@@ -801,7 +801,7 @@ export class UcCardSelectorTab extends LitElement {
                       <div class="cards-grid">
                         ${availableCards.map(
                           (card: ThirdPartyCardEntry) => html`
-                            <div class="card-item" @click=${() => this._emitCardSelected(card.type)}>
+                            <div role="button" tabindex="0" data-uc-activate class="card-item" @click=${() => this._emitCardSelected(card.type)}>
                               <div class="card-icon">
                                 <ha-icon icon="mdi:card-bulleted"></ha-icon>
                               </div>
@@ -823,8 +823,8 @@ export class UcCardSelectorTab extends LitElement {
                   : html`
                       <div class="empty-state-mini">
                         <ha-icon icon="mdi:card-off"></ha-icon>
-                        <p>No 3rd party cards installed</p>
-                        <p class="empty-hint">Install custom cards via HACS</p>
+                        <p>${localize('editor.ui.card_selector_tab.no_3rd_party_cards_installed', this.hass?.locale?.language || 'en', 'No 3rd party cards installed')}</p>
+                        <p class="empty-hint">${localize('editor.ui.card_selector_tab.install_custom_cards_via_hacs', this.hass?.locale?.language || 'en', 'Install custom cards via HACS')}</p>
                       </div>
                     `}
               </div>

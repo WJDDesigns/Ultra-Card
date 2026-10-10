@@ -189,7 +189,11 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Række slettet",
+      "column_deleted": "Kolonne slettet",
+      "module_deleted": "Modul slettet",
+      "browse_presets_tooltip": "Gennemse forudindstillinger og tilføj en til dette kort"
     },
     "about": {
       "developed_by": "Udviklet af",
@@ -1630,7 +1634,11 @@
           "device_state": "Device State",
           "attribute": "Attribute",
           "toggle": "Toggle"
-        }
+        },
+        "bg_image": "Billede",
+        "bg_gradient": "Gradient",
+        "bg_color": "Farve",
+        "bg_entity": "Enhed"
       }
     },
     "common": {
@@ -1904,7 +1912,8 @@
         "desc": "JSON med værdi, knap_baggrundsfarve, knap_tekstfarve, værdi_farve — eller et almindeligt numerisk Jinja resultat.",
         "toggle": "Templade tilstand",
         "cheatsheet": "Templade snydeark"
-      }
+      },
+      "no_entity_hint": "Ingen enhed valgt: værdien ændres kun på denne skærm og gemmes ikke."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2443,7 +2452,12 @@
     "pro": {
       "feature_locked": "Pro Funktion",
       "sports_description": "Sports Score modul kræver et Ultra Card Pro abonnement for at vise live sportsresultater og holdinformation.",
-      "upgrade_button": "Opgrader til Pro"
+      "upgrade_button": "Opgrader til Pro",
+      "status_not_installed": "Har du allerede Pro? Installér Ultra Card Connect, og log ind for at låse det op her.",
+      "status_unreachable": "Ultra Card Connect kan ikke nå ultracard.io lige nu. Har du Pro, låses det op igen, når forbindelsen er tilbage.",
+      "status_reauth": "Ultra Card Connect skal have dig til at logge ind igen (Indstillinger → Enheder og tjenester → Ultra Card Connect).",
+      "status_signed_out": "Har du allerede Pro? Log ind på Ultra Card Connect fra Ultra Card Hub i sidepanelet.",
+      "status_inactive": "Dit Pro-abonnement er {status}. Forny det på ultracard.io for at låse dette op."
     },
     "toggle": {
       "display_settings": "VIS INDSTILLINGER",
@@ -5373,6 +5387,177 @@
     "native_card": {
       "settings_title": "{name} Settings",
       "settings_desc": "Configure this native Home Assistant card using its built-in editor."
+    },
+    "ui": {
+      "module_selector_shell": {
+        "drag_to_resize": "Træk for at ændre størrelse",
+        "favorites": "Favoritter",
+        "smart": "Smart",
+        "presets": "Forudindstillinger",
+        "cards": "Kort",
+        "modules": "Moduler",
+        "adding_to_layout_module_content_modules": "Tilføjer til layoutmodul (indholdsmoduler og layoutmoduler tilladt op til 2 niveauer dybt)",
+        "close": "Luk",
+        "add_module": "Tilføj modul"
+      },
+      "card_selector_tab": {
+        "install_custom_cards_via_hacs": "Installer brugerdefinerede kort via HACS",
+        "no_3rd_party_cards_installed": "Ingen tredjepartskort installeret",
+        "some_3rd_party_cards_may_not": "Nogle tredjepartskort fungerer muligvis ikke som tilsigtet. Rapportér venligst eventuelle problemer.",
+        "compatibility_notice": "Kompatibilitetsmeddelelse:",
+        "get_pro": "Få Pro",
+        "want_unlimited_3rd_party_cards": "Vil du have ubegrænsede tredjepartskort?",
+        "unlimited": "Ubegrænset",
+        "community_3rd_party": "Fællesskab og tredjepart",
+        "no_native_cards_detected": "Ingen indbyggede kort fundet",
+        "native_home_assistant": "Indbygget Home Assistant",
+        "click_any_card_to_add_it": "Klik på et kort for at tilføje det til den valgte kolonne. Indbyggede HA-kort og tredjepartskort bruger deres egne editorer, når de er tilgængelige.",
+        "how_to_use": "Sådan bruges det:",
+        "refresh": "Opdater",
+        "cards": "Kort",
+        "community_3rd_party_cards": "Fællesskabs- og tredjepartskort",
+        "native": "Indbygget",
+        "native_home_assistant_cards": "Indbyggede Home Assistant-kort",
+        "clear_search": "Ryd søgning",
+        "clear_search_2": "Ryd søgning",
+        "search_cards": "Søg efter kort..."
+      },
+      "favorites_selector_tab": {
+        "use_the_heart_icon_on_any": "Brug hjerteikonet på en række for at gemme den som favorit",
+        "no_favorites_saved_yet": "Ingen favoritter gemt endnu",
+        "delete": "Slet",
+        "export": "Eksportér",
+        "add_to_layout": "Tilføj til layout",
+        "clear_search": "Ryd søgning",
+        "search_favorites": "Søg i favoritter...",
+        "import": "Importér",
+        "saved_favorites": "Gemte favoritter"
+      },
+      "modules_selector_tab": {
+        "priority_support": "Prioriteret support",
+        "auto_snapshots": "Automatiske snapshots",
+        "cloud_backups": "Cloud-sikkerhedskopier",
+        "premium_modules": "Premium-moduler",
+        "access_premium_modules_like_weather_forecast": "Få adgang til premium-moduler som vejrudsigt, avancerede animationer og flere eksklusive funktioner.",
+        "ultra_card_pro": "Ultra Card PRO",
+        "clear_search": "Ryd søgning",
+        "clear_search_2": "Ryd søgning",
+        "module_layout": "Modullayout",
+        "pro": "PRO",
+        "standard": "Standard",
+        "module_type": "Modultype",
+        "layout_containers": "Layoutcontainere"
+      },
+      "presets_selector_tab": {
+        "reload": "Genindlæs",
+        "refresh_presets_from_server": "Opdater forudindstillinger fra server",
+        "no_presets_available_in_this_category": "Ingen forudindstillinger tilgængelige i denne kategori",
+        "clear_search": "Ryd søgning",
+        "requires": "Kræver",
+        "included": "Inkluderet",
+        "card_settings": "Kortindstillinger",
+        "variables": "Variabler",
+        "rows": "Rækker",
+        "version": "Version",
+        "category": "Kategori",
+        "view_preset_details": "Vis detaljer om forudindstilling",
+        "add": "Tilføj",
+        "add_this_preset_to_your_card": "Tilføj denne forudindstilling til dit kort",
+        "new": "Ny",
+        "retry": "Prøv igen",
+        "failed_to_load_presets": "Kunne ikke indlæse forudindstillinger",
+        "top_rated": "Bedst bedømte",
+        "date": "Dato",
+        "name": "Navn",
+        "sort_by": "Sortér efter:",
+        "clear_search_2": "Ryd søgning",
+        "search_presets": "Søg i forudindstillinger..."
+      },
+      "entity_replace_dialog": {
+        "replace_all": "Erstat alle",
+        "cancel": "Annuller",
+        "replace_with": "Erstat med",
+        "find_entity": "Find entitet",
+        "replaces_every_exact_text_match_of": "Erstatter hver nøjagtig tekstmatch af entitets-ID'et i dette korts layout (inklusive skabeloner og indlejrede moduler). Brug fortryd i layoutbyggeren om nødvendigt.",
+        "close": "Luk",
+        "find_amp_replace_entity": "Find og erstat entitet"
+      },
+      "snapshot_history_modal": {
+        "delete": "🗑️ Slet",
+        "download": "⬇️ Download",
+        "rename": "✏️ Omdøb",
+        "restore": "🔄 Gendan",
+        "you_can_have_up_to_30": "💡 Du kan have op til 30 kortsikkerhedskopier. De ældste sikkerhedskopier fjernes automatisk, når grænsen nås.",
+        "card_backups_save_individual_ultra_card": "Kortsikkerhedskopier gemmer individuelle Ultra Card-konfigurationer",
+        "no_card_backups_yet": "Ingen kortsikkerhedskopier endnu",
+        "restore_all": "🔄 Gendan alle",
+        "views_breakdown": "Visningsoversigt:",
+        "dashboard_snapshots_capture_all_ultra_cards": "Dashboard-snapshots indfanger alle Ultra Cards på hele dit dashboard",
+        "no_dashboard_snapshots_yet": "Ingen dashboard-snapshots endnu",
+        "loading": "Indlæser...",
+        "manual_card_backups": "Manuelle kortsikkerhedskopier",
+        "dashboard_snapshots": "Dashboard-snapshots",
+        "close": "Luk",
+        "backup_amp_snapshot_history": "Sikkerhedskopi- og snapshothistorik"
+      },
+      "snapshot_settings_dialog": {
+        "cancel": "Annuller",
+        "manual_snapshots_are_never_automatically_deleted": "Manuelle snapshots slettes aldrig automatisk",
+        "older_snapshots_are_automatically_deleted": "Ældre snapshots slettes automatisk",
+        "30_days": "30 dage",
+        "auto_snapshots_are_kept_for": "Automatiske snapshots gemmes i",
+        "storage_policy": "Lagringspolitik:",
+        "auto_snapshots_are_currently_disabled_you": "Automatiske snapshots er i øjeblikket deaktiveret. Du kan stadig oprette manuelle snapshots når som helst.",
+        "next_snapshot": "Næste snapshot:",
+        "sydney": "Sydney",
+        "shanghai": "Shanghai",
+        "tokyo": "Tokyo",
+        "berlin": "Berlin",
+        "paris": "Paris",
+        "london": "London",
+        "pacific_time_pt": "Pacific-tid (PT)",
+        "mountain_time_mt": "Mountain-tid (MT)",
+        "central_time_ct": "Central-tid (CT)",
+        "eastern_time_et": "Eastern-tid (ET)",
+        "utc": "UTC",
+        "snapshot_time_will_use_this_timezone": "Snapshot-tidspunktet bruger denne tidszone",
+        "timezone": "Tidszone",
+        "what_time_should_snapshots_be_created": "Hvornår skal snapshots oprettes? (24-timers format)",
+        "snapshot_time": "Snapshot-tidspunkt",
+        "automatically_backup_all_ultra_cards_in": "Sikkerhedskopiér automatisk alle Ultra Cards på dit dashboard hver dag",
+        "enable_daily_auto_snapshots": "Aktivér daglige automatiske snapshots",
+        "automatically_save_a_cloud_backup_when": "Gem automatisk en cloud-sikkerhedskopi, når du redigerer dette kort (forsinket). Slå fra, hvis du kun foretrækker manuelle snapshots.",
+        "enable_real_time_auto_save": "Aktivér automatisk lagring i realtid",
+        "loading_settings": "Indlæser indstillinger...",
+        "snapshot_settings": "⚙️ Snapshot-indstillinger"
+      },
+      "snapshot_restore_dialog": {
+        "cancel": "Annuller",
+        "affected_views": "Berørte visninger:",
+        "caution_deletes_all_ultra_cards_first": "Advarsel: sletter alle Ultra Cards først",
+        "best_for_heavily_broken_dashboards": "Bedst til meget ødelagte dashboards",
+        "exact_snapshot_state": "Nøjagtig snapshot-tilstand",
+        "fixes_duplicated_cards": "Retter duplikerede kort",
+        "deletes_all_ultra_cards_first_then": "Sletter ALLE Ultra Cards først og gendanner derefter snapshot-kortene til deres nøjagtige oprindelige placeringer og rækkefølge.",
+        "nuclear_option": "Atomløsning",
+        "clean_restore": "Ryd og gendan",
+        "can_run_multiple_times": "Kan køres flere gange",
+        "preserves_non_matching_cards": "Bevarer kort, der ikke matcher",
+        "works_with_named_or_unnamed_cards": "Virker med navngivne eller unavngivne kort",
+        "safe_no_duplicates": "Sikkert - ingen dubletter",
+        "intelligently_matches_cards_by_custom_name": "Matcher intelligent kort efter brugerdefineret navn ELLER placering og erstatter dem på stedet uden at oprette dubletter.",
+        "recommended": "Anbefalet",
+        "smart_replace": "Smart erstatning",
+        "restore_dashboard_snapshot": "Gendan dashboard-snapshot"
+      }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} er installeret, men denne side kører stadig {running}. Genindlæs for at fuldføre opdateringen.",
+      "reload": "Genindlæs",
+      "dismiss": "Afvis"
+    },
+    "color_picker": {
+      "gradient_presets": "Forudindstillede gradienter"
     }
   },
   "hub": {

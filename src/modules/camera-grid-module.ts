@@ -1,7 +1,8 @@
 import { TemplateResult, html, nothing } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
 import { ref } from 'lit/directives/ref.js';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
+import { fireEvent } from '../ha/helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
   CardModule,

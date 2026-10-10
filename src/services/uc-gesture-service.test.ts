@@ -6,7 +6,7 @@ import {
   POINTER_FOCUS_ATTR,
 } from './uc-gesture-service';
 import { UltraLinkComponent } from '../components/ultra-link';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 /**
  * H7: the service bound only pointer events, so keyboard and screen-reader users

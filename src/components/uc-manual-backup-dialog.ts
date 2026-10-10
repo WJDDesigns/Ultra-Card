@@ -1,10 +1,11 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { localize } from '../localize/localize';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { UltraCardConfig } from '../types';
+import { ucDialog } from '../utils/uc-dialog-directive';
 
 @customElement('uc-manual-backup-dialog')
 export class UcManualBackupDialog extends LitElement {
@@ -234,7 +235,7 @@ export class UcManualBackupDialog extends LitElement {
 
     return html`
       <div class="dialog-overlay" @click="${this._handleOverlayClick}">
-        <div class="dialog" @click="${(e: Event) => e.stopPropagation()}">
+        <div class="dialog" ${ucDialog(() => this._handleClose())} @click="${(e: Event) => e.stopPropagation()}">
           <div class="dialog-header">
             <h3 class="dialog-title">
               <ha-icon icon="mdi:bookmark-plus"></ha-icon>

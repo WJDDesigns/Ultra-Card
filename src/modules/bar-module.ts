@@ -1,6 +1,6 @@
 import { TemplateResult, html, nothing } from 'lit';
 import { ref, createRef, Ref } from 'lit/directives/ref.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, BarModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
@@ -56,6 +56,35 @@ export class UltraBarModule extends BaseUltraModule {
   private _timeProgressCleanup: (() => void) | null = null;
   private _scaleClampObservers = new WeakMap<Element, ResizeObserver>();
   private _scaleClampTimers = new WeakMap<Element, number>();
+  /**
+   * Stable ref callback. A new arrow per render made Lit call it on every render,
+   * which queued two rAFs, a 360 ms timer and a ResizeObserver rebuild each time.
+   */
+  private _barRootRef = (el?: Element): void => {
+    if (!el) return;
+
+    // After render, check if parent wrapper has flex constraint
+    // If constrained, ensure bar uses 100% to fill the constrained wrapper
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const parent = el.parentElement;
+        const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
+
+        if (isFlexConstrained) {
+          const barContainer = el.querySelector('.bar-container') as HTMLElement;
+          if (barContainer) {
+            // Parent wrapper has fixed width constraint (e.g., 80%)
+            // Set bar to 100% to fill that constrained space
+            barContainer.style.width = '100%';
+          }
+        }
+
+        // Apply edge clamp after layout settles and widths are final.
+        this.scheduleScaleEdgeLabelClamping(el);
+        this.ensureScaleClampObserver(el);
+      });
+    });
+  };
 
   /** Called by the module lifecycle service once no live card uses this module type. */
   destroy(): void {
@@ -329,11 +358,13 @@ export class UltraBarModule extends BaseUltraModule {
       return;
     }
 
-    // Rebind on each render: bar-scale nodes can be recreated during live edits.
+    // Already watching this root: only pick up bar-scale nodes recreated by a live
+    // edit (observe() is a no-op for targets already observed). Rebuilding the
+    // observer and re-walking ancestors on every render was the expensive part.
     const existing = this._scaleClampObservers.get(root);
     if (existing) {
-      existing.disconnect();
-      this._scaleClampObservers.delete(root);
+      root.querySelectorAll('.bar-scale').forEach(scale => existing.observe(scale));
+      return;
     }
 
     const observer = new ResizeObserver(() => {
@@ -2172,31 +2203,7 @@ export class UltraBarModule extends BaseUltraModule {
         class="bar-module-preview" data-uc-role="pane"
         data-layout-grow="${shouldGrow ? 'true' : 'false'}"
         style="${this.buildStyleString(containerStyles)}"
-        ${ref((el?: Element) => {
-          if (!el) return;
-
-          // After render, check if parent wrapper has flex constraint
-          // If constrained, ensure bar uses 100% to fill the constrained wrapper
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              const parent = el.parentElement;
-              const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
-
-              if (isFlexConstrained) {
-                const barContainer = el.querySelector('.bar-container') as HTMLElement;
-                if (barContainer) {
-                  // Parent wrapper has fixed width constraint (e.g., 80%)
-                  // Set bar to 100% to fill that constrained space
-                  barContainer.style.width = '100%';
-                }
-              }
-
-              // Apply edge clamp after layout settles and widths are final.
-              this.scheduleScaleEdgeLabelClamping(el);
-              this.ensureScaleClampObserver(el);
-            });
-          });
-        })}
+        ${ref(this._barRootRef)}
       >
         <!-- Bar Container -->
         <div 
@@ -4185,19 +4192,6 @@ export class UltraBarModule extends BaseUltraModule {
     return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
   }
 
-  // Helper method to convert style object to CSS string
-  private styleObjectToCss(styles: Record<string, string | number | undefined>): string {
-    return Object.entries(styles)
-      .filter(([, value]) => value !== undefined && value !== null && value !== '')
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
-  // Helper method to convert camelCase to kebab-case
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-  }
-
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
     const imageType = moduleWithDesign.background_image_type;
     const backgroundImage = moduleWithDesign.background_image;
@@ -4453,26 +4447,5 @@ export class UltraBarModule extends BaseUltraModule {
     } catch {
       return trimmed;
     }
-  }
-
-  // Helper method to ensure border radius values have proper units
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-
-    // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(value)) {
-      return `${value}px`;
-    }
-
-    // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (already has units like px, em, %, etc.)
-    return value;
   }
 }

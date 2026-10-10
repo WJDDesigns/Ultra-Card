@@ -5,7 +5,7 @@
 import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { panelStyles } from '../panel-styles';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import {
   ucCloudAuthService,
   CloudUser,

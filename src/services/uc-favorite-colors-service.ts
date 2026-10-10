@@ -410,16 +410,16 @@ class UcFavoriteColorsService {
       if (stored) {
         const parsed = JSON.parse(stored);
         UC_DEBUG &&
-          console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+          UC_DEBUG && console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
         UC_DEBUG &&
-          console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+          UC_DEBUG && console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
       }
     } catch (error) {
       console.error('Storage Data Error:', error);
     }
 
     UC_DEBUG &&
-      console.log(
+      UC_DEBUG && console.log(
         'Favorite Colors List:',
         this._favorites.map(f => ({
           id: f.id,
@@ -691,7 +691,7 @@ class UcFavoriteColorsService {
    */
   private _handleStorageQuotaExceeded(): void {
     UC_DEBUG &&
-      console.log('Attempting to free up storage space by removing oldest favorite colors...');
+      UC_DEBUG && console.log('Attempting to free up storage space by removing oldest favorite colors...');
 
     if (this._favorites.length <= 1) {
       console.error('Cannot free up space - only one or no favorite colors exist');
@@ -707,7 +707,7 @@ class UcFavoriteColorsService {
     this._favorites = colorsToKeep;
 
     UC_DEBUG &&
-      console.log(`Removed ${colorsToRemove} oldest favorite colors to free up storage space`);
+      UC_DEBUG && console.log(`Removed ${colorsToRemove} oldest favorite colors to free up storage space`);
 
     // Try to save again
     try {
@@ -728,6 +728,8 @@ export const ucFavoriteColorsService = new UcFavoriteColorsService();
 // Make service and debug methods available globally for debugging
 if (typeof window !== 'undefined') {
   (window as any).ucFavoriteColorsService = ucFavoriteColorsService;
-  (window as any).debugUltraCardFavoriteColors = () =>
-    ucFavoriteColorsService.debugFavoriteColors();
+  if (UC_DEBUG) {
+    (window as any).debugUltraCardFavoriteColors = () =>
+      ucFavoriteColorsService.debugFavoriteColors();
+  }
 }

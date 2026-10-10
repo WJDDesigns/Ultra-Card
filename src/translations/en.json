@@ -737,7 +737,11 @@
         "toggle": "Template Mode",
         "cheatsheet_title": "Template cheatsheet",
         "placeholder": "{ \"visible\": {{ states('input_boolean.show_row') == 'on' }} }"
-      }
+      },
+      "row_deleted": "Row deleted",
+      "column_deleted": "Column deleted",
+      "module_deleted": "Module deleted",
+      "browse_presets_tooltip": "Browse presets and add one to this card"
     },
     "entity_mapper": {
       "title": "Map Entities",
@@ -1925,7 +1929,8 @@
         "desc": "JSON with value, button_background_color, button_text_color, value_color, or a plain numeric Jinja result.",
         "toggle": "Template Mode",
         "cheatsheet": "Template cheatsheet"
-      }
+      },
+      "no_entity_hint": "No entity selected: the value only changes on this screen and is not saved."
     },
     "layout_extra": {
       "module_name": "Module Name:",
@@ -2395,7 +2400,11 @@
         "badge_top_left": "Top Left",
         "badge_top_right": "Top Right",
         "badge_bottom_left": "Bottom Left",
-        "badge_bottom_right": "Bottom Right"
+        "badge_bottom_right": "Bottom Right",
+        "bg_image": "Image",
+        "bg_gradient": "Gradient",
+        "bg_color": "Color",
+        "bg_entity": "Entity"
       },
       "no_text_configured": "No text configured",
       "no_image_configured": "No image configured",
@@ -2832,7 +2841,12 @@
     "pro": {
       "feature_locked": "Pro Feature",
       "sports_description": "Sports Score module requires an Ultra Card Pro subscription to display live sports scores and team information.",
-      "upgrade_button": "Upgrade to Pro"
+      "upgrade_button": "Upgrade to Pro",
+      "status_not_installed": "Already have Pro? Install Ultra Card Connect and sign in to unlock it here.",
+      "status_unreachable": "Ultra Card Connect can't reach ultracard.io right now. If you have Pro, it unlocks again when the connection is back.",
+      "status_reauth": "Ultra Card Connect needs you to sign in again (Settings → Devices & services → Ultra Card Connect).",
+      "status_signed_out": "Already have Pro? Sign in to Ultra Card Connect from the Ultra Card Hub in the sidebar.",
+      "status_inactive": "Your Pro subscription is {status}. Renew it on ultracard.io to unlock this."
     },
     "text_input": {
       "entity": {
@@ -5340,6 +5354,177 @@
       "accent_color": "Accent",
       "text_color": "Text color",
       "secondary_text_color": "Secondary text"
+    },
+    "ui": {
+      "module_selector_shell": {
+        "drag_to_resize": "Drag to resize",
+        "favorites": "Favorites",
+        "smart": "Smart",
+        "presets": "Presets",
+        "cards": "Cards",
+        "modules": "Modules",
+        "adding_to_layout_module_content_modules": "Adding to layout module (content modules and layout modules allowed up to 2 levels deep)",
+        "close": "Close",
+        "add_module": "Add Module"
+      },
+      "card_selector_tab": {
+        "install_custom_cards_via_hacs": "Install custom cards via HACS",
+        "no_3rd_party_cards_installed": "No 3rd party cards installed",
+        "some_3rd_party_cards_may_not": "Some 3rd party cards may not work as intended. Please report any issues.",
+        "compatibility_notice": "Compatibility Notice:",
+        "get_pro": "Get Pro",
+        "want_unlimited_3rd_party_cards": "Want unlimited 3rd party cards?",
+        "unlimited": "Unlimited",
+        "community_3rd_party": "Community & 3rd Party",
+        "no_native_cards_detected": "No native cards detected",
+        "native_home_assistant": "Native Home Assistant",
+        "click_any_card_to_add_it": "Click any card to add it to your selected column. Native HA cards and 3rd party cards will use their native editors when available.",
+        "how_to_use": "How to use:",
+        "refresh": "Refresh",
+        "cards": "Cards",
+        "community_3rd_party_cards": "Community & 3rd Party Cards",
+        "native": "Native",
+        "native_home_assistant_cards": "Native Home Assistant Cards",
+        "clear_search": "Clear Search",
+        "clear_search_2": "Clear search",
+        "search_cards": "Search cards..."
+      },
+      "favorites_selector_tab": {
+        "use_the_heart_icon_on_any": "Use the heart icon on any row to save it as a favorite",
+        "no_favorites_saved_yet": "No favorites saved yet",
+        "delete": "Delete",
+        "export": "Export",
+        "add_to_layout": "Add to layout",
+        "clear_search": "Clear search",
+        "search_favorites": "Search favorites...",
+        "import": "Import",
+        "saved_favorites": "Saved Favorites"
+      },
+      "modules_selector_tab": {
+        "priority_support": "Priority Support",
+        "auto_snapshots": "Auto Snapshots",
+        "cloud_backups": "Cloud Backups",
+        "premium_modules": "Premium Modules",
+        "access_premium_modules_like_weather_forecast": "Access premium modules like Weather Forecast, advanced animations, and more exclusive features.",
+        "ultra_card_pro": "Ultra Card PRO",
+        "clear_search": "Clear Search",
+        "clear_search_2": "Clear search",
+        "module_layout": "Module layout",
+        "pro": "PRO",
+        "standard": "Standard",
+        "module_type": "Module type",
+        "layout_containers": "Layout Containers"
+      },
+      "presets_selector_tab": {
+        "reload": "Reload",
+        "refresh_presets_from_server": "Refresh presets from server",
+        "no_presets_available_in_this_category": "No presets available in this category",
+        "clear_search": "Clear Search",
+        "requires": "Requires",
+        "included": "Included",
+        "card_settings": "Card settings",
+        "variables": "Variables",
+        "rows": "Rows",
+        "version": "Version",
+        "category": "Category",
+        "view_preset_details": "View preset details",
+        "add": "Add",
+        "add_this_preset_to_your_card": "Add this preset to your card",
+        "new": "New",
+        "retry": "Retry",
+        "failed_to_load_presets": "Failed to load presets",
+        "top_rated": "Top Rated",
+        "date": "Date",
+        "name": "Name",
+        "sort_by": "Sort by:",
+        "clear_search_2": "Clear search",
+        "search_presets": "Search presets..."
+      },
+      "entity_replace_dialog": {
+        "replace_all": "Replace all",
+        "cancel": "Cancel",
+        "replace_with": "Replace with",
+        "find_entity": "Find entity",
+        "replaces_every_exact_text_match_of": "Replaces every exact text match of the entity ID inside this card's layout (including templates and nested modules). Use undo in the layout builder if needed.",
+        "close": "Close",
+        "find_amp_replace_entity": "Find & replace entity"
+      },
+      "snapshot_history_modal": {
+        "delete": "🗑️ Delete",
+        "download": "⬇️ Download",
+        "rename": "✏️ Rename",
+        "restore": "🔄 Restore",
+        "you_can_have_up_to_30": "💡 You can have up to 30 card backups. Oldest backups are automatically removed when limit is reached.",
+        "card_backups_save_individual_ultra_card": "Card backups save individual Ultra Card configurations",
+        "no_card_backups_yet": "No card backups yet",
+        "restore_all": "🔄 Restore All",
+        "views_breakdown": "Views Breakdown:",
+        "dashboard_snapshots_capture_all_ultra_cards": "Dashboard snapshots capture all Ultra Cards across your entire dashboard",
+        "no_dashboard_snapshots_yet": "No dashboard snapshots yet",
+        "loading": "Loading...",
+        "manual_card_backups": "Manual Card Backups",
+        "dashboard_snapshots": "Dashboard Snapshots",
+        "close": "Close",
+        "backup_amp_snapshot_history": "Backup & Snapshot History"
+      },
+      "snapshot_settings_dialog": {
+        "cancel": "Cancel",
+        "manual_snapshots_are_never_automatically_deleted": "Manual snapshots are never automatically deleted",
+        "older_snapshots_are_automatically_deleted": "Older snapshots are automatically deleted",
+        "30_days": "30 days",
+        "auto_snapshots_are_kept_for": "Auto-snapshots are kept for",
+        "storage_policy": "Storage Policy:",
+        "auto_snapshots_are_currently_disabled_you": "Auto-snapshots are currently disabled. You can still create manual snapshots anytime.",
+        "next_snapshot": "Next Snapshot:",
+        "sydney": "Sydney",
+        "shanghai": "Shanghai",
+        "tokyo": "Tokyo",
+        "berlin": "Berlin",
+        "paris": "Paris",
+        "london": "London",
+        "pacific_time_pt": "Pacific Time (PT)",
+        "mountain_time_mt": "Mountain Time (MT)",
+        "central_time_ct": "Central Time (CT)",
+        "eastern_time_et": "Eastern Time (ET)",
+        "utc": "UTC",
+        "snapshot_time_will_use_this_timezone": "Snapshot time will use this timezone",
+        "timezone": "Timezone",
+        "what_time_should_snapshots_be_created": "What time should snapshots be created? (24-hour format)",
+        "snapshot_time": "Snapshot Time",
+        "automatically_backup_all_ultra_cards_in": "Automatically backup all Ultra Cards in your dashboard every day",
+        "enable_daily_auto_snapshots": "Enable Daily Auto-Snapshots",
+        "automatically_save_a_cloud_backup_when": "Automatically save a cloud backup when you edit this card (debounced). Turn off if you prefer manual snapshots only.",
+        "enable_real_time_auto_save": "Enable Real-time Auto-save",
+        "loading_settings": "Loading settings...",
+        "snapshot_settings": "⚙️ Snapshot Settings"
+      },
+      "snapshot_restore_dialog": {
+        "cancel": "Cancel",
+        "affected_views": "Affected Views:",
+        "caution_deletes_all_ultra_cards_first": "Caution: deletes all Ultra Cards first",
+        "best_for_heavily_broken_dashboards": "Best for heavily broken dashboards",
+        "exact_snapshot_state": "Exact snapshot state",
+        "fixes_duplicated_cards": "Fixes duplicated cards",
+        "deletes_all_ultra_cards_first_then": "Deletes ALL Ultra Cards first, then restores snapshot cards to their exact original positions and order.",
+        "nuclear_option": "Nuclear Option",
+        "clean_restore": "Clean & Restore",
+        "can_run_multiple_times": "Can run multiple times",
+        "preserves_non_matching_cards": "Preserves non-matching cards",
+        "works_with_named_or_unnamed_cards": "Works with named or unnamed cards",
+        "safe_no_duplicates": "Safe - no duplicates",
+        "intelligently_matches_cards_by_custom_name": "Intelligently matches cards by custom name OR position, replacing them in-place without creating duplicates.",
+        "recommended": "Recommended",
+        "smart_replace": "Smart Replace",
+        "restore_dashboard_snapshot": "Restore Dashboard Snapshot"
+      }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} is installed, but this page is still running {running}. Reload to finish the update.",
+      "reload": "Reload",
+      "dismiss": "Dismiss"
+    },
+    "color_picker": {
+      "gradient_presets": "Gradient Presets"
     }
   },
   "hub": {

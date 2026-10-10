@@ -4,7 +4,7 @@
  * Handles priority resolution, conditional logic, and background application
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BackgroundModule, UltraCardConfig } from '../types';
 import { logicService } from './logic-service';
 import { getImageUrl } from '../utils/image-upload';

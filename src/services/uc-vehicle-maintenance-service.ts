@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { VehicleMaintenanceModule, VehicleServiceItem } from '../types';
 import { localize } from '../localize/localize';
 import { ucRecordStore, type UcStoredRecord } from './uc-record-store';

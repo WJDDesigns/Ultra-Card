@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { DisplayCondition, UltraCardConfig, UserVisibility } from '../types';
 import { TemplateService } from './template-service';
 import { parseUnifiedTemplate, unifiedTemplateVisible } from '../utils/template-parser';

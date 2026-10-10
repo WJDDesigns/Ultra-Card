@@ -6,13 +6,15 @@
  * needed by sibling cards.
  */
 
-interface ClockTimer {
-  intervalId: number;
-  frequency: number; // in seconds
-}
-
 class ClockUpdateService {
-  private timers: Map<string, ClockTimer> = new Map();
+  /** Registered clocks and their update frequency in seconds. */
+  private clocks: Map<string, number> = new Map();
+  /**
+   * One shared interval at the fastest registered frequency. One interval per
+   * clock meant N clocks re-rendered every card N times per tick.
+   */
+  private sharedIntervalId: number | null = null;
+  private sharedFrequency = 0;
   private updateCallbacks: Array<() => void> = [];
   /** Mounted `ultra-card` count; full teardown only when the last card disconnects. */
   private consumerRefCount = 0;
@@ -36,7 +38,7 @@ class ClockUpdateService {
   }
 
   /**
-   * Register a callback invoked on each clock tick (per registered clock interval).
+   * Register a callback invoked on each clock tick (fastest registered frequency).
    * Returns a disposer; call it when the owning ultra-card disconnects.
    */
   public addUpdateCallback(callback: () => void): () => void {
@@ -55,20 +57,35 @@ class ClockUpdateService {
    * @param frequency - Update frequency in seconds (1 or 60)
    */
   registerClock(moduleId: string, frequency: number = 1): void {
-    // If already registered with same frequency, do nothing
-    const existing = this.timers.get(moduleId);
-    if (existing && existing.frequency === frequency) {
-      return;
-    }
+    if (this.clocks.get(moduleId) === frequency) return;
+    this.clocks.set(moduleId, frequency);
+    this.syncInterval();
+  }
 
-    // Clear existing timer if frequency changed
-    if (existing) {
-      this.unregisterClock(moduleId);
-    }
+  /**
+   * Unregister a clock module
+   * @param moduleId - Unique identifier for the clock module
+   */
+  unregisterClock(moduleId: string): void {
+    if (!this.clocks.delete(moduleId)) return;
+    this.syncInterval();
+  }
 
-    // Create new interval timer
-    const intervalMs = frequency * 1000;
-    const intervalId = window.setInterval(() => {
+  /**
+   * Check if a clock is registered
+   * @param moduleId - Unique identifier for the clock module
+   */
+  isRegistered(moduleId: string): boolean {
+    return this.clocks.has(moduleId);
+  }
+
+  private syncInterval(): void {
+    const frequency = this.clocks.size ? Math.min(...this.clocks.values()) : 0;
+    if (frequency === this.sharedFrequency && this.sharedIntervalId !== null) return;
+    this.stopInterval();
+    if (!frequency) return;
+    this.sharedFrequency = frequency;
+    this.sharedIntervalId = window.setInterval(() => {
       const listeners = [...this.updateCallbacks];
       for (const fn of listeners) {
         try {
@@ -77,34 +94,18 @@ class ClockUpdateService {
           // ignore per-card errors
         }
       }
-    }, intervalMs);
-
-    this.timers.set(moduleId, { intervalId, frequency });
+    }, frequency * 1000);
   }
 
-  /**
-   * Unregister a clock module
-   * @param moduleId - Unique identifier for the clock module
-   */
-  unregisterClock(moduleId: string): void {
-    const timer = this.timers.get(moduleId);
-    if (timer) {
-      clearInterval(timer.intervalId);
-    }
-    this.timers.delete(moduleId);
-  }
-
-  /**
-   * Check if a clock is registered
-   * @param moduleId - Unique identifier for the clock module
-   */
-  isRegistered(moduleId: string): boolean {
-    return this.timers.has(moduleId);
+  private stopInterval(): void {
+    if (this.sharedIntervalId !== null) clearInterval(this.sharedIntervalId);
+    this.sharedIntervalId = null;
+    this.sharedFrequency = 0;
   }
 
   private clearAllInternal(): void {
-    this.timers.forEach(timer => clearInterval(timer.intervalId));
-    this.timers.clear();
+    this.stopInterval();
+    this.clocks.clear();
     this.updateCallbacks = [];
   }
 
@@ -120,7 +121,7 @@ class ClockUpdateService {
    * Get active clock count
    */
   getActiveClockCount(): number {
-    return this.timers.size;
+    return this.clocks.size;
   }
 }
 

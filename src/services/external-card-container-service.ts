@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { escapeHtml } from '../utils/html-sanitizer';
 import { isEntityRowType, ucExternalCardsService } from './uc-external-cards-service';
 

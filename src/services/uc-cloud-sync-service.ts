@@ -7,6 +7,7 @@ import { ucCloudAuthService, CloudUser } from './uc-cloud-auth-service';
 import { FavoriteRow, FavoriteColor } from '../types';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 export interface SyncResult {
   success: boolean;
   synced: number;
@@ -210,7 +211,7 @@ class UcCloudSyncService {
       this._saveSyncStatus();
       this._notifyListeners();
 
-      console.log(
+      UC_DEBUG && console.log(
         `✅ Favorites sync completed: ${result.synced} synced, ${result.conflicts} conflicts`
       );
     } catch (error) {
@@ -294,7 +295,7 @@ class UcCloudSyncService {
         this._syncStatus.lastVariablesSync = new Date();
         this._saveSyncStatus();
         this._notifyListeners();
-        console.log(`✅ Variables sync completed: ${result.synced} variables`);
+        UC_DEBUG && console.log(`✅ Variables sync completed: ${result.synced} variables`);
       } else {
         // Deliberately does NOT advance lastVariablesSync. Reporting success and
         // bumping the timestamp hid every failure and made the next run skip

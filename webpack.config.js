@@ -43,6 +43,11 @@ setVersion('${version}');
 export { version, setVersion };`;
 
   fs.writeFileSync(path.resolve(__dirname, 'dist/version.js'), content);
+  // Keep the committed declaration in step (it had drifted to 3.1.0).
+  fs.writeFileSync(
+    path.resolve(__dirname, 'dist/version.d.ts'),
+    `export declare const version: string;\nexport declare function setVersion(value: string): void;\n`
+  );
   console.log(`Generated version.js with version ${version}`);
 }
 

@@ -1,4 +1,4 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 /**
  * Resolves Home Assistant `media-source://` URIs to authenticated URLs that

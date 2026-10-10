@@ -1,10 +1,11 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 import { FavoriteColor } from '../types';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { isGradient } from '../utils/uc-color-utils';
+import { localize, uiLanguage } from '../localize/localize';
 
 export interface ColorChangedEvent {
   detail: {
@@ -133,6 +134,11 @@ export class UltraColorPicker extends LitElement {
   @property() public label: string | undefined;
   @property() public defaultValue: string | undefined;
   @property({ type: Boolean }) public disabled = false;
+  /**
+   * Hide gradient presets where a gradient has no effect (icon colours: an icon
+   * is painted with `color`, which cannot be a gradient).
+   */
+  @property({ type: Boolean, attribute: 'no-gradients' }) public noGradients = false;
 
   @state() private _currentValue: string | undefined = undefined;
   @state() private _showPalette = false;
@@ -1128,7 +1134,7 @@ export class UltraColorPicker extends LitElement {
                 <div class="palette-grid">
                   ${COLOR_PALETTE.map(
                     color => html`
-                      <div
+                      <div role="button" tabindex="0" data-uc-activate
                         class="color-swatch ${this._currentValue === color ? 'selected' : ''}"
                         style="background-color: ${color}"
                         @click=${(e: Event) => this._selectColor(color, e)}
@@ -1139,14 +1145,18 @@ export class UltraColorPicker extends LitElement {
                 </div>
 
                 <!-- Gradient Presets Section -->
-                <div class="gradient-presets-section">
+                ${this.noGradients
+                  ? ''
+                  : html`<div class="gradient-presets-section">
                   <div class="gradient-presets-header">
-                    <label class="gradient-presets-label">Gradient Presets</label>
+                    <label class="gradient-presets-label"
+                          >${localize('editor.color_picker.gradient_presets', uiLanguage(), 'Gradient Presets')}</label
+                        >
                   </div>
                   <div class="gradient-presets-grid">
                     ${GRADIENT_PRESETS.map(
                       gradient => html`
-                        <div
+                        <div role="button" tabindex="0" data-uc-activate
                           class="gradient-preset-swatch ${this._currentValue === gradient.value
                             ? 'selected'
                             : ''}"
@@ -1159,7 +1169,7 @@ export class UltraColorPicker extends LitElement {
                       `
                     )}
                   </div>
-                </div>
+                </div>`}
 
                 <!-- Favorites Section (always visible so users can add favorites) -->
                 <div class="favorites-section">
@@ -1185,7 +1195,7 @@ export class UltraColorPicker extends LitElement {
                         <div class="favorites-grid">
                           ${this._favoriteColors.map(
                             favorite => html`
-                              <div
+                              <div role="button" tabindex="0" data-uc-activate
                                 class="favorite-swatch ${this._currentValue === favorite.color
                                   ? 'selected'
                                   : ''}"

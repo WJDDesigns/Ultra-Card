@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, DropdownModule, DropdownOption, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
@@ -3776,7 +3776,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Trigger haptic feedback if enabled (default: true)
     const hapticEnabled = config?.haptic_feedback !== false;
     if (hapticEnabled) {
-      import('custom-card-helpers').then(({ forwardHaptic }) => {
+      import('../ha/helpers').then(({ forwardHaptic }) => {
         forwardHaptic('selection'); // Use selection haptic for dropdown selections
       });
     }
@@ -3828,25 +3828,6 @@ export class UltraDropdownModule extends BaseUltraModule {
       actionEntity, // Pass the entity from the option's action as moduleEntity
       dropdownModule
     );
-  }
-
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (value === 'auto' || value === 'none' || value === 'inherit') return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-    return value;
-  }
-
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
   }
 
   // Simple string hash function for template cache keys

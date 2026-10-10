@@ -51,3 +51,40 @@ describe('ClockUpdateService multi-card', () => {
     expect(clockUpdateService.activeConsumerCount).toBe(0);
   });
 });
+
+describe('ClockUpdateService shared interval', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    clockUpdateService.clearAll();
+  });
+
+  afterEach(() => {
+    clockUpdateService.clearAll();
+    vi.useRealTimers();
+  });
+
+  it('ticks once per interval no matter how many clocks are registered', () => {
+    const cb = vi.fn();
+    clockUpdateService.addUpdateCallback(cb);
+    clockUpdateService.registerClock('a', 1);
+    clockUpdateService.registerClock('b', 1);
+    clockUpdateService.registerClock('c', 60);
+    vi.advanceTimersByTime(1000);
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('slows to the remaining fastest frequency when the fast clock goes away', () => {
+    const cb = vi.fn();
+    clockUpdateService.addUpdateCallback(cb);
+    clockUpdateService.registerClock('fast', 1);
+    clockUpdateService.registerClock('slow', 60);
+    clockUpdateService.unregisterClock('fast');
+    vi.advanceTimersByTime(59_000);
+    expect(cb).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1000);
+    expect(cb).toHaveBeenCalledTimes(1);
+    clockUpdateService.unregisterClock('slow');
+    vi.advanceTimersByTime(120_000);
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+});

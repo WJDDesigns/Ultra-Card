@@ -1,5 +1,5 @@
 import { TemplateResult, html, nothing } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ClockModule, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
@@ -366,7 +366,7 @@ export class UltraClockModule extends BaseUltraModule {
     if (this._tickTimer) clearInterval(this._tickTimer);
     this._tickSeconds = needSeconds;
     this._tickTimer = setInterval(
-      () => this.triggerPreviewUpdate(),
+      () => this.triggerPreviewUpdate(false, true),
       needSeconds ? 1000 : 15000
     );
   }

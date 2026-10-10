@@ -14,7 +14,7 @@
  *   poe-, port-, power_cycle-, outlet-
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import { inferPortCountFromModel, portCountForSku } from '../modules/unifi/port-maps';
 import { ucUnifiDeviceDb } from './uc-unifi-device-db';

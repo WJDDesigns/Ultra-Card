@@ -1,5 +1,5 @@
 import { html, TemplateResult, nothing } from 'lit';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { UserVisibility } from '../types';
 import { localize } from '../localize/localize';
 import { ucHaUsersService } from '../services/uc-ha-users-service';

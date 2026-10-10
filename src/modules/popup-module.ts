@@ -1,7 +1,7 @@
 import { TemplateResult, html, render } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig, PopupModule, NavigationModule, NavRoute } from '../types';
 import { getModuleRegistry } from './module-registry';

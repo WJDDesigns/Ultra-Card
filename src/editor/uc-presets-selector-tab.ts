@@ -6,11 +6,12 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { PresetDefinition } from '../types';
 import { ucPresetsService } from '../services/uc-presets-service';
 import { ucCloudSyncService } from '../services/uc-cloud-sync-service';
 import { sanitizePresetHtml } from '../utils/html-sanitizer';
+import { localize } from '../localize/localize';
 
 @customElement('uc-presets-selector-tab')
 export class UcPresetsSelectorTab extends LitElement {
@@ -147,7 +148,7 @@ export class UcPresetsSelectorTab extends LitElement {
     }
     if (images.length === 1) {
       return html`
-        <div
+        <div role="button" tabindex="0" data-uc-activate
           class="preset-thumbnail"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -165,7 +166,7 @@ export class UcPresetsSelectorTab extends LitElement {
         <div class="preset-slider-container" style="transform: translateX(0%)">
           ${images.map(
             (img, i) => html`
-              <div
+              <div role="button" tabindex="0" data-uc-activate
                 class="preset-slider-image"
                 @click=${(e: Event) => {
                   e.stopPropagation();
@@ -199,7 +200,7 @@ export class UcPresetsSelectorTab extends LitElement {
         <div class="preset-slider-dots">
           ${images.map(
             (_, i) => html`
-              <div
+              <div role="button" tabindex="0" data-uc-activate
                 class="preset-slider-dot ${i === 0 ? 'active' : ''}"
                 @click=${(e: Event) => {
                   e.stopPropagation();
@@ -767,7 +768,7 @@ export class UcPresetsSelectorTab extends LitElement {
             <input
               id="preset-search-input"
               type="text"
-              placeholder="Search presets..."
+              placeholder=${localize('editor.ui.presets_selector_tab.search_presets', this.hass?.locale?.language || 'en', 'Search presets...')}
               .value=${this._presetSearchQuery}
               @input=${(e: Event) => {
                 const t = e.target as HTMLInputElement;
@@ -782,7 +783,7 @@ export class UcPresetsSelectorTab extends LitElement {
                       this._presetSearchQuery = '';
                       this.focusSearchInput();
                     }}
-                    title="Clear search"
+                    title=${localize('editor.ui.presets_selector_tab.clear_search_2', this.hass?.locale?.language || 'en', 'Clear search')}
                   >
                     <ha-icon icon="mdi:close"></ha-icon>
                   </button>
@@ -814,7 +815,7 @@ export class UcPresetsSelectorTab extends LitElement {
                   )}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
-                  <span style="font-size: 12px; color: var(--secondary-text-color);">Sort by:</span>
+                  <span style="font-size: 12px; color: var(--secondary-text-color);">${localize('editor.ui.presets_selector_tab.sort_by', this.hass?.locale?.language || 'en', 'Sort by:')}</span>
                   <select
                     .value=${this._presetSortBy}
                     @change=${(e: Event) => {
@@ -825,9 +826,9 @@ export class UcPresetsSelectorTab extends LitElement {
                     }}
                     style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-size: 12px;"
                   >
-                    <option value="name">Name</option>
-                    <option value="date">Date</option>
-                    <option value="rating">Top Rated</option>
+                    <option value="name">${localize('editor.ui.presets_selector_tab.name', this.hass?.locale?.language || 'en', 'Name')}</option>
+                    <option value="date">${localize('editor.ui.presets_selector_tab.date', this.hass?.locale?.language || 'en', 'Date')}</option>
+                    <option value="rating">${localize('editor.ui.presets_selector_tab.top_rated', this.hass?.locale?.language || 'en', 'Top Rated')}</option>
                   </select>
                   <button
                     @click=${() =>
@@ -843,11 +844,11 @@ export class UcPresetsSelectorTab extends LitElement {
                       <div class="wordpress-status">
                         <div class="status-item error">
                           <ha-icon icon="mdi:alert-circle"></ha-icon>
-                          <span>Failed to load presets</span>
+                          <span>${localize('editor.ui.presets_selector_tab.failed_to_load_presets', this.hass?.locale?.language || 'en', 'Failed to load presets')}</span>
                           <button
                             class="retry-btn"
                             @click=${() => this._emitRefresh()}
-                            title="Retry"
+                            title=${localize('editor.ui.presets_selector_tab.retry', this.hass?.locale?.language || 'en', 'Retry')}
                           >
                             <ha-icon icon="mdi:refresh"></ha-icon>
                           </button>
@@ -896,7 +897,7 @@ export class UcPresetsSelectorTab extends LitElement {
                         >
                           ${isCommunity ? 'Community' : isDefault ? 'Default' : 'Built-in'}
                         </div>
-                        ${this._isNewPreset(preset) ? html`<span class="new-badge">New</span>` : ''}
+                        ${this._isNewPreset(preset) ? html`<span class="new-badge">${localize('editor.ui.presets_selector_tab.new', this.hass?.locale?.language || 'en', 'New')}</span>` : ''}
                         <div class="preset-title-info">
                           <h4 class="preset-header-title">${preset.name}</h4>
                           ${!isWjdDesigns
@@ -915,7 +916,7 @@ export class UcPresetsSelectorTab extends LitElement {
                           : ''}
                         ${isWpPreset
                           ? html`
-                              <div
+                              <div role="button" tabindex="0" data-uc-activate
                                 class="preset-rating-stars"
                                 @click=${(e: Event) => {
                                   e.stopPropagation();
@@ -993,10 +994,10 @@ export class UcPresetsSelectorTab extends LitElement {
                           this._emitPresetSelected(preset);
                           if (isWpPreset) ucPresetsService.trackPresetDownload(preset.id);
                         }}
-                        title="Add this preset to your card"
+                        title=${localize('editor.ui.presets_selector_tab.add_this_preset_to_your_card', this.hass?.locale?.language || 'en', 'Add this preset to your card')}
                       >
                         <ha-icon icon="mdi:plus"></ha-icon>
-                        <span>Add</span>
+                        <span>${localize('editor.ui.presets_selector_tab.add', this.hass?.locale?.language || 'en', 'Add')}</span>
                       </button>
                       ${isWpPreset
                         ? html`
@@ -1007,7 +1008,7 @@ export class UcPresetsSelectorTab extends LitElement {
                                 this._builderExpandedId =
                                   this._builderExpandedId === preset.id ? null : preset.id;
                               }}
-                              title="View preset details"
+                              title=${localize('editor.ui.presets_selector_tab.view_preset_details', this.hass?.locale?.language || 'en', 'View preset details')}
                             >
                               <ha-icon
                                 icon=${this._builderExpandedId === preset.id
@@ -1025,20 +1026,20 @@ export class UcPresetsSelectorTab extends LitElement {
                       ? html`
                           <div class="preset-details">
                             <dl class="detail-info">
-                              <dt>Category</dt>
+                              <dt>${localize('editor.ui.presets_selector_tab.category', this.hass?.locale?.language || 'en', 'Category')}</dt>
                               <dd>${preset.category}</dd>
-                              <dt>Version</dt>
+                              <dt>${localize('editor.ui.presets_selector_tab.version', this.hass?.locale?.language || 'en', 'Version')}</dt>
                               <dd>${preset.version || '—'}</dd>
-                              <dt>Rows</dt>
+                              <dt>${localize('editor.ui.presets_selector_tab.rows', this.hass?.locale?.language || 'en', 'Rows')}</dt>
                               <dd>${preset.layout?.rows?.length ?? 0}</dd>
                               ${preset.customVariables?.length
-                                ? html`<dt>Variables</dt><dd>${preset.customVariables.length}</dd>`
+                                ? html`<dt>${localize('editor.ui.presets_selector_tab.variables', this.hass?.locale?.language || 'en', 'Variables')}</dt><dd>${preset.customVariables.length}</dd>`
                                 : ''}
                               ${preset.cardSettings && Object.keys(preset.cardSettings).length
-                                ? html`<dt>Card settings</dt><dd>Included</dd>`
+                                ? html`<dt>${localize('editor.ui.presets_selector_tab.card_settings', this.hass?.locale?.language || 'en', 'Card settings')}</dt><dd>${localize('editor.ui.presets_selector_tab.included', this.hass?.locale?.language || 'en', 'Included')}</dd>`
                                 : ''}
                               ${(preset as any).integrations?.length
-                                ? html`<dt>Requires</dt><dd>${(preset as any).integrations.join(', ')}</dd>`
+                                ? html`<dt>${localize('editor.ui.presets_selector_tab.requires', this.hass?.locale?.language || 'en', 'Requires')}</dt><dd>${(preset as any).integrations.join(', ')}</dd>`
                                 : ''}
                             </dl>
                           </div>
@@ -1066,14 +1067,14 @@ export class UcPresetsSelectorTab extends LitElement {
                         this.focusSearchInput();
                       }}
                     >
-                      Clear Search
+                      ${localize('editor.ui.presets_selector_tab.clear_search', this.hass?.locale?.language || 'en', 'Clear Search')}
                     </button>
                   </div>
                 `
               : html`
                   <div class="empty-state">
                     <ha-icon icon="mdi:palette-outline"></ha-icon>
-                    <p>No presets available in this category</p>
+                    <p>${localize('editor.ui.presets_selector_tab.no_presets_available_in_this_category', this.hass?.locale?.language || 'en', 'No presets available in this category')}</p>
                     ${wpStatus.error
                       ? html`<div class="error-details"><p class="error-hint">${wpStatus.error}</p></div>`
                       : ''}
@@ -1084,11 +1085,11 @@ export class UcPresetsSelectorTab extends LitElement {
           <button
             class="reload-btn ${wpStatus.loading ? 'loading' : ''}"
             @click=${() => this._emitRefresh()}
-            title="Refresh presets from server"
+            title=${localize('editor.ui.presets_selector_tab.refresh_presets_from_server', this.hass?.locale?.language || 'en', 'Refresh presets from server')}
             ?disabled=${wpStatus.loading}
           >
             <ha-icon icon="mdi:refresh" class="${wpStatus.loading ? 'spinning' : ''}"></ha-icon>
-            <span>Reload</span>
+            <span>${localize('editor.ui.presets_selector_tab.reload', this.hass?.locale?.language || 'en', 'Reload')}</span>
           </button>
         </div>
       </div>

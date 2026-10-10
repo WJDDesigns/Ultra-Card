@@ -261,7 +261,11 @@
       "move_up": "Move up",
       "move_down": "Move down",
       "moved_up": "Moved up",
-      "moved_down": "Moved down"
+      "moved_down": "Moved down",
+      "row_deleted": "Riga eliminata",
+      "column_deleted": "Colonna eliminata",
+      "module_deleted": "Modulo eliminato",
+      "browse_presets_tooltip": "Sfoglia i preset e aggiungine uno a questa scheda"
     },
     "layout_logic": {
       "display_title": "Mostra questo elemento",
@@ -1720,7 +1724,11 @@
           "device_state": "Stato dispositivo",
           "attribute": "Attributo",
           "toggle": "Interruttore"
-        }
+        },
+        "bg_image": "Immagine",
+        "bg_gradient": "Gradiente",
+        "bg_color": "Colore",
+        "bg_entity": "Entità"
       }
     },
     "dropdown": {
@@ -1904,7 +1912,8 @@
         "desc": "JSON con valore, button_background_color, button_text_color, value_color — o un risultato numerico Jinja semplice.",
         "toggle": "Modalità Template",
         "cheatsheet": "Guida Template"
-      }
+      },
+      "no_entity_hint": "Nessuna entità selezionata: il valore cambia solo su questa schermata e non viene salvato."
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2443,7 +2452,12 @@
     "pro": {
       "feature_locked": "Caratteristica Pro",
       "sports_description": "Il modulo Sports Score richiede un abbonamento Ultra Card Pro per visualizzare i punteggi sportivi dal vivo e le informazioni sulle squadre.",
-      "upgrade_button": "Aggiorna a Pro"
+      "upgrade_button": "Aggiorna a Pro",
+      "status_not_installed": "Hai già Pro? Installa Ultra Card Connect e accedi per sbloccarlo qui.",
+      "status_unreachable": "Ultra Card Connect non riesce a raggiungere ultracard.io al momento. Se hai Pro, si sbloccherà di nuovo quando la connessione tornerà.",
+      "status_reauth": "Ultra Card Connect richiede un nuovo accesso (Impostazioni → Dispositivi e servizi → Ultra Card Connect).",
+      "status_signed_out": "Hai già Pro? Accedi a Ultra Card Connect dall'Ultra Card Hub nella barra laterale.",
+      "status_inactive": "Il tuo abbonamento Pro è {status}. Rinnovalo su ultracard.io per sbloccarlo."
     },
     "toggle": {
       "display_settings": "IMPOSTAZIONI VISIVE",
@@ -5373,6 +5387,177 @@
     "native_card": {
       "settings_title": "{name} Settings",
       "settings_desc": "Configure this native Home Assistant card using its built-in editor."
+    },
+    "ui": {
+      "module_selector_shell": {
+        "drag_to_resize": "Trascina per ridimensionare",
+        "favorites": "Preferiti",
+        "smart": "Smart",
+        "presets": "Preset",
+        "cards": "Schede",
+        "modules": "Moduli",
+        "adding_to_layout_module_content_modules": "Aggiunta al modulo di layout (moduli di contenuto e moduli di layout consentiti fino a 2 livelli di profondità)",
+        "close": "Chiudi",
+        "add_module": "Aggiungi modulo"
+      },
+      "card_selector_tab": {
+        "install_custom_cards_via_hacs": "Installa schede personalizzate tramite HACS",
+        "no_3rd_party_cards_installed": "Nessuna scheda di terze parti installata",
+        "some_3rd_party_cards_may_not": "Alcune schede di terze parti potrebbero non funzionare come previsto. Segnala eventuali problemi.",
+        "compatibility_notice": "Avviso di compatibilità:",
+        "get_pro": "Ottieni Pro",
+        "want_unlimited_3rd_party_cards": "Vuoi schede di terze parti illimitate?",
+        "unlimited": "Illimitato",
+        "community_3rd_party": "Community e terze parti",
+        "no_native_cards_detected": "Nessuna scheda nativa rilevata",
+        "native_home_assistant": "Home Assistant nativo",
+        "click_any_card_to_add_it": "Fai clic su una scheda per aggiungerla alla colonna selezionata. Le schede HA native e quelle di terze parti useranno i propri editor nativi quando disponibili.",
+        "how_to_use": "Come usare:",
+        "refresh": "Aggiorna",
+        "cards": "Schede",
+        "community_3rd_party_cards": "Schede della community e di terze parti",
+        "native": "Nativo",
+        "native_home_assistant_cards": "Schede native di Home Assistant",
+        "clear_search": "Cancella ricerca",
+        "clear_search_2": "Cancella ricerca",
+        "search_cards": "Cerca schede..."
+      },
+      "favorites_selector_tab": {
+        "use_the_heart_icon_on_any": "Usa l'icona del cuore su qualsiasi riga per salvarla come preferita",
+        "no_favorites_saved_yet": "Nessun preferito salvato",
+        "delete": "Elimina",
+        "export": "Esporta",
+        "add_to_layout": "Aggiungi al layout",
+        "clear_search": "Cancella ricerca",
+        "search_favorites": "Cerca preferiti...",
+        "import": "Importa",
+        "saved_favorites": "Preferiti salvati"
+      },
+      "modules_selector_tab": {
+        "priority_support": "Supporto prioritario",
+        "auto_snapshots": "Snapshot automatici",
+        "cloud_backups": "Backup su cloud",
+        "premium_modules": "Moduli premium",
+        "access_premium_modules_like_weather_forecast": "Accedi a moduli premium come le previsioni meteo, animazioni avanzate e altre funzionalità esclusive.",
+        "ultra_card_pro": "Ultra Card PRO",
+        "clear_search": "Cancella ricerca",
+        "clear_search_2": "Cancella ricerca",
+        "module_layout": "Layout del modulo",
+        "pro": "PRO",
+        "standard": "Standard",
+        "module_type": "Tipo di modulo",
+        "layout_containers": "Contenitori di layout"
+      },
+      "presets_selector_tab": {
+        "reload": "Ricarica",
+        "refresh_presets_from_server": "Aggiorna i preset dal server",
+        "no_presets_available_in_this_category": "Nessun preset disponibile in questa categoria",
+        "clear_search": "Cancella ricerca",
+        "requires": "Richiede",
+        "included": "Incluso",
+        "card_settings": "Impostazioni scheda",
+        "variables": "Variabili",
+        "rows": "Righe",
+        "version": "Versione",
+        "category": "Categoria",
+        "view_preset_details": "Visualizza dettagli del preset",
+        "add": "Aggiungi",
+        "add_this_preset_to_your_card": "Aggiungi questo preset alla tua scheda",
+        "new": "Nuovo",
+        "retry": "Riprova",
+        "failed_to_load_presets": "Impossibile caricare i preset",
+        "top_rated": "Più votati",
+        "date": "Data",
+        "name": "Nome",
+        "sort_by": "Ordina per:",
+        "clear_search_2": "Cancella ricerca",
+        "search_presets": "Cerca preset..."
+      },
+      "entity_replace_dialog": {
+        "replace_all": "Sostituisci tutto",
+        "cancel": "Annulla",
+        "replace_with": "Sostituisci con",
+        "find_entity": "Trova entità",
+        "replaces_every_exact_text_match_of": "Sostituisce ogni corrispondenza esatta del testo dell'ID entità all'interno del layout di questa scheda (inclusi template e moduli annidati). Usa annulla nel generatore di layout se necessario.",
+        "close": "Chiudi",
+        "find_amp_replace_entity": "Trova e sostituisci entità"
+      },
+      "snapshot_history_modal": {
+        "delete": "🗑️ Elimina",
+        "download": "⬇️ Scarica",
+        "rename": "✏️ Rinomina",
+        "restore": "🔄 Ripristina",
+        "you_can_have_up_to_30": "💡 Puoi avere fino a 30 backup delle schede. I backup più vecchi vengono rimossi automaticamente quando si raggiunge il limite.",
+        "card_backups_save_individual_ultra_card": "I backup delle schede salvano singole configurazioni di Ultra Card",
+        "no_card_backups_yet": "Nessun backup delle schede",
+        "restore_all": "🔄 Ripristina tutto",
+        "views_breakdown": "Dettaglio viste:",
+        "dashboard_snapshots_capture_all_ultra_cards": "Gli snapshot della dashboard acquisiscono tutte le Ultra Card dell'intera dashboard",
+        "no_dashboard_snapshots_yet": "Nessuno snapshot della dashboard",
+        "loading": "Caricamento...",
+        "manual_card_backups": "Backup manuali delle schede",
+        "dashboard_snapshots": "Snapshot della dashboard",
+        "close": "Chiudi",
+        "backup_amp_snapshot_history": "Cronologia backup e snapshot"
+      },
+      "snapshot_settings_dialog": {
+        "cancel": "Annulla",
+        "manual_snapshots_are_never_automatically_deleted": "Gli snapshot manuali non vengono mai eliminati automaticamente",
+        "older_snapshots_are_automatically_deleted": "Gli snapshot più vecchi vengono eliminati automaticamente",
+        "30_days": "30 giorni",
+        "auto_snapshots_are_kept_for": "Gli snapshot automatici vengono conservati per",
+        "storage_policy": "Criterio di archiviazione:",
+        "auto_snapshots_are_currently_disabled_you": "Gli snapshot automatici sono attualmente disattivati. Puoi comunque creare snapshot manuali in qualsiasi momento.",
+        "next_snapshot": "Prossimo snapshot:",
+        "sydney": "Sydney",
+        "shanghai": "Shanghai",
+        "tokyo": "Tokyo",
+        "berlin": "Berlino",
+        "paris": "Parigi",
+        "london": "Londra",
+        "pacific_time_pt": "Ora del Pacifico (PT)",
+        "mountain_time_mt": "Ora delle Montagne Rocciose (MT)",
+        "central_time_ct": "Ora centrale (CT)",
+        "eastern_time_et": "Ora dell'Est (ET)",
+        "utc": "UTC",
+        "snapshot_time_will_use_this_timezone": "L'orario dello snapshot userà questo fuso orario",
+        "timezone": "Fuso orario",
+        "what_time_should_snapshots_be_created": "A che ora devono essere creati gli snapshot? (formato 24 ore)",
+        "snapshot_time": "Orario dello snapshot",
+        "automatically_backup_all_ultra_cards_in": "Esegui automaticamente il backup di tutte le Ultra Card della dashboard ogni giorno",
+        "enable_daily_auto_snapshots": "Attiva snapshot automatici giornalieri",
+        "automatically_save_a_cloud_backup_when": "Salva automaticamente un backup su cloud quando modifichi questa scheda (con ritardo). Disattiva se preferisci solo snapshot manuali.",
+        "enable_real_time_auto_save": "Attiva salvataggio automatico in tempo reale",
+        "loading_settings": "Caricamento impostazioni...",
+        "snapshot_settings": "⚙️ Impostazioni snapshot"
+      },
+      "snapshot_restore_dialog": {
+        "cancel": "Annulla",
+        "affected_views": "Viste interessate:",
+        "caution_deletes_all_ultra_cards_first": "Attenzione: elimina prima tutte le Ultra Card",
+        "best_for_heavily_broken_dashboards": "Ideale per dashboard gravemente danneggiate",
+        "exact_snapshot_state": "Stato esatto dello snapshot",
+        "fixes_duplicated_cards": "Corregge le schede duplicate",
+        "deletes_all_ultra_cards_first_then": "Elimina prima TUTTE le Ultra Card, quindi ripristina le schede dello snapshot nelle loro posizioni e nell'ordine originali esatti.",
+        "nuclear_option": "Opzione drastica",
+        "clean_restore": "Pulisci e ripristina",
+        "can_run_multiple_times": "Può essere eseguito più volte",
+        "preserves_non_matching_cards": "Mantiene le schede non corrispondenti",
+        "works_with_named_or_unnamed_cards": "Funziona con schede con o senza nome",
+        "safe_no_duplicates": "Sicuro - nessun duplicato",
+        "intelligently_matches_cards_by_custom_name": "Abbina in modo intelligente le schede per nome personalizzato O posizione, sostituendole sul posto senza creare duplicati.",
+        "recommended": "Consigliato",
+        "smart_replace": "Sostituzione intelligente",
+        "restore_dashboard_snapshot": "Ripristina snapshot della dashboard"
+      }
+    },
+    "update_banner": {
+      "text": "Ultra Card {installed} è installato, ma questa pagina usa ancora {running}. Ricarica per completare l'aggiornamento.",
+      "reload": "Ricarica",
+      "dismiss": "Ignora"
+    },
+    "color_picker": {
+      "gradient_presets": "Gradienti predefiniti"
     }
   },
   "hub": {

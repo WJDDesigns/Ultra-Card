@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { CardModule, UltraCardConfig } from './../types';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';

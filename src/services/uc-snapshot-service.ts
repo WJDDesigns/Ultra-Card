@@ -7,7 +7,7 @@
  * @author WJD Designs
  */
 
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import {
   ucDashboardScannerService,
   DashboardSnapshot,
@@ -90,7 +90,7 @@ class UcSnapshotService {
       }
 
       UC_DEBUG &&
-        console.log(
+        UC_DEBUG && console.log(
           `📦 Captured ${dashboardSnapshot.card_count} Ultra Cards from ${dashboardSnapshot.views.length} views`
         );
 
@@ -163,7 +163,7 @@ class UcSnapshotService {
       // Note: Using timestamp in URL is sufficient; custom headers cause CORS issues
       const timestamp = Date.now();
       UC_DEBUG &&
-        console.log(`📋 Fetching snapshot list with cache-busting timestamp: ${timestamp}`);
+        UC_DEBUG && console.log(`📋 Fetching snapshot list with cache-busting timestamp: ${timestamp}`);
 
       const response = await this.apiCall(`/snapshots?limit=${limit}&_=${timestamp}`, {
         method: 'GET',
@@ -231,7 +231,7 @@ class UcSnapshotService {
       });
 
       UC_DEBUG &&
-        console.log(
+        UC_DEBUG && console.log(
           `✅ Snapshot restored: ${snapshotData.card_count} cards across ${Object.keys(cardsByView).length} views`
         );
 

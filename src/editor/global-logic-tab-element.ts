@@ -1,6 +1,6 @@
 import { html, LitElement, nothing, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { FormUtils } from '../utils/form-utils';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import type { CardModule, CardColumn, CardRow, DeviceBreakpoint, UserVisibility } from '../types';

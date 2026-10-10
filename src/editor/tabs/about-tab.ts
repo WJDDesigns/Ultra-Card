@@ -1,7 +1,7 @@
 import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { until } from 'lit/directives/until.js';
 import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { localize } from '../../localize/localize';
 import { VERSION } from '../../version';
 import { DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../../utils/constants';

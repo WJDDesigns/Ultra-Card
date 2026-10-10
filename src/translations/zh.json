@@ -737,7 +737,11 @@
         "toggle": "模板模式",
         "cheatsheet_title": "模板速查表",
         "placeholder": "{ \"visible\": {{ states('input_boolean.show_row') == 'on' }} }"
-      }
+      },
+      "row_deleted": "行已删除",
+      "column_deleted": "列已删除",
+      "module_deleted": "模块已删除",
+      "browse_presets_tooltip": "浏览预设并将其添加到此卡片"
     },
     "entity_mapper": {
       "title": "映射实体",
@@ -1925,7 +1929,8 @@
         "desc": "返回 JSON，包含 value、button_background_color、button_text_color、value_color，或一个简单的数值型 Jinja 结果。",
         "toggle": "模板模式",
         "cheatsheet": "模板速查表"
-      }
+      },
+      "no_entity_hint": "未选择实体：数值只在此屏幕上变化，不会被保存。"
     },
     "layout_extra": {
       "module_name": "模块名称：",
@@ -2395,7 +2400,11 @@
         "badge_top_left": "左上角",
         "badge_top_right": "右上角",
         "badge_bottom_left": "左下角",
-        "badge_bottom_right": "右下角"
+        "badge_bottom_right": "右下角",
+        "bg_image": "图片",
+        "bg_gradient": "渐变",
+        "bg_color": "颜色",
+        "bg_entity": "实体"
       },
       "no_text_configured": "未配置文本",
       "no_image_configured": "未配置图片",
@@ -2832,7 +2841,12 @@
     "pro": {
       "feature_locked": "Pro 功能",
       "sports_description": "Sports Score 模块需要 Ultra Card Pro 订阅才能显示实时赛事比分和球队信息。",
-      "upgrade_button": "升级到 Pro"
+      "upgrade_button": "升级到 Pro",
+      "status_not_installed": "已经拥有 Pro？请安装 Ultra Card Connect 并登录以在此解锁。",
+      "status_unreachable": "Ultra Card Connect 目前无法连接 ultracard.io。如果您拥有 Pro，连接恢复后将再次解锁。",
+      "status_reauth": "Ultra Card Connect 需要您重新登录（设置 → 设备与服务 → Ultra Card Connect）。",
+      "status_signed_out": "已经拥有 Pro？请从侧边栏的 Ultra Card Hub 登录 Ultra Card Connect。",
+      "status_inactive": "您的 Pro 订阅状态为 {status}。请在 ultracard.io 续订以解锁此功能。"
     },
     "text_input": {
       "entity": {
@@ -5340,6 +5354,177 @@
       "accent_color": "强调色",
       "text_color": "文字颜色",
       "secondary_text_color": "次要文字"
+    },
+    "ui": {
+      "module_selector_shell": {
+        "drag_to_resize": "拖动以调整大小",
+        "favorites": "收藏",
+        "smart": "智能",
+        "presets": "预设",
+        "cards": "卡片",
+        "modules": "模块",
+        "adding_to_layout_module_content_modules": "正在添加到布局模块（内容模块和布局模块最多允许嵌套 2 层）",
+        "close": "关闭",
+        "add_module": "添加模块"
+      },
+      "card_selector_tab": {
+        "install_custom_cards_via_hacs": "通过 HACS 安装自定义卡片",
+        "no_3rd_party_cards_installed": "未安装第三方卡片",
+        "some_3rd_party_cards_may_not": "部分第三方卡片可能无法按预期工作。请报告任何问题。",
+        "compatibility_notice": "兼容性提示：",
+        "get_pro": "获取 Pro",
+        "want_unlimited_3rd_party_cards": "想要无限制使用第三方卡片？",
+        "unlimited": "无限制",
+        "community_3rd_party": "社区和第三方",
+        "no_native_cards_detected": "未检测到原生卡片",
+        "native_home_assistant": "原生 Home Assistant",
+        "click_any_card_to_add_it": "点击任意卡片即可将其添加到所选列。原生 HA 卡片和第三方卡片将在可用时使用其原生编辑器。",
+        "how_to_use": "使用方法：",
+        "refresh": "刷新",
+        "cards": "卡片",
+        "community_3rd_party_cards": "社区和第三方卡片",
+        "native": "原生",
+        "native_home_assistant_cards": "原生 Home Assistant 卡片",
+        "clear_search": "清除搜索",
+        "clear_search_2": "清除搜索",
+        "search_cards": "搜索卡片..."
+      },
+      "favorites_selector_tab": {
+        "use_the_heart_icon_on_any": "点击任意行上的心形图标即可将其保存为收藏",
+        "no_favorites_saved_yet": "尚未保存任何收藏",
+        "delete": "删除",
+        "export": "导出",
+        "add_to_layout": "添加到布局",
+        "clear_search": "清除搜索",
+        "search_favorites": "搜索收藏...",
+        "import": "导入",
+        "saved_favorites": "已保存的收藏"
+      },
+      "modules_selector_tab": {
+        "priority_support": "优先支持",
+        "auto_snapshots": "自动快照",
+        "cloud_backups": "云备份",
+        "premium_modules": "高级模块",
+        "access_premium_modules_like_weather_forecast": "使用天气预报、高级动画等高级模块及更多专属功能。",
+        "ultra_card_pro": "Ultra Card PRO",
+        "clear_search": "清除搜索",
+        "clear_search_2": "清除搜索",
+        "module_layout": "模块布局",
+        "pro": "PRO",
+        "standard": "标准",
+        "module_type": "模块类型",
+        "layout_containers": "布局容器"
+      },
+      "presets_selector_tab": {
+        "reload": "重新加载",
+        "refresh_presets_from_server": "从服务器刷新预设",
+        "no_presets_available_in_this_category": "此类别中没有可用的预设",
+        "clear_search": "清除搜索",
+        "requires": "需要",
+        "included": "已包含",
+        "card_settings": "卡片设置",
+        "variables": "变量",
+        "rows": "行",
+        "version": "版本",
+        "category": "类别",
+        "view_preset_details": "查看预设详情",
+        "add": "添加",
+        "add_this_preset_to_your_card": "将此预设添加到您的卡片",
+        "new": "新",
+        "retry": "重试",
+        "failed_to_load_presets": "加载预设失败",
+        "top_rated": "评分最高",
+        "date": "日期",
+        "name": "名称",
+        "sort_by": "排序方式：",
+        "clear_search_2": "清除搜索",
+        "search_presets": "搜索预设..."
+      },
+      "entity_replace_dialog": {
+        "replace_all": "全部替换",
+        "cancel": "取消",
+        "replace_with": "替换为",
+        "find_entity": "查找实体",
+        "replaces_every_exact_text_match_of": "替换此卡片布局中实体 ID 的每个精确文本匹配项（包括模板和嵌套模块）。如有需要，可在布局构建器中使用撤销。",
+        "close": "关闭",
+        "find_amp_replace_entity": "查找并替换实体"
+      },
+      "snapshot_history_modal": {
+        "delete": "🗑️ 删除",
+        "download": "⬇️ 下载",
+        "rename": "✏️ 重命名",
+        "restore": "🔄 恢复",
+        "you_can_have_up_to_30": "💡 最多可保存 30 个卡片备份。达到上限时将自动删除最旧的备份。",
+        "card_backups_save_individual_ultra_card": "卡片备份保存单个 Ultra Card 配置",
+        "no_card_backups_yet": "暂无卡片备份",
+        "restore_all": "🔄 全部恢复",
+        "views_breakdown": "视图明细：",
+        "dashboard_snapshots_capture_all_ultra_cards": "仪表板快照会捕获整个仪表板中的所有 Ultra Card",
+        "no_dashboard_snapshots_yet": "暂无仪表板快照",
+        "loading": "加载中...",
+        "manual_card_backups": "手动卡片备份",
+        "dashboard_snapshots": "仪表板快照",
+        "close": "关闭",
+        "backup_amp_snapshot_history": "备份和快照历史"
+      },
+      "snapshot_settings_dialog": {
+        "cancel": "取消",
+        "manual_snapshots_are_never_automatically_deleted": "手动快照永远不会被自动删除",
+        "older_snapshots_are_automatically_deleted": "较旧的快照会被自动删除",
+        "30_days": "30 天",
+        "auto_snapshots_are_kept_for": "自动快照保留时长",
+        "storage_policy": "存储策略：",
+        "auto_snapshots_are_currently_disabled_you": "自动快照当前已禁用。您仍可随时创建手动快照。",
+        "next_snapshot": "下次快照：",
+        "sydney": "悉尼",
+        "shanghai": "上海",
+        "tokyo": "东京",
+        "berlin": "柏林",
+        "paris": "巴黎",
+        "london": "伦敦",
+        "pacific_time_pt": "太平洋时间 (PT)",
+        "mountain_time_mt": "山地时间 (MT)",
+        "central_time_ct": "中部时间 (CT)",
+        "eastern_time_et": "东部时间 (ET)",
+        "utc": "UTC",
+        "snapshot_time_will_use_this_timezone": "快照时间将使用此时区",
+        "timezone": "时区",
+        "what_time_should_snapshots_be_created": "快照应在什么时间创建？（24 小时制）",
+        "snapshot_time": "快照时间",
+        "automatically_backup_all_ultra_cards_in": "每天自动备份仪表板中的所有 Ultra Card",
+        "enable_daily_auto_snapshots": "启用每日自动快照",
+        "automatically_save_a_cloud_backup_when": "编辑此卡片时自动保存云备份（防抖）。如果只想使用手动快照，请关闭此选项。",
+        "enable_real_time_auto_save": "启用实时自动保存",
+        "loading_settings": "正在加载设置...",
+        "snapshot_settings": "⚙️ 快照设置"
+      },
+      "snapshot_restore_dialog": {
+        "cancel": "取消",
+        "affected_views": "受影响的视图：",
+        "caution_deletes_all_ultra_cards_first": "注意：会先删除所有 Ultra Card",
+        "best_for_heavily_broken_dashboards": "最适合严重损坏的仪表板",
+        "exact_snapshot_state": "精确的快照状态",
+        "fixes_duplicated_cards": "修复重复的卡片",
+        "deletes_all_ultra_cards_first_then": "先删除所有 Ultra Card，然后将快照中的卡片恢复到其确切的原始位置和顺序。",
+        "nuclear_option": "终极方案",
+        "clean_restore": "清理并恢复",
+        "can_run_multiple_times": "可多次运行",
+        "preserves_non_matching_cards": "保留不匹配的卡片",
+        "works_with_named_or_unnamed_cards": "适用于已命名或未命名的卡片",
+        "safe_no_duplicates": "安全 - 无重复",
+        "intelligently_matches_cards_by_custom_name": "按自定义名称或位置智能匹配卡片，原地替换且不会创建重复项。",
+        "recommended": "推荐",
+        "smart_replace": "智能替换",
+        "restore_dashboard_snapshot": "恢复仪表板快照"
+      }
+    },
+    "update_banner": {
+      "text": "已安装 Ultra Card {installed}，但此页面仍在运行 {running}。请重新加载以完成更新。",
+      "reload": "重新加载",
+      "dismiss": "关闭"
+    },
+    "color_picker": {
+      "gradient_presets": "渐变预设"
     }
   },
   "hub": {

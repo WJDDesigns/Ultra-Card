@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TemplateService } from './template-service';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 
 /**
  * P1: every render_template subscription is a real backend task in HA, and the

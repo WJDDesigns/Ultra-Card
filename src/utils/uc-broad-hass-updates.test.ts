@@ -3,6 +3,7 @@ import type { LayoutConfig } from '../types';
 import {
   moduleRequiresBroadHassUpdates,
   layoutRequiresBroadHassUpdates,
+  layoutHasTimeConditions,
 } from './uc-broad-hass-updates';
 
 function layoutOf(modules: unknown[]): LayoutConfig {
@@ -111,7 +112,7 @@ describe('layoutRequiresBroadHassUpdates', () => {
     expect(layoutRequiresBroadHassUpdates(layout)).toBe(true);
   });
 
-  it('flags time-based display conditions, which no entity change would catch', () => {
+  it('leaves time-based display conditions to the minute timer, not broad updates', () => {
     const rowLevel = {
       rows: [
         {
@@ -121,12 +122,24 @@ describe('layoutRequiresBroadHassUpdates', () => {
         },
       ],
     } as unknown as LayoutConfig;
-    expect(layoutRequiresBroadHassUpdates(rowLevel)).toBe(true);
+    expect(layoutRequiresBroadHassUpdates(rowLevel)).toBe(false);
+    expect(layoutHasTimeConditions(rowLevel)).toBe(true);
 
     const moduleLevel = layoutOf([
       { id: 'm', type: 'text', display_conditions: [{ type: 'time' }] },
     ]);
-    expect(layoutRequiresBroadHassUpdates(moduleLevel)).toBe(true);
+    expect(layoutRequiresBroadHassUpdates(moduleLevel)).toBe(false);
+    expect(layoutHasTimeConditions(moduleLevel)).toBe(true);
+
+    const nested = layoutOf([
+      {
+        id: 'h',
+        type: 'horizontal',
+        modules: [{ id: 'inner', type: 'text', display_conditions: [{ type: 'time' }] }],
+      },
+    ]);
+    expect(layoutHasTimeConditions(nested)).toBe(true);
+    expect(layoutHasTimeConditions(layoutOf([{ id: 'm', type: 'text' }]))).toBe(false);
   });
 
   it('does not flag entity-based display conditions, whose entities are tracked', () => {

@@ -1,6 +1,6 @@
 import { TemplateResult, html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { createLazySettings } from './uc-lazy-settings';
 import { CardModule, UltraCardConfig } from '../types';
@@ -863,18 +863,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
     };
   }
 
-  // Helper methods for style conversion and design properties
-  private styleObjectToCss(styles: Record<string, string | undefined>): string {
-    return Object.entries(styles)
-      .filter(([, value]) => value !== undefined && value !== null && value !== '')
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-  }
-
   private childShouldFillAvailableSpace(childModule: CardModule): boolean {
     // Any child module with alignment "justify" should fill available horizontal space
     const childAsAny = childModule as any;
@@ -1101,18 +1089,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
     const numeric = parseFloat(str);
     return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
-  }
-
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-    return value;
   }
 
   private getPaddingCSS(moduleWithDesign: any): string {

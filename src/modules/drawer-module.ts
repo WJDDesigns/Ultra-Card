@@ -1,5 +1,5 @@
 import { TemplateResult, html, render } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig, DrawerModule } from '../types';
 import { getModuleRegistry } from './module-registry';

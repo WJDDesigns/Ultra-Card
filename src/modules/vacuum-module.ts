@@ -1,6 +1,7 @@
 import { TemplateResult, html, nothing, svg, SVGTemplateResult } from 'lit';
 import { localize } from '../localize/localize';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
+import { fireEvent } from '../ha/helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, VacuumModule, UltraCardConfig, VacuumRoom, VacuumZone, VacuumDisplaySection, VacuumSectionType } from '../types';
 
@@ -1549,39 +1550,27 @@ export class UltraVacuumModule extends BaseUltraModule {
         </div>
         
         <!-- Layout Style Selector -->
-        <div class="vacuum-layout-style-row">
-          <span class="vacuum-layout-style-label">Layout Style</span>
-          <select 
-            class="vacuum-layout-style-select"
-            @change=${(e: Event) => {
-              const select = e.target as HTMLSelectElement;
-              const newStyle = select.value as 'single_column' | 'double_column';
-              // When switching to single column, clear column assignments
-              if (newStyle === 'single_column') {
-                const updatedSections = sections.map(
-                  (s: VacuumDisplaySection): VacuumDisplaySection => ({
-                    ...s,
-                    column: undefined,
-                  })
-                );
-                updateModule({ card_layout_style: newStyle, display_sections: updatedSections });
-              } else {
-                // When switching to double column, assign all to left by default
-                const updatedSections = sections.map(
-                  (s: VacuumDisplaySection): VacuumDisplaySection => ({
-                    ...s,
-                    column: 'left',
-                  })
-                );
-                updateModule({ card_layout_style: newStyle, display_sections: updatedSections });
-              }
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }}
-          >
-            <option value="single_column" ?selected=${layoutStyle === 'single_column'}>Single Column</option>
-            <option value="double_column" ?selected=${layoutStyle === 'double_column'}>Double Column</option>
-          </select>
-        </div>
+        ${this.renderSegmentedField(
+          'Layout Style',
+          '',
+          layoutStyle,
+          [
+            { value: 'single_column', label: 'Single Column', icon: 'mdi:view-agenda-outline' },
+            { value: 'double_column', label: 'Double Column', icon: 'mdi:view-column-outline' },
+          ],
+          next => {
+            const newStyle = next as 'single_column' | 'double_column';
+            // Single column clears column assignments; double column starts everything on the left.
+            const updatedSections = sections.map(
+              (s: VacuumDisplaySection): VacuumDisplaySection => ({
+                ...s,
+                column: newStyle === 'single_column' ? undefined : 'left',
+              })
+            );
+            updateModule({ card_layout_style: newStyle, display_sections: updatedSections });
+          },
+          2
+        )}
 
         ${isDoubleColumn ? html`
           <!-- Double Column Layout -->

@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { CustomVariable } from '../../types';
 import { ucCustomVariablesService } from '../../services/uc-custom-variables-service';
 import { panelStyles } from '../panel-styles';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 import { dispatchHubNavigate } from '../hub-navigation';

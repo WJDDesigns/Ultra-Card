@@ -1,0 +1,16 @@
+{
+  "(none)": 2,
+  "@typescript-eslint/no-explicit-any": 3605,
+  "@typescript-eslint/no-non-null-assertion": 269,
+  "@typescript-eslint/no-require-imports": 1,
+  "@typescript-eslint/no-unsafe-function-type": 1,
+  "@typescript-eslint/no-unused-expressions": 10,
+  "@typescript-eslint/no-unused-vars": 536,
+  "eqeqeq": 193,
+  "no-console": 536,
+  "no-empty": 28,
+  "no-prototype-builtins": 109,
+  "no-useless-assignment": 62,
+  "no-useless-escape": 17,
+  "preserve-caught-error": 19
+}

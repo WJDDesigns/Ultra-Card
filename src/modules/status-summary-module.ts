@@ -1,5 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
+import { fireEvent } from '../ha/helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, StatusSummaryModule, StatusSummaryEntity, UltraCardConfig } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
@@ -2523,7 +2524,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
   private handleEntityClick(event: Event, entityId: string): void {
     event.stopPropagation();
 
-    // Use the fireEvent helper from custom-card-helpers
+    // HA's more-info dialog listens for this event
     fireEvent(event.target as HTMLElement, 'hass-more-info', {
       entityId,
     });

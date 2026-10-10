@@ -1,5 +1,5 @@
 import { html, svg, TemplateResult } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, GraphsModule, GraphEntityConfig, UltraCardConfig } from '../types';
 import { TemplateService } from '../services/template-service';
@@ -24,6 +24,7 @@ import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { escapeHtml } from '../utils/html-sanitizer';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
+import { UC_DEBUG } from '../utils/uc-debug';
 
 /** Unified-template output keys the graphs module reads. */
 const GRAPHS_TEMPLATE_KEYS = ['colors', 'global_color', 'fill_area', 'pie_fill'] as const;
@@ -4367,14 +4368,18 @@ export class UltraGraphsModule extends BaseUltraModule {
         return;
       }
 
-      // Fetch real history data from Home Assistant
-      // Store debug info globally for inspection
-      (window as any).ultraCardGraphDebug = {
-        entityIds,
-        startTime: startTime.toISOString(),
-        endTime: now.toISOString(),
-        status: 'fetching',
-      };
+      // Fetch real history data from Home Assistant.
+      // Debug-only: the global kept every history response alive in memory.
+      const graphDebug: Record<string, unknown> | null = UC_DEBUG ? {} : null;
+      if (graphDebug) (window as any).ultraCardGraphDebug = graphDebug;
+      if (graphDebug) {
+        Object.assign(graphDebug, {
+          entityIds,
+          startTime: startTime.toISOString(),
+          endTime: now.toISOString(),
+          status: 'fetching',
+        });
+      }
 
       // debug removed
 
@@ -4440,8 +4445,10 @@ export class UltraGraphsModule extends BaseUltraModule {
         }
 
         // debug removed
-        (window as any).ultraCardGraphDebug.response = historyData;
-        (window as any).ultraCardGraphDebug.status = 'success';
+        if (graphDebug) {
+          graphDebug.response = historyData;
+          graphDebug.status = 'success';
+        }
 
         // Process the response based on its format
         if (wsResult && typeof wsResult === 'object' && !Array.isArray(wsResult)) {
@@ -4469,15 +4476,15 @@ export class UltraGraphsModule extends BaseUltraModule {
         }
       } catch (error: any) {
         // keep quiet in UI builds; fallback silently
-        (window as any).ultraCardGraphDebug.error = error;
-        (window as any).ultraCardGraphDebug.errorDetails = {
+        if (graphDebug) graphDebug.error = error;
+        if (graphDebug) graphDebug.errorDetails = {
           message: error.message,
           status: error.status,
           statusText: error.statusText,
           body: error.body,
           stack: error.stack,
         };
-        (window as any).ultraCardGraphDebug.status = 'error';
+        if (graphDebug) graphDebug.status = 'error';
 
         // Fallback: Create minimal history from current states
         for (const entityId of entityIds) {
@@ -5179,13 +5186,6 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
   }
 
-  // Helper methods for design properties
-  private styleObjectToCss(styles: Record<string, string>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
   // Resolve chart width as CSS, preferring percentage slider when present
   private _resolveChartWidth(module: GraphsModule): string {
     const percent = (module as any).chart_width_percent;
@@ -5196,22 +5196,6 @@ export class UltraGraphsModule extends BaseUltraModule {
     const width = (module as any).chart_width;
     if (typeof width === 'string' && width.trim() !== '') return width.trim();
     return '100%';
-  }
-
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
-  }
-
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-    if (/^\d+$/.test(value)) return `${value}px`;
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-    return value;
   }
 
   private getPaddingCSS(moduleWithDesign: any): string {

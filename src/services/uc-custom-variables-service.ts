@@ -1,5 +1,5 @@
 import { CustomVariable, UltraCardConfig } from '../types';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 import { UC_DEBUG } from '../utils/uc-debug';
 
@@ -468,25 +468,32 @@ class UcCustomVariablesService {
       return obj;
     }
 
-    // Handle arrays
+    // Arrays and objects are only copied when something inside them resolved, so a
+    // module with no $variables keeps its identity (no per-render deep clone, and
+    // child elements can still memoise on it).
     if (Array.isArray(obj)) {
-      return obj.map(item => this._deepResolveVariables(item, cardConfig));
+      let out: any[] | null = null;
+      for (let i = 0; i < obj.length; i++) {
+        const next = this._deepResolveVariables(obj[i], cardConfig);
+        if (next !== obj[i] && !out) out = obj.slice(0, i);
+        if (out) out.push(next);
+      }
+      return out ?? obj;
     }
 
-    // Handle objects
     if (typeof obj === 'object') {
-      const resolved: any = {};
+      let resolved: any = null;
       for (const key of Object.keys(obj)) {
         const value = obj[key];
-        
         // Special handling for entity-related keys
-        if (this._isEntityFieldKey(key) && typeof value === 'string' && value.startsWith('$')) {
-          resolved[key] = this.resolveEntityField(value, cardConfig) || value;
-        } else {
-          resolved[key] = this._deepResolveVariables(value, cardConfig);
-        }
+        const next =
+          this._isEntityFieldKey(key) && typeof value === 'string' && value.startsWith('$')
+            ? this.resolveEntityField(value, cardConfig) || value
+            : this._deepResolveVariables(value, cardConfig);
+        if (next !== value && !resolved) resolved = { ...obj };
+        if (resolved) resolved[key] = next;
       }
-      return resolved;
+      return resolved ?? obj;
     }
 
     // Return primitives as-is
@@ -754,16 +761,16 @@ class UcCustomVariablesService {
       if (stored) {
         const parsed = JSON.parse(stored);
         UC_DEBUG &&
-          console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+          UC_DEBUG && console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
         UC_DEBUG &&
-          console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+          UC_DEBUG && console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
       }
     } catch (error) {
       console.error('Storage Data Error:', error);
     }
 
     UC_DEBUG &&
-      console.log(
+      UC_DEBUG && console.log(
         'Variables List:',
         this._variables.map(v => ({
           id: v.id,
@@ -958,5 +965,7 @@ export const ucCustomVariablesService = new UcCustomVariablesService();
 // Make service and debug methods available globally for debugging
 if (typeof window !== 'undefined') {
   (window as any).ucCustomVariablesService = ucCustomVariablesService;
-  (window as any).debugUltraCardCustomVariables = () => ucCustomVariablesService.debugVariables();
+  if (UC_DEBUG) {
+    (window as any).debugUltraCardCustomVariables = () => ucCustomVariablesService.debugVariables();
+  }
 }

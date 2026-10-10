@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { CardModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalDesignTab } from '../tabs/global-design-tab';
@@ -17,6 +17,11 @@ import type { UltraSegmentedOption } from '../components/ultra-segmented';
 import { localize } from '../localize/localize';
 import { ucThemeService } from '../services/uc-theme-service';
 import { UC_THEME_INHERIT } from '../themes/uc-theme-types';
+import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import {
+  addPixelUnit as addPixelUnitToValue,
+  styleObjectToCss as styleObjectToCssText,
+} from '../utils/uc-css-text';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -247,9 +252,6 @@ export abstract class BaseUltraModule implements UltraModule {
       return entityValue;
     }
 
-    // Import dynamically to avoid circular dependencies
-    // eslint-disable-next-line @typescript-eslint/no-var-requires -- runtime require breaks circular import with uc-custom-variables-service
-    const { ucCustomVariablesService } = require('../services/uc-custom-variables-service');
     return ucCustomVariablesService.resolveEntityField(entityValue, config);
   }
 
@@ -1337,15 +1339,21 @@ export abstract class BaseUltraModule implements UltraModule {
    * and the actual card listen for to trigger re-renders.
    *
    * @param immediate - If true, triggers update immediately without debouncing
+   * @param scoped - If true, only cards that contain this module type repaint.
+   *   Use for periodic ticks (clock, timer) that change nothing outside the module.
    */
-  protected triggerPreviewUpdate(immediate: boolean = false): void {
+  protected triggerPreviewUpdate(immediate: boolean = false, scoped: boolean = false): void {
     // Coalesce bursts of template callbacks (many modules can fire within the same
     // websocket tick). Never "skip" updates: a second callback while the debounce
     // timer is armed must reschedule so the final paint includes the latest
     // `hass.__uvc_template_strings` writes (skipping caused stale icon colors).
     // Rescheduling is bounded so a stream of callbacks cannot postpone the paint
     // forever — see `uc-preview-update`.
-    requestPreviewUpdate({ source: 'module-update', immediate });
+    requestPreviewUpdate({
+      source: 'module-update',
+      immediate,
+      scopeModuleType: scoped ? this.metadata?.type : undefined,
+    });
   }
 
   /**
@@ -1507,6 +1515,16 @@ export abstract class BaseUltraModule implements UltraModule {
   // ============================================
   // DESIGN PROPERTY UTILITIES
   // ============================================
+
+  /** Inline CSS text from a style object (shared helper; see utils/uc-css-text). */
+  protected styleObjectToCss(styles: Record<string, unknown>): string {
+    return styleObjectToCssText(styles);
+  }
+
+  /** Add `px` to unitless numbers (shared helper; see utils/uc-css-text). */
+  protected addPixelUnit(value: string | number | undefined | null): string | undefined {
+    return addPixelUnitToValue(value);
+  }
 
   /**
    * Convert a style object to an inline CSS string

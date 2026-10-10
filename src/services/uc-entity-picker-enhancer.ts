@@ -1,8 +1,9 @@
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { escapeHtml } from '../utils/html-sanitizer';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { UltraCardConfig, CustomVariable } from '../types';
 
+import { UC_DEBUG } from '../utils/uc-debug';
 /**
  * Entity Picker Enhancer Service
  * 
@@ -569,7 +570,7 @@ class UcEntityPickerEnhancer {
     // Add click handlers to chips
     this._attachChipClickHandlers(comboBox, chipsContainer);
     
-    console.log('[UC Entity Enhancer] ✅ Injected variable chips into entity picker');
+    UC_DEBUG && console.log('[UC Entity Enhancer] ✅ Injected variable chips into entity picker');
   }
 
   /**
@@ -731,7 +732,7 @@ class UcEntityPickerEnhancer {
       }, 50);
     }
 
-    console.log(`[UC Entity Enhancer] Selected variable ${variableName} (resolves to: ${entityId})`);
+    UC_DEBUG && console.log(`[UC Entity Enhancer] Selected variable ${variableName} (resolves to: ${entityId})`);
   }
 
   /**

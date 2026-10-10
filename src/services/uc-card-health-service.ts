@@ -1,4 +1,4 @@
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import type { UltraCardConfig, CardModule, CardRow, CardColumn } from '../types';
 import { configValidationService } from './config-validation-service';
 import { entityDetector } from './uc-entity-detector';

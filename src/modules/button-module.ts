@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { createLazySettings } from './uc-lazy-settings';
 import { CardModule, ButtonModule, UltraCardConfig } from '../types';
@@ -414,12 +414,6 @@ export class UltraButtonModule extends BaseUltraModule {
     );
   }
 
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
-  }
-
   private getFlexJustify(
     alignment: string | undefined,
     allowSpaceBetween: boolean = false
@@ -469,30 +463,6 @@ export class UltraButtonModule extends BaseUltraModule {
     }
 
     return 'none';
-  }
-
-  private addPixelUnit(value: string | number | undefined | null): string | undefined {
-    if (value === undefined || value === null) {
-      return undefined;
-    }
-
-    const str = String(value).trim();
-    if (!str) {
-      return undefined;
-    }
-
-    if (/^-?\d+(?:\.\d+)?$/.test(str)) {
-      return `${str}px`;
-    }
-
-    if (/^(?:-?\d+(?:\.\d+)?\s+)+-?\d+(?:\.\d+)?$/.test(str)) {
-      return str
-        .split(/\s+/)
-        .map(part => (/^-?\d+(?:\.\d+)?$/.test(part) ? `${part}px` : part))
-        .join(' ');
-    }
-
-    return str;
   }
 
   // Trigger preview update for reactive UI

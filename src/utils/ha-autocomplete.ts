@@ -1,5 +1,5 @@
 import { CompletionContext, CompletionResult, Completion } from '@codemirror/autocomplete';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { jinja2Keywords, jinja2Filters, haTemplateFunctions } from './jinja2-lang';
 
 /**

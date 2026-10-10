@@ -1,5 +1,5 @@
 import { TemplateResult, html } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import { UltraTextModule, TEXT_TEMPLATE_KEYS } from '../text-module';
 import { installSettingsMethods } from '../uc-lazy-settings';
 import { CardModule, TextModule, UltraCardConfig } from '../../types';

@@ -1,4 +1,4 @@
-import { HomeAssistant, ActionConfig } from 'custom-card-helpers';
+import type { HomeAssistant, ActionConfig } from '../ha/types';
 
 export interface LinkAction {
   action_type?:

@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../ha/types';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { CustomVariable, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';

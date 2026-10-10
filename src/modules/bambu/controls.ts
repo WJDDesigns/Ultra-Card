@@ -2,7 +2,7 @@
  * Control helpers for Bambu Lab printers (button / select / light / fan / number).
  */
 
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { HomeAssistant } from '../../ha/types';
 import type { PrinterSnapshot, PrinterFan } from '../printer-shared/printer-state';
 import type { ControlHandlers } from '../printer-shared/widgets';
 

@@ -143,16 +143,16 @@ class UcFavoritesService {
       if (stored) {
         const parsed = JSON.parse(stored);
         UC_DEBUG &&
-          console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+          UC_DEBUG && console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
         UC_DEBUG &&
-          console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+          UC_DEBUG && console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
       }
     } catch (error) {
       console.error('Storage Data Error:', error);
     }
 
     UC_DEBUG &&
-      console.log(
+      UC_DEBUG && console.log(
         'Favorites List:',
         this._favorites.map(f => ({
           id: f.id,
@@ -309,7 +309,7 @@ class UcFavoritesService {
     this._favorites = favoritesToKeep;
 
     UC_DEBUG &&
-      console.log(`Removed ${favoritesToRemove} oldest favorites to free up storage space`);
+      UC_DEBUG && console.log(`Removed ${favoritesToRemove} oldest favorites to free up storage space`);
 
     // Try to save again
     try {
@@ -329,5 +329,7 @@ export const ucFavoritesService = new UcFavoritesService();
 
 // Make debug method available globally for troubleshooting
 if (typeof window !== 'undefined') {
-  (window as any).debugUltraCardFavorites = () => ucFavoritesService.debugFavorites();
+  if (UC_DEBUG) {
+    (window as any).debugUltraCardFavorites = () => ucFavoritesService.debugFavorites();
+  }
 }

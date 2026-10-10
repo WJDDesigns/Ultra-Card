@@ -4,6 +4,8 @@
  */
 import { LitElement, html, css, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ucDialog } from '../utils/uc-dialog-directive';
+import { localize, uiLanguage } from '../localize/localize';
 
 export type ModuleSelectorTab = 'modules' | 'cards' | 'presets' | 'smart' | 'favorites';
 
@@ -312,17 +314,21 @@ export class UcModuleSelectorShell extends LitElement {
           class="popup-overlay"
           @click=${this._dispatchClose}
         ></div>
-        <div class="selector-content draggable-popup" id="module-selector-popup">
+        <div
+          class="selector-content draggable-popup"
+          id="module-selector-popup"
+          ${ucDialog(() => this._dispatchClose())}
+        >
           <div class="selector-header-wrapper">
             <div
               class="selector-header"
               @mousedown=${(e: MouseEvent) => this._startDrag(e)}
             >
               <div class="selector-header-top">
-                <h3>Add Module</h3>
+                <h3>${localize('editor.ui.module_selector_shell.add_module', uiLanguage(), 'Add Module')}</h3>
                 <button
                   class="close-button"
-                  title="Close"
+                  title=${localize('editor.ui.module_selector_shell.close', uiLanguage(), 'Close')}
                   @mousedown=${(e: Event) => e.stopPropagation()}
                   @click=${this._dispatchClose}
                 >
@@ -331,8 +337,7 @@ export class UcModuleSelectorShell extends LitElement {
               </div>
               ${this.isAddingToLayoutModule
                 ? html`<p class="selector-subtitle">
-                    Adding to layout module (content modules and layout modules allowed up to 2
-                    levels deep)
+                    ${localize('editor.ui.module_selector_shell.adding_to_layout_module_content_modules', uiLanguage(), 'Adding to layout module (content modules and layout modules allowed up to 2 levels deep)')}
                   </p>`
                 : ''}
             </div>
@@ -342,35 +347,35 @@ export class UcModuleSelectorShell extends LitElement {
                 @click=${() => this._dispatchTabChange('modules')}
               >
                 <ha-icon icon="mdi:puzzle"></ha-icon>
-                <span>Modules</span>
+                <span>${localize('editor.ui.module_selector_shell.modules', uiLanguage(), 'Modules')}</span>
               </button>
               <button
                 class="tab-button ${this.activeTab === 'cards' ? 'active' : ''}"
                 @click=${() => this._dispatchTabChange('cards')}
               >
                 <ha-icon icon="mdi:card-multiple"></ha-icon>
-                <span>Cards</span>
+                <span>${localize('editor.ui.module_selector_shell.cards', uiLanguage(), 'Cards')}</span>
               </button>
               <button
                 class="tab-button ${this.activeTab === 'presets' ? 'active' : ''}"
                 @click=${() => this._dispatchTabChange('presets')}
               >
                 <ha-icon icon="mdi:palette"></ha-icon>
-                <span>Presets</span>
+                <span>${localize('editor.ui.module_selector_shell.presets', uiLanguage(), 'Presets')}</span>
               </button>
               <button
                 class="tab-button ${this.activeTab === 'smart' ? 'active' : ''}"
                 @click=${() => this._dispatchTabChange('smart')}
               >
                 <ha-icon icon="mdi:brain"></ha-icon>
-                <span>Smart</span>
+                <span>${localize('editor.ui.module_selector_shell.smart', uiLanguage(), 'Smart')}</span>
               </button>
               <button
                 class="tab-button ${this.activeTab === 'favorites' ? 'active' : ''}"
                 @click=${() => this._dispatchTabChange('favorites')}
               >
                 <ha-icon icon="mdi:heart"></ha-icon>
-                <span>Favorites</span>
+                <span>${localize('editor.ui.module_selector_shell.favorites', uiLanguage(), 'Favorites')}</span>
               </button>
             </div>
           </div>
@@ -380,7 +385,7 @@ export class UcModuleSelectorShell extends LitElement {
           <div
             class="resize-handle"
             @mousedown=${(e: MouseEvent) => this._startResize(e)}
-            title="Drag to resize"
+            title=${localize('editor.ui.module_selector_shell.drag_to_resize', uiLanguage(), 'Drag to resize')}
           >
             <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
           </div>

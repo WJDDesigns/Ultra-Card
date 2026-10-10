@@ -7,6 +7,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ucCloudSyncService } from '../../services/uc-cloud-sync-service';
+import { ucDialog } from '../../utils/uc-dialog-directive';
 
 export class UcHubRateDialog extends LitElement {
   @property() presetId = '';
@@ -48,8 +49,9 @@ export class UcHubRateDialog extends LitElement {
       background: var(--ha-card-background, var(--card-background-color, #1c1c1e));
       border-radius: 16px;
       padding: 24px 28px;
-      min-width: 300px;
+      min-width: min(300px, calc(100vw - 32px));
       max-width: min(480px, 90vw);
+      box-sizing: border-box;
       box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
       animation: slideUp 0.18s ease;
     }
@@ -246,7 +248,7 @@ export class UcHubRateDialog extends LitElement {
 
     return html`
       <div class="overlay" @click=${(e: Event) => { if (e.target === e.currentTarget) this._close(); }}>
-        <div class="dialog-surface">
+        <div class="dialog-surface" ${ucDialog(() => this._close())}>
 
           <div class="dialog-header">
             <h2 class="dialog-title">${this.heading || 'Rate this preset'}</h2>
@@ -261,7 +263,7 @@ export class UcHubRateDialog extends LitElement {
 
           <div class="rate-stars-row" @mouseleave=${() => (this._hoveredRating = 0)}>
             ${[1, 2, 3, 4, 5].map(star => html`
-              <ha-icon
+              <ha-icon role="button" tabindex="0" data-uc-activate
                 icon=${star <= displayRating ? 'mdi:star' : 'mdi:star-outline'}
                 class=${star <= displayRating ? '' : 'empty'}
                 @mouseenter=${() => (this._hoveredRating = star)}
