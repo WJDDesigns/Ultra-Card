@@ -101,6 +101,9 @@ directories-pro-presets-service-update.ts
 # Release archives (built locally and attached to GitHub releases)
 /ultra-card-v*.zip
 
+# WordPress plugin package: built by `npm run plugin:zip` and uploaded to WordPress by hand
+/ultra-card-integration.zip
+
 # Playwright layout-harness screenshots / metrics
 .harness-output/
 
