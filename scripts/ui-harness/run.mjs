@@ -72,6 +72,15 @@ const OUT = path.resolve(opt('out', path.join(ROOT, '.harness-output', 'ui-harne
 const RECYCLE_EVERY = 30;
 const RENDER_SETTLE_MS = 2200;
 const CLICK_SETTLE_MS = 650;
+/** Modules that paint outside their card (view backgrounds, nav bars, screensavers). */
+const OVERLAY_TYPES = new Set([
+  'background',
+  'video_bg',
+  'dynamic_weather',
+  'living_canvas',
+  'navigation',
+  'screensaver',
+]);
 const MAX_CLICKS = Number(opt('clicks', '6'));
 
 const VIEWPORTS = {
@@ -186,7 +195,12 @@ async function openHa(context) {
       'position:fixed;inset:0;z-index:2147483000;overflow:auto;padding:16px 8px;box-sizing:border-box;' +
       'background:var(--primary-background-color);color:var(--primary-text-color);' +
       'font-family:var(--paper-font-body1_-_font-family, Roboto, sans-serif)';
-    document.body.appendChild(host);
+    // Inside home-assistant's shadow root, not on <body>: newer HA elements read
+    // localize, entities and devices from Lit context providers on that root, and
+    // a picker mounted outside it renders blank ("reading 'localize'").
+    const ha = document.querySelector('home-assistant');
+    (ha && ha.shadowRoot ? ha.shadowRoot : document.body).appendChild(host);
+    window.__uchHost = () => (host.isConnected ? host : null);
 
     // HA lazy-loads its form and picker elements; the module editors need them.
     // Opening two core card editors pulls them in, the same way HA's own editor does.
@@ -274,7 +288,7 @@ async function buildConfig(page, type) {
 async function renderCard(page, cfg, slotWidth) {
   await page.evaluate(
     ({ cfg, slotWidth }) => {
-      const host = document.getElementById('uc-harness');
+      const host = window.__uchHost();
       host.innerHTML = '';
       const slot = document.createElement('div');
       slot.className = 'uch-slot';
@@ -319,7 +333,8 @@ async function shoot(page, selector, file) {
 async function harnessAlive(page) {
   return page
     .evaluate(
-      () => !!document.getElementById('uc-harness') && !!window.__ucProbe && !!window.__UC_HARNESS__
+      () =>
+        !!window.__uchHost && !!window.__uchHost() && !!window.__ucProbe && !!window.__UC_HARNESS__
     )
     .catch(() => false);
 }
@@ -330,7 +345,7 @@ async function checkSlot(page, selector, opts) {
       const root =
         selector === 'slot'
           ? window.__uchSlot
-          : window.__ucProbe.deepQuery(document.getElementById('uc-harness'), selector);
+          : window.__ucProbe.deepQuery(window.__uchHost(), selector);
       if (!root)
         return {
           findings: [
@@ -338,7 +353,24 @@ async function checkSlot(page, selector, opts) {
           ],
           stats: {},
         };
-      return window.__ucProbe.check(root, opts);
+      const res = window.__ucProbe.check(root, opts);
+      // An empty card says why: hidden by the card itself, or rendered nothing.
+      const card = selector === 'slot' && window.__uchCard;
+      if (card && res.findings.some(f => f.check === 'empty-render')) {
+        const sr = card.shadowRoot;
+        res.diagnostics = {
+          display: card.style.display || getComputedStyle(card).display,
+          invisibleAttr: card.getAttribute('data-invisible'),
+          shadowChildren: sr ? sr.childElementCount : -1,
+          html: sr
+            ? sr.innerHTML
+                .replace(/<style[^]*?<\/style>/g, '')
+                .replace(/\s+/g, ' ')
+                .slice(0, 600)
+            : '',
+        };
+      }
+      return res;
     },
     { selector, opts }
   );
@@ -391,6 +423,12 @@ async function cardPass(browser, token, kind, modules, configs) {
         try {
           await renderCard(page, cfg, slot);
           const res = await checkSlot(page, 'slot', { mode: 'card', mobile });
+          if (OVERLAY_TYPES.has(meta.type)) {
+            for (const f of res.findings.filter(f => f.check === 'empty-render')) {
+              f.severity = 'info';
+              f.message = 'Overlay module: draws behind or over the view, not inside the card';
+            }
+          }
           const file = path.join(OUT, 'shots', `${meta.type}.card.${kind}.${theme}.png`);
           const captured = await shoot(page, '#uc-harness .uch-slot', file);
           (r.card[kind] ||= {})[theme] = { shot: captured ? rel(file) : null, ...res };
@@ -508,7 +546,7 @@ async function editorPass(browser, token, modules, configs) {
         try {
           const opened = await page.evaluate(
             async ({ cfg, slotWidth }) => {
-              const host = document.getElementById('uc-harness');
+              const host = window.__uchHost();
               host.innerHTML = '';
               const slot = document.createElement('div');
               slot.className = 'uch-editor';

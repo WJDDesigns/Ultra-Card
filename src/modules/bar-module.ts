@@ -2817,7 +2817,7 @@ export class UltraBarModule extends BaseUltraModule {
                 font-style: ${barModule.percentage_text_italic ? 'italic' : 'normal'};
                 text-decoration: ${barModule.percentage_text_strikethrough ? 'line-through' : 'none'};
                 z-index: 10;
-                text-shadow: var(--uc-bar-text-shadow, 0 1px 2px rgba(0,0,0,0.5));
+                text-shadow: var(--uc-bar-text-shadow, 0 0 3px rgba(0,0,0,0.75), 0 1px 2px rgba(0,0,0,0.5));
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;

@@ -413,7 +413,7 @@ class UcSnapshotService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(error.message || `API call failed: ${response.status}`);
+      throw new Error(error?.message || `API call failed: ${response.status}`);
     }
 
     return response.json();

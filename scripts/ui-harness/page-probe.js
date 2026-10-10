@@ -314,7 +314,9 @@
 
       // Contrast.
       const fg = parseColor(cs.color);
-      const bg = effectiveBackground(el);
+      // A text shadow is how text over fills and images stays legible; computed
+      // colours alone can't judge it, so skip rather than report a false positive.
+      const bg = cs.textShadow && cs.textShadow !== 'none' ? null : effectiveBackground(el);
       if (fg && bg) {
         const alpha = fg[3] * effectiveOpacity(el);
         const painted = over([fg[0], fg[1], fg[2], alpha], bg);
@@ -538,7 +540,12 @@
         return real.callWS(msg);
       },
       callApi: (method, path, params, headers) => {
-        if (String(method).toUpperCase() !== 'GET') {
+        // Connect's cloud proxy is a POST that carries the real method inside;
+        // a read through it (favorites, reviews, snapshot settings) is still a read.
+        const proxiedRead =
+          String(path).endsWith('ultra_card_pro_cloud/proxy') &&
+          String((params && params.method) || 'GET').toUpperCase() === 'GET';
+        if (String(method).toUpperCase() !== 'GET' && !proxiedRead) {
           record({ kind: 'api', type: `${method} ${path}`, detail: '' });
           return Promise.resolve({});
         }

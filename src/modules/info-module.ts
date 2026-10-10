@@ -55,13 +55,24 @@ export class UltraInfoModule extends BaseUltraModule {
   private _lastUnifiedInfoIconColorByKey = new Map<string, string>();
 
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
+    // Bind a real temperature sensor when one exists, so the default's
+    // "Temperature" label sits over a temperature (the fallback weather entity
+    // shows its condition, e.g. "Partly cloudy").
+    const temperature = hass?.states
+      ? Object.values(hass.states).find(
+          s =>
+            s.entity_id.startsWith('sensor.') &&
+            s.attributes?.device_class === 'temperature' &&
+            !isNaN(parseFloat(s.state))
+        )
+      : undefined;
     return {
       id: id || this.generateId('info'),
       type: 'info',
       info_entities: [
         {
           id: this.generateId('entity'),
-          entity: 'weather.forecast_home',
+          entity: temperature?.entity_id || 'weather.forecast_home',
           name: 'Temperature',
           icon: 'mdi:thermometer',
           show_icon: true,

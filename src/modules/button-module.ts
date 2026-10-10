@@ -31,7 +31,8 @@ export class UltraButtonModule extends BaseUltraModule {
     return {
       id: id || this.generateId('button'),
       type: 'button',
-      label: '',
+      // A new button needs visible text; an empty label rendered a bare coloured box.
+      label: 'Button',
       // New buttons follow the active Ultra Card theme; resolves to 'flat' without one.
       style: 'theme',
       // alignment: undefined, // No default alignment to allow Global Design tab control
