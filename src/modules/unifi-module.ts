@@ -1381,7 +1381,7 @@ export class UltraUnifiModule extends BaseUltraModule {
       >
         ${this.wrapWithAnimation(
           html`
-            <div class="uc-unifi ${animClass} ${curated.blank_background ? 'is-blank' : ''}" style="${curated.accent_color ? `--uc-unifi-accent:${curated.accent_color};` : ''}${curated.text_color ? `color:${curated.text_color};` : ''}">
+            <div class="uc-unifi ${animClass} ${curated.blank_background ? 'is-blank' : ''}" style="${curated.accent_color ? `--uc-unifi-accent:${curated.accent_color};` : ''}${curated.text_color ? `color:${curated.text_color};--uc-unifi-ink:${curated.text_color};` : ''}">
               <style>
                 ${this.getStyles()}
               </style>

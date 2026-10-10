@@ -4,6 +4,7 @@ export function unifiModuleStyles(): string {
   return `
 .uc-unifi {
   --uc-unifi-accent: var(--primary-color, #00bcd4);
+  --uc-unifi-ink: var(--primary-text-color);
   position: relative;
   width: 100%;
   color: var(--primary-text-color);
@@ -194,6 +195,23 @@ export function unifiModuleStyles(): string {
 .uc-unifi.is-blank .uc-unifi-topo {
   background: none;
   border: none;
+}
+/* With no dark container behind them, labels follow the dashboard theme
+   (the light defaults below were unreadable on light themes). */
+.uc-unifi.is-blank .uc-unifi-topo-node text {
+  fill: var(--uc-unifi-ink);
+}
+.uc-unifi.is-blank .uc-unifi-photo-footer,
+.uc-unifi-rack.style-blank .uc-unifi-photo-footer {
+  color: var(--uc-unifi-ink);
+}
+.uc-unifi.is-blank .uc-unifi-photo-footer .state.ok,
+.uc-unifi-rack.style-blank .uc-unifi-photo-footer .state.ok {
+  color: color-mix(in srgb, #2bd97c 60%, var(--uc-unifi-ink));
+}
+.uc-unifi.is-blank .uc-unifi-photo-footer .state.bad,
+.uc-unifi-rack.style-blank .uc-unifi-photo-footer .state.bad {
+  color: color-mix(in srgb, #ff5252 70%, var(--uc-unifi-ink));
 }
 .uc-unifi.is-blank .uc-unifi-device-tile,
 .uc-unifi.is-blank .uc-unifi-port-card,

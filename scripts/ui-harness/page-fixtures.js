@@ -125,6 +125,10 @@
         c.todo_entity = todo;
       }
     },
+    // The default dark rack paints its own background, so it can't show
+    // text that only breaks on a light dashboard. Blank background floats the
+    // views on the theme, which is how light-theme contrast bugs show up.
+    unifi: c => (c.blank_background = true),
     auto_entity_list: c => {
       if (!c.include_domains || !c.include_domains.length) c.include_domains = ['light'];
       c.max_items = c.max_items || 4;
