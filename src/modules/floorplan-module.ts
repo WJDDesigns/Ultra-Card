@@ -22,6 +22,7 @@ import type {
   UltraCardConfig,
 } from '../types';
 import { localize } from '../localize/localize';
+import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
 import { formatEntityState } from '../utils/number-format';
 import { iconPairForEntity } from '../services/smart/smart-sanitize-utils';

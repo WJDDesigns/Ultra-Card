@@ -28,6 +28,7 @@ import {
   UltraCardConfig,
 } from '../types';
 import { localize } from '../localize/localize';
+import '../components/ultra-color-picker';
 import {
   DEFAULT_DURATION_MINUTES,
   DEFAULT_MOISTURE_DRY,
@@ -774,43 +775,54 @@ export class UltraIrrigationModule extends BaseUltraModule {
           },
         ]
       )}
-      ${this.renderSegmentedField(
-        localize('editor.irrigation.layout', lang, 'Layout'),
-        localize('editor.irrigation.layout_desc', lang, 'Full rows or a compact list.'),
-        m.layout || 'full',
-        [
-          {
-            value: 'full',
-            label: localize('editor.irrigation.layout_full', lang, 'Full'),
-            icon: 'mdi:view-agenda-outline',
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.irrigation.appearance_section', lang, 'Appearance')}
+        </div>
+        ${this.renderSegmentedField(
+          localize('editor.irrigation.layout', lang, 'Layout'),
+          localize('editor.irrigation.layout_desc', lang, 'Full rows or a compact list.'),
+          m.layout || 'full',
+          [
+            {
+              value: 'full',
+              label: localize('editor.irrigation.layout_full', lang, 'Full'),
+              icon: 'mdi:view-agenda-outline',
+            },
+            {
+              value: 'compact',
+              label: localize('editor.irrigation.layout_compact', lang, 'Compact'),
+              icon: 'mdi:view-list-outline',
+            },
+          ],
+          next => {
+            updateModule({ layout: next as IrrigationLayout });
+            this.triggerPreviewUpdate();
           },
-          {
-            value: 'compact',
-            label: localize('editor.irrigation.layout_compact', lang, 'Compact'),
-            icon: 'mdi:view-list-outline',
-          },
-        ],
-        next => {
-          updateModule({ layout: next as IrrigationLayout });
-          this.triggerPreviewUpdate();
-        },
-        2
-      )}
-      ${this.renderColorField(
-        localize('editor.irrigation.accent_color', lang, 'Accent color'),
-        localize(
-          'editor.irrigation.accent_color_desc',
-          lang,
-          'Used for running zones and buttons. Defaults to the theme primary color.'
-        ),
-        hass,
-        m.accent_color || '',
-        '',
-        (v: string) => {
-          updateModule({ accent_color: v || undefined });
-          this.triggerPreviewUpdate();
-        }
-      )}
+          2
+        )}
+        ${this.renderColorField(
+          localize('editor.irrigation.accent_color', lang, 'Accent color'),
+          localize(
+            'editor.irrigation.accent_color_desc',
+            lang,
+            'Used for running zones and buttons. Defaults to the theme primary color.'
+          ),
+          hass,
+          m.accent_color || '',
+          '',
+          (v: string) => {
+            updateModule({ accent_color: v || undefined });
+            this.triggerPreviewUpdate();
+          }
+        )}
+      </div>
     `;
   }
 

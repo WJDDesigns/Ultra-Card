@@ -5680,7 +5680,8 @@
       "preset_irrigation_unlimited": "Irrigation Unlimited",
       "preset_bhyve": "B-hyve",
       "preset_valve": "Valve",
-      "preset_switch": "Switch (on/off)"
+      "preset_switch": "Switch (on/off)",
+      "appearance_section": "Appearance"
     },
     "floorplan": {
       "image_section": "Floor plan image",
@@ -5913,7 +5914,7 @@
       "price_source": "Price source",
       "price_source_desc": "Auto-detect works for almost everyone. Pick a source only if detection gets it wrong.",
       "pro_description": "Energy Price & EV is a Pro feature: your electricity price curve from Nord Pool, Tibber, Octopus and more, the cheapest time to run appliances, and a smart EV charge plan.",
-      "setup_desc": "Choose a Nord Pool, Tibber, Octopus or other price sensor in the General tab. The format is detected automatically.",
+      "setup_desc": "Select a price sensor in the General tab",
       "setup_title": "Pick your electricity price sensor",
       "show_chart": "Price chart",
       "show_chart_desc": "Bars colored by price level, with the current time marked.",
@@ -5989,7 +5990,9 @@
       "load_failed": "Could not load that shared row. Check that Ultra Card Connect is running.",
       "default_name": "Linked row",
       "admin_only": "Only Home Assistant admins can change shared rows.",
-      "save_failed": "Could not save the shared row: {error}"
+      "save_failed": "Could not save the shared row: {error}",
+      "layout_desc": "Alignment and spacing of the modules in this shared row. These settings stay on this card and are not shared.",
+      "gap_desc": "Space between the modules in this row. Use negative values to overlap them. Gap is off when using Space Between or Space Around."
     }
   },
   "hub": {

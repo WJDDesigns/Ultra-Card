@@ -10,6 +10,7 @@ import type {
   UltraCardConfig,
 } from '../types';
 import { localize } from '../localize/localize';
+import '../components/ultra-color-picker';
 import { hasProAccess, renderProLockUI } from '../utils/uc-pro-access';
 import {
   ACTION_FORMATS,
@@ -1513,7 +1514,7 @@ export class UltraEnergyPriceModule extends BaseUltraModule {
         localize(
           'editor.energy_price.setup_desc',
           lang,
-          'Choose a Nord Pool, Tibber, Octopus or other price sensor in the General tab. The format is detected automatically.'
+          'Select a price sensor in the General tab'
         ),
         'mdi:ev-station'
       );
