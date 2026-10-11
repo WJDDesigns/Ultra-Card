@@ -7,6 +7,7 @@
 
 import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import {
   mdiAlignHorizontalCenter,
   mdiAlignHorizontalLeft,
@@ -18,25 +19,38 @@ import {
   mdiArrangeBringToFront,
   mdiArrangeSendBackward,
   mdiArrangeSendToBack,
+  mdiArrowCollapseVertical,
   mdiArrowExpandHorizontal,
+  mdiAspectRatio,
   mdiCellphone,
+  mdiCellphoneScreenshot,
   mdiContentCopy,
   mdiContentDuplicate,
   mdiDelete,
   mdiDistributeHorizontalCenter,
   mdiDistributeVerticalCenter,
+  mdiEyeOffOutline,
+  mdiEyeOutline,
   mdiFormatHorizontalAlignCenter,
   mdiFormatHorizontalAlignLeft,
   mdiFormatHorizontalAlignRight,
+  mdiGroup,
   mdiLaptop,
+  mdiLock,
+  mdiLockOpenVariantOutline,
   mdiMagnet,
   mdiMonitor,
   mdiPencil,
   mdiPlus,
+  mdiRedo,
   mdiRestore,
   mdiSelectionDrag,
   mdiTablet,
+  mdiTabletDashboard,
+  mdiUndo,
+  mdiUngroup,
   mdiViewDashboardOutline,
+  mdiViewDashboardVariantOutline,
 } from '@mdi/js';
 import { ucFreeSpaceSettingsService } from '../services/uc-freespace-settings-service';
 import { ucSectionsLayoutService } from '../services/uc-sections-layout-service';
@@ -48,7 +62,9 @@ import {
   FREESPACE_ITEM_TAG,
   FREESPACE_PINS,
   type FreeSpaceAlign,
+  type FreeSpaceBackgroundSize,
   type FreeSpaceCardLayout,
+  type FreeSpaceLayoutFlag,
   type FreeSpacePin,
   type FreeSpaceViewOptions,
   type InteractionState,
@@ -58,17 +74,23 @@ import {
   applyLayoutsToView,
   applyZOrder,
   assignDefaultLayouts,
+  backgroundImageFor,
   clearBreakpointLayouts,
   computeArtboardHeight,
   copyDesktopLayoutsFitted,
   countSectionCards,
   fittedDesktopLayouts,
   effectiveCanvasWidth,
+  expandToGroups,
   flattenSectionsToCards,
+  groupMembers,
   isBreakpointCustom,
+  newGroupId,
   readFreeSpaceOptions,
   removeCards,
   setCardLayout,
+  setFlag,
+  setGroup,
   shouldStackPhone,
   type ZOrderAction,
 } from './uc-freespace-config';
@@ -85,17 +107,57 @@ import {
   alignmentGuides,
   cardsInRect,
   clampLayout,
+  contentBottom,
   distributeGroup,
   fitLayoutsToWidth,
+  fitToScreenScale,
+  neighbourGaps,
   resolvePinnedLayout,
   resolvePinnedLayouts,
   snapLayout,
   snapToGuides,
   stackOrder,
+  visibleLayouts,
   withPin,
+  type SpacingGap,
 } from './uc-freespace-geometry';
 import { FreeSpaceInteractionEngine } from './uc-freespace-interaction';
+import { FreeSpaceHistory } from './uc-freespace-history';
+import { buildStarter, STARTER_IDS, type StarterId } from './uc-freespace-starters';
 import './uc-freespace-item';
+
+const SNAP_STORAGE_KEY = 'ultra-card:freespace:snap';
+
+function readSnapPreference(): boolean {
+  try {
+    return window.localStorage?.getItem(SNAP_STORAGE_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+function writeSnapPreference(on: boolean): void {
+  try {
+    window.localStorage?.setItem(SNAP_STORAGE_KEY, on ? 'on' : 'off');
+  } catch {
+    // Private mode or blocked storage: the toggle still works for this session.
+  }
+}
+
+const BG_SIZE: Record<FreeSpaceBackgroundSize, { size: string; repeat: string }> = {
+  fit_width: { size: '100% auto', repeat: 'no-repeat' },
+  cover: { size: 'cover', repeat: 'no-repeat' },
+  contain: { size: 'contain', repeat: 'no-repeat' },
+  stretch: { size: '100% 100%', repeat: 'no-repeat' },
+  repeat: { size: 'auto', repeat: 'repeat' },
+  original: { size: 'auto', repeat: 'no-repeat' },
+};
+
+const STARTER_ICONS: Record<StarterId, string> = {
+  wall: mdiTabletDashboard,
+  phone: mdiCellphoneScreenshot,
+  desktop: mdiViewDashboardVariantOutline,
+};
 
 const BP_ICONS: Record<FreeSpaceBreakpoint, string> = {
   desktop: mdiMonitor,
@@ -121,8 +183,12 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   @state() private _layouts: FreeSpaceCardLayout[] = [];
   /** What multi-select Align lines cards up against (toolbar toggle, this session only). */
   @state() private _alignTarget: 'selection' | 'canvas' = 'selection';
-  /** Snap to the view's grid while dragging (toolbar toggle, this session only). */
-  @state() private _snapOn = true;
+  /** Snap to the view's grid while dragging (toolbar toggle, remembered in this browser). */
+  @state() private _snapOn = readSnapPreference();
+  /** Spacing to the nearest cards while dragging or resizing one card. */
+  @state() private _gaps: SpacingGap[] = [];
+  /** Bumped when undo/redo availability changes so the toolbar re-renders. */
+  @state() private _historyTick = 0;
   @state() private _scale = 1;
   /** Painted artboard width in design px (may fill the viewport like Sections). */
   @state() private _artboardWidth = 1200;
@@ -173,6 +239,14 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   @state() private _containerWidth = 1200;
 
   private _engine: FreeSpaceInteractionEngine;
+  /** Undo / redo of this view's config for the current edit session. */
+  private _history = new FreeSpaceHistory<unknown>();
+  /** This view's config as last seen (to record what each change replaced). */
+  private _lastView: unknown = undefined;
+  /** View config an undo/redo just saved (not recorded as a new change). */
+  private _restoringView: unknown = undefined;
+  /** Measured heights of auto-height cards, by card index. */
+  private _measuredH: Map<number, number> = new Map();
   private _resizeObserver: ResizeObserver | null = null;
   /**
    * Optimistic layouts keyed by `${breakpoint}:${cardIndex}`, held only until
@@ -208,7 +282,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       onEnd: (state, cancelled) => this._onInteractionEnd(state, cancelled),
       onClick: (index, additive) => {
         if (!additive) {
-          this._selected = index;
+          this._selection = groupMembers(this._layouts, index);
           return;
         }
         this._selection = this._selection.includes(index)
@@ -558,6 +632,90 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       border-top: none;
       border-left: 1px dashed var(--primary-color);
     }
+    .tb-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      background: transparent;
+    }
+    .tb-field input:disabled {
+      color: var(--secondary-text-color);
+    }
+    /* Canvas background: behind every card, moves and scales with them. */
+    .canvas-bg,
+    .canvas-bg-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      pointer-events: none;
+      z-index: -100000;
+    }
+    .gap-line {
+      position: absolute;
+      pointer-events: none;
+      z-index: 9998;
+      border-color: var(--accent-color, #ff9800);
+      border-style: solid;
+      border-width: 0;
+    }
+    .gap-line.x {
+      height: 0;
+      border-top-width: 1px;
+    }
+    .gap-line.y {
+      width: 0;
+      border-left-width: 1px;
+    }
+    .gap-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: var(--accent-color, #ff9800);
+      color: #000;
+      font-weight: 600;
+      line-height: 1.3;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .starters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .starter {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 160px;
+      padding: 16px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color, var(--ha-card-background, #1c1c1c));
+      color: var(--primary-text-color);
+      font: inherit;
+      cursor: pointer;
+    }
+    .starter:hover,
+    .starter:focus-visible {
+      border-color: var(--primary-color);
+      outline: none;
+    }
+    .starter svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--primary-color);
+    }
+    .starter strong {
+      font-size: 14px;
+    }
+    .starter span {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+    }
   `;
 
   setConfig(config: unknown): void {
@@ -590,6 +748,8 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     this.addEventListener('fs-z-order', this._onFsZOrder as EventListener);
     this.addEventListener('fs-reset-rotation', this._onFsResetRotation as EventListener);
     this.addEventListener('fs-set-pin', this._onFsSetPin as EventListener);
+    this.addEventListener('fs-toggle-flag', this._onFsToggleFlag as EventListener);
+    this.addEventListener('fs-measured', this._onFsMeasured as EventListener);
     this.addEventListener('keydown', this._onKeyDown);
   }
 
@@ -618,6 +778,8 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     this.removeEventListener('fs-z-order', this._onFsZOrder as EventListener);
     this.removeEventListener('fs-reset-rotation', this._onFsResetRotation as EventListener);
     this.removeEventListener('fs-set-pin', this._onFsSetPin as EventListener);
+    this.removeEventListener('fs-toggle-flag', this._onFsToggleFlag as EventListener);
+    this.removeEventListener('fs-measured', this._onFsMeasured as EventListener);
     this.removeEventListener('keydown', this._onKeyDown);
   }
 
@@ -631,6 +793,11 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   }
 
   protected override willUpdate(changed: PropertyValues): void {
+    if (changed.has('index')) {
+      this._history.clear();
+      this._lastView = undefined;
+      this._historyTick++;
+    }
     if (changed.has('cards') || changed.has('_config')) {
       this._rebuildLayouts();
     }
@@ -647,6 +814,61 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       }
       // Edit mode shows the toolbar's breakpoint, live shows the screen's.
       if (toggled) this._rebuildLayouts();
+      this._trackHistory(editing);
+    }
+  }
+
+  /** Record what each config change of this view replaced, for undo. */
+  private _trackHistory(editing: boolean): void {
+    const view = this.lovelace?.config?.views?.[this.index];
+    if (!editing) {
+      if (this._history.canUndo || this._history.canRedo) {
+        this._history.clear();
+        this._historyTick++;
+      }
+      this._restoringView = undefined;
+      this._lastView = view;
+      return;
+    }
+    if (this._lastView !== undefined && view !== undefined && view !== this._lastView) {
+      // Home Assistant may hand back a copy of what undo saved, so compare contents too.
+      if (
+        this._restoringView !== undefined &&
+        (view === this._restoringView || JSON.stringify(view) === JSON.stringify(this._restoringView))
+      ) {
+        this._restoringView = undefined;
+      } else {
+        this._history.record(this._lastView);
+        this._historyTick++;
+      }
+    }
+    this._lastView = view;
+  }
+
+  private _busy(): boolean {
+    return this._saving || this._savingAll || !!this._engine.state;
+  }
+
+  private async _undoRedo(direction: 'undo' | 'redo'): Promise<void> {
+    if (!this.lovelace?.saveConfig || this._busy()) return;
+    const current = this.lovelace.config?.views?.[this.index];
+    if (current === undefined) return;
+    const target =
+      direction === 'undo' ? this._history.undo(current) : this._history.redo(current);
+    this._historyTick++;
+    if (target === undefined) return;
+    const views = [...this.lovelace.config.views];
+    views[this.index] = target;
+    this._restoringView = target;
+    this._selection = [];
+    this._optimistic.clear();
+    try {
+      await this.lovelace.saveConfig({ ...this.lovelace.config, views });
+    } catch (err) {
+      this._restoringView = undefined;
+      throw err;
+    } finally {
+      this._rebuildLayouts();
     }
   }
 
@@ -738,6 +960,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const count = Math.max(this.cards?.length ?? 0, cardConfigs.length);
     if (count !== this._optimisticCardCount) {
       this._optimistic.clear();
+      this._measuredH.clear();
       this._optimisticCardCount = count;
     }
     const configs = Array.from({ length: count }, (_, i) => cardConfigs[i] ?? {});
@@ -745,9 +968,60 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       { length: count },
       (_, i) => this._optimistic.get(this._optKey(i, bp)) ?? null
     );
-    this._rawLayouts = assignDefaultLayouts(configs, this._options, optimistic, bp);
+    this._rawLayouts = this._withMeasured(assignDefaultLayouts(configs, this._options, optimistic, bp));
     this._layouts = this._rawLayouts;
     this._pinWidth = -1;
+  }
+
+  /** Auto-height cards use their measured content height for geometry. */
+  private _withMeasured(layouts: FreeSpaceCardLayout[]): FreeSpaceCardLayout[] {
+    if (!this._measuredH.size) return layouts;
+    return layouts.map((l, i) => {
+      const h = this._measuredH.get(i);
+      return l.auto_h && h !== undefined && h !== l.h ? { ...l, h } : l;
+    });
+  }
+
+  private _onFsMeasured = (ev: Event): void => {
+    const { cardIndex, h } = (ev as CustomEvent).detail as { cardIndex: number; h: number };
+    if (this._measuredH.get(cardIndex) === h) return;
+    this._measuredH.set(cardIndex, h);
+    const patch = (arr: FreeSpaceCardLayout[]) =>
+      arr.map((l, i) => (i === cardIndex && l.auto_h && l.h !== h ? { ...l, h } : l));
+    this._rawLayouts = patch(this._rawLayouts);
+    this._layouts = patch(this._layouts);
+    this._updateScale();
+  };
+
+  /** Indices from `indices` whose card is not locked. */
+  private _movable(indices: number[]): number[] {
+    return indices.filter(i => {
+      const l = this._layouts[i];
+      return !!l && !l.locked;
+    });
+  }
+
+  private _onFsToggleFlag = (ev: Event): void => {
+    const { cardIndex, flag } = (ev as CustomEvent).detail as {
+      cardIndex: number;
+      flag: 'lock' | 'hidden' | 'auto_h';
+    };
+    const indices = this._selection.includes(cardIndex) ? this._selection : [cardIndex];
+    this._toggleFlag(indices, flag === 'lock' ? 'locked' : flag);
+  };
+
+  /** Turn a flag on for all `indices` (or off when every one already has it). */
+  private _toggleFlag(indices: number[], flag: FreeSpaceLayoutFlag): void {
+    if (!this._editingAllowed() || !indices.length) return;
+    const on = !indices.every(i => this._layouts[i]?.[flag]);
+    void this._persistAllLayouts(setFlag(this._layouts, indices, flag, on));
+  }
+
+  private _setGroupFor(indices: number[], grouped: boolean): void {
+    if (!this._editingAllowed() || !indices.length) return;
+    const ids = grouped ? indices : expandToGroups(this._layouts, indices);
+    void this._persistAllLayouts(setGroup(this._layouts, ids, grouped ? newGroupId(this._layouts) : null));
+    this._selection = ids;
   }
 
   /** Replace layouts that are already in current-width coordinates. */
@@ -805,13 +1079,14 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const pe = detail.pointerEvent;
     const additive = pe.shiftKey || pe.ctrlKey || pe.metaKey;
     const inSelection = this._selection.includes(detail.cardIndex);
-    // Modifier clicks toggle on release; pressing an unselected card selects it alone.
-    if (!additive && !inSelection) this._selected = detail.cardIndex;
+    // Modifier clicks toggle on release; pressing an unselected card selects it
+    // alone (with the rest of its group).
+    if (!additive && !inSelection) this._selection = groupMembers(this._layouts, detail.cardIndex);
     this._groupOrigins =
       detail.mode === 'move' && this._selection.length > 1 && this._selection.includes(detail.cardIndex)
         ? new Map(
-            this._selection
-              .filter(i => i !== detail.cardIndex && this._layouts[i])
+            this._movable(this._selection)
+              .filter(i => i !== detail.cardIndex)
               .map(i => [i, this._layouts[i]!] as [number, FreeSpaceCardLayout])
           )
         : null;
@@ -833,7 +1108,15 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   };
 
   private _onInteractionMove(state: InteractionState): void {
+    // Locked cards still select and open their editor, but never move.
+    if (this._layouts[state.cardIndex]?.locked) return;
     let layout = state.current;
+    // Dragging the top or bottom edge sets an explicit height.
+    if (state.mode === 'resize' && /[ns]/.test(state.handle ?? '') && layout.auto_h) {
+      const { auto_h: _a, ...fixed } = layout;
+      layout = fixed;
+      this._measuredH.delete(state.cardIndex);
+    }
     const group = state.mode === 'move' ? this._groupOrigins : null;
     if (state.mode === 'move') {
       // Other selected cards move with this one, so they are not snap targets.
@@ -851,8 +1134,10 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     }
     if (!group) {
       this._commitLayout(state.cardIndex, layout);
+      this._gaps = state.mode === 'rotate' ? [] : neighbourGaps(this._layouts, state.cardIndex);
       return;
     }
+    this._gaps = [];
     const dx = layout.x - state.origin.x;
     const dy = layout.y - state.origin.y;
     this._commitLayouts(
@@ -866,8 +1151,10 @@ export class UltraFreeSpaceViewImpl extends LitElement {
 
   private async _onInteractionEnd(state: InteractionState, cancelled: boolean): Promise<void> {
     this._guides = { vertical: [], horizontal: [] };
+    this._gaps = [];
     const group = this._groupOrigins;
     this._groupOrigins = null;
+    if (this._layouts[state.cardIndex]?.locked) return;
     if (cancelled) {
       this._optimistic.delete(this._optKey(state.cardIndex));
       group?.forEach((_, i) => this._optimistic.delete(this._optKey(i)));
@@ -908,7 +1195,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       bottom: Math.max(s.y, p.y),
     };
     this._marquee = rect;
-    const hit = cardsInRect(this._layouts, rect);
+    const hit = expandToGroups(this._layouts, cardsInRect(this._layouts, rect));
     this._selection = s.additive ? [...new Set([...s.base, ...hit])] : hit;
   };
 
@@ -1066,10 +1353,12 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   }
 
   private _alignSelection(align: FreeSpaceAlign): void {
+    const sel = this._movable(this._selection);
+    if (!sel.length) return;
     void this._persistAllLayouts(
       this._alignTarget === 'canvas'
-        ? alignGroupToArtboard(this._layouts, this._selection, align, this._artboardWidth)
-        : alignGroup(this._layouts, this._selection, align)
+        ? alignGroupToArtboard(this._layouts, sel, align, this._artboardWidth)
+        : alignGroup(this._layouts, sel, align)
     );
   }
 
@@ -1078,7 +1367,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const bp = this._activeBreakpoint();
     if (bp === 'desktop' || !this._selection.length) return;
     const fitted = fittedDesktopLayouts(this._viewConfig(), bp);
-    const sel = new Set(this._selection);
+    const sel = new Set(this._movable(this._selection));
     void this._persistAllLayouts(
       this._layouts.map((l, i) =>
         sel.has(i) && fitted[i] ? resolvePinnedLayout(fitted[i]!, this._artboardWidth) : l
@@ -1101,7 +1390,9 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   }
 
   private _distributeSelection(axis: 'horizontal' | 'vertical'): void {
-    void this._persistAllLayouts(distributeGroup(this._layouts, this._selection, axis));
+    const sel = this._movable(this._selection);
+    if (sel.length < 3) return;
+    void this._persistAllLayouts(distributeGroup(this._layouts, sel, axis));
   }
 
   private _pinSelection(pin: FreeSpacePin): void {
@@ -1124,7 +1415,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
 
   private _onFsSelect = (ev: Event): void => {
     const { cardIndex } = (ev as CustomEvent).detail;
-    if (!this._selection.includes(cardIndex)) this._selected = cardIndex;
+    if (!this._selection.includes(cardIndex)) this._selection = groupMembers(this._layouts, cardIndex);
   };
 
   private _setEditBreakpoint(bp: FreeSpaceBreakpoint): void {
@@ -1186,12 +1477,36 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const devicePreview =
       this._editMode() &&
       BREAKPOINT_SPECS[this._editBreakpoint].minWidth < BREAKPOINT_SPECS[live].minWidth;
+    // Fit to screen (wall tablets): the whole layout fits without scrolling.
+    const fitScreen = this._options.fit === 'screen' && !devicePreview;
+    let screenHeightPx = 0;
 
-    if (this._following) {
+    if (fitScreen) {
+      // Following breakpoints show Desktop coordinates, so fit the Desktop canvas.
+      const designW = this._following ? effectiveCanvasWidth(this._options, 'desktop') : designCanvas;
+      const pinned = this._following ? this._rawLayouts : resolvePinnedLayouts(this._rawLayouts, designW);
+      const shown = this._editMode() ? pinned : visibleLayouts(pinned);
+      const contentH = Math.max(contentBottom(shown), 1);
+      // Measured from the top of the canvas (below the edit toolbar and hints).
+      const above = viewport.getBoundingClientRect().top - this.getBoundingClientRect().top;
+      screenHeightPx = Math.max(200, this._availableViewportPx() - Math.max(0, Math.round(above)));
+      this._scale = fitToScreenScale(designW, contentH, width, screenHeightPx);
+      this._devicePreview = false;
+      this._showWidthBounds = false;
+      this._artboardWidth = designW;
+      this._artboardOffsetX = Math.max(0, Math.round((width - designW * this._scale) / 2));
+      if (this._following) {
+        this._frameLeft = this._artboardOffsetX;
+        this._frameWidth = Math.round(designW * this._scale);
+        this._engine.setScale(this._scale);
+        this._pinWidth = -2;
+        this._layouts = this._rawLayouts;
+      }
+    } else if (this._following) {
       // Shrink the Desktop cards to the device (or screen) width and centre them.
       const frameWidth = devicePreview ? designCanvas : width;
       const frameLeft = devicePreview ? Math.max(0, Math.round((width - frameWidth) / 2)) : 0;
-      const fit = fitLayoutsToWidth(this._rawLayouts, frameWidth);
+      const fit = fitLayoutsToWidth(visibleLayouts(this._rawLayouts), frameWidth);
       this._devicePreview = devicePreview;
       this._showWidthBounds = devicePreview;
       this._frameLeft = frameLeft;
@@ -1240,7 +1555,16 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       }
     }
 
-    const contentHeight = computeArtboardHeight(this._layouts, this._options.min_height);
+    if (fitScreen) {
+      this._artboardHeight = Math.max(Math.ceil(screenHeightPx / this._scale), 1);
+      viewport.style.height = `${screenHeightPx}px`;
+      viewport.style.minHeight = '';
+      return;
+    }
+
+    // Live, hidden cards take no room; in edit mode they stay reachable.
+    const sized = this._editMode() ? this._layouts : this._layouts.filter(l => !l.hidden);
+    const contentHeight = computeArtboardHeight(sized, this._options.min_height);
     const availablePx = this._availableViewportPx();
     const fillHeight =
       this._scale > 0 && availablePx > 0
@@ -1348,7 +1672,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   private _onFsResetRotation = async (ev: Event): Promise<void> => {
     const { cardIndex } = (ev as CustomEvent).detail;
     const current = this._layouts[cardIndex];
-    if (!current) return;
+    if (!current || current.locked) return;
     await this._updateCardLayout(cardIndex, { ...current, r: 0 });
   };
 
@@ -1373,18 +1697,40 @@ export class UltraFreeSpaceViewImpl extends LitElement {
 
   private _align(cardIndex: number, align: FreeSpaceAlign): void {
     const current = this._layouts[cardIndex];
-    if (!current) return;
+    if (!current || current.locked) return;
     void this._updateCardLayout(cardIndex, alignInArtboard(current, align, this._artboardWidth));
   }
 
   private _setField(cardIndex: number, key: 'x' | 'y' | 'w' | 'h' | 'r', raw: string): void {
     const current = this._layouts[cardIndex];
     const value = Number(raw);
-    if (!current || raw.trim() === '' || !Number.isFinite(value)) {
+    if (!current || current.locked || raw.trim() === '' || !Number.isFinite(value)) {
       this.requestUpdate();
       return;
     }
-    void this._updateCardLayout(cardIndex, clampLayout({ ...current, [key]: value }));
+    let next: FreeSpaceCardLayout = { ...current, [key]: value };
+    if (key === 'h' && next.auto_h) {
+      delete next.auto_h;
+      this._measuredH.delete(cardIndex);
+    }
+    // Keep ratio: typing one side scales the other.
+    if (current.keep_ratio && (key === 'w' || key === 'h') && current.w > 0 && current.h > 0) {
+      const ratio = current.w / current.h;
+      next = key === 'w' ? { ...next, h: Math.round(value / ratio) } : { ...next, w: Math.round(value * ratio) };
+    }
+    void this._updateCardLayout(cardIndex, clampLayout(next));
+  }
+
+  private async _applyStarter(id: StarterId): Promise<void> {
+    if (!this.lovelace?.saveConfig) return;
+    const view = this._viewConfig();
+    const starter = buildStarter(id, this.hass?.states);
+    const next: Record<string, unknown> = { ...view, cards: starter.cards };
+    if (starter.fit) next.freespace = { ...(view.freespace ?? {}), fit: starter.fit };
+    const views = [...this.lovelace.config.views];
+    views[this.index] = next;
+    this._optimistic.clear();
+    await this.lovelace.saveConfig({ ...this.lovelace.config, views });
   }
 
   private _addCard(): void {
@@ -1414,11 +1760,20 @@ export class UltraFreeSpaceViewImpl extends LitElement {
   }
 
   private _onKeyDown = (ev: KeyboardEvent): void => {
-    if (!this._editingAllowed()) return;
+    if (!this._editMode() || !this._discoverable) return;
     // ev.target is retargeted to this host for events from our shadow DOM
     // (toolbar inputs), so check the real origin.
     const target = ev.composedPath()[0] as HTMLElement | undefined;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+
+    // Undo / redo work on every breakpoint, including ones that use Desktop.
+    const key = ev.key.toLowerCase();
+    if ((ev.metaKey || ev.ctrlKey) && (key === 'z' || key === 'y')) {
+      ev.preventDefault();
+      void this._undoRedo(key === 'y' || ev.shiftKey ? 'redo' : 'undo');
+      return;
+    }
+    if (!this._editingAllowed()) return;
 
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'a') {
       ev.preventDefault();
@@ -1462,7 +1817,8 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       ev.preventDefault();
       const dx = ev.key === 'ArrowLeft' ? -step : ev.key === 'ArrowRight' ? step : 0;
       const dy = ev.key === 'ArrowUp' ? -step : ev.key === 'ArrowDown' ? step : 0;
-      const sel = new Set(this._selection);
+      const sel = new Set(this._movable(this._selection));
+      if (!sel.size) return;
       void this._persistAllLayouts(
         this._layouts.map((l, i) => (sel.has(i) ? clampLayout({ ...l, x: l.x + dx, y: l.y + dy }) : l))
       );
@@ -1483,6 +1839,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       return;
     }
 
+    if (layout.locked && ev.key.startsWith('Arrow')) return;
     let next = layout;
     if (ev.key === 'ArrowLeft') next = { ...layout, x: layout.x - step };
     else if (ev.key === 'ArrowRight') next = { ...layout, x: layout.x + step };
@@ -1507,6 +1864,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     showLabel?: boolean;
     danger?: boolean;
     title?: string;
+    disabled?: boolean;
   }) {
     return html`
       <button
@@ -1515,6 +1873,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
         title=${opts.title ?? opts.label}
         aria-label=${opts.label}
         aria-pressed=${opts.active === undefined ? nothing : opts.active ? 'true' : 'false'}
+        ?disabled=${!!opts.disabled}
         @click=${opts.onClick}
       >
         ${this._icon(opts.icon)}
@@ -1527,7 +1886,8 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     idx: number,
     key: 'x' | 'y' | 'w' | 'h' | 'r',
     label: string,
-    value: number
+    value: number,
+    disabled = false
   ) {
     return html`
       <label class="tb-field" title=${this._t(`tb_field_${key}`, label)}>
@@ -1535,6 +1895,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
         <input
           type="number"
           inputmode="decimal"
+          ?disabled=${disabled}
           .value=${String(Math.round(value))}
           @change=${(e: Event) => this._setField(idx, key, (e.target as HTMLInputElement).value)}
           @keydown=${(e: KeyboardEvent) => {
@@ -1554,14 +1915,37 @@ export class UltraFreeSpaceViewImpl extends LitElement {
     const pinMeta = this._pinMeta();
     const zOrder = (action: ZOrderAction) =>
       void this._onFsZOrder(new CustomEvent('fs-z-order', { detail: { cardIndex: idx, action } }));
+    const locked = !!layout.locked;
 
     return html`
       <span class="tb-sep"></span>
       <div class="tb-group">
-        ${this._tbField(idx, 'x', 'X', layout.x)} ${this._tbField(idx, 'y', 'Y', layout.y)}
-        ${this._tbField(idx, 'w', 'W', layout.w)} ${this._tbField(idx, 'h', 'H', layout.h)}
-        ${this._tbField(idx, 'r', '°', layout.r)}
+        ${this._tbField(idx, 'x', 'X', layout.x, locked)} ${this._tbField(idx, 'y', 'Y', layout.y, locked)}
+        ${this._tbField(idx, 'w', 'W', layout.w, locked)}
+        ${this._tbField(idx, 'h', 'H', layout.h, locked || !!layout.auto_h)}
+        ${this._tbButton({
+          icon: mdiArrowCollapseVertical,
+          label: this._t('tb_auto_height', 'Auto height'),
+          title: this._t('tb_auto_height_hint', 'Auto height: the card is as tall as its content'),
+          active: !!layout.auto_h,
+          disabled: locked,
+          onClick: () => this._toggleFlag([idx], 'auto_h'),
+        })}
+        ${this._tbButton({
+          icon: mdiAspectRatio,
+          label: this._t('tb_keep_ratio', 'Keep ratio'),
+          title: this._t(
+            'tb_keep_ratio_hint',
+            'Keep the width and height in proportion when resizing (hold Shift to switch it for one drag)'
+          ),
+          active: !!layout.keep_ratio,
+          disabled: locked,
+          onClick: () => this._toggleFlag([idx], 'keep_ratio'),
+        })}
+        ${this._tbField(idx, 'r', '°', layout.r, locked)}
       </div>
+      <span class="tb-sep"></span>
+      <div class="tb-group">${this._cardStateButtons([idx])}</div>
       <span class="tb-sep"></span>
       <div
         class="tb-group ${pinsActive ? '' : 'muted'}"
@@ -1579,7 +1963,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
         )}
       </div>
       <span class="tb-sep"></span>
-      <div class="tb-group" aria-label=${this._t('tb_align', 'Align')}>
+      <div class="tb-group ${locked ? 'muted' : ''}" aria-label=${this._t('tb_align', 'Align')}>
         ${(
           [
             ['left', mdiAlignHorizontalLeft, this._t('tb_align_left', 'Align left')],
@@ -1587,7 +1971,9 @@ export class UltraFreeSpaceViewImpl extends LitElement {
             ['right', mdiAlignHorizontalRight, this._t('tb_align_right', 'Align right')],
             ['top', mdiAlignVerticalTop, this._t('tb_align_top', 'Align top')],
           ] as Array<[FreeSpaceAlign, string, string]>
-        ).map(([a, icon, label]) => this._tbButton({ icon, label, onClick: () => this._align(idx, a) }))}
+        ).map(([a, icon, label]) =>
+          this._tbButton({ icon, label, disabled: locked, onClick: () => this._align(idx, a) })
+        )}
       </div>
       <span class="tb-sep"></span>
       <div class="tb-group" aria-label=${this._t('tb_layer', 'Layer')}>
@@ -1612,6 +1998,56 @@ export class UltraFreeSpaceViewImpl extends LitElement {
           onClick: () => this._onFsDelete(new CustomEvent('fs-delete-card', { detail: { cardIndex: idx } })),
         })}
       </div>
+    `;
+  }
+
+  /** Lock, hide-on-this-screen and group buttons for one or more cards. */
+  private _cardStateButtons(indices: number[]) {
+    const picked = indices.map(i => this._layouts[i]).filter(Boolean) as FreeSpaceCardLayout[];
+    const allLocked = picked.length > 0 && picked.every(l => l.locked);
+    const allHidden = picked.length > 0 && picked.every(l => l.hidden);
+    const bp = BREAKPOINT_SPECS[this._activeBreakpoint()].label;
+    const anyGrouped = picked.some(l => l.group);
+    const oneGroup = picked.length > 1 && anyGrouped && new Set(picked.map(l => l.group)).size === 1;
+    return html`
+      ${this._tbButton({
+        icon: allLocked ? mdiLock : mdiLockOpenVariantOutline,
+        label: allLocked ? this._t('tb_unlock', 'Unlock') : this._t('tb_lock', 'Lock'),
+        title: allLocked
+          ? this._t('tb_unlock_hint', 'Unlock so it can be moved and resized again')
+          : this._t('tb_lock_hint', 'Lock so it cannot be moved or resized by accident'),
+        active: allLocked,
+        onClick: () => this._toggleFlag(indices, 'locked'),
+      })}
+      ${this._tbButton({
+        icon: allHidden ? mdiEyeOffOutline : mdiEyeOutline,
+        label: allHidden
+          ? this._t('tb_show_here', 'Show on {bp}').replace('{bp}', bp)
+          : this._t('tb_hide_here', 'Hide on {bp}').replace('{bp}', bp),
+        title: allHidden
+          ? this._t('tb_show_here', 'Show on {bp}').replace('{bp}', bp)
+          : this._t(
+              'tb_hide_here_hint',
+              'Hide on {bp}. Hidden cards stay visible, faded, while editing.'
+            ).replace('{bp}', bp),
+        active: allHidden,
+        onClick: () => this._toggleFlag(indices, 'hidden'),
+      })}
+      ${indices.length > 1 && !oneGroup
+        ? this._tbButton({
+            icon: mdiGroup,
+            label: this._t('tb_group', 'Group'),
+            title: this._t('tb_group_hint', 'Group: select and move these cards together'),
+            onClick: () => this._setGroupFor(indices, true),
+          })
+        : nothing}
+      ${anyGrouped
+        ? this._tbButton({
+            icon: mdiUngroup,
+            label: this._t('tb_ungroup', 'Ungroup'),
+            onClick: () => this._setGroupFor(indices, false),
+          })
+        : nothing}
     `;
   }
 
@@ -1715,6 +2151,8 @@ export class UltraFreeSpaceViewImpl extends LitElement {
         )}
       </div>
       <span class="tb-sep"></span>
+      <div class="tb-group">${this._cardStateButtons(sel)}</div>
+      <span class="tb-sep"></span>
       <div class="tb-group">
         ${this._resetDesktopButton()}
         ${this._tbButton({
@@ -1724,6 +2162,29 @@ export class UltraFreeSpaceViewImpl extends LitElement {
           onClick: () => void this._deleteSelection(),
         })}
       </div>
+    `;
+  }
+
+  private _historyButtons() {
+    void this._historyTick;
+    return html`
+      <div class="tb-group" aria-label=${this._t('tb_history', 'History')}>
+        ${this._tbButton({
+          icon: mdiUndo,
+          label: this._t('tb_undo', 'Undo'),
+          title: this._t('tb_undo_hint', 'Undo (Ctrl+Z)'),
+          disabled: !this._history.canUndo,
+          onClick: () => void this._undoRedo('undo'),
+        })}
+        ${this._tbButton({
+          icon: mdiRedo,
+          label: this._t('tb_redo', 'Redo'),
+          title: this._t('tb_redo_hint', 'Redo (Ctrl+Shift+Z)'),
+          disabled: !this._history.canRedo,
+          onClick: () => void this._undoRedo('redo'),
+        })}
+      </div>
+      <span class="tb-sep"></span>
     `;
   }
 
@@ -1738,6 +2199,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
 
     return html`
       <div class="toolbar" role="toolbar" aria-label=${this._t('toolbar', 'FreeSpace tools')}>
+        ${this._historyButtons()}
         <div class="tb-group" role="radiogroup" aria-label=${this._t('breakpoints', 'Breakpoints')}>
           ${FREESPACE_BREAKPOINTS.map(bp => {
             const spec = BREAKPOINT_SPECS[bp];
@@ -1794,7 +2256,10 @@ export class UltraFreeSpaceViewImpl extends LitElement {
                       label: this._t('tb_snap', 'Snap to grid'),
                       active: this._snapOn,
                       showLabel: true,
-                      onClick: () => (this._snapOn = !this._snapOn),
+                      onClick: () => {
+                        this._snapOn = !this._snapOn;
+                        writeSnapPreference(this._snapOn);
+                      },
                     })
                   : nothing}
                 ${this._editingAllowed()
@@ -1834,6 +2299,92 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       class="pin-line vertical"
       style="left:${W / 2}px;top:${l.y - 12}px;height:${l.h + 24}px"
     ></div>`;
+  }
+
+  /** Canvas background (`freespace.background`), drawn behind every card. */
+  private _renderBackground() {
+    const bg = this._options.background;
+    if (!bg) return nothing;
+    const bp = this._following ? 'desktop' : this._activeBreakpoint();
+    const image = backgroundImageFor(bg, bp);
+    // Following breakpoints draw Desktop coordinates, so use the Desktop canvas.
+    const width = `${this._following ? effectiveCanvasWidth(this._options, 'desktop') : this._artboardWidth}px`;
+    const size = BG_SIZE[bg.size];
+    // Quotes and line breaks cannot break out of url("…").
+    const safe = image?.replace(/["\\\n\r]/g, c => encodeURIComponent(c));
+    return html`
+      ${bg.color
+        ? html`<div class="canvas-bg" style=${styleMap({ width, background: bg.color })}></div>`
+        : nothing}
+      ${safe
+        ? html`<div
+            class="canvas-bg-img"
+            style=${styleMap({
+              width,
+              backgroundImage: `url("${safe}")`,
+              backgroundSize: size.size,
+              backgroundRepeat: size.repeat,
+              backgroundPosition: bg.position,
+              opacity: String(bg.opacity / 100),
+            })}
+          ></div>`
+        : nothing}
+    `;
+  }
+
+  /** Distances to the nearest cards while dragging or resizing one card. */
+  private _renderGaps() {
+    if (!this._gaps.length) return nothing;
+    const font = `${Math.round(11 / (this._scale || 1))}px`;
+    return this._gaps.map(g => {
+      const mid = (g.from + g.to) / 2;
+      const label = html`<div
+        class="gap-label"
+        style="left:${g.axis === 'x' ? mid : g.at}px;top:${g.axis === 'x' ? g.at : mid}px;font-size:${font}"
+      >
+        ${Math.round(g.to - g.from)}
+      </div>`;
+      return g.axis === 'x'
+        ? html`<div class="gap-line x" style="left:${g.from}px;top:${g.at}px;width:${g.to - g.from}px"></div>
+            ${label}`
+        : html`<div class="gap-line y" style="left:${g.at}px;top:${g.from}px;height:${g.to - g.from}px"></div>
+            ${label}`;
+    });
+  }
+
+  /** Empty view: a hint, plus starter layouts while editing. */
+  private _renderEmpty() {
+    const canStart = this._editingAllowed() && !!this.lovelace?.saveConfig;
+    const meta: Record<StarterId, { title: string; desc: string }> = {
+      wall: {
+        title: this._t('starter_wall', 'Wall tablet'),
+        desc: this._t('starter_wall_desc', 'Fills the screen, no scrolling'),
+      },
+      phone: {
+        title: this._t('starter_phone', 'Phone home'),
+        desc: this._t('starter_phone_desc', 'With its own Phone layout'),
+      },
+      desktop: {
+        title: this._t('starter_desktop', 'Desktop overview'),
+        desc: this._t('starter_desktop_desc', 'Camera, lights and climate'),
+      },
+    };
+    return html`<div class="empty">
+      ${canStart
+        ? html`
+            ${this._t('empty_starters', 'Add a card to start building, or begin with a starter layout:')}
+            <div class="starters">
+              ${STARTER_IDS.map(
+                id => html`<button type="button" class="starter" @click=${() => void this._applyStarter(id)}>
+                  ${this._icon(STARTER_ICONS[id])}
+                  <strong>${meta[id].title}</strong>
+                  <span>${meta[id].desc}</span>
+                </button>`
+              )}
+            </div>
+          `
+        : this._t('empty', 'Add a card to start building.')}
+    </div>`;
   }
 
   protected override render() {
@@ -1952,13 +2503,14 @@ export class UltraFreeSpaceViewImpl extends LitElement {
             : `width:${this._artboardWidth}px;height:${this._artboardHeight}px;transform:scale(${this._scale});left:${this._artboardOffsetX}px`}
           @pointerdown=${this._onArtboardPointerDown}
         >
+          ${!stacked ? this._renderBackground() : nothing}
           ${!this.cards?.length
-            ? html`<div class="empty">${this._t('empty', 'Add a card to start building.')}</div>`
+            ? this._renderEmpty()
             : order.map(i => {
                 const card = this.cards[i];
                 if (!card) return nothing;
                 const layout = this._layouts[i];
-                if (!layout) return nothing;
+                if (!layout || (layout.hidden && !editMode)) return nothing;
                 return html`
                   <uc-freespace-item
                     .card=${card}
@@ -1989,6 +2541,7 @@ export class UltraFreeSpaceViewImpl extends LitElement {
               `
             : nothing}
           ${!stacked ? this._renderPinLines() : nothing}
+          ${!stacked ? this._renderGaps() : nothing}
           ${this._marquee
             ? html`<div
                 class="marquee"

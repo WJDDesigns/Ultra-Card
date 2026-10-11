@@ -16,6 +16,33 @@ export interface FreeSpaceViewOptions {
    * `scale` keeps the scaled artboard (the Desktop layout).
    */
   narrow: 'stack' | 'scale';
+  /**
+   * `width` (default): fit the canvas to the screen width and scroll down.
+   * `screen`: scale the whole layout to fit the screen (no scrolling), for
+   * wall tablets.
+   */
+  fit?: FreeSpaceFit;
+  /** Optional canvas background that moves and scales with the cards. */
+  background?: FreeSpaceBackground;
+}
+
+export type FreeSpaceFit = 'width' | 'screen';
+
+export type FreeSpaceBackgroundSize = 'fit_width' | 'cover' | 'contain' | 'stretch' | 'repeat' | 'original';
+
+/** Canvas background (drawn behind the cards, inside the artboard). */
+export interface FreeSpaceBackground {
+  /** Image URL (e.g. /local/floorplan.png). */
+  image?: string;
+  /** Per-breakpoint image overrides; missing ones use `image`. */
+  images?: Partial<Record<'laptop' | 'tablet' | 'phone', string>>;
+  /** Any CSS colour or gradient, painted under the image. */
+  color?: string;
+  size: FreeSpaceBackgroundSize;
+  /** CSS background-position, e.g. `top center`. */
+  position: string;
+  /** Image opacity 0-100. */
+  opacity: number;
 }
 
 /** Per-card layout stored under `view_layout`. */
@@ -32,7 +59,21 @@ export interface FreeSpaceCardLayout {
   pin?: FreeSpacePin;
   /** Artboard width the x/w were saved at; required for non-left pins. */
   ref_w?: number;
+  /** Height follows the card's content; `h` holds the last measured height. */
+  auto_h?: boolean;
+  /** Locked cards can be selected and edited but not moved or resized. */
+  locked?: boolean;
+  /** Hidden on this breakpoint (still shown, dimmed, in edit mode). */
+  hidden?: boolean;
+  /** Cards sharing a group id are selected and moved together. */
+  group?: string;
+  /** Keep the width:height ratio when resizing. */
+  keep_ratio?: boolean;
 }
+
+/** Boolean per-card flags carried through every layout transform. */
+export const FREESPACE_LAYOUT_FLAGS = ['auto_h', 'locked', 'hidden', 'keep_ratio'] as const;
+export type FreeSpaceLayoutFlag = (typeof FREESPACE_LAYOUT_FLAGS)[number];
 
 export type FreeSpacePin = 'left' | 'right' | 'center' | 'stretch';
 

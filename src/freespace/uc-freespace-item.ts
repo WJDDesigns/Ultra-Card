@@ -21,11 +21,17 @@ import {
   mdiFormatHorizontalAlignCenter,
   mdiFormatHorizontalAlignRight,
   mdiArrowExpandHorizontal,
+  mdiEyeOffOutline,
+  mdiEyeOutline,
+  mdiLock,
+  mdiLockOpenVariantOutline,
+  mdiArrowCollapseVertical,
 } from '@mdi/js';
 import { localize } from '../localize/localize';
 import {
   FREESPACE_ITEM_TAG,
   FREESPACE_PINS,
+  MIN_CARD_H,
   type FreeSpaceCardLayout,
   type FreeSpacePin,
   type ResizeHandle,
@@ -54,8 +60,12 @@ export class UcFreeSpaceItem extends LitElement {
 
   @state() private _hover = false;
   @state() private _menuOpen = false;
+  /** Fixed-height card whose content is taller than the card (edit mode hint). */
+  @state() private _clipped = false;
 
   private _touchStarted = false;
+  private _sizeObserver: ResizeObserver | null = null;
+  private _lastMeasuredH = 0;
 
   static override styles = css`
     :host {
@@ -327,6 +337,52 @@ export class UcFreeSpaceItem extends LitElement {
     :host([selected]) .frame {
       box-shadow: 0 0 0 2px var(--primary-color);
     }
+    :host([locked]) .overlay {
+      cursor: default;
+    }
+    /* Height follows the card's content. */
+    :host([auto-h]) .frame,
+    :host([auto-h]) .card-slot,
+    :host([auto-h]) .card-slot > * {
+      height: auto;
+    }
+    /* Hidden on this screen: only drawn in edit mode, faded. */
+    :host([hidden-here]) .card-slot {
+      opacity: 0.35;
+      filter: grayscale(1);
+    }
+    .badges {
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+      z-index: 3;
+      display: flex;
+      gap: 4px;
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 11px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    .badge.warn {
+      background: var(--warning-color, #ffa600);
+      color: #000;
+    }
+    .badge svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
   `;
 
   override connectedCallback(): void {
@@ -346,6 +402,8 @@ export class UcFreeSpaceItem extends LitElement {
     this.removeEventListener('mouseleave', this._onMouseLeave);
     this.removeEventListener('contextmenu', this._onContextMenu);
     document.removeEventListener('click', this._documentClicked);
+    this._sizeObserver?.disconnect();
+    this._sizeObserver = null;
   }
 
   protected override updated(changed: PropertyValues): void {
@@ -367,6 +425,64 @@ export class UcFreeSpaceItem extends LitElement {
     if (changed.has('stacked')) {
       this.toggleAttribute('stacked', this.stacked);
     }
+    if (changed.has('layout') || changed.has('editMode')) {
+      this.toggleAttribute('hidden-here', !!this.layout?.hidden && this.editMode);
+      this.toggleAttribute('locked', !!this.layout?.locked);
+    }
+    if (changed.has('layout') || changed.has('stacked') || changed.has('editMode')) {
+      this._measure();
+    }
+  }
+
+  private _autoHeight(): boolean {
+    return !!this.layout?.auto_h && !this.stacked;
+  }
+
+  /**
+   * Auto-height cards report their content height so the view can size the
+   * canvas and selection around them. Fixed-height cards check whether their
+   * content is cut off (edit mode only).
+   */
+  private _measure(): void {
+    const watch = this._autoHeight() || (this.editMode && !this.stacked);
+    if (!watch) {
+      this._sizeObserver?.disconnect();
+      this._sizeObserver = null;
+      this._clipped = false;
+      return;
+    }
+    if (!this._sizeObserver && typeof ResizeObserver !== 'undefined') {
+      this._sizeObserver = new ResizeObserver(() => this._onResize());
+      this._sizeObserver.observe(this);
+      const slot = this.renderRoot?.querySelector('.card-slot');
+      if (slot) this._sizeObserver.observe(slot);
+      if (this.card) this._sizeObserver.observe(this.card);
+    }
+    this._onResize();
+  }
+
+  private _onResize(): void {
+    const slot = this.renderRoot?.querySelector('.card-slot') as HTMLElement | null;
+    if (this._autoHeight()) {
+      this._clipped = false;
+      // offsetHeight is in artboard units (the artboard's scale is a transform).
+      const h = Math.max(MIN_CARD_H, Math.round(this.offsetHeight));
+      if (h > 0 && Math.abs(h - this._lastMeasuredH) >= 1) {
+        this._lastMeasuredH = h;
+        this._fire('fs-measured', { cardIndex: this.cardIndex, h });
+      }
+      return;
+    }
+    this._lastMeasuredH = 0;
+    if (!slot || !this.editMode) {
+      this._clipped = false;
+      return;
+    }
+    const content = Math.max(
+      slot.scrollHeight,
+      ...Array.from(slot.children).map(c => (c as HTMLElement).scrollHeight || 0)
+    );
+    this._clipped = content > slot.clientHeight + 2;
   }
 
   private _applyPosition(): void {
@@ -374,7 +490,9 @@ export class UcFreeSpaceItem extends LitElement {
     this.style.left = `${this.layout.x}px`;
     this.style.top = `${this.layout.y}px`;
     this.style.width = `${this.layout.w}px`;
-    this.style.height = `${this.layout.h}px`;
+    this.style.height = this._autoHeight() ? 'auto' : `${this.layout.h}px`;
+    this.style.minHeight = this._autoHeight() ? `${MIN_CARD_H}px` : '';
+    this.toggleAttribute('auto-h', this._autoHeight());
     this.style.zIndex = String(this.layout.z ?? 0);
     this.style.transform = this.layout.r ? `rotate(${this.layout.r}deg)` : '';
   }
@@ -390,6 +508,11 @@ export class UcFreeSpaceItem extends LitElement {
       // ignore
     }
     slot.appendChild(this.card);
+    if (this._sizeObserver) {
+      this._sizeObserver.disconnect();
+      this._sizeObserver = null;
+      this._measure();
+    }
   }
 
   protected override firstUpdated(): void {
@@ -527,14 +650,53 @@ export class UcFreeSpaceItem extends LitElement {
       case 'reset-rotation':
         this._fire('fs-reset-rotation', { cardIndex: this.cardIndex });
         break;
+      case 'lock':
+      case 'hidden':
+      case 'auto_h':
+        this._fire('fs-toggle-flag', { cardIndex: this.cardIndex, flag: action });
+        break;
     }
+  }
+
+  private _renderBadges() {
+    if (!this.editMode || this.stacked) return nothing;
+    const locked = !!this.layout?.locked;
+    const hiddenHere = !!this.layout?.hidden;
+    if (!locked && !hiddenHere && !this._clipped) return nothing;
+    return html`
+      <div class="badges">
+        ${locked
+          ? html`<span class="badge" title=${this._t('badge_locked_hint', 'Locked: unlock it to move or resize')}
+              >${this._icon(mdiLock)}</span
+            >`
+          : nothing}
+        ${hiddenHere
+          ? html`<span class="badge" title=${this._t('badge_hidden_hint', 'Hidden on this screen size')}
+              >${this._icon(mdiEyeOffOutline)} ${this._t('badge_hidden', 'Hidden')}</span
+            >`
+          : nothing}
+        ${this._clipped
+          ? html`<span
+              class="badge warn"
+              title=${this._t(
+                'badge_clipped_hint',
+                'The content is taller than this card and is cut off. Make the card taller or set its height to Auto.'
+              )}
+              >${this._t('badge_clipped', 'Cut off')}</span
+            >`
+          : nothing}
+      </div>
+    `;
   }
 
   protected override render() {
     const show = this._showChrome();
+    const locked = !!this.layout?.locked;
+    const hiddenHere = !!this.layout?.hidden;
     return html`
       <div class="frame">
         <div class="card-slot"></div>
+        ${this._renderBadges()}
         ${this.editMode && this.editingAllowed
           ? html`
               <div
@@ -542,7 +704,7 @@ export class UcFreeSpaceItem extends LitElement {
                 @pointerdown=${this._onOverlayPointerDown}
               >
                 <div class="control-overlay"></div>
-                <div class="control-icon">${this._icon(mdiCursorMove)}</div>
+                <div class="control-icon">${this._icon(locked ? mdiLock : mdiCursorMove)}</div>
                 <button
                   type="button"
                   class="more"
@@ -614,6 +776,29 @@ export class UcFreeSpaceItem extends LitElement {
                           </button>
                         </li>
                         <li class="divider" role="separator"></li>
+                        <li>
+                          <button type="button" @click=${(e: Event) => this._menuAction('lock', e)}>
+                            ${locked
+                              ? html`${this._icon(mdiLockOpenVariantOutline)} ${this._t('menu_unlock', 'Unlock')}`
+                              : html`${this._icon(mdiLock)} ${this._t('menu_lock', 'Lock')}`}
+                          </button>
+                        </li>
+                        <li>
+                          <button type="button" @click=${(e: Event) => this._menuAction('auto_h', e)}>
+                            ${this._icon(mdiArrowCollapseVertical)}
+                            ${this.layout?.auto_h
+                              ? this._t('menu_fixed_height', 'Fixed height')
+                              : this._t('menu_auto_height', 'Auto height')}
+                          </button>
+                        </li>
+                        <li>
+                          <button type="button" @click=${(e: Event) => this._menuAction('hidden', e)}>
+                            ${hiddenHere
+                              ? html`${this._icon(mdiEyeOutline)} ${this._t('menu_show_here', 'Show on this screen')}`
+                              : html`${this._icon(mdiEyeOffOutline)} ${this._t('menu_hide_here', 'Hide on this screen')}`}
+                          </button>
+                        </li>
+                        <li class="divider" role="separator"></li>
                         <li class="menu-label" role="presentation">${this._t('menu_pin_to', 'Pin to')}</li>
                         ${FREESPACE_PINS.map(
                           p => html`
@@ -644,7 +829,7 @@ export class UcFreeSpaceItem extends LitElement {
                     `
                   : nothing}
               </div>
-              ${show
+              ${show && !locked
                 ? html`
                     ${RESIZE_HANDLES.map(
                       h => html`
@@ -656,7 +841,7 @@ export class UcFreeSpaceItem extends LitElement {
                     )}
                   `
                 : nothing}
-              ${this.selected
+              ${this.selected && !locked
                 ? html`
                     <div
                       class="rotate-zone nw"

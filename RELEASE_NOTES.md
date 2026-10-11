@@ -1,5 +1,28 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta3
+
+The third 3.14.0 beta is a big FreeSpace update: undo and redo, cards that grow with their content, locking, grouping, hiding cards on some screen sizes, a canvas background for floorplans, and a fit-to-screen mode for wall tablets. It also brings a large batch of German translations from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added Undo and Redo to FreeSpace** - Toolbar buttons plus Ctrl+Z and Ctrl+Shift+Z step back through every change to the view while you edit it, including Use Desktop, deletes and edits made in Home Assistant's card editor
+- **Added Auto height to FreeSpace cards** - A card can grow and shrink with its content instead of having a fixed height, and cards whose content is cut off show a "Cut off" badge while editing
+- **Added Lock and Group to FreeSpace** - Lock a card so it can't be moved or resized by accident, or group cards so clicking one selects and moves them all together
+- **Added Hide on this screen to FreeSpace** - Hide a card on Desktop, Laptop, Tablet or Phone; hidden cards stay visible, faded, while editing
+- **Added a FreeSpace canvas background** - An image (optionally a different one per screen size), colour or gradient behind the cards that moves and scales with them, so a floorplan stays lined up with the cards placed on it
+- **Added Fit to screen for FreeSpace** - A view setting that scales the whole layout to fill the screen with no scrolling, made for wall tablets
+- **Added FreeSpace starter layouts** - An empty FreeSpace view offers Wall tablet, Phone home and Desktop overview layouts filled with your own lights, weather, camera, thermostat and media player
+
+### 🔧 Improvements
+
+- **FreeSpace shows spacing while dragging** - Lines and numbers show the distance to the nearest cards as you drag or resize
+- **FreeSpace can keep a card's proportions** - Turn on Keep ratio, or hold Shift while resizing
+- **FreeSpace remembers Snap to grid** - The toggle stays the way you left it in this browser
+- **More German translations** - 304 more strings translated by community contributor larrysansan, bringing German to about 58%
+
 ## Version 3.14.0-beta2
 
 The second 3.14.0 beta adds four new modules: Floorplan and Irrigation for everyone, and Energy Price & EV and Linked Row for Pro. It also fixes a long list of editor and readability problems found by testing every module in light and dark themes on desktop and phone sizes. This is a pre-release for testing — please report anything odd on GitHub or Discord.
