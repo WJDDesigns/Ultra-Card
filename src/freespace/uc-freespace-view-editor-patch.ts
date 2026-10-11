@@ -37,6 +37,56 @@ function defaultNote(bp: FreeSpaceBreakpoint): string {
   );
 }
 
+/**
+ * Background fields use generic names (`image`, `color`, …), so they are
+ * matched by a marker on the schema entry, never by name alone, to avoid
+ * relabelling Home Assistant's own fields.
+ */
+const BG_MARK = '__ucFreeSpaceBg';
+
+function backgroundLabel(name: string): string | undefined {
+  switch (name) {
+    case 'background':
+      return t('editor_background', 'Canvas background');
+    case 'image':
+      return t('editor_bg_image', 'Image URL');
+    case 'images':
+      return t('editor_bg_images', 'Image per screen size (optional)');
+    case 'laptop':
+    case 'tablet':
+    case 'phone':
+      return bpLabel(name);
+    case 'color':
+      return t('editor_bg_color', 'Color or gradient');
+    case 'size':
+      return t('editor_bg_size', 'Image size');
+    case 'position':
+      return t('editor_bg_position', 'Image position');
+    case 'opacity':
+      return t('editor_bg_opacity', 'Image opacity (%)');
+    default:
+      return undefined;
+  }
+}
+
+function backgroundHelper(name: string): string | undefined {
+  switch (name) {
+    case 'background':
+      return t(
+        'editor_background_help',
+        'Drawn behind the cards and moves and scales with them, for floorplans or photos. For a wallpaper behind the whole view, use the view’s own Background setting.'
+      );
+    case 'image':
+      return t('editor_bg_image_help', 'For example /local/floorplan.png (a file in your config/www folder).');
+    case 'images':
+      return t('editor_bg_images_help', 'Screen sizes left empty use the image above.');
+    case 'color':
+      return t('editor_bg_color_help', 'Any CSS color or gradient, e.g. #1c1c1c or linear-gradient(#123, #345).');
+    default:
+      return undefined;
+  }
+}
+
 function label(name: string): string | undefined {
   switch (name) {
     case 'freespace_specifics':
@@ -56,6 +106,8 @@ function label(name: string): string | undefined {
       return t('editor_grid', 'Snap grid (0 = off)');
     case 'narrow':
       return t('editor_narrow', 'Phone without layout');
+    case 'fit':
+      return t('editor_fit', 'Fit');
     case 'canvas_width':
       return t('editor_canvas_width_legacy', 'Desktop canvas width (legacy)');
     default:
@@ -95,6 +147,11 @@ function helper(name: string): string | undefined {
       return t(
         'editor_narrow_help',
         'When Phone uses the Desktop layout: stack cards for readability, or keep scaling the artboard.'
+      );
+    case 'fit':
+      return t(
+        'editor_fit_help',
+        'Fit to screen scales the whole layout up or down so it fills the screen without scrolling, for wall tablets.'
       );
     default:
       return undefined;
@@ -183,10 +240,80 @@ function buildFreeSpaceExpandable(): Record<string, unknown> {
               },
             },
           },
+          {
+            name: 'fit',
+            default: 'width',
+            selector: {
+              select: {
+                mode: 'dropdown',
+                options: [
+                  { value: 'width', label: t('editor_fit_width', 'Fit width, scroll down (default)') },
+                  { value: 'screen', label: t('editor_fit_screen', 'Fit to screen (no scrolling)') },
+                ],
+              },
+            },
+          },
+          buildBackgroundSchema(),
         ],
       },
     ],
   };
+}
+
+function bgField(entry: Record<string, unknown>): Record<string, unknown> {
+  return { ...entry, [BG_MARK]: true };
+}
+
+function buildBackgroundSchema(): Record<string, unknown> {
+  const text = { text: {} };
+  return bgField({
+    name: 'background',
+    type: 'expandable',
+    schema: [
+      bgField({ name: 'image', selector: text }),
+      bgField({ name: 'color', selector: text }),
+      bgField({
+        name: 'size',
+        default: 'fit_width',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: [
+              { value: 'fit_width', label: t('editor_bg_size_fit_width', 'Fit canvas width') },
+              { value: 'cover', label: t('editor_bg_size_cover', 'Cover') },
+              { value: 'contain', label: t('editor_bg_size_contain', 'Contain') },
+              { value: 'stretch', label: t('editor_bg_size_stretch', 'Stretch') },
+              { value: 'repeat', label: t('editor_bg_size_repeat', 'Tile') },
+              { value: 'original', label: t('editor_bg_size_original', 'Original size') },
+            ],
+          },
+        },
+      }),
+      bgField({
+        name: 'position',
+        default: 'top center',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: ['top left', 'top center', 'top right', 'center', 'bottom center'].map(v => ({
+              value: v,
+              label: v,
+            })),
+          },
+        },
+      }),
+      bgField({
+        name: 'opacity',
+        default: 100,
+        selector: { number: { min: 0, max: 100, mode: 'slider', step: 5 } },
+      }),
+      bgField({
+        name: 'images',
+        type: 'expandable',
+        schema: (['laptop', 'tablet', 'phone'] as const).map(bp => bgField({ name: bp, selector: text })),
+      }),
+    ],
+  });
 }
 
 /**
@@ -230,14 +357,22 @@ function patchEditorInstance(editor: any): void {
 
   // Labels / helpers for our custom schema names
   const origLabel = editor._computeLabel?.bind(editor);
-  editor._computeLabel = (schema: { name?: string }) => {
-    const ours = schema?.name ? label(schema.name) : undefined;
+  editor._computeLabel = (schema: { name?: string; [BG_MARK]?: boolean }) => {
+    const ours = schema?.name
+      ? schema[BG_MARK]
+        ? backgroundLabel(schema.name)
+        : label(schema.name)
+      : undefined;
     if (ours) return ours;
     return origLabel?.(schema) ?? schema?.name;
   };
   const origHelper = editor._computeHelper?.bind(editor);
-  editor._computeHelper = (schema: { name?: string }) => {
-    const ours = schema?.name ? helper(schema.name) : undefined;
+  editor._computeHelper = (schema: { name?: string; [BG_MARK]?: boolean }) => {
+    const ours = schema?.name
+      ? schema[BG_MARK]
+        ? backgroundHelper(schema.name)
+        : helper(schema.name)
+      : undefined;
     if (ours) return ours;
     return origHelper?.(schema);
   };

@@ -7,6 +7,7 @@ import {
   DEFAULT_CARD_W,
   MIN_CARD_H,
   MIN_CARD_W,
+  FREESPACE_LAYOUT_FLAGS,
   type FreeSpaceAlign,
   type FreeSpaceCardLayout,
   type FreeSpacePin,
@@ -46,6 +47,10 @@ export function clampLayout(layout: FreeSpaceCardLayout): FreeSpaceCardLayout {
     out.pin = layout.pin;
     out.ref_w = Math.round(layout.ref_w!);
   }
+  for (const flag of FREESPACE_LAYOUT_FLAGS) {
+    if (layout[flag] === true) out[flag] = true;
+  }
+  if (typeof layout.group === 'string' && layout.group) out.group = layout.group;
   return out;
 }
 
@@ -297,8 +302,10 @@ export function applyResize(
   origin: FreeSpaceCardLayout,
   handle: ResizeHandle,
   dx: number,
-  dy: number
+  dy: number,
+  keepRatio = false
 ): FreeSpaceCardLayout {
+  if (keepRatio) return applyRatioResize(origin, handle, dx, dy);
   let { x, y, w, h } = origin;
 
   if (handle.includes('e')) w = origin.w + dx;
@@ -322,6 +329,34 @@ export function applyResize(
     h = MIN_CARD_H;
   }
 
+  return clampLayout({ ...origin, x, y, w, h });
+}
+
+/**
+ * Resize keeping the card's width:height ratio. Corner handles follow
+ * whichever axis moved further; edge handles drive their own axis and grow
+ * the other one around the card's centre line.
+ */
+function applyRatioResize(
+  origin: FreeSpaceCardLayout,
+  handle: ResizeHandle,
+  dx: number,
+  dy: number
+): FreeSpaceCardLayout {
+  const ratio = origin.w / Math.max(1, origin.h);
+  const dw = handle.includes('e') ? dx : handle.includes('w') ? -dx : 0;
+  const dh = handle.includes('s') ? dy : handle.includes('n') ? -dy : 0;
+  const byWidth =
+    handle === 'e' || handle === 'w' || (handle.length === 2 && Math.abs(dw) >= Math.abs(dh * ratio));
+  let w = byWidth ? origin.w + dw : (origin.h + dh) * ratio;
+  w = Math.max(w, MIN_CARD_W, MIN_CARD_H * ratio);
+  const h = w / ratio;
+  let x = origin.x;
+  let y = origin.y;
+  if (handle.includes('w')) x = origin.x + origin.w - w;
+  else if (handle === 'n' || handle === 's') x = origin.x + (origin.w - w) / 2;
+  if (handle.includes('n')) y = origin.y + origin.h - h;
+  else if (handle === 'e' || handle === 'w') y = origin.y + (origin.h - h) / 2;
   return clampLayout({ ...origin, x, y, w, h });
 }
 
@@ -500,4 +535,87 @@ export function snapToGuides(
     activeV,
     activeH,
   };
+}
+
+/** Layouts that count for fitting and live height (hidden cards are skipped). */
+export function visibleLayouts(layouts: FreeSpaceCardLayout[]): FreeSpaceCardLayout[] {
+  const shown = layouts.filter(l => !l.hidden);
+  return shown.length ? shown : layouts;
+}
+
+/**
+ * Scale for "fit to screen": the whole design (width × content height) fits
+ * inside the available box, enlarging or shrinking as needed.
+ */
+export function fitToScreenScale(
+  designWidth: number,
+  contentHeight: number,
+  availWidth: number,
+  availHeight: number
+): number {
+  if (!(designWidth > 0) || !(contentHeight > 0) || !(availWidth > 0) || !(availHeight > 0)) return 1;
+  return Math.min(availWidth / designWidth, availHeight / contentHeight);
+}
+
+/** Bottom edge of the cards plus padding (ignores min height). */
+export function contentBottom(layouts: FreeSpaceCardLayout[], padding = 16): number {
+  if (!layouts.length) return 0;
+  return Math.max(...layouts.map(l => layoutAabb(l).bottom)) + padding;
+}
+
+export interface SpacingGap {
+  axis: 'x' | 'y';
+  /** Start and end of the gap along `axis`. */
+  from: number;
+  to: number;
+  /** Position of the measuring line on the other axis. */
+  at: number;
+}
+
+/**
+ * Gaps from a card to its nearest neighbour on each side (only neighbours
+ * that overlap it on the other axis), for the spacing readout while dragging.
+ */
+export function neighbourGaps(
+  layouts: FreeSpaceCardLayout[],
+  index: number,
+  skip: ReadonlySet<number> = new Set()
+): SpacingGap[] {
+  const self = layouts[index];
+  if (!self) return [];
+  const a = layoutAabb(self);
+  const best: Record<'left' | 'right' | 'top' | 'bottom', SpacingGap | null> = {
+    left: null,
+    right: null,
+    top: null,
+    bottom: null,
+  };
+  const len = (g: SpacingGap | null) => (g ? g.to - g.from : Infinity);
+  layouts.forEach((l, i) => {
+    if (i === index || skip.has(i) || l.hidden) return;
+    const b = layoutAabb(l);
+    const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    if (overlapY > 0) {
+      const at = (Math.max(a.top, b.top) + Math.min(a.bottom, b.bottom)) / 2;
+      if (b.right <= a.left) {
+        const g: SpacingGap = { axis: 'x', from: b.right, to: a.left, at };
+        if (len(g) < len(best.left)) best.left = g;
+      } else if (b.left >= a.right) {
+        const g: SpacingGap = { axis: 'x', from: a.right, to: b.left, at };
+        if (len(g) < len(best.right)) best.right = g;
+      }
+    }
+    if (overlapX > 0) {
+      const at = (Math.max(a.left, b.left) + Math.min(a.right, b.right)) / 2;
+      if (b.bottom <= a.top) {
+        const g: SpacingGap = { axis: 'y', from: b.bottom, to: a.top, at };
+        if (len(g) < len(best.top)) best.top = g;
+      } else if (b.top >= a.bottom) {
+        const g: SpacingGap = { axis: 'y', from: a.bottom, to: b.top, at };
+        if (len(g) < len(best.bottom)) best.bottom = g;
+      }
+    }
+  });
+  return Object.values(best).filter((g): g is SpacingGap => !!g && g.to - g.from > 0);
 }

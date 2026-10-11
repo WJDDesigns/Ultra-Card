@@ -187,7 +187,9 @@ export class FreeSpaceInteractionEngine {
     if (this._state.mode === 'move') {
       next = applyMove(this._state.origin, dx, dy);
     } else if (this._state.mode === 'resize' && this._state.handle) {
-      next = applyResize(this._state.origin, this._state.handle, dx, dy);
+      // Shift (or the card's Keep ratio setting) keeps the aspect ratio.
+      const keepRatio = this._shiftKey !== !!this._state.origin.keep_ratio;
+      next = applyResize(this._state.origin, this._state.handle, dx, dy, keepRatio);
     } else if (this._state.mode === 'rotate' && this._state.startAngle !== undefined) {
       const centre = cardCentre(this._state.origin);
       const currentAngle = angleFromCentre(centre.cx, centre.cy, artboard.x, artboard.y);

@@ -7,7 +7,10 @@ import {
   DEFAULT_CARD_H,
   DEFAULT_CARD_W,
   DEFAULT_FREESPACE_OPTIONS,
+  FREESPACE_LAYOUT_FLAGS,
   FREESPACE_PINS,
+  type FreeSpaceBackground,
+  type FreeSpaceBackgroundSize,
   type FreeSpaceCardLayout,
   type FreeSpacePin,
   type FreeSpaceViewOptions,
@@ -28,6 +31,7 @@ import {
   clampLayout,
   fitLayoutsToWidth,
   snapLayout,
+  visibleLayouts,
 } from './uc-freespace-geometry';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -55,6 +59,55 @@ function parseCanvasWidths(
   return any ? out : undefined;
 }
 
+const BACKGROUND_SIZES: readonly FreeSpaceBackgroundSize[] = [
+  'fit_width',
+  'cover',
+  'contain',
+  'stretch',
+  'repeat',
+  'original',
+];
+
+function str(v: unknown): string | undefined {
+  return typeof v === 'string' && v.trim() ? v.trim() : undefined;
+}
+
+/** Sanitise `freespace.background`. Returns undefined when nothing would be drawn. */
+export function normalizeBackground(input: unknown): FreeSpaceBackground | undefined {
+  if (!isRecord(input)) return undefined;
+  const image = str(input.image);
+  const color = str(input.color);
+  const images: FreeSpaceBackground['images'] = {};
+  if (isRecord(input.images)) {
+    for (const bp of ['laptop', 'tablet', 'phone'] as const) {
+      const v = str(input.images[bp]);
+      if (v) images[bp] = v;
+    }
+  }
+  if (!image && !color && !Object.keys(images).length) return undefined;
+  const size = (BACKGROUND_SIZES as readonly unknown[]).includes(input.size)
+    ? (input.size as FreeSpaceBackgroundSize)
+    : 'fit_width';
+  const out: FreeSpaceBackground = {
+    size,
+    position: str(input.position) ?? 'top center',
+    opacity: Math.min(100, Math.max(0, Math.round(num(input.opacity, 100)))),
+  };
+  if (image) out.image = image;
+  if (color) out.color = color;
+  if (Object.keys(images).length) out.images = images;
+  return out;
+}
+
+/** Image for a breakpoint: its own override, else the shared image. */
+export function backgroundImageFor(
+  bg: FreeSpaceBackground | undefined,
+  bp: FreeSpaceBreakpoint
+): string | undefined {
+  if (!bg) return undefined;
+  return (bp !== 'desktop' ? bg.images?.[bp] : undefined) ?? bg.image;
+}
+
 /** Sanitise view-level `freespace:` options. */
 export function normalizeFreeSpaceOptions(input: unknown): FreeSpaceViewOptions {
   const raw = isRecord(input) ? input : {};
@@ -70,6 +123,9 @@ export function normalizeFreeSpaceOptions(input: unknown): FreeSpaceViewOptions 
   const grid = Math.max(0, Math.round(num(raw.grid, DEFAULT_FREESPACE_OPTIONS.grid)));
   const canvas_widths = parseCanvasWidths(raw.canvas_widths);
   const out: FreeSpaceViewOptions = { canvas_width, min_height, grid, narrow };
+  if (raw.fit === 'screen') out.fit = 'screen';
+  const background = normalizeBackground(raw.background);
+  if (background) out.background = background;
   if (canvas_widths) {
     out.canvas_widths = canvas_widths;
     // Keep legacy canvas_width aligned with desktop override when present.
@@ -125,6 +181,10 @@ export function normalizeCardLayout(input: unknown): FreeSpaceCardLayout | null 
     layout.pin = input.pin as FreeSpacePin;
     layout.ref_w = num(input.ref_w, NaN);
   }
+  for (const flag of FREESPACE_LAYOUT_FLAGS) {
+    if (input[flag] === true) layout[flag] = true;
+  }
+  if (typeof input.group === 'string' && input.group) layout.group = input.group;
   return clampLayout(layout);
 }
 
@@ -352,7 +412,7 @@ export function fittedDesktopLayouts(viewConfig: unknown, bp: FreeSpaceBreakpoin
   const options = readFreeSpaceOptions(view);
   const width = effectiveCanvasWidth(options, bp);
   const desktop = assignDefaultLayouts(cards, options, undefined, 'desktop');
-  const fit = fitLayoutsToWidth(desktop, width);
+  const fit = fitLayoutsToWidth(visibleLayouts(desktop), width);
   return desktop.map(l => applyFit(l, fit, width));
 }
 
@@ -536,4 +596,65 @@ export function shouldStackPhone(
     if (hasExplicitBreakpointLayout(store, 'phone')) return false;
   }
   return true;
+}
+
+/** Indices of every card in the same group as `index` (just `index` when ungrouped). */
+export function groupMembers(layouts: FreeSpaceCardLayout[], index: number): number[] {
+  const group = layouts[index]?.group;
+  if (!group) return [index];
+  const members = layouts.flatMap((l, i) => (l.group === group && i !== index ? [i] : []));
+  // The clicked card goes last so it is the primary selection.
+  return [...members, index];
+}
+
+/** Expand a selection so whole groups are included. */
+export function expandToGroups(layouts: FreeSpaceCardLayout[], indices: number[]): number[] {
+  const out = new Set<number>();
+  for (const i of indices) for (const m of groupMembers(layouts, i)) out.add(m);
+  // Keep the original primary (last index) last.
+  const primary = indices[indices.length - 1];
+  if (primary !== undefined && out.has(primary)) {
+    out.delete(primary);
+    return [...out, primary];
+  }
+  return [...out];
+}
+
+/** Put the cards at `indices` into one new group (or ungroup them with `null`). */
+export function setGroup(
+  layouts: FreeSpaceCardLayout[],
+  indices: number[],
+  group: string | null
+): FreeSpaceCardLayout[] {
+  const sel = new Set(indices);
+  return layouts.map((l, i) => {
+    if (!sel.has(i)) return l;
+    const { group: _g, ...rest } = l;
+    return group ? { ...rest, group } : rest;
+  });
+}
+
+/** Set or clear a boolean flag on the cards at `indices`. */
+export function setFlag(
+  layouts: FreeSpaceCardLayout[],
+  indices: number[],
+  flag: (typeof FREESPACE_LAYOUT_FLAGS)[number],
+  on: boolean
+): FreeSpaceCardLayout[] {
+  const sel = new Set(indices);
+  return layouts.map((l, i) => {
+    if (!sel.has(i)) return l;
+    const next = { ...l };
+    if (on) next[flag] = true;
+    else delete next[flag];
+    return next;
+  });
+}
+
+/** A short group id that is not used by any card yet. */
+export function newGroupId(layouts: FreeSpaceCardLayout[]): string {
+  const used = new Set(layouts.map(l => l.group).filter(Boolean));
+  let n = 1;
+  while (used.has(`g${n}`)) n++;
+  return `g${n}`;
 }

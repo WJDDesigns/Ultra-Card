@@ -24,14 +24,24 @@ Install Ultra Card Connect (HACS → Integrations). That's it: FreeSpace is on f
    - Drag to move (dragging one selected card moves the whole selection); resize with edge/corner handles.
    - Arrow keys nudge the selection 1px (10px with Shift). Delete removes it.
    - Rotate with the **top-left** rotate icon (only when selected; hold **Shift** to snap 15°).
+   - Hold **Shift** while resizing to keep the card's proportions.
+   - **Ctrl+Z** (Cmd+Z) undoes, **Ctrl+Shift+Z** or **Ctrl+Y** redoes.
+   - While you drag or resize one card, orange lines show the distance to the nearest cards.
+
+On an empty FreeSpace view, edit mode offers three **starter layouts** (Wall tablet, Phone home, Desktop overview). They fill the view with cards for your first matching entities (lights, weather, camera, thermostat, media player); slots with no match get a placeholder card to edit.
 
 ### Toolbar
 
-The toolbar at the top of the view in edit mode always shows the breakpoints, plus **Use Desktop / Custom** on Laptop, Tablet and Phone (see Breakpoints). With nothing selected it shows **Snap to grid** (this session only) and **Add card**.
+The toolbar at the top of the view in edit mode always shows **Undo / Redo** and the breakpoints, plus **Use Desktop / Custom** on Laptop, Tablet and Phone (see Breakpoints). With nothing selected it shows **Snap to grid** (remembered in this browser) and **Add card**.
+
+Undo covers every change to this view while you edit it, including Use Desktop, deletes and edits made in Home Assistant's card editor. It only rolls back this view, and the history is cleared when you leave edit mode.
 
 With **one card** selected:
 
 - **X / Y / W / H / °** fields for exact position, size and rotation
+- **Auto height**: the card is as tall as its content (see below)
+- **Keep ratio**: resizing keeps the width:height ratio (Shift switches it for one drag)
+- **Lock**, **Hide on this screen**, and **Ungroup** when the card is in a group
 - **Pin**: Left, Center, Right, or Left & right (see below)
 - **Align**: left, center, right or top of the canvas (16px inset)
 - **Layer**: bring to front, forward, backward, send to back
@@ -44,8 +54,21 @@ With **two or more** selected:
 - **Align to Canvas**: move the cards together as one block to the canvas left, center, right or top, keeping their spacing
 - **Distribute** horizontally or vertically (3 or more cards), spacing them evenly between the outermost two
 - **Pin** all selected cards at once
+- **Lock**, **Hide on this screen**, **Group** or **Ungroup** all selected cards
 - **Reset to Desktop** (Laptop, Tablet, Phone) for all selected cards
 - **Delete** all selected cards (asks first)
+
+### Auto height
+
+By default a card is exactly as tall as its **H** value and anything taller is cut off. In edit mode a **Cut off** badge marks cards whose content does not fit. Turn on **Auto height** (toolbar or right-click menu) and the card grows and shrinks with its content, for example an entities card whose rows come and go. Dragging the top or bottom handle, or typing an H value, switches it back to a fixed height.
+
+### Lock, hide and group
+
+- **Lock** keeps a card from being moved, resized or rotated by accident (handy on touch screens). A locked card can still be selected, edited, layered and deleted. Align, Distribute and arrow keys skip locked cards.
+- **Hide on this screen** hides the card on the breakpoint you are editing. Hidden cards stay visible, faded with a **Hidden** badge, while editing. Hiding on Desktop also hides the card on Laptop, Tablet and Phone while they use Desktop; to hide a card only on Phone, choose **Custom** for Phone first. (Home Assistant's own card visibility conditions keep working too.)
+- **Group** ties two or more selected cards together. Clicking any of them selects the whole group, so they move, align and pin as one. Shift-click still picks single cards.
+
+Lock, hide and group are saved per breakpoint, like positions. Choosing **Custom** for a breakpoint copies them from Desktop.
 
 ### Pins
 
@@ -81,6 +104,21 @@ A card with no layout for a breakpoint always falls back to its Desktop layout, 
 
 On phones, while Phone uses Desktop and `narrow: stack` is set (the default), cards stack in reading order. Choose **Custom** to arrange a Phone layout.
 
+### Fit to screen (wall tablets)
+
+**View settings → FreeSpace view specific settings → Fit** chooses how the canvas fits the screen:
+
+- **Fit width, scroll down** (default): the canvas follows the screen width and the page scrolls when cards go further down.
+- **Fit to screen**: the whole layout is scaled up or down so every card is on screen with no scrolling, centered. Made for wall-mounted tablets and kiosks. It applies to every breakpoint except a stacked Phone.
+
+### Canvas background
+
+**FreeSpace view specific settings → Canvas background** draws an image and/or colour behind the cards. Unlike the view's own Background setting, it is part of the canvas: it moves and scales with the cards, so a floorplan or house photo stays lined up with the cards placed on it.
+
+- **Image URL**: e.g. `/local/floorplan.png` (a file in `config/www`). **Image per screen size** can set a different image for Laptop, Tablet or Phone.
+- **Colour or gradient**: any CSS value, e.g. `#1c1c1c` or `linear-gradient(#123, #345)`.
+- **Image size**: Fit canvas width (default), Cover, Contain, Stretch, Tile or Original size. **Image position** and **Image opacity** fine-tune it.
+
 ## Config
 
 ```yaml
@@ -95,6 +133,15 @@ freespace:
   min_height: 800
   grid: 8
   narrow: stack # stack | scale (phone fallback when no phone layout)
+  fit: width # width | screen (wall tablets: no scrolling)
+  background:
+    image: /local/floorplan.png
+    images:
+      phone: /local/floorplan-phone.png
+    color: '#1c1c1c'
+    size: fit_width # fit_width | cover | contain | stretch | repeat | original
+    position: top center
+    opacity: 100
 cards:
   - type: tile
     entity: light.sofa
@@ -106,6 +153,10 @@ cards:
         h: 160
         r: 0
         z: 2
+        auto_h: true # height follows the content (h = last measured height)
+        locked: true # cannot be moved or resized
+        group: g1 # cards with the same group move together
+        keep_ratio: true # keep proportions when resizing
       phone:
         x: 16
         y: 16
@@ -113,6 +164,7 @@ cards:
         h: 120
         r: 0
         z: 2
+        hidden: true # not shown on Phone
 ```
 
 In the view editor (pencil on the view), **FreeSpace view specific settings** lets you set each breakpoint’s canvas size, snap grid, min height, and phone fallback behaviour.
