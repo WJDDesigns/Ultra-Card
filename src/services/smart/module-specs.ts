@@ -61,6 +61,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   bambu: ['bambu', 'bambu lab', 'x1c', 'p1s', 'a1', 'ams', '3d printer bambu', 'bambulab'],
   printer_3d: ['3d printer', 'octoprint', 'moonraker', 'klipper', 'prusa', 'prusalink', 'print progress'],
   floorplan: ['floorplan', 'floor plan', 'house map', 'home map', 'room map', 'picture elements'],
+  rain_radar: ['rain radar', 'weather radar', 'radar', 'precipitation map', 'rain map', 'storm radar', 'rainviewer'],
   irrigation: ['irrigation', 'sprinkler', 'sprinklers', 'sprinkler zones', 'garden watering', 'lawn watering', 'opensprinkler', 'rachio'],
   energy_price: ['energy price', 'electricity price', 'spot price', 'nordpool', 'nord pool', 'tibber', 'octopus agile', 'cheapest hours', 'ev charging plan', 'smart charging'],
   calendar: ['events', 'schedule', 'agenda'],
@@ -521,6 +522,18 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
       ],
       default_duration_minutes: 10,
       layout: 'full',
+    },
+  },
+  rain_radar: {
+    purpose:
+      'Animated rain radar loop (RainViewer) over a map centered on the Home Assistant home location. Works with no entities; markers for people or zones are optional.',
+    fields: ['title', 'zoom', 'map_style', 'marker_entities', 'show_forecast'],
+    example: {
+      type: 'rain_radar',
+      title: 'Rain near home',
+      zoom: 7,
+      map_style: 'auto',
+      marker_entities: ['person.example'],
     },
   },
   floorplan: {

@@ -377,4 +377,8 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-linked-row" */ './linked-row-module').then(
       m => new m.UltraLinkedRowModule()
     ),
+  rain_radar: () =>
+    import(/* webpackChunkName: "m-rain-radar" */ './rain-radar-module').then(
+      m => new m.UltraRainRadarModule()
+    ),
 };

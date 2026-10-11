@@ -241,7 +241,8 @@ export interface BaseModule {
     | 'floorplan'
     | 'irrigation'
     | 'linked_row'
-    | 'energy_price';
+    | 'energy_price'
+    | 'rain_radar';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5641,7 +5642,8 @@ export type CardModule =
   | FloorplanModule
   | IrrigationModule
   | LinkedRowModule
-  | EnergyPriceModule;
+  | EnergyPriceModule
+  | RainRadarModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -9513,6 +9515,67 @@ export interface EnergyPriceModule extends BaseModule {
   ev_start_entity?: string | undefined;
   /** apply mode 'datetime': optional input_datetime set to the last planned end. */
   ev_end_entity?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Rain Radar (Free) — animated precipitation radar over a map (RainViewer)
+// -------------------------------------------------------------------------
+
+/** Where the map is centered: the HA home location, an entity with coordinates, or fixed coordinates. */
+export type RainRadarCenterMode = 'home' | 'entity' | 'manual';
+
+/** Base map under the radar. `auto` follows Home Assistant's light / dark mode. */
+export type RainRadarMapStyle = 'auto' | 'light' | 'dark' | 'streets' | 'satellite';
+
+export interface RainRadarModule extends BaseModule {
+  type: 'rain_radar';
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+
+  center_mode?: RainRadarCenterMode | undefined;
+  /** person / device_tracker / zone (anything with latitude + longitude attributes). */
+  center_entity?: string | undefined;
+  latitude?: number | undefined;
+  longitude?: number | undefined;
+  zoom?: number | undefined;
+  /** Map height in px. */
+  height?: number | undefined;
+
+  map_style?: RainRadarMapStyle | undefined;
+  /** Radar layer opacity, 0–100. */
+  radar_opacity?: number | undefined;
+  /** Smoothed radar edges (the source's `smooth` option). */
+  smooth?: boolean | undefined;
+  /** Separate colors for snow. */
+  snow_colors?: boolean | undefined;
+
+  autoplay?: boolean | undefined;
+  /** Milliseconds each frame is shown. */
+  frame_delay?: number | undefined;
+  /** Extra milliseconds to hold the newest frame before looping. */
+  end_pause?: number | undefined;
+  /** Add short-term forecast frames when the radar source offers them. */
+  show_forecast?: boolean | undefined;
+
+  show_controls?: boolean | undefined;
+  show_timestamp?: boolean | undefined;
+  show_legend?: boolean | undefined;
+  show_home_marker?: boolean | undefined;
+  /** Entities drawn as markers (person, device_tracker, zone …). */
+  marker_entities?: string[] | undefined;
+  show_marker_names?: boolean | undefined;
+
+  /** Allow dragging and pinch / double-tap zoom on the map. */
+  interactive?: boolean | undefined;
+  show_zoom_controls?: boolean | undefined;
+
+  /** RainViewer-compatible weather-maps.json URL (e.g. a self-hosted mirror). Empty = RainViewer. */
+  source_url?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
