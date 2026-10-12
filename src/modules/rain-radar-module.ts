@@ -29,10 +29,12 @@ import {
   DEFAULT_FRAME_DELAY,
   DEFAULT_HEIGHT,
   DEFAULT_OPACITY,
+  DEFAULT_TIME_SPAN,
   DEFAULT_ZOOM,
   LOCATION_ENTITY_DOMAINS,
   MAX_ZOOM,
   MIN_ZOOM,
+  TIME_SPAN_OPTIONS,
   homeLatLng,
   resolveCenter,
 } from '../services/uc-rain-radar-service';
@@ -70,6 +72,7 @@ export class UltraRainRadarModule extends BaseUltraModule {
       frame_delay: DEFAULT_FRAME_DELAY,
       end_pause: DEFAULT_END_PAUSE,
       show_forecast: true,
+      time_span: DEFAULT_TIME_SPAN,
       show_controls: true,
       show_timestamp: true,
       show_legend: true,
@@ -465,6 +468,26 @@ export class UltraRainRadarModule extends BaseUltraModule {
     return html`
       <div class="settings-section">
         <div class="section-title">${t('animation_section', 'Animation')}</div>
+        ${this.renderSegmentedField(
+          t('time_span', 'Time span'),
+          t('time_span_desc', 'How far back the loop goes. RainViewer keeps about two hours.'),
+          String(m.time_span ?? DEFAULT_TIME_SPAN),
+          TIME_SPAN_OPTIONS.map(minutes => ({
+            value: String(minutes),
+            label:
+              minutes < 60
+                ? t('span_minutes', '{n} min').replace('{n}', String(minutes))
+                : t('span_hours', '{n} h').replace('{n}', (minutes / 60).toLocaleString(lang)),
+          })),
+          (next: string) => {
+            const minutes = Number(next);
+            updateModule({
+              time_span: Number.isFinite(minutes) && minutes > 0 ? minutes : DEFAULT_TIME_SPAN,
+            });
+            this.triggerPreviewUpdate();
+          },
+          4
+        )}
         ${this.renderFieldSection(
           t('autoplay', 'Play automatically'),
           t('autoplay_desc', 'Loop through the radar frames when the dashboard opens.'),

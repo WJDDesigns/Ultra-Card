@@ -28,6 +28,7 @@ import {
   baseMapFor,
   clampNumber,
   entityLatLng,
+  filterByTimeSpan,
   isDarkMode,
   latestObservedIndex,
   loadRadarFrames,
@@ -597,7 +598,7 @@ export class UcRainRadar extends LitElement {
       this._applyOpacity();
     }
 
-    const sourceKey = `${sourceUrlFor(m)}|${m.show_forecast !== false}`;
+    const sourceKey = `${sourceUrlFor(m)}|${m.show_forecast !== false}|${m.time_span ?? ''}`;
     if (sourceKey !== this._sourceKey) {
       this._sourceKey = sourceKey;
       this._loadFrames(true);
@@ -731,12 +732,13 @@ export class UcRainRadar extends LitElement {
       if (seq !== this._loadSeq || !this._map) return;
       const hostChanged = set.host !== this._host;
       this._host = set.host;
-      const keep = new Set(set.frames.map(f => f.path));
+      const frames = filterByTimeSpan(set.frames, m.time_span);
+      const keep = new Set(frames.map(f => f.path));
       this._dropLayers(path => hostChanged || !keep.has(path));
       const wasAtLatest = this._index >= latestObservedIndex(this._frames);
-      this._frames = set.frames;
-      if (!this._shownPath || wasAtLatest || this._index >= set.frames.length) {
-        this._index = latestObservedIndex(set.frames);
+      this._frames = frames;
+      if (!this._shownPath || wasAtLatest || this._index >= frames.length) {
+        this._index = latestObservedIndex(frames);
       }
       this._status = 'ready';
       this._showFrame(this._index);

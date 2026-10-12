@@ -9561,6 +9561,8 @@ export interface RainRadarModule extends BaseModule {
   end_pause?: number | undefined;
   /** Add short-term forecast frames when the radar source offers them. */
   show_forecast?: boolean | undefined;
+  /** Minutes of past radar to loop through (30–120). */
+  time_span?: number | undefined;
 
   show_controls?: boolean | undefined;
   show_timestamp?: boolean | undefined;

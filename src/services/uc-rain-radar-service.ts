@@ -30,6 +30,9 @@ export const DEFAULT_HEIGHT = 300;
 export const DEFAULT_OPACITY = 75;
 export const DEFAULT_FRAME_DELAY = 500;
 export const DEFAULT_END_PAUSE = 1500;
+/** Minutes of past radar in the loop. RainViewer's free API keeps about two hours. */
+export const DEFAULT_TIME_SPAN = 120;
+export const TIME_SPAN_OPTIONS = [30, 60, 90, 120] as const;
 /** How long a fetched frame list is reused. New radar frames arrive every 10 minutes. */
 export const FRAMES_TTL_MS = 5 * 60 * 1000;
 
@@ -222,6 +225,19 @@ export function latestObservedIndex(frames: readonly RadarFrame[]): number {
     if (frames[i]?.forecast === false) return i;
   }
   return Math.max(0, frames.length - 1);
+}
+
+/**
+ * Keep only the past frames inside the last `minutes` (counted back from the
+ * newest observed frame, so the window doesn't shrink while data is a few
+ * minutes old). Forecast frames are always kept.
+ */
+export function filterByTimeSpan(frames: readonly RadarFrame[], minutes: unknown): RadarFrame[] {
+  const span = clampNumber(minutes, 10, 24 * 60, DEFAULT_TIME_SPAN);
+  const newest = frames[latestObservedIndex(frames)];
+  if (!newest || newest.forecast) return [...frames];
+  const cutoff = newest.time - span * 60;
+  return frames.filter(f => f.forecast || f.time >= cutoff);
 }
 
 /** Signed whole minutes from now to a frame (negative = past). */

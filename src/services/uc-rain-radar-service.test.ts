@@ -6,6 +6,7 @@ import {
   RAINVIEWER_MAX_NATIVE_ZOOM,
   clampNumber,
   clearRadarCache,
+  filterByTimeSpan,
   homeLatLng,
   latestObservedIndex,
   loadRadarFrames,
@@ -163,5 +164,32 @@ describe('rain radar service', () => {
     await expect(loadRadarFrames('https://y/maps.json', true, 1, bad)).rejects.toThrow();
     const good = vi.fn(async () => ({ ok: true, json: async () => PAYLOAD }));
     await expect(loadRadarFrames('https://y/maps.json', true, 2, good)).resolves.toBeTruthy();
+  });
+});
+
+describe('filterByTimeSpan', () => {
+  const frames = [0, 1, 2, 3, 4, 5, 6].map(i => ({
+    time: 10000 + i * 600,
+    path: `/p${i}`,
+    forecast: i >= 5,
+  }));
+
+  it('keeps past frames within the span of the newest observed frame plus all forecast', () => {
+    // Newest observed frame is index 4 (time 12400); 30 min back = 10600.
+    expect(filterByTimeSpan(frames, 30).map(f => f.path)).toEqual([
+      '/p1',
+      '/p2',
+      '/p3',
+      '/p4',
+      '/p5',
+      '/p6',
+    ]);
+    expect(filterByTimeSpan(frames, 10).map(f => f.path)).toEqual(['/p3', '/p4', '/p5', '/p6']);
+  });
+
+  it('defaults to two hours and ignores junk', () => {
+    expect(filterByTimeSpan(frames, undefined)).toHaveLength(7);
+    expect(filterByTimeSpan(frames, 'abc')).toHaveLength(7);
+    expect(filterByTimeSpan([], 30)).toEqual([]);
   });
 });
