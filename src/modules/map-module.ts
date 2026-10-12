@@ -1576,6 +1576,42 @@ export class UltraMapModule extends BaseUltraModule {
     `, module, hass);
   }
 
+  /**
+   * Keyless street-map tiles. The standard style uses Esri's public street map:
+   * tile.openstreetmap.org answers Home Assistant dashboard requests with a 403
+   * "Access blocked" tile. Every layer sends the dashboard origin as Referer,
+   * since HA's page sends none and community tile servers require one.
+   */
+  private createStreetTileLayer(mapType: string): L.TileLayer {
+    const common = {
+      detectRetina: true,
+      keepBuffer: 2,
+      updateWhenZooming: false,
+      updateWhenIdle: true,
+      referrerPolicy: 'strict-origin-when-cross-origin' as const,
+    };
+    const osmAttribution =
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    const communityStyles: Record<string, string> = {
+      cycle: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+      transport: 'https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png',
+      humanitarian: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    };
+    const communityUrl = communityStyles[mapType];
+    if (communityUrl) {
+      return L.tileLayer(communityUrl, { ...common, attribution: osmAttribution, maxZoom: 19 });
+    }
+    return L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      {
+        ...common,
+        attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>',
+        maxZoom: 19,
+        maxNativeZoom: 18,
+      }
+    );
+  }
+
   private initializeLeafletMap(
     container: HTMLElement,
     mapId: string,
@@ -1704,23 +1740,7 @@ export class UltraMapModule extends BaseUltraModule {
           updateWhenIdle: true,
         });
       } else {
-        // OpenStreetMap with retina support
-        const osmStyles: Record<string, string> = {
-          standard: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          cycle: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-          transport: 'https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png',
-          humanitarian: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-        };
-        const osmStyle = mapType === 'roadmap' ? 'standard' : mapType;
-        tileLayer = L.tileLayer(osmStyles[osmStyle] || osmStyles.standard, {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-          detectRetina: true,
-          keepBuffer: 2,
-          updateWhenZooming: false,
-          updateWhenIdle: true,
-        });
+        tileLayer = this.createStreetTileLayer(mapType);
       }
 
       tileLayer.addTo(map);
@@ -1885,22 +1905,7 @@ export class UltraMapModule extends BaseUltraModule {
             updateWhenIdle: true,
           });
         } else {
-          const osmStyles: Record<string, string> = {
-            standard: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            cycle: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-            transport: 'https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png',
-            humanitarian: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-          };
-          const osmStyle = mapType === 'roadmap' ? 'standard' : mapType;
-          newTileLayer = L.tileLayer(osmStyles[osmStyle] || osmStyles.standard, {
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 19,
-            detectRetina: true,
-            keepBuffer: 2,
-            updateWhenZooming: false,
-            updateWhenIdle: true,
-          });
+          newTileLayer = this.createStreetTileLayer(mapType);
         }
 
         newTileLayer.addTo(map);
