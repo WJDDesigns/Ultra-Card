@@ -18,8 +18,10 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import type {
   CardModule,
   RainRadarCenterMode,
+  RainRadarMapProvider,
   RainRadarMapStyle,
   RainRadarModule,
+  RainRadarSource,
   UltraCardConfig,
 } from '../types';
 import { localize } from '../localize/localize';
@@ -82,6 +84,11 @@ export class UltraRainRadarModule extends BaseUltraModule {
       interactive: false,
       show_zoom_controls: false,
       source_url: '',
+      radar_source: 'rainviewer',
+      openweather_api_key: '',
+      show_fullscreen: true,
+      map_provider: 'esri',
+      map_api_key: '',
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
@@ -262,9 +269,54 @@ export class UltraRainRadarModule extends BaseUltraModule {
   ): TemplateResult {
     const t = (key: string, fallback: string) =>
       localize(`editor.rain_radar.${key}`, lang, fallback);
+    const source: RainRadarSource = m.radar_source === 'openweather' ? 'openweather' : 'rainviewer';
+    const owm = source === 'openweather';
+    const hasKey = !!(m.openweather_api_key || '').trim();
     return html`
       <div class="settings-section">
         <div class="section-title">${t('map_section', 'Map and radar')}</div>
+        ${this.renderSegmentedField(
+          t('radar_source', 'Radar source'),
+          t(
+            'radar_source_desc',
+            'RainViewer is free and needs no account. OpenWeather uses your own API key.'
+          ),
+          source,
+          [
+            { value: 'rainviewer', label: 'RainViewer', icon: 'mdi:radar' },
+            { value: 'openweather', label: 'OpenWeather', icon: 'mdi:weather-cloudy' },
+          ],
+          (next: string) => {
+            updateModule({ radar_source: (next || 'rainviewer') as RainRadarSource });
+            this.triggerPreviewUpdate();
+          }
+        )}
+        ${
+          owm
+            ? this.renderFieldSection(
+                t('openweather_api_key', 'OpenWeather API key'),
+                hasKey
+                  ? t(
+                      'openweather_api_key_desc',
+                      'From your openweathermap.org account. Animated history and forecast need a plan with Weather Maps 2.0; other keys show current rain only. The key is saved in this dashboard, so anyone who can edit it can see the key.'
+                    )
+                  : t(
+                      'openweather_api_key_missing',
+                      'Enter your key from openweathermap.org. Until then the radar uses RainViewer.'
+                    ),
+                hass,
+                { openweather_api_key: m.openweather_api_key || '' },
+                [{ name: 'openweather_api_key', selector: { text: { type: 'password' } } }],
+                (e: CustomEvent) => {
+                  updateModule({
+                    openweather_api_key: (e.detail.value?.openweather_api_key ?? '').trim(),
+                  });
+                  this.triggerPreviewUpdate();
+                }
+              )
+            : nothing
+        }
+        ${this._renderMapProvider(m, hass, updateModule, t)}
         ${this.renderSegmentedField(
           t('map_style', 'Map style'),
           t('map_style_desc', 'Auto switches between light and dark with Home Assistant.'),
@@ -310,23 +362,95 @@ export class UltraRainRadarModule extends BaseUltraModule {
             'Add the next few forecast frames after "now" when the radar source offers them.'
           )
         )}
-        ${this._toggle(
-          hass,
-          updateModule,
-          'snow_colors',
-          m.snow_colors !== false,
-          t('snow_colors', 'Snow colors'),
-          t('snow_colors_desc', 'Show snow in its own colors.')
-        )}
-        ${this._toggle(
-          hass,
-          updateModule,
-          'smooth',
-          m.smooth !== false,
-          t('smooth', 'Smooth edges'),
-          t('smooth_desc', 'Soften the blocky edges of radar cells.')
-        )}
+        ${
+          owm
+            ? nothing
+            : html`${this._toggle(
+                hass,
+                updateModule,
+                'snow_colors',
+                m.snow_colors !== false,
+                t('snow_colors', 'Snow colors'),
+                t('snow_colors_desc', 'Show snow in its own colors.')
+              )}
+              ${this._toggle(
+                hass,
+                updateModule,
+                'smooth',
+                m.smooth !== false,
+                t('smooth', 'Smooth edges'),
+                t('smooth_desc', 'Soften the blocky edges of radar cells.')
+              )}`
+        }
       </div>
+    `;
+  }
+
+  private _renderMapProvider(
+    m: RainRadarModule,
+    hass: HomeAssistant,
+    updateModule: UpdateFn,
+    t: (key: string, fallback: string) => string
+  ): TemplateResult {
+    const provider: RainRadarMapProvider =
+      m.map_provider === 'google' || m.map_provider === 'mapbox' || m.map_provider === 'maptiler'
+        ? m.map_provider
+        : 'esri';
+    const keyed = provider !== 'esri';
+    const hasKey = !!(m.map_api_key || '').trim();
+    const help: Record<Exclude<RainRadarMapProvider, 'esri'>, string> = {
+      google: t(
+        'map_api_key_google',
+        'A Google Cloud API key with the Map Tiles API turned on. Google bills by map tile beyond its free monthly allowance.'
+      ),
+      mapbox: t(
+        'map_api_key_mapbox',
+        'A Mapbox access token (starts with pk.) from account.mapbox.com.'
+      ),
+      maptiler: t('map_api_key_maptiler', 'A MapTiler API key from cloud.maptiler.com.'),
+    };
+    return html`
+      ${this.renderSegmentedField(
+        t('map_provider', 'Map provider'),
+        t(
+          'map_provider_desc',
+          'Esri is free and needs no key. Google, Mapbox and MapTiler use your own key.'
+        ),
+        provider,
+        [
+          { value: 'esri', label: 'Esri', icon: 'mdi:map' },
+          { value: 'google', label: 'Google', icon: 'mdi:google-maps' },
+          { value: 'mapbox', label: 'Mapbox', icon: 'mdi:map-outline' },
+          { value: 'maptiler', label: 'MapTiler', icon: 'mdi:map-legend' },
+        ],
+        (next: string) => {
+          updateModule({ map_provider: (next || 'esri') as RainRadarMapProvider });
+          this.triggerPreviewUpdate();
+        }
+      )}
+      ${
+        keyed
+          ? this.renderFieldSection(
+              t('map_api_key', 'Map API key'),
+              hasKey
+                ? `${help[provider]} ${t(
+                    'map_api_key_note',
+                    'The key is saved in this dashboard, so anyone who can edit it can see the key. If the key is refused the map switches back to Esri.'
+                  )}`
+                : t(
+                    'map_api_key_missing',
+                    'Enter your key for this provider. Until then the map uses Esri.'
+                  ),
+              hass,
+              { map_api_key: m.map_api_key || '' },
+              [{ name: 'map_api_key', selector: { text: { type: 'password' } } }],
+              (e: CustomEvent) => {
+                updateModule({ map_api_key: (e.detail.value?.map_api_key ?? '').trim() });
+                this.triggerPreviewUpdate();
+              }
+            )
+          : nothing
+      }
     `;
   }
 
@@ -415,6 +539,12 @@ export class UltraRainRadarModule extends BaseUltraModule {
           t('show_legend', 'Intensity legend'),
           t('show_legend_desc', 'A small light-to-heavy color scale.'),
           m.show_legend !== false
+        ),
+        bool(
+          'show_fullscreen',
+          t('show_fullscreen', 'Full screen button'),
+          t('show_fullscreen_desc', 'A button that opens the map full screen, with pan and zoom.'),
+          m.show_fullscreen !== false
         ),
         bool(
           'show_home_marker',
@@ -565,20 +695,24 @@ export class UltraRainRadarModule extends BaseUltraModule {
           this.triggerPreviewUpdate();
         }
       )}
-      ${this.renderFieldSection(
-        t('source_url', 'Radar source URL'),
-        t(
-          'source_url_desc',
-          'Leave blank to use RainViewer (free, no key). Or a RainViewer-compatible weather-maps.json URL, such as a self-hosted mirror.'
-        ),
-        hass,
-        { source_url: m.source_url || '' },
-        [this.textField('source_url')],
-        (e: CustomEvent) => {
-          updateModule({ source_url: (e.detail.value?.source_url ?? '').trim() });
-          this.triggerPreviewUpdate();
-        }
-      )}
+      ${
+        m.radar_source === 'openweather'
+          ? nothing
+          : this.renderFieldSection(
+              t('source_url', 'Radar source URL'),
+              t(
+                'source_url_desc',
+                'Leave blank to use RainViewer (free, no key). Or a RainViewer-compatible weather-maps.json URL, such as a self-hosted mirror.'
+              ),
+              hass,
+              { source_url: m.source_url || '' },
+              [this.textField('source_url')],
+              (e: CustomEvent) => {
+                updateModule({ source_url: (e.detail.value?.source_url ?? '').trim() });
+                this.triggerPreviewUpdate();
+              }
+            )
+      }
     `;
   }
 

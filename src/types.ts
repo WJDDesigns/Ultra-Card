@@ -9,14 +9,7 @@ declare global {
      * `localStorage['ultra-card-module-preload']` accepts the same strings if this is unset.
      */
     __ultraCardModulePreload?:
-      | 'batched'
-      | 'full'
-      | 'minimal'
-      | 'off'
-      | 'none'
-      | 'parallel'
-      | 'default'
-      | undefined;
+      'batched' | 'full' | 'minimal' | 'off' | 'none' | 'parallel' | 'default' | undefined;
     /** Rollback: set false to eagerly import the editor at card bootstrap. */
     __ultraCardLazyEditor?: boolean | string | undefined;
     /** Rollback hint for docs / tooling (loaders always use dynamic import). */
@@ -26,14 +19,7 @@ declare global {
 
 // Action type definition (includes 'default' for smart resolution)
 export type ActionType =
-  | 'default'
-  | 'more-info'
-  | 'toggle'
-  | 'navigate'
-  | 'url'
-  | 'perform-action'
-  | 'assist'
-  | 'nothing';
+  'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
 
 // Unified Template Response (parsed from JSON template results)
 export interface UnifiedTemplateResponse {
@@ -444,13 +430,7 @@ export interface TextModule extends BaseModule {
 export interface SeparatorModule extends BaseModule {
   type: 'separator';
   separator_style?:
-    | 'line'
-    | 'double_line'
-    | 'dotted'
-    | 'double_dotted'
-    | 'shadow'
-    | 'blank'
-    | undefined;
+    'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank' | undefined;
   orientation?: 'horizontal' | 'vertical' | undefined;
   thickness?: number | undefined;
   width_percent?: number | string | undefined; // Percentage (e.g., "100%") or pixels (e.g., "200px")
@@ -536,13 +516,7 @@ export interface ImageModule extends BaseModule {
   image_height?: number | undefined;
   image_fit?: 'cover' | 'contain' | 'fill' | 'none' | undefined;
   single_click_action?:
-    | 'none'
-    | 'more-info'
-    | 'toggle'
-    | 'navigate'
-    | 'url'
-    | 'service'
-    | undefined;
+    'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   single_entity?: string | undefined;
   single_navigation_path?: string | undefined;
   single_url?: string | undefined;
@@ -784,13 +758,7 @@ export interface BarModule extends BaseModule {
 
   // Percentage Calculation
   percentage_type?:
-    | 'entity'
-    | 'attribute'
-    | 'difference'
-    | 'template'
-    | 'time_progress'
-    | 'range'
-    | undefined;
+    'entity' | 'attribute' | 'difference' | 'template' | 'time_progress' | 'range' | undefined;
   percentage_entity?: string | undefined;
 
   // Entity Attribute mode
@@ -1479,13 +1447,7 @@ export interface IconConfig {
   // Legacy actions (for backward compatibility)
   click_action?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   double_click_action?:
-    | 'none'
-    | 'more-info'
-    | 'toggle'
-    | 'navigate'
-    | 'url'
-    | 'service'
-    | undefined;
+    'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   hold_action_legacy?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   navigation_path?: string | undefined;
   url?: string | undefined;
@@ -1584,13 +1546,7 @@ export interface HorizontalModule extends BaseModule {
   type: 'horizontal';
   modules: CardModule[];
   alignment?:
-    | 'left'
-    | 'center'
-    | 'right'
-    | 'space-between'
-    | 'space-around'
-    | 'justify'
-    | undefined;
+    'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'justify' | undefined;
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch' | 'baseline' | undefined;
   gap?: number | undefined;
   gap_unit?: 'px' | 'rem' | 'em' | '%' | 'vw' | 'vh' | undefined;
@@ -1802,8 +1758,7 @@ export interface GridLayoutModule extends BaseModule {
   mobile_columns?: number | undefined;
   /** Per-child spans keyed by child module id */
   item_spans?:
-    | Record<string, { columns?: number | undefined; rows?: number | undefined }>
-    | undefined;
+    Record<string, { columns?: number | undefined; rows?: number | undefined }> | undefined;
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
   double_tap_action?: ModuleActionConfig | undefined;
@@ -2403,7 +2358,8 @@ export interface SliderBar {
   overlay_icon_position?: 'top' | 'middle' | 'bottom' | undefined;
 
   // Unified content positioning for all layout modes (deprecated, use individual positions below)
-  content_position?: // Horizontal Overlay: Left, Center, Right
+  content_position?:
+    // Horizontal Overlay: Left, Center, Right
     | 'left'
     | 'center'
     | 'right'
@@ -3284,18 +3240,7 @@ export interface GraphsModule extends BaseModule {
 
   // Time period
   time_period:
-    | 'today'
-    | '1h'
-    | '3h'
-    | '6h'
-    | '12h'
-    | '24h'
-    | '2d'
-    | '7d'
-    | '30d'
-    | '90d'
-    | '365d'
-    | 'custom';
+    'today' | '1h' | '3h' | '6h' | '12h' | '24h' | '2d' | '7d' | '30d' | '90d' | '365d' | 'custom';
   custom_time_start?: string | undefined;
   custom_time_end?: string | undefined;
 
@@ -3348,16 +3293,7 @@ export interface GraphsModule extends BaseModule {
 
   // Data configuration
   data_aggregation?:
-    | 'mean'
-    | 'sum'
-    | 'min'
-    | 'max'
-    | 'median'
-    | 'first'
-    | 'last'
-    | 'count'
-    | 'delta'
-    | undefined;
+    'mean' | 'sum' | 'min' | 'max' | 'median' | 'first' | 'last' | 'count' | 'delta' | undefined;
   data_points_limit?: number | undefined;
   smooth_curves?: boolean | undefined;
 
@@ -3411,15 +3347,7 @@ export interface GraphsModule extends BaseModule {
   // Heatmap
   cell_padding?: number | undefined;
   color_scheme?:
-    | 'viridis'
-    | 'plasma'
-    | 'inferno'
-    | 'magma'
-    | 'blues'
-    | 'reds'
-    | 'greens'
-    | 'greys'
-    | undefined;
+    'viridis' | 'plasma' | 'inferno' | 'magma' | 'blues' | 'reds' | 'greens' | 'greys' | undefined;
   show_values?: boolean | undefined;
   value_format?: string | undefined;
 
@@ -3654,13 +3582,7 @@ export interface LightModule extends BaseModule {
   // Display Configuration
   layout?: 'buttons' | 'grid' | undefined; // How to display presets
   button_alignment?:
-    | 'left'
-    | 'center'
-    | 'right'
-    | 'space-between'
-    | 'space-around'
-    | 'space-evenly'
-    | undefined; // Button alignment
+    'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'space-evenly' | undefined; // Button alignment
   allow_wrapping?: boolean | undefined; // Allow buttons to wrap to next line
   button_gap?: number | undefined; // Gap between buttons in rem
   columns?: number | undefined; // Number of columns for grid layout
@@ -4268,13 +4190,7 @@ export interface QrCodeModule extends BaseModule {
   qr_margin?: number | undefined; // Quiet zone in modules (0–10), default 1; named to avoid BaseModule.margin
   // Style (qr-code-styling)
   dot_style?:
-    | 'square'
-    | 'dots'
-    | 'rounded'
-    | 'extra-rounded'
-    | 'classy'
-    | 'classy-rounded'
-    | undefined;
+    'square' | 'dots' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded' | undefined;
   corner_square_style?: 'square' | 'extra-rounded' | 'dot' | undefined;
   corner_dot_style?: 'square' | 'dot' | undefined;
   // Logo overlay
@@ -4490,12 +4406,7 @@ export interface ToggleModule extends BaseModule {
   toggle_points: TogglePoint[];
   // Visual style
   visual_style:
-    | 'ios_toggle'
-    | 'segmented'
-    | 'button_group'
-    | 'slider_track'
-    | 'minimal'
-    | 'timeline';
+    'ios_toggle' | 'segmented' | 'button_group' | 'slider_track' | 'minimal' | 'timeline';
   // Tracking
   tracking_entity?: string | undefined; // Entity to watch for state changes
   // Display
@@ -6193,11 +6104,7 @@ export interface BatteryMonitorModule extends BaseModule {
 export type AutoEntityListRowStyle = 'compact' | 'detailed' | 'slim' | 'card' | 'theme';
 export type AutoEntityListSortBy = 'name' | 'last_changed' | 'state' | 'domain';
 export type AutoEntityListStateOperator =
-  | 'equals'
-  | 'not_equals'
-  | 'contains'
-  | 'greater_than'
-  | 'less_than';
+  'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
 
 export interface AutoEntityListPinnedEntity {
   id: string;
@@ -7863,22 +7770,11 @@ export type SportsLeague =
 
 // Display style options
 export type SportsDisplayStyle =
-  | 'scorecard'
-  | 'upcoming'
-  | 'compact'
-  | 'detailed'
-  | 'mini'
-  | 'logo_bg';
+  'scorecard' | 'upcoming' | 'compact' | 'detailed' | 'mini' | 'logo_bg';
 
 // Game status types
 export type SportsGameStatus =
-  | 'scheduled'
-  | 'in_progress'
-  | 'halftime'
-  | 'final'
-  | 'delayed'
-  | 'postponed'
-  | 'cancelled';
+  'scheduled' | 'in_progress' | 'halftime' | 'final' | 'delayed' | 'postponed' | 'cancelled';
 
 // Normalized game data interface (used by both HA sensor and ESPN API)
 export interface SportsGameData {
@@ -8103,13 +7999,7 @@ export type GridPaginationStyle = 'numbers' | 'buttons' | 'both';
 
 // Grid load animations
 export type GridLoadAnimation =
-  | 'fadeIn'
-  | 'slideUp'
-  | 'zoomIn'
-  | 'slideDown'
-  | 'slideLeft'
-  | 'slideRight'
-  | 'none';
+  'fadeIn' | 'slideUp' | 'zoomIn' | 'slideDown' | 'slideLeft' | 'slideRight' | 'none';
 
 // Metro size options
 export type MetroSize = 'small' | 'medium' | 'large';
@@ -9347,13 +9237,7 @@ export interface FloorplanModule extends BaseModule {
 export type IrrigationRunMode = 'auto' | 'toggle' | 'service' | 'custom';
 
 export type IrrigationServicePreset =
-  | 'auto'
-  | 'opensprinkler'
-  | 'rachio'
-  | 'irrigation_unlimited'
-  | 'bhyve'
-  | 'valve'
-  | 'switch';
+  'auto' | 'opensprinkler' | 'rachio' | 'irrigation_unlimited' | 'bhyve' | 'valve' | 'switch';
 
 export type IrrigationLayout = 'full' | 'compact';
 
@@ -9531,6 +9415,12 @@ export type RainRadarCenterMode = 'home' | 'entity' | 'manual';
 /** Base map under the radar. `auto` follows Home Assistant's light / dark mode. */
 export type RainRadarMapStyle = 'auto' | 'light' | 'dark' | 'streets' | 'satellite';
 
+/** Who draws the map under the radar. Everything but `esri` needs the user's own key. */
+export type RainRadarMapProvider = 'esri' | 'google' | 'mapbox' | 'maptiler';
+
+/** Where radar frames come from. `openweather` needs the user's own API key. */
+export type RainRadarSource = 'rainviewer' | 'openweather';
+
 export interface RainRadarModule extends BaseModule {
   type: 'rain_radar';
 
@@ -9578,6 +9468,16 @@ export interface RainRadarModule extends BaseModule {
 
   /** RainViewer-compatible weather-maps.json URL (e.g. a self-hosted mirror). Empty = RainViewer. */
   source_url?: string | undefined;
+  /** Radar provider. Defaults to RainViewer; OpenWeather is used only once a key is set. */
+  radar_source?: RainRadarSource | undefined;
+  /** The user's own OpenWeather API key (stored in the dashboard config). */
+  openweather_api_key?: string | undefined;
+  /** Show a button that opens the map full screen. */
+  show_fullscreen?: boolean | undefined;
+  /** Base map provider. Defaults to Esri (keyless); others are used only once a key is set. */
+  map_provider?: RainRadarMapProvider | undefined;
+  /** The user's own key for the chosen map provider (stored in the dashboard config). */
+  map_api_key?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

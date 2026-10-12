@@ -6043,7 +6043,24 @@
       "unavailable": "Radar unavailable, retrying soon",
       "pause": "Pause",
       "play": "Play",
-      "timeline": "Radar time"
+      "timeline": "Radar time",
+      "radar_source": "Radar source",
+      "radar_source_desc": "RainViewer is free and needs no account. OpenWeather uses your own API key.",
+      "openweather_api_key": "OpenWeather API key",
+      "openweather_api_key_desc": "From your openweathermap.org account. Animated history and forecast need a plan with Weather Maps 2.0; other keys show current rain only. The key is saved in this dashboard, so anyone who can edit it can see the key.",
+      "openweather_api_key_missing": "Enter your key from openweathermap.org. Until then the radar uses RainViewer.",
+      "show_fullscreen": "Full screen button",
+      "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom.",
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen",
+      "map_provider": "Map provider",
+      "map_provider_desc": "Esri is free and needs no key. Google, Mapbox and MapTiler use your own key.",
+      "map_api_key": "Map API key",
+      "map_api_key_google": "A Google Cloud API key with the Map Tiles API turned on. Google bills by map tile beyond its free monthly allowance.",
+      "map_api_key_mapbox": "A Mapbox access token (starts with pk.) from account.mapbox.com.",
+      "map_api_key_maptiler": "A MapTiler API key from cloud.maptiler.com.",
+      "map_api_key_note": "The key is saved in this dashboard, so anyone who can edit it can see the key. If the key is refused the map switches back to Esri.",
+      "map_api_key_missing": "Enter your key for this provider. Until then the map uses Esri."
     }
   },
   "hub": {
