@@ -45,11 +45,7 @@ import {
 const LEGEND_GRADIENT =
   'linear-gradient(90deg, #9be1ff 0%, #4aa8ff 18%, #1f62e0 36%, #0b2f9f 50%, #ffe500 62%, #ff9a00 74%, #ff3b1f 86%, #d1008f 100%)';
 
-/**
- * Home Assistant's page sends no Referer to other sites, and the OpenStreetMap
- * and CARTO tile servers answer such requests with an "Access blocked" tile.
- * Sending the dashboard's origin satisfies their usage policies.
- */
+/** Home Assistant's page sends no Referer to other sites; send the origin so tile servers can attribute usage. */
 const TILE_REFERRER_POLICY = 'strict-origin-when-cross-origin' as const;
 const RETRY_MS = 60 * 1000;
 /** Longest we wait for the next frame's tiles before moving on anyway. */
@@ -82,6 +78,7 @@ export class UcRainRadar extends LitElement {
 
   private _map: L.Map | undefined;
   private _baseLayer: L.TileLayer | undefined;
+  private _labelsLayer: L.TileLayer | undefined;
   private _baseKey = '';
   private _viewKey = '';
   private _optionsKey = '';
@@ -585,15 +582,24 @@ export class UcRainRadar extends LitElement {
     if (style !== this._baseKey) {
       this._baseKey = style;
       if (this._baseLayer) map.removeLayer(this._baseLayer);
+      if (this._labelsLayer) map.removeLayer(this._labelsLayer);
+      this._labelsLayer = undefined;
       const base = baseMapFor(style);
       this._baseLayer = L.tileLayer(base.url, {
         attribution: base.attribution,
         maxZoom: base.maxZoom,
-        ...(base.subdomains ? { subdomains: base.subdomains } : {}),
         zIndex: 1,
         keepBuffer: 2,
         referrerPolicy: TILE_REFERRER_POLICY,
       }).addTo(map);
+      if (base.labelsUrl) {
+        this._labelsLayer = L.tileLayer(base.labelsUrl, {
+          maxZoom: base.maxZoom,
+          zIndex: 20,
+          keepBuffer: 2,
+          referrerPolicy: TILE_REFERRER_POLICY,
+        }).addTo(map);
+      }
     }
 
     const radarKey = `${m.smooth !== false}|${m.snow_colors !== false}|${maxNativeZoomFor(m)}`;

@@ -61,36 +61,45 @@ export interface LatLng {
 
 export interface BaseMapStyle {
   url: string;
+  /** Optional place-name layer drawn above the radar. */
+  labelsUrl?: string;
   attribution: string;
-  subdomains?: string;
   maxZoom: number;
 }
 
-const CARTO_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services';
+const ESRI_ATTRIBUTION =
+  'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a>';
 
+/**
+ * All base maps come from Esri's public ArcGIS tile services: keyless and they
+ * accept requests from a Home Assistant page. CARTO now requires an API key and
+ * the OpenStreetMap tile servers reject dashboard requests ("Access blocked"),
+ * so neither is used. Light, dark and satellite get a separate labels layer
+ * drawn above the radar so place names stay readable through the rain.
+ */
 const BASE_MAPS: Record<Exclude<RainRadarMapStyle, 'auto'>, BaseMapStyle> = {
   light: {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: CARTO_ATTRIBUTION,
-    subdomains: 'abcd',
-    maxZoom: 19,
+    url: `${ESRI}/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
+    labelsUrl: `${ESRI}/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}`,
+    attribution: ESRI_ATTRIBUTION,
+    maxZoom: 16,
   },
   dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: CARTO_ATTRIBUTION,
-    subdomains: 'abcd',
-    maxZoom: 19,
+    url: `${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
+    labelsUrl: `${ESRI}/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`,
+    attribution: ESRI_ATTRIBUTION,
+    maxZoom: 16,
   },
   streets: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-    maxZoom: 19,
+    url: `${ESRI}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`,
+    attribution: ESRI_ATTRIBUTION,
+    maxZoom: 18,
   },
   satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Tiles &copy; Esri',
+    url: `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+    labelsUrl: `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`,
+    attribution: ESRI_ATTRIBUTION,
     maxZoom: 18,
   },
 };
