@@ -20,6 +20,7 @@ import type {
   RainRadarCenterMode,
   RainRadarMapStyle,
   RainRadarModule,
+  RainRadarSource,
   UltraCardConfig,
 } from '../types';
 import { localize } from '../localize/localize';
@@ -82,6 +83,9 @@ export class UltraRainRadarModule extends BaseUltraModule {
       interactive: false,
       show_zoom_controls: false,
       source_url: '',
+      radar_source: 'rainviewer',
+      openweather_api_key: '',
+      show_fullscreen: true,
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
@@ -262,9 +266,53 @@ export class UltraRainRadarModule extends BaseUltraModule {
   ): TemplateResult {
     const t = (key: string, fallback: string) =>
       localize(`editor.rain_radar.${key}`, lang, fallback);
+    const source: RainRadarSource = m.radar_source === 'openweather' ? 'openweather' : 'rainviewer';
+    const owm = source === 'openweather';
+    const hasKey = !!(m.openweather_api_key || '').trim();
     return html`
       <div class="settings-section">
         <div class="section-title">${t('map_section', 'Map and radar')}</div>
+        ${this.renderSegmentedField(
+          t('radar_source', 'Radar source'),
+          t(
+            'radar_source_desc',
+            'RainViewer is free and needs no account. OpenWeather uses your own API key.'
+          ),
+          source,
+          [
+            { value: 'rainviewer', label: 'RainViewer', icon: 'mdi:radar' },
+            { value: 'openweather', label: 'OpenWeather', icon: 'mdi:weather-cloudy' },
+          ],
+          (next: string) => {
+            updateModule({ radar_source: (next || 'rainviewer') as RainRadarSource });
+            this.triggerPreviewUpdate();
+          }
+        )}
+        ${
+          owm
+            ? this.renderFieldSection(
+                t('openweather_api_key', 'OpenWeather API key'),
+                hasKey
+                  ? t(
+                      'openweather_api_key_desc',
+                      'From your openweathermap.org account. Animated history and forecast need a plan with Weather Maps 2.0; other keys show current rain only. The key is saved in this dashboard, so anyone who can edit it can see the key.'
+                    )
+                  : t(
+                      'openweather_api_key_missing',
+                      'Enter your key from openweathermap.org. Until then the radar uses RainViewer.'
+                    ),
+                hass,
+                { openweather_api_key: m.openweather_api_key || '' },
+                [{ name: 'openweather_api_key', selector: { text: { type: 'password' } } }],
+                (e: CustomEvent) => {
+                  updateModule({
+                    openweather_api_key: (e.detail.value?.openweather_api_key ?? '').trim(),
+                  });
+                  this.triggerPreviewUpdate();
+                }
+              )
+            : nothing
+        }
         ${this.renderSegmentedField(
           t('map_style', 'Map style'),
           t('map_style_desc', 'Auto switches between light and dark with Home Assistant.'),
@@ -310,22 +358,26 @@ export class UltraRainRadarModule extends BaseUltraModule {
             'Add the next few forecast frames after "now" when the radar source offers them.'
           )
         )}
-        ${this._toggle(
-          hass,
-          updateModule,
-          'snow_colors',
-          m.snow_colors !== false,
-          t('snow_colors', 'Snow colors'),
-          t('snow_colors_desc', 'Show snow in its own colors.')
-        )}
-        ${this._toggle(
-          hass,
-          updateModule,
-          'smooth',
-          m.smooth !== false,
-          t('smooth', 'Smooth edges'),
-          t('smooth_desc', 'Soften the blocky edges of radar cells.')
-        )}
+        ${
+          owm
+            ? nothing
+            : html`${this._toggle(
+                hass,
+                updateModule,
+                'snow_colors',
+                m.snow_colors !== false,
+                t('snow_colors', 'Snow colors'),
+                t('snow_colors_desc', 'Show snow in its own colors.')
+              )}
+              ${this._toggle(
+                hass,
+                updateModule,
+                'smooth',
+                m.smooth !== false,
+                t('smooth', 'Smooth edges'),
+                t('smooth_desc', 'Soften the blocky edges of radar cells.')
+              )}`
+        }
       </div>
     `;
   }
@@ -415,6 +467,12 @@ export class UltraRainRadarModule extends BaseUltraModule {
           t('show_legend', 'Intensity legend'),
           t('show_legend_desc', 'A small light-to-heavy color scale.'),
           m.show_legend !== false
+        ),
+        bool(
+          'show_fullscreen',
+          t('show_fullscreen', 'Full screen button'),
+          t('show_fullscreen_desc', 'A button that opens the map full screen, with pan and zoom.'),
+          m.show_fullscreen !== false
         ),
         bool(
           'show_home_marker',
@@ -565,20 +623,24 @@ export class UltraRainRadarModule extends BaseUltraModule {
           this.triggerPreviewUpdate();
         }
       )}
-      ${this.renderFieldSection(
-        t('source_url', 'Radar source URL'),
-        t(
-          'source_url_desc',
-          'Leave blank to use RainViewer (free, no key). Or a RainViewer-compatible weather-maps.json URL, such as a self-hosted mirror.'
-        ),
-        hass,
-        { source_url: m.source_url || '' },
-        [this.textField('source_url')],
-        (e: CustomEvent) => {
-          updateModule({ source_url: (e.detail.value?.source_url ?? '').trim() });
-          this.triggerPreviewUpdate();
-        }
-      )}
+      ${
+        m.radar_source === 'openweather'
+          ? nothing
+          : this.renderFieldSection(
+              t('source_url', 'Radar source URL'),
+              t(
+                'source_url_desc',
+                'Leave blank to use RainViewer (free, no key). Or a RainViewer-compatible weather-maps.json URL, such as a self-hosted mirror.'
+              ),
+              hass,
+              { source_url: m.source_url || '' },
+              [this.textField('source_url')],
+              (e: CustomEvent) => {
+                updateModule({ source_url: (e.detail.value?.source_url ?? '').trim() });
+                this.triggerPreviewUpdate();
+              }
+            )
+      }
     `;
   }
 

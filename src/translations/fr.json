@@ -6076,7 +6076,16 @@
       "unavailable": "Radar unavailable, retrying soon",
       "pause": "Pause",
       "play": "Play",
-      "timeline": "Radar time"
+      "timeline": "Radar time",
+      "radar_source": "Radar source",
+      "radar_source_desc": "RainViewer is free and needs no account. OpenWeather uses your own API key.",
+      "openweather_api_key": "OpenWeather API key",
+      "openweather_api_key_desc": "From your openweathermap.org account. Animated history and forecast need a plan with Weather Maps 2.0; other keys show current rain only. The key is saved in this dashboard, so anyone who can edit it can see the key.",
+      "openweather_api_key_missing": "Enter your key from openweathermap.org. Until then the radar uses RainViewer.",
+      "show_fullscreen": "Full screen button",
+      "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom.",
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen"
     }
   },
   "hub": {

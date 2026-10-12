@@ -7,7 +7,13 @@ import {
   clampNumber,
   clearRadarCache,
   filterByTimeSpan,
+  frameTileUrl,
   homeLatLng,
+  loadOpenWeatherFrames,
+  openWeatherFrames,
+  openWeatherKey,
+  radarSourceFor,
+  sourceKeyFor,
   latestObservedIndex,
   loadRadarFrames,
   maxNativeZoomFor,
@@ -191,5 +197,79 @@ describe('filterByTimeSpan', () => {
     expect(filterByTimeSpan(frames, undefined)).toHaveLength(7);
     expect(filterByTimeSpan(frames, 'abc')).toHaveLength(7);
     expect(filterByTimeSpan([], 30)).toEqual([]);
+  });
+});
+
+describe('OpenWeather source', () => {
+  afterEach(() => clearRadarCache());
+  const KEY = 'abcdef0123456789abcdef0123456789';
+
+  it('is used only when chosen and a valid key is set', () => {
+    expect(radarSourceFor({})).toBe('rainviewer');
+    expect(radarSourceFor({ radar_source: 'openweather' })).toBe('rainviewer');
+    expect(
+      radarSourceFor({ radar_source: 'openweather', openweather_api_key: ' x"><script ' })
+    ).toBe('rainviewer');
+    expect(radarSourceFor({ radar_source: 'openweather', openweather_api_key: ` ${KEY} ` })).toBe(
+      'openweather'
+    );
+    expect(openWeatherKey({ openweather_api_key: ` ${KEY} ` })).toBe(KEY);
+    expect(sourceKeyFor({ radar_source: 'openweather', openweather_api_key: KEY })).toContain(
+      'owm:'
+    );
+  });
+
+  it('builds hourly frames back over the span plus forecast hours', () => {
+    const now = Date.UTC(2026, 9, 12, 12, 40);
+    const hour = Date.UTC(2026, 9, 12, 12) / 1000;
+    const frames = openWeatherFrames(now, 120, true);
+    expect(frames.map(f => f.time - hour)).toEqual([-7200, -3600, 0, 3600, 7200, 10800]);
+    expect(frames.map(f => f.forecast)).toEqual([false, false, false, true, true, true]);
+    expect(openWeatherFrames(now, 30, false)).toHaveLength(2);
+  });
+
+  it('builds tile URLs for Weather Maps 2.0 and the free 1.0 layer', () => {
+    expect(
+      frameTileUrl(
+        { host: KEY, provider: 'openweather2' },
+        { path: '1760270400' },
+        {
+          smooth: true,
+          snow: true,
+        }
+      )
+    ).toBe(
+      `https://maps.openweathermap.org/maps/2.0/weather/PR0/{z}/{x}/{y}?appid=${KEY}&date=1760270400&opacity=1`
+    );
+    expect(
+      frameTileUrl(
+        { host: KEY, provider: 'openweather1' },
+        { path: 'now' },
+        {
+          smooth: true,
+          snow: true,
+        }
+      )
+    ).toBe(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${KEY}`);
+  });
+
+  it('falls back to the current-only layer, and fails when the key works for neither', async () => {
+    const now = Date.UTC(2026, 9, 12, 12, 40);
+    const v1Only = vi.fn(async (url: string) => url.includes('tile.openweathermap.org'));
+    const set = await loadOpenWeatherFrames(KEY, true, 120, now, v1Only);
+    expect(set.provider).toBe('openweather1');
+    expect(set.frames).toHaveLength(1);
+    expect(v1Only).toHaveBeenCalledTimes(2);
+    // Reused without probing again.
+    await loadOpenWeatherFrames(KEY, true, 120, now + 1000, v1Only);
+    expect(v1Only).toHaveBeenCalledTimes(2);
+
+    clearRadarCache();
+    const v2 = await loadOpenWeatherFrames(KEY, true, 60, now, async () => true);
+    expect(v2.provider).toBe('openweather2');
+    expect(v2.frames.length).toBeGreaterThan(2);
+
+    clearRadarCache();
+    await expect(loadOpenWeatherFrames(KEY, true, 60, now, async () => false)).rejects.toThrow();
   });
 });

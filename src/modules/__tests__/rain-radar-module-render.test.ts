@@ -53,7 +53,22 @@ describe('Rain Radar module', () => {
     const wrap = el.shadowRoot!.querySelector('.wrap') as HTMLElement;
     expect(wrap.style.height).toBe('260px');
     expect(el.shadowRoot!.textContent).toContain('Rain near home');
+    expect(el.shadowRoot!.querySelector('button.fullscreen')).toBeTruthy();
     host.remove();
+  });
+
+  it('asks for an OpenWeather key only when OpenWeather is picked', () => {
+    const handler = getModuleRegistry().getModule(TYPE)!;
+    const base = handler.createDefault('rr-5') as RainRadarModule;
+    const rv = renderToHost(handler.renderGeneralTab(base, homeHass, CONFIG, () => {}));
+    expect(rv.textContent).not.toContain('OpenWeather API key');
+    rv.remove();
+    const owm = renderToHost(
+      handler.renderGeneralTab({ ...base, radar_source: 'openweather' }, homeHass, CONFIG, () => {})
+    );
+    expect(owm.textContent).toContain('OpenWeather API key');
+    expect(owm.textContent).not.toContain('Snow colors');
+    owm.remove();
   });
 
   it('shows coordinate fields only in coordinates mode', () => {

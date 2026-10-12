@@ -6076,7 +6076,16 @@
       "unavailable": "Radar nicht verfügbar, neuer Versuch in Kürze",
       "pause": "Pause",
       "play": "Abspielen",
-      "timeline": "Radarzeit"
+      "timeline": "Radarzeit",
+      "radar_source": "Radarquelle",
+      "radar_source_desc": "RainViewer ist kostenlos und benötigt kein Konto. OpenWeather verwendet Ihren eigenen API-Schlüssel.",
+      "openweather_api_key": "OpenWeather-API-Schlüssel",
+      "openweather_api_key_desc": "Aus Ihrem openweathermap.org-Konto. Animierter Verlauf und Vorhersage erfordern einen Tarif mit Weather Maps 2.0; andere Schlüssel zeigen nur den aktuellen Regen. Der Schlüssel wird in diesem Dashboard gespeichert, daher kann ihn jeder sehen, der es bearbeiten darf.",
+      "openweather_api_key_missing": "Geben Sie Ihren Schlüssel von openweathermap.org ein. Bis dahin verwendet das Radar RainViewer.",
+      "show_fullscreen": "Vollbild-Schaltfläche",
+      "show_fullscreen_desc": "Eine Schaltfläche, die die Karte im Vollbild öffnet, mit Verschieben und Zoomen.",
+      "fullscreen": "Vollbild",
+      "exit_fullscreen": "Vollbild beenden"
     }
   },
   "hub": {
