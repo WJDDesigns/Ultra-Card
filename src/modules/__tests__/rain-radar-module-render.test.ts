@@ -69,6 +69,11 @@ describe('Rain Radar module', () => {
     expect(owm.textContent).toContain('OpenWeather API key');
     expect(owm.textContent).not.toContain('Snow colors');
     owm.remove();
+    const g = renderToHost(
+      handler.renderGeneralTab({ ...base, map_provider: 'google' }, homeHass, CONFIG, () => {})
+    );
+    expect(g.textContent).toContain('Map API key');
+    g.remove();
   });
 
   it('shows coordinate fields only in coordinates mode', () => {

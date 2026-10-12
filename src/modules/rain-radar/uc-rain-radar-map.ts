@@ -28,6 +28,10 @@ import {
   RAINVIEWER_ATTRIBUTION,
   baseMapFor,
   clampNumber,
+  keyedBaseMap,
+  loadGoogleBaseMap,
+  mapApiKey,
+  mapProviderFor,
   entityLatLng,
   frameTileUrl,
   isDarkMode,
@@ -38,6 +42,7 @@ import {
   resolveCenter,
   resolveMapStyle,
   sourceKeyFor,
+  type BaseMapStyle,
   type RadarFrame,
   type RadarFrameSet,
 } from '../../services/uc-rain-radar-service';
@@ -84,6 +89,7 @@ export class UcRainRadar extends LitElement {
   private _baseLayer: L.TileLayer | undefined;
   private _labelsLayer: L.TileLayer | undefined;
   private _baseKey = '';
+  private _baseSeq = 0;
   private _viewKey = '';
   private _optionsKey = '';
   private _radarKey = '';
@@ -686,27 +692,12 @@ export class UcRainRadar extends LitElement {
     }
 
     const style = resolveMapStyle(m.map_style, isDarkMode(this.hass));
-    if (style !== this._baseKey) {
-      this._baseKey = style;
-      if (this._baseLayer) map.removeLayer(this._baseLayer);
-      if (this._labelsLayer) map.removeLayer(this._labelsLayer);
-      this._labelsLayer = undefined;
-      const base = baseMapFor(style);
-      this._baseLayer = L.tileLayer(base.url, {
-        attribution: base.attribution,
-        maxZoom: base.maxZoom,
-        zIndex: 1,
-        keepBuffer: 2,
-        referrerPolicy: TILE_REFERRER_POLICY,
-      }).addTo(map);
-      if (base.labelsUrl) {
-        this._labelsLayer = L.tileLayer(base.labelsUrl, {
-          maxZoom: base.maxZoom,
-          zIndex: 20,
-          keepBuffer: 2,
-          referrerPolicy: TILE_REFERRER_POLICY,
-        }).addTo(map);
-      }
+    const provider = mapProviderFor(m);
+    const mapKey = provider === 'esri' ? '' : mapApiKey(m);
+    const baseKey = `${provider}|${style}|${mapKey}`;
+    if (baseKey !== this._baseKey) {
+      this._baseKey = baseKey;
+      void this._applyBase(style, provider, mapKey);
     }
 
     const radarKey = `${m.smooth !== false}|${m.snow_colors !== false}|${maxNativeZoomFor(m)}`;
@@ -732,6 +723,65 @@ export class UcRainRadar extends LitElement {
     }
 
     this._syncMarkers();
+  }
+
+  /** Pick the base map; a keyed provider that fails falls back to Esri. */
+  private async _applyBase(
+    style: ReturnType<typeof resolveMapStyle>,
+    provider: ReturnType<typeof mapProviderFor>,
+    key: string
+  ): Promise<void> {
+    const seq = ++this._baseSeq;
+    let base: BaseMapStyle | null = null;
+    if (provider === 'mapbox' || provider === 'maptiler') {
+      base = keyedBaseMap(provider, style, key);
+    } else if (provider === 'google') {
+      try {
+        base = await loadGoogleBaseMap(style, key, this.language);
+      } catch {
+        base = null;
+      }
+      if (seq !== this._baseSeq || !this._map) return;
+    }
+    if (base) this._setBaseLayer(base, true, style);
+    else this._setBaseLayer(baseMapFor(style), false, style);
+  }
+
+  private _setBaseLayer(
+    base: BaseMapStyle,
+    keyed: boolean,
+    style: ReturnType<typeof resolveMapStyle>
+  ): void {
+    const map = this._map;
+    if (!map) return;
+    if (this._baseLayer) map.removeLayer(this._baseLayer);
+    if (this._labelsLayer) map.removeLayer(this._labelsLayer);
+    this._labelsLayer = undefined;
+    const layer = L.tileLayer(base.url, {
+      attribution: base.attribution,
+      maxZoom: base.maxZoom,
+      zIndex: 1,
+      keepBuffer: 2,
+      referrerPolicy: TILE_REFERRER_POLICY,
+    }).addTo(map);
+    this._baseLayer = layer;
+    if (keyed) {
+      // A bad key or a provider that refuses the page: switch to Esri rather than show a blank map.
+      let loaded = false;
+      let errors = 0;
+      layer.on('tileload', () => (loaded = true));
+      layer.on('tileerror', () => {
+        if (loaded || ++errors < 4 || this._baseLayer !== layer) return;
+        this._setBaseLayer(baseMapFor(style), false, style);
+      });
+    } else if (base.labelsUrl) {
+      this._labelsLayer = L.tileLayer(base.labelsUrl, {
+        maxZoom: base.maxZoom,
+        zIndex: 20,
+        keepBuffer: 2,
+        referrerPolicy: TILE_REFERRER_POLICY,
+      }).addTo(map);
+    }
   }
 
   private _recenter(fromButton: boolean): void {

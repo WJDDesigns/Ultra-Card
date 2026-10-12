@@ -9415,6 +9415,9 @@ export type RainRadarCenterMode = 'home' | 'entity' | 'manual';
 /** Base map under the radar. `auto` follows Home Assistant's light / dark mode. */
 export type RainRadarMapStyle = 'auto' | 'light' | 'dark' | 'streets' | 'satellite';
 
+/** Who draws the map under the radar. Everything but `esri` needs the user's own key. */
+export type RainRadarMapProvider = 'esri' | 'google' | 'mapbox' | 'maptiler';
+
 /** Where radar frames come from. `openweather` needs the user's own API key. */
 export type RainRadarSource = 'rainviewer' | 'openweather';
 
@@ -9471,6 +9474,10 @@ export interface RainRadarModule extends BaseModule {
   openweather_api_key?: string | undefined;
   /** Show a button that opens the map full screen. */
   show_fullscreen?: boolean | undefined;
+  /** Base map provider. Defaults to Esri (keyless); others are used only once a key is set. */
+  map_provider?: RainRadarMapProvider | undefined;
+  /** The user's own key for the chosen map provider (stored in the dashboard config). */
+  map_api_key?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

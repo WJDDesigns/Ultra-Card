@@ -10,7 +10,12 @@
  */
 
 import type { HomeAssistant } from '../ha/types';
-import type { RainRadarMapStyle, RainRadarModule, RainRadarSource } from '../types';
+import type {
+  RainRadarMapProvider,
+  RainRadarMapStyle,
+  RainRadarModule,
+  RainRadarSource,
+} from '../types';
 
 export const RAINVIEWER_MAPS_URL = 'https://api.rainviewer.com/public/weather-maps.json';
 export const RAINVIEWER_ATTRIBUTION =
@@ -134,6 +139,131 @@ export function resolveMapStyle(
 
 export function baseMapFor(style: Exclude<RainRadarMapStyle, 'auto'>): BaseMapStyle {
   return BASE_MAPS[style];
+}
+
+// ── Keyed base map providers (opt-in, the user's own key) ───────────────────
+
+type ConcreteStyle = Exclude<RainRadarMapStyle, 'auto'>;
+
+const MAPBOX_STYLES: Record<ConcreteStyle, string> = {
+  light: 'light-v11',
+  dark: 'dark-v11',
+  streets: 'streets-v12',
+  satellite: 'satellite-streets-v12',
+};
+
+const MAPTILER_STYLES: Record<ConcreteStyle, { id: string; ext: string }> = {
+  light: { id: 'basic-v2-light', ext: 'png' },
+  dark: { id: 'basic-v2-dark', ext: 'png' },
+  streets: { id: 'streets-v2', ext: 'png' },
+  satellite: { id: 'hybrid', ext: 'jpg' },
+};
+
+/** A key that can safely go in a URL (provider keys and tokens are alphanumeric plus . _ -). */
+export function mapApiKey(module: Pick<RainRadarModule, 'map_api_key'>): string {
+  const key = (module.map_api_key || '').trim();
+  return /^[A-Za-z0-9._-]{8,256}$/.test(key) ? key : '';
+}
+
+/** The provider actually used: a keyed provider only once its key is set, otherwise Esri. */
+export function mapProviderFor(
+  module: Pick<RainRadarModule, 'map_provider' | 'map_api_key'>
+): RainRadarMapProvider {
+  const p = module.map_provider;
+  if ((p === 'google' || p === 'mapbox' || p === 'maptiler') && mapApiKey(module)) return p;
+  return 'esri';
+}
+
+/**
+ * Base map for Mapbox or MapTiler (synchronous URL templates). Google needs a
+ * session first, see {@link loadGoogleBaseMap}.
+ */
+export function keyedBaseMap(
+  provider: 'mapbox' | 'maptiler',
+  style: ConcreteStyle,
+  key: string
+): BaseMapStyle {
+  const k = encodeURIComponent(key);
+  if (provider === 'mapbox') {
+    return {
+      url: `https://api.mapbox.com/styles/v1/mapbox/${MAPBOX_STYLES[style]}/tiles/256/{z}/{x}/{y}?access_token=${k}`,
+      attribution:
+        '&copy; <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+      maxZoom: 19,
+    };
+  }
+  const s = MAPTILER_STYLES[style];
+  return {
+    url: `https://api.maptiler.com/maps/${s.id}/256/{z}/{x}/{y}.${s.ext}?key=${k}`,
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    maxZoom: 19,
+  };
+}
+
+/** A dark look for Google's road map (Map Tiles API styles). */
+const GOOGLE_DARK_STYLES = [
+  { stylers: [{ hue: '#1d2c4d' }, { saturation: -60 }, { invert_lightness: true }] },
+];
+
+const googleSessions = new Map<string, { session: string; expires: number }>();
+
+type JsonFetch = (
+  url: string,
+  init: { method: string; headers: Record<string, string>; body: string }
+) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
+
+/**
+ * Google Map Tiles API: create (or reuse) a session for the style, then return
+ * its tile URL. Throws when Google rejects the key, so the caller can fall back
+ * to Esri.
+ */
+export async function loadGoogleBaseMap(
+  style: ConcreteStyle,
+  key: string,
+  language = 'en',
+  now: number = Date.now(),
+  fetcher: JsonFetch = (u, init) => fetch(u, init)
+): Promise<BaseMapStyle> {
+  const cacheKey = `${key}|${style}|${language}`;
+  let entry = googleSessions.get(cacheKey);
+  if (!entry || entry.expires - now < 60 * 60 * 1000) {
+    const body: Record<string, unknown> = {
+      mapType: style === 'satellite' ? 'satellite' : 'roadmap',
+      language: language || 'en',
+      region: 'US',
+      scale: 'scaleFactor1x',
+    };
+    if (style === 'satellite') body.layerTypes = ['layerRoadmap'];
+    if (style === 'dark') body.styles = GOOGLE_DARK_STYLES;
+    const res = await fetcher(
+      `https://tile.googleapis.com/v1/createSession?key=${encodeURIComponent(key)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) throw new Error('Google rejected the map key');
+    const data = (await res.json()) as { session?: unknown; expiry?: unknown };
+    if (typeof data.session !== 'string' || !data.session) throw new Error('No Google session');
+    const expiry = Number(data.expiry);
+    entry = {
+      session: data.session,
+      expires: Number.isFinite(expiry) ? expiry * 1000 : now + 12 * 60 * 60 * 1000,
+    };
+    googleSessions.set(cacheKey, entry);
+  }
+  return {
+    url: `https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${encodeURIComponent(entry.session)}&key=${encodeURIComponent(key)}`,
+    attribution: 'Map data &copy; Google',
+    maxZoom: 20,
+  };
+}
+
+/** Test hook. */
+export function clearGoogleSessions(): void {
+  googleSessions.clear();
 }
 
 function coord(value: unknown): number | null {

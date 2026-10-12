@@ -6085,7 +6085,15 @@
       "show_fullscreen": "Vollbild-Schaltfläche",
       "show_fullscreen_desc": "Eine Schaltfläche, die die Karte im Vollbild öffnet, mit Verschieben und Zoomen.",
       "fullscreen": "Vollbild",
-      "exit_fullscreen": "Vollbild beenden"
+      "exit_fullscreen": "Vollbild beenden",
+      "map_provider": "Kartenanbieter",
+      "map_provider_desc": "Esri ist kostenlos und benötigt keinen Schlüssel. Google, Mapbox und MapTiler verwenden Ihren eigenen Schlüssel.",
+      "map_api_key": "Karten-API-Schlüssel",
+      "map_api_key_google": "Ein Google-Cloud-API-Schlüssel mit aktivierter Map Tiles API. Google berechnet Kartenkacheln über das kostenlose Monatskontingent hinaus.",
+      "map_api_key_mapbox": "Ein Mapbox-Zugriffstoken (beginnt mit pk.) von account.mapbox.com.",
+      "map_api_key_maptiler": "Ein MapTiler-API-Schlüssel von cloud.maptiler.com.",
+      "map_api_key_note": "Der Schlüssel wird in diesem Dashboard gespeichert, daher kann ihn jeder sehen, der es bearbeiten darf. Wird der Schlüssel abgelehnt, wechselt die Karte zurück zu Esri.",
+      "map_api_key_missing": "Geben Sie Ihren Schlüssel für diesen Anbieter ein. Bis dahin verwendet die Karte Esri."
     }
   },
   "hub": {

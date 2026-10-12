@@ -7,7 +7,11 @@ import {
   clampNumber,
   clearRadarCache,
   filterByTimeSpan,
+  clearGoogleSessions,
   frameTileUrl,
+  keyedBaseMap,
+  loadGoogleBaseMap,
+  mapProviderFor,
   homeLatLng,
   loadOpenWeatherFrames,
   openWeatherFrames,
@@ -271,5 +275,46 @@ describe('OpenWeather source', () => {
 
     clearRadarCache();
     await expect(loadOpenWeatherFrames(KEY, true, 60, now, async () => false)).rejects.toThrow();
+  });
+});
+
+describe('keyed map providers', () => {
+  afterEach(() => clearGoogleSessions());
+
+  it('uses Esri until the chosen provider has a key', () => {
+    expect(mapProviderFor({})).toBe('esri');
+    expect(mapProviderFor({ map_provider: 'google' })).toBe('esri');
+    expect(mapProviderFor({ map_provider: 'mapbox', map_api_key: 'pk.abc"onerror' })).toBe('esri');
+    expect(
+      mapProviderFor({ map_provider: 'mapbox', map_api_key: ' pk.eyJ1Ijoid2F5bmUi.abc_-1 ' })
+    ).toBe('mapbox');
+  });
+
+  it('builds Mapbox and MapTiler tile URLs per style', () => {
+    expect(keyedBaseMap('mapbox', 'dark', 'pk.k').url).toBe(
+      'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}?access_token=pk.k'
+    );
+    expect(keyedBaseMap('maptiler', 'satellite', 'abc').url).toBe(
+      'https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}.jpg?key=abc'
+    );
+  });
+
+  it('creates and reuses a Google session, and throws when the key is refused', async () => {
+    const fetcher = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ session: 'S1', expiry: 2000000000 }),
+    }));
+    const base = await loadGoogleBaseMap('satellite', 'KEY12345', 'en', 1000, fetcher);
+    expect(base.url).toBe(
+      'https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=S1&key=KEY12345'
+    );
+    const body = JSON.parse(
+      (fetcher.mock.calls[0] as unknown as [string, { body: string }])[1].body
+    );
+    expect(body).toMatchObject({ mapType: 'satellite', layerTypes: ['layerRoadmap'] });
+    await loadGoogleBaseMap('satellite', 'KEY12345', 'en', 2000, fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const refused = vi.fn(async () => ({ ok: false, json: async () => ({}) }));
+    await expect(loadGoogleBaseMap('light', 'BADKEY123', 'en', 1000, refused)).rejects.toThrow();
   });
 });
