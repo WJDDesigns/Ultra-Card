@@ -13,6 +13,7 @@
     "build:prerelease": "node scripts/release.js --prerelease",
     "release": "node scripts/release.js --skip-build",
     "deploy": "node deploy.js",
+    "ha55:watch": "bash scripts/ha55-preview/watch.sh",
     "watch": "webpack --watch --mode development",
     "watch:ha": "echo '\\n🚀 Starting HA development mode...\\n   Auto-deploys to /Volumes/config on each save\\n   Just refresh browser (F5) to see changes!\\n' && webpack --watch --mode development",
     "dev:ha": "npm run watch:ha",
