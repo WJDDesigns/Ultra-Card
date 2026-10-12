@@ -7166,6 +7166,12 @@ export interface CustomCard {
   preview?: boolean | undefined;
   documentationURL?: string | undefined;
   version?: string | undefined;
+  getEntitySuggestion?:
+    | ((
+        hass: HomeAssistant,
+        entityId: string
+      ) => Array<{ label?: string; config: Record<string, unknown> }> | null)
+    | undefined;
 }
 
 // Home Assistant types

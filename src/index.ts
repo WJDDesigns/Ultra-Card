@@ -17,6 +17,8 @@ import { registerUltraDashboardStrategy } from './strategy/ultra-dashboard-strat
 import { registerUltraFreeSpaceView } from './freespace/ultra-freespace-view';
 import { installFreeSpaceViewEditorPatch } from './freespace/uc-freespace-view-editor-patch';
 import { ucSectionsLayoutService } from './services/uc-sections-layout-service';
+import { getUltraCardEntitySuggestions } from './services/uc-entity-suggestions';
+import { ucCloudAuthService } from './services/uc-cloud-auth-service';
 
 // Custom view/strategy tags must be defined before anything below can throw:
 // Home Assistant shows "Configuration error" for a view whose element never
@@ -76,6 +78,12 @@ window.customCards.push({
   preview: true,
   documentationURL: 'https://github.com/WJDDesigns/Ultra-Card',
   version: VERSION,
+  // "Add to dashboard > By entity" (HA 2026.6+) lists these under Community.
+  getEntitySuggestion: (hass, entityId) => {
+    const user = ucCloudAuthService.checkIntegrationAuth(hass);
+    const pro = user?.subscription?.tier === 'pro' && user?.subscription?.status === 'active';
+    return getUltraCardEntitySuggestions(hass, entityId, { pro });
+  },
 } as CustomCard);
 
 installFreeSpaceViewEditorPatch();
