@@ -1127,6 +1127,36 @@ function sanitizeIrrigationModule(
   };
 }
 
+function sanitizeRainRadarModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const rawMarkers = Array.isArray(module.marker_entities) ? (module.marker_entities as unknown[]) : [];
+  const markers = rawMarkers
+    .map(value => String(value || ''))
+    .filter(entityId => /^(person|device_tracker|zone)\./.test(entityId) && entityExists(hass, entityId));
+  return {
+    id,
+    type: 'rain_radar',
+    title: String(module.title || ''),
+    show_title: true,
+    center_mode: 'home',
+    zoom: numberInRange(module.zoom, 3, 12, 7),
+    height: numberInRange(module.height, 120, 800, 300),
+    map_style: oneOf(module.map_style, ['auto', 'light', 'dark', 'streets', 'satellite'] as const, 'auto'),
+    radar_opacity: numberInRange(module.radar_opacity, 10, 100, 75),
+    show_forecast: module.show_forecast !== false,
+    autoplay: true,
+    show_controls: true,
+    show_timestamp: true,
+    show_legend: true,
+    show_home_marker: true,
+    marker_entities: markers,
+    ...defaultDisplayActions(),
+  };
+}
+
 function sanitizePrinter3dModule(module: SmartModule, id: string): SmartModule | null {
   return {
     id,
@@ -1452,6 +1482,11 @@ export const supplementalSmartModuleHandlers = {
             ctx.id
           )
         : null,
+  },
+  rain_radar: {
+    sanitize: wrapSanitize(sanitizeRainRadarModule),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeRainRadarModule({ type: 'rain_radar' } as SmartModule, ctx.hass, ctx.id),
   },
   printer_3d: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizePrinter3dModule(module, id)),
