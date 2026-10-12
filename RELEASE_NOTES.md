@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta5
+
+The fifth 3.14.0 beta builds on the new Rain Radar module with a full screen view, OpenWeather as an optional radar source, and Google, Mapbox or MapTiler maps underneath. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Full screen Rain Radar** - A button in the top right corner opens the radar full screen with pan and zoom, and the same button minimizes it again; it can be turned off under Display
+- **OpenWeather radar source** - Choose OpenWeather under Map and radar and enter your own API key; keys with Weather Maps 2.0 get an hourly loop with three forecast hours, other keys show the current rain, and RainViewer stays the free default
+- **Google, Mapbox and MapTiler maps** - Pick a map provider and enter your own key to draw the radar over Google Maps, Mapbox or MapTiler in light, dark, streets or satellite; Esri stays the free default and takes over again if a key is refused
+
+### 🔧 Improvements
+
+- **Rain Radar ideas from the community** - Full screen and OpenWeather support were suggested by larrysansan on Discord
+
 ## Version 3.14.0-beta4
 
 The fourth 3.14.0 beta adds the new Rain Radar module, fixes the Map module's "Access blocked" street maps, and brings another large batch of German translations from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
