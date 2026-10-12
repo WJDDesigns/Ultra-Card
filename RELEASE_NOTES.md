@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta4
+
+The fourth 3.14.0 beta adds the new Rain Radar module, fixes the Map module's "Access blocked" street maps, and brings another large batch of German translations from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the Rain Radar module** - An animated radar loop of the last two hours over a map centered on your home, an entity or coordinates, with play/pause, a timeline scrubber, a Light to Heavy legend and a map that follows your light or dark theme; uses RainViewer's free radar, so no API key or account is needed
+
+### 🔧 Improvements
+
+- **More German translations** - 392 more strings translated by community contributor larrysansan, covering Energy Price & EV, Floorplan, Linked Row, preset sharing and the Themes hub, bringing German to about 65%
+- **German uses the formal "Sie" everywhere** - Nine strings that said "du" now match the rest of the German translation
+
+### 🐛 Bug Fixes
+
+- **Fixed "Access blocked" tiles in the Map module** - The default street style now loads Esri's street map instead of OpenStreetMap tiles, which were being blocked on Home Assistant dashboards
+
 ## Version 3.14.0-beta3
 
 The third 3.14.0 beta is a big FreeSpace update: undo and redo, cards that grow with their content, locking, grouping, hiding cards on some screen sizes, a canvas background for floorplans, and a fit-to-screen mode for wall tablets. It also brings a large batch of German translations from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
