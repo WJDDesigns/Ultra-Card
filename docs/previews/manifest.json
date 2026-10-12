@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-11T23:39:33.034Z",
-  "ultraCardVersion": "3.14.0-beta3",
+  "generatedAt": "2026-10-12T01:32:54.688Z",
+  "ultraCardVersion": "3.14.0-beta4",
   "counts": {
-    "total": 103,
-    "free": 70,
+    "total": 104,
+    "free": 71,
     "pro": 33
   },
   "modules": [
@@ -1290,6 +1290,25 @@
         "barcode"
       ],
       "preview": "previews/qr_code.png",
+      "status": "ok"
+    },
+    {
+      "type": "rain_radar",
+      "title": "Rain Radar",
+      "description": "Animated rain radar over a map, centered on your home, with a play and scrub timeline",
+      "category": "data",
+      "icon": "mdi:weather-pouring",
+      "pro": false,
+      "tags": [
+        "rain",
+        "radar",
+        "weather",
+        "precipitation",
+        "map",
+        "rainviewer",
+        "storm"
+      ],
+      "preview": "previews/rain_radar.png",
       "status": "ok"
     },
     {
