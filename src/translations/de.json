@@ -6095,8 +6095,8 @@
       "map_api_key_note": "Der Schlüssel wird in diesem Dashboard gespeichert, daher kann ihn jeder sehen, der es bearbeiten darf. Wird der Schlüssel abgelehnt, wechselt die Karte zurück zu Esri.",
       "map_api_key_missing": "Geben Sie Ihren Schlüssel für diesen Anbieter ein. Bis dahin verwendet die Karte Esri.",
       "rainbow_api_key": "Rainbow.ai-API-Schlüssel",
-      "rainbow_api_key_desc": "Aus Ihrem Rainbow.ai-Entwicklerkonto. Zeigt aktuellen Regen und eine 2-Stunden-Vorhersage. Der kostenlose Tarif enthält 30.000 Kartenkacheln pro Monat, daher kann eine Karte, die den ganzen Tag angezeigt wird, dieses Kontingent aufbrauchen. Der Schlüssel wird in diesem Dashboard gespeichert, sodass jeder, der es bearbeiten kann, den Schlüssel sehen kann.",
-      "rainbow_api_key_missing": "Geben Sie Ihren kostenlosen Schlüssel von developer.rainbow.ai ein. Bis dahin verwendet das Radar RainViewer."
+      "rainbow_api_key_desc": "Aus Ihrem Rainbow.ai-Entwicklerkonto. Zeigt aktuellen Regen und eine 2-Stunden-Vorhersage. Rainbow.ai enthält 30.000 kostenlose Kartenkacheln pro Monat und berechnet darüber hinaus Ihrem Konto, daher kann eine Karte, die den ganzen Tag angezeigt wird, Kosten verursachen. Der Schlüssel wird in diesem Dashboard gespeichert, sodass jeder, der es bearbeiten kann, den Schlüssel sehen kann.",
+      "rainbow_api_key_missing": "Geben Sie Ihren Schlüssel von developer.rainbow.ai ein. Bis dahin verwendet das Radar RainViewer."
     }
   },
   "hub": {

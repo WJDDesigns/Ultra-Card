@@ -329,11 +329,11 @@ export class UltraRainRadarModule extends BaseUltraModule {
                 hasRainbowKey
                   ? t(
                       'rainbow_api_key_desc',
-                      'From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. The free plan includes 30,000 map tiles a month, so a map left on screen all day can use it up. The key is saved in this dashboard, so anyone who can edit it can see the key.'
+                      'From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, so a map left on screen all day can cost money. The key is saved in this dashboard, so anyone who can edit it can see the key.'
                     )
                   : t(
                       'rainbow_api_key_missing',
-                      'Enter your free key from developer.rainbow.ai. Until then the radar uses RainViewer.'
+                      'Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer.'
                     ),
                 hass,
                 { rainbow_api_key: m.rainbow_api_key || '' },
