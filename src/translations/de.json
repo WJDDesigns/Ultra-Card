@@ -3714,7 +3714,9 @@
       "err_empty_desc": "Adjust discovery mode, manual entities, or thresholds in the General tab.",
       "default_title": "Battery Monitor",
       "preview_remove": "Remove from list",
-      "strip_hint": "Tap a segment for more-info. Colors reflect battery level."
+      "strip_hint": "Tap a segment for more-info. Colors reflect battery level.",
+      "hide_when_empty": "Hide when empty",
+      "hide_when_empty_desc": "On the dashboard, hide this module when no batteries match. A column, row or card left empty hides too."
     },
     "auto_entity_list": {
       "default_title": "Auto Entities List",

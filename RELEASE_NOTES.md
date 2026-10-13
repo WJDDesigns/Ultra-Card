@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta6
+
+The sixth 3.14.0 beta adds a "Hide when empty" option to the Battery Monitor, so a battery list with nothing to show no longer leaves an empty panel or a gap on your dashboard. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Hide when empty for Battery Monitor** - Turn it on in the General tab and the module disappears from the dashboard when no batteries match, for example when "Show only below low threshold" is on and every battery is fine; a column, row or whole card left with nothing to show hides too, so no gap is left between cards. It always stays visible while editing
+
+### 🔧 Improvements
+
+- **Requested on GitHub** - Thanks to jrdeee for suggesting hiding empty modules (#156)
+
 ## Version 3.14.0-beta5
 
 The fifth 3.14.0 beta builds on the new Rain Radar module with a full screen view, OpenWeather as an optional radar source, and Google, Mapbox or MapTiler maps underneath. Ultra Card also now shows up in Home Assistant's "Add to dashboard > By entity" picker. This is a pre-release for testing — please report anything odd on GitHub or Discord.

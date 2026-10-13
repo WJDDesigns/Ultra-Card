@@ -412,6 +412,21 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
               },
             },
             {
+              title: localize('editor.battery_monitor.hide_when_empty', lang, 'Hide when empty'),
+              description: localize(
+                'editor.battery_monitor.hide_when_empty_desc',
+                lang,
+                'On the dashboard, hide this module when no batteries match. A column, row or card left empty hides too.'
+              ),
+              hass,
+              data: { hide_when_empty: m.hide_when_empty === true },
+              schema: [this.booleanField('hide_when_empty')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ hide_when_empty: e.detail.value.hide_when_empty } as Partial<CardModule>);
+                this.triggerPreviewUpdate();
+              },
+            },
+            {
               title: localize('editor.battery_monitor.show_charging', lang, 'Show charging indicator'),
               description: localize(
                 'editor.battery_monitor.show_charging_desc',
@@ -927,6 +942,11 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           `
         : ''}
     `;
+  }
+
+  isEmpty(module: CardModule, hass: HomeAssistant): boolean {
+    if (!hass?.states) return false;
+    return this._collectReadings(module as BatteryMonitorModule, hass, true).length === 0;
   }
 
   renderPreview(
