@@ -86,6 +86,7 @@ export class UltraRainRadarModule extends BaseUltraModule {
       source_url: '',
       radar_source: 'rainviewer',
       openweather_api_key: '',
+      rainbow_api_key: '',
       show_fullscreen: true,
       map_provider: 'esri',
       map_api_key: '',
@@ -269,9 +270,13 @@ export class UltraRainRadarModule extends BaseUltraModule {
   ): TemplateResult {
     const t = (key: string, fallback: string) =>
       localize(`editor.rain_radar.${key}`, lang, fallback);
-    const source: RainRadarSource = m.radar_source === 'openweather' ? 'openweather' : 'rainviewer';
+    const source: RainRadarSource =
+      m.radar_source === 'openweather' || m.radar_source === 'rainbow'
+        ? m.radar_source
+        : 'rainviewer';
     const owm = source === 'openweather';
     const hasKey = !!(m.openweather_api_key || '').trim();
+    const hasRainbowKey = !!(m.rainbow_api_key || '').trim();
     return html`
       <div class="settings-section">
         <div class="section-title">${t('map_section', 'Map and radar')}</div>
@@ -279,12 +284,13 @@ export class UltraRainRadarModule extends BaseUltraModule {
           t('radar_source', 'Radar source'),
           t(
             'radar_source_desc',
-            'RainViewer is free and needs no account. OpenWeather uses your own API key.'
+            'RainViewer is free and needs no account. OpenWeather and Rainbow.ai use your own API key.'
           ),
           source,
           [
             { value: 'rainviewer', label: 'RainViewer', icon: 'mdi:radar' },
             { value: 'openweather', label: 'OpenWeather', icon: 'mdi:weather-cloudy' },
+            { value: 'rainbow', label: 'Rainbow.ai', icon: 'mdi:weather-rainy' },
           ],
           (next: string) => {
             updateModule({ radar_source: (next || 'rainviewer') as RainRadarSource });
@@ -310,6 +316,31 @@ export class UltraRainRadarModule extends BaseUltraModule {
                 (e: CustomEvent) => {
                   updateModule({
                     openweather_api_key: (e.detail.value?.openweather_api_key ?? '').trim(),
+                  });
+                  this.triggerPreviewUpdate();
+                }
+              )
+            : nothing
+        }
+        ${
+          source === 'rainbow'
+            ? this.renderFieldSection(
+                t('rainbow_api_key', 'Rainbow.ai API key'),
+                hasRainbowKey
+                  ? t(
+                      'rainbow_api_key_desc',
+                      'From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. The free plan includes 30,000 map tiles a month, so a map left on screen all day can use it up. The key is saved in this dashboard, so anyone who can edit it can see the key.'
+                    )
+                  : t(
+                      'rainbow_api_key_missing',
+                      'Enter your free key from developer.rainbow.ai. Until then the radar uses RainViewer.'
+                    ),
+                hass,
+                { rainbow_api_key: m.rainbow_api_key || '' },
+                [{ name: 'rainbow_api_key', selector: { text: { type: 'password' } } }],
+                (e: CustomEvent) => {
+                  updateModule({
+                    rainbow_api_key: (e.detail.value?.rainbow_api_key ?? '').trim(),
                   });
                   this.triggerPreviewUpdate();
                 }
@@ -363,7 +394,7 @@ export class UltraRainRadarModule extends BaseUltraModule {
           )
         )}
         ${
-          owm
+          source !== 'rainviewer'
             ? nothing
             : html`${this._toggle(
                 hass,
@@ -598,26 +629,37 @@ export class UltraRainRadarModule extends BaseUltraModule {
     return html`
       <div class="settings-section">
         <div class="section-title">${t('animation_section', 'Animation')}</div>
-        ${this.renderSegmentedField(
-          t('time_span', 'Time span'),
-          t('time_span_desc', 'How far back the loop goes. RainViewer keeps about two hours.'),
-          String(m.time_span ?? DEFAULT_TIME_SPAN),
-          TIME_SPAN_OPTIONS.map(minutes => ({
-            value: String(minutes),
-            label:
-              minutes < 60
-                ? t('span_minutes', '{n} min').replace('{n}', String(minutes))
-                : t('span_hours', '{n} h').replace('{n}', (minutes / 60).toLocaleString(lang)),
-          })),
-          (next: string) => {
-            const minutes = Number(next);
-            updateModule({
-              time_span: Number.isFinite(minutes) && minutes > 0 ? minutes : DEFAULT_TIME_SPAN,
-            });
-            this.triggerPreviewUpdate();
-          },
-          4
-        )}
+        ${
+          m.radar_source === 'rainbow'
+            ? nothing
+            : this.renderSegmentedField(
+                t('time_span', 'Time span'),
+                t(
+                  'time_span_desc',
+                  'How far back the loop goes. RainViewer keeps about two hours.'
+                ),
+                String(m.time_span ?? DEFAULT_TIME_SPAN),
+                TIME_SPAN_OPTIONS.map(minutes => ({
+                  value: String(minutes),
+                  label:
+                    minutes < 60
+                      ? t('span_minutes', '{n} min').replace('{n}', String(minutes))
+                      : t('span_hours', '{n} h').replace(
+                          '{n}',
+                          (minutes / 60).toLocaleString(lang)
+                        ),
+                })),
+                (next: string) => {
+                  const minutes = Number(next);
+                  updateModule({
+                    time_span:
+                      Number.isFinite(minutes) && minutes > 0 ? minutes : DEFAULT_TIME_SPAN,
+                  });
+                  this.triggerPreviewUpdate();
+                },
+                4
+              )
+        }
         ${this.renderFieldSection(
           t('autoplay', 'Play automatically'),
           t('autoplay_desc', 'Loop through the radar frames when the dashboard opens.'),
@@ -696,7 +738,7 @@ export class UltraRainRadarModule extends BaseUltraModule {
         }
       )}
       ${
-        m.radar_source === 'openweather'
+        m.radar_source === 'openweather' || m.radar_source === 'rainbow'
           ? nothing
           : this.renderFieldSection(
               t('source_url', 'Radar source URL'),

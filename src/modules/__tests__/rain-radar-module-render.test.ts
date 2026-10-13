@@ -69,6 +69,14 @@ describe('Rain Radar module', () => {
     expect(owm.textContent).toContain('OpenWeather API key');
     expect(owm.textContent).not.toContain('Snow colors');
     owm.remove();
+    expect(rv.textContent).not.toContain('Rainbow.ai API key');
+    const rb = renderToHost(
+      handler.renderGeneralTab({ ...base, radar_source: 'rainbow' }, homeHass, CONFIG, () => {})
+    );
+    expect(rb.textContent).toContain('Rainbow.ai API key');
+    expect(rb.textContent).not.toContain('OpenWeather API key');
+    expect(rb.textContent).not.toContain('Snow colors');
+    rb.remove();
     const g = renderToHost(
       handler.renderGeneralTab({ ...base, map_provider: 'google' }, homeHass, CONFIG, () => {})
     );

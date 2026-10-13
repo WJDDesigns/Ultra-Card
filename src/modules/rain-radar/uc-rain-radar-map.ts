@@ -24,8 +24,8 @@ import {
   FRAMES_TTL_MS,
   MAX_ZOOM,
   MIN_ZOOM,
-  OPENWEATHER_ATTRIBUTION,
-  RAINVIEWER_ATTRIBUTION,
+  radarAttributionFor,
+  RAINBOW_TTL_MS,
   baseMapFor,
   clampNumber,
   keyedBaseMap,
@@ -914,7 +914,7 @@ export class UcRainRadar extends LitElement {
       this._status = 'ready';
       this._showFrame(this._index);
       this._schedulePlay();
-      this._scheduleRefresh(FRAMES_TTL_MS + 5000);
+      this._scheduleRefresh((set.provider === 'rainbow' ? RAINBOW_TTL_MS : FRAMES_TTL_MS) + 5000);
     } catch {
       if (seq !== this._loadSeq) return;
       if (!this._frames.length) this._status = 'error';
@@ -954,7 +954,7 @@ export class UcRainRadar extends LitElement {
           tileSize: 256,
           maxNativeZoom: maxNativeZoomFor(m),
           maxZoom: MAX_ZOOM,
-          attribution: this._provider ? OPENWEATHER_ATTRIBUTION : RAINVIEWER_ATTRIBUTION,
+          attribution: radarAttributionFor(this._provider),
           className: 'uc-rr-layer',
           referrerPolicy: TILE_REFERRER_POLICY,
           keepBuffer: 1,
@@ -1120,7 +1120,7 @@ export class UcRainRadar extends LitElement {
             : nothing
         }
         ${
-          // The legend shows RainViewer's colors; OpenWeather uses its own palette.
+          // The legend shows RainViewer's colors; keyed sources use their own palettes.
           m?.show_legend !== false && hasFrames && !this._provider
             ? html`<div class="chip legend" style="bottom:${legendBottom}px" aria-hidden="true">
                 <div class="bar"></div>

@@ -4,6 +4,15 @@ import {
   FRAMES_TTL_MS,
   RAINVIEWER_MAPS_URL,
   RAINVIEWER_MAX_NATIVE_ZOOM,
+  RAINBOW_ATTRIBUTION,
+  RAINBOW_MAX_NATIVE_ZOOM,
+  RAINBOW_TTL_MS,
+  loadModuleFrames,
+  loadRainbowFrames,
+  parseRainbowSnapshot,
+  radarAttributionFor,
+  rainbowFrames,
+  rainbowKey,
   clampNumber,
   clearRadarCache,
   filterByTimeSpan,
@@ -275,6 +284,86 @@ describe('OpenWeather source', () => {
 
     clearRadarCache();
     await expect(loadOpenWeatherFrames(KEY, true, 60, now, async () => false)).rejects.toThrow();
+  });
+});
+
+describe('Rainbow.ai source', () => {
+  afterEach(() => clearRadarCache());
+  const KEY = 'rb_live-0123456789abcdef';
+  const SNAP = 1760220000;
+  const okFetch = (payload: unknown) =>
+    vi.fn(async (_url: string) => ({ ok: true, json: async () => payload }));
+
+  it('is used only when chosen and a valid key is set', () => {
+    expect(radarSourceFor({ radar_source: 'rainbow' })).toBe('rainviewer');
+    expect(radarSourceFor({ radar_source: 'rainbow', rainbow_api_key: 'bad key"' })).toBe(
+      'rainviewer'
+    );
+    expect(radarSourceFor({ radar_source: 'rainbow', rainbow_api_key: ` ${KEY} ` })).toBe(
+      'rainbow'
+    );
+    expect(rainbowKey({ rainbow_api_key: ` ${KEY} ` })).toBe(KEY);
+    expect(sourceKeyFor({ radar_source: 'rainbow', rainbow_api_key: KEY })).toContain('rainbow:');
+    expect(maxNativeZoomFor({ radar_source: 'rainbow', rainbow_api_key: KEY })).toBe(
+      RAINBOW_MAX_NATIVE_ZOOM
+    );
+  });
+
+  it('builds now plus half-hour forecast frames from a snapshot', () => {
+    const frames = rainbowFrames(SNAP, true);
+    expect(frames.map(f => f.path)).toEqual([
+      `${SNAP}/0`,
+      `${SNAP}/1800`,
+      `${SNAP}/3600`,
+      `${SNAP}/5400`,
+      `${SNAP}/7200`,
+    ]);
+    expect(frames[0]?.forecast).toBe(false);
+    expect(frames.slice(1).every(f => f.forecast)).toBe(true);
+    expect(latestObservedIndex(frames)).toBe(0);
+    expect(rainbowFrames(SNAP, false)).toHaveLength(1);
+  });
+
+  it('parses the snapshot response', () => {
+    expect(parseRainbowSnapshot({ snapshot: SNAP })).toBe(SNAP);
+    expect(parseRainbowSnapshot({ snapshot: String(SNAP) })).toBe(SNAP);
+    expect(parseRainbowSnapshot({})).toBeNull();
+    expect(parseRainbowSnapshot(null)).toBeNull();
+  });
+
+  it('fetches the snapshot with the key, caches it and builds tile URLs', async () => {
+    const fetcher = okFetch({ snapshot: SNAP });
+    const set = await loadRainbowFrames(KEY, true, 1000, fetcher);
+    expect(fetcher).toHaveBeenCalledWith(`https://api.rainbow.ai/tiles/v1/snapshot?token=${KEY}`);
+    expect(set.provider).toBe('rainbow');
+    expect(set.frames).toHaveLength(5);
+    expect(frameTileUrl(set, set.frames[1]!, { smooth: true, snow: true })).toBe(
+      `https://api.rainbow.ai/tiles/v1/precip/${SNAP}/1800/{z}/{x}/{y}?token=${KEY}`
+    );
+    await loadRainbowFrames(KEY, true, 1000 + RAINBOW_TTL_MS - 1, fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    await loadRainbowFrames(KEY, true, 1000 + RAINBOW_TTL_MS, fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws when the key is refused or no snapshot comes back', async () => {
+    const refused = vi.fn(async () => ({ ok: false, json: async () => ({}) }));
+    await expect(loadRainbowFrames(KEY, true, 0, refused)).rejects.toThrow();
+    await expect(loadRainbowFrames(KEY, true, 0, okFetch({}))).rejects.toThrow();
+  });
+
+  it('loads through loadModuleFrames and credits Rainbow.ai', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue({ ok: true, json: async () => ({ snapshot: SNAP }) } as Response);
+    const set = await loadModuleFrames({
+      radar_source: 'rainbow',
+      rainbow_api_key: KEY,
+      show_forecast: false,
+    });
+    expect(set.frames.map(f => f.path)).toEqual([`${SNAP}/0`]);
+    expect(radarAttributionFor(set.provider)).toBe(RAINBOW_ATTRIBUTION);
+    fetchSpy.mockRestore();
   });
 });
 

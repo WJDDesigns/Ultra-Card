@@ -6078,7 +6078,7 @@
       "play": "Abspielen",
       "timeline": "Radarzeit",
       "radar_source": "Radarquelle",
-      "radar_source_desc": "RainViewer ist kostenlos und benötigt kein Konto. OpenWeather verwendet Ihren eigenen API-Schlüssel.",
+      "radar_source_desc": "RainViewer ist kostenlos und benötigt kein Konto. OpenWeather und Rainbow.ai verwenden Ihren eigenen API-Schlüssel.",
       "openweather_api_key": "OpenWeather-API-Schlüssel",
       "openweather_api_key_desc": "Aus Ihrem openweathermap.org-Konto. Animierter Verlauf und Vorhersage erfordern einen Tarif mit Weather Maps 2.0; andere Schlüssel zeigen nur den aktuellen Regen. Der Schlüssel wird in diesem Dashboard gespeichert, daher kann ihn jeder sehen, der es bearbeiten darf.",
       "openweather_api_key_missing": "Geben Sie Ihren Schlüssel von openweathermap.org ein. Bis dahin verwendet das Radar RainViewer.",
@@ -6093,7 +6093,10 @@
       "map_api_key_mapbox": "Ein Mapbox-Zugriffstoken (beginnt mit pk.) von account.mapbox.com.",
       "map_api_key_maptiler": "Ein MapTiler-API-Schlüssel von cloud.maptiler.com.",
       "map_api_key_note": "Der Schlüssel wird in diesem Dashboard gespeichert, daher kann ihn jeder sehen, der es bearbeiten darf. Wird der Schlüssel abgelehnt, wechselt die Karte zurück zu Esri.",
-      "map_api_key_missing": "Geben Sie Ihren Schlüssel für diesen Anbieter ein. Bis dahin verwendet die Karte Esri."
+      "map_api_key_missing": "Geben Sie Ihren Schlüssel für diesen Anbieter ein. Bis dahin verwendet die Karte Esri.",
+      "rainbow_api_key": "Rainbow.ai-API-Schlüssel",
+      "rainbow_api_key_desc": "Aus Ihrem Rainbow.ai-Entwicklerkonto. Zeigt aktuellen Regen und eine 2-Stunden-Vorhersage. Der kostenlose Tarif enthält 30.000 Kartenkacheln pro Monat, daher kann eine Karte, die den ganzen Tag angezeigt wird, dieses Kontingent aufbrauchen. Der Schlüssel wird in diesem Dashboard gespeichert, sodass jeder, der es bearbeiten kann, den Schlüssel sehen kann.",
+      "rainbow_api_key_missing": "Geben Sie Ihren kostenlosen Schlüssel von developer.rainbow.ai ein. Bis dahin verwendet das Radar RainViewer."
     }
   },
   "hub": {

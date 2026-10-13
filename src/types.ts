@@ -9424,8 +9424,8 @@ export type RainRadarMapStyle = 'auto' | 'light' | 'dark' | 'streets' | 'satelli
 /** Who draws the map under the radar. Everything but `esri` needs the user's own key. */
 export type RainRadarMapProvider = 'esri' | 'google' | 'mapbox' | 'maptiler';
 
-/** Where radar frames come from. `openweather` needs the user's own API key. */
-export type RainRadarSource = 'rainviewer' | 'openweather';
+/** Where radar frames come from. `openweather` and `rainbow` need the user's own API key. */
+export type RainRadarSource = 'rainviewer' | 'openweather' | 'rainbow';
 
 export interface RainRadarModule extends BaseModule {
   type: 'rain_radar';
@@ -9478,6 +9478,8 @@ export interface RainRadarModule extends BaseModule {
   radar_source?: RainRadarSource | undefined;
   /** The user's own OpenWeather API key (stored in the dashboard config). */
   openweather_api_key?: string | undefined;
+  /** The user's own Rainbow.ai API key (stored in the dashboard config). */
+  rainbow_api_key?: string | undefined;
   /** Show a button that opens the map full screen. */
   show_fullscreen?: boolean | undefined;
   /** Base map provider. Defaults to Esri (keyless); others are used only once a key is set. */
