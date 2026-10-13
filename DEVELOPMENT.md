@@ -94,6 +94,16 @@ The **Ultra Card Hub** (sidebar panel) is **served by the Ultra Card Connect int
 
 ---
 
+## Preview branch on the .55 test instance
+
+Keep **`npm run ha55:watch`** running in a Terminal tab on the Mac. It polls the `ha55-preview` branch every 15 seconds; whenever someone pushes to it (for example a cloud session finishing a fix), it builds that commit in its own clone under `~/Library/Application Support/UltraCardHA55`, deploys the card to `192.168.4.55` only, and shows a notification. Then just refresh the dashboard.
+
+- Push a branch to preview: `git push --force origin HEAD:ha55-preview`.
+- The host is fixed in the script and the deploy is card-only (no Connect sync, no integration copy).
+- A failed build or deploy is shown in the Terminal tab and as a notification; the next push retries.
+
+---
+
 ## Development Workflow
 
 ### Fastest Iteration (~10-15 seconds)
