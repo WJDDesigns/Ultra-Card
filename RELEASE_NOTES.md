@@ -2,17 +2,19 @@
 
 ## Version 3.14.0-beta6
 
-The sixth 3.14.0 beta adds a "Hide when empty" option to the Battery Monitor, so a battery list with nothing to show no longer leaves an empty panel or a gap on your dashboard. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+The sixth 3.14.0 beta adds Rainbow.ai as a Rain Radar source with a 2-hour rain forecast, and a "Hide when empty" option to the Battery Monitor, so a battery list with nothing to show no longer leaves an empty panel or a gap on your dashboard. This is a pre-release for testing — please report anything odd on GitHub or Discord.
 
 **If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
 
 ### 🚀 New Features
 
+- **Rainbow.ai radar source with forecast** - Choose Rainbow.ai under Map and radar and enter your own key from developer.rainbow.ai to see the current rain plus a 2-hour forecast in half-hour steps; Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, and RainViewer stays the free default
 - **Hide when empty for Battery Monitor** - Turn it on in the General tab and the module disappears from the dashboard when no batteries match, for example when "Show only below low threshold" is on and every battery is fine; a column, row or whole card left with nothing to show hides too, so no gap is left between cards. It always stays visible while editing
 
 ### 🔧 Improvements
 
 - **Requested on GitHub** - Thanks to jrdeee for suggesting hiding empty modules (#156)
+- **Rain Radar ideas from the community** - Thanks to larrysansan for suggesting a radar source with a free forecast
 
 ## Version 3.14.0-beta5
 
