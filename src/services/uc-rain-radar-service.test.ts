@@ -346,10 +346,27 @@ describe('Rainbow.ai source', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
-  it('throws when the key is refused or no snapshot comes back', async () => {
+  it('falls back to the second endpoint, then to tile probing', async () => {
+    const second = vi.fn(async (url: string) =>
+      url.includes('/v1/weather/map/')
+        ? { ok: true, json: async () => ({ snapshot: SNAP }) }
+        : { ok: false, json: async () => ({}) }
+    );
+    expect((await loadRainbowFrames(KEY, false, 0, second)).frames[0]?.path).toBe(`${SNAP}/0`);
+    clearRadarCache();
+    const blocked = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    const now = (SNAP + 300) * 1000;
+    const probe = vi.fn(async (url: string) => url.includes(`/${SNAP - 600}/0/`));
+    const set = await loadRainbowFrames(KEY, false, now, blocked, probe);
+    expect(set.frames[0]?.path).toBe(`${SNAP - 600}/0`);
+    expect(probe).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws when the key is refused everywhere', async () => {
     const refused = vi.fn(async () => ({ ok: false, json: async () => ({}) }));
-    await expect(loadRainbowFrames(KEY, true, 0, refused)).rejects.toThrow();
-    await expect(loadRainbowFrames(KEY, true, 0, okFetch({}))).rejects.toThrow();
+    await expect(loadRainbowFrames(KEY, true, 0, refused, async () => false)).rejects.toThrow();
   });
 
   it('loads through loadModuleFrames and credits Rainbow.ai', async () => {

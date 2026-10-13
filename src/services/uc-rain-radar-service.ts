@@ -564,19 +564,59 @@ export function parseRainbowSnapshot(payload: unknown): number | null {
 
 const rainbowCache = new Map<string, { snapshot: number; at: number }>();
 
-/** Frames for Rainbow.ai. Throws when the key is refused or no snapshot comes back. */
+/** Snapshot endpoints; Rainbow's docs show both paths. */
+const RAINBOW_SNAPSHOT_URLS = [
+  `${RAINBOW_API}/snapshot`,
+  'https://api.rainbow.ai/v1/weather/map/snapshot',
+] as const;
+const RAINBOW_STEP = 600;
+
+/** Ask the snapshot endpoints; null when none answers (refused key, or the browser blocks the request). */
+async function fetchRainbowSnapshot(key: string, fetcher: FetchLike): Promise<number | null> {
+  for (const url of RAINBOW_SNAPSHOT_URLS) {
+    try {
+      const res = await fetcher(`${url}?token=${encodeURIComponent(key)}`);
+      if (!res.ok) continue;
+      const snapshot = parseRainbowSnapshot(await res.json());
+      if (snapshot !== null) return snapshot;
+    } catch {
+      // Network or CORS failure: try the next endpoint, then tile probing.
+    }
+  }
+  return null;
+}
+
+/**
+ * Find the newest snapshot by loading one tile per candidate time. Images need
+ * no CORS, so this works even when the snapshot endpoint can't be read.
+ */
+async function probeRainbowSnapshot(
+  key: string,
+  now: number,
+  probe: TileProbe
+): Promise<number | null> {
+  const newest = Math.floor(now / 1000 / RAINBOW_STEP) * RAINBOW_STEP;
+  for (let k = 0; k < 6; k++) {
+    const snapshot = newest - k * RAINBOW_STEP;
+    const url = rainbowTileUrl(key, { path: `${snapshot}/0` }).replace('{z}/{x}/{y}', '2/1/1');
+    if (await probe(url)) return snapshot;
+  }
+  return null;
+}
+
+/** Frames for Rainbow.ai. Throws when the key is refused or no snapshot is found. */
 export async function loadRainbowFrames(
   key: string,
   includeForecast: boolean,
   now: number = Date.now(),
-  fetcher: FetchLike = (u: string) => fetch(u, { cache: 'no-store' })
+  fetcher: FetchLike = (u: string) => fetch(u, { cache: 'no-store' }),
+  probe: TileProbe = imageProbe
 ): Promise<RadarFrameSet> {
   let hit = rainbowCache.get(key);
   if (!hit || now - hit.at >= RAINBOW_TTL_MS) {
-    const res = await fetcher(`${RAINBOW_API}/snapshot?token=${encodeURIComponent(key)}`);
-    if (!res.ok) throw new Error('Rainbow.ai rejected the API key');
-    const snapshot = parseRainbowSnapshot(await res.json());
-    if (snapshot === null) throw new Error('Rainbow.ai returned no snapshot');
+    const snapshot =
+      (await fetchRainbowSnapshot(key, fetcher)) ?? (await probeRainbowSnapshot(key, now, probe));
+    if (snapshot === null) throw new Error('Rainbow.ai returned no radar for this key');
     hit = { snapshot, at: now };
     rainbowCache.set(key, hit);
   }
