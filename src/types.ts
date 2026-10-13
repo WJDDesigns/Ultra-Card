@@ -237,6 +237,8 @@ export interface BaseModule {
   user_visibility?: UserVisibility | undefined;
   // Responsive visibility - hide on specific device breakpoints
   hidden_on_devices?: DeviceBreakpoint[] | undefined;
+  /** Hide on the dashboard when the module reports nothing to show (see UltraModule.isEmpty). */
+  hide_when_empty?: boolean | undefined;
   // Legacy design properties (for backward compatibility)
   background_color?: string | undefined;
   background_image?: string | undefined;
