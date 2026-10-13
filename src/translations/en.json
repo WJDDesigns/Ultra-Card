@@ -6047,7 +6047,7 @@
       "play": "Play",
       "timeline": "Radar time",
       "radar_source": "Radar source",
-      "radar_source_desc": "RainViewer is free and needs no account. OpenWeather uses your own API key.",
+      "radar_source_desc": "RainViewer is free and needs no account. OpenWeather and Rainbow.ai use your own API key.",
       "openweather_api_key": "OpenWeather API key",
       "openweather_api_key_desc": "From your openweathermap.org account. Animated history and forecast need a plan with Weather Maps 2.0; other keys show current rain only. The key is saved in this dashboard, so anyone who can edit it can see the key.",
       "openweather_api_key_missing": "Enter your key from openweathermap.org. Until then the radar uses RainViewer.",
@@ -6062,7 +6062,10 @@
       "map_api_key_mapbox": "A Mapbox access token (starts with pk.) from account.mapbox.com.",
       "map_api_key_maptiler": "A MapTiler API key from cloud.maptiler.com.",
       "map_api_key_note": "The key is saved in this dashboard, so anyone who can edit it can see the key. If the key is refused the map switches back to Esri.",
-      "map_api_key_missing": "Enter your key for this provider. Until then the map uses Esri."
+      "map_api_key_missing": "Enter your key for this provider. Until then the map uses Esri.",
+      "rainbow_api_key": "Rainbow.ai API key",
+      "rainbow_api_key_desc": "From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, so a map left on screen all day can cost money. The key is saved in this dashboard, so anyone who can edit it can see the key.",
+      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer."
     }
   },
   "hub": {

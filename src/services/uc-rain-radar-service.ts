@@ -53,10 +53,10 @@ export interface RadarFrame {
 }
 
 /** How a frame set's tiles are addressed. */
-export type RadarProvider = 'rainviewer' | 'openweather2' | 'openweather1';
+export type RadarProvider = 'rainviewer' | 'openweather2' | 'openweather1' | 'rainbow';
 
 export interface RadarFrameSet {
-  /** Tile host (RainViewer), or the API key for OpenWeather sets. */
+  /** Tile host (RainViewer), or the API key for OpenWeather and Rainbow sets. */
   host: string;
   /** Missing means RainViewer. */
   provider?: RadarProvider | undefined;
@@ -396,10 +396,15 @@ export function sourceUrlFor(module: Pick<RainRadarModule, 'source_url'>): strin
   return /^https?:\/\//i.test(custom) ? custom : RAINVIEWER_MAPS_URL;
 }
 
-type SourceFields = Pick<RainRadarModule, 'source_url' | 'radar_source' | 'openweather_api_key'>;
+type SourceFields = Pick<
+  RainRadarModule,
+  'source_url' | 'radar_source' | 'openweather_api_key' | 'rainbow_api_key'
+>;
 
 export function maxNativeZoomFor(module: SourceFields): number {
-  if (radarSourceFor(module) === 'openweather') return OPENWEATHER_MAX_NATIVE_ZOOM;
+  const source = radarSourceFor(module);
+  if (source === 'openweather') return OPENWEATHER_MAX_NATIVE_ZOOM;
+  if (source === 'rainbow') return RAINBOW_MAX_NATIVE_ZOOM;
   return sourceUrlFor(module) === RAINVIEWER_MAPS_URL
     ? RAINVIEWER_MAX_NATIVE_ZOOM
     : CUSTOM_SOURCE_MAX_NATIVE_ZOOM;
@@ -424,11 +429,11 @@ export function openWeatherKey(module: Pick<RainRadarModule, 'openweather_api_ke
   return /^[A-Za-z0-9]{8,64}$/.test(key) ? key : '';
 }
 
-/** OpenWeather is used only when chosen AND a key is set; otherwise RainViewer. */
+/** A keyed source is used only when chosen AND its key is set; otherwise RainViewer. */
 export function radarSourceFor(module: SourceFields): RainRadarSource {
-  return module.radar_source === 'openweather' && openWeatherKey(module)
-    ? 'openweather'
-    : 'rainviewer';
+  if (module.radar_source === 'openweather' && openWeatherKey(module)) return 'openweather';
+  if (module.radar_source === 'rainbow' && rainbowKey(module)) return 'rainbow';
+  return 'rainviewer';
 }
 
 /**
@@ -515,12 +520,128 @@ export async function loadOpenWeatherFrames(
   return { host: key, provider: provider.provider, frames, fetchedAt: now };
 }
 
+// ── Rainbow.ai (opt-in, the user's own key) ─────────────────────────────────
+
+export const RAINBOW_ATTRIBUTION =
+  '<a href="https://www.rainbow.ai/" target="_blank" rel="noopener">Rainbow.ai</a>';
+/** Rainbow precipitation tiles are served up to zoom 7; Leaflet scales them beyond. */
+export const RAINBOW_MAX_NATIVE_ZOOM = 7;
+const RAINBOW_API = 'https://api.rainbow.ai/tiles/v1';
+/**
+ * Forecast offsets (seconds after the snapshot). Rainbow forecasts 4 hours in
+ * 10-minute steps, but every frame costs a screenful of tiles from the free
+ * monthly allowance, so only half-hour steps for two hours are shown.
+ */
+export const RAINBOW_FORECAST_OFFSETS = [0, 1800, 3600, 5400, 7200] as const;
+/** Snapshots update every 10 minutes; checking more often only spends quota. */
+export const RAINBOW_TTL_MS = 10 * 60 * 1000;
+
+export function rainbowKey(module: Pick<RainRadarModule, 'rainbow_api_key'>): string {
+  const key = (module.rainbow_api_key || '').trim();
+  return /^[A-Za-z0-9_-]{8,128}$/.test(key) ? key : '';
+}
+
+/** Frames for one Rainbow snapshot: now, plus forecast steps when wanted. */
+export function rainbowFrames(snapshot: number, includeForecast: boolean): RadarFrame[] {
+  const offsets = includeForecast ? RAINBOW_FORECAST_OFFSETS : RAINBOW_FORECAST_OFFSETS.slice(0, 1);
+  return offsets.map(offset => ({
+    time: snapshot + offset,
+    path: `${snapshot}/${offset}`,
+    forecast: offset > 0,
+  }));
+}
+
+export function rainbowTileUrl(key: string, frame: Pick<RadarFrame, 'path'>): string {
+  return `${RAINBOW_API}/precip/${frame.path}/{z}/{x}/{y}?token=${encodeURIComponent(key)}`;
+}
+
+/** Read the snapshot timestamp from a Rainbow snapshot response. */
+export function parseRainbowSnapshot(payload: unknown): number | null {
+  const value = (payload as { snapshot?: unknown } | null)?.snapshot;
+  const n = typeof value === 'string' ? Number(value) : value;
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+}
+
+const rainbowCache = new Map<string, { snapshot: number; at: number }>();
+
+/** Snapshot endpoints; Rainbow's docs show both paths. */
+const RAINBOW_SNAPSHOT_URLS = [
+  `${RAINBOW_API}/snapshot`,
+  'https://api.rainbow.ai/v1/weather/map/snapshot',
+] as const;
+const RAINBOW_STEP = 600;
+
+/** Ask the snapshot endpoints; null when none answers (refused key, or the browser blocks the request). */
+async function fetchRainbowSnapshot(key: string, fetcher: FetchLike): Promise<number | null> {
+  for (const url of RAINBOW_SNAPSHOT_URLS) {
+    try {
+      const res = await fetcher(`${url}?token=${encodeURIComponent(key)}`);
+      if (!res.ok) continue;
+      const snapshot = parseRainbowSnapshot(await res.json());
+      if (snapshot !== null) return snapshot;
+    } catch {
+      // Network or CORS failure: try the next endpoint, then tile probing.
+    }
+  }
+  return null;
+}
+
+/**
+ * Find the newest snapshot by loading one tile per candidate time. Images need
+ * no CORS, so this works even when the snapshot endpoint can't be read.
+ */
+async function probeRainbowSnapshot(
+  key: string,
+  now: number,
+  probe: TileProbe
+): Promise<number | null> {
+  const newest = Math.floor(now / 1000 / RAINBOW_STEP) * RAINBOW_STEP;
+  for (let k = 0; k < 6; k++) {
+    const snapshot = newest - k * RAINBOW_STEP;
+    const url = rainbowTileUrl(key, { path: `${snapshot}/0` }).replace('{z}/{x}/{y}', '2/1/1');
+    if (await probe(url)) return snapshot;
+  }
+  return null;
+}
+
+/** Frames for Rainbow.ai. Throws when the key is refused or no snapshot is found. */
+export async function loadRainbowFrames(
+  key: string,
+  includeForecast: boolean,
+  now: number = Date.now(),
+  fetcher: FetchLike = (u: string) => fetch(u, { cache: 'no-store' }),
+  probe: TileProbe = imageProbe
+): Promise<RadarFrameSet> {
+  let hit = rainbowCache.get(key);
+  if (!hit || now - hit.at >= RAINBOW_TTL_MS) {
+    const snapshot =
+      (await fetchRainbowSnapshot(key, fetcher)) ?? (await probeRainbowSnapshot(key, now, probe));
+    if (snapshot === null) throw new Error('Rainbow.ai returned no radar for this key');
+    hit = { snapshot, at: now };
+    rainbowCache.set(key, hit);
+  }
+  return {
+    host: key,
+    provider: 'rainbow',
+    frames: rainbowFrames(hit.snapshot, includeForecast),
+    fetchedAt: hit.at,
+  };
+}
+
+/** Attribution for the radar layer of a frame set. */
+export function radarAttributionFor(provider: RadarProvider | undefined): string {
+  if (provider === 'rainbow') return RAINBOW_ATTRIBUTION;
+  if (provider === 'openweather2' || provider === 'openweather1') return OPENWEATHER_ATTRIBUTION;
+  return RAINVIEWER_ATTRIBUTION;
+}
+
 /** Tile URL template for any frame set. */
 export function frameTileUrl(
   set: Pick<RadarFrameSet, 'host' | 'provider'>,
   frame: Pick<RadarFrame, 'path'>,
   options: { smooth: boolean; snow: boolean }
 ): string {
+  if (set.provider === 'rainbow') return rainbowTileUrl(set.host, frame);
   if (set.provider === 'openweather2' || set.provider === 'openweather1') {
     return openWeatherTileUrl(set.host, frame, set.provider);
   }
@@ -535,6 +656,9 @@ export async function loadModuleFrames(
   if (radarSourceFor(module) === 'openweather') {
     return loadOpenWeatherFrames(openWeatherKey(module), forecast, module.time_span);
   }
+  if (radarSourceFor(module) === 'rainbow') {
+    return loadRainbowFrames(rainbowKey(module), forecast);
+  }
   const set = await loadRadarFrames(sourceUrlFor(module), forecast);
   return { ...set, frames: filterByTimeSpan(set.frames, module.time_span) };
 }
@@ -543,10 +667,13 @@ export async function loadModuleFrames(
 export function sourceKeyFor(
   module: SourceFields & Pick<RainRadarModule, 'show_forecast' | 'time_span'>
 ): string {
+  const source = radarSourceFor(module);
   const src =
-    radarSourceFor(module) === 'openweather'
+    source === 'openweather'
       ? `owm:${openWeatherKey(module)}`
-      : sourceUrlFor(module);
+      : source === 'rainbow'
+        ? `rainbow:${rainbowKey(module)}`
+        : sourceUrlFor(module);
   return `${src}|${module.show_forecast !== false}|${module.time_span ?? ''}`;
 }
 
@@ -602,4 +729,5 @@ export function clearRadarCache(): void {
   cache.clear();
   inflight.clear();
   providerCache.clear();
+  rainbowCache.clear();
 }
