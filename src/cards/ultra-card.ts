@@ -17,6 +17,7 @@ import {
 /** Per-render context passed to row/column/module helpers to avoid recomputing per module. */
 interface RenderContext {
   isHaPreview: boolean;
+  isInCardEditor: boolean;
   isDashboardEditMode: boolean;
   breakpoint: DeviceBreakpoint;
   hass: HomeAssistant;
@@ -226,6 +227,8 @@ export class UltraCard extends LitElement {
     moduleTypes: Set<string>;
     onlyInvisibleModules: boolean;
     onlyPopupModules: boolean;
+    /** Any module uses "Hide when empty"; skips the collapse checks otherwise. */
+    hasHideWhenEmpty: boolean;
     allPopupsInvisible: boolean;
     hasLogicConditions: boolean;
     videoBgModules: Array<{ id: string; module: CardModule }>;
@@ -432,6 +435,7 @@ export class UltraCard extends LitElement {
       moduleTypes,
       onlyInvisibleModules,
       onlyPopupModules,
+      hasHideWhenEmpty: allModules.some(m => m.hide_when_empty === true),
       allPopupsInvisible,
       hasLogicConditions,
       videoBgModules,
@@ -1623,7 +1627,13 @@ export class UltraCard extends LitElement {
     const isInCardEditor = isHaPreview || this._isCardEditDialogOpen();
     const isDashboardEditMode = this._getCachedDashboardEditMode();
     const breakpoint = responsiveDesignService.getCurrentBreakpoint();
-    const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint, hass: effectiveHass };
+    const renderCtx: RenderContext = {
+      isHaPreview,
+      isInCardEditor,
+      isDashboardEditMode,
+      breakpoint,
+      hass: effectiveHass,
+    };
 
     // Card-level per-user visibility (skip in editor so you can still edit when hidden from yourself)
     if (
@@ -1642,7 +1652,10 @@ export class UltraCard extends LitElement {
     }
 
     // Track invisible state; parent visibility side-effects are handled in updated()
-    const isNowInvisible = onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode;
+    const isNowInvisible =
+      (onlyInvisibleModules || this._isLayoutCollapsedEmpty(renderCtx)) &&
+      !isInCardEditor &&
+      !isDashboardEditMode;
     this._lastInvisibleState = isNowInvisible;
 
     if (isNowInvisible) {
@@ -2175,8 +2188,8 @@ export class UltraCard extends LitElement {
       logic_value: rowWithDesign.design?.logic_value,
     });
 
-    // Hide row if conditions not met
-    if (!shouldShow || !globalLogicVisible) {
+    // Hide row if conditions not met, or if everything in it is hidden as empty
+    if (!shouldShow || !globalLogicVisible || this._isRowCollapsedEmpty(row, ctx, rowIndex)) {
       return html``;
     }
 
@@ -2485,13 +2498,13 @@ export class UltraCard extends LitElement {
       logic_value: columnWithDesign.design?.logic_value,
     });
 
-    // Hide column if conditions not met
-    if (!shouldShow || !globalLogicVisible) {
-      return html``;
-    }
-
     // Stable id for template key and CSS (matches _registerLayoutTemplateSubscriptions)
     const colId = (column as any).id ?? `col-${colIndex}`;
+
+    // Hide column if conditions not met, or if everything in it is hidden as empty
+    if (!shouldShow || !globalLogicVisible || this._isColumnCollapsedEmpty(column, colId, ctx)) {
+      return html``;
+    }
     const hiddenOnDevices = (column as any).hidden_on_devices;
     const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-col-${colId}`,
@@ -2669,6 +2682,78 @@ export class UltraCard extends LitElement {
     return columnContent;
   }
 
+  /**
+   * "Hide when empty": the module opted in and its handler reports nothing to show.
+   * Never applies while editing, so the module stays reachable in the editor.
+   */
+  private _isModuleEmptyHidden(module: CardModule, ctx: RenderContext): boolean {
+    if (!module.hide_when_empty || ctx.isInCardEditor || ctx.isDashboardEditMode) return false;
+    return !!getModuleRegistry().getModule(module.type)?.isEmpty?.(module, ctx.hass);
+  }
+
+  private _isLogicVisible(item: CardRow | CardColumn | CardModule, shouldShow: boolean): boolean {
+    const design = (item as { design?: Parameters<typeof logicService.evaluateLogicProperties>[0] })
+      .design;
+    return (
+      shouldShow &&
+      logicService.evaluateLogicProperties({
+        logic_entity: design?.logic_entity,
+        logic_attribute: design?.logic_attribute,
+        logic_operator: design?.logic_operator,
+        logic_value: design?.logic_value,
+      })
+    );
+  }
+
+  /**
+   * A column collapses when every module in it is hidden and at least one of them is
+   * hidden as empty, so layouts that never use "Hide when empty" render as before.
+   */
+  private _isColumnCollapsedEmpty(column: CardColumn, colId: string, ctx: RenderContext): boolean {
+    if (!this._configCache?.hasHideWhenEmpty || ctx.isInCardEditor || ctx.isDashboardEditMode) {
+      return false;
+    }
+    let anyEmpty = false;
+    for (const module of this._resolveModules(column, colId)) {
+      if (!this._isLogicVisible(module, logicService.evaluateModuleVisibility(module))) continue;
+      if (!this._isModuleEmptyHidden(module, ctx)) return false;
+      anyEmpty = true;
+    }
+    return anyEmpty;
+  }
+
+  /** Same rule one level up: every column hidden, at least one of them collapsed as empty. */
+  private _isRowCollapsedEmpty(row: CardRow, ctx: RenderContext, rowIndex: number): boolean {
+    if (!this._configCache?.hasHideWhenEmpty || ctx.isInCardEditor || ctx.isDashboardEditMode) {
+      return false;
+    }
+    const columns = this._resolveColumns(row, row.id ?? `row-${rowIndex}`);
+    let anyEmpty = false;
+    for (let i = 0; i < columns.length; i++) {
+      const column = columns[i];
+      if (!this._isLogicVisible(column, logicService.evaluateColumnVisibility(column, this.config))) {
+        continue;
+      }
+      if (!this._isColumnCollapsedEmpty(column, column.id ?? `col-${i}`, ctx)) return false;
+      anyEmpty = true;
+    }
+    return anyEmpty;
+  }
+
+  /** Whole card hides (no dashboard gap) when every row collapsed as empty. */
+  private _isLayoutCollapsedEmpty(ctx: RenderContext): boolean {
+    if (!this._configCache?.hasHideWhenEmpty) return false;
+    const rows = this.config?.layout?.rows || [];
+    let anyEmpty = false;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!this._isLogicVisible(row, logicService.evaluateRowVisibility(row, this.config))) continue;
+      if (!this._isRowCollapsedEmpty(row, ctx, i)) return false;
+      anyEmpty = true;
+    }
+    return anyEmpty;
+  }
+
   private _renderModule(module: CardModule, ctx: RenderContext): TemplateResult {
     // Check if this is a pro module and if user has access
     const isProModule = this._isProModule(module);
@@ -2689,7 +2774,7 @@ export class UltraCard extends LitElement {
       logic_value: moduleWithDesign.design?.logic_value,
     });
 
-    const isVisible = shouldShow && globalLogicVisible;
+    const isVisible = shouldShow && globalLogicVisible && !this._isModuleEmptyHidden(module, ctx);
     const moduleId = module.id || this._fallbackModuleId(module);
     const previouslyVisible = this._moduleVisibilityState.get(moduleId);
 
