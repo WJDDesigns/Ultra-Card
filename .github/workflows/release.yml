@@ -4,6 +4,19 @@ on:
   push:
     tags:
       - 'v*'
+  # Release without pushing a tag from a computer: this run creates the tag on
+  # `sha` (default: the head of main) and then releases exactly as a tag push
+  # would. A tag pushed with GITHUB_TOKEN does not start this workflow again.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create and release, e.g. v3.14.0-beta6 (must match src/version.ts)'
+        required: true
+        type: string
+      sha:
+        description: 'Commit to tag (default: head of main)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -13,10 +26,30 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && (inputs.sha || 'main') || github.ref }}
+
+      - name: Create the tag (manual runs only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]] || { echo "::error::Bad tag name: $TAG"; exit 1; }
+          VERSION=$(grep -oE "VERSION = '[^']+'" src/version.ts | head -1 | cut -d"'" -f2)
+          [ "v$VERSION" = "$TAG" ] || { echo "::error::src/version.ts says $VERSION, not ${TAG#v}"; exit 1; }
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            echo "::error::Tag $TAG already exists"; exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Ultra Card ${TAG#v}"
+          git push origin "refs/tags/$TAG"
+          echo "Tagged $(git rev-parse HEAD) as $TAG"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -54,12 +87,12 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${TAG#v}" >> $GITHUB_OUTPUT
 
       - name: Generate Release Notes
         id: release_notes
         run: |
-          VERSION="${{ github.ref_name }}"
+          VERSION="$TAG"
           # Remove 'v' prefix from version for matching
           VERSION_NUM="${VERSION#v}"
 
@@ -137,7 +170,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+          if gh release view "${{ env.TAG }}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -146,10 +179,10 @@ jobs:
       - name: Create draft release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.TAG }}
           name: What's New in ${{ steps.version.outputs.VERSION }}
           draft: true
-          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          prerelease: ${{ contains(env.TAG, 'alpha') || contains(env.TAG, 'beta') || contains(env.TAG, 'rc') }}
           generate_release_notes: false
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
           fail_on_unmatched_files: true
@@ -171,7 +204,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ASSETS=$(gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" --json assets -q '.assets[].name')
+          ASSETS=$(gh release view "${{ env.TAG }}" --repo "${{ github.repository }}" --json assets -q '.assets[].name')
           echo "$ASSETS"
           echo "$ASSETS" | grep -qx 'ultra-card.js' || { echo "::error::ultra-card.js is not attached to the release"; exit 1; }
           echo "$ASSETS" | grep -q '^uc-.*\.js$' || { echo "::error::no uc-*.js chunks attached to the release"; exit 1; }
@@ -180,7 +213,7 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "${{ github.ref_name }}" --repo "${{ github.repository }}" --draft=false
+        run: gh release edit "${{ env.TAG }}" --repo "${{ github.repository }}" --draft=false
 
       # `announce-release.yml` is the single source of truth for the Discord
       # announcement. Publishing with GITHUB_TOKEN does not fire the
