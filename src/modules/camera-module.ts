@@ -4,7 +4,7 @@ import { ref } from 'lit/directives/ref.js';
 import type { HomeAssistant } from '../ha/types';
 import { ucToastService } from '../services/uc-toast-service';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, CameraModule, UltraCardConfig } from '../types';
+import { CardModule, CameraActionButton, CameraModule, UltraCardConfig } from '../types';
 import { FormUtils } from '../utils/form-utils';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
@@ -21,6 +21,16 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
+import {
+  CAMERA_ACTION_CONFIRM_MS,
+  DEFAULT_LIVE_TRIGGER_HOLD,
+  cameraActionIcon,
+  cameraActionIsActive,
+  cameraActionLabel,
+  cameraActionNeedsConfirm,
+  cameraLiveTriggerState,
+  runCameraAction,
+} from '../utils/uc-camera-actions';
 
 /** Unified-template output keys the camera module reads (plain entity_id strings also work). */
 const CAMERA_TEMPLATE_KEYS = ['entity', 'visible', 'overlay_text', 'overlay_color'] as const;
@@ -55,6 +65,12 @@ interface CameraRuntimeState {
   clickTimeout?: any;
   holdTimeout?: any;
   isHolding?: boolean | undefined;
+  /** Repaint scheduled for when a triggered live stream drops back to its normal mode. */
+  triggerTimer?: ReturnType<typeof setTimeout> | undefined;
+  triggerUntil?: number | undefined;
+  /** Action button waiting for its confirming second tap. */
+  confirmButton?: string | undefined;
+  confirmTimer?: ReturnType<typeof setTimeout> | undefined;
 }
 
 export class UltraCameraModule extends BaseUltraModule {
@@ -112,6 +128,12 @@ export class UltraCameraModule extends BaseUltraModule {
       view_mode: 'auto',
       refresh_interval: 10, // Seconds between refreshes (only used in 'snapshot' mode, range: 1-300)
       audio_enabled: false, // Only applies in 'live' mode
+      live_trigger_entity: '',
+      live_trigger_hold: DEFAULT_LIVE_TRIGGER_HOLD,
+
+      // Buttons over the feed, also shown in fullscreen
+      action_buttons: [],
+      action_buttons_position: 'bottom-center',
 
       // Image quality
       image_quality: 'high',
@@ -337,6 +359,9 @@ export class UltraCameraModule extends BaseUltraModule {
           </div>
         </div>
 
+        <!-- Action Buttons -->
+        ${this._renderActionButtonsEditor(cameraModule, hass, updateModule)}
+
         <!-- Display Settings Section -->
         <div
           class="settings-section"
@@ -392,6 +417,74 @@ export class UltraCameraModule extends BaseUltraModule {
               }
             )}
           </div>
+
+          <!-- Go live while an entity is on (doorbell ring, motion) -->
+          ${
+            (cameraModule.view_mode || 'auto') !== 'live'
+              ? html`
+                  <div style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.camera.live_trigger.title', lang, 'Go Live When'),
+                      localize(
+                        'editor.camera.live_trigger.desc',
+                        lang,
+                        'Switch to a live stream while this entity is on, such as a doorbell ring, motion sensor or toggle helper. Event entities go live each time they fire.'
+                      ),
+                      hass,
+                      { live_trigger_entity: cameraModule.live_trigger_entity || '' },
+                      [
+                        this.entityField('live_trigger_entity', [
+                          'event',
+                          'binary_sensor',
+                          'input_boolean',
+                          'switch',
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        updateModule({
+                          live_trigger_entity: e.detail.value.live_trigger_entity || '',
+                        });
+                        this.triggerPreviewUpdate();
+                      }
+                    )}
+                  </div>
+                  ${
+                    cameraModule.live_trigger_entity
+                      ? html`
+                          <div style="margin-bottom: 16px;">
+                            ${this.renderFieldSection(
+                              localize(
+                                'editor.camera.live_trigger_hold.title',
+                                lang,
+                                'Stay Live For (seconds)'
+                              ),
+                              localize(
+                                'editor.camera.live_trigger_hold.desc',
+                                lang,
+                                'How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds.'
+                              ),
+                              hass,
+                              {
+                                live_trigger_hold:
+                                  cameraModule.live_trigger_hold ?? DEFAULT_LIVE_TRIGGER_HOLD,
+                              },
+                              [
+                                FormUtils.createSchemaItem('live_trigger_hold', {
+                                  number: { min: 0, max: 3600, mode: 'box' },
+                                }),
+                              ],
+                              (e: CustomEvent) =>
+                                updateModule({
+                                  live_trigger_hold: e.detail.value.live_trigger_hold,
+                                })
+                            )}
+                          </div>
+                        `
+                      : ''
+                  }
+                `
+              : ''
+          }
 
           <!-- Live stream options -->
           ${(cameraModule.view_mode || 'auto') === 'live'
@@ -1143,7 +1236,17 @@ export class UltraCameraModule extends BaseUltraModule {
     let cameraEntity = templateEntity || cameraModule.entity;
 
     const state = this._runtimeFor(cameraModule.id);
-    const viewMode: CameraViewMode = (cameraModule.view_mode as CameraViewMode) || 'auto';
+    const configuredMode: CameraViewMode = (cameraModule.view_mode as CameraViewMode) || 'auto';
+    const trigger =
+      configuredMode === 'live'
+        ? { live: false }
+        : cameraLiveTriggerState(
+            hass,
+            cameraModule.live_trigger_entity,
+            cameraModule.live_trigger_hold
+          );
+    this._scheduleTriggerExpiry(state, trigger.until);
+    const viewMode: CameraViewMode = trigger.live ? 'live' : configuredMode;
     const isLiveMode = viewMode === 'live';
 
     // While the editor is open the entity changes on every keystroke, so swaps are serialised to
@@ -1422,6 +1525,7 @@ export class UltraCameraModule extends BaseUltraModule {
                       `
                     : ''}
                 `}
+          ${this._renderActionBar(cameraModule, hass, showAudioToggle)}
         </div>
       </div>
     `;
@@ -1449,6 +1553,391 @@ export class UltraCameraModule extends BaseUltraModule {
         </div>`;
 
     return this.wrapWithAnimation(cameraWrapper, module, hass);
+  }
+
+  private _renderActionButtonsEditor(
+    cameraModule: CameraModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const lang = hass.locale?.language || 'en';
+    const buttons = cameraModule.action_buttons || [];
+    const save = (next: CameraActionButton[]) => {
+      updateModule({ action_buttons: next } as Partial<CardModule>);
+      this.triggerPreviewUpdate();
+    };
+    const patch = (index: number, updates: Partial<CameraActionButton>) =>
+      save(buttons.map((b, i) => (i === index ? { ...b, ...updates } : b)));
+    const remove = (index: number) => save(buttons.filter((_, i) => i !== index));
+    const add = () => save([...buttons, { id: this.generateId('camera_action'), entity: '' }]);
+
+    return html`
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
+      >
+        <div class="section-title" style="margin-bottom: 8px;">
+          ${localize('editor.camera.action_buttons.title', lang, 'Action Buttons')}
+        </div>
+        <div class="field-description">
+          ${localize(
+            'editor.camera.action_buttons.desc',
+            lang,
+            'Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.'
+          )}
+        </div>
+
+        ${buttons.map(
+          (button, index) => html`
+            <div
+              style="border: 1px solid var(--divider-color); border-radius: var(--uc-r-8, 8px); padding: 12px; margin-bottom: 12px;"
+            >
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="field-title" style="margin: 0;">
+                  ${localize('editor.camera.action_buttons.button', lang, 'Button')} ${index + 1}
+                </div>
+                <button
+                  type="button"
+                  class="uc-cam-ed-icon-btn"
+                  title=${localize('editor.camera.action_buttons.remove', lang, 'Remove button')}
+                  aria-label=${localize('editor.camera.action_buttons.remove', lang, 'Remove button')}
+                  @click=${() => remove(index)}
+                >
+                  <ha-icon icon="mdi:delete-outline"></ha-icon>
+                </button>
+              </div>
+              ${this.renderFieldSection(
+                localize('editor.camera.action_buttons.entity', lang, 'Entity'),
+                '',
+                hass,
+                { entity: button.entity || '' },
+                [this.entityField('entity')],
+                (e: CustomEvent) => patch(index, { entity: e.detail.value.entity || '' })
+              )}
+              ${this.renderFieldSection(
+                localize('editor.camera.action_buttons.icon', lang, 'Icon'),
+                localize(
+                  'editor.camera.action_buttons.icon_desc',
+                  lang,
+                  'Leave empty to follow the entity, such as an open or closed lock.'
+                ),
+                hass,
+                { icon: button.icon || '' },
+                [this.iconField('icon')],
+                (e: CustomEvent) => patch(index, { icon: e.detail.value.icon || undefined })
+              )}
+              ${this.renderFieldSection(
+                localize('editor.camera.action_buttons.label', lang, 'Label'),
+                localize(
+                  'editor.camera.action_buttons.label_desc',
+                  lang,
+                  'Shown in fullscreen and as the tooltip. Leave empty to use the entity name.'
+                ),
+                hass,
+                { label: button.label || '' },
+                [this.textField('label')],
+                (e: CustomEvent) => patch(index, { label: e.detail.value.label || undefined })
+              )}
+              ${this.renderFieldSection(
+                localize('editor.camera.action_buttons.confirm', lang, 'Tap Twice to Confirm'),
+                localize(
+                  'editor.camera.action_buttons.confirm_desc',
+                  lang,
+                  'Ask for a second tap before running, so a stray tap cannot unlock a door. On by default for locks.'
+                ),
+                hass,
+                { confirm: cameraActionNeedsConfirm(button) },
+                [this.booleanField('confirm')],
+                (e: CustomEvent) => patch(index, { confirm: e.detail.value.confirm })
+              )}
+            </div>
+          `
+        )}
+
+        <button type="button" class="uc-cam-ed-btn" @click=${add}>
+          <ha-icon icon="mdi:plus"></ha-icon>
+          ${localize('editor.camera.action_buttons.add', lang, 'Add Button')}
+        </button>
+
+        ${
+          buttons.length
+            ? html`
+                <div style="margin-top: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.camera.action_buttons.position', lang, 'Button Position'),
+                    '',
+                    hass,
+                    {
+                      action_buttons_position:
+                        cameraModule.action_buttons_position || 'bottom-center',
+                    },
+                    [
+                      this.selectField('action_buttons_position', [
+                        {
+                          value: 'bottom-left',
+                          label: localize(
+                            'editor.camera.name_position.options.bottom_left',
+                            lang,
+                            'Bottom Left'
+                          ),
+                        },
+                        {
+                          value: 'bottom-center',
+                          label: localize(
+                            'editor.camera.name_position.options.bottom_middle',
+                            lang,
+                            'Bottom Middle'
+                          ),
+                        },
+                        {
+                          value: 'bottom-right',
+                          label: localize(
+                            'editor.camera.name_position.options.bottom_right',
+                            lang,
+                            'Bottom Right'
+                          ),
+                        },
+                      ]),
+                    ],
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.action_buttons_position;
+                      if (next === (cameraModule.action_buttons_position || 'bottom-center'))
+                        return;
+                      updateModule({ action_buttons_position: next });
+                      this.triggerPreviewUpdate();
+                    }
+                  )}
+                </div>
+              `
+            : ''
+        }
+      </div>
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Live trigger and action buttons
+  // ---------------------------------------------------------------------------
+
+  /** Repaints once a triggered stream's hold runs out, since no state change may announce it. */
+  private _scheduleTriggerExpiry(state: CameraRuntimeState, until: number | undefined): void {
+    if (state.triggerUntil === until) return;
+    if (state.triggerTimer) clearTimeout(state.triggerTimer);
+    state.triggerTimer = undefined;
+    state.triggerUntil = until;
+    if (until === undefined) return;
+    state.triggerTimer = setTimeout(
+      () => {
+        state.triggerTimer = undefined;
+        state.triggerUntil = undefined;
+        this.triggerPreviewUpdate(true, true);
+      },
+      Math.max(0, until - Date.now()) + 250
+    );
+  }
+
+  /** The page's own `hass`, for overlays and handlers that run outside a render pass. */
+  private _appHass(): HomeAssistant | undefined {
+    return (document.querySelector('home-assistant') as (Element & { hass?: HomeAssistant }) | null)
+      ?.hass;
+  }
+
+  private _validActionButtons(module: CameraModule): CameraActionButton[] {
+    return (module.action_buttons || []).filter(b => !!b?.entity);
+  }
+
+  private _renderActionBar(
+    module: CameraModule,
+    hass: HomeAssistant,
+    besideAudioButton = false
+  ): TemplateResult | string {
+    const buttons = this._validActionButtons(module);
+    if (!buttons.length) return '';
+    const lang = hass?.locale?.language || 'en';
+    const state = this._runtimeFor(module.id);
+    const position = module.action_buttons_position || 'bottom-center';
+    const stop = (e: Event) => e.stopPropagation();
+
+    return html`
+      <div class="camera-action-bar ${position} ${besideAudioButton ? 'has-audio' : ''}">
+        ${buttons.map(button => {
+          const stateObj = hass?.states?.[button.entity];
+          const confirming = state.confirmButton === button.id;
+          const label = cameraActionLabel(button, stateObj);
+          const title = confirming
+            ? localize('editor.camera.action_buttons.tap_again', lang, 'Tap again to confirm')
+            : label;
+          return html`
+            <button
+              type="button"
+              class="camera-action-btn ${
+                cameraActionIsActive(button.entity, stateObj) ? 'active' : ''
+              } ${confirming ? 'confirming' : ''}"
+              title=${title}
+              aria-label=${title}
+              @mousedown=${stop}
+              @mouseup=${stop}
+              @touchstart=${stop}
+              @touchend=${stop}
+              @dblclick=${stop}
+              @click=${(e: Event) => this._onActionButton(e, module, button)}
+            >
+              <ha-icon icon=${cameraActionIcon(button, stateObj)}></ha-icon>
+              ${
+                confirming
+                  ? html`<span class="camera-action-confirm"
+                      >${localize('editor.camera.action_buttons.tap_again', lang, 'Tap again to confirm')}</span
+                    >`
+                  : ''
+              }
+            </button>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  private _onActionButton(e: Event, module: CameraModule, button: CameraActionButton): void {
+    e.stopPropagation();
+    e.preventDefault();
+    const state = this._runtimeFor(module.id);
+    if (state.confirmTimer) clearTimeout(state.confirmTimer);
+    state.confirmTimer = undefined;
+
+    if (cameraActionNeedsConfirm(button) && state.confirmButton !== button.id) {
+      state.confirmButton = button.id;
+      state.confirmTimer = setTimeout(() => {
+        state.confirmButton = undefined;
+        state.confirmTimer = undefined;
+        this.triggerPreviewUpdate(true, true);
+      }, CAMERA_ACTION_CONFIRM_MS);
+      this.triggerPreviewUpdate(true, true);
+      return;
+    }
+
+    state.confirmButton = undefined;
+    this.triggerPreviewUpdate(true, true);
+    this._runAction(button);
+  }
+
+  private _runAction(button: CameraActionButton): void {
+    const hass = this._hass || this._appHass();
+    if (!hass) return;
+    import('../ha/helpers').then(({ forwardHaptic }) => forwardHaptic('light'));
+    runCameraAction(hass, button).catch((err: unknown) => {
+      ucToastService.error(
+        err instanceof Error && err.message ? err.message : `Could not run ${button.entity}`
+      );
+    });
+  }
+
+  /**
+   * The action buttons for the fullscreen overlay. That overlay lives outside the card's render
+   * tree, so the buttons are plain DOM that re-read entity state once a second.
+   */
+  private _buildFullscreenActionBar(
+    module: CameraModule,
+    zIndex: number
+  ): { element: HTMLElement; dispose: () => void } | undefined {
+    const buttons = this._validActionButtons(module);
+    if (!buttons.length) return undefined;
+
+    const bar = document.createElement('div');
+    bar.className = 'camera-fullscreen-actions';
+    bar.style.cssText = `
+      position: absolute !important;
+      left: 50% !important;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+      transform: translateX(-50%) !important;
+      display: flex !important;
+      gap: 12px !important;
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      max-width: calc(100vw - 32px) !important;
+      z-index: ${zIndex} !important;
+    `;
+
+    let confirmId: string | undefined;
+    let confirmTimer: ReturnType<typeof setTimeout> | undefined;
+    const currentHass = () => this._appHass() || this._hass;
+    const lang = () => currentHass()?.locale?.language || 'en';
+
+    const items = buttons.map(button => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.style.cssText = `
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        min-height: 52px !important;
+        padding: 0 20px !important;
+        border-radius: 26px !important;
+        border: 2px solid rgba(255,255,255,0.6) !important;
+        color: white !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        font-family: inherit !important;
+        cursor: pointer !important;
+        backdrop-filter: blur(6px) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+        transition: background 0.2s ease !important;
+      `;
+      const icon = document.createElement('ha-icon') as HTMLElement & { icon?: string };
+      icon.style.cssText = '--mdc-icon-size: 26px; pointer-events: none;';
+      const text = document.createElement('span');
+      text.style.pointerEvents = 'none';
+      el.append(icon, text);
+      el.addEventListener('click', event => {
+        event.stopPropagation();
+        event.preventDefault();
+        if (confirmTimer) clearTimeout(confirmTimer);
+        confirmTimer = undefined;
+        if (cameraActionNeedsConfirm(button) && confirmId !== button.id) {
+          confirmId = button.id;
+          confirmTimer = setTimeout(() => {
+            confirmId = undefined;
+            refresh();
+          }, CAMERA_ACTION_CONFIRM_MS);
+          refresh();
+          return;
+        }
+        confirmId = undefined;
+        refresh();
+        this._runAction(button);
+      });
+      return { button, el, icon, text };
+    });
+
+    const refresh = () => {
+      const hass = currentHass();
+      for (const item of items) {
+        const stateObj = hass?.states?.[item.button.entity];
+        const confirming = confirmId === item.button.id;
+        item.icon.icon = cameraActionIcon(item.button, stateObj);
+        item.text.textContent = confirming
+          ? localize('editor.camera.action_buttons.tap_again', lang(), 'Tap again to confirm')
+          : cameraActionLabel(item.button, stateObj);
+        const background = confirming
+          ? 'rgba(244,67,54,0.85)'
+          : cameraActionIsActive(item.button.entity, stateObj)
+            ? 'rgba(255,152,0,0.85)'
+            : 'rgba(0,0,0,0.7)';
+        item.el.style.setProperty('background', background, 'important');
+        item.el.setAttribute('aria-label', item.text.textContent || '');
+      }
+    };
+
+    items.forEach(item => bar.appendChild(item.el));
+    refresh();
+    const interval = setInterval(refresh, 1000);
+
+    return {
+      element: bar,
+      dispose: () => {
+        clearInterval(interval);
+        if (confirmTimer) clearTimeout(confirmTimer);
+      },
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -1578,6 +2067,16 @@ export class UltraCameraModule extends BaseUltraModule {
     if (state.holdTimeout) {
       clearTimeout(state.holdTimeout);
       state.holdTimeout = undefined;
+    }
+    if (state.triggerTimer) {
+      clearTimeout(state.triggerTimer);
+      state.triggerTimer = undefined;
+      state.triggerUntil = undefined;
+    }
+    if (state.confirmTimer) {
+      clearTimeout(state.confirmTimer);
+      state.confirmTimer = undefined;
+      state.confirmButton = undefined;
     }
   }
 
@@ -2161,6 +2660,8 @@ export class UltraCameraModule extends BaseUltraModule {
     // Assemble modal
     cameraWrapper.appendChild(cameraContainer);
     cameraWrapper.appendChild(closeButton);
+    const actionBar = this._buildFullscreenActionBar(module, closeButtonZIndex);
+    if (actionBar) cameraWrapper.appendChild(actionBar.element);
     modal.appendChild(cameraWrapper);
     overlayHost.appendChild(modal);
 
@@ -2175,6 +2676,7 @@ export class UltraCameraModule extends BaseUltraModule {
       // Emptying the container first disconnects the player, which is what actually stops the
       // stream; removing the modal alone can leave the connection alive long enough to matter.
       observer.disconnect();
+      actionBar?.dispose();
       cameraContainer.replaceChildren();
       modal.remove();
       document.removeEventListener('keydown', handleEscape);
@@ -3133,6 +3635,80 @@ export class UltraCameraModule extends BaseUltraModule {
         color: rgba(255, 255, 255, 0.9);
       }
       
+      .camera-action-bar {
+        position: absolute;
+        bottom: 10px;
+        z-index: 12;
+        display: flex;
+        gap: 8px;
+        max-width: calc(100% - 20px);
+        flex-wrap: wrap;
+      }
+      .camera-action-bar.bottom-left {
+        left: 10px;
+      }
+      .camera-action-bar.bottom-right {
+        right: 10px;
+      }
+      .camera-action-bar.bottom-right.has-audio {
+        right: 48px;
+      }
+      .camera-action-bar.bottom-center {
+        left: 50%;
+        transform: translateX(-50%);
+        justify-content: center;
+      }
+
+      .camera-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 40px;
+        height: 40px;
+        padding: 0 8px;
+        border: none;
+        border-radius: 20px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.2s ease, transform 0.15s ease;
+      }
+
+      .camera-action-btn ha-icon {
+        --mdc-icon-size: 22px;
+        pointer-events: none;
+      }
+
+      .camera-action-btn:hover {
+        transform: scale(1.05);
+      }
+
+      .camera-action-btn:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
+
+      .camera-action-btn.active {
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 85%, transparent);
+      }
+
+      .camera-action-btn.confirming {
+        background: color-mix(in srgb, var(--error-color, #f44336) 85%, transparent);
+        padding: 0 12px;
+      }
+
+      .camera-action-confirm {
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
       .camera-unavailable {
         display: flex;
         align-items: center;
@@ -3157,6 +3733,39 @@ export class UltraCameraModule extends BaseUltraModule {
       
       .camera-module-clickable:active {
         transform: scale(0.98);
+      }
+
+      .uc-cam-ed-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border: 1px solid var(--primary-color);
+        border-radius: var(--uc-r-8, 8px);
+        background: transparent;
+        color: var(--primary-color);
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .uc-cam-ed-btn:hover {
+        background: rgba(var(--rgb-primary-color), 0.08);
+      }
+      .uc-cam-ed-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+      }
+      .uc-cam-ed-icon-btn:hover {
+        color: var(--error-color, #f44336);
+        background: rgba(var(--rgb-primary-color), 0.08);
       }
 
       /* Standard field styling */

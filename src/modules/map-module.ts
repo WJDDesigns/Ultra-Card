@@ -41,6 +41,7 @@ export class UltraMapModule extends BaseUltraModule {
       map_type: 'roadmap',
       zoom: 14,
       show_map_controls: true,
+      show_fullscreen: true,
       disable_zoom_scroll: false,
       disable_touch_drag: false,
       auto_zoom_entities: false,
@@ -382,6 +383,19 @@ export class UltraMapModule extends BaseUltraModule {
               schema: [this.booleanField('show_map_controls')],
               onChange: (e: CustomEvent) =>
                 updateModule({ show_map_controls: e.detail.value.show_map_controls }),
+            },
+            {
+              title: localize('editor.map.controls.show_fullscreen', lang, 'Full Screen Button'),
+              description: localize(
+                'editor.map.controls.show_fullscreen_desc',
+                lang,
+                'A button that opens the map full screen, with pan and zoom.'
+              ),
+              hass,
+              data: { show_fullscreen: mapModule.show_fullscreen === true },
+              schema: [this.booleanField('show_fullscreen')],
+              onChange: (e: CustomEvent) =>
+                updateModule({ show_fullscreen: e.detail.value.show_fullscreen }),
             },
             {
               title: localize(
@@ -1395,6 +1409,7 @@ export class UltraMapModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const mapModule = module as MapModule;
+    const lang = hass?.locale?.language || 'en';
     // Include preview context in mapId to handle different rendering contexts
     const contextSuffix = previewContext ? `-${previewContext}` : '';
     const mapId = `map-${mapModule.id}${contextSuffix}`;
@@ -1557,6 +1572,41 @@ export class UltraMapModule extends BaseUltraModule {
           object-fit: cover;
           border-radius: 50%;
         }
+
+        .map-container[uc-map-fs] {
+          height: 100% !important;
+          padding-bottom: 0 !important;
+          border-radius: 0 !important;
+        }
+        .map-container[uc-map-pseudo-fs] {
+          position: fixed !important;
+          inset: 0 !important;
+          z-index: 9999 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          height: 100dvh !important;
+        }
+        .uc-map-fs-btn {
+          position: absolute;
+          z-index: 2;
+          top: 10px;
+          right: 10px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: none;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--primary-text-color);
+          background: color-mix(in srgb, var(--uc-pane-bg, var(--card-background-color, #fff)) 88%, transparent);
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        }
+        .uc-map-fs-btn:focus-visible {
+          outline: 2px solid var(--primary-text-color);
+          outline-offset: 2px;
+        }
       </style>
       <div
         class="map-container ${hoverClass}"
@@ -1572,8 +1622,121 @@ export class UltraMapModule extends BaseUltraModule {
         }}
       >
         <div ${ref(mapContainerRef)} id="${mapId}" style="${mapStyle}"></div>
+        ${mapModule.show_fullscreen === true
+          ? html`<button
+              type="button"
+              class="uc-map-fs-btn"
+              aria-label=${localize('editor.map.fullscreen', lang, 'Full screen')}
+              title=${localize('editor.map.fullscreen', lang, 'Full screen')}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @touchstart=${(e: Event) => e.stopPropagation()}
+              @click=${(e: Event) => this._toggleMapFullscreen(e, mapId, mapModule)}
+            >
+              <ha-icon icon="mdi:fullscreen"></ha-icon>
+            </button>`
+          : ''}
       </div>
     `, module, hass);
+  }
+
+  /**
+   * Full screen uses the browser's Fullscreen API on the map's frame, and falls back to covering
+   * the window with CSS where that isn't allowed (iPhone, some app webviews). The frame is plain
+   * DOM rendered by the card, so state lives in attributes Lit never binds.
+   */
+  private async _toggleMapFullscreen(e: Event, mapId: string, mapModule: MapModule): Promise<void> {
+    e.stopPropagation();
+    e.preventDefault();
+    const button = e.currentTarget as HTMLElement | null;
+    const frame = button?.closest('.map-container') as
+      (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | null;
+    if (!button || !frame) return;
+    const frameAny = frame as HTMLElement & { _ucExitFullscreen?: () => void };
+    if (frame.hasAttribute('uc-map-fs')) {
+      frameAny._ucExitFullscreen?.();
+      return;
+    }
+
+    let pseudo = false;
+    try {
+      if (frame.requestFullscreen) await frame.requestFullscreen();
+      else if (frame.webkitRequestFullscreen) await frame.webkitRequestFullscreen();
+      else throw new Error('no fullscreen');
+    } catch {
+      pseudo = true;
+      frame.setAttribute('uc-map-pseudo-fs', '');
+      document.documentElement.style.setProperty('overflow', 'hidden');
+    }
+    frame.setAttribute('uc-map-fs', '');
+
+    const appRoot = document.querySelector('home-assistant') as
+      | (Element & { hass?: HomeAssistant })
+      | null;
+    const lang = appRoot?.hass?.locale?.language || 'en';
+    const icon = button.querySelector('ha-icon');
+    const setButton = (fullscreen: boolean) => {
+      icon?.setAttribute('icon', fullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen');
+      const label = fullscreen
+        ? localize('editor.map.exit_fullscreen', lang, 'Exit full screen')
+        : localize('editor.map.fullscreen', lang, 'Full screen');
+      button.setAttribute('aria-label', label);
+      button.setAttribute('title', label);
+    };
+    setButton(true);
+
+    // Full screen is for exploring, so pan and zoom are always on there.
+    const map = this.mapInstances.get(mapId);
+    let addedZoom: L.Control.Zoom | undefined;
+    if (map) {
+      map.dragging?.enable();
+      map.touchZoom?.enable();
+      map.doubleClickZoom?.enable();
+      map.scrollWheelZoom?.enable();
+      if (!(map.zoomControl as (L.Control.Zoom & { _map?: L.Map }) | undefined)?._map) {
+        addedZoom = L.control.zoom({ position: 'topleft' });
+        map.addControl(addedZoom);
+      }
+    }
+
+    const onKeydown = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') exit();
+    };
+    const onFullscreenChange = () => {
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      if (!(document.fullscreenElement || doc.webkitFullscreenElement)) exit();
+    };
+
+    const exit = () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+      window.removeEventListener('keydown', onKeydown);
+      delete frameAny._ucExitFullscreen;
+      if (pseudo) {
+        frame.removeAttribute('uc-map-pseudo-fs');
+        document.documentElement.style.removeProperty('overflow');
+      } else {
+        const doc = document as Document & {
+          webkitExitFullscreen?: () => void;
+          webkitFullscreenElement?: Element | null;
+        };
+        if (document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
+        else if (doc.webkitFullscreenElement) doc.webkitExitFullscreen?.();
+      }
+      frame.removeAttribute('uc-map-fs');
+      setButton(false);
+      if (map) {
+        if (addedZoom) map.removeControl(addedZoom);
+        if (mapModule.disable_touch_drag) map.dragging?.disable();
+        if (mapModule.disable_zoom_scroll) map.scrollWheelZoom?.disable();
+      }
+    };
+    frameAny._ucExitFullscreen = exit;
+
+    if (pseudo) window.addEventListener('keydown', onKeydown);
+    else {
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    }
   }
 
   /**

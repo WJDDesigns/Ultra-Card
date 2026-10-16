@@ -1236,6 +1236,30 @@
       "unavailable": "Camera Unavailable",
       "snapshot_refresh": {
         "section_title": "Snapshot Refresh Settings"
+      },
+      "live_trigger": {
+        "title": "Go Live When",
+        "desc": "Switch to a live stream while this entity is on, such as a doorbell ring, motion sensor or toggle helper. Event entities go live each time they fire."
+      },
+      "live_trigger_hold": {
+        "title": "Stay Live For (seconds)",
+        "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
+      },
+      "action_buttons": {
+        "title": "Action Buttons",
+        "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",
+        "button": "Button",
+        "remove": "Remove button",
+        "entity": "Entity",
+        "icon": "Icon",
+        "icon_desc": "Leave empty to follow the entity, such as an open or closed lock.",
+        "label": "Label",
+        "label_desc": "Shown in fullscreen and as the tooltip. Leave empty to use the entity name.",
+        "confirm": "Tap Twice to Confirm",
+        "confirm_desc": "Ask for a second tap before running, so a stray tap cannot unlock a door. On by default for locks.",
+        "add": "Add Button",
+        "position": "Button Position",
+        "tap_again": "Tap again to confirm"
       }
     },
     "separator": {
@@ -2050,7 +2074,9 @@
         "disable_scroll": "Deaktiver zoom med mus Wheel rulling",
         "disable_scroll_desc": "Forhindre utilsiktet zooming når du ruller på siden",
         "disable_drag": "Deaktiver draing på berøringsskjermer",
-        "disable_drag_desc": "Forhindre kartpanorering på mobile/berøringsenheter"
+        "disable_drag_desc": "Forhindre kartpanorering på mobile/berøringsenheter",
+        "show_fullscreen": "Full Screen Button",
+        "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom."
       },
       "dimensions": {
         "title": "Kartdimensjoner",
@@ -2116,7 +2142,9 @@
       },
       "google_api_key": "Google Kart API Nøkkel (Valgfritt)",
       "google_api_key_desc": "Skriv inn din Google Kart API nøkkel for full JavaScript API funksjonalitet. Uten en nøkkel brukes grunnleggende flislag (begrensede funksjoner).",
-      "how_to_get_api_key": "Hvordan få en Google Kart API Nøkkel →"
+      "how_to_get_api_key": "Hvordan få en Google Kart API Nøkkel →",
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen"
     },
     "entity_mapper": {
       "title": "Kartlegg enheter",
