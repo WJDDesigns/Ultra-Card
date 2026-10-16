@@ -2982,6 +2982,15 @@ export interface MarkdownModule extends BaseModule {
 }
 
 // Camera Module
+export interface CameraActionButton {
+  id: string;
+  entity: string;
+  icon?: string | undefined;
+  label?: string | undefined;
+  /** Require a second tap within a few seconds. Defaults to on for locks. */
+  confirm?: boolean | undefined;
+}
+
 export interface CameraModule extends BaseModule {
   type: 'camera';
 
@@ -3027,6 +3036,15 @@ export interface CameraModule extends BaseModule {
 
   // Snapshot refresh settings (only used when view_mode === 'snapshot')
   refresh_interval?: number | undefined; // 1-300 seconds
+
+  // Switch to a live stream while this entity is on (or for a while after an event entity fires),
+  // then fall back to view_mode. Ignored when view_mode is already 'live'.
+  live_trigger_entity?: string | undefined;
+  live_trigger_hold?: number | undefined; // seconds the stream stays live after the trigger ends
+
+  // Buttons over the feed (unlock a door, open a gate) that also show in fullscreen
+  action_buttons?: CameraActionButton[] | undefined;
+  action_buttons_position?: 'bottom-left' | 'bottom-center' | 'bottom-right' | undefined;
 
   // Legacy properties (deprecated, migrated to view_mode)
   auto_refresh?: boolean | undefined;
@@ -3712,6 +3730,9 @@ export interface MapModule extends BaseModule {
   // Map dimensions
   map_height?: number | undefined; // Height in pixels
   aspect_ratio?: '16:9' | '4:3' | '1:1' | 'custom' | undefined;
+
+  // Button that opens the map full screen with pan and zoom on
+  show_fullscreen?: boolean | undefined;
 
   // Global action configuration
   tap_action?:

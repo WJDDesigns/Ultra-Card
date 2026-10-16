@@ -1236,6 +1236,30 @@
       "unavailable": "Camera Unavailable",
       "snapshot_refresh": {
         "section_title": "Snapshot Refresh Settings"
+      },
+      "live_trigger": {
+        "title": "Go Live When",
+        "desc": "Switch to a live stream while this entity is on, such as a doorbell ring, motion sensor or toggle helper. Event entities go live each time they fire."
+      },
+      "live_trigger_hold": {
+        "title": "Stay Live For (seconds)",
+        "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
+      },
+      "action_buttons": {
+        "title": "Action Buttons",
+        "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",
+        "button": "Button",
+        "remove": "Remove button",
+        "entity": "Entity",
+        "icon": "Icon",
+        "icon_desc": "Leave empty to follow the entity, such as an open or closed lock.",
+        "label": "Label",
+        "label_desc": "Shown in fullscreen and as the tooltip. Leave empty to use the entity name.",
+        "confirm": "Tap Twice to Confirm",
+        "confirm_desc": "Ask for a second tap before running, so a stray tap cannot unlock a door. On by default for locks.",
+        "add": "Add Button",
+        "position": "Button Position",
+        "tap_again": "Tap again to confirm"
       }
     },
     "separator": {
@@ -2050,7 +2074,9 @@
         "disable_scroll": "Zakázat zoomování při rolování myší Wheel",
         "disable_scroll_desc": "Zabránit náhodnému zoomování při rolování stránky",
         "disable_drag": "Zakázat táhnutí na dotykových obrazovkách",
-        "disable_drag_desc": "Zabránit posouvání mapy na mobilních/dotykových zařízeních"
+        "disable_drag_desc": "Zabránit posouvání mapy na mobilních/dotykových zařízeních",
+        "show_fullscreen": "Full Screen Button",
+        "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom."
       },
       "dimensions": {
         "title": "Rozměry mapy",
@@ -2116,7 +2142,9 @@
       },
       "google_api_key": "Google Mapy API Klíč (Volitelně)",
       "google_api_key_desc": "Zadej svůj Google Mapy API klíč pro plné funkce JavaScript API. Bez klíče se používají základní dlaždicové vrstvy (omezené funkce).",
-      "how_to_get_api_key": "Jak získat Google Mapy API Klíč →"
+      "how_to_get_api_key": "Jak získat Google Mapy API Klíč →",
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen"
     },
     "entity_mapper": {
       "title": "Mapovat entity",

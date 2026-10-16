@@ -2070,6 +2070,30 @@
         "toggle": "Template Mode",
         "toggle_desc": "Dynamically select camera and overlay via one Jinja template",
         "cheatsheet": "Template cheatsheet"
+      },
+      "live_trigger": {
+        "title": "Go Live When",
+        "desc": "Switch to a live stream while this entity is on, such as a doorbell ring, motion sensor or toggle helper. Event entities go live each time they fire."
+      },
+      "live_trigger_hold": {
+        "title": "Stay Live For (seconds)",
+        "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
+      },
+      "action_buttons": {
+        "title": "Action Buttons",
+        "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",
+        "button": "Button",
+        "remove": "Remove button",
+        "entity": "Entity",
+        "icon": "Icon",
+        "icon_desc": "Leave empty to follow the entity, such as an open or closed lock.",
+        "label": "Label",
+        "label_desc": "Shown in fullscreen and as the tooltip. Leave empty to use the entity name.",
+        "confirm": "Tap Twice to Confirm",
+        "confirm_desc": "Ask for a second tap before running, so a stray tap cannot unlock a door. On by default for locks.",
+        "add": "Add Button",
+        "position": "Button Position",
+        "tap_again": "Tap again to confirm"
       }
     },
     "separator": {
@@ -2522,7 +2546,9 @@
         "disable_scroll": "Disable Zoom on Mouse Wheel Scroll",
         "disable_scroll_desc": "Prevent accidental zooming when scrolling the page",
         "disable_drag": "Disable Dragging on Touch Screens",
-        "disable_drag_desc": "Prevent map panning on mobile/touch devices"
+        "disable_drag_desc": "Prevent map panning on mobile/touch devices",
+        "show_fullscreen": "Full Screen Button",
+        "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom."
       },
       "dimensions": {
         "title": "Map Dimensions",
@@ -2579,7 +2605,9 @@
           "custom_image": "Custom Image",
           "entity_image": "Entity Image"
         }
-      }
+      },
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen"
     },
     "sports": {
       "data_source": "DATA SOURCE",
