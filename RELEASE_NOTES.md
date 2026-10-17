@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta7
+
+The seventh 3.14.0 beta turns the Camera module into a video doorbell: buttons over the feed that stay with you in fullscreen, and a live stream that starts by itself when someone rings. The Map module also gets the full screen button from Rain Radar. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Camera action buttons** - Add buttons over the camera feed in the new Action Buttons section, such as unlocking the front door, opening a gate or switching on a porch light; they also show at the bottom of the fullscreen view, locks ask for a second tap before they unlock, and the icon follows the entity, such as an open or closed lock
+- **Go live on a doorbell ring** - Under Stream Mode, pick an entity in "Go Live When", such as a doorbell event, motion sensor or toggle helper, and a snapshot camera switches to a live stream while it's on, then stays live for the number of seconds you choose before dropping back
+- **Full screen Map** - Turn on "Full Screen Button" under Map Controls to open the map full screen with pan and zoom; it's on for new Map modules and off for existing ones
+
+### 🔧 Improvements
+
+- **Doorbell ideas from the community** - Thanks to the Discord member who set up a Ring doorbell and suggested the lock button, full screen Map and live stream switching
+
 ## Version 3.14.0-beta6
 
 The sixth 3.14.0 beta adds Rainbow.ai as a Rain Radar source with a 2-hour rain forecast, and a "Hide when empty" option to the Battery Monitor, so a battery list with nothing to show no longer leaves an empty panel or a gap on your dashboard. This is a pre-release for testing — please report anything odd on GitHub or Discord.
