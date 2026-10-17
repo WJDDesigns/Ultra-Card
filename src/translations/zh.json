@@ -2070,6 +2070,30 @@
         "toggle": "模板模式",
         "toggle_desc": "通过一个 Jinja 模板动态选择摄像头与浮层",
         "cheatsheet": "模板速查表"
+      },
+      "live_trigger": {
+        "title": "Go Live When",
+        "desc": "Switch to a live stream while this entity is on, such as a doorbell ring, motion sensor or toggle helper. Event entities go live each time they fire."
+      },
+      "live_trigger_hold": {
+        "title": "Stay Live For (seconds)",
+        "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
+      },
+      "action_buttons": {
+        "title": "Action Buttons",
+        "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",
+        "button": "Button",
+        "remove": "Remove button",
+        "entity": "Entity",
+        "icon": "Icon",
+        "icon_desc": "Leave empty to follow the entity, such as an open or closed lock.",
+        "label": "Label",
+        "label_desc": "Shown in fullscreen and as the tooltip. Leave empty to use the entity name.",
+        "confirm": "Tap Twice to Confirm",
+        "confirm_desc": "Ask for a second tap before running, so a stray tap cannot unlock a door. On by default for locks.",
+        "add": "Add Button",
+        "position": "Button Position",
+        "tap_again": "Tap again to confirm"
       }
     },
     "separator": {
@@ -2522,7 +2546,9 @@
         "disable_scroll": "禁用鼠标滚轮缩放",
         "disable_scroll_desc": "防止滚动页面时意外缩放",
         "disable_drag": "在触摸屏上禁用拖动",
-        "disable_drag_desc": "阻止在移动/触摸设备上平移地图"
+        "disable_drag_desc": "阻止在移动/触摸设备上平移地图",
+        "show_fullscreen": "Full Screen Button",
+        "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom."
       },
       "dimensions": {
         "title": "地图尺寸",
@@ -2579,7 +2605,9 @@
           "custom_image": "自定义图片",
           "entity_image": "实体图像"
         }
-      }
+      },
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen"
     },
     "sports": {
       "data_source": "数据源",

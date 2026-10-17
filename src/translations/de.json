@@ -1391,6 +1391,30 @@
       "unavailable": "Camera Unavailable",
       "snapshot_refresh": {
         "section_title": "Snapshot Refresh Settings"
+      },
+      "live_trigger": {
+        "title": "Live schalten bei",
+        "desc": "Wechselt zum Livestream, solange diese Entität eingeschaltet ist, etwa bei Türklingel, Bewegungsmelder oder Schalter-Helfer. Ereignis-Entitäten schalten bei jedem Auslösen live."
+      },
+      "live_trigger_hold": {
+        "title": "Live bleiben für (Sekunden)",
+        "desc": "Wie lange der Stream live bleibt, nachdem die Entität ausgeschaltet wurde oder das Ereignis ausgelöst hat. Bereich: 0-3600 Sekunden."
+      },
+      "action_buttons": {
+        "title": "Aktionsschaltflächen",
+        "desc": "Schaltflächen über dem Bild, die auch im Vollbild erscheinen, zum Beispiel zum Entriegeln der Haustür. Schlösser werden ent- oder verriegelt, Abdeckungen geöffnet oder geschlossen, Schaltflächen und Skripte ausgeführt, alles andere wird umgeschaltet.",
+        "button": "Schaltfläche",
+        "remove": "Schaltfläche entfernen",
+        "entity": "Entität",
+        "icon": "Symbol",
+        "icon_desc": "Leer lassen, um dem Zustand der Entität zu folgen, etwa einem offenen oder geschlossenen Schloss.",
+        "label": "Beschriftung",
+        "label_desc": "Wird im Vollbild und als Tooltip angezeigt. Leer lassen, um den Namen der Entität zu verwenden.",
+        "confirm": "Zum Bestätigen zweimal tippen",
+        "confirm_desc": "Vor dem Ausführen ein zweites Tippen verlangen, damit ein versehentliches Tippen keine Tür entriegelt. Für Schlösser standardmäßig an.",
+        "add": "Schaltfläche hinzufügen",
+        "position": "Position der Schaltflächen",
+        "tap_again": "Zum Bestätigen erneut tippen"
       }
     },
     "separator": {
@@ -2054,7 +2078,9 @@
         "disable_scroll": "Zoom mit der Maus Wheel Scroll deaktivieren",
         "disable_scroll_desc": "Verhindern Sie versehentliches Zoomen beim Scrollen der Seite",
         "disable_drag": "Ziehen auf Touchscreens deaktivieren",
-        "disable_drag_desc": "Verhindern Sie das Verschieben der Karte auf mobilen/touch Geräten"
+        "disable_drag_desc": "Verhindern Sie das Verschieben der Karte auf mobilen/touch Geräten",
+        "show_fullscreen": "Vollbild-Schaltfläche",
+        "show_fullscreen_desc": "Eine Schaltfläche, die die Karte im Vollbild öffnet, mit Verschieben und Zoomen."
       },
       "dimensions": {
         "title": "Kartendimensionen",
@@ -2120,7 +2146,9 @@
       },
       "google_api_key": "Google Karten API Schlüssel (Optional)",
       "google_api_key_desc": "Geben Sie Ihren Google Karten API Schlüssel ein, um vollständige JavaScript API Funktionen zu erhalten. Ohne einen Schlüssel werden grundlegende Kachel-Layer verwendet (eingeschränkte Funktionen).",
-      "how_to_get_api_key": "Wie man einen Google Karten API Schlüssel erhält →"
+      "how_to_get_api_key": "Wie man einen Google Karten API Schlüssel erhält →",
+      "fullscreen": "Vollbild",
+      "exit_fullscreen": "Vollbild beenden"
     },
     "entity_mapper": {
       "title": "Entitäten zuordnen",
