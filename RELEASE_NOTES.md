@@ -1,5 +1,16 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta8
+
+The eighth 3.14.0 beta fixes two bugs reported on Discord: text with several lines showing all on one line, and the FreeSpace card menu opening underneath other cards. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Text lines run together** - Text modules with more than one paragraph showed every paragraph side by side on a single line; each paragraph is back on its own line, with left, center and right alignment working as before
+- **FreeSpace menu hidden behind cards** - The card options menu (the ⋮ button or right-click) could open underneath other cards on the canvas; it now always shows on top, and the card goes back to its own layer when the menu closes
+
 ## Version 3.14.0-beta7
 
 The seventh 3.14.0 beta turns the Camera module into a video doorbell: buttons over the feed that stay with you in fullscreen, and a live stream that starts by itself when someone rings. The Map module also gets the full screen button from Rain Radar. This is a pre-release for testing — please report anything odd on GitHub or Discord.
