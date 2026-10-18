@@ -834,10 +834,15 @@ export class UltraTextModule extends BaseUltraModule {
         line-height: 0;
       }
 
-      .text-module-label,
-      .rich-text-content {
+      .text-module-label {
         display: inline-flex;
         align-items: center;
+        min-width: 0;
+      }
+
+      /* Block, not flex: each <p> from the rich text editor must stack on its own line. */
+      .rich-text-content {
+        display: block;
         min-width: 0;
       }
 

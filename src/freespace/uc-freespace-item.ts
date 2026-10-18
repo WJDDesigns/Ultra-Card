@@ -44,6 +44,9 @@ const PIN_MENU: Record<FreeSpacePin, { icon: string; key: string; label: string 
   stretch: { icon: mdiArrowExpandHorizontal, key: 'menu_pin_stretch', label: 'Left & right' },
 };
 
+/** Stacking order for an item whose options menu is open: above every card, below the marquee and guides. */
+const MENU_OPEN_Z = 9000;
+
 const RESIZE_HANDLES: ResizeHandle[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
 @customElement(FREESPACE_ITEM_TAG)
@@ -407,7 +410,11 @@ export class UcFreeSpaceItem extends LitElement {
   }
 
   protected override updated(changed: PropertyValues): void {
-    if (changed.has('layout') || changed.has('stacked')) {
+    if (
+      changed.has('layout') ||
+      changed.has('stacked') ||
+      (changed as Map<PropertyKey, unknown>).has('_menuOpen')
+    ) {
       this._applyPosition();
     }
     if (changed.has('card') && this.card) {
@@ -493,7 +500,9 @@ export class UcFreeSpaceItem extends LitElement {
     this.style.height = this._autoHeight() ? 'auto' : `${this.layout.h}px`;
     this.style.minHeight = this._autoHeight() ? `${MIN_CARD_H}px` : '';
     this.toggleAttribute('auto-h', this._autoHeight());
-    this.style.zIndex = String(this.layout.z ?? 0);
+    // An open options menu lives inside this item, so lift the whole item above
+    // its neighbours while the menu is open (below the canvas guides and toolbar).
+    this.style.zIndex = this._menuOpen ? String(MENU_OPEN_Z) : String(this.layout.z ?? 0);
     this.style.transform = this.layout.r ? `rotate(${this.layout.r}deg)` : '';
   }
 
