@@ -89,6 +89,21 @@ export class UltraClockModule extends BaseUltraModule {
             this.triggerPreviewUpdate();
           }
         )}
+        ${this.renderFieldSection(
+          localize('editor.clock.entity', lang, 'Time from entity'),
+          localize(
+            'editor.clock.entity_desc',
+            lang,
+            'Optional. Show the date and time an entity holds, such as when the dishwasher finishes, instead of the current time. Works with timestamp sensors, date/time helpers and date/time entities.'
+          ),
+          hass,
+          { entity: m.entity || '' },
+          [this.entityField('entity', ['sensor', 'input_datetime', 'datetime', 'date', 'time'])],
+          (e: CustomEvent) => {
+            updateModule({ entity: e.detail.value.entity || '' } as Partial<CardModule>);
+            this.triggerPreviewUpdate();
+          }
+        )}
         ${this.renderSettingsSection(
           localize('editor.clock.section_display', lang, 'Display'),
           localize('editor.clock.section_display_desc', lang, 'What the clock shows.'),
@@ -262,10 +277,14 @@ export class UltraClockModule extends BaseUltraModule {
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const hoverClass = this.getHoverEffectClass(module);
 
-    this._ensureTick(!!m.show_seconds);
+    const source = m.entity ? this._entityTime(hass, m.entity) : null;
+    // An entity's value only changes with hass updates, so only the live clock needs the tick.
+    // The tick is shared by every clock on the page, so leave it running for the others.
+    if (!m.entity) this._ensureTick(!!m.show_seconds);
 
-    const now = new Date();
-    const tz = m.timezone?.trim() || undefined;
+    const now = source?.date ?? new Date();
+    // Wall-clock values (input_datetime) are already local; only real instants take the timezone.
+    const tz = source?.wallClock ? undefined : m.timezone?.trim() || undefined;
     const is12 = (m.time_format || '12') === '12';
 
     let time: string;
@@ -288,9 +307,17 @@ export class UltraClockModule extends BaseUltraModule {
       // Invalid timezone — fall back to local time
       time = now.toLocaleTimeString(lang, { hour: 'numeric', minute: '2-digit', hour12: is12 });
     }
+    if (m.entity && !source) {
+      // Entity missing, unknown or unavailable
+      time = '--:--';
+      ampm = '';
+    } else if (source && !source.hasTime) {
+      time = '';
+      ampm = '';
+    }
 
     let date = '';
-    if (m.show_date !== false) {
+    if (m.show_date !== false && (!m.entity || source?.hasDate)) {
       const style = m.date_style || 'long';
       const opts: Intl.DateTimeFormatOptions =
         style === 'long'
@@ -337,16 +364,18 @@ export class UltraClockModule extends BaseUltraModule {
       >
         ${this.wrapWithAnimation(
           html`
-            <div
-              style="font-size:${m.time_size ?? 48}px;font-weight:${weight};color:${timeColor};line-height:1.1;font-variant-numeric:tabular-nums;"
-            >
-              ${time}${is12 && m.show_ampm !== false && ampm
-                ? html`<span
-                    style="font-size:${Math.round((m.time_size ?? 48) * 0.4)}px;font-weight:600;margin-left:6px;vertical-align:baseline;"
-                    >${ampm}</span
-                  >`
-                : nothing}
-            </div>
+            ${time
+              ? html`<div
+                  style="font-size:${m.time_size ?? 48}px;font-weight:${weight};color:${timeColor};line-height:1.1;font-variant-numeric:tabular-nums;"
+                >
+                  ${time}${is12 && m.show_ampm !== false && ampm
+                    ? html`<span
+                        style="font-size:${Math.round((m.time_size ?? 48) * 0.4)}px;font-weight:600;margin-left:6px;vertical-align:baseline;"
+                        >${ampm}</span
+                      >`
+                    : nothing}
+                </div>`
+              : nothing}
             ${date
               ? html`<div style="font-size:${m.date_size ?? 16}px;color:${dateColor};margin-top:4px;">
                   ${date}
@@ -358,6 +387,41 @@ export class UltraClockModule extends BaseUltraModule {
         )}
       </div>
     `;
+  }
+
+  /**
+   * Read the date/time an entity holds.
+   *
+   * Timestamp sensors and datetime entities hold an ISO instant. input_datetime,
+   * date and time entities hold a wall-clock value with no offset, which is
+   * shown as-is. Returns null while the entity is missing, unknown or unavailable.
+   */
+  private _entityTime(
+    hass: HomeAssistant,
+    entityId: string
+  ): { date: Date; hasDate: boolean; hasTime: boolean; wallClock: boolean } | null {
+    const value = String(hass?.states?.[entityId]?.state ?? '').trim();
+    if (!value || value === 'unknown' || value === 'unavailable') return null;
+
+    const timeOnly = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+    if (timeOnly) {
+      const d = new Date();
+      d.setHours(+timeOnly[1], +timeOnly[2], +(timeOnly[3] || 0), 0);
+      return { date: d, hasDate: false, hasTime: true, wallClock: true };
+    }
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (dateOnly) {
+      const d = new Date(+dateOnly[1], +dateOnly[2] - 1, +dateOnly[3]);
+      return { date: d, hasDate: true, hasTime: false, wallClock: true };
+    }
+    const wall = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+    if (wall) {
+      const d = new Date(+wall[1], +wall[2] - 1, +wall[3], +wall[4], +wall[5], +(wall[6] || 0));
+      return { date: d, hasDate: true, hasTime: true, wallClock: true };
+    }
+    const instant = new Date(value);
+    if (Number.isNaN(instant.getTime())) return null;
+    return { date: instant, hasDate: true, hasTime: true, wallClock: false };
   }
 
   /** Re-render once per minute (or per second when seconds are shown) to keep the time fresh. */

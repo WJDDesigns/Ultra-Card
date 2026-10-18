@@ -1,6 +1,7 @@
 import { TemplateResult, html } from 'lit';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { wrapChildModuleAnimation } from './layout-container-utils';
 import { CardModule, UltraCardConfig, AccordionModule } from '../types';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
@@ -1837,48 +1838,7 @@ export class UltraAccordionModule extends BaseUltraModule {
       </div>
     `;
 
-    // State-based animation wrapper for child modules when configured
-    // (same behavior as horizontal/vertical/stack layouts)
-    const m: any = moduleToRender;
-    const animationType = m.animation_type || m.design?.animation_type;
-    if (animationType && animationType !== 'none') {
-      const animationDuration = m.animation_duration || m.design?.animation_duration || '2s';
-      const animationDelay = m.animation_delay || m.design?.animation_delay || '0s';
-      const animationTiming = m.animation_timing || m.design?.animation_timing || 'ease';
-      const entityId = m.animation_entity || m.design?.animation_entity;
-      const triggerType = m.animation_trigger_type || m.design?.animation_trigger_type || 'state';
-      const attribute = m.animation_attribute || m.design?.animation_attribute;
-      const targetState = m.animation_state || m.design?.animation_state;
-
-      let shouldAnimate = false;
-      if (!entityId) {
-        shouldAnimate = true;
-      } else if (targetState && hass && hass.states[entityId]) {
-        const entity = hass.states[entityId];
-        if (triggerType === 'attribute' && attribute) {
-          shouldAnimate = String(entity.attributes[attribute]) === targetState;
-        } else {
-          shouldAnimate = entity.state === targetState;
-        }
-      }
-
-      if (shouldAnimate) {
-        return html`
-          <div
-            class="module-animation-wrapper animation-${animationType}"
-            style="
-              --animation-duration: ${animationDuration};
-              --animation-delay: ${animationDelay};
-              --animation-timing: ${animationTiming};
-            "
-          >
-            ${moduleContent}
-          </div>
-        `;
-      }
-    }
-
-    return moduleContent;
+    return wrapChildModuleAnimation(moduleToRender, hass, moduleContent);
   }
 
   /**

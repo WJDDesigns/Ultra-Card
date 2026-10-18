@@ -5694,6 +5694,8 @@ export interface UpdateMonitorModule extends BaseModule {
 export interface ClockModule extends BaseModule {
   type: 'clock';
 
+  /** Show this entity's date/time instead of the current time (timestamp sensor, input_datetime, datetime). */
+  entity?: string | undefined;
   time_format?: '12' | '24' | undefined;
   show_seconds?: boolean | undefined;
   show_ampm?: boolean | undefined;

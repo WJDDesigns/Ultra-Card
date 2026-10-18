@@ -1,5 +1,23 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta9
+
+The ninth 3.14.0 beta lets the Clock module show a time from an entity, such as when the dishwasher finishes, plays intro animations on modules inside layouts, and brings a big German translation update from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Clock time from an entity** - Pick a date or time entity under "Time from entity", such as a timestamp sensor or an `input_datetime` helper, and the Clock shows that time instead of the current one; the date line shows only when the entity has a date, and the clock shows --:-- while the entity is unavailable
+
+### 🔧 Improvements
+
+- **German translations** - About 480 German strings updated or newly translated, thanks to larrysansan
+
+### 🐛 Bug Fixes
+
+- **Intro animations inside layouts** - Modules placed inside a Horizontal, Vertical, Stack or Accordion layout now play their intro animation, the same way they already do at the top level of a card; state animations keep working as before
+
 ## Version 3.14.0-beta8
 
 The eighth 3.14.0 beta fixes two bugs reported on Discord: text with several lines showing all on one line, and the FreeSpace card menu opening underneath other cards. This is a pre-release for testing — please report anything odd on GitHub or Discord.
