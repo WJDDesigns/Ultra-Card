@@ -54,6 +54,8 @@ interface CameraRuntimeState {
   renderedEntity?: string | undefined;
   appliedEntity?: string | undefined;
   appliedLive?: boolean | undefined;
+  /** Whether the last render showed the live stream, configured or promoted by "Go Live When". */
+  renderedLive?: boolean | undefined;
   pendingProps?: { entity: string; live: boolean } | undefined;
   updateTimer?: any;
   snapshotTimer?: any;
@@ -1248,6 +1250,7 @@ export class UltraCameraModule extends BaseUltraModule {
     this._scheduleTriggerExpiry(state, trigger.until);
     const viewMode: CameraViewMode = trigger.live ? 'live' : configuredMode;
     const isLiveMode = viewMode === 'live';
+    state.renderedLive = isLiveMode;
 
     // While the editor is open the entity changes on every keystroke, so swaps are serialised to
     // avoid starting a second stream negotiation before the first one settles.
@@ -3355,9 +3358,9 @@ export class UltraCameraModule extends BaseUltraModule {
     event.preventDefault();
     event.stopPropagation();
 
-    if ((cameraModule.view_mode || 'auto') !== 'live') return;
-
     const state = this._runtimeFor(cameraModule.id);
+    if (!state.renderedLive) return;
+
     state.audioOverride = !this._isAudioActive(cameraModule);
     this._syncAudio(cameraModule);
     this.triggerPreviewUpdate(true);
@@ -3371,10 +3374,9 @@ export class UltraCameraModule extends BaseUltraModule {
    * some browsers require an explicit `play()` for.
    */
   private _syncAudio(cameraModule: CameraModule): void {
-    if ((cameraModule.view_mode || 'auto') !== 'live') return;
-
     const state = this._runtime.get(cameraModule.id);
-    const player = state?.player as any;
+    if (!state?.renderedLive) return;
+    const player = state.player as any;
     if (!player) return;
 
     const audioActive = this._isAudioActive(cameraModule);
@@ -3388,7 +3390,16 @@ export class UltraCameraModule extends BaseUltraModule {
     video.playsInline = true;
     if (video.paused) {
       void video.play().catch(() => {
-        // Autoplay policy rejected the unmuted stream; the toggle remains available.
+        if (!audioActive) return;
+        // Autoplay policy rejected the unmuted stream, which happens when "Go Live When" starts
+        // it without a tap. Play muted instead of leaving a paused frame that looks like a
+        // snapshot; the audio toggle can still unmute it.
+        state.audioOverride = false;
+        player.muted = true;
+        video.muted = true;
+        video.volume = 0;
+        void video.play().catch(() => {});
+        this.triggerPreviewUpdate(true);
       });
     }
   }

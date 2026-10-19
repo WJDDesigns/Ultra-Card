@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta10
+
+The tenth 3.14.0 beta fixes the Camera's "Go Live When" trigger, which could leave the card showing a still snapshot instead of the live stream. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Go Live When stuck on snapshot** - When a "Go Live When" entity switched the Camera to live, the stream could sit on a frozen frame until you reloaded the page or opened full screen; it now starts playing right away, and if the browser blocks sound on a stream that starts by itself, it plays muted and the audio button turns the sound on
+
 ## Version 3.14.0-beta9
 
 The ninth 3.14.0 beta lets the Clock module show a time from an entity, such as when the dishwasher finishes, plays intro animations on modules inside layouts, and brings a big German translation update from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
