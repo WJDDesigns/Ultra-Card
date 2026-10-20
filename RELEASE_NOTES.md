@@ -1,5 +1,20 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0-beta11
+
+The eleventh 3.14.0 beta turns Rain Radar into Weather Radar: alongside the radar, the map can now show temperature, precipitation, wind, clouds or air quality for the current hour, free from Open-Meteo. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Weather layers on the radar map** - Pick a layer under the new "Weather layer" setting: Temperature, Precipitation, Wind, Clouds or Air quality (PM2.5); it draws under the radar for the current hour with a small legend, needs no account or key, and "Auto" picks the most detailed weather model for your area; these are model forecasts from Open-Meteo, not radar
+
+### 🔧 Improvements
+
+- **Rain Radar is now Weather Radar** - The module shows as Weather Radar in the module list; existing cards keep working with no changes
+- **Thanks to Open-Meteo** - For letting Ultra Card use their weather map layer, and to the Discord member who suggested it
+
 ## Version 3.14.0-beta10
 
 The tenth 3.14.0 beta fixes the Camera's "Go Live When" trigger, which could leave the card showing a still snapshot instead of the live stream. This is a pre-release for testing — please report anything odd on GitHub or Discord.
