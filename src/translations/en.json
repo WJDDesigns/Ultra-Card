@@ -6093,7 +6093,22 @@
       "map_api_key_missing": "Enter your key for this provider. Until then the map uses Esri.",
       "rainbow_api_key": "Rainbow.ai API key",
       "rainbow_api_key_desc": "From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, so a map left on screen all day can cost money. The key is saved in this dashboard, so anyone who can edit it can see the key.",
-      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer."
+      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer.",
+      "weather_section": "Weather layer",
+      "weather_layer": "Weather layer",
+      "weather_layer_desc": "A weather map for the current hour under the radar, from Open-Meteo. Free, no key. These are model forecasts, not radar.",
+      "weather_layer_none": "None",
+      "weather_layer_temperature": "Temperature",
+      "weather_layer_precipitation": "Precipitation",
+      "weather_layer_wind": "Wind",
+      "weather_layer_clouds": "Clouds",
+      "weather_layer_air_quality": "Air quality (PM2.5)",
+      "weather_layer_opacity": "Weather layer opacity",
+      "weather_layer_opacity_desc": "Lower lets more of the map show through.",
+      "weather_model": "Weather model",
+      "weather_model_desc": "Auto picks the most detailed model for the map center.",
+      "weather_model_auto": "Auto",
+      "weather_layer_unavailable": "Weather layer unavailable"
     }
   },
   "hub": {

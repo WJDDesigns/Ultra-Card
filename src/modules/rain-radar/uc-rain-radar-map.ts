@@ -46,6 +46,19 @@ import {
   type RadarFrame,
   type RadarFrameSet,
 } from '../../services/uc-rain-radar-service';
+import {
+  DEFAULT_WEATHER_LAYER_OPACITY,
+  EXTRA_COLOR_SCALES,
+  OPEN_METEO_ATTRIBUTION,
+  WEATHER_LAYER_REFRESH_MS,
+  loadOpenMeteoAdapter,
+  weatherDomainFor,
+  weatherLayerOf,
+  weatherLayerUrl,
+  weatherLegendFrom,
+  weatherVariableFor,
+  type WeatherLegend,
+} from '../../services/uc-open-meteo-layer';
 
 /** Universal Blue (RainViewer scheme 2), light drizzle to extreme. Used for the legend only. */
 const LEGEND_GRADIENT =
@@ -84,6 +97,8 @@ export class UcRainRadar extends LitElement {
   @state() private _fullscreen = false;
   /** Fullscreen drawn with CSS where the browser can't (iPhone, some app webviews). */
   @state() private _pseudoFs = false;
+  @state() private _weatherLegend: WeatherLegend | null = null;
+  @state() private _weatherError = false;
 
   private _map: L.Map | undefined;
   private _baseLayer: L.TileLayer | undefined;
@@ -109,6 +124,10 @@ export class UcRainRadar extends LitElement {
   private _waitedMs = 0;
   private _resizeObserver: ResizeObserver | undefined;
   private _loadSeq = 0;
+  private _weatherLayer: L.GridLayer | undefined;
+  private _weatherKey = '';
+  private _weatherSeq = 0;
+  private _weatherTimer: number | undefined;
 
   static override styles = [
     unsafeCSS(leafletCss),
@@ -215,6 +234,18 @@ export class UcRainRadar extends LitElement {
         height: 6px;
         border-radius: 3px;
         background: ${unsafeCSS(LEGEND_GRADIENT)};
+      }
+      .legend.wx {
+        min-width: 120px;
+      }
+      .legend .wx-name {
+        color: var(--primary-text-color);
+        font-weight: 600;
+      }
+      .wx-error {
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
       }
       .legend .labels {
         display: flex;
@@ -503,6 +534,9 @@ export class UcRainRadar extends LitElement {
       this._map.invalidateSize();
       this._scheduleRefresh(this._frames.length ? FRAMES_TTL_MS : 0);
       this._schedulePlay();
+      // Back on the page: pick up the current hour again.
+      this._weatherKey = '';
+      this._sync();
     }
   }
 
@@ -517,6 +551,7 @@ export class UcRainRadar extends LitElement {
     this._clearTimer('_playTimer');
     this._clearTimer('_refreshTimer');
     this._clearTimer('_sizeTimer');
+    this._clearTimer('_weatherTimer');
     this._resizeObserver?.disconnect();
     this._resizeObserver = undefined;
   }
@@ -585,7 +620,7 @@ export class UcRainRadar extends LitElement {
     this._fullscreen = false;
   }
 
-  private _clearTimer(key: '_playTimer' | '_refreshTimer' | '_sizeTimer'): void {
+  private _clearTimer(key: '_playTimer' | '_refreshTimer' | '_sizeTimer' | '_weatherTimer'): void {
     const id = this[key];
     if (id !== undefined) window.clearTimeout(id);
     this[key] = undefined;
@@ -714,6 +749,8 @@ export class UcRainRadar extends LitElement {
       this._sourceKey = sourceKey;
       this._loadFrames(true);
     }
+
+    this._syncWeather(style === 'dark' || style === 'satellite');
 
     const autoplay = m.autoplay !== false;
     if (autoplay !== this._autoplayApplied) {
@@ -884,6 +921,84 @@ export class UcRainRadar extends LitElement {
     this.dispatchEvent(
       new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId } })
     );
+  }
+
+  // ── Open-Meteo weather layer ───────────────────────────────────────────────
+
+  private _weatherOpacity(): number {
+    return (
+      clampNumber(this.module?.weather_layer_opacity, 0, 100, DEFAULT_WEATHER_LAYER_OPACITY) / 100
+    );
+  }
+
+  private _syncWeather(dark: boolean): void {
+    const m = this.module;
+    const map = this._map;
+    if (!m || !map) return;
+    const layer = weatherLayerOf(m);
+    const center = resolveCenter(m, this.hass);
+    const domain = center ? weatherDomainFor(m, center) : null;
+    const variable = weatherVariableFor(layer);
+    const key = domain && variable ? `${domain}|${variable}|${dark}` : '';
+    if (key === this._weatherKey) {
+      this._weatherLayer?.setOpacity(this._weatherOpacity());
+      return;
+    }
+    this._weatherKey = key;
+    this._removeWeather();
+    if (!domain || !variable) return;
+    void this._addWeather(domain, variable, dark);
+  }
+
+  private async _addWeather(domain: string, variable: string, dark: boolean): Promise<void> {
+    const seq = ++this._weatherSeq;
+    try {
+      const adapter = await loadOpenMeteoAdapter(L);
+      const map = this._map;
+      if (seq !== this._weatherSeq || !map) return;
+      const layer = adapter.createTileLayer(weatherLayerUrl(domain, variable, dark), {
+        opacity: this._weatherOpacity(),
+        zIndex: 5,
+        maxZoom: MAX_ZOOM,
+        attribution: OPEN_METEO_ATTRIBUTION,
+        className: 'uc-rr-weather',
+        keepBuffer: 1,
+      }) as L.GridLayer;
+      layer.addTo(map);
+      this._weatherLayer = layer;
+      this._weatherError = false;
+      try {
+        this._weatherLegend = weatherLegendFrom(
+          EXTRA_COLOR_SCALES[variable] ?? adapter.lib.getColorScale?.(variable, dark),
+          this.hass?.config?.unit_system?.temperature === '°F'
+        );
+      } catch {
+        this._weatherLegend = null;
+      }
+      this._clearTimer('_weatherTimer');
+      this._weatherTimer = window.setTimeout(() => {
+        // Same settings, new hour: rebuild so "now" resolves again.
+        this._weatherKey = '';
+        this._sync();
+      }, WEATHER_LAYER_REFRESH_MS);
+    } catch {
+      if (seq !== this._weatherSeq) return;
+      this._weatherError = true;
+      this._clearTimer('_weatherTimer');
+      this._weatherTimer = window.setTimeout(() => {
+        this._weatherKey = '';
+        this._sync();
+      }, RETRY_MS);
+    }
+  }
+
+  private _removeWeather(): void {
+    this._weatherSeq++;
+    this._clearTimer('_weatherTimer');
+    if (this._weatherLayer) this._map?.removeLayer(this._weatherLayer);
+    this._weatherLayer = undefined;
+    this._weatherLegend = null;
+    this._weatherError = false;
   }
 
   // ── Frames ─────────────────────────────────────────────────────────────────
@@ -1077,6 +1192,16 @@ export class UcRainRadar extends LitElement {
     const showTitle = m?.show_title !== false && !!title;
     const hasFrames = this._frames.length > 0;
     const legendBottom = showControls && hasFrames ? 64 : 10;
+    const showRadarLegend = m?.show_legend !== false && hasFrames && !this._provider;
+    const wx = m ? weatherLayerOf(m) : 'none';
+    const wxLegend = m?.show_legend !== false && wx !== 'none' ? this._weatherLegend : null;
+    const wxNames: Record<string, string> = {
+      temperature: this._t('weather_layer_temperature', 'Temperature'),
+      precipitation: this._t('weather_layer_precipitation', 'Precipitation'),
+      wind: this._t('weather_layer_wind', 'Wind'),
+      clouds: this._t('weather_layer_clouds', 'Clouds'),
+      air_quality: this._t('weather_layer_air_quality', 'Air quality (PM2.5)'),
+    };
     const recenterTop = showTitle ? 52 : 10;
 
     return html`
@@ -1121,13 +1246,36 @@ export class UcRainRadar extends LitElement {
         }
         ${
           // The legend shows RainViewer's colors; keyed sources use their own palettes.
-          m?.show_legend !== false && hasFrames && !this._provider
+          showRadarLegend
             ? html`<div class="chip legend" style="bottom:${legendBottom}px" aria-hidden="true">
                 <div class="bar"></div>
                 <div class="labels">
                   <span>${this._t('legend_light', 'Light')}</span>
                   <span>${this._t('legend_heavy', 'Heavy')}</span>
                 </div>
+              </div>`
+            : nothing
+        }
+        ${
+          wxLegend
+            ? html`<div
+                class="chip legend wx"
+                style="bottom:${legendBottom + (showRadarLegend ? 42 : 0)}px"
+                aria-hidden="true"
+              >
+                <div class="wx-name">
+                  ${wxNames[wx] || ''}${wxLegend.unit ? html` · ${wxLegend.unit}` : nothing}
+                </div>
+                <div class="bar" style="background:${wxLegend.gradient}"></div>
+                <div class="labels"><span>${wxLegend.min}</span><span>${wxLegend.max}</span></div>
+              </div>`
+            : nothing
+        }
+        ${
+          this._weatherError && wx !== 'none'
+            ? html`<div class="chip wx-error" role="status" style="bottom:${legendBottom}px">
+                <ha-icon icon="mdi:cloud-alert"></ha-icon
+                ><span>${this._t('weather_layer_unavailable', 'Weather layer unavailable')}</span>
               </div>`
             : nothing
         }

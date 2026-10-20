@@ -22,6 +22,7 @@ import type {
   RainRadarMapStyle,
   RainRadarModule,
   RainRadarSource,
+  RainRadarWeatherLayer,
   UltraCardConfig,
 } from '../types';
 import { localize } from '../localize/localize';
@@ -40,20 +41,39 @@ import {
   homeLatLng,
   resolveCenter,
 } from '../services/uc-rain-radar-service';
+import {
+  DEFAULT_WEATHER_LAYER_OPACITY,
+  WEATHER_MODELS,
+  autoWeatherModel,
+  weatherLayerOf,
+} from '../services/uc-open-meteo-layer';
 
 type UpdateFn = (updates: Partial<CardModule>) => void;
 
 export class UltraRainRadarModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'rain_radar',
-    title: 'Rain Radar',
+    title: 'Weather Radar',
     description:
-      'Animated rain radar over a map, centered on your home, with a play and scrub timeline',
+      'Animated rain radar over a map, centered on your home, with a play and scrub timeline and optional weather layers',
     author: 'WJD Designs',
     version: '1.0.0',
     icon: 'mdi:weather-pouring',
     category: 'data',
-    tags: ['rain', 'radar', 'weather', 'precipitation', 'map', 'rainviewer', 'storm'],
+    tags: [
+      'rain',
+      'radar',
+      'weather',
+      'precipitation',
+      'map',
+      'rainviewer',
+      'storm',
+      'temperature',
+      'wind',
+      'clouds',
+      'air quality',
+      'open-meteo',
+    ],
   };
 
   createDefault(id?: string, _hass?: HomeAssistant): RainRadarModule {
@@ -90,6 +110,9 @@ export class UltraRainRadarModule extends BaseUltraModule {
       show_fullscreen: true,
       map_provider: 'esri',
       map_api_key: '',
+      weather_layer: 'none',
+      weather_layer_opacity: DEFAULT_WEATHER_LAYER_OPACITY,
+      weather_model: 'auto',
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
@@ -132,6 +155,7 @@ export class UltraRainRadarModule extends BaseUltraModule {
       <div class="module-general-settings">
         ${this._renderLocationSection(m, hass, updateModule, lang)}
         ${this._renderMapSection(m, hass, updateModule, lang)}
+        ${this._renderWeatherSection(m, hass, updateModule, lang)}
         ${this._renderDisplaySection(m, hass, updateModule, lang)}
         ${this._renderAnimationSection(m, hass, updateModule, lang)}
         ${this.renderConditionalFieldsGroup(
@@ -412,6 +436,105 @@ export class UltraRainRadarModule extends BaseUltraModule {
                 t('smooth', 'Smooth edges'),
                 t('smooth_desc', 'Soften the blocky edges of radar cells.')
               )}`
+        }
+      </div>
+    `;
+  }
+
+  private _renderWeatherSection(
+    m: RainRadarModule,
+    hass: HomeAssistant,
+    updateModule: UpdateFn,
+    lang: string
+  ): TemplateResult {
+    const t = (key: string, fallback: string) =>
+      localize(`editor.rain_radar.${key}`, lang, fallback);
+    const layer = weatherLayerOf(m);
+    const center = resolveCenter(m, hass);
+    const autoModel = center ? autoWeatherModel(center.lat, center.lng) : '';
+    const autoLabel = WEATHER_MODELS.find(o => o.value === autoModel)?.label;
+    const options: { value: RainRadarWeatherLayer; label: string }[] = [
+      { value: 'none', label: t('weather_layer_none', 'None') },
+      { value: 'temperature', label: t('weather_layer_temperature', 'Temperature') },
+      { value: 'precipitation', label: t('weather_layer_precipitation', 'Precipitation') },
+      { value: 'wind', label: t('weather_layer_wind', 'Wind') },
+      { value: 'clouds', label: t('weather_layer_clouds', 'Clouds') },
+      { value: 'air_quality', label: t('weather_layer_air_quality', 'Air quality (PM2.5)') },
+    ];
+    return html`
+      <div class="settings-section">
+        <div class="section-title">${t('weather_section', 'Weather layer')}</div>
+        ${this.renderFieldSection(
+          t('weather_layer', 'Weather layer'),
+          t(
+            'weather_layer_desc',
+            'A weather map for the current hour under the radar, from Open-Meteo. Free, no key. These are model forecasts, not radar.'
+          ),
+          hass,
+          { weather_layer: layer },
+          [{ name: 'weather_layer', selector: { select: { mode: 'dropdown', options } } }],
+          (e: CustomEvent) => {
+            updateModule({
+              weather_layer: (e.detail.value?.weather_layer || 'none') as RainRadarWeatherLayer,
+            });
+            this.triggerPreviewUpdate();
+          }
+        )}
+        ${
+          layer === 'none'
+            ? nothing
+            : html`
+                ${this.renderSliderField(
+                  t('weather_layer_opacity', 'Weather layer opacity'),
+                  t('weather_layer_opacity_desc', 'Lower lets more of the map show through.'),
+                  m.weather_layer_opacity ?? DEFAULT_WEATHER_LAYER_OPACITY,
+                  DEFAULT_WEATHER_LAYER_OPACITY,
+                  10,
+                  100,
+                  5,
+                  (v: number) => {
+                    updateModule({ weather_layer_opacity: v });
+                    this.triggerPreviewUpdate();
+                  },
+                  '%'
+                )}
+                ${
+                  layer === 'air_quality'
+                    ? nothing
+                    : this.renderFieldSection(
+                        t('weather_model', 'Weather model'),
+                        t(
+                          'weather_model_desc',
+                          'Auto picks the most detailed model for the map center.'
+                        ),
+                        hass,
+                        { weather_model: m.weather_model || 'auto' },
+                        [
+                          {
+                            name: 'weather_model',
+                            selector: {
+                              select: {
+                                mode: 'dropdown',
+                                options: [
+                                  {
+                                    value: 'auto',
+                                    label: autoLabel
+                                      ? `${t('weather_model_auto', 'Auto')} (${autoLabel})`
+                                      : t('weather_model_auto', 'Auto'),
+                                  },
+                                  ...WEATHER_MODELS,
+                                ],
+                              },
+                            },
+                          },
+                        ],
+                        (e: CustomEvent) => {
+                          updateModule({ weather_model: e.detail.value?.weather_model || 'auto' });
+                          this.triggerPreviewUpdate();
+                        }
+                      )
+                }
+              `
         }
       </div>
     `;

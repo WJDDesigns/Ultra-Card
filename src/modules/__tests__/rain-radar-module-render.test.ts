@@ -84,6 +84,38 @@ describe('Rain Radar module', () => {
     g.remove();
   });
 
+  it('shows weather layer options only once a layer is picked', () => {
+    const handler = getModuleRegistry().getModule(TYPE)!;
+    const base = handler.createDefault('rr-6') as RainRadarModule;
+    expect(base.weather_layer).toBe('none');
+    const off = renderToHost(handler.renderGeneralTab(base, homeHass, CONFIG, () => {}));
+    expect(off.textContent).toContain('Weather layer');
+    expect(off.textContent).not.toContain('Weather model');
+    off.remove();
+    const temp = renderToHost(
+      handler.renderGeneralTab(
+        { ...base, weather_layer: 'temperature' },
+        homeHass,
+        CONFIG,
+        () => {}
+      )
+    );
+    expect(temp.textContent).toContain('Weather layer opacity');
+    expect(temp.textContent).toContain('Weather model');
+    temp.remove();
+    const aq = renderToHost(
+      handler.renderGeneralTab(
+        { ...base, weather_layer: 'air_quality' },
+        homeHass,
+        CONFIG,
+        () => {}
+      )
+    );
+    expect(aq.textContent).toContain('Weather layer opacity');
+    expect(aq.textContent).not.toContain('Weather model');
+    aq.remove();
+  });
+
   it('shows coordinate fields only in coordinates mode', () => {
     const handler = getModuleRegistry().getModule(TYPE)!;
     const base = handler.createDefault('rr-4') as RainRadarModule;

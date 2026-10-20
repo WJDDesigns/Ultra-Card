@@ -6126,7 +6126,22 @@
       "map_api_key_missing": "Enter your key for this provider. Until then the map uses Esri.",
       "rainbow_api_key": "Rainbow.ai API key",
       "rainbow_api_key_desc": "From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, so a map left on screen all day can cost money. The key is saved in this dashboard, so anyone who can edit it can see the key.",
-      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer."
+      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer.",
+      "weather_section": "Verlag",
+      "weather_layer": "Verlag",
+      "weather_layer_desc": "Eit verkart for gjeldande time under radaren, frå Open-Meteo. Gratis, ingen nøkkel. Dette er modellprognosar, ikkje radar.",
+      "weather_layer_none": "Ingen",
+      "weather_layer_temperature": "Temperatur",
+      "weather_layer_precipitation": "Nedbør",
+      "weather_layer_wind": "Vind",
+      "weather_layer_clouds": "Skyer",
+      "weather_layer_air_quality": "Luftkvalitet (PM2,5)",
+      "weather_layer_opacity": "Dekkevne for verlaget",
+      "weather_layer_opacity_desc": "Lågare lèt meir av kartet synast.",
+      "weather_model": "Vermodell",
+      "weather_model_desc": "Auto vel den mest detaljerte modellen for midten av kartet.",
+      "weather_model_auto": "Auto",
+      "weather_layer_unavailable": "Verlaget er ikkje tilgjengeleg"
     }
   },
   "hub": {
