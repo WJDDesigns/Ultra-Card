@@ -16,7 +16,10 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = __dirname;
-const DIST_DIR = path.join(ROOT, 'dist');
+// The .55 preview watcher (scripts/ha55-preview) builds in its own checkout and points here.
+const DIST_DIR = process.env.UC_DIST_DIR || path.join(ROOT, 'dist');
+// Card assets only: skip the Connect repo sync and the live Connect integration.
+const CARD_ONLY = process.env.UC_DEPLOY_CARD_ONLY === '1';
 
 /**
  * Find where an HA host's `config` Samba share is mounted, from `mount` output
@@ -406,13 +409,16 @@ function deploy() {
   }
 
   // Always refresh sibling Connect www + panel-assets.json (shipping source of truth)
-  console.log('🔌 Syncing Ultra Card Connect www/…');
-  syncConnectRepoWww();
-  console.log('');
+  if (!CARD_ONLY) {
+    console.log('🔌 Syncing Ultra Card Connect www/…');
+    syncConnectRepoWww();
+    console.log('');
+  }
 
   if (!isVolumeMounted()) {
     console.log(`⚠️  No HA config share mounted for ${HOSTS.join(', ')} — skipped live HA deploy.`);
     console.log(`✨ Done in ${Date.now() - t0}ms (Connect repo sync only)\n`);
+    if (CARD_ONLY) process.exitCode = 1;
     return;
   }
 
@@ -454,8 +460,12 @@ function deploy() {
   }
 
   // Deploy the full Connect integration (Python + www) from the sibling repo
-  console.log('🔌 Deploying Ultra Card Connect integration to HA…');
   let connectResult = null;
+  if (CARD_ONLY) {
+    finish(t0, deployed, null);
+    return;
+  }
+  console.log('🔌 Deploying Ultra Card Connect integration to HA…');
   try {
     connectResult = deployConnectIntegration();
     if (connectResult) {
@@ -493,6 +503,10 @@ function deploy() {
     }
   }
 
+  finish(t0, deployed, connectResult);
+}
+
+function finish(t0, deployed, connectResult) {
   console.log(`\n✨ Done in ${Date.now() - t0}ms`);
   if (deployed) {
     console.log('🔄 Hard-refresh HA (Cmd+Shift+R) to load the new assets.');

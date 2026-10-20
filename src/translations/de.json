@@ -6126,7 +6126,22 @@
       "map_api_key_missing": "Geben Sie Ihren Schlüssel für diesen Anbieter ein. Bis dahin verwendet die Karte Esri.",
       "rainbow_api_key": "Rainbow.ai-API-Schlüssel",
       "rainbow_api_key_desc": "Aus Ihrem Rainbow.ai-Entwicklerkonto. Zeigt aktuellen Regen und eine 2-Stunden-Vorhersage. Rainbow.ai enthält 30.000 kostenlose Kartenkacheln pro Monat und berechnet darüber hinaus Ihrem Konto, daher kann eine Karte, die den ganzen Tag angezeigt wird, Kosten verursachen. Der Schlüssel wird in diesem Dashboard gespeichert, sodass jeder, der es bearbeiten kann, den Schlüssel sehen kann.",
-      "rainbow_api_key_missing": "Geben Sie Ihren Schlüssel von developer.rainbow.ai ein. Bis dahin verwendet das Radar RainViewer."
+      "rainbow_api_key_missing": "Geben Sie Ihren Schlüssel von developer.rainbow.ai ein. Bis dahin verwendet das Radar RainViewer.",
+      "weather_section": "Wetterebene",
+      "weather_layer": "Wetterebene",
+      "weather_layer_desc": "Eine Wetterkarte für die aktuelle Stunde unter dem Radar, von Open-Meteo. Kostenlos, ohne Schlüssel. Es handelt sich um Modellvorhersagen, nicht um Radar.",
+      "weather_layer_none": "Keine",
+      "weather_layer_temperature": "Temperatur",
+      "weather_layer_precipitation": "Niederschlag",
+      "weather_layer_wind": "Wind",
+      "weather_layer_clouds": "Wolken",
+      "weather_layer_air_quality": "Luftqualität (PM2,5)",
+      "weather_layer_opacity": "Deckkraft der Wetterebene",
+      "weather_layer_opacity_desc": "Ein niedrigerer Wert lässt mehr von der Karte durchscheinen.",
+      "weather_model": "Wettermodell",
+      "weather_model_desc": "Auto wählt das detaillierteste Modell für die Kartenmitte.",
+      "weather_model_auto": "Auto",
+      "weather_layer_unavailable": "Wetterebene nicht verfügbar"
     }
   },
   "hub": {

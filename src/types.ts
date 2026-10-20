@@ -9452,6 +9452,15 @@ export type RainRadarMapProvider = 'esri' | 'google' | 'mapbox' | 'maptiler';
 /** Where radar frames come from. `openweather` and `rainbow` need the user's own API key. */
 export type RainRadarSource = 'rainviewer' | 'openweather' | 'rainbow';
 
+/** Open-Meteo weather layer drawn under the radar. */
+export type RainRadarWeatherLayer =
+  | 'none'
+  | 'temperature'
+  | 'precipitation'
+  | 'wind'
+  | 'clouds'
+  | 'air_quality';
+
 export interface RainRadarModule extends BaseModule {
   type: 'rain_radar';
 
@@ -9511,6 +9520,13 @@ export interface RainRadarModule extends BaseModule {
   map_provider?: RainRadarMapProvider | undefined;
   /** The user's own key for the chosen map provider (stored in the dashboard config). */
   map_api_key?: string | undefined;
+
+  /** Open-Meteo model layer under the radar (current hour). Defaults to none. */
+  weather_layer?: RainRadarWeatherLayer | undefined;
+  /** Weather layer opacity, 0–100. */
+  weather_layer_opacity?: number | undefined;
+  /** Open-Meteo weather model domain, or 'auto' to pick one from the map center. */
+  weather_model?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

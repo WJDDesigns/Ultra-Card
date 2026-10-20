@@ -6093,7 +6093,22 @@
       "map_api_key_missing": "Enter your key for this provider. Until then the map uses Esri.",
       "rainbow_api_key": "Rainbow.ai API key",
       "rainbow_api_key_desc": "From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, so a map left on screen all day can cost money. The key is saved in this dashboard, so anyone who can edit it can see the key.",
-      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer."
+      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer.",
+      "weather_section": "天气图层",
+      "weather_layer": "天气图层",
+      "weather_layer_desc": "在雷达下方显示当前小时的天气图，数据来自 Open-Meteo。免费，无需密钥。这些是模型预报，不是雷达。",
+      "weather_layer_none": "无",
+      "weather_layer_temperature": "温度",
+      "weather_layer_precipitation": "降水",
+      "weather_layer_wind": "风",
+      "weather_layer_clouds": "云量",
+      "weather_layer_air_quality": "空气质量 (PM2.5)",
+      "weather_layer_opacity": "天气图层不透明度",
+      "weather_layer_opacity_desc": "数值越低，地图显示得越清楚。",
+      "weather_model": "天气模型",
+      "weather_model_desc": "自动会为地图中心选择最精细的模型。",
+      "weather_model_auto": "自动",
+      "weather_layer_unavailable": "天气图层不可用"
     }
   },
   "hub": {
