@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-19T23:07:57.437Z",
-  "ultraCardVersion": "3.14.0-beta10",
+  "generatedAt": "2026-10-20T18:21:13.736Z",
+  "ultraCardVersion": "3.14.0-beta11",
   "counts": {
     "total": 104,
     "free": 71,
@@ -1293,25 +1293,6 @@
       "status": "ok"
     },
     {
-      "type": "rain_radar",
-      "title": "Rain Radar",
-      "description": "Animated rain radar over a map, centered on your home, with a play and scrub timeline",
-      "category": "data",
-      "icon": "mdi:weather-pouring",
-      "pro": false,
-      "tags": [
-        "rain",
-        "radar",
-        "weather",
-        "precipitation",
-        "map",
-        "rainviewer",
-        "storm"
-      ],
-      "preview": "previews/rain_radar.png",
-      "status": "ok"
-    },
-    {
       "type": "range",
       "title": "Range & Oven",
       "description": "Range card with live cooktop burner indicators, oven status and temperature, dual-oven support, and light control",
@@ -1926,6 +1907,30 @@
         "conditions"
       ],
       "preview": "previews/weather.png",
+      "status": "ok"
+    },
+    {
+      "type": "rain_radar",
+      "title": "Weather Radar",
+      "description": "Animated rain radar over a map, centered on your home, with a play and scrub timeline and optional weather layers",
+      "category": "data",
+      "icon": "mdi:weather-pouring",
+      "pro": false,
+      "tags": [
+        "rain",
+        "radar",
+        "weather",
+        "precipitation",
+        "map",
+        "rainviewer",
+        "storm",
+        "temperature",
+        "wind",
+        "clouds",
+        "air quality",
+        "open-meteo"
+      ],
+      "preview": "previews/rain_radar.png",
       "status": "ok"
     }
   ]
