@@ -1,5 +1,77 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.0
+
+Stable 3.14.0 brings everything from the eleven 3.14.0 betas into one release. There are five new modules (Weather Radar, Floorplan and Irrigation for everyone; Energy Price & EV and Linked Row for Pro), a big FreeSpace update with undo, auto height, locking, grouping and fit to screen, and a Camera that works as a video doorbell. The editor is much faster to type in, dashboards repaint less, and every module was checked for readability in light and dark themes. Thanks to everyone who tested the betas and reported issues on GitHub and Discord, to larrysansan for nearly 1,200 German translations, and to Open-Meteo for letting Ultra Card use their weather map layer.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the Weather Radar module** - An animated radar loop over a map centered on your home, an entity or coordinates, with play/pause, a timeline scrubber, a Light to Heavy legend, a full screen button with pan and zoom, and a map that follows your light or dark theme. RainViewer's free radar is the default, so no key or account is needed
+- **Weather layers on the radar map** - Under "Weather layer", show Temperature, Precipitation, Wind, Clouds or Air quality (PM2.5) under the radar for the current hour, free from Open-Meteo with no key; "Auto" picks the most detailed weather model for your area. These are model forecasts, not radar
+- **More radar sources** - Choose OpenWeather (keys with Weather Maps 2.0 get an hourly loop with three forecast hours) or Rainbow.ai (current rain plus a 2-hour forecast in half-hour steps) and enter your own key
+- **Google, Mapbox and MapTiler maps** - Draw the radar over Google Maps, Mapbox or MapTiler in light, dark, streets or satellite with your own key; Esri stays the free default and takes over again if a key is refused
+- **Added the Floorplan module** - Upload a picture of your floor plan and drop entities on it; icons change with state, lights glow in their own colour, and rooms can fill with colour while something in them is on
+- **Added the Irrigation module** - Sprinkler and valve zones from any integration (OpenSprinkler, Rachio, Irrigation Unlimited, B-hyve or plain switches) with timed runs, remaining time, rain delay, rain sensor, next run, flow, water used and soil moisture
+- **Added the Energy Price & EV module (Pro)** - Pick your Nord Pool, Tibber, Octopus, ENTSO-e, Energi Data Service or Amber price sensor and get today's and tomorrow's price curve, cheap and expensive hours, the cheapest time to run an appliance, and an EV charge plan that reaches your target by departure
+- **Added the Linked Row module (Pro)** - Build a row of modules once, show it on any dashboard, and edit it in one place to update every copy; shared through Ultra Card Connect 1.10.0 or later, and it keeps working from its saved copy if Connect is missing or offline
+- **Camera action buttons** - Add buttons over the camera feed, such as unlocking the front door, opening a gate or switching on a porch light; they also show in the fullscreen view, locks ask for a second tap before they unlock, and the icon follows the entity
+- **Go live on a doorbell ring** - Under Stream Mode, pick an entity in "Go Live When", such as a doorbell event, motion sensor or toggle helper, and a snapshot camera switches to a live stream while it's on, then stays live for the number of seconds you choose. If the browser blocks sound on a stream that starts by itself, it plays muted and the audio button turns the sound on
+- **Clock time from an entity** - Pick a date or time entity under "Time from entity", such as when the dishwasher finishes or an `input_datetime` helper, and the Clock shows that time instead of the current one
+- **Full screen Map** - Turn on "Full Screen Button" under Map Controls to open the map full screen with pan and zoom; it's on for new Map modules and off for existing ones
+- **Hide when empty for Battery Monitor** - The module disappears when no batteries match, for example when "Show only below low threshold" is on and every battery is fine, and a column, row or card left with nothing to show hides too, so no gap is left. It always stays visible while editing ([#156](https://github.com/WJDDesigns/Ultra-Card/issues/156))
+- **Ultra Card in "Add to dashboard > By entity"** - Pick an entity in Home Assistant's Add to dashboard dialog and Ultra Card offers ready-made cards for it, such as light buttons or sliders, a thermostat, a graph or a gauge; Pro modules are only offered to Pro users
+- **FreeSpace Undo and Redo** - Toolbar buttons plus Ctrl+Z and Ctrl+Shift+Z step back through every change to the view while you edit it, including Use Desktop, deletes and edits made in Home Assistant's card editor
+- **FreeSpace Auto height** - A card can grow and shrink with its content instead of having a fixed height, and cards whose content is cut off show a "Cut off" badge while editing
+- **FreeSpace Lock and Group** - Lock a card so it can't be moved or resized by accident, or group cards so clicking one selects and moves them all together
+- **FreeSpace Hide on this screen** - Hide a card on Desktop, Laptop, Tablet or Phone; hidden cards stay visible, faded, while editing
+- **FreeSpace canvas background** - An image (optionally a different one per screen size), colour or gradient behind the cards that moves and scales with them, so a floorplan stays lined up with the cards placed on it
+- **FreeSpace Fit to screen** - A view setting that scales the whole layout to fill the screen with no scrolling, made for wall tablets
+- **FreeSpace starter layouts** - An empty FreeSpace view offers Wall tablet, Phone home and Desktop overview layouts filled with your own lights, weather, camera, thermostat and media player
+- **A "reload to finish updating" notice** - When HACS has installed a newer Ultra Card than the page is still running (the usual "clear your cache" problem), the editor says so and offers a Reload button
+- **Undo after deleting** - Deleting a row, column or module shows a toast with Undo, so a mis-tap next to Duplicate is one click to reverse
+- **Move up / Move down inside layouts** - Modules inside Horizontal, Vertical and nested layouts can be reordered from their ⋯ menu, which works on phones and tablets where dragging is unreliable
+- **Presets button on the layout toolbar** - Opens the preset browser directly instead of only through Add Module
+- **Pro lock cards explain why Pro isn't unlocking** - The card says whether Ultra Card Connect isn't installed, is signed out, needs you to sign in again, can't reach ultracard.io, or the subscription isn't active
+
+### 🔧 Improvements
+
+- **Much faster typing in the editor** - Edits are sent to Home Assistant once you pause instead of on every keystroke, and the dashboard behind the editor no longer redraws as you type
+- **Undo groups your typing** - Edits within a moment of each other are one undo step, so typing a label no longer fills the history one letter at a time
+- **Dashboards repaint less** - A clock showing seconds, a running timer, train or moon-phase module only refreshes its own card, a time condition checks once a minute, and an embedded card no longer triggers a dashboard scan every few seconds; idle repaints dropped by about a quarter to a third in testing
+- **Smaller download** - The main file is about 5% smaller and the editor about 11% smaller; video and background effects load only on cards that use them
+- **Keyboard and screen reader support in the editor** - Tree rows, colour swatches, chips and selector cards work with Enter and Space, menus and tabs are announced properly, there's a visible focus ring, and dialogs close with Escape and keep focus inside
+- **Easier to read in light themes** - Editor headings, action headers, selected buttons and colour picker values read on white, and the layout tree's column and layout headers meet contrast guidelines
+- **Better phone layouts and bigger tap targets** - Lock buttons drop under the title on phones, grid names wrap to two lines, and Climate +/−, moon-phase dots, slider dots and tree buttons are easier to tap
+- **Readable text in more places** - Bar percentage labels, the Virtual Pet screen, UniFi setup badges and labels, printer status pills, activity feed and alarm badges, and the battery fleet count
+- **New modules start ready to use** - Info binds a temperature sensor by default and Button has a default label
+- **Consistent controls** - Row, column and card settings use the same switches, dropdowns and sliders as module settings; the icon colour picker no longer offers gradients, which icons can't show
+- **FreeSpace editing helpers** - Lines and numbers show the distance to the nearest cards while dragging, Keep ratio (or holding Shift) keeps a card's proportions, and Snap to grid remembers how you left it
+- **More of the editor is translated** - The Add Module, Cards, Presets and Favorites selectors, find-and-replace and snapshot dialogs, and new messages are available in all 16 languages
+- **German translations** - Nearly 1,200 strings translated by community contributor larrysansan, and German now uses the formal "Sie" everywhere
+- **Spinbox without an entity says so** - In the editor, a spinbox with no entity notes that its value only changes on screen and isn't saved
+
+### 🐛 Bug Fixes
+
+- **Fixed whole cards going blank before setup** - Area Summary, Boiler, Cleaning Zones, Dishwasher, Dryer, Range, Fridge, Washer, Dog Duty, Laundry Tracker, Plant Care, Solar Analytics, Sports Score, Status Summary and Train now show their "Select a…" placeholder instead of an "invalid configuration" message
+- **Fixed "Access blocked" tiles in the Map module** - The default street style now loads Esri's street map instead of OpenStreetMap tiles, which were being blocked on Home Assistant dashboards
+- **Fixed Slider Control showing 0 for covers and fans** - The bar now reads the cover position or fan speed instead of the on/off state
+- **Fixed text lines running together** - Text modules with more than one paragraph show each paragraph on its own line again
+- **Fixed the FreeSpace menu hiding behind cards** - The card options menu now always opens on top of other cards
+- **Fixed intro animations inside layouts** - Modules inside a Horizontal, Vertical, Stack or Accordion layout now play their intro animation
+- **Fixed animated clocks inside layouts not ticking** - Clocks nested in Horizontal, Tabs and other layouts now update
+- **Fixed editor errors in 61 module editors** - Translation errors and snapshot/backup crashes in the editor are gone
+- **Fixed duplicate Native Card ids** - Native cards added in quick succession could get the same id
+- **Fixed a broken style rule in the Icon module** - A stray brace could stop the toggle slider style that followed it from applying
+- **Fixed the responsive-scaling flash** - Cards with responsive scaling no longer flash to full size on every state change
+- **Fixed popups** - Popups reposition when the window resizes, and dragging and resizing work on touch screens and with a pen
+- **Fixed dialogs overflowing small phone screens**
+- **Fixed the Vertical layout gap description** - It no longer says the gap is in rem when the unit picker shows px
+- **Fixed the Ultra Card Hub logging an error after Ultra Card Connect is updated** while Home Assistant stays open
+
+---
+
 ## Version 3.14.0-beta11
 
 The eleventh 3.14.0 beta turns Rain Radar into Weather Radar: alongside the radar, the map can now show temperature, precipitation, wind, clouds or air quality for the current hour, free from Open-Meteo. This is a pre-release for testing — please report anything odd on GitHub or Discord.
