@@ -6,6 +6,7 @@ import { getModuleRegistry } from './module-registry';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { forwardHaEventsFromPortal } from '../utils/uc-portal-ha-events';
 import { UcAlignment } from '../utils/uc-alignment';
 import {
   UcTriggerIconChrome,
@@ -584,6 +585,9 @@ export class UltraDrawerModule extends BaseUltraModule {
       portal.style.pointerEvents = 'auto';
       document.body.appendChild(portal);
       this._portals.set(drawerModule.id, portal);
+      // Cards inside the drawer (e.g. a tile card's more-info) fire HA events that
+      // can't reach <home-assistant> from a body-level portal; forward them.
+      forwardHaEventsFromPortal(portal);
 
       const keydown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
