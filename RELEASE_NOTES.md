@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.1-beta1
+
+The first 3.14.1 beta fixes cards inside a Drawer or Popup that couldn't open Home Assistant's detail view. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **More info from cards in a Drawer or Popup** - A Home Assistant card inside a Drawer or Popup, such as a tile card set to "More info", now opens the entity's detail view when tapped; before, nothing happened. The same fix applies to other dialogs and actions those cards open. Thanks to larrysansan for reporting it
+
 ## Version 3.14.0
 
 Stable 3.14.0 brings everything from the eleven 3.14.0 betas into one release. There are five new modules (Weather Radar, Floorplan and Irrigation for everyone; Energy Price & EV and Linked Row for Pro), a big FreeSpace update with undo, auto height, locking, grouping and fit to screen, and a Camera that works as a video doorbell. The editor is much faster to type in, dashboards repaint less, and every module was checked for readability in light and dark themes. Thanks to everyone who tested the betas and reported issues on GitHub and Discord, to larrysansan for nearly 1,200 German translations, and to Open-Meteo for letting Ultra Card use their weather map layer.
