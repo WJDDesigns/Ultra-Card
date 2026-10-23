@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta1
+
+The first 3.14.2 beta fixes cameras, maps and radar that disappeared inside a Horizontal container. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Cameras inside a Horizontal container** - A Camera set to a percentage width (the default 100%) now shows inside a Horizontal container instead of shrinking to nothing. Map, Weather Radar, Camera Grid and Stack modules had the same problem and are fixed too. They share the row when there's room and move onto their own line on narrow screens
+
 ## Version 3.14.1
 
 Stable 3.14.1 makes Ultra Card much lighter on ultracard.io and brings the 3.14.1 beta fix for cards inside Drawers and Popups. The presets and themes catalogs are now cached for hours instead of minutes and are shared by every card on the page, so a dashboard no longer asks ultracard.io for the same list over and over.
