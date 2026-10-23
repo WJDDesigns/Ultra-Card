@@ -11,10 +11,12 @@ import pako from 'pako';
 class UcPresetsService {
   private static readonly STORAGE_KEY = 'ultra-card-presets';
   private static readonly SYNC_EVENT = 'ultra-card-presets-changed';
+  private static readonly FORCED_REFRESH_MIN_GAP = 60 * 1000;
 
   private _userPresets: PresetDefinition[] = [];
   private _wordpressPresets: PresetDefinition[] = [];
   private _wordpressLoading = false;
+  private _lastForcedRefresh = 0;
   private _wordpressError: string | null = null;
   private _listeners: Set<(presets: PresetDefinition[]) => void> = new Set();
   private _statusListeners: Set<(status: { loading: boolean; error: string | null }) => void> =
@@ -165,11 +167,17 @@ class UcPresetsService {
   }
 
   /**
-   * Refresh WordPress presets
+   * Refresh WordPress presets.
+   *
+   * `force` (the refresh button) drops the API cache; otherwise the cached
+   * catalog is reused, so opening a tab never refetches from ultracard.io.
+   * Forced refreshes are limited to one per minute.
    */
-  async refreshWordPressPresets(): Promise<void> {
-    // Clear the API cache first to ensure fresh data
-    directoriesProPresetsAPI.clearCache();
+  async refreshWordPressPresets(force = false): Promise<void> {
+    if (force && Date.now() - this._lastForcedRefresh >= UcPresetsService.FORCED_REFRESH_MIN_GAP) {
+      this._lastForcedRefresh = Date.now();
+      directoriesProPresetsAPI.clearCache();
+    }
     await this._loadWordPressPresets(true);
     try {
       localStorage.setItem('ultra_card_presets_last_refresh', new Date().toISOString());
