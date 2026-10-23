@@ -631,9 +631,9 @@ class UcNavigationService {
         }
       }
 
-      const shouldDisplay = logicService.evaluateDisplayConditions(
-        module.display_conditions || [],
-        module.display_mode || 'always'
+      const shouldDisplay = logicService.evaluateOverlayModuleVisibility(
+        module,
+        registered.config
       );
 
       if (shouldDisplay) {

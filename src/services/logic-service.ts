@@ -199,6 +199,35 @@ export class LogicService {
   }
 
   /**
+   * Visibility for modules a service draws outside the card (navigation, background,
+   * video background, dynamic weather, living canvas). The card never renders these
+   * through _renderModule, so this is where their Logic tab applies. User visibility
+   * on the row and column holding the module counts too, since hiding those hides
+   * everything in them.
+   */
+  public evaluateOverlayModuleVisibility(module: any, cardConfig?: UltraCardConfig): boolean {
+    if (!this.evaluateUserVisibility(module?.user_visibility)) {
+      return false;
+    }
+
+    const moduleId = module?.id;
+    if (moduleId && cardConfig?.layout?.rows) {
+      for (const row of cardConfig.layout.rows) {
+        for (const column of row.columns || []) {
+          if (!(column.modules || []).some(m => m?.id === moduleId)) continue;
+          if (!this.evaluateUserVisibility((row as any).user_visibility)) return false;
+          if (!this.evaluateUserVisibility((column as any).user_visibility)) return false;
+        }
+      }
+    }
+
+    return this.evaluateDisplayConditions(
+      module?.display_conditions || [],
+      module?.display_mode || 'always'
+    );
+  }
+
+  /**
    * Evaluate display for a row that may have template_mode enabled
    * @param row The row to evaluate
    * @returns true if element should be visible, false otherwise
