@@ -15,6 +15,7 @@ interface HassEntity {
   context: { id: string; parent_id?: string | null; user_id?: string | null };
 }
 import '../components/ultra-color-picker';
+import { toggleEntities } from '../utils/uc-entity-toggle';
 
 /**
  * Vacuum Module - Pro Feature
@@ -2859,8 +2860,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       } else if (domain === 'input_boolean') {
         await hass.callService('input_boolean', 'toggle', { entity_id: entityId });
       } else {
-        // Fallback: try homeassistant.toggle
-        await hass.callService('homeassistant', 'toggle', { entity_id: entityId });
+        await toggleEntities(hass, entityId);
       }
     } catch (error) {
       console.error('Toggle failed:', error);

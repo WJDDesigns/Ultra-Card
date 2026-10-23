@@ -1,5 +1,6 @@
 import type { HomeAssistant } from '../ha/types';
 import type { CameraActionButton } from '../types';
+import { entityToggleService } from './uc-entity-toggle';
 
 /** How long a confirm-first button waits for the second tap. */
 export const CAMERA_ACTION_CONFIRM_MS = 4000;
@@ -35,22 +36,9 @@ export function cameraActionService(
   stateObj?: EntityLike
 ): { domain: string; service: string } {
   const domain = domainOf(entityId);
-  switch (domain) {
-    case 'lock':
-      return { domain: 'lock', service: stateObj?.state === 'locked' ? 'unlock' : 'lock' };
-    case 'cover':
-      return { domain: 'cover', service: 'toggle' };
-    case 'button':
-    case 'input_button':
-      return { domain, service: 'press' };
-    case 'scene':
-    case 'script':
-      return { domain, service: 'turn_on' };
-    case 'automation':
-      return { domain, service: 'trigger' };
-    default:
-      return { domain: 'homeassistant', service: 'toggle' };
-  }
+  if (domain === 'automation') return { domain, service: 'trigger' };
+  if (domain === 'script') return { domain, service: 'turn_on' };
+  return entityToggleService(entityId, stateObj);
 }
 
 /** Unlocked, open or on reads as "active" and gets the highlight color. */

@@ -1,5 +1,16 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta2
+
+The second 3.14.2 beta fixes the Toggle action on locks and makes Visible to Users work on Navigation and other overlay modules. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Toggle action on locks** - Toggle as a tap, hold or double-tap action now works on lock entities: a locked lock unlocks and any other lock locks. Before, nothing happened. Buttons and input buttons now get pressed and scenes get activated the same way. Thanks to larrysansan for reporting it
+- **Visible to Users on Navigation** - Logic > Visible to Users (Show only for / Hide for) now works on Navigation, Background, Video Background, Dynamic Weather and Living Canvas, including user visibility set on their row or column. Thanks to larrysansan for reporting it
+
 ## Version 3.14.2-beta1
 
 The first 3.14.2 beta fixes cameras, maps and radar that disappeared inside a Horizontal container. This is a pre-release for testing — please report anything odd on GitHub or Discord.

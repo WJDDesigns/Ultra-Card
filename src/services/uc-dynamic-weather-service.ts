@@ -172,9 +172,10 @@ class UcDynamicWeatherService {
 
       if (!module.enabled) continue;
 
-      const shouldDisplay = logicService.evaluateDisplayConditions(
-        module.display_conditions || [],
-        module.display_mode || 'always'
+      if (registered.hass) logicService.setHass(registered.hass);
+      const shouldDisplay = logicService.evaluateOverlayModuleVisibility(
+        module,
+        registered.config
       );
 
       if (shouldDisplay) {

@@ -1,4 +1,5 @@
 import type { HomeAssistant, ActionConfig } from '../ha/types';
+import { toggleEntities } from '../utils/uc-entity-toggle';
 
 export interface LinkAction {
   action_type?:
@@ -80,9 +81,7 @@ export class LinkService {
       switch (action.action_type) {
         case 'toggle':
           if (action.entity) {
-            await this.hass.callService('homeassistant', 'toggle', {
-              entity_id: action.entity,
-            });
+            await toggleEntities(this.hass, action.entity);
           }
           break;
 
