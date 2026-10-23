@@ -450,6 +450,14 @@ export class UltraHorizontalModule extends BaseUltraModule {
                           ? this.getChildPreferredWidth(childModule)
                           : null;
 
+                      const fluidMediaFlex =
+                        !layoutShouldGrow &&
+                        !childShouldGrow &&
+                        !clusterOverlappingChildren &&
+                        !childPreferredWidth
+                          ? this.getFluidMediaFlex(childModule)
+                          : null;
+
                       const flexSegments = [
                         layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
                         childShouldGrow
@@ -461,6 +469,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                         !layoutShouldGrow && !childShouldGrow && childPreferredWidth
                           ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
                           : '',
+                        fluidMediaFlex || '',
                       ].filter(Boolean);
 
                       const baseStyles = `
@@ -948,6 +957,41 @@ export class UltraHorizontalModule extends BaseUltraModule {
     }
 
     return false;
+  }
+
+  /**
+   * Cameras, maps, radar, camera grids and stacks size themselves to their parent and have no
+   * content width of their own (the media is absolutely positioned inside an aspect-ratio box).
+   * A flex item sized by its content therefore collapses to 0px and the module vanishes. Give
+   * them a real basis to grow from, so they share the row and wrap onto their own line when it
+   * gets too narrow. A fixed design width (e.g. 320px) already gives them a size, so leave
+   * those alone.
+   */
+  private getFluidMediaFlex(childModule: CardModule): string | null {
+    const child = childModule as any;
+    const fluidTypes = ['camera', 'camera_grid', 'map', 'rain_radar', 'stack'];
+    if (!fluidTypes.includes(childModule.type)) {
+      return null;
+    }
+
+    const designWidth = child?.design?.width;
+    const hasWidth =
+      designWidth !== undefined && designWidth !== null && String(designWidth).trim() !== '';
+    // Without a design width the camera falls back to its own pixel width.
+    if (!hasWidth && childModule.type === 'camera') {
+      return null;
+    }
+    if (hasWidth && /^\s*[\d.]+\s*(px|em|rem|vw|vh)\s*$/i.test(String(designWidth))) {
+      return null;
+    }
+
+    const maxWidth = child?.design?.max_width;
+    const maxWidthCss =
+      maxWidth !== undefined && maxWidth !== null && String(maxWidth).trim() !== ''
+        ? `max-width: min(${/^[\d.]+$/.test(String(maxWidth).trim()) ? `${maxWidth}px` : maxWidth}, 100%);`
+        : 'max-width: 100%;';
+
+    return `flex: 1 1 240px; min-width: 0; ${maxWidthCss}`;
   }
 
   private getChildPreferredWidth(childModule: CardModule): string | null {
