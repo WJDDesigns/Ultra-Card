@@ -68,7 +68,7 @@ export type UcThemeInstallState = 'not_installed' | 'installed' | 'update_availa
 
 const API_BASE = 'https://ultracard.io/wp-json/ultra-card/v1';
 const CACHE_PREFIX = 'ultra-card-themes-v1:';
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000; // the refresh button still forces a reload
 /** Stale data is still better than an empty catalog when ultracard.io is unreachable. */
 const STALE_TTL = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT = 8000;
