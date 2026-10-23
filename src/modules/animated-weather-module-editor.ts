@@ -7,6 +7,13 @@ import { AnimatedWeatherModule, UltraCardConfig, CardModule } from '../types';
 import { localize } from '../localize/localize';
 import { BaseUltraModule } from './base-module';
 
+import {
+  WEATHER_STATION_SENSORS,
+  WeatherStationKey,
+  hasStationSensor,
+  readWeatherValue,
+} from '../utils/uc-weather-station';
+
 // Item metadata
 interface WeatherItemMeta {
   id: string;
@@ -24,10 +31,92 @@ const WEATHER_ITEMS: Record<string, WeatherItemMeta> = {
   wind: { id: 'wind', label: 'Wind', icon: 'mdi:weather-windy', column: 'left' },
   pressure: { id: 'pressure', label: 'Pressure', icon: 'mdi:gauge', column: 'left' },
   visibility: { id: 'visibility', label: 'Visibility', icon: 'mdi:eye', column: 'left' },
+  humidity: { id: 'humidity', label: 'Humidity', icon: 'mdi:water-percent', column: 'left' },
+  feels_like: { id: 'feels_like', label: 'Feels Like', icon: 'mdi:thermometer-lines', column: 'left' },
+  dew_point: { id: 'dew_point', label: 'Dew Point', icon: 'mdi:thermometer-water', column: 'left' },
+  wind_gust: { id: 'wind_gust', label: 'Wind Gust', icon: 'mdi:weather-windy-variant', column: 'left' },
+  uv_index: { id: 'uv_index', label: 'UV Index', icon: 'mdi:sun-wireless', column: 'left' },
+  wind_compass: { id: 'wind_compass', label: 'Wind Compass', icon: 'mdi:compass-outline', column: 'left' },
   date: { id: 'date', label: 'Date', icon: 'mdi:calendar', column: 'right' },
   temperature: { id: 'temperature', label: 'Temperature', icon: 'mdi:thermometer', column: 'right' },
   temp_range: { id: 'temp_range', label: 'High/Low', icon: 'mdi:thermometer-lines', column: 'right' },
 };
+
+/**
+ * Items added with the station sensors. They stay hidden unless turned on, or
+ * unless their station sensor is set, so existing cards don't change.
+ */
+const OPT_IN_ITEMS: Record<string, WeatherStationKey | null> = {
+  humidity: 'humidity',
+  feels_like: 'feels_like',
+  dew_point: 'dew_point',
+  wind_gust: 'wind_gust',
+  uv_index: 'uv_index',
+  wind_compass: null,
+};
+
+/** Item id → the station reading it shows, for availability checks. */
+const ITEM_READINGS: Record<string, WeatherStationKey> = {
+  precipitation: 'precipitation',
+  pressure: 'pressure',
+  humidity: 'humidity',
+  feels_like: 'feels_like',
+  dew_point: 'dew_point',
+  wind_gust: 'wind_gust',
+  uv_index: 'uv_index',
+  wind_compass: 'wind_direction',
+};
+
+export function isAnimatedWeatherItemShown(module: AnimatedWeatherModule, itemId: string): boolean {
+  const value = (module as any)[`show_${itemId}`];
+  if (itemId in OPT_IN_ITEMS) {
+    if (value === true || value === false) return value;
+    const sensorKey = OPT_IN_ITEMS[itemId];
+    return sensorKey ? hasStationSensor(module, sensorKey) : false;
+  }
+  return value !== false;
+}
+
+/** Which items have data to show (station sensor or weather entity attribute). */
+export function getAnimatedWeatherItemAvailability(
+  module: AnimatedWeatherModule,
+  hass: HomeAssistant | undefined,
+  resolveEntity?: (id: string) => string
+): (itemId: string) => boolean {
+  const weatherEntity = module.weather_entity ? hass?.states[module.weather_entity] : undefined;
+  const attrs = (weatherEntity?.attributes || {}) as Record<string, unknown>;
+  const has = (key: WeatherStationKey) =>
+    readWeatherValue(hass, attrs, module, key, resolveEntity) !== undefined;
+  return (itemId: string) => {
+    if (!WEATHER_ITEMS[itemId]) return false;
+    if (itemId === 'precipitation_probability') return attrs.precipitation_probability != null;
+    if (itemId === 'visibility') return attrs.visibility != null;
+    if (itemId === 'wind') return has('wind_speed') || has('wind_direction');
+    if (ITEM_READINGS[itemId]) return has(ITEM_READINGS[itemId]);
+    return true;
+  };
+}
+
+/**
+ * Column order: the saved order (or the default), with new opt-in items that
+ * have data appended to the left column so they can be found in the editor.
+ */
+export function getAnimatedWeatherColumnOrder(
+  module: AnimatedWeatherModule,
+  isAvailable: (itemId: string) => boolean
+): { left: string[]; right: string[] } {
+  const defaultLeft: string[] = ['location', 'condition'];
+  if (module.custom_entity) defaultLeft.push('custom_entity');
+  for (const id of ['precipitation', 'precipitation_probability', 'wind', 'pressure', 'visibility']) {
+    if (isAvailable(id)) defaultLeft.push(id);
+  }
+  const left = [...(module.left_column_order || defaultLeft)];
+  const right = [...(module.right_column_order || ['date', 'temperature', 'temp_range'])];
+  for (const id of Object.keys(OPT_IN_ITEMS)) {
+    if (!left.includes(id) && !right.includes(id) && isAvailable(id)) left.push(id);
+  }
+  return { left, right };
+}
 
 // Module-level state (survives re-renders during a drag)
 const expandedAccordionState: Record<string, string | null> = {};
@@ -48,44 +137,18 @@ export function renderAnimatedWeatherModuleEditor(
 
   // ─── Entity attribute availability ───────────────────────────────────────────
 
-  const weatherEntity = weatherModule.weather_entity ? hass.states[weatherModule.weather_entity] : null;
-  const hasPrecipitation = weatherEntity?.attributes?.precipitation != null;
-  const hasPrecipitationProbability = weatherEntity?.attributes?.precipitation_probability != null;
-  const hasWind =
-    weatherEntity?.attributes?.wind_speed !== undefined ||
-    weatherEntity?.attributes?.wind_bearing !== undefined;
-  const hasPressure = weatherEntity?.attributes?.pressure != null;
-  const hasVisibility = weatherEntity?.attributes?.visibility != null;
-
-  const isItemAvailable = (itemId: string): boolean => {
-    if (!WEATHER_ITEMS[itemId]) return false;
-    if (itemId === 'precipitation' && !hasPrecipitation) return false;
-    if (itemId === 'precipitation_probability' && !hasPrecipitationProbability) return false;
-    if (itemId === 'wind' && !hasWind) return false;
-    if (itemId === 'pressure' && !hasPressure) return false;
-    if (itemId === 'visibility' && !hasVisibility) return false;
-    return true;
-  };
+  const isItemAvailable = getAnimatedWeatherItemAvailability(
+    weatherModule,
+    hass,
+    (id: string) => context.resolveEntity?.(id, config) || id
+  );
 
   // ─── Column ordering ──────────────────────────────────────────────────────────
 
-  const getDefaultOrder = (column: 'left' | 'right'): string[] => {
-    if (column === 'left') {
-      const items: string[] = ['location', 'condition'];
-      if (weatherModule.custom_entity) items.push('custom_entity');
-      if (hasPrecipitation) items.push('precipitation');
-      if (hasPrecipitationProbability) items.push('precipitation_probability');
-      if (hasWind) items.push('wind');
-      if (hasPressure) items.push('pressure');
-      if (hasVisibility) items.push('visibility');
-      return items;
-    }
-    return ['date', 'temperature', 'temp_range'];
-  };
-
   // Filter to available items so indices are stable and predictable
-  const leftOrder = (weatherModule.left_column_order || getDefaultOrder('left')).filter(isItemAvailable);
-  const rightOrder = (weatherModule.right_column_order || getDefaultOrder('right')).filter(isItemAvailable);
+  const order = getAnimatedWeatherColumnOrder(weatherModule, isItemAvailable);
+  const leftOrder = order.left.filter(isItemAvailable);
+  const rightOrder = order.right.filter(isItemAvailable);
 
   // ─── Accordion state ──────────────────────────────────────────────────────────
 
@@ -206,7 +269,7 @@ export function renderAnimatedWeatherModuleEditor(
     const sizeKey  = `${itemId}_size`  as keyof AnimatedWeatherModule;
     const colorKey = `${itemId}_color` as keyof AnimatedWeatherModule;
 
-    const isVisible  = weatherModule[showKey] !== false;
+    const isVisible  = isAnimatedWeatherItemShown(weatherModule, itemId);
     const isExpanded = getExpanded() === itemId;
 
     const toggleExpand = (e: Event) => {
@@ -246,9 +309,9 @@ export function renderAnimatedWeatherModuleEditor(
           <div class="wm-item-content">
             ${context.renderSliderField(
               localize('editor.animated_weather.item_size', lang, 'Size'), '',
-              (weatherModule[sizeKey] as number) ?? (column === 'left' ? 14 : 16),
-              column === 'left' ? 14 : 16,
-              0, 128, 1,
+              (weatherModule[sizeKey] as number) ?? (itemId === 'wind_compass' ? 96 : column === 'left' ? 14 : 16),
+              itemId === 'wind_compass' ? 96 : column === 'left' ? 14 : 16,
+              itemId === 'wind_compass' ? 48 : 0, itemId === 'wind_compass' ? 240 : 128, 1,
               (v: number) => { updateModule({ [sizeKey]: v } as any); },
               'px'
             )}
@@ -564,6 +627,22 @@ export function renderAnimatedWeatherModuleEditor(
         <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
           ${localize('editor.animated_weather.entity_desc', lang, 'Select a weather entity to drive the animated background and forecast display.')}
         </div>
+      </div>
+
+      <!-- Weather Station Sensors -->
+      <div class="wm-section">
+        <div class="wm-section-title">${localize('editor.animated_weather.station_section', lang, 'Weather Station Sensors')}</div>
+        <div class="wm-section-desc" style="margin-bottom: 16px;">
+          ${localize('editor.animated_weather.station_section_desc', lang, 'Optional. Use your own weather station for the current values. The animated icon and high/low still come from the weather entity. New items like Feels Like and UV Index appear in the Left Column once their sensor is set.')}
+        </div>
+        ${WEATHER_STATION_SENSORS.map(def =>
+          context.renderEntityPickerWithVariables(
+            hass, config, def.field, (weatherModule[def.field] as string) || '',
+            (value: string) => { updateModule({ [def.field]: value } as any); context.triggerPreviewUpdate(); },
+            ['sensor'],
+            localize(`editor.weather.sensor.${def.key}`, lang, def.label)
+          )
+        )}
       </div>
 
       <!-- Layout Settings -->
