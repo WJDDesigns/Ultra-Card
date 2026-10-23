@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.1
+
+Stable 3.14.1 makes Ultra Card much lighter on ultracard.io and brings the 3.14.1 beta fix for cards inside Drawers and Popups. The presets and themes catalogs are now cached for hours instead of minutes and are shared by every card on the page, so a dashboard no longer asks ultracard.io for the same list over and over.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Far fewer requests to ultracard.io** - The community presets catalog is cached for 6 hours instead of 5 minutes, and every card on a dashboard shares one request. Opening the Presets tab uses the cached list; the refresh button still loads a fresh one
+- **Gentler when ultracard.io is busy** - If loading presets fails, Ultra Card waits before trying again (from 5 minutes up to 6 hours) and shows the presets it already has, instead of retrying through several fallback routes at once
+- **Account tab and themes load from cache** - Billing details in the Hub's Account tab are reused for 10 minutes, and the themes catalog for an hour
+
+### 🐛 Bug Fixes
+
+- **More info from cards in a Drawer or Popup** - A Home Assistant card inside a Drawer or Popup, such as a tile card set to "More info", now opens the entity's detail view when tapped; before, nothing happened. The same fix applies to other dialogs and actions those cards open. Thanks to larrysansan for reporting it
+
 ## Version 3.14.1-beta1
 
 The first 3.14.1 beta fixes cards inside a Drawer or Popup that couldn't open Home Assistant's detail view. This is a pre-release for testing — please report anything odd on GitHub or Discord.
