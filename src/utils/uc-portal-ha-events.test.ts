@@ -65,4 +65,24 @@ describe('forwardHaEventsFromPortal', () => {
 
     expect(reachedDocument).toBe(1);
   });
+
+  it('re-asks Lit context requests on <home-assistant> with the original target', () => {
+    const { ha, portal, card } = setup();
+    forwardHaEventsFromPortal(portal);
+    const ctx = Symbol('connection');
+    const callback = () => {};
+    let got: any = null;
+    ha.addEventListener('context-request', e => {
+      got = e;
+    });
+    const req = new Event('context-request', { bubbles: true, composed: true });
+    Object.assign(req, { context: ctx, callback, subscribe: true });
+    card.dispatchEvent(req);
+
+    expect(got).not.toBeNull();
+    expect(got.context).toBe(ctx);
+    expect(got.callback).toBe(callback);
+    expect(got.subscribe).toBe(true);
+    expect(got.contextTarget).toBe(card);
+  });
 });

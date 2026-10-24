@@ -1983,6 +1983,14 @@
         "title": "Sound Button",
         "desc": "Show a mute/unmute button over the stream."
       },
+      "show_mode_badge": {
+        "title": "Live / Snapshot Badge",
+        "desc": "Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
+      },
       "show_controls": {
         "title": "Player Controls",
         "desc": "Show the browser's native video controls on the stream."

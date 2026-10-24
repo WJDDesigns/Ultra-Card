@@ -1371,6 +1371,14 @@
         "title": "Ton-Taste",
         "desc": "Zeige eine Schaltfläche zum Stummschalten/Entstummschalten über dem Stream an."
       },
+      "show_mode_badge": {
+        "title": "Live-/Snapshot-Anzeige",
+        "desc": "Zeigt oben in der Ecke ein kleines Abzeichen, ob die Kamera live streamt oder Standbilder anzeigt."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
+      },
       "show_controls": {
         "title": "Steuerung",
         "desc": "Die nativen Videosteuerelemente des Browsers im Stream anzeigen."

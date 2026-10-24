@@ -138,6 +138,21 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
               },
             },
             {
+              title: localize('editor.update_monitor.hide_when_empty', lang, 'Hide when up to date'),
+              description: localize(
+                'editor.update_monitor.hide_when_empty_desc',
+                lang,
+                'On the dashboard, hide this module when no updates are pending. A column, row or card left empty hides too.'
+              ),
+              hass,
+              data: { hide_when_empty: m.hide_when_empty === true },
+              schema: [this.booleanField('hide_when_empty')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ hide_when_empty: e.detail.value.hide_when_empty } as Partial<CardModule>);
+                this.triggerPreviewUpdate();
+              },
+            },
+            {
               title: localize('editor.update_monitor.show_version', lang, 'Show version info'),
               description: localize(
                 'editor.update_monitor.show_version_desc',
@@ -453,6 +468,12 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
             : nothing}
       </div>
     `;
+  }
+
+  /** "Hide when up to date": nothing pending, even if up-to-date entities are listed. */
+  isEmpty(module: CardModule, hass: HomeAssistant): boolean {
+    if (!hass?.states) return false;
+    return !this._collectReadings(module as UpdateMonitorModule, hass).some(r => r.hasUpdate);
   }
 
   /** Full state-machine scan, so the result is cached per hass tick. */
