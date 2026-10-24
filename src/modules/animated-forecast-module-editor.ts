@@ -105,6 +105,161 @@ export function renderAnimatedForecastModuleEditor(
           (value: number) => updateModule({ forecast_days: value }),
           ''
         )}
+
+        <!-- Daily / Hourly -->
+        ${context.renderSegmentedField(
+          localize('editor.animated_forecast.forecast_type', lang, 'Show First'),
+          localize(
+            'editor.animated_forecast.forecast_type_desc',
+            lang,
+            'Hourly needs a weather integration that provides an hourly forecast.'
+          ),
+          forecastModule.forecast_type || 'daily',
+          [
+            { value: 'daily', label: localize('editor.animated_forecast.daily', lang, 'Daily') },
+            { value: 'hourly', label: localize('editor.animated_forecast.hourly', lang, 'Hourly') },
+          ],
+          (next: string) => {
+            updateModule({ forecast_type: next as 'daily' | 'hourly' });
+            context.triggerPreviewUpdate();
+          }
+        )}
+
+        ${forecastModule.forecast_type !== 'hourly'
+          ? context.renderFieldSection(
+              localize('editor.animated_forecast.day_tap_hourly', lang, 'Tap a Day to See Its Hours'),
+              localize(
+                'editor.animated_forecast.day_tap_hourly_desc',
+                lang,
+                'Tapping a day switches to that day\'s hourly forecast. Tap Back to return. Day taps no longer run the module tap action.'
+              ),
+              hass,
+              { day_tap_hourly: forecastModule.day_tap_hourly === true },
+              [context.booleanField('day_tap_hourly')],
+              (e: CustomEvent) => {
+                updateModule({ day_tap_hourly: e.detail.value.day_tap_hourly });
+                context.triggerPreviewUpdate();
+              }
+            )
+          : ''}
+
+        ${forecastModule.forecast_type === 'hourly' || forecastModule.day_tap_hourly
+          ? context.renderSliderField(
+              localize('editor.animated_forecast.forecast_hours', lang, 'Forecast Hours'),
+              localize('editor.animated_forecast.forecast_hours_desc', lang, 'Hours shown in the hourly view (3-12)'),
+              forecastModule.forecast_hours || 8,
+              8,
+              3,
+              12,
+              1,
+              (value: number) => updateModule({ forecast_hours: value }),
+              ''
+            )
+          : ''}
+      </div>
+
+      <!-- ============================================ -->
+      <!-- CHART SECTION -->
+      <!-- ============================================ -->
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 24px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.animated_forecast.chart.title', lang, '📊 Chart')}
+        </div>
+
+        ${context.renderFieldSection(
+          localize('editor.animated_forecast.show_chart', lang, 'Show Chart Under Forecast'),
+          localize(
+            'editor.animated_forecast.show_chart_desc',
+            lang,
+            'Adds a small bar or line row per value, lined up with each day or hour.'
+          ),
+          hass,
+          { show_chart: forecastModule.show_chart === true },
+          [context.booleanField('show_chart')],
+          (e: CustomEvent) => {
+            updateModule({ show_chart: e.detail.value.show_chart });
+            context.triggerPreviewUpdate();
+          }
+        )}
+
+        ${forecastModule.show_chart === true
+          ? html`
+              ${context.renderFieldSection(
+                localize('editor.animated_forecast.chart_metrics', lang, 'Values'),
+                localize(
+                  'editor.animated_forecast.chart_metrics_desc',
+                  lang,
+                  'Pick one or more. Values your weather integration doesn\'t provide are skipped.'
+                ),
+                hass,
+                { chart_metrics: forecastModule.chart_metrics || ['precipitation_probability'] },
+                [
+                  {
+                    name: 'chart_metrics',
+                    selector: {
+                      select: {
+                        multiple: true,
+                        mode: 'list',
+                        options: [
+                          { value: 'precipitation_probability', label: localize('editor.animated_forecast.metric.precipitation_probability', lang, 'Chance of rain') },
+                          { value: 'precipitation', label: localize('editor.animated_forecast.metric.precipitation', lang, 'Rain amount') },
+                          { value: 'uv_index', label: localize('editor.animated_forecast.metric.uv_index', lang, 'UV index') },
+                          { value: 'temperature', label: localize('editor.animated_forecast.metric.temperature', lang, 'Temperature') },
+                          { value: 'wind_speed', label: localize('editor.animated_forecast.metric.wind_speed', lang, 'Wind speed') },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                (e: CustomEvent) => {
+                  updateModule({ chart_metrics: e.detail.value.chart_metrics || [] });
+                  context.triggerPreviewUpdate();
+                }
+              )}
+              ${context.renderSegmentedField(
+                localize('editor.animated_forecast.chart_style', lang, 'Chart Style'),
+                '',
+                forecastModule.chart_style || 'bar',
+                [
+                  { value: 'bar', label: localize('editor.animated_forecast.chart_style_bar', lang, 'Bars') },
+                  { value: 'line', label: localize('editor.animated_forecast.chart_style_line', lang, 'Line') },
+                ],
+                (next: string) => {
+                  updateModule({ chart_style: next as 'bar' | 'line' });
+                  context.triggerPreviewUpdate();
+                }
+              )}
+              ${context.renderSliderField(
+                localize('editor.animated_forecast.chart_height', lang, 'Row Height'),
+                '24-120px',
+                forecastModule.chart_height || 48,
+                48,
+                24,
+                120,
+                4,
+                (value: number) => updateModule({ chart_height: value }),
+                'px'
+              )}
+              <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+                ${localize('editor.animated_forecast.chart_color', lang, 'Chart Color')}
+              </div>
+              <ultra-color-picker
+                .value="${forecastModule.chart_color || ''}"
+                .defaultValue=${'var(--primary-color)'}
+                .hass="${hass}"
+                @value-changed=${(e: CustomEvent) => {
+                  updateModule({ chart_color: e.detail.value });
+                  setTimeout(() => context.triggerPreviewUpdate(), 50);
+                }}
+              ></ultra-color-picker>
+            `
+          : ''}
       </div>
 
       <!-- ============================================ -->

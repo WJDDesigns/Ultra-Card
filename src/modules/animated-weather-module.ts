@@ -5,8 +5,23 @@ import { CardModule, AnimatedWeatherModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { renderAnimatedWeatherModuleEditor } from './animated-weather-module-editor';
+import {
+  renderAnimatedWeatherModuleEditor,
+  getAnimatedWeatherColumnOrder,
+  getAnimatedWeatherItemAvailability,
+  isAnimatedWeatherItemShown,
+} from './animated-weather-module-editor';
 import { formatEntityState } from '../utils/number-format';
+import {
+  WEATHER_STATION_SENSORS,
+  WeatherReading,
+  WeatherStationKey,
+  bearingToCardinal,
+  formatWeatherReading,
+  readWeatherValue,
+  renderWindCompass,
+} from '../utils/uc-weather-station';
+import { getWeatherForecast } from '../utils/uc-weather-forecast';
 
 export class UltraAnimatedWeatherModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -123,46 +138,19 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
   }
 
   /**
-   * Get default column order for backwards compatibility
-   * Returns order arrays based on current visibility toggles and entity availability
+   * Column order: saved order or the default for what the entities provide.
    */
-  private _getDefaultColumnOrder(
+  private _getColumnOrder(
     module: AnimatedWeatherModule,
-    hass?: HomeAssistant
+    hass?: HomeAssistant,
+    config?: UltraCardConfig
   ): { left: string[]; right: string[] } {
-    // Check entity availability
-    const weatherEntity = module.weather_entity ? hass?.states[module.weather_entity] : null;
-    const hasPrecipitation =
-      weatherEntity?.attributes?.precipitation !== undefined &&
-      weatherEntity?.attributes?.precipitation !== null;
-    const hasPrecipitationProbability =
-      weatherEntity?.attributes?.precipitation_probability !== undefined &&
-      weatherEntity?.attributes?.precipitation_probability !== null;
-    const hasWind =
-      weatherEntity?.attributes?.wind_speed !== undefined ||
-      weatherEntity?.attributes?.wind_bearing !== undefined;
-    const hasPressure =
-      weatherEntity?.attributes?.pressure !== undefined &&
-      weatherEntity?.attributes?.pressure !== null;
-    const hasVisibility =
-      weatherEntity?.attributes?.visibility !== undefined &&
-      weatherEntity?.attributes?.visibility !== null;
-
-    // Left column default order (only include items that exist in entity)
-    const leftItems: string[] = [];
-    leftItems.push('location');
-    leftItems.push('condition');
-    if (module.custom_entity) leftItems.push('custom_entity');
-    if (hasPrecipitation) leftItems.push('precipitation');
-    if (hasPrecipitationProbability) leftItems.push('precipitation_probability');
-    if (hasWind) leftItems.push('wind');
-    if (hasPressure) leftItems.push('pressure');
-    if (hasVisibility) leftItems.push('visibility');
-
-    // Right column default order
-    const rightItems: string[] = ['date', 'temperature', 'temp_range'];
-
-    return { left: leftItems, right: rightItems };
+    const isAvailable = getAnimatedWeatherItemAvailability(
+      module,
+      hass,
+      id => this.resolveEntity(id, config) || id
+    );
+    return getAnimatedWeatherColumnOrder(module, isAvailable);
   }
 
   renderGeneralTab(
@@ -253,7 +241,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         (weatherModule as any).border_color || designFromDesignObject.border_color,
     };
 
-    const weatherData = this._getWeatherData(hass, weatherModule);
+    const weatherData = this._getWeatherData(hass, weatherModule, config);
     const now = new Date();
 
     // Format date
@@ -274,10 +262,13 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
 
     // Get high/low temps for today
     const todayForecast = weatherData.forecast[0];
-    const highTemp = todayForecast ? Math.round(todayForecast.temperature) : temp;
-    const lowTemp = todayForecast
-      ? Math.round(todayForecast.templow ?? todayForecast.temperature - 10)
-      : temp - 10;
+    const todayHigh =
+      typeof todayForecast?.temperature === 'number' ? todayForecast.temperature : undefined;
+    const highTemp = todayHigh !== undefined ? Math.round(todayHigh) : temp;
+    const lowTemp =
+      todayHigh !== undefined
+        ? Math.round(todayForecast?.templow ?? todayHigh - 10)
+        : temp - 10;
 
     // Determine which columns are visible
     const showLeft = weatherModule.show_left_column !== false;
@@ -517,7 +508,8 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
                     dateStr,
                     temp,
                     highTemp,
-                    lowTemp
+                    lowTemp,
+                    config
                   )}
                 </div>
               `
@@ -550,7 +542,8 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
                     dateStr,
                     temp,
                     highTemp,
-                    lowTemp
+                    lowTemp,
+                    config
                   )}
                 </div>
               `
@@ -571,14 +564,29 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
     dateStr: string,
     temp: number,
     highTemp: number,
-    lowTemp: number
+    lowTemp: number,
+    config?: UltraCardConfig
   ): TemplateResult[] {
     // Get order for this column
-    const defaultOrder = this._getDefaultColumnOrder(weatherModule, hass);
-    const order =
-      column === 'left'
-        ? weatherModule.left_column_order || defaultOrder.left
-        : weatherModule.right_column_order || defaultOrder.right;
+    const columnOrder = this._getColumnOrder(weatherModule, hass, config);
+    const order = column === 'left' ? columnOrder.left : columnOrder.right;
+    const globalTextColor = (weatherModule as any).color || (weatherModule as any).design?.color;
+    const detail = (itemId: WeatherStationKey & string, icon: string, prefix = '') => {
+      const reading: WeatherReading | undefined = weatherData.readings[itemId];
+      if (!isAnimatedWeatherItemShown(weatherModule, itemId) || !reading) return nothing;
+      const size = (weatherModule as any)[`${itemId}_size`] || 14;
+      const color =
+        globalTextColor || (weatherModule as any)[`${itemId}_color`] || 'var(--primary-text-color)';
+      return html`
+        <div
+          class="weather-detail weather-${itemId.replace(/_/g, '-')}"
+          style="font-size:${size}px;color:${color};"
+        >
+          <ha-icon icon=${icon} style="--mdc-icon-size:${size + 2}px;"></ha-icon>
+          ${prefix}${formatWeatherReading(itemId, reading)}
+        </div>
+      `;
+    };
 
     // Map item IDs to their render functions
     const itemRenderers: Record<string, () => TemplateResult | typeof nothing> = {
@@ -623,7 +631,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
           ? html`
               <div class="weather-precipitation">
                 <ha-icon icon="mdi:weather-pouring"></ha-icon>
-                ${this._formatPrecipitation(weatherData.precipitation, weatherData.weatherEntity)}
+                ${formatWeatherReading('precipitation', weatherData.readings.precipitation)}
               </div>
             `
           : nothing,
@@ -644,11 +652,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
           ? html`
               <div class="weather-wind">
                 <ha-icon icon="mdi:weather-windy"></ha-icon>
-                ${this._formatWind(
-                  weatherData.windSpeed,
-                  weatherData.windBearing,
-                  weatherData.weatherEntity
-                )}
+                ${this._formatWind(weatherData.readings.wind_speed, weatherData.windBearing)}
               </div>
             `
           : nothing,
@@ -659,7 +663,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
           ? html`
               <div class="weather-pressure">
                 <ha-icon icon="mdi:gauge"></ha-icon>
-                ${this._formatPressure(weatherData.pressure, weatherData.weatherEntity)}
+                ${formatWeatherReading('pressure', weatherData.readings.pressure)}
               </div>
             `
           : nothing,
@@ -674,6 +678,29 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
               </div>
             `
           : nothing,
+      humidity: () => detail('humidity', 'mdi:water-percent'),
+      feels_like: () => detail('feels_like', 'mdi:thermometer-lines'),
+      dew_point: () => detail('dew_point', 'mdi:thermometer-water'),
+      wind_gust: () => detail('wind_gust', 'mdi:weather-windy-variant'),
+      uv_index: () => detail('uv_index', 'mdi:sun-wireless', 'UV '),
+      wind_compass: () => {
+        const bearing: WeatherReading | undefined = weatherData.readings.wind_direction;
+        if (!isAnimatedWeatherItemShown(weatherModule, 'wind_compass') || !bearing) return nothing;
+        const speed: WeatherReading | undefined = weatherData.readings.wind_speed;
+        return html`
+          <div class="weather-wind-compass">
+            ${renderWindCompass(
+              bearing.value,
+              speed ? formatWeatherReading('wind_speed', speed) : '',
+              weatherModule.wind_compass_size || 96,
+              {
+                needle: weatherModule.wind_compass_color || 'var(--primary-color)',
+                text: globalTextColor || 'var(--primary-text-color)',
+              }
+            )}
+          </div>
+        `;
+      },
       date: () =>
         weatherModule.show_date !== false ? html` <div class="weather-date">${dateStr}</div> ` : nothing,
       temperature: () =>
@@ -724,24 +751,29 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
   }
 
   /**
-   * Get weather data from entities
+   * Get weather data from entities. Station sensors win over the weather
+   * entity's attributes; the condition and forecast come from the weather entity.
    */
-  private _getWeatherData(hass: HomeAssistant, module: AnimatedWeatherModule) {
+  private _getWeatherData(
+    hass: HomeAssistant,
+    module: AnimatedWeatherModule,
+    config?: UltraCardConfig
+  ) {
     const weatherEntity = hass.states[module.weather_entity || ''];
-    const tempEntity = hass.states[module.temperature_entity || ''];
     const conditionEntity = hass.states[module.condition_entity || ''];
+    const attrs = (weatherEntity?.attributes || {}) as Record<string, unknown>;
+    const resolve = (id: string) => this.resolveEntity(id, config) || id;
 
-    // Try to get forecast from different possible locations
-    let forecast = weatherEntity?.attributes?.forecast || [];
-
-    // PirateWeather and some integrations store it differently
-    if (forecast.length === 0 && weatherEntity) {
-      forecast =
-        weatherEntity.attributes?.['forecast_daily'] ||
-        weatherEntity.attributes?.['daily'] ||
-        weatherEntity.attributes?.['forecasts'] ||
-        [];
+    const readings: Partial<Record<WeatherStationKey, WeatherReading>> = {};
+    for (const def of WEATHER_STATION_SENSORS) {
+      const reading = readWeatherValue(hass, attrs, module, def.key, resolve);
+      if (reading) readings[def.key] = reading;
     }
+
+    // Legacy attributes first (Pirate Weather etc.), then weather.get_forecasts.
+    const forecast = module.weather_entity
+      ? getWeatherForecast(hass, module.weather_entity, 'daily', () => this.triggerPreviewUpdate())
+      : [];
 
     // Determine location display value
     let location = 'Unknown Location';
@@ -759,21 +791,22 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       location = weatherEntity?.attributes?.friendly_name || location;
     }
 
-    // Get temperature unit from weather entity attributes
-    const temperatureUnit = weatherEntity?.attributes?.temperature_unit || '°F';
+    const temperatureUnit =
+      readings.temperature?.unit || weatherEntity?.attributes?.temperature_unit || '°F';
 
     return {
-      temperature: weatherEntity?.attributes?.temperature || parseFloat(tempEntity?.state) || 72,
+      temperature: readings.temperature?.value ?? 72,
       temperatureUnit: temperatureUnit,
       condition: weatherEntity?.state || conditionEntity?.state || 'sunny',
       location: location,
       forecast: forecast,
-      humidity: weatherEntity?.attributes?.humidity,
-      windSpeed: weatherEntity?.attributes?.wind_speed,
-      windBearing: weatherEntity?.attributes?.wind_bearing,
-      precipitation: weatherEntity?.attributes?.precipitation,
+      readings,
+      humidity: readings.humidity?.value,
+      windSpeed: readings.wind_speed?.value,
+      windBearing: readings.wind_direction?.value,
+      precipitation: readings.precipitation?.value,
       precipitationProbability: weatherEntity?.attributes?.precipitation_probability,
-      pressure: weatherEntity?.attributes?.pressure,
+      pressure: readings.pressure?.value,
       visibility: weatherEntity?.attributes?.visibility,
       weatherEntity: weatherEntity, // Keep reference for formatting
     };
@@ -822,18 +855,6 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
   }
 
   /**
-   * Format precipitation amount with unit
-   */
-  private _formatPrecipitation(
-    precipitation: number | undefined,
-    weatherEntity: any
-  ): string {
-    if (precipitation === undefined || precipitation === null) return '';
-    const unit = weatherEntity?.attributes?.precipitation_unit || 'mm';
-    return `${precipitation.toFixed(1)} ${unit}`;
-  }
-
-  /**
    * Format precipitation probability as percentage
    */
   private _formatPrecipitationProbability(probability: number | undefined): string {
@@ -844,38 +865,15 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
   /**
    * Format wind speed and direction
    */
-  private _formatWind(
-    windSpeed: number | undefined,
-    windBearing: number | undefined,
-    weatherEntity: any
-  ): string {
+  private _formatWind(windSpeed: WeatherReading | undefined, windBearing: number | undefined): string {
     const parts: string[] = [];
-    if (windSpeed !== undefined && windSpeed !== null) {
-      const unit = weatherEntity?.attributes?.wind_speed_unit || 'km/h';
-      parts.push(`${windSpeed.toFixed(1)} ${unit}`);
+    if (windSpeed) {
+      parts.push(`${windSpeed.value.toFixed(1)} ${windSpeed.unit}`);
     }
     if (windBearing !== undefined && windBearing !== null) {
-      parts.push(this._formatWindBearing(windBearing));
+      parts.push(bearingToCardinal(windBearing));
     }
     return parts.join(' ');
-  }
-
-  /**
-   * Convert wind bearing degrees to cardinal direction
-   */
-  private _formatWindBearing(bearing: number): string {
-    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    const index = Math.round(bearing / 22.5) % 16;
-    return directions[index];
-  }
-
-  /**
-   * Format pressure with unit
-   */
-  private _formatPressure(pressure: number | undefined, weatherEntity: any): string {
-    if (pressure === undefined || pressure === null) return '';
-    const unit = weatherEntity?.attributes?.pressure_unit || 'hPa';
-    return `${Math.round(pressure)} ${unit}`;
   }
 
   /**
@@ -1015,6 +1013,26 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
 
       .weather-visibility ha-icon {
         --mdc-icon-size: calc(var(--visibility-size) + 2px);
+      }
+
+      .weather-detail {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        overflow-wrap: break-word;
+        margin: 0;
+        padding: 0;
+        line-height: 1.2;
+      }
+
+      .weather-detail ha-icon {
+        flex-shrink: 0;
+      }
+
+      .weather-wind-compass {
+        display: flex;
+        line-height: 0;
       }
 
       /* Center Column - Weather Icon */

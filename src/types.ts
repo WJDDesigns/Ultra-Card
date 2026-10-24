@@ -1,5 +1,6 @@
 import type { HomeAssistant } from './ha/types';
 import { LinkAction } from './services/link-service';
+import type { WeatherStationSensorFields } from './utils/uc-weather-station';
 
 // Global window interface extensions
 declare global {
@@ -3209,6 +3210,8 @@ export interface GraphEntityConfig {
   forecast_attribute?:
     | 'temperature'
     | 'precipitation'
+    | 'precipitation_probability'
+    | 'uv_index'
     | 'wind_speed'
     | 'humidity'
     | 'pressure'
@@ -3956,12 +3959,13 @@ export interface AnimatedClockModule extends BaseModule {
 }
 
 // Animated Weather Module (PRO)
-export interface AnimatedWeatherModule extends BaseModule {
+export interface AnimatedWeatherModule extends BaseModule, WeatherStationSensorFields {
   type: 'animated_weather';
 
   // Entity Configuration
   weather_entity?: string | undefined; // weather.* entity (primary)
-  temperature_entity?: string | undefined; // Individual sensor fallback
+  // Station sensors (temperature_entity, humidity_entity, ...) override the
+  // weather entity's current values; see WeatherStationSensorFields.
   condition_entity?: string | undefined; // Individual sensor fallback
   custom_entity?: string | undefined; // Optional custom entity to display (shows as "name: state")
   custom_entity_name?: string | undefined; // Custom name override for custom entity display
@@ -3995,6 +3999,25 @@ export interface AnimatedWeatherModule extends BaseModule {
   show_wind?: boolean | undefined; // Show wind speed and direction (default: false)
   show_pressure?: boolean | undefined; // Show air pressure (default: false)
   show_visibility?: boolean | undefined; // Show visibility (default: false)
+  // Opt-in items: shown when true, or when unset and their station sensor is set
+  show_humidity?: boolean | undefined;
+  show_feels_like?: boolean | undefined;
+  show_dew_point?: boolean | undefined;
+  show_wind_gust?: boolean | undefined;
+  show_uv_index?: boolean | undefined;
+  show_wind_compass?: boolean | undefined; // Compass dial (default: false)
+  humidity_size?: number | undefined;
+  feels_like_size?: number | undefined;
+  dew_point_size?: number | undefined;
+  wind_gust_size?: number | undefined;
+  uv_index_size?: number | undefined;
+  wind_compass_size?: number | undefined; // Dial size in px (default: 96)
+  humidity_color?: string | undefined;
+  feels_like_color?: string | undefined;
+  dew_point_color?: string | undefined;
+  wind_gust_color?: string | undefined;
+  uv_index_color?: string | undefined;
+  wind_compass_color?: string | undefined; // Needle color
 
   // Right Column Display Toggles
   show_date?: boolean | undefined; // Show date (default: true)
@@ -4044,6 +4067,13 @@ export interface AnimatedWeatherModule extends BaseModule {
 }
 
 // Animated Forecast Module (PRO)
+export type AnimatedForecastChartMetric =
+  | 'precipitation_probability'
+  | 'precipitation'
+  | 'uv_index'
+  | 'temperature'
+  | 'wind_speed';
+
 export interface AnimatedForecastModule extends BaseModule {
   type: 'animated_forecast';
 
@@ -4053,8 +4083,18 @@ export interface AnimatedForecastModule extends BaseModule {
 
   // Configuration
   forecast_days?: number | undefined; // Number of forecast days (default: 5, range: 3-7)
+  forecast_type?: 'daily' | 'hourly' | undefined; // View shown first (default: daily)
+  forecast_hours?: number | undefined; // Hours in the hourly view (default: 8, range: 3-12)
+  day_tap_hourly?: boolean | undefined; // Tapping a day opens its hours (default: false)
   temperature_unit?: 'F' | 'C' | undefined; // Temperature unit (default: F)
   allow_wrap?: boolean | undefined; // Allow forecast days to wrap to new rows
+
+  // Chart rows under the forecast
+  show_chart?: boolean | undefined;
+  chart_metrics?: AnimatedForecastChartMetric[] | undefined; // default: ['precipitation_probability']
+  chart_style?: 'bar' | 'line' | undefined; // default: bar
+  chart_height?: number | undefined; // Height of each row in px (default: 48)
+  chart_color?: string | undefined; // default: accent color
 
   // Styling - Text Sizes
   forecast_day_size?: number | undefined; // Forecast day name size (default: 14)
@@ -6045,16 +6085,24 @@ export interface TodoListModule extends BaseModule {
 }
 
 // Basic Weather — current conditions and a simple forecast strip with static MDI icons
-export interface WeatherModule extends BaseModule {
+export interface WeatherModule extends BaseModule, WeatherStationSensorFields {
   type: 'weather';
 
-  weather_entity: string;
+  weather_entity: string; // Optional when a temperature sensor is set
   name?: string | undefined;
 
   show_current?: boolean | undefined;
   show_condition_label?: boolean | undefined;
   show_humidity?: boolean | undefined;
   show_wind?: boolean | undefined;
+  show_wind_direction?: boolean | undefined; // Arrow next to wind (default: true)
+  // Opt-in extras: shown when true, or when unset and their station sensor is set
+  show_feels_like?: boolean | undefined;
+  show_wind_gust?: boolean | undefined;
+  show_pressure?: boolean | undefined;
+  show_precipitation?: boolean | undefined;
+  show_uv_index?: boolean | undefined;
+  show_dew_point?: boolean | undefined;
   show_forecast?: boolean | undefined;
   forecast_type?: 'daily' | 'hourly' | undefined;
   forecast_count?: number | undefined;
