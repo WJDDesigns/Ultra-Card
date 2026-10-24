@@ -2707,7 +2707,7 @@ export class UltraPopupModule extends BaseUltraModule {
                         '',
                         hass,
                         { value: cond.value || '' },
-                        [this.textField('value')],
+                        [this.conditionValueField('value', hass, cond)],
                         (e: CustomEvent) => onChange(e.detail.value)
                       )}
                     `;
@@ -2753,7 +2753,7 @@ export class UltraPopupModule extends BaseUltraModule {
                         '',
                         hass,
                         { value: cond.value || '' },
-                        [this.textField('value')],
+                        [this.conditionValueField('value', hass, cond)],
                         (e: CustomEvent) => onChange(e.detail.value)
                       )}
                     `;

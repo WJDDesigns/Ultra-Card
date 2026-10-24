@@ -194,6 +194,12 @@ export class UltraChipList extends LitElement {
       background-repeat: no-repeat;
       padding-right: 32px;
     }
+    /* The open list is drawn by the OS (white on Windows/Linux Chrome) but inherits the light
+       theme text colour, which left the options near-invisible in dark themes. */
+    .uc-cl-select option {
+      background: var(--card-background-color, #1f1f1f);
+      color: var(--primary-text-color);
+    }
     .uc-cl-select:hover,
     .uc-cl-select:focus {
       border-color: var(--primary-color);

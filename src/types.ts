@@ -3031,6 +3031,8 @@ export interface CameraModule extends BaseModule {
 
   // Show the mute/unmute button over a live stream
   show_audio_button?: boolean | undefined;
+  /** Badge in the top corner saying whether the camera is live or showing snapshots. */
+  show_mode_badge?: boolean | undefined;
 
   // Stream mode - controls how camera feed is displayed
   view_mode?: 'auto' | 'live' | 'snapshot' | undefined;

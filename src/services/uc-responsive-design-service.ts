@@ -372,33 +372,39 @@ export class ResponsiveDesignService {
    */
   public generateHideOnDevicesCSS(
     elementSelector: string,
-    hiddenOnDevices: DeviceBreakpoint[] | undefined
+    hiddenOnDevices: DeviceBreakpoint[] | undefined,
+    inEditor: boolean = false
   ): string {
     if (!hiddenOnDevices || hiddenOnDevices.length === 0) return '';
 
     const cssRules: string[] = [];
+    // In the card editor the element stays visible but faded, so hiding a row on the device you
+    // are editing on doesn't leave an empty preview with nothing to click.
+    const hide = inEditor
+      ? 'opacity: 0.35 !important; outline: 1px dashed var(--secondary-text-color); outline-offset: -1px;'
+      : 'display: none !important;'
 
     if (hiddenOnDevices.includes('desktop')) {
       cssRules.push(
-        `@media (min-width: ${DEVICE_BREAKPOINTS.desktop.minWidth}px) { ${elementSelector} { display: none !important; } }`
+        `@media (min-width: ${DEVICE_BREAKPOINTS.desktop.minWidth}px) { ${elementSelector} { ${hide} } }`
       );
     }
 
     if (hiddenOnDevices.includes('laptop')) {
       cssRules.push(
-        `@media (min-width: ${DEVICE_BREAKPOINTS.laptop.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.laptop.maxWidth}px) { ${elementSelector} { display: none !important; } }`
+        `@media (min-width: ${DEVICE_BREAKPOINTS.laptop.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.laptop.maxWidth}px) { ${elementSelector} { ${hide} } }`
       );
     }
 
     if (hiddenOnDevices.includes('tablet')) {
       cssRules.push(
-        `@media (min-width: ${DEVICE_BREAKPOINTS.tablet.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.tablet.maxWidth}px) { ${elementSelector} { display: none !important; } }`
+        `@media (min-width: ${DEVICE_BREAKPOINTS.tablet.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.tablet.maxWidth}px) { ${elementSelector} { ${hide} } }`
       );
     }
 
     if (hiddenOnDevices.includes('mobile')) {
       cssRules.push(
-        `@media (max-width: ${DEVICE_BREAKPOINTS.mobile.maxWidth}px) { ${elementSelector} { display: none !important; } }`
+        `@media (max-width: ${DEVICE_BREAKPOINTS.mobile.maxWidth}px) { ${elementSelector} { ${hide} } }`
       );
     }
 

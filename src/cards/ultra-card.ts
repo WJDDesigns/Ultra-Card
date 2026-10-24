@@ -2198,7 +2198,8 @@ export class UltraCard extends LitElement {
     const hiddenOnDevices = (row as any).hidden_on_devices;
     const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-row-${rowId}`,
-      hiddenOnDevices
+      hiddenOnDevices,
+      ctx.isInCardEditor
     );
 
     // Generate responsive design CSS if device-specific overrides exist
@@ -2508,7 +2509,8 @@ export class UltraCard extends LitElement {
     const hiddenOnDevices = (column as any).hidden_on_devices;
     const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-col-${colId}`,
-      hiddenOnDevices
+      hiddenOnDevices,
+      ctx.isInCardEditor
     );
 
     // Generate responsive design CSS if device-specific overrides exist
@@ -2782,7 +2784,8 @@ export class UltraCard extends LitElement {
     const hiddenOnDevices = (module as any).hidden_on_devices;
     const moduleHideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-mod-${moduleId}`,
-      hiddenOnDevices
+      hiddenOnDevices,
+      ctx.isInCardEditor
     );
 
     // Generate responsive design CSS if device-specific overrides exist

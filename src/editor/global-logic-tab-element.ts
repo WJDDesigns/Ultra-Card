@@ -628,7 +628,7 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     '',
                                     hass,
                                     { value: (cond as any).value || '' },
-                                    [FormUtils.createSchemaItem('value', { text: {} })],
+                                    [UcFormUtils.conditionValue('value', hass, cond)],
                                     (e: CustomEvent) => onChange(e.detail.value)
                                   )}
                                 `;
@@ -697,7 +697,7 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     '',
                                     hass,
                                     { value: (cond as any).value || '' },
-                                    [FormUtils.createSchemaItem('value', { text: {} })],
+                                    [UcFormUtils.conditionValue('value', hass, cond)],
                                     (e: CustomEvent) => onChange(e.detail.value)
                                   )}
                                 `;
