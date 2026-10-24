@@ -11,6 +11,7 @@ import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { forwardHaEventsFromPortal } from '../utils/uc-portal-ha-events';
+import { collectPortalChildStyles } from '../utils/uc-portal-child-styles';
 import { getImageUrl } from '../utils/image-upload';
 import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
@@ -3892,6 +3893,7 @@ export class UltraPopupModule extends BaseUltraModule {
               animation-duration: 150ms !important;
             }
           }
+          ${collectPortalChildStyles(popupModule.modules)}
         </style>
         <div
           class="ultra-popup-overlay"
