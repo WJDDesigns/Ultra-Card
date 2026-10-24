@@ -1,5 +1,31 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta3
+
+The third 3.14.2 beta brings station sensors, a wind compass and forecast charts to the weather modules, fixes live cameras inside Popups and Drawers, and adds a few things asked for in Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Weather station sensors** - Weather and Animated Weather can read temperature, humidity, feels like, dew point, pressure, wind, gust, rain and UV from your own sensors. A sensor wins over the weather entity and falls back to it when unavailable
+- **Wind compass and more weather details** - Weather shows a wind direction arrow and optional feels like, gust, pressure, rain, UV and dew point. Animated Weather gets the same items plus a wind compass dial. New items stay off unless you turn them on, so existing cards don't change
+- **Hourly forecast and forecast charts** - Animated Forecast can start on hourly, open a day's hours when tapped, and show bar or line chart rows (chance of rain, rain, UV, temperature, wind) under the forecast. Graphs forecast mode adds Chance of Rain and UV Index
+- **Update Monitor "Hide when up to date"** - Hides the module on the dashboard when no updates are pending. Thanks to larrysansan for the idea
+- **Camera Live / Snapshot badge** - Optional small badge in the top corner showing whether the camera is live or a snapshot. Thanks to larrysansan for the idea
+
+### 🔧 Improvements
+
+- **State picker for condition values** - For "=" and "!=" conditions on an entity, the Value field now lists that entity's states (such as on/off) and still accepts a typed value. Applies to the Logic tab, Popup triggers, Accordion and Grid filters. Thanks to larrysansan for the idea
+- **Hidden rows stay visible in the editor** - Rows, columns and modules set to hide on the device you're editing on now show faded with a dashed outline in the card editor instead of disappearing. Thanks to larrysansan for reporting it
+
+### 🐛 Bug Fixes
+
+- **Readable dropdowns in dark themes** - The add dropdowns in Lunar Phase hidden items and other list settings no longer show near-white text on a white list. Thanks to larrysansan for reporting it
+- **Camera after returning to the app** - A camera no longer shows the broken-image icon or goes blank after the app has been in the background. Snapshots keep the last good frame and fetch a fresh link, and live streams restart after 30 seconds away. Thanks to larrysansan for reporting it
+- **Live cameras in Popups and Drawers** - A live Camera inside a Popup or Drawer now plays instead of staying blank on current Home Assistant versions
+- **Styling inside Popups** - Modules inside a Popup now get all of their styling, matching Drawers
+
 ## Version 3.14.2-beta2
 
 The second 3.14.2 beta fixes the Toggle action on locks and makes Visible to Users work on Navigation and other overlay modules. This is a pre-release for testing — please report anything odd on GitHub or Discord.
