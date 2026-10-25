@@ -4090,6 +4090,7 @@ export interface AnimatedForecastModule extends BaseModule {
   day_tap_hourly?: boolean | undefined; // Tapping a day opens its hours (default: false)
   temperature_unit?: 'F' | 'C' | undefined; // Temperature unit (default: F)
   allow_wrap?: boolean | undefined; // Allow forecast days to wrap to new rows
+  swipe_more?: boolean | undefined; // Load more days/hours and swipe sideways to see them (default: false)
 
   // Chart rows under the forecast
   show_chart?: boolean | undefined;
@@ -4097,6 +4098,7 @@ export interface AnimatedForecastModule extends BaseModule {
   chart_style?: 'bar' | 'line' | undefined; // default: bar
   chart_height?: number | undefined; // Height of each row in px (default: 48)
   chart_color?: string | undefined; // default: accent color
+  chart_color_mode?: 'single' | 'value' | undefined; // 'value' colours each point by its value (default: single)
 
   // Styling - Text Sizes
   forecast_day_size?: number | undefined; // Forecast day name size (default: 14)
@@ -4538,7 +4540,17 @@ export interface NavBadgeConfig {
   textColor?: string | undefined;
 }
 
-export interface NavRoute {
+/** Visibility options a route or stack can set in the editor. */
+export interface NavItemVisibility {
+  /** Show only for / hide for these Home Assistant users */
+  user_visibility?: UserVisibility | undefined;
+  /** Hide when the navbar is in its desktop or mobile layout */
+  hide_on?: Array<'desktop' | 'mobile'> | undefined;
+  /** Show only while an entity is (or is not) in a state */
+  show_when?: { entity: string; operator?: '=' | '!=' | undefined; state?: string | undefined } | undefined;
+}
+
+export interface NavRoute extends NavItemVisibility {
   id: string;
   url?: string | undefined;
   icon?: string | undefined;
@@ -4557,7 +4569,7 @@ export interface NavRoute {
 }
 
 /** A stack item that can contain child routes */
-export interface NavStackItem {
+export interface NavStackItem extends NavItemVisibility {
   id: string;
   /** Icon for the stack button */
   icon?: string | undefined;
@@ -4880,6 +4892,13 @@ export interface LockModule extends BaseModule {
   show_lock_buttons?: boolean | undefined;
   /** Ask for confirmation before unlock / open (default true) */
   require_confirmation?: boolean | undefined;
+  /** How unlock / open are triggered in the hero and standard layouts (default buttons) */
+  unlock_style?: 'buttons' | 'slide' | undefined;
+  /**
+   * Ask for the lock's PIN code and send it with the service call. 'auto' asks when the
+   * lock reports a code format (default auto).
+   */
+  ask_code?: 'auto' | 'always' | 'never' | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
@@ -6922,6 +6941,7 @@ export interface CustomVariable {
   order: number;
   created?: string | undefined;
   isGlobal?: boolean | undefined; // true = syncs across all cards (default), false = card-specific
+  group?: string | undefined; // Optional label for filtering global variables in the Hub
 }
 
 export interface CustomVariablesExportData {

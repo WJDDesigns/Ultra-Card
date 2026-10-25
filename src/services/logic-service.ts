@@ -1,5 +1,6 @@
 import type { HomeAssistant } from '../ha/types';
 import { DisplayCondition, UltraCardConfig, UserVisibility } from '../types';
+import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { TemplateService } from './template-service';
 import { parseUnifiedTemplate, unifiedTemplateVisible } from '../utils/template-parser';
 
@@ -32,6 +33,22 @@ export class LogicService {
       LogicService.instance = new LogicService();
     }
     return LogicService.instance;
+  }
+
+  /**
+   * Card whose `$variables` a condition entity like `$front_door` resolves against.
+   * Cards render synchronously and set this first; global variables resolve without it.
+   */
+  private _cardConfig: UltraCardConfig | undefined;
+
+  public setCardConfig(config: UltraCardConfig | undefined): void {
+    this._cardConfig = config;
+  }
+
+  /** Condition entity with a `$variable` swapped for its entity id. */
+  private _conditionEntity(entity: string): string {
+    if (!entity.startsWith('$')) return entity;
+    return ucCustomVariablesService.resolveEntityField(entity, this._cardConfig) || entity;
   }
 
   public setHass(hass: HomeAssistant | undefined): void {
@@ -342,7 +359,7 @@ export class LogicService {
       return true; // Show by default if no entity or hass available
     }
 
-    const entity = this.hass.states[condition.entity];
+    const entity = this.hass.states[this._conditionEntity(condition.entity)];
     if (!entity) {
       // Track logged errors to prevent console flooding
       this.loggedEntityErrors.add(condition.entity);
@@ -408,7 +425,7 @@ export class LogicService {
       return true; // Show by default if no entity, attribute, or hass available
     }
 
-    const entity = this.hass.states[condition.entity];
+    const entity = this.hass.states[this._conditionEntity(condition.entity)];
     if (!entity) {
       // Track logged errors to prevent console flooding
       this.loggedEntityErrors.add(condition.entity);

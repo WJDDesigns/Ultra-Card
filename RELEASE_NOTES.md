@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta6
+
+The sixth 3.14.2 beta works through the Discord feature requests and bug reports: slide to unlock and PIN codes for the Lock module, per-item visibility in Navigation, more forecast and colour by value in Animated Forecast, and easier global variables. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Lock: slide to unlock** - Set "Unlock with" to Slide and the Unlock and Open buttons become sliders, so a stray tap can't unlock the door. Works in the Hero and Standard layouts
+- **Lock: PIN code keypad** - "Ask for PIN code" shows a keypad and sends the code to the lock, so locks that need a code now work from the card. Automatic asks only when the lock needs one. Thanks to larrysansan for the idea
+- **Navigation: visibility per item** - Each path and stack has a Visibility section: Visible to Users, Hide on desktop or mobile, and Show only when an entity is (or isn't) a state
+- **Animated Forecast: swipe for more** - Turn on "Swipe for More" to scroll sideways through up to 14 days or 48 hours. Forecast Days and Hours set how many show at once
+- **Animated Forecast: colour by value** - Set Colors to "By Value" to colour bars and lines by their value: UV by the WHO scale, temperature from blue to red, rain from light to dark blue, wind from green to red. Thanks to larrysansan for the mockups
+- **Make a card variable global** - Card variables have a new globe button that moves them to your global variables, so every card can use them
+- **Search entities for global variables** - The Entity field in the Hub's Variables tab searches by entity ID or name as you type
+- **Group global variables** - Global variables can have a Group, and the Hub shows filter chips so you can see one group at a time
+
+### 🐛 Bug Fixes
+
+- **Global variables in Logic conditions** - A $variable picked as a Logic condition entity showed "unknown entity" and never matched. Conditions now use card variables first, then global ones, and the editor shows which variable is in use. Thanks to larrysansan for reporting it
+- **Dynamic List and Action sources going stale** - Changing a To-do list template or an Action source kept showing the old result until the page was reloaded
+- **Animated Forecast line chart missing** - The line chart style drew nothing because the chart had no size
+- **Hidden Ultra Card leaving a gap** - When an Ultra Card hides itself through its conditions, Home Assistant's sections view now closes up the empty space
+
 ## Version 3.14.2-beta5
 
 The fifth 3.14.2 beta makes the Lock module's Alignment setting work in every layout. This is a pre-release for testing — please report anything odd on GitHub or Discord.

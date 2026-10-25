@@ -89,7 +89,9 @@
       "delete_variable": "删除变量",
       "drag_to_reorder": "拖动排序",
       "empty_title": "暂无自定义变量",
-      "empty_description": "添加你的第一个变量即可开始。变量可通过 {{ $variable_name }} 语法在模板中使用。"
+      "empty_description": "添加你的第一个变量即可开始。变量可通过 {{ $variable_name }} 语法在模板中使用。",
+      "make_global_conflict": "已存在同名的全局变量。请先重命名此变量。",
+      "make_global": "设为全局（在所有卡片上使用）"
     },
     "export_import": {
       "include_variables": "你有自定义变量。是否将其包含在导出中？",
@@ -780,7 +782,8 @@
         "attribute": "属性",
         "time_from": "起始时间",
         "time_to": "结束时间",
-        "template": "模板"
+        "template": "模板",
+        "variable": "变量"
       },
       "condition_header": "条件",
       "custom_name": "自定义名称",
@@ -2823,7 +2826,21 @@
       "action_lock": "上锁",
       "action_unlock": "解锁",
       "action_open": "打开",
-      "actions": "门锁操作"
+      "actions": "门锁操作",
+      "unlock_style": "解锁方式",
+      "unlock_style_desc": "滑动会用滑块替换“解锁”和“打开”按钮，避免误触解锁。适用于 Hero 和标准布局。",
+      "unlock_style_buttons": "按钮",
+      "unlock_style_slide": "滑动解锁",
+      "ask_code": "询问 PIN 码",
+      "ask_code_desc": "显示数字键盘并将代码发送给门锁。自动：当门锁需要代码时询问。如果您已在 Home Assistant 中为门锁设置了默认代码，请选择“从不”。",
+      "ask_code_auto": "自动",
+      "ask_code_always": "始终",
+      "ask_code_never": "从不",
+      "cancel": "取消",
+      "code_clear": "清除",
+      "code_placeholder": "代码",
+      "slide_to_unlock": "滑动解锁",
+      "slide_to_open": "滑动打开"
     },
     "living_canvas": {
       "title": "Living Canvas",
@@ -3613,7 +3630,21 @@
       "autohide_enable_desc": "macOS 风格：闲置后隐藏，鼠标悬停到边缘时显示。仅适用于桌面鼠标。",
       "autohide_delay": "隐藏延迟",
       "autohide_delay_desc": "导航栏隐藏前的无操作秒数。",
-      "autohide_disabled_by_collapse": "启用折叠时无法使用自动隐藏。请停用折叠后再使用自动隐藏。"
+      "autohide_disabled_by_collapse": "启用折叠时无法使用自动隐藏。请停用折叠后再使用自动隐藏。",
+      "visibility": {
+        "title": "可见性",
+        "hide_on": "隐藏于",
+        "hide_on_desc": "当导航栏使用桌面或移动布局时隐藏此项。",
+        "desktop": "桌面",
+        "mobile": "移动",
+        "show_when": "仅在以下情况显示",
+        "show_when_desc": "仅当某实体处于（或不处于）某状态时显示此项，例如访客模式开关。实体留空则始终显示。",
+        "entity": "实体",
+        "is": "是",
+        "is_not": "不是",
+        "condition": "条件",
+        "state": "状态"
+      }
     },
     "climate": {
       "entity_config_title": "实体配置",
@@ -3680,7 +3711,13 @@
         "no_data": "暂无预报数据"
       },
       "icon_style_fill": "填充",
-      "icon_style_line": "描边"
+      "icon_style_line": "描边",
+      "swipe_more": "滑动查看更多",
+      "swipe_more_desc": "加载天气服务提供的所有天数或小时，并可左右滑动浏览。预报天数和小时设置将改为一次显示的数量。",
+      "chart_color_mode": "颜色",
+      "chart_color_mode_desc": "按数值为每个柱或点着色：UV 按 WHO 等级，温度从蓝到红，降雨从浅蓝到深蓝，风从绿到红。",
+      "chart_color_single": "单一颜色",
+      "chart_color_value": "按数值"
     },
     "animated_weather": {
       "entity_section": "天气实体",

@@ -148,6 +148,8 @@ export class TemplateService {
   private _settledKeys: Set<string> = new Set();
   /** Template text last requested per key. */
   private _subscribedTemplates: Map<string, string> = new Map();
+  /** Template text each live websocket subscription was opened with. */
+  private _activeTemplates: Map<string, string> = new Map();
   /** Latest rendered value per key, kept off the hass object so a new hass tick cannot drop it. */
   private _lastResults: Map<string, unknown> = new Map();
   /** Entity IDs HA reported as render_template listeners for each key. */
@@ -279,6 +281,7 @@ export class TemplateService {
       } catch {}
     }
     this._templateSubscriptions.delete(templateKey);
+    this._activeTemplates.delete(templateKey);
     this._lastResults.delete(templateKey);
     this._lastEntities.delete(templateKey);
     this._onResultChangedByKey.delete(templateKey);
@@ -312,16 +315,20 @@ export class TemplateService {
     const prevVarSig = this._customVarSignatures.get(templateKey);
     const hadSub = this._templateSubscriptions.has(templateKey);
     const varsChanged = prevVarSig !== undefined && prevVarSig !== varSignature;
+    // Callers that embed data in the text itself (Dynamic List's todo items and
+    // action responses) send a new template under the same key. Keeping the old
+    // subscription would render the old data until the page is reloaded.
+    const textChanged = hadSub && this._activeTemplates.get(templateKey) !== template;
 
     if (hadSub) {
-      if (!trackEntity && !varsChanged) {
+      if (!textChanged && !trackEntity && !varsChanged) {
         // Keep the existing websocket subscription, but make sure the current
         // hass object can still read the last result (issue #130: after Save
         // the live card re-renders with a new hass and would otherwise miss it).
         this._writeResultToHass(templateKey, this._lastResults.get(templateKey));
         return;
       }
-      if (trackEntity && entitySignature === prevSig && !varsChanged) {
+      if (!textChanged && trackEntity && entitySignature === prevSig && !varsChanged) {
         this._writeResultToHass(templateKey, this._lastResults.get(templateKey));
         return;
       }
@@ -358,6 +365,7 @@ export class TemplateService {
       this._entitySignatures.set(templateKey, STATIC_SIG);
     }
     this._customVarSignatures.set(templateKey, varSignature);
+    this._activeTemplates.set(templateKey, template);
 
     let isFirstMessage = true;
 
@@ -488,6 +496,7 @@ export class TemplateService {
       this._evaluationCache.delete(key);
       this._entitySignatures.delete(key);
       this._customVarSignatures.delete(key);
+      this._activeTemplates.delete(key);
       this._liveGenByKey.delete(key);
       this._subscribeChains.delete(key);
       this._lastResults.delete(key);

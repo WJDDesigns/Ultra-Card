@@ -222,6 +222,13 @@ export class UltraCard extends LitElement {
   private _navigationRegistrationToken = 0;
   /** Tracks invisible state across renders for parent visibility side-effects. */
   private _lastInvisibleState: boolean | null = null;
+  /** Visibility last reported to Home Assistant via `card-visibility-changed`. */
+  private _reportedHidden = false;
+  /**
+   * Keeps HA's hui-card from detaching this element while it is hidden, so Logic
+   * conditions keep being evaluated and the card can show itself again.
+   */
+  public connectedWhileHidden = true;
   /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
   private _layoutColumnsParsedCache = new Map<string, { raw: string; value: CardColumn[] }>();
   private _layoutModulesParsedCache = new Map<string, { raw: string; value: CardModule[] }>();
@@ -1583,6 +1590,8 @@ export class UltraCard extends LitElement {
     if (!this._hass) {
       logicService.setHass(hass);
     }
+    // Logic conditions on `$variable` entities resolve against this card's variables.
+    logicService.setCardConfig(this.config);
 
     const cardStyle = this._getCardStyle();
 
@@ -1790,6 +1799,20 @@ export class UltraCard extends LitElement {
    * Extracted from render() so side-effects run in updated() lifecycle.
    */
   private _syncParentVisibility(invisible: boolean): void {
+    // Tell Home Assistant, the same way its own conditional cards do. Without this the
+    // wrapper is only styled away, so masonry keeps the card's column and a section
+    // whose cards are all hidden still takes its grid slot.
+    if (this._reportedHidden !== invisible) {
+      this._reportedHidden = invisible;
+      this.hidden = invisible;
+      this.dispatchEvent(
+        new CustomEvent('card-visibility-changed', {
+          detail: { value: !invisible },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }
     try {
       let parent: HTMLElement | null = this.parentElement;
       let depth = 0;

@@ -156,6 +156,22 @@ export function renderAnimatedForecastModuleEditor(
               ''
             )
           : ''}
+
+        ${context.renderFieldSection(
+          localize('editor.animated_forecast.swipe_more', lang, 'Swipe for More'),
+          localize(
+            'editor.animated_forecast.swipe_more_desc',
+            lang,
+            'Loads every day or hour your weather service offers and lets you swipe sideways through them. The Forecast Days and Hours settings become how many show at once.'
+          ),
+          hass,
+          { swipe_more: forecastModule.swipe_more === true },
+          [context.booleanField('swipe_more')],
+          (e: CustomEvent) => {
+            updateModule({ swipe_more: e.detail.value.swipe_more });
+            context.triggerPreviewUpdate();
+          }
+        )}
       </div>
 
       <!-- ============================================ -->
@@ -246,7 +262,26 @@ export function renderAnimatedForecastModuleEditor(
                 (value: number) => updateModule({ chart_height: value }),
                 'px'
               )}
-              <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+              ${context.renderSegmentedField(
+                localize('editor.animated_forecast.chart_color_mode', lang, 'Colors'),
+                localize(
+                  'editor.animated_forecast.chart_color_mode_desc',
+                  lang,
+                  'By Value colors each bar or point by its value: UV by the WHO scale, temperature from blue to red, rain from light to dark blue, wind from green to red.'
+                ),
+                forecastModule.chart_color_mode || 'single',
+                [
+                  { value: 'single', label: localize('editor.animated_forecast.chart_color_single', lang, 'One Color') },
+                  { value: 'value', label: localize('editor.animated_forecast.chart_color_value', lang, 'By Value') },
+                ],
+                (next: string) => {
+                  updateModule({ chart_color_mode: next as 'single' | 'value' });
+                  context.triggerPreviewUpdate();
+                }
+              )}
+              ${forecastModule.chart_color_mode === 'value'
+                ? ''
+                : html`<div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
                 ${localize('editor.animated_forecast.chart_color', lang, 'Chart Color')}
               </div>
               <ultra-color-picker
@@ -257,7 +292,7 @@ export function renderAnimatedForecastModuleEditor(
                   updateModule({ chart_color: e.detail.value });
                   setTimeout(() => context.triggerPreviewUpdate(), 50);
                 }}
-              ></ultra-color-picker>
+              ></ultra-color-picker>`}
             `
           : ''}
       </div>

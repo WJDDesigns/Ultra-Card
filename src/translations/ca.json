@@ -77,7 +77,9 @@
       "delete_variable": "Suprimeix la variable",
       "drag_to_reorder": "Arrossegueu per a reordenar",
       "empty_title": "Sense variables personalitzades",
-      "empty_description": "Afegiu la vostra primera variable per a començar. Les variables es poden usar en plantilles amb la sintaxi {{ $variable_name }}."
+      "empty_description": "Afegiu la vostra primera variable per a començar. Les variables es poden usar en plantilles amb la sintaxi {{ $variable_name }}.",
+      "make_global_conflict": "Ja existeix una variable global amb aquest nom. Canvieu primer el nom d'aquesta.",
+      "make_global": "Fer global (utilitzar a totes les targetes)"
     },
     "export_import": {
       "include_variables": "Teniu variables personalitzades. Voleu incloure-les en l'exportació?",
@@ -738,7 +740,8 @@
         "attribute": "Atribut",
         "time_from": "Des de",
         "time_to": "Fins a",
-        "template": "Plantilla"
+        "template": "Plantilla",
+        "variable": "Variable"
       },
       "condition_header": "Condició",
       "custom_name": "Nom personalitzat",
@@ -2872,7 +2875,21 @@
       "action_lock": "Tanca",
       "action_unlock": "Desbloqueja",
       "action_open": "Obre",
-      "actions": "Accions de tancament"
+      "actions": "Accions de tancament",
+      "unlock_style": "Desbloquejar amb",
+      "unlock_style_desc": "Lliscar substitueix els botons Desbloqueja i Obre per controls lliscants, perquè un toc accidental no desbloquegi. Dissenys Hero i Estàndard.",
+      "unlock_style_buttons": "Botons",
+      "unlock_style_slide": "Llisca per desbloquejar",
+      "ask_code": "Demanar codi PIN",
+      "ask_code_desc": "Mostra un teclat i envia el codi al pany. Automàtic el demana quan el pany necessita un codi. Trieu Mai si heu definit un codi predeterminat per al pany a Home Assistant.",
+      "ask_code_auto": "Automàtic",
+      "ask_code_always": "Sempre",
+      "ask_code_never": "Mai",
+      "cancel": "Cancel·la",
+      "code_clear": "Esborra",
+      "code_placeholder": "Codi",
+      "slide_to_unlock": "Llisca per desbloquejar",
+      "slide_to_open": "Llisca per obrir"
     },
     "text_input": {
       "entity": {
@@ -3292,7 +3309,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Visibilitat",
+        "hide_on": "Amagar a",
+        "hide_on_desc": "Amaga aquest element mentre la barra de navegació utilitza el disseny d'escriptori o mòbil.",
+        "desktop": "Escriptori",
+        "mobile": "Mòbil",
+        "show_when": "Mostrar només quan",
+        "show_when_desc": "Mostra aquest element només mentre una entitat és (o no és) en un estat, per exemple un interruptor de mode convidat. Deixeu l'entitat buida per mostrar-lo sempre.",
+        "entity": "Entitat",
+        "is": "és",
+        "is_not": "no és",
+        "condition": "Condició",
+        "state": "Estat"
+      }
     },
     "climate": {
       "error_no_entity": "Sense Entitat Climàtica",
@@ -3355,7 +3386,13 @@
         "no_data": "No hi ha dades de previsió disponibles"
       },
       "icon_style_fill": "Omplert",
-      "icon_style_line": "Contornat"
+      "icon_style_line": "Contornat",
+      "swipe_more": "Llisca per veure'n més",
+      "swipe_more_desc": "Carrega tots els dies o hores que ofereix el vostre servei meteorològic i permet lliscar-hi lateralment. Els ajustos de Dies i Hores de previsió passen a indicar quants se'n mostren alhora.",
+      "chart_color_mode": "Colors",
+      "chart_color_mode_desc": "Per valor acoloreix cada barra o punt segons el seu valor: UV segons l'escala de l'OMS, temperatura de blau a vermell, pluja de blau clar a fosc, vent de verd a vermell.",
+      "chart_color_single": "Un color",
+      "chart_color_value": "Per valor"
     },
     "animated_weather": {
       "entity_section": "Entitat Meteorològica",

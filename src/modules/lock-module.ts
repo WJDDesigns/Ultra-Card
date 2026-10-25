@@ -4,6 +4,8 @@ import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, LockModule as LockModuleConfig, UltraCardConfig } from '../types';
 import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
+import { promptForCode } from '../services/uc-code-prompt-service';
+import '../components/uc-slide-confirm';
 
 /** Home Assistant LockEntityFeature.OPEN */
 const LOCK_FEATURE_OPEN = 1;
@@ -232,6 +234,47 @@ export class UltraLockModule extends BaseUltraModule {
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
+            {
+              title: localize('editor.lock.unlock_style', lang, 'Unlock with'),
+              description: localize(
+                'editor.lock.unlock_style_desc',
+                lang,
+                'Slide replaces the Unlock and Open buttons with sliders, so a stray tap can\'t unlock. Hero and Standard layouts.'
+              ),
+              hass,
+              data: { unlock_style: lock.unlock_style || 'buttons' },
+              schema: [
+                this.selectField('unlock_style', [
+                  { value: 'buttons', label: localize('editor.lock.unlock_style_buttons', lang, 'Buttons') },
+                  { value: 'slide', label: localize('editor.lock.unlock_style_slide', lang, 'Slide to unlock') },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({ unlock_style: e.detail.value?.unlock_style || 'buttons' });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+            {
+              title: localize('editor.lock.ask_code', lang, 'Ask for PIN code'),
+              description: localize(
+                'editor.lock.ask_code_desc',
+                lang,
+                'Shows a keypad and sends the code to the lock. Automatic asks when the lock needs a code. Choose Never if you set a default code for the lock in Home Assistant.'
+              ),
+              hass,
+              data: { ask_code: lock.ask_code || 'auto' },
+              schema: [
+                this.selectField('ask_code', [
+                  { value: 'auto', label: localize('editor.lock.ask_code_auto', lang, 'Automatic') },
+                  { value: 'always', label: localize('editor.lock.ask_code_always', lang, 'Always') },
+                  { value: 'never', label: localize('editor.lock.ask_code_never', lang, 'Never') },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({ ask_code: e.detail.value?.ask_code || 'auto' });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
           ]
         )}
 
@@ -367,8 +410,34 @@ export class UltraLockModule extends BaseUltraModule {
     const defaultIcon = isLocked ? 'mdi:lock' : 'mdi:lock-open-variant';
     const iconName = iconOverride || defaultIcon;
 
-    const call = (service: 'lock' | 'unlock' | 'open') => {
-      hass.callService('lock', service, { entity_id: entityId });
+    // PIN code: 'auto' asks when the lock reports a code format, like HA's own dialog.
+    const codeFormat = typeof attrs.code_format === 'string' ? attrs.code_format : undefined;
+    const askCode = lockCfg.ask_code || 'auto';
+    const needsCode = askCode === 'always' || (askCode === 'auto' && !!codeFormat);
+    const slideMode = lockCfg.unlock_style === 'slide' && layout !== 'compact';
+
+    const actionLabel = (service: LockPendingAction) =>
+      service === 'open'
+        ? localize('editor.lock.action_open', lang, 'Open')
+        : service === 'unlock'
+          ? localize('editor.lock.action_unlock', lang, 'Unlock')
+          : localize('editor.lock.action_lock', lang, 'Lock');
+
+    /** Returns the code to send, '' when none is needed, or null when the user cancelled. */
+    const getCode = async (service: LockPendingAction): Promise<string | null> => {
+      if (!needsCode) return '';
+      return promptForCode({
+        title: `${actionLabel(service)} ${name}`,
+        codeFormat,
+        confirmText: actionLabel(service),
+        cancelText: localize('editor.lock.cancel', lang, 'Cancel'),
+        clearLabel: localize('editor.lock.code_clear', lang, 'Clear'),
+        placeholder: localize('editor.lock.code_placeholder', lang, 'Code'),
+      });
+    };
+
+    const call = (service: LockPendingAction, code: string) => {
+      hass.callService('lock', service, code ? { entity_id: entityId, code } : { entity_id: entityId });
     };
 
     const setPending = (action: LockPendingAction) => {
@@ -378,7 +447,8 @@ export class UltraLockModule extends BaseUltraModule {
 
     // Unlock/open are security-sensitive: confirm before calling unless disabled
     const confirmSensitive = async (service: 'unlock' | 'open'): Promise<boolean> => {
-      if (lockCfg.require_confirmation === false) return true;
+      // Typing the code or completing the slide is already a deliberate step.
+      if (lockCfg.require_confirmation === false || needsCode || slideMode) return true;
       ucActionConfirmationService.setHass(hass);
       return ucActionConfirmationService.showConfirmation(
         { action: 'perform-action', perform_action: `lock.${service}`, entity: entityId },
@@ -392,19 +462,25 @@ export class UltraLockModule extends BaseUltraModule {
       );
     };
 
-    const onLock = () => {
+    const onLock = async () => {
+      const code = await getCode('lock');
+      if (code === null) return;
       setPending('lock');
-      call('lock');
+      call('lock', code);
     };
     const onUnlock = async () => {
       if (!(await confirmSensitive('unlock'))) return;
+      const code = await getCode('unlock');
+      if (code === null) return;
       setPending('unlock');
-      call('unlock');
+      call('unlock', code);
     };
     const onOpen = async () => {
       if (!(await confirmSensitive('open'))) return;
+      const code = await getCode('open');
+      if (code === null) return;
       setPending('open');
-      call('open');
+      call('open', code);
     };
 
     const controlsDisabled = isUnavailable || isBusy;
@@ -419,7 +495,42 @@ export class UltraLockModule extends BaseUltraModule {
       ></ha-icon>
     `;
 
-    const actionBtns = () => html`
+    // Slide mode: unlock / open become sliders under the controls; Lock stays a button.
+    const slideControls = () =>
+      slideMode && hasActions
+        ? html`<div class="uc-lock__slides">
+            ${showLockBtns && !isUnlocked
+              ? html`<uc-slide-confirm
+                  .label=${localize('editor.lock.slide_to_unlock', lang, 'Slide to unlock')}
+                  .icon=${'mdi:lock-open-variant'}
+                  ?disabled=${controlsDisabled}
+                  @confirmed=${onUnlock}
+                ></uc-slide-confirm>`
+              : nothing}
+            ${showOpen
+              ? html`<uc-slide-confirm
+                  .label=${localize('editor.lock.slide_to_open', lang, 'Slide to open')}
+                  .icon=${'mdi:door-open'}
+                  ?disabled=${controlsDisabled}
+                  @confirmed=${onOpen}
+                ></uc-slide-confirm>`
+              : nothing}
+          </div>`
+        : nothing;
+
+    const actionBtns = () => slideMode
+      ? html`${showLockBtns && isUnlocked
+          ? html`<button
+              type="button"
+              class="uc-lock-btn"
+              @click=${onLock}
+              ?disabled=${controlsDisabled}
+            >
+              <ha-icon style="--mdc-icon-size: 18px;" icon="mdi:lock"></ha-icon>
+              ${localize('editor.lock.action_lock', lang, 'Lock')}
+            </button>`
+          : nothing}`
+      : html`
       ${showLockBtns
         ? html`<button
         type="button"
@@ -480,6 +591,7 @@ export class UltraLockModule extends BaseUltraModule {
           ${hasActions
             ? html`<div class="uc-lock__actions" role="group">${actionBtns()}</div>`
             : nothing}
+          ${slideControls()}
         </div>
       `;
     } else if (layout === 'compact') {
@@ -533,6 +645,7 @@ export class UltraLockModule extends BaseUltraModule {
               ? html`<div class="uc-lock-std__actions" role="group">${actionBtns()}</div>`
               : nothing}
           </div>
+          ${slideControls()}
           ${isJammed ? html`<p class="uc-lock-warn">${localize('editor.lock.jammed_hint', lang, 'Check the lock hardware.')}</p>` : nothing}
         </div>
       `;
@@ -623,6 +736,21 @@ export class UltraLockModule extends BaseUltraModule {
         gap: 8px;
         width: 100%;
         max-width: 340px;
+      }
+      .uc-lock__slides {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+      .uc-lock--hero .uc-lock__slides {
+        max-width: 340px;
+      }
+      .uc-lock--hero .uc-lock__actions:empty {
+        display: none;
+      }
+      .uc-lock--standard .uc-lock__slides {
+        margin-top: 12px;
       }
       .uc-lock--hero.uc-lock--align-left { align-items: flex-start; }
       .uc-lock--hero.uc-lock--align-left .uc-lock__identity { align-items: flex-start; text-align: left; }

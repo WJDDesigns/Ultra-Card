@@ -7,6 +7,26 @@ import type { CardModule, CardColumn, CardRow, DeviceBreakpoint, UserVisibility 
 import { localize } from '../localize/localize';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
+import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+
+/** Entity id to show for a condition, with a `$variable` resolved (global variables). */
+function conditionEntityDisplay(cond: { entity?: string | undefined }): string {
+  const raw = cond.entity || '';
+  if (!raw.startsWith('$')) return raw;
+  return ucCustomVariablesService.resolveEntityField(raw, undefined) || raw;
+}
+
+/** "Uses $name" note under the entity picker when the condition is bound to a variable. */
+function conditionEntityHint(
+  cond: { entity?: string | undefined },
+  lang: string
+): TemplateResult | typeof nothing {
+  const raw = cond.entity || '';
+  if (!raw.startsWith('$')) return nothing;
+  return html`<div style="font-size: 12px; color: var(--secondary-text-color); margin: -8px 0 12px;">
+    ${localize('editor.layout_logic.condition_fields.variable', lang, 'Variable')} <code>${raw}</code>
+  </div>`;
+}
 import type { GlobalLogicArgs, GlobalLogicTarget } from '../tabs/global-logic-tab';
 
 /** Unified-template output keys row/column visibility templates read. */
@@ -390,6 +410,14 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                     next[index] = { ...cond, ...updates };
                     updateModule({ display_conditions: next } as any);
                   };
+                  // A `$variable` entity shows its resolved entity in the picker, so HA
+                  // doesn't flag it as unknown. Re-affirmations of that same entity must
+                  // not overwrite the variable; only a different pick replaces it.
+                  const onConditionEntity = (picked: string | undefined) => {
+                    const raw = (cond as any).entity || '';
+                    if ((picked || '') === conditionEntityDisplay(cond) || picked === raw) return;
+                    onChange({ entity: picked || '' });
+                  };
                   const remove = () => {
                     const next = conditions.filter((_, i) => i !== index);
                     updateModule({ display_conditions: next } as any);
@@ -585,10 +613,11 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     ),
                                     '',
                                     hass,
-                                    { entity: (cond as any).entity || '' },
+                                    { entity: conditionEntityDisplay(cond) },
                                     [FormUtils.createSchemaItem('entity', { entity: {} })],
-                                    (e: CustomEvent) => onChange(e.detail.value)
+                                    (e: CustomEvent) => onConditionEntity(e.detail.value?.entity)
                                   )}
+                                  ${conditionEntityHint(cond, lang)}
                                   ${FormUtils.renderField(
                                     localize(
                                       'editor.layout_logic.condition_fields.operator',
@@ -628,7 +657,12 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     '',
                                     hass,
                                     { value: (cond as any).value || '' },
-                                    [UcFormUtils.conditionValue('value', hass, cond)],
+                                    [
+                                      UcFormUtils.conditionValue('value', hass, {
+                                        ...cond,
+                                        entity: conditionEntityDisplay(cond),
+                                      }),
+                                    ],
                                     (e: CustomEvent) => onChange(e.detail.value)
                                   )}
                                 `;
@@ -644,10 +678,11 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     ),
                                     '',
                                     hass,
-                                    { entity: (cond as any).entity || '' },
+                                    { entity: conditionEntityDisplay(cond) },
                                     [FormUtils.createSchemaItem('entity', { entity: {} })],
-                                    (e: CustomEvent) => onChange(e.detail.value)
+                                    (e: CustomEvent) => onConditionEntity(e.detail.value?.entity)
                                   )}
+                                  ${conditionEntityHint(cond, lang)}
                                   ${FormUtils.renderField(
                                     localize(
                                       'editor.layout_logic.condition_fields.attribute',
@@ -697,7 +732,12 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     '',
                                     hass,
                                     { value: (cond as any).value || '' },
-                                    [UcFormUtils.conditionValue('value', hass, cond)],
+                                    [
+                                      UcFormUtils.conditionValue('value', hass, {
+                                        ...cond,
+                                        entity: conditionEntityDisplay(cond),
+                                      }),
+                                    ],
                                     (e: CustomEvent) => onChange(e.detail.value)
                                   )}
                                 `;

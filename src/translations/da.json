@@ -1360,7 +1360,8 @@
         "attribute": "Attribut",
         "time_from": "Fra",
         "time_to": "Til",
-        "template": "Skabelon"
+        "template": "Skabelon",
+        "variable": "Variabel"
       },
       "condition_header": "Betingelse",
       "custom_name": "Brugernavn",
@@ -2595,7 +2596,9 @@
       "confirm_clear_card": "Er du sikker på, at du vil slette alle kortspecifikke variabler?",
       "value_type_attribute": "Attribut",
       "value_type_attribute_desc": "Attributværdi (f.eks. temmperatur, friendly_name)",
-      "attribute_name": "Attributnavn"
+      "attribute_name": "Attributnavn",
+      "make_global_conflict": "Der findes allerede en global variabel med dette navn. Omdøb denne først.",
+      "make_global": "Gør global (brug på alle kort)"
     },
     "export_import": {
       "include_variables": "Du har brugerdefinerede variabel(ler). Inkluder them i eksporten?",
@@ -2872,7 +2875,21 @@
       "action_lock": "Lås",
       "action_unlock": "Lås Op",
       "action_open": "Åbn",
-      "actions": "Lås Handlinger"
+      "actions": "Lås Handlinger",
+      "unlock_style": "Lås op med",
+      "unlock_style_desc": "Skyd erstatter knapperne Lås op og Åbn med skydere, så et utilsigtet tryk ikke låser op. Hero- og Standard-layout.",
+      "unlock_style_buttons": "Knapper",
+      "unlock_style_slide": "Skyd for at låse op",
+      "ask_code": "Spørg om PIN-kode",
+      "ask_code_desc": "Viser et tastatur og sender koden til låsen. Automatisk spørger, når låsen kræver en kode. Vælg Aldrig, hvis du har angivet en standardkode for låsen i Home Assistant.",
+      "ask_code_auto": "Automatisk",
+      "ask_code_always": "Altid",
+      "ask_code_never": "Aldrig",
+      "cancel": "Annuller",
+      "code_clear": "Ryd",
+      "code_placeholder": "Kode",
+      "slide_to_unlock": "Skyd for at låse op",
+      "slide_to_open": "Skyd for at åbne"
     },
     "text_input": {
       "entity": {
@@ -3292,7 +3309,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Synlighed",
+        "hide_on": "Skjul på",
+        "hide_on_desc": "Skjuler dette element, mens navigationslinjen bruger sit desktop- eller mobillayout.",
+        "desktop": "Desktop",
+        "mobile": "Mobil",
+        "show_when": "Vis kun når",
+        "show_when_desc": "Viser kun dette element, mens en entitet er (eller ikke er) i en tilstand, f.eks. en gæstetilstandskontakt. Lad entiteten være tom for altid at vise det.",
+        "entity": "Entitet",
+        "is": "er",
+        "is_not": "er ikke",
+        "condition": "Betingelse",
+        "state": "Tilstand"
+      }
     },
     "climate": {
       "error_no_entity": "Ingen klimaforhold",
@@ -3355,7 +3386,13 @@
         "no_data": "Ingen prognosedata tilgængelig"
       },
       "icon_style_fill": "Udfyldt",
-      "icon_style_line": "Omrids"
+      "icon_style_line": "Omrids",
+      "swipe_more": "Swipe for mere",
+      "swipe_more_desc": "Indlæser alle dage eller timer, din vejrtjeneste leverer, og lader dig swipe sidelæns igennem dem. Indstillingerne for prognosedage og -timer bestemmer så, hvor mange der vises ad gangen.",
+      "chart_color_mode": "Farver",
+      "chart_color_mode_desc": "Efter værdi farver hver søjle eller punkt efter værdien: UV efter WHO-skalaen, temperatur fra blå til rød, regn fra lys- til mørkeblå, vind fra grøn til rød.",
+      "chart_color_single": "Én farve",
+      "chart_color_value": "Efter værdi"
     },
     "animated_weather": {
       "entity_section": "Vejr Enhed",

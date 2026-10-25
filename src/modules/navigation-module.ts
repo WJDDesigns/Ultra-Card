@@ -10,6 +10,7 @@ import {
   ModuleActionConfig,
   UltraCardConfig,
   PopupModule,
+  NavItemVisibility,
 } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { UltraLinkComponent } from '../components/ultra-link';
@@ -19,6 +20,7 @@ import '../components/ultra-color-picker';
 import '../components/navigation-picker';
 import '../entity-picker';
 import { resolveThemedModuleStyle } from '../services/uc-theme-service';
+import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
 
 // Navbar style presets (matching UC visual design)
 export type NavbarStylePreset =
@@ -2709,6 +2711,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                   <div class="field-group-title">Notifications</div>
                   ${this.renderNotificationEditor(route, hass, updateRoute, config)}
                 </div>
+
+                ${this.renderItemVisibilityEditor(route, hass, updateRoute)}
               </div>
             `
           : ''}
@@ -2982,6 +2986,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                   </ha-select>
                 </div>
 
+                ${this.renderItemVisibilityEditor(stack, hass, updateStack)}
+
                 <div class="info-box" style="margin-top: 16px;">
                   <ha-icon icon="mdi:information-outline"></ha-icon>
                   <span>
@@ -2993,6 +2999,106 @@ export class UltraNavigationModule extends BaseUltraModule {
               </div>
             `
           : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * "Visibility" block for a route or stack: users, desktop / mobile layout and an
+   * entity state. Evaluated by the navigation service next to the `hidden` template.
+   */
+  private renderItemVisibilityEditor(
+    item: NavItemVisibility,
+    hass: HomeAssistant,
+    update: (updates: Partial<NavItemVisibility>) => void
+  ): TemplateResult {
+    const lang = hass?.locale?.language || 'en';
+    const hideOn = item.hide_on || [];
+    const cond = item.show_when;
+    const toggleDevice = (device: 'desktop' | 'mobile', hidden: boolean) => {
+      const next = hidden ? [...new Set([...hideOn, device])] : hideOn.filter(d => d !== device);
+      update({ hide_on: next.length ? next : undefined });
+    };
+    const setCond = (next: Partial<NonNullable<NavItemVisibility['show_when']>>) => {
+      const merged = { entity: '', operator: '=' as const, state: '', ...cond, ...next };
+      update({ show_when: merged.entity ? merged : undefined });
+    };
+    // Field labels stay on here: several fields share one section.
+    const section = (
+      title: string,
+      description: string,
+      data: Record<string, unknown>,
+      schema: unknown[],
+      onChange: (e: CustomEvent) => void
+    ) => html`
+      <div class="field-section" style="margin-bottom: 16px;">
+        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">${title}</div>
+        <div
+          class="field-description"
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+        >
+          ${description}
+        </div>
+        ${UcFormUtils.renderForm(hass, data, schema as any[], onChange, true)}
+      </div>
+    `;
+
+    return html`
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--divider-color);">
+        <div class="field-group-title">
+          ${localize('editor.navigation.visibility.title', lang, 'Visibility')}
+        </div>
+
+        ${renderUserVisibilitySection(item.user_visibility, hass, next =>
+          update({ user_visibility: next })
+        )}
+
+        ${section(
+          localize('editor.navigation.visibility.hide_on', lang, 'Hide on'),
+          localize(
+            'editor.navigation.visibility.hide_on_desc',
+            lang,
+            'Hide this item while the navbar uses its desktop or mobile layout.'
+          ),
+          { hide_desktop: hideOn.includes('desktop'), hide_mobile: hideOn.includes('mobile') },
+          [
+            { name: 'hide_desktop', label: localize('editor.navigation.visibility.desktop', lang, 'Desktop'), selector: { boolean: {} } },
+            { name: 'hide_mobile', label: localize('editor.navigation.visibility.mobile', lang, 'Mobile'), selector: { boolean: {} } },
+          ],
+          (e: CustomEvent) => {
+            const v = e.detail.value || {};
+            if (!!v.hide_desktop !== hideOn.includes('desktop')) toggleDevice('desktop', !!v.hide_desktop);
+            else if (!!v.hide_mobile !== hideOn.includes('mobile')) toggleDevice('mobile', !!v.hide_mobile);
+          }
+        )}
+
+        ${section(
+          localize('editor.navigation.visibility.show_when', lang, 'Show only when'),
+          localize(
+            'editor.navigation.visibility.show_when_desc',
+            lang,
+            'Show this item only while an entity is (or is not) in a state, for example a guest mode switch. Leave the entity empty to always show it.'
+          ),
+          { entity: cond?.entity || '', operator: cond?.operator || '=', state: cond?.state || '' },
+          [
+            { ...UcFormUtils.entity('entity'), label: localize('editor.navigation.visibility.entity', lang, 'Entity') },
+            {
+              ...UcFormUtils.select('operator', [
+                { value: '=', label: localize('editor.navigation.visibility.is', lang, 'is') },
+                { value: '!=', label: localize('editor.navigation.visibility.is_not', lang, 'is not') },
+              ]),
+              label: localize('editor.navigation.visibility.condition', lang, 'Condition'),
+            },
+            {
+              ...UcFormUtils.conditionValue('state', hass, { entity: cond?.entity || '', operator: cond?.operator || '=' }),
+              label: localize('editor.navigation.visibility.state', lang, 'State'),
+            },
+          ],
+          (e: CustomEvent) => {
+            const v = e.detail.value || {};
+            setCond({ entity: v.entity || '', operator: v.operator === '!=' ? '!=' : '=', state: v.state ?? '' });
+          }
+        )}
       </div>
     `;
   }

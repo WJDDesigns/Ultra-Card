@@ -1360,7 +1360,8 @@
         "attribute": "Attribut",
         "time_from": "Från",
         "time_to": "Till",
-        "template": "Mall"
+        "template": "Mall",
+        "variable": "Variabel"
       },
       "condition_header": "Villkor",
       "custom_name": "Anpassat namn",
@@ -2595,7 +2596,9 @@
       "confirm_clear_card": "Är du säker på att du vill ta bort alla kortspecifika variabler?",
       "value_type_attribute": "Attribut",
       "value_type_attribute_desc": "Attributvärde (t.ex. temmperatur, friendly_name)",
-      "attribute_name": "Attributnamn"
+      "attribute_name": "Attributnamn",
+      "make_global_conflict": "Det finns redan en global variabel med det här namnet. Byt namn på den här först.",
+      "make_global": "Gör global (använd på alla kort)"
     },
     "export_import": {
       "include_variables": "Du har anpassad variabel/variabler. Inkludera them i exporten?",
@@ -2872,7 +2875,21 @@
       "action_lock": "Lås",
       "action_unlock": "Lås upp",
       "action_open": "Öppna",
-      "actions": "Lås åtgärder"
+      "actions": "Lås åtgärder",
+      "unlock_style": "Lås upp med",
+      "unlock_style_desc": "Skjut ersätter knapparna Lås upp och Öppna med reglage, så att ett oavsiktligt tryck inte låser upp. Hero- och Standard-layout.",
+      "unlock_style_buttons": "Knappar",
+      "unlock_style_slide": "Skjut för att låsa upp",
+      "ask_code": "Fråga efter PIN-kod",
+      "ask_code_desc": "Visar en knappsats och skickar koden till låset. Automatiskt frågar när låset kräver en kod. Välj Aldrig om du har angett en standardkod för låset i Home Assistant.",
+      "ask_code_auto": "Automatiskt",
+      "ask_code_always": "Alltid",
+      "ask_code_never": "Aldrig",
+      "cancel": "Avbryt",
+      "code_clear": "Rensa",
+      "code_placeholder": "Kod",
+      "slide_to_unlock": "Skjut för att låsa upp",
+      "slide_to_open": "Skjut för att öppna"
     },
     "text_input": {
       "entity": {
@@ -3292,7 +3309,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Synlighet",
+        "hide_on": "Dölj på",
+        "hide_on_desc": "Döljer detta objekt medan navigeringsfältet använder sin dator- eller mobillayout.",
+        "desktop": "Dator",
+        "mobile": "Mobil",
+        "show_when": "Visa endast när",
+        "show_when_desc": "Visar detta objekt endast när en entitet är (eller inte är) i ett tillstånd, till exempel en gästlägesbrytare. Lämna entiteten tom för att alltid visa det.",
+        "entity": "Entitet",
+        "is": "är",
+        "is_not": "är inte",
+        "condition": "Villkor",
+        "state": "Tillstånd"
+      }
     },
     "climate": {
       "error_no_entity": "Ingen Klimatenhet",
@@ -3355,7 +3386,13 @@
         "no_data": "Ingen prognosdata tillgänglig"
       },
       "icon_style_fill": "Fylld",
-      "icon_style_line": "Utritad"
+      "icon_style_line": "Utritad",
+      "swipe_more": "Svep för mer",
+      "swipe_more_desc": "Laddar alla dagar eller timmar som din vädertjänst erbjuder och låter dig svepa i sidled genom dem. Inställningarna för prognosdagar och -timmar anger då hur många som visas åt gången.",
+      "chart_color_mode": "Färger",
+      "chart_color_mode_desc": "Efter värde färgar varje stapel eller punkt efter värdet: UV enligt WHO-skalan, temperatur från blått till rött, regn från ljus- till mörkblått, vind från grönt till rött.",
+      "chart_color_single": "En färg",
+      "chart_color_value": "Efter värde"
     },
     "animated_weather": {
       "entity_section": "Väderenhet",
