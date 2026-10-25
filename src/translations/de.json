@@ -2893,7 +2893,15 @@
       "code_clear": "Löschen",
       "code_placeholder": "Code",
       "slide_to_unlock": "Zum Entsperren schieben",
-      "slide_to_open": "Zum Öffnen schieben"
+      "slide_to_open": "Zum Öffnen schieben",
+      "unlock_style_pattern": "Muster zeichnen",
+      "pattern_title": "Entsperrmuster",
+      "pattern_desc": "Zeichnen Sie das Muster, mit dem dieses Schloss entsperrt und geöffnet wird. Es wird im Dashboard gespeichert und verhindert so versehentliches Entsperren, ist aber kein echtes Passwort.",
+      "pattern_prompt": "Zeichnen Sie Ihr Muster",
+      "pattern_wrong": "Falsches Muster, bitte erneut versuchen",
+      "pattern_saved": "Muster gespeichert. Zeichnen Sie erneut, um es zu ändern.",
+      "pattern_none": "Noch kein Muster, daher wird beim Entsperren die normale Bestätigung verwendet.",
+      "pattern_too_short": "Verbinden Sie mindestens 4 Punkte"
     },
     "text_input": {
       "entity": {

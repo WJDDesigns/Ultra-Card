@@ -2889,7 +2889,15 @@
       "code_clear": "Effacer",
       "code_placeholder": "Code",
       "slide_to_unlock": "Glisser pour déverrouiller",
-      "slide_to_open": "Glisser pour ouvrir"
+      "slide_to_open": "Glisser pour ouvrir",
+      "unlock_style_pattern": "Dessiner un schéma",
+      "pattern_title": "Schéma de déverrouillage",
+      "pattern_desc": "Dessinez le schéma qui déverrouille et ouvre cette serrure. Il est enregistré dans le tableau de bord : il évite les déverrouillages accidentels, mais ce n'est pas un vrai mot de passe.",
+      "pattern_prompt": "Dessinez votre schéma",
+      "pattern_wrong": "Schéma incorrect, réessayez",
+      "pattern_saved": "Schéma enregistré. Dessinez à nouveau pour le modifier.",
+      "pattern_none": "Aucun schéma pour l'instant, le déverrouillage utilise donc la confirmation normale.",
+      "pattern_too_short": "Reliez au moins 4 points"
     },
     "text_input": {
       "entity": {

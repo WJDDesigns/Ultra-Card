@@ -2889,7 +2889,15 @@
       "code_clear": "Vymazat",
       "code_placeholder": "Kód",
       "slide_to_unlock": "Posunutím odemknout",
-      "slide_to_open": "Posunutím otevřít"
+      "slide_to_open": "Posunutím otevřít",
+      "unlock_style_pattern": "Nakreslit gesto",
+      "pattern_title": "Odemykací gesto",
+      "pattern_desc": "Nakreslete gesto, které odemyká a otevírá tento zámek. Ukládá se do dashboardu, takže brání nechtěnému odemčení, ale není to skutečné heslo.",
+      "pattern_prompt": "Nakreslete své gesto",
+      "pattern_wrong": "Špatné gesto, zkuste to znovu",
+      "pattern_saved": "Gesto uloženo. Nakreslete znovu pro změnu.",
+      "pattern_none": "Zatím žádné gesto, odemčení proto používá běžné potvrzení.",
+      "pattern_too_short": "Spojte alespoň 4 body"
     },
     "text_input": {
       "entity": {

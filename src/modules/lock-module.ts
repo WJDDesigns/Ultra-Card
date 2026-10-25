@@ -6,6 +6,8 @@ import { CardModule, LockModule as LockModuleConfig, UltraCardConfig } from '../
 import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
 import { promptForCode } from '../services/uc-code-prompt-service';
 import '../components/uc-slide-confirm';
+import '../components/uc-pattern-pad';
+import { promptForPattern } from '../services/uc-pattern-prompt-service';
 
 /** Home Assistant LockEntityFeature.OPEN */
 const LOCK_FEATURE_OPEN = 1;
@@ -247,6 +249,7 @@ export class UltraLockModule extends BaseUltraModule {
                 this.selectField('unlock_style', [
                   { value: 'buttons', label: localize('editor.lock.unlock_style_buttons', lang, 'Buttons') },
                   { value: 'slide', label: localize('editor.lock.unlock_style_slide', lang, 'Slide to unlock') },
+                  { value: 'pattern', label: localize('editor.lock.unlock_style_pattern', lang, 'Draw a pattern') },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -277,6 +280,8 @@ export class UltraLockModule extends BaseUltraModule {
             },
           ]
         )}
+
+        ${lock.unlock_style === 'pattern' ? this.renderPatternRecorder(lock, updateModule, lang) : nothing}
 
         ${this.renderSettingsSection(
           localize('editor.lock.layout_section', lang, 'Layout'),
@@ -318,6 +323,66 @@ export class UltraLockModule extends BaseUltraModule {
             },
           ]
         )}
+      </div>
+    `;
+  }
+
+  /** Editor block where the unlock pattern is drawn and saved. */
+  private renderPatternRecorder(
+    lock: LockModuleConfig,
+    updateModule: (updates: Partial<CardModule>) => void,
+    lang: string
+  ): TemplateResult {
+    const saved = lock.unlock_pattern || '';
+    const hasPattern = saved.length >= 4;
+    const savedText = hasPattern
+      ? localize('editor.lock.pattern_saved', lang, 'Pattern saved. Draw again to change it.')
+      : localize('editor.lock.pattern_none', lang, 'No pattern yet, so unlocking uses the normal confirmation.');
+    const onComplete = (e: CustomEvent<{ pattern: string }>) => {
+      const pad = e.currentTarget as HTMLElement & { status: string; clear: () => void };
+      const msg = pad.parentElement?.querySelector('.uc-lock-pattern-msg');
+      const pattern = e.detail.pattern;
+      if (pattern.length < 4) {
+        pad.status = 'error';
+        if (msg) msg.textContent = localize('editor.lock.pattern_too_short', lang, 'Connect at least 4 dots');
+        setTimeout(() => {
+          pad.clear();
+          pad.status = '';
+          if (msg) msg.textContent = savedText;
+        }, 900);
+        return;
+      }
+      pad.clear();
+      updateModule({ unlock_pattern: pattern });
+      setTimeout(() => this.triggerPreviewUpdate(), 50);
+    };
+    return html`
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.lock.pattern_title', lang, 'Unlock pattern')}
+        </div>
+        <div
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+        >
+          ${localize(
+            'editor.lock.pattern_desc',
+            lang,
+            "Draw the pattern that unlocks and opens this lock. It's saved in the dashboard, so it stops accidental unlocks but isn't a real password."
+          )}
+        </div>
+        <uc-pattern-pad .pattern=${saved} @pattern-complete=${onComplete}></uc-pattern-pad>
+        <div
+          class="uc-lock-pattern-msg"
+          style="font-size: 13px; text-align: center; margin-top: 12px; color: var(--secondary-text-color);"
+        >
+          ${savedText}
+        </div>
       </div>
     `;
   }
@@ -415,6 +480,9 @@ export class UltraLockModule extends BaseUltraModule {
     const askCode = lockCfg.ask_code || 'auto';
     const needsCode = askCode === 'always' || (askCode === 'auto' && !!codeFormat);
     const slideMode = lockCfg.unlock_style === 'slide' && layout !== 'compact';
+    // Until a pattern of at least 4 dots is saved, unlock falls back to the normal confirmation.
+    const unlockPattern = lockCfg.unlock_pattern || '';
+    const patternMode = lockCfg.unlock_style === 'pattern' && unlockPattern.length >= 4;
 
     const actionLabel = (service: LockPendingAction) =>
       service === 'open'
@@ -447,6 +515,15 @@ export class UltraLockModule extends BaseUltraModule {
 
     // Unlock/open are security-sensitive: confirm before calling unless disabled
     const confirmSensitive = async (service: 'unlock' | 'open'): Promise<boolean> => {
+      if (patternMode) {
+        return promptForPattern({
+          title: `${actionLabel(service)} ${name}`,
+          expected: unlockPattern,
+          hint: localize('editor.lock.pattern_prompt', lang, 'Draw your pattern'),
+          wrongText: localize('editor.lock.pattern_wrong', lang, 'Wrong pattern, try again'),
+          cancelText: localize('editor.lock.cancel', lang, 'Cancel'),
+        });
+      }
       // Typing the code or completing the slide is already a deliberate step.
       if (lockCfg.require_confirmation === false || needsCode || slideMode) return true;
       ucActionConfirmationService.setHass(hass);

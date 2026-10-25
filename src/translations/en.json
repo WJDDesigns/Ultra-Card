@@ -2840,7 +2840,15 @@
       "code_clear": "Clear",
       "code_placeholder": "Code",
       "slide_to_unlock": "Slide to unlock",
-      "slide_to_open": "Slide to open"
+      "slide_to_open": "Slide to open",
+      "unlock_style_pattern": "Draw a pattern",
+      "pattern_title": "Unlock pattern",
+      "pattern_desc": "Draw the pattern that unlocks and opens this lock. It's saved in the dashboard, so it stops accidental unlocks but isn't a real password.",
+      "pattern_prompt": "Draw your pattern",
+      "pattern_wrong": "Wrong pattern, try again",
+      "pattern_saved": "Pattern saved. Draw again to change it.",
+      "pattern_none": "No pattern yet, so unlocking uses the normal confirmation.",
+      "pattern_too_short": "Connect at least 4 dots"
     },
     "living_canvas": {
       "title": "Living Canvas",

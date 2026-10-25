@@ -2889,7 +2889,15 @@
       "code_clear": "Ryd",
       "code_placeholder": "Kode",
       "slide_to_unlock": "Skyd for at låse op",
-      "slide_to_open": "Skyd for at åbne"
+      "slide_to_open": "Skyd for at åbne",
+      "unlock_style_pattern": "Tegn et mønster",
+      "pattern_title": "Oplåsningsmønster",
+      "pattern_desc": "Tegn det mønster, der låser op og åbner denne lås. Det gemmes i dashboardet, så det forhindrer utilsigtet oplåsning, men det er ikke en rigtig adgangskode.",
+      "pattern_prompt": "Tegn dit mønster",
+      "pattern_wrong": "Forkert mønster, prøv igen",
+      "pattern_saved": "Mønster gemt. Tegn igen for at ændre det.",
+      "pattern_none": "Intet mønster endnu, så oplåsning bruger den normale bekræftelse.",
+      "pattern_too_short": "Forbind mindst 4 prikker"
     },
     "text_input": {
       "entity": {

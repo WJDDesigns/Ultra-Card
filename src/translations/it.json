@@ -2889,7 +2889,15 @@
       "code_clear": "Cancella",
       "code_placeholder": "Codice",
       "slide_to_unlock": "Scorri per sbloccare",
-      "slide_to_open": "Scorri per aprire"
+      "slide_to_open": "Scorri per aprire",
+      "unlock_style_pattern": "Disegna una sequenza",
+      "pattern_title": "Sequenza di sblocco",
+      "pattern_desc": "Disegna la sequenza che sblocca e apre questa serratura. Viene salvata nella dashboard: evita sblocchi accidentali, ma non è una vera password.",
+      "pattern_prompt": "Disegna la tua sequenza",
+      "pattern_wrong": "Sequenza errata, riprova",
+      "pattern_saved": "Sequenza salvata. Disegnala di nuovo per cambiarla.",
+      "pattern_none": "Nessuna sequenza ancora, quindi lo sblocco usa la conferma normale.",
+      "pattern_too_short": "Collega almeno 4 punti"
     },
     "text_input": {
       "entity": {

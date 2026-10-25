@@ -2889,7 +2889,15 @@
       "code_clear": "Borrar",
       "code_placeholder": "Código",
       "slide_to_unlock": "Deslizar para desbloquear",
-      "slide_to_open": "Deslizar para abrir"
+      "slide_to_open": "Deslizar para abrir",
+      "unlock_style_pattern": "Dibujar un patrón",
+      "pattern_title": "Patrón de desbloqueo",
+      "pattern_desc": "Dibuja el patrón que desbloquea y abre esta cerradura. Se guarda en el panel, así que evita desbloqueos accidentales, pero no es una contraseña real.",
+      "pattern_prompt": "Dibuja tu patrón",
+      "pattern_wrong": "Patrón incorrecto, inténtalo de nuevo",
+      "pattern_saved": "Patrón guardado. Dibuja de nuevo para cambiarlo.",
+      "pattern_none": "Aún no hay patrón, así que el desbloqueo usa la confirmación normal.",
+      "pattern_too_short": "Une al menos 4 puntos"
     },
     "text_input": {
       "entity": {
