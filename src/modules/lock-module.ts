@@ -55,6 +55,7 @@ export class UltraLockModule extends BaseUltraModule {
       show_icon: true,
       show_state: true,
       show_open_button: true,
+      show_lock_buttons: true,
       require_confirmation: true,
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -92,6 +93,11 @@ export class UltraLockModule extends BaseUltraModule {
   ): TemplateResult {
     const lock = module as LockModuleConfig;
     const lang = hass?.locale?.language || 'en';
+    const lockState = lock.entity ? hass?.states?.[lock.entity] : undefined;
+    // No entity yet (or not loaded): leave the toggle usable
+    const canOpen =
+      !lockState ||
+      lockHasOpen(lockSupportedFeatures((lockState.attributes || {}) as Record<string, unknown>));
 
     return html`
       ${this.injectUcFormStyles()}
@@ -169,15 +175,36 @@ export class UltraLockModule extends BaseUltraModule {
               },
             },
             {
-              title: localize('editor.lock.show_open_button', lang, 'Show open button'),
+              title: localize('editor.lock.show_lock_buttons', lang, 'Show lock / unlock buttons'),
               description: localize(
-                'editor.lock.show_open_button_desc',
+                'editor.lock.show_lock_buttons_desc',
                 lang,
-                'Show Open when the lock supports unlatch (OPEN feature)'
+                'Show the Lock and Unlock buttons (the compact layout shows one toggle button)'
               ),
               hass,
+              data: { show_lock_buttons: lock.show_lock_buttons !== false },
+              schema: [this.booleanField('show_lock_buttons')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_lock_buttons: e.detail.value?.show_lock_buttons ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+            {
+              title: localize('editor.lock.show_open_button', lang, 'Show open button'),
+              description: canOpen
+                ? localize(
+                    'editor.lock.show_open_button_desc',
+                    lang,
+                    'Show Open when the lock supports unlatch (OPEN feature)'
+                  )
+                : localize(
+                    'editor.lock.show_open_button_unsupported',
+                    lang,
+                    "This lock can't unlatch (no Open feature), so there's no Open button to show"
+                  ),
+              hass,
               data: { show_open_button: lock.show_open_button !== false },
-              schema: [this.booleanField('show_open_button')],
+              schema: [{ ...this.booleanField('show_open_button'), disabled: !canOpen }],
               onChange: (e: CustomEvent) => {
                 updateModule({ show_open_button: e.detail.value?.show_open_button ?? true });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
@@ -298,6 +325,8 @@ export class UltraLockModule extends BaseUltraModule {
     const sup = lockSupportedFeatures(attrs);
     const hasOpen = lockHasOpen(sup);
     const showOpen = lockCfg.show_open_button !== false && hasOpen;
+    const showLockBtns = lockCfg.show_lock_buttons !== false;
+    const hasActions = showLockBtns || showOpen;
 
     const isUnavailable = stateStr === 'unavailable' || stateStr === 'unknown';
     const isBusy = stateStr === 'locking' || stateStr === 'unlocking';
@@ -383,7 +412,8 @@ export class UltraLockModule extends BaseUltraModule {
     `;
 
     const actionBtns = () => html`
-      <button
+      ${showLockBtns
+        ? html`<button
         type="button"
         class="uc-lock-btn ${isLocked ? 'uc-lock-btn--active' : ''}"
         @click=${onLock}
@@ -400,7 +430,8 @@ export class UltraLockModule extends BaseUltraModule {
       >
         <ha-icon style="--mdc-icon-size: 18px;" icon="mdi:lock-open-variant"></ha-icon>
         ${localize('editor.lock.action_unlock', lang, 'Unlock')}
-      </button>
+      </button>`
+        : nothing}
       ${showOpen
         ? html`<button
             type="button"
@@ -438,7 +469,9 @@ export class UltraLockModule extends BaseUltraModule {
               : nothing}
           </div>
           ${isJammed ? html`<p class="uc-lock-warn">${localize('editor.lock.jammed_hint', lang, 'Check the lock hardware.')}</p>` : nothing}
-          <div class="uc-lock__actions" role="group">${actionBtns()}</div>
+          ${hasActions
+            ? html`<div class="uc-lock__actions" role="group">${actionBtns()}</div>`
+            : nothing}
         </div>
       `;
     } else if (layout === 'compact') {
@@ -460,16 +493,18 @@ export class UltraLockModule extends BaseUltraModule {
                 ? html`<span class="uc-lock-chip-state">${stateLabel}</span>`
                 : nothing}
             </span>
-            <button
-              type="button"
-              class="uc-lock-chip-btn ${lockedVisual ? '' : 'uc-lock-chip-btn--active'}"
-              @click=${isLocked ? onUnlock : onLock}
-              ?disabled=${controlsDisabled}
-            >
-              ${isLocked
-                ? localize('editor.lock.action_unlock', lang, 'Unlock')
-                : localize('editor.lock.action_lock', lang, 'Lock')}
-            </button>
+            ${showLockBtns
+              ? html`<button
+                  type="button"
+                  class="uc-lock-chip-btn ${lockedVisual ? '' : 'uc-lock-chip-btn--active'}"
+                  @click=${isLocked ? onUnlock : onLock}
+                  ?disabled=${controlsDisabled}
+                >
+                  ${isLocked
+                    ? localize('editor.lock.action_unlock', lang, 'Unlock')
+                    : localize('editor.lock.action_lock', lang, 'Lock')}
+                </button>`
+              : nothing}
           </div>
         </div>
       `;
@@ -486,7 +521,9 @@ export class UltraLockModule extends BaseUltraModule {
               ${showTitle ? html`<h2 class="uc-lock-title uc-lock-title--std">${name}</h2>` : nothing}
               ${showState ? html`<p class="uc-lock-subtitle">${stateLabel}</p>` : nothing}
             </div>
-            <div class="uc-lock-std__actions" role="group">${actionBtns()}</div>
+            ${hasActions
+              ? html`<div class="uc-lock-std__actions" role="group">${actionBtns()}</div>`
+              : nothing}
           </div>
           ${isJammed ? html`<p class="uc-lock-warn">${localize('editor.lock.jammed_hint', lang, 'Check the lock hardware.')}</p>` : nothing}
         </div>

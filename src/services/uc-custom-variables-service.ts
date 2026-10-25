@@ -5,7 +5,9 @@ import { UC_DEBUG } from '../utils/uc-debug';
 
 /**
  * Service for managing custom variables across Ultra Card instances
- * Provides cross-card synchronization using localStorage (local-only, no cloud sync)
+ * Global variables live in localStorage and are mirrored to the Home Assistant user's
+ * frontend data (frontend/get_user_data), so every browser and the companion app the
+ * user signs in with gets the same set; the newest copy wins.
  * Variables can be used in templates with {{ $variable_name }} syntax
  * 
  * Supports two types of variables:
@@ -15,6 +17,14 @@ import { UC_DEBUG } from '../utils/uc-debug';
 class UcCustomVariablesService {
   private static readonly STORAGE_KEY = 'ultra-card-custom-variables';
   private static readonly SYNC_EVENT = 'ultra-card-custom-variables-changed';
+  /** When this browser's copy last changed (ms); compared with the Home Assistant copy. */
+  private static readonly UPDATED_KEY = 'ultra-card-custom-variables-updated';
+  /** Key in the Home Assistant user's frontend data. */
+  private static readonly USER_DATA_KEY = 'ultra-card-custom-variables';
+
+  private _hass?: HomeAssistant;
+  private _haSyncStarted = false;
+  private _pushTimer: ReturnType<typeof setTimeout> | null = null;
 
   private _variables: CustomVariable[] = [];
   private _listeners: Set<(variables: CustomVariable[]) => void> = new Set();
@@ -687,8 +697,9 @@ class UcCustomVariablesService {
     // Restore variables
     this._variables = variables.filter(v => this._isValidVariable(v) && v.isGlobal !== false);
     
-    // Save to localStorage so it's available for other cards
-    this._saveToStorage();
+    // Save to localStorage so it's available for other cards. Stamped as never edited,
+    // so a newer copy in Home Assistant still replaces it.
+    this._saveToStorage(0);
     this._notifyListeners();
     
     return true;
@@ -809,6 +820,70 @@ class UcCustomVariablesService {
     return cleaned;
   }
 
+  // ==========================================
+  // Home Assistant sync (all devices of one HA user)
+  // ==========================================
+
+  /**
+   * Called with every hass update; the first call compares this browser's copy with
+   * the one saved in the Home Assistant user's data and keeps the newer one.
+   */
+  syncWithHomeAssistant(hass: HomeAssistant | undefined): void {
+    if (!hass?.callWS) return;
+    this._hass = hass;
+    if (this._haSyncStarted) return;
+    this._haSyncStarted = true;
+
+    hass
+      .callWS<{ value?: { variables?: CustomVariable[]; updated?: number } | null }>({
+        type: 'frontend/get_user_data',
+        key: UcCustomVariablesService.USER_DATA_KEY,
+      })
+      .then(res => {
+        const remote = res?.value;
+        const remoteUpdated = Number(remote?.updated) || 0;
+        const localUpdated = this._getLocalUpdated();
+        if (remote && Array.isArray(remote.variables) && remoteUpdated > localUpdated) {
+          this._variables = remote.variables.filter(
+            v => this._isValidVariable(v) && v.isGlobal !== false
+          );
+          this._saveToStorage(remoteUpdated);
+          this._notifyListeners();
+          window.dispatchEvent(new CustomEvent(UcCustomVariablesService.SYNC_EVENT));
+        } else if (
+          this._variables.length > 0 &&
+          (!remote || localUpdated > remoteUpdated)
+        ) {
+          // First sync from a browser that only had a local copy: upload it.
+          this._schedulePush(localUpdated || Date.now());
+        }
+      })
+      .catch(() => {
+        // Older Home Assistant or no connection: stay local-only.
+      });
+  }
+
+  private _getLocalUpdated(): number {
+    return Number(safeGetItem(UcCustomVariablesService.UPDATED_KEY)) || 0;
+  }
+
+  /** Debounced so a drag-reorder or bulk import writes once. */
+  private _schedulePush(updated: number): void {
+    if (this._pushTimer) clearTimeout(this._pushTimer);
+    this._pushTimer = setTimeout(() => {
+      this._pushTimer = null;
+      this._hass
+        ?.callWS({
+          type: 'frontend/set_user_data',
+          key: UcCustomVariablesService.USER_DATA_KEY,
+          value: { variables: this.getVariables(), updated },
+        })
+        .catch(() => {
+          // Keep the local copy; the next edit tries again.
+        });
+    }, 500);
+  }
+
   /**
    * Load variables from localStorage
    */
@@ -843,7 +918,11 @@ class UcCustomVariablesService {
    * Save variables to localStorage
    * @returns true if save succeeded, false otherwise
    */
-  private _saveToStorage(): boolean {
+  private _saveToStorage(updated?: number): boolean {
+    // A local edit (no stamp given) is stamped now and pushed to Home Assistant; a copy
+    // that came from Home Assistant or a card backup keeps the stamp it was given.
+    const stamp = updated ?? Date.now();
+    if (updated === undefined) this._schedulePush(stamp);
     try {
       // Check if localStorage is available
       if (!this._isLocalStorageAvailable()) {
@@ -852,6 +931,7 @@ class UcCustomVariablesService {
 
       const dataToSave = JSON.stringify(this._variables);
       safeSetItem(UcCustomVariablesService.STORAGE_KEY, dataToSave);
+      safeSetItem(UcCustomVariablesService.UPDATED_KEY, String(stamp));
       return true;
     } catch (error) {
       // Check if it's a quota exceeded error

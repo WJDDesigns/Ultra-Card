@@ -107,6 +107,8 @@ export class UltraCard extends LitElement {
     // Only update external card containers and logic service if hass object reference changed
     // (HA creates new objects when state changes, so reference check is sufficient)
     if (value && value !== oldHass) {
+      // Pull or push global custom variables via the HA user's data (first call only).
+      ucCustomVariablesService.syncWithHomeAssistant(value);
       // Start fetching the user's locale chunk on first hass so strings are
       // translated by the time most cards paint (English until it lands).
       if (value.locale?.language && value.locale.language !== oldHass?.locale?.language) {
