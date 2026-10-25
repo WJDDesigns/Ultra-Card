@@ -1,5 +1,25 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta4
+
+The fourth 3.14.2 beta syncs global variables across your devices, adds button options to the Lock module, and fixes two things reported in Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Global variables on every device** - Global Custom Variables are now saved to your Home Assistant user, so every browser and the companion app you sign in with gets the same set. Before, they only lived in the browser where you made them. If two devices have different copies, the newest one wins
+- **Lock "Show lock / unlock buttons"** - New Display option to hide the Lock and Unlock buttons, for example for a status-only lock. Works in the hero, standard and compact layouts
+
+### 🔧 Improvements
+
+- **Clearer Lock "Show open button"** - The option is greyed out with a note when your lock can't unlatch (no Open feature), since the Open button can never show for it. Thanks to larrysansan for the question
+
+### 🐛 Bug Fixes
+
+- **No empty card for hidden users** - When Logic > Visible to Users hides everything in a card, column or row from the current user, it now collapses instead of leaving an empty box with its background and padding. Thanks to larrysansan for reporting it
+- **Forecast line chart lines up** - The line chart under Animated Forecast now puts each point over its day or hour column instead of drifting toward the edges. Thanks to larrysansan for reporting it
+
 ## Version 3.14.2-beta3
 
 The third 3.14.2 beta brings station sensors, a wind compass and forecast charts to the weather modules, fixes live cameras inside Popups and Drawers, and adds a few things asked for in Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.
