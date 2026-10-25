@@ -289,7 +289,8 @@
         "attribute": "Attribut",
         "time_from": "Von",
         "time_to": "Bis",
-        "template": "Vorlage"
+        "template": "Vorlage",
+        "variable": "Variable"
       },
       "condition_header": "Bedingung",
       "custom_name": "Benutzerdefinierter Name",
@@ -2599,7 +2600,9 @@
       "confirm_clear_card": "Sind Sie sicher, dass Sie alle kartenbezogenen Variablen löschen möchten?",
       "value_type_attribute": "Attribut",
       "value_type_attribute_desc": "Attributwert (z.B. temperature, friendly_name)",
-      "attribute_name": "Attributname"
+      "attribute_name": "Attributname",
+      "make_global_conflict": "Es gibt bereits eine globale Variable mit diesem Namen. Bitte benennen Sie diese zuerst um.",
+      "make_global": "Global machen (auf jeder Karte verwenden)"
     },
     "export_import": {
       "include_variables": "Sie haben benutzerdefinierte Variable(n). Soll them in den Export einbezogen werden?",
@@ -2876,7 +2879,21 @@
       "action_lock": "Verriegeln",
       "action_unlock": "Entsperren",
       "action_open": "Öffnen",
-      "actions": "Verriegelungsaktionen"
+      "actions": "Verriegelungsaktionen",
+      "unlock_style": "Entsperren mit",
+      "unlock_style_desc": "Schieben ersetzt die Tasten Entsperren und Öffnen durch Schieberegler, damit ein versehentliches Tippen nicht entsperrt. Layouts Hero und Standard.",
+      "unlock_style_buttons": "Tasten",
+      "unlock_style_slide": "Zum Entsperren schieben",
+      "ask_code": "PIN-Code abfragen",
+      "ask_code_desc": "Zeigt ein Tastenfeld und sendet den Code an das Schloss. Automatisch fragt, wenn das Schloss einen Code benötigt. Wählen Sie Nie, wenn Sie in Home Assistant einen Standardcode für das Schloss festgelegt haben.",
+      "ask_code_auto": "Automatisch",
+      "ask_code_always": "Immer",
+      "ask_code_never": "Nie",
+      "cancel": "Abbrechen",
+      "code_clear": "Löschen",
+      "code_placeholder": "Code",
+      "slide_to_unlock": "Zum Entsperren schieben",
+      "slide_to_open": "Zum Öffnen schieben"
     },
     "text_input": {
       "entity": {
@@ -3296,7 +3313,21 @@
       "autohide_enable_desc": "Im macOS-Stil: Nach Inaktivität ausblenden, beim Bewegen des Mauszeigers über den Rand einblenden. Nur für Desktop-Mäuse.",
       "autohide_delay": "Verzögerung ausblenden",
       "autohide_delay_desc": "Sekunden der Inaktivität, bevor die Navigationsleiste ausgeblendet wird.",
-      "autohide_disabled_by_collapse": "Die automatische Ausblendung ist nicht verfügbar, solange die Zusammenklappfunktion aktiviert ist. Deaktivieren Sie die Zusammenklappfunktion, um die automatische Ausblendung zu nutzen."
+      "autohide_disabled_by_collapse": "Die automatische Ausblendung ist nicht verfügbar, solange die Zusammenklappfunktion aktiviert ist. Deaktivieren Sie die Zusammenklappfunktion, um die automatische Ausblendung zu nutzen.",
+      "visibility": {
+        "title": "Sichtbarkeit",
+        "hide_on": "Ausblenden auf",
+        "hide_on_desc": "Blendet diesen Eintrag aus, solange die Navigationsleiste ihr Desktop- oder Mobil-Layout verwendet.",
+        "desktop": "Desktop",
+        "mobile": "Mobil",
+        "show_when": "Nur anzeigen, wenn",
+        "show_when_desc": "Zeigt diesen Eintrag nur, solange eine Entität einen bestimmten Zustand hat (oder nicht hat), zum Beispiel ein Gastmodus-Schalter. Lassen Sie die Entität leer, um ihn immer anzuzeigen.",
+        "entity": "Entität",
+        "is": "ist",
+        "is_not": "ist nicht",
+        "condition": "Bedingung",
+        "state": "Zustand"
+      }
     },
     "climate": {
       "error_no_entity": "Keine Klimaanlage",
@@ -3359,7 +3390,13 @@
         "no_data": "Keine Wetterdaten verfügbar"
       },
       "icon_style_fill": "Ausgefüllt",
-      "icon_style_line": "Umrissen"
+      "icon_style_line": "Umrissen",
+      "swipe_more": "Wischen für mehr",
+      "swipe_more_desc": "Lädt alle Tage oder Stunden, die Ihr Wetterdienst liefert, und Sie können seitlich durch sie wischen. Die Einstellungen für Vorhersagetage und -stunden legen dann fest, wie viele gleichzeitig angezeigt werden.",
+      "chart_color_mode": "Farben",
+      "chart_color_mode_desc": "Nach Wert färbt jeden Balken oder Punkt nach seinem Wert: UV nach der WHO-Skala, Temperatur von Blau bis Rot, Regen von Hell- bis Dunkelblau, Wind von Grün bis Rot.",
+      "chart_color_single": "Eine Farbe",
+      "chart_color_value": "Nach Wert"
     },
     "animated_weather": {
       "entity_section": "Wetterentität",
