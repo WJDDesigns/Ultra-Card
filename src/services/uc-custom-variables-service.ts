@@ -854,8 +854,10 @@ class UcCustomVariablesService {
           this._variables.length > 0 &&
           (!remote || localUpdated > remoteUpdated)
         ) {
-          // First sync from a browser that only had a local copy: upload it.
-          this._schedulePush(localUpdated || Date.now());
+          // First sync from a browser that only had a local copy: stamp and upload it.
+          const stamp = localUpdated || Date.now();
+          safeSetItem(UcCustomVariablesService.UPDATED_KEY, String(stamp));
+          this._schedulePush(stamp);
         }
       })
       .catch(() => {
