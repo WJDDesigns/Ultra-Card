@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta8
+
+The eighth 3.14.2 beta adds pattern unlock to the Lock module. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Lock: draw a pattern to unlock** - Set "Unlock with" to "Draw a pattern" and draw your pattern (at least 4 dots) in the editor. Unlock and Open then ask for the pattern first, like a phone's lock screen. A wrong pattern flashes red and nothing happens. The pattern is saved in the dashboard, so it stops accidental unlocks but isn't a real password. Thanks to larrysansan for the idea
+
 ## Version 3.14.2-beta7
 
 The seventh 3.14.2 beta follows up on Discord feedback from beta6: hidden cards now close up for every kind of condition, Navigation uses the same Hide on Devices picker as other modules, and the Lock slider and Animated Forecast get a few extra options. This is a pre-release for testing — please report anything odd on GitHub or Discord.
