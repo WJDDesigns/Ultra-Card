@@ -7215,6 +7215,8 @@ export interface UltraCardConfig {
   display_conditions?: DisplayCondition[] | undefined;
   /** Per-HA-user visibility for the whole card. Empty/omitted = everyone. */
   user_visibility?: UserVisibility | undefined;
+  /** Hide the whole card on these device breakpoints (faded instead while editing). */
+  hidden_on_devices?: DeviceBreakpoint[] | undefined;
   // Favorite colors configuration
   favorite_colors?: FavoriteColor[] | undefined;
   // Haptic feedback configuration

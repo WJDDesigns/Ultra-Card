@@ -5159,7 +5159,8 @@
     "freespace.editor_bg_size_contain",
     "freespace.editor_bg_size_stretch",
     "freespace.editor_bg_size_repeat",
-    "freespace.editor_bg_size_original"
+    "freespace.editor_bg_size_original",
+    "editor.logic.card_visibility_title"
   ],
   "lastRun": "2026-09-30T06:46:18.527Z",
   "engine": "openai:gpt-4o-mini"

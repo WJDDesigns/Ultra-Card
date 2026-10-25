@@ -163,6 +163,21 @@ export class LogicService {
   }
 
   /**
+   * Whole-card visibility from Card Settings: per-user filter plus the card's
+   * display conditions (same condition types as rows, columns and modules).
+   */
+  public evaluateCardVisibility(config?: UltraCardConfig | null): boolean {
+    if (!config) return true;
+    if (!this.evaluateUserVisibility(config.user_visibility)) {
+      return false;
+    }
+    return this.evaluateDisplayConditions(
+      config.display_conditions || [],
+      config.display_mode || 'always'
+    );
+  }
+
+  /**
    * Evaluate display for a module that may have template_mode enabled
    * @param module The module to evaluate
    * @returns true if element should be visible, false otherwise

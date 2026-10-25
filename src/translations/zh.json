@@ -788,6 +788,7 @@
       "condition_type": "条件类型"
     },
     "logic": {
+      "card_visibility_title": "可见性",
       "hide_on_devices": "在设备上隐藏",
       "hide_on_devices_desc": "在特定屏幕尺寸下隐藏此元素。可用于为不同设备创建不同布局。",
       "user_visibility": {
