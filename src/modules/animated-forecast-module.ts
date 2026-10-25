@@ -30,6 +30,24 @@ const CHART_METRIC_LABELS: Record<AnimatedForecastChartMetric, string> = {
   wind_speed: 'Wind speed',
 };
 
+/**
+ * Hour label for the hourly view. `numberOnly` drops words some languages add,
+ * like the German "Uhr", but keeps AM/PM so 12-hour times stay clear.
+ */
+export function formatForecastHour(date: Date, lang: string, numberOnly: boolean): string {
+  if (!numberOnly) return date.toLocaleTimeString(lang, { hour: 'numeric' });
+  try {
+    const parts = new Intl.DateTimeFormat(lang, { hour: 'numeric' }).formatToParts(date);
+    const hour = parts.find(p => p.type === 'hour')?.value ?? String(date.getHours());
+    const period = parts.find(p => p.type === 'dayPeriod')?.value;
+    const periodFirst = parts.findIndex(p => p.type === 'dayPeriod') < parts.findIndex(p => p.type === 'hour');
+    if (!period) return hour;
+    return periodFirst ? `${period} ${hour}` : `${hour} ${period}`;
+  } catch {
+    return String(date.getHours());
+  }
+}
+
 export class UltraAnimatedForecastModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'animated_forecast',
@@ -449,7 +467,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         ${data.slots.map((slot: WeatherForecastSlot) => {
           const date = new Date(slot.datetime);
           const label = isHourly
-            ? date.toLocaleTimeString(lang, { hour: 'numeric' })
+            ? formatForecastHour(date, lang, module.hour_number_only === true)
             : date.toLocaleDateString(lang, { weekday: 'short' });
           const high = typeof slot.temperature === 'number' ? Math.round(slot.temperature) : undefined;
           const low =
@@ -505,7 +523,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       : ['precipitation_probability']) as AnimatedForecastChartMetric[];
     const height = module.chart_height || 48;
     const color = module.chart_color || module.accent_color || 'var(--primary-color)';
-    const style = module.chart_style || 'bar';
+    const defaultStyle = module.chart_style || 'bar';
     const byValue = module.chart_color_mode === 'value';
 
     const rows = metrics
@@ -548,6 +566,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         );
 
         const colorOf = (v: number) => (byValue ? forecastValueColor(metric, v, units) : color);
+        const style = module.chart_metric_styles?.[metric] || defaultStyle;
 
         if (style === 'line') {
           const n = values.length;

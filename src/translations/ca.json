@@ -3392,7 +3392,12 @@
       "chart_color_mode": "Colors",
       "chart_color_mode_desc": "Per valor acoloreix cada barra o punt segons el seu valor: UV segons l'escala de l'OMS, temperatura de blau a vermell, pluja de blau clar a fosc, vent de verd a vermell.",
       "chart_color_single": "Un color",
-      "chart_color_value": "Per valor"
+      "chart_color_value": "Per valor",
+      "hour_number_only": "Només el número d'hora",
+      "hour_number_only_desc": "Mostra només l'hora, per exemple 14 en lloc de 14 h. AM i PM es mantenen en idiomes de 12 hores.",
+      "chart_values_desc": "Marqueu els valors que voleu mostrar, trieu Barres o Línia per a cadascun i feu servir les fletxes per canviar-ne l'ordre. Els valors que la vostra integració meteorològica no ofereix s'ometen.",
+      "move_up": "Puja",
+      "move_down": "Baixa"
     },
     "animated_weather": {
       "entity_section": "Entitat Meteorològica",

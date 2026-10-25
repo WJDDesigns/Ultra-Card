@@ -3392,7 +3392,12 @@
       "chart_color_mode": "Barvy",
       "chart_color_mode_desc": "Podle hodnoty obarví každý sloupec nebo bod podle jeho hodnoty: UV podle stupnice WHO, teplota od modré po červenou, déšť od světle po tmavě modrou, vítr od zelené po červenou.",
       "chart_color_single": "Jedna barva",
-      "chart_color_value": "Podle hodnoty"
+      "chart_color_value": "Podle hodnoty",
+      "hour_number_only": "Pouze číslo hodiny",
+      "hour_number_only_desc": "Zobrazí jen hodinu, například 14 místo 14 Uhr. AM a PM zůstávají u 12hodinových jazyků.",
+      "chart_values_desc": "Zaškrtněte hodnoty k zobrazení, u každé zvolte Sloupce nebo Čáru a šipkami změňte pořadí. Hodnoty, které vaše integrace počasí neposkytuje, se přeskočí.",
+      "move_up": "Posunout nahoru",
+      "move_down": "Posunout dolů"
     },
     "animated_weather": {
       "entity_section": "Předpověď Počasí",

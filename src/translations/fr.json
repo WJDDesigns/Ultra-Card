@@ -3392,7 +3392,12 @@
       "chart_color_mode": "Couleurs",
       "chart_color_mode_desc": "Par valeur colore chaque barre ou point selon sa valeur : UV selon l'échelle de l'OMS, température du bleu au rouge, pluie du bleu clair au bleu foncé, vent du vert au rouge.",
       "chart_color_single": "Une couleur",
-      "chart_color_value": "Par valeur"
+      "chart_color_value": "Par valeur",
+      "hour_number_only": "Heure seule",
+      "hour_number_only_desc": "Affiche seulement l'heure, par exemple 14 au lieu de 14 h. AM et PM restent pour les langues au format 12 heures.",
+      "chart_values_desc": "Cochez les valeurs à afficher, choisissez Barres ou Ligne pour chacune et utilisez les flèches pour changer leur ordre. Les valeurs non fournies par votre intégration météo sont ignorées.",
+      "move_up": "Monter",
+      "move_down": "Descendre"
     },
     "animated_weather": {
       "entity_section": "Entité météo",

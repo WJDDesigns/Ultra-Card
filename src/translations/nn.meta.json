@@ -1935,7 +1935,12 @@
     "editor.navigation.visibility.is",
     "editor.navigation.visibility.is_not",
     "editor.navigation.visibility.condition",
-    "editor.navigation.visibility.state"
+    "editor.navigation.visibility.state",
+    "editor.animated_forecast.hour_number_only",
+    "editor.animated_forecast.hour_number_only_desc",
+    "editor.animated_forecast.chart_values_desc",
+    "editor.animated_forecast.move_up",
+    "editor.animated_forecast.move_down"
   ],
   "lastRun": "2026-05-03T22:41:08.454Z",
   "engine": "openai:gpt-4o-mini"

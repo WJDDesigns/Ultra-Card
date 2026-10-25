@@ -2789,8 +2789,11 @@ export class UltraCard extends LitElement {
 
   /** Whole card hides (no dashboard gap) when every row collapsed as empty. */
   private _isLayoutCollapsedEmpty(ctx: RenderContext): boolean {
-    if (!this._configCache?.hasHideWhenEmpty) return false;
     const rows = this.config?.layout?.rows || [];
+    // Every row hidden by its Logic (users, entity conditions, template) or by Hide on
+    // Devices: nothing is left to show, so the whole card hides and leaves no gap.
+    if (rows.length > 0 && rows.every(row => this._isRowHiddenByLogic(row, ctx))) return true;
+    if (!this._configCache?.hasHideWhenEmpty) return false;
     let anyEmpty = false;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -2802,6 +2805,20 @@ export class UltraCard extends LitElement {
       anyEmpty = true;
     }
     return anyEmpty;
+  }
+
+  private _isRowHiddenByLogic(row: CardRow, ctx: RenderContext): boolean {
+    if (row.hidden_on_devices?.includes(ctx.breakpoint)) return true;
+    if (!this._isLogicVisible(row, logicService.evaluateRowVisibility(row, this.config))) return true;
+    const columns = row.columns || [];
+    return (
+      columns.length > 0 &&
+      columns.every(
+        column =>
+          column.hidden_on_devices?.includes(ctx.breakpoint) ||
+          !this._isLogicVisible(column, logicService.evaluateColumnVisibility(column, this.config))
+      )
+    );
   }
 
   private _renderModule(module: CardModule, ctx: RenderContext): TemplateResult {

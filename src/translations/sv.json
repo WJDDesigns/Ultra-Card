@@ -3392,7 +3392,12 @@
       "chart_color_mode": "Färger",
       "chart_color_mode_desc": "Efter värde färgar varje stapel eller punkt efter värdet: UV enligt WHO-skalan, temperatur från blått till rött, regn från ljus- till mörkblått, vind från grönt till rött.",
       "chart_color_single": "En färg",
-      "chart_color_value": "Efter värde"
+      "chart_color_value": "Efter värde",
+      "hour_number_only": "Endast timtal",
+      "hour_number_only_desc": "Visar bara timmen, till exempel 14 i stället för 14 Uhr. AM och PM finns kvar för 12-timmarsspråk.",
+      "chart_values_desc": "Bocka för värdena som ska visas, välj Staplar eller Linje för vart och ett och ändra ordningen med pilarna. Värden som din väderintegration inte ger hoppas över.",
+      "move_up": "Flytta upp",
+      "move_down": "Flytta ned"
     },
     "animated_weather": {
       "entity_section": "Väderenhet",

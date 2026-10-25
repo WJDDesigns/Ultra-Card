@@ -1,5 +1,26 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta7
+
+The seventh 3.14.2 beta follows up on Discord feedback from beta6: hidden cards now close up for every kind of condition, Navigation uses the same Hide on Devices picker as other modules, and the Lock slider and Animated Forecast get a few extra options. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Animated Forecast: Bars or Line per value** - Each chart value (temperature, rain, UV, wind and so on) now picks its own Bars or Line style, so you can mix them in one chart
+- **Animated Forecast: change the order** - Up and down arrows next to each chart value set the order the rows show in
+- **Animated Forecast: Hour Number Only** - Shows just the hour (for example "14") instead of "14 Uhr" or "2 PM" in hourly forecasts. Thanks to larrysansan for all three ideas
+
+### 🔧 Improvements
+
+- **Navigation uses Hide on Devices** - Navigation items now use the same Desktop, Laptop, Tablet and Mobile picker as every other module. Existing desktop and mobile settings carry over
+- **Lock slider icon** - The slider knob icon is centred and switches from a locked to an unlocked icon (or closed to open door) when you reach the end. Thanks to larrysansan for the idea
+
+### 🐛 Bug Fixes
+
+- **Hidden Ultra Card still leaving a gap** - beta6 only closed up the space for Visible to Users. Cards whose rows are all hidden by an entity condition, Logic or Hide on Devices now close up too. Note that Home Assistant always shows hidden cards while the dashboard is in edit mode. Thanks to larrysansan for reporting it
+
 ## Version 3.14.2-beta6
 
 The sixth 3.14.2 beta works through the Discord feature requests and bug reports: slide to unlock and PIN codes for the Lock module, per-item visibility in Navigation, more forecast and colour by value in Animated Forecast, and easier global variables. This is a pre-release for testing — please report anything odd on GitHub or Discord.
