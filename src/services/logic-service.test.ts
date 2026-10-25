@@ -164,3 +164,42 @@ describe('LogicService evaluateOverlayModuleVisibility', () => {
     );
   });
 });
+
+describe('LogicService $variable condition entities', () => {
+  it('resolves a global variable used as the condition entity', async () => {
+    const { ucCustomVariablesService } = await import('./uc-custom-variables-service');
+    const v = ucCustomVariablesService.addVariable('window_office', 'binary_sensor.office_window');
+    logicService.setHass({
+      states: { 'binary_sensor.office_window': { state: 'on', attributes: {} } },
+    } as unknown as HomeAssistant);
+    const cond = (value: string) => ({
+      id: 'c1',
+      type: 'entity_state' as const,
+      entity: '$window_office',
+      operator: '=' as const,
+      value,
+    });
+    expect(logicService.evaluateDisplayConditions([cond('on')], 'every')).toBe(true);
+    expect(logicService.evaluateDisplayConditions([cond('off')], 'every')).toBe(false);
+    if (v) ucCustomVariablesService.deleteVariable(v.id);
+  });
+
+  it('prefers the card variable over a global one with the same name', () => {
+    logicService.setHass({
+      states: {
+        'light.card': { state: 'on', attributes: {} },
+      },
+    } as unknown as HomeAssistant);
+    logicService.setCardConfig({
+      type: 'custom:ultra-card',
+      layout: { rows: [] },
+      _customVariables: [
+        { id: 'x', name: 'lamp', entity: 'light.card', value_type: 'state', order: 0, created: '', isGlobal: false },
+      ],
+    } as any);
+    const cond = (value: string) => ({ id: 'c', type: 'entity_state' as const, entity: '$lamp', operator: '=' as const, value });
+    expect(logicService.evaluateDisplayConditions([cond('on')], 'every')).toBe(true);
+    expect(logicService.evaluateDisplayConditions([cond('off')], 'every')).toBe(false);
+    logicService.setCardConfig(undefined);
+  });
+});

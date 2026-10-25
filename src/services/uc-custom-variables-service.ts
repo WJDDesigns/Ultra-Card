@@ -97,7 +97,8 @@ class UcCustomVariablesService {
     valueType: 'entity_id' | 'state' | 'attribute' = 'state',
     isGlobal: boolean = true,
     attributeName?: string,
-    existingCardVars: CustomVariable[] = []
+    existingCardVars: CustomVariable[] = [],
+    group?: string
   ): CustomVariable | null {
     // Validate variable name
     const cleanName = this._sanitizeVariableName(name);
@@ -127,6 +128,7 @@ class UcCustomVariablesService {
       order: this._getNextOrder(),
       created: new Date().toISOString(),
       isGlobal: isGlobal,
+      ...(group?.trim() ? { group: group.trim() } : {}),
     };
 
     this._variables.push(newVariable);
@@ -193,7 +195,7 @@ class UcCustomVariablesService {
    */
   updateVariable(
     id: string,
-    updates: Partial<Pick<CustomVariable, 'name' | 'entity' | 'value_type' | 'attribute_name'>>,
+    updates: Partial<Pick<CustomVariable, 'name' | 'entity' | 'value_type' | 'attribute_name' | 'group'>>,
     existingCardVars: CustomVariable[] = []
   ): boolean {
     const index = this._variables.findIndex(v => v.id === id);
@@ -226,6 +228,10 @@ class UcCustomVariablesService {
       }
 
       updates.name = cleanName;
+    }
+
+    if ('group' in updates) {
+      updates.group = updates.group?.trim() || undefined;
     }
 
     this._variables[index] = {
