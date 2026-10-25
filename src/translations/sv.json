@@ -2889,7 +2889,15 @@
       "code_clear": "Rensa",
       "code_placeholder": "Kod",
       "slide_to_unlock": "Skjut för att låsa upp",
-      "slide_to_open": "Skjut för att öppna"
+      "slide_to_open": "Skjut för att öppna",
+      "unlock_style_pattern": "Rita ett mönster",
+      "pattern_title": "Upplåsningsmönster",
+      "pattern_desc": "Rita mönstret som låser upp och öppnar det här låset. Det sparas i instrumentpanelen, så det förhindrar oavsiktlig upplåsning, men det är inget riktigt lösenord.",
+      "pattern_prompt": "Rita ditt mönster",
+      "pattern_wrong": "Fel mönster, försök igen",
+      "pattern_saved": "Mönster sparat. Rita igen för att ändra det.",
+      "pattern_none": "Inget mönster än, så upplåsning använder den vanliga bekräftelsen.",
+      "pattern_too_short": "Anslut minst 4 punkter"
     },
     "text_input": {
       "entity": {

@@ -2889,7 +2889,15 @@
       "code_clear": "Wyczyść",
       "code_placeholder": "Kod",
       "slide_to_unlock": "Przesuń, aby odblokować",
-      "slide_to_open": "Przesuń, aby otworzyć"
+      "slide_to_open": "Przesuń, aby otworzyć",
+      "unlock_style_pattern": "Narysuj wzór",
+      "pattern_title": "Wzór odblokowania",
+      "pattern_desc": "Narysuj wzór, który odblokowuje i otwiera ten zamek. Jest zapisany w panelu, więc chroni przed przypadkowym odblokowaniem, ale nie jest prawdziwym hasłem.",
+      "pattern_prompt": "Narysuj swój wzór",
+      "pattern_wrong": "Nieprawidłowy wzór, spróbuj ponownie",
+      "pattern_saved": "Wzór zapisany. Narysuj ponownie, aby go zmienić.",
+      "pattern_none": "Brak wzoru, więc odblokowanie używa zwykłego potwierdzenia.",
+      "pattern_too_short": "Połącz co najmniej 4 punkty"
     },
     "text_input": {
       "entity": {

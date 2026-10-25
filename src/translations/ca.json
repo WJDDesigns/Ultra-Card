@@ -2889,7 +2889,15 @@
       "code_clear": "Esborra",
       "code_placeholder": "Codi",
       "slide_to_unlock": "Llisca per desbloquejar",
-      "slide_to_open": "Llisca per obrir"
+      "slide_to_open": "Llisca per obrir",
+      "unlock_style_pattern": "Dibuixar un patró",
+      "pattern_title": "Patró de desbloqueig",
+      "pattern_desc": "Dibuixa el patró que desbloqueja i obre aquest pany. Es desa al tauler, així que evita desbloquejos accidentals, però no és una contrasenya real.",
+      "pattern_prompt": "Dibuixa el teu patró",
+      "pattern_wrong": "Patró incorrecte, torna-ho a provar",
+      "pattern_saved": "Patró desat. Dibuixa'l de nou per canviar-lo.",
+      "pattern_none": "Encara no hi ha cap patró, així que el desbloqueig fa servir la confirmació normal.",
+      "pattern_too_short": "Connecta almenys 4 punts"
     },
     "text_input": {
       "entity": {

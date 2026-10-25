@@ -2889,7 +2889,15 @@
       "code_clear": "Tøm",
       "code_placeholder": "Kode",
       "slide_to_unlock": "Skyv for å låse opp",
-      "slide_to_open": "Skyv for å åpne"
+      "slide_to_open": "Skyv for å åpne",
+      "unlock_style_pattern": "Tegn et mønster",
+      "pattern_title": "Opplåsingsmønster",
+      "pattern_desc": "Tegn mønsteret som låser opp og åpner denne låsen. Det lagres i dashbordet, så det hindrer utilsiktet opplåsing, men det er ikke et ekte passord.",
+      "pattern_prompt": "Tegn mønsteret ditt",
+      "pattern_wrong": "Feil mønster, prøv igjen",
+      "pattern_saved": "Mønster lagret. Tegn på nytt for å endre det.",
+      "pattern_none": "Ingen mønster ennå, så opplåsing bruker vanlig bekreftelse.",
+      "pattern_too_short": "Koble sammen minst 4 prikker"
     },
     "text_input": {
       "entity": {

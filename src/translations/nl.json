@@ -2889,7 +2889,15 @@
       "code_clear": "Wissen",
       "code_placeholder": "Code",
       "slide_to_unlock": "Schuif om te ontgrendelen",
-      "slide_to_open": "Schuif om te openen"
+      "slide_to_open": "Schuif om te openen",
+      "unlock_style_pattern": "Patroon tekenen",
+      "pattern_title": "Ontgrendelpatroon",
+      "pattern_desc": "Teken het patroon dat dit slot ontgrendelt en opent. Het wordt in het dashboard opgeslagen, dus het voorkomt per ongeluk ontgrendelen, maar het is geen echt wachtwoord.",
+      "pattern_prompt": "Teken je patroon",
+      "pattern_wrong": "Verkeerd patroon, probeer het opnieuw",
+      "pattern_saved": "Patroon opgeslagen. Teken opnieuw om het te wijzigen.",
+      "pattern_none": "Nog geen patroon, dus ontgrendelen gebruikt de normale bevestiging.",
+      "pattern_too_short": "Verbind minstens 4 punten"
     },
     "text_input": {
       "entity": {

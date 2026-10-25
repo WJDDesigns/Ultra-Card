@@ -2840,7 +2840,15 @@
       "code_clear": "清除",
       "code_placeholder": "代码",
       "slide_to_unlock": "滑动解锁",
-      "slide_to_open": "滑动打开"
+      "slide_to_open": "滑动打开",
+      "unlock_style_pattern": "绘制图案",
+      "pattern_title": "解锁图案",
+      "pattern_desc": "绘制用于解锁和打开此门锁的图案。图案保存在仪表盘中，可防止误解锁，但并不是真正的密码。",
+      "pattern_prompt": "绘制您的图案",
+      "pattern_wrong": "图案错误，请重试",
+      "pattern_saved": "图案已保存。重新绘制即可更改。",
+      "pattern_none": "尚未设置图案，因此解锁使用普通确认。",
+      "pattern_too_short": "至少连接 4 个点"
     },
     "living_canvas": {
       "title": "Living Canvas",
