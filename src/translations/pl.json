@@ -2847,6 +2847,7 @@
       "show_lock_buttons": "Pokaż przyciski zablokuj / odblokuj",
       "show_lock_buttons_desc": "Pokaż przyciski Zablokuj i Odblokuj (układ kompaktowy pokazuje jeden przełącznik)",
       "show_open_button_unsupported": "Ten zamek nie obsługuje otwierania (brak funkcji Otwórz), więc nie ma przycisku Otwórz",
+      "align_spread": "Rozłożone",
       "layout_section": "Układ",
       "layout_desc": "Styl wizualny i wyrównanie.",
       "layout": "Układ",

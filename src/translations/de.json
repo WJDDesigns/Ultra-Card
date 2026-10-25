@@ -2851,6 +2851,7 @@
       "show_lock_buttons": "Sperren-/Entsperren-Schaltflächen anzeigen",
       "show_lock_buttons_desc": "Die Schaltflächen Sperren und Entsperren anzeigen (das kompakte Layout zeigt eine Umschalt-Schaltfläche)",
       "show_open_button_unsupported": "Dieses Schloss kann nicht entriegeln (keine Öffnen-Funktion), daher gibt es keine Öffnen-Schaltfläche",
+      "align_spread": "Verteilt",
       "layout_section": "Layout",
       "layout_desc": "Visueller Stil und Ausrichtung.",
       "layout": "Layout",

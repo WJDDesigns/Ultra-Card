@@ -2847,6 +2847,7 @@
       "show_lock_buttons": "Vis lås / lås opp-knappar",
       "show_lock_buttons_desc": "Vis knappane Lås og Lås opp (kompakt oppsett viser éin vekslarknapp)",
       "show_open_button_unsupported": "Denne låsen kan ikkje opne (ingen Opne-funksjon), så det finst ingen Opne-knapp å vise",
+      "align_spread": "Spreidd",
       "layout_section": "Oppsett",
       "layout_desc": "Visuell stil og justering.",
       "layout": "Oppsett",

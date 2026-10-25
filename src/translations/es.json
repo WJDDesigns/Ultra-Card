@@ -2847,6 +2847,7 @@
       "show_lock_buttons": "Mostrar botones de bloquear / desbloquear",
       "show_lock_buttons_desc": "Mostrar los botones Bloquear y Desbloquear (el diseño compacto muestra un solo botón)",
       "show_open_button_unsupported": "Esta cerradura no puede abrir el pestillo (sin función Abrir), así que no hay botón Abrir",
+      "align_spread": "Repartido",
       "layout_section": "Diseño",
       "layout_desc": "Estilo visual y alineación.",
       "layout": "Diseño",

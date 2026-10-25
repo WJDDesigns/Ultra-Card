@@ -2798,6 +2798,7 @@
       "show_lock_buttons": "显示上锁 / 解锁按钮",
       "show_lock_buttons_desc": "显示上锁和解锁按钮（紧凑布局只显示一个切换按钮）",
       "show_open_button_unsupported": "此锁不支持开门（无开门功能），因此没有可显示的开门按钮",
+      "align_spread": "分散",
       "layout_section": "布局",
       "layout_desc": "视觉样式与对齐方式。",
       "layout": "布局",

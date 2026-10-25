@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2-beta5
+
+The fifth 3.14.2 beta makes the Lock module's Alignment setting work in every layout. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Lock alignment in Standard and Compact** - Alignment only worked in the Hero layout. Left and Right now move the lock to that side in the Standard and Compact layouts too. Their default stays spread across the card and is now called "Spread out", so existing cards look the same. Thanks to larrysansan for reporting it
+
 ## Version 3.14.2-beta4
 
 The fourth 3.14.2 beta syncs global variables across your devices, adds button options to the Lock module, and fixes two things reported in Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.

@@ -2847,6 +2847,7 @@
       "show_lock_buttons": "Vis lås / lås op-knapper",
       "show_lock_buttons_desc": "Vis knapperne Lås og Lås op (det kompakte layout viser én skifteknap)",
       "show_open_button_unsupported": "Denne lås kan ikke åbne (ingen Åbn-funktion), så der er ingen Åbn-knap at vise",
+      "align_spread": "Fordelt",
       "layout_section": "Layout",
       "layout_desc": "Visuel stil og justering.",
       "layout": "Layout",

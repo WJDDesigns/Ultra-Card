@@ -2847,6 +2847,7 @@
       "show_lock_buttons": "Zobrazit tlačítka zamknout / odemknout",
       "show_lock_buttons_desc": "Zobrazit tlačítka Zamknout a Odemknout (kompaktní rozložení zobrazuje jedno přepínací tlačítko)",
       "show_open_button_unsupported": "Tento zámek neumí odjistit (chybí funkce Otevřít), takže tlačítko Otevřít nelze zobrazit",
+      "align_spread": "Roztažené",
       "layout_section": "Rozložení",
       "layout_desc": "Vizuální styl a zarovnání.",
       "layout": "Rozložení",
