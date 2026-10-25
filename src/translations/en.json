@@ -2798,6 +2798,7 @@
       "show_lock_buttons": "Show lock / unlock buttons",
       "show_lock_buttons_desc": "Show the Lock and Unlock buttons (the compact layout shows one toggle button)",
       "show_open_button_unsupported": "This lock can't unlatch (no Open feature), so there's no Open button to show",
+      "align_spread": "Spread out",
       "layout_section": "Layout",
       "layout_desc": "Visual style and alignment.",
       "layout": "Layout",

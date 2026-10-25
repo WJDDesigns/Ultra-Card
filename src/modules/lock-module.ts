@@ -252,12 +252,20 @@ export class UltraLockModule extends BaseUltraModule {
             },
             {
               title: localize('editor.lock.alignment', lang, 'Alignment'),
-              description: localize('editor.lock.alignment_desc', lang, 'Content alignment in the hero layout'),
+              description: localize('editor.lock.alignment_desc', lang, 'Align content'),
               hass,
               data: { alignment: lock.alignment || 'center' },
               schema: [this.selectField('alignment', [
                 { value: 'left', label: localize('editor.lock.align_left', lang, 'Left') },
-                { value: 'center', label: localize('editor.lock.align_center', lang, 'Center') },
+                // Standard and compact rows spread across the card by default, so their
+                // "center" value keeps that look under a clearer name.
+                {
+                  value: 'center',
+                  label:
+                    (lock.layout || 'standard') === 'hero'
+                      ? localize('editor.lock.align_center', lang, 'Center')
+                      : localize('editor.lock.align_spread', lang, 'Spread out'),
+                },
                 { value: 'right', label: localize('editor.lock.align_right', lang, 'Right') },
               ])],
               onChange: (e: CustomEvent) => {
@@ -476,7 +484,7 @@ export class UltraLockModule extends BaseUltraModule {
       `;
     } else if (layout === 'compact') {
       content = html`
-        <div class="uc-lock uc-lock--compact">
+        <div class="uc-lock uc-lock--compact ${alignClass}">
           <div class="uc-lock-compact__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
@@ -510,7 +518,7 @@ export class UltraLockModule extends BaseUltraModule {
       `;
     } else {
       content = html`
-        <div class="uc-lock uc-lock--standard">
+        <div class="uc-lock uc-lock--standard ${alignClass}">
           <div class="uc-lock-std__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well uc-lock-icon-well--std ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
@@ -654,6 +662,16 @@ export class UltraLockModule extends BaseUltraModule {
         overflow: hidden;
         text-overflow: ellipsis;
       }
+
+      /* Left / Right pack the row to one side; the default spreads it across the card */
+      .uc-lock--standard.uc-lock--align-left .uc-lock-std__meta,
+      .uc-lock--standard.uc-lock--align-right .uc-lock-std__meta { flex: 0 1 auto; }
+      .uc-lock--standard.uc-lock--align-right .uc-lock-std__row { justify-content: flex-end; }
+      .uc-lock--standard.uc-lock--align-right .uc-lock-std__meta { text-align: right; }
+      .uc-lock--compact.uc-lock--align-left .uc-lock-chip-label,
+      .uc-lock--compact.uc-lock--align-right .uc-lock-chip-label { flex: 0 1 auto; }
+      .uc-lock--compact.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
+      .uc-lock--compact.uc-lock--align-right .uc-lock-chip-label { text-align: right; }
 
       /* ═══ COMPACT (chip) ═════════════════════════ */
       .uc-lock--compact { padding: 6px 10px; }

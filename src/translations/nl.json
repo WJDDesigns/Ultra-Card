@@ -2847,6 +2847,7 @@
       "show_lock_buttons": "Knoppen vergrendelen / ontgrendelen tonen",
       "show_lock_buttons_desc": "Toon de knoppen Vergrendelen en Ontgrendelen (de compacte indeling toont één schakelknop)",
       "show_open_button_unsupported": "Dit slot kan niet openen (geen Openen-functie), dus er is geen Openen-knop",
+      "align_spread": "Verspreid",
       "layout_section": "Indeling",
       "layout_desc": "Visuele stijl en uitlijning.",
       "layout": "Indeling",
