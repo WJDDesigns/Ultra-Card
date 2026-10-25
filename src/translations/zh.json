@@ -3717,7 +3717,12 @@
       "chart_color_mode": "颜色",
       "chart_color_mode_desc": "按数值为每个柱或点着色：UV 按 WHO 等级，温度从蓝到红，降雨从浅蓝到深蓝，风从绿到红。",
       "chart_color_single": "单一颜色",
-      "chart_color_value": "按数值"
+      "chart_color_value": "按数值",
+      "hour_number_only": "仅显示小时数",
+      "hour_number_only_desc": "只显示小时，例如 14 而不是 14 时。12 小时制语言仍保留上午/下午。",
+      "chart_values_desc": "勾选要显示的数值，为每项选择柱状或折线，并用箭头调整顺序。天气集成未提供的数值会被跳过。",
+      "move_up": "上移",
+      "move_down": "下移"
     },
     "animated_weather": {
       "entity_section": "天气实体",

@@ -11,7 +11,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 @customElement('uc-slide-confirm')
 export class UcSlideConfirm extends LitElement {
   @property({ type: String }) label = '';
-  @property({ type: String }) icon = 'mdi:lock-open-variant';
+  @property({ type: String }) icon = 'mdi:lock';
+  /** Icon shown once the knob is far enough to confirm (e.g. an open lock). */
+  @property({ type: String, attribute: 'done-icon' }) doneIcon = '';
   @property({ type: Boolean, reflect: true }) disabled = false;
 
   @state() private _offset = 0;
@@ -79,6 +81,14 @@ export class UcSlideConfirm extends LitElement {
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       --mdc-icon-size: 22px;
     }
+    .knob ha-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--mdc-icon-size);
+      height: var(--mdc-icon-size);
+      line-height: 0;
+    }
     .knob:not(.dragging) {
       transition: transform 0.25s ease;
     }
@@ -142,6 +152,8 @@ export class UcSlideConfirm extends LitElement {
 
   override render() {
     const knobWidth = 40;
+    const atEnd = this._max > 0 && this._offset >= this._max * 0.9;
+    const icon = atEnd && this.doneIcon ? this.doneIcon : this.icon;
     return html`
       <div class="track">
         <div class="fill" style="width:${this._offset + knobWidth + 6}px;"></div>
@@ -163,7 +175,7 @@ export class UcSlideConfirm extends LitElement {
           @click=${(e: Event) => e.stopPropagation()}
           @keydown=${this._onKey}
         >
-          <ha-icon icon=${this.icon}></ha-icon>
+          <ha-icon icon=${icon}></ha-icon>
         </button>
       </div>
     `;

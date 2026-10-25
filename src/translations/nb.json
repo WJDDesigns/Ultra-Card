@@ -3392,7 +3392,12 @@
       "chart_color_mode": "Farger",
       "chart_color_mode_desc": "Etter verdi farger hver søyle eller punkt etter verdien: UV etter WHO-skalaen, temperatur fra blått til rødt, regn fra lys- til mørkeblått, vind fra grønt til rødt.",
       "chart_color_single": "Én farge",
-      "chart_color_value": "Etter verdi"
+      "chart_color_value": "Etter verdi",
+      "hour_number_only": "Bare timetall",
+      "hour_number_only_desc": "Viser bare timen, for eksempel 14 i stedet for 14 Uhr. AM og PM beholdes for 12-timersspråk.",
+      "chart_values_desc": "Kryss av verdiene som skal vises, velg Søyler eller Linje for hver, og bruk pilene til å endre rekkefølgen. Verdier værintegrasjonen ikke leverer, hoppes over.",
+      "move_up": "Flytt opp",
+      "move_down": "Flytt ned"
     },
     "animated_weather": {
       "entity_section": "Vær-enhet",

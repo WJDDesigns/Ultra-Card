@@ -3392,7 +3392,12 @@
       "chart_color_mode": "Kleuren",
       "chart_color_mode_desc": "Op waarde kleurt elke balk of punt naar de waarde: UV volgens de WHO-schaal, temperatuur van blauw naar rood, regen van licht- naar donkerblauw, wind van groen naar rood.",
       "chart_color_single": "Eén kleur",
-      "chart_color_value": "Op waarde"
+      "chart_color_value": "Op waarde",
+      "hour_number_only": "Alleen uurgetal",
+      "hour_number_only_desc": "Toont alleen het uur, bijvoorbeeld 14 in plaats van 14 Uhr. AM en PM blijven staan bij 12-uurstalen.",
+      "chart_values_desc": "Vink de waarden aan die je wilt tonen, kies per waarde Balken of Lijn en verander de volgorde met de pijlen. Waarden die je weerintegratie niet levert, worden overgeslagen.",
+      "move_up": "Omhoog",
+      "move_down": "Omlaag"
     },
     "animated_weather": {
       "entity_section": "Weer Entiteit",

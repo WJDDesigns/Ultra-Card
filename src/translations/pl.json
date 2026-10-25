@@ -3392,7 +3392,12 @@
       "chart_color_mode": "Kolory",
       "chart_color_mode_desc": "Według wartości koloruje każdy słupek lub punkt według jego wartości: UV według skali WHO, temperatura od niebieskiego do czerwonego, deszcz od jasno- do ciemnoniebieskiego, wiatr od zielonego do czerwonego.",
       "chart_color_single": "Jeden kolor",
-      "chart_color_value": "Według wartości"
+      "chart_color_value": "Według wartości",
+      "hour_number_only": "Tylko numer godziny",
+      "hour_number_only_desc": "Pokazuje tylko godzinę, np. 14 zamiast 14 Uhr. AM i PM zostają w językach 12-godzinnych.",
+      "chart_values_desc": "Zaznacz wartości do pokazania, wybierz dla każdej Słupki lub Linię i zmień kolejność strzałkami. Wartości, których nie dostarcza integracja pogody, są pomijane.",
+      "move_up": "Przenieś w górę",
+      "move_down": "Przenieś w dół"
     },
     "animated_weather": {
       "entity_section": "Jednostka Pogodowa",

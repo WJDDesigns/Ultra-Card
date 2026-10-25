@@ -3079,8 +3079,8 @@ class UcNavigationService {
   }
 
   /**
-   * Per-route / per-stack visibility set in the editor: users, desktop or mobile
-   * layout, and an entity state. Works alongside the `hidden` template.
+   * Per-route / per-stack visibility set in the editor: users, screen size
+   * (Hide on Devices) and an entity state. Works alongside the `hidden` template.
    */
   private isNavItemVisible(
     item: NavItemVisibility,
@@ -3091,7 +3091,9 @@ class UcNavigationService {
       logicService.setHass(hass);
       if (!logicService.evaluateUserVisibility(item.user_visibility)) return false;
     }
-    if (item.hide_on?.length) {
+    if (item.hidden_on_devices?.length) {
+      if (item.hidden_on_devices.includes(responsiveDesignService.getCurrentBreakpoint())) return false;
+    } else if (item.hide_on?.length) {
       const device = this.isDesktop(navModule.nav_desktop) ? 'desktop' : 'mobile';
       if (item.hide_on.includes(device)) return false;
     }

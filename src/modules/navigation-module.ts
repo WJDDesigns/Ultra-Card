@@ -11,6 +11,7 @@ import {
   UltraCardConfig,
   PopupModule,
   NavItemVisibility,
+  DeviceBreakpoint,
 } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { UltraLinkComponent } from '../components/ultra-link';
@@ -21,6 +22,7 @@ import '../components/navigation-picker';
 import '../entity-picker';
 import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
+import { renderHideOnDevicesSection } from '../tabs/uc-hide-on-devices-section';
 
 // Navbar style presets (matching UC visual design)
 export type NavbarStylePreset =
@@ -3013,12 +3015,15 @@ export class UltraNavigationModule extends BaseUltraModule {
     update: (updates: Partial<NavItemVisibility>) => void
   ): TemplateResult {
     const lang = hass?.locale?.language || 'en';
-    const hideOn = item.hide_on || [];
+    // Items saved with the beta6 desktop/mobile toggles start from the matching breakpoints.
+    const hiddenOnDevices: DeviceBreakpoint[] =
+      item.hidden_on_devices ||
+      (item.hide_on || []).flatMap(d =>
+        d === 'desktop'
+          ? (['desktop', 'laptop'] as DeviceBreakpoint[])
+          : (['tablet', 'mobile'] as DeviceBreakpoint[])
+      );
     const cond = item.show_when;
-    const toggleDevice = (device: 'desktop' | 'mobile', hidden: boolean) => {
-      const next = hidden ? [...new Set([...hideOn, device])] : hideOn.filter(d => d !== device);
-      update({ hide_on: next.length ? next : undefined });
-    };
     const setCond = (next: Partial<NonNullable<NavItemVisibility['show_when']>>) => {
       const merged = { entity: '', operator: '=' as const, state: '', ...cond, ...next };
       update({ show_when: merged.entity ? merged : undefined });
@@ -3053,23 +3058,10 @@ export class UltraNavigationModule extends BaseUltraModule {
           update({ user_visibility: next })
         )}
 
-        ${section(
-          localize('editor.navigation.visibility.hide_on', lang, 'Hide on'),
-          localize(
-            'editor.navigation.visibility.hide_on_desc',
-            lang,
-            'Hide this item while the navbar uses its desktop or mobile layout.'
-          ),
-          { hide_desktop: hideOn.includes('desktop'), hide_mobile: hideOn.includes('mobile') },
-          [
-            { name: 'hide_desktop', label: localize('editor.navigation.visibility.desktop', lang, 'Desktop'), selector: { boolean: {} } },
-            { name: 'hide_mobile', label: localize('editor.navigation.visibility.mobile', lang, 'Mobile'), selector: { boolean: {} } },
-          ],
-          (e: CustomEvent) => {
-            const v = e.detail.value || {};
-            if (!!v.hide_desktop !== hideOn.includes('desktop')) toggleDevice('desktop', !!v.hide_desktop);
-            else if (!!v.hide_mobile !== hideOn.includes('mobile')) toggleDevice('mobile', !!v.hide_mobile);
-          }
+        ${renderHideOnDevicesSection(
+          hiddenOnDevices,
+          next => update({ hidden_on_devices: next, hide_on: undefined }),
+          lang
         )}
 
         ${section(

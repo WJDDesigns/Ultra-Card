@@ -3396,7 +3396,12 @@
       "chart_color_mode": "Farben",
       "chart_color_mode_desc": "Nach Wert färbt jeden Balken oder Punkt nach seinem Wert: UV nach der WHO-Skala, Temperatur von Blau bis Rot, Regen von Hell- bis Dunkelblau, Wind von Grün bis Rot.",
       "chart_color_single": "Eine Farbe",
-      "chart_color_value": "Nach Wert"
+      "chart_color_value": "Nach Wert",
+      "hour_number_only": "Nur Stundenzahl",
+      "hour_number_only_desc": "Zeigt nur die Stunde, zum Beispiel 14 statt 14 Uhr. AM und PM bleiben bei 12-Stunden-Sprachen erhalten.",
+      "chart_values_desc": "Haken Sie die anzuzeigenden Werte an, wählen Sie für jeden Balken oder Linie und ändern Sie die Reihenfolge mit den Pfeilen. Werte, die Ihre Wetter-Integration nicht liefert, werden übersprungen.",
+      "move_up": "Nach oben",
+      "move_down": "Nach unten"
     },
     "animated_weather": {
       "entity_section": "Wetterentität",

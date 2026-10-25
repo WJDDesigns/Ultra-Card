@@ -502,7 +502,8 @@ export class UltraLockModule extends BaseUltraModule {
             ${showLockBtns && !isUnlocked
               ? html`<uc-slide-confirm
                   .label=${localize('editor.lock.slide_to_unlock', lang, 'Slide to unlock')}
-                  .icon=${'mdi:lock-open-variant'}
+                  .icon=${'mdi:lock'}
+                  .doneIcon=${'mdi:lock-open-variant'}
                   ?disabled=${controlsDisabled}
                   @confirmed=${onUnlock}
                 ></uc-slide-confirm>`
@@ -510,7 +511,8 @@ export class UltraLockModule extends BaseUltraModule {
             ${showOpen
               ? html`<uc-slide-confirm
                   .label=${localize('editor.lock.slide_to_open', lang, 'Slide to open')}
-                  .icon=${'mdi:door-open'}
+                  .icon=${'mdi:door-closed'}
+                  .doneIcon=${'mdi:door-open'}
                   ?disabled=${controlsDisabled}
                   @confirmed=${onOpen}
                 ></uc-slide-confirm>`

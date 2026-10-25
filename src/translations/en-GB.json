@@ -3397,7 +3397,12 @@
       "chart_color_mode": "Colours",
       "chart_color_mode_desc": "By Value colours each bar or point by its value: UV by the WHO scale, temperature from blue to red, rain from light to dark blue, wind from green to red.",
       "chart_color_single": "One Colour",
-      "chart_color_value": "By Value"
+      "chart_color_value": "By Value",
+      "hour_number_only": "Hour Number Only",
+      "hour_number_only_desc": "Shows just the hour, for example 14 instead of 14 Uhr. AM and PM stay for 12-hour languages.",
+      "chart_values_desc": "Tick the values to show, pick Bars or Line for each, and use the arrows to change their order. Values your weather integration doesn't provide are skipped.",
+      "move_up": "Move up",
+      "move_down": "Move down"
     },
     "animated_weather": {
       "entity_section": "Weather Entity",

@@ -4091,11 +4091,13 @@ export interface AnimatedForecastModule extends BaseModule {
   temperature_unit?: 'F' | 'C' | undefined; // Temperature unit (default: F)
   allow_wrap?: boolean | undefined; // Allow forecast days to wrap to new rows
   swipe_more?: boolean | undefined; // Load more days/hours and swipe sideways to see them (default: false)
+  hour_number_only?: boolean | undefined; // Hourly labels show just the hour, e.g. "14" not "14 Uhr" (default: false)
 
   // Chart rows under the forecast
   show_chart?: boolean | undefined;
   chart_metrics?: AnimatedForecastChartMetric[] | undefined; // default: ['precipitation_probability']
   chart_style?: 'bar' | 'line' | undefined; // default: bar
+  chart_metric_styles?: Partial<Record<AnimatedForecastChartMetric, 'bar' | 'line'>> | undefined; // per value, overrides chart_style
   chart_height?: number | undefined; // Height of each row in px (default: 48)
   chart_color?: string | undefined; // default: accent color
   chart_color_mode?: 'single' | 'value' | undefined; // 'value' colours each point by its value (default: single)
@@ -4544,7 +4546,9 @@ export interface NavBadgeConfig {
 export interface NavItemVisibility {
   /** Show only for / hide for these Home Assistant users */
   user_visibility?: UserVisibility | undefined;
-  /** Hide when the navbar is in its desktop or mobile layout */
+  /** Hide on these screen sizes (same breakpoints as module Hide on Devices) */
+  hidden_on_devices?: DeviceBreakpoint[] | undefined;
+  /** @deprecated 3.14.2-beta6 only: navbar desktop/mobile layout. Still honoured until edited. */
   hide_on?: Array<'desktop' | 'mobile'> | undefined;
   /** Show only while an entity is (or is not) in a state */
   show_when?: { entity: string; operator?: '=' | '!=' | undefined; state?: string | undefined } | undefined;
