@@ -819,8 +819,11 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         border-radius: var(--uc-r-4, 4px) var(--uc-r-4, 4px) 0 0;
       }
 
+      /* The line spans every column; widening it by one gap (half on each side) puts point
+         (i + 0.5) / n exactly over column i's centre instead of drifting up to 8px at the ends. */
       .forecast-chart-line {
         grid-column: 1 / -1;
+        margin: 0 -8px;
       }
 
       .forecast-chart-line svg {
