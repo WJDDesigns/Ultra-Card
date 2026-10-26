@@ -1,6 +1,7 @@
 import type { HomeAssistant } from '../ha/types';
 import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 import { CardModule, UltraCardConfig } from '../types';
+import { getPopupForModule } from './popup-trigger-registry';
 
 /**
  * Configuration for gesture handler
@@ -32,6 +33,16 @@ function isExplicitNothingAction(action: TapActionConfig | undefined | null): bo
   if (actionType === 'nothing' || actionType === 'none') return true;
 
   return false;
+}
+
+/**
+ * Whether a popup uses this module as its "Trigger via Module" source.
+ *
+ * Checked at tap time rather than when handlers are created: the popup registers
+ * itself when it renders, which can be after the trigger module rendered.
+ */
+function isPopupTriggerModule(module: CardModule | undefined): boolean {
+  return Boolean(module?.id && getPopupForModule(module.id));
 }
 
 /**
@@ -83,7 +94,8 @@ function isInteractiveElement(target: HTMLElement, boundary: HTMLElement): boole
  * actionable when there is an entity, because it falls through to more-info.
  */
 export function hasActionableGesture(config: GestureConfig): boolean {
-  const { tap_action, hold_action, double_tap_action, entity } = config;
+  const { tap_action, hold_action, double_tap_action, entity, module } = config;
+  if (isPopupTriggerModule(module)) return true;
   const actions = [tap_action, hold_action, double_tap_action];
   if (actions.some(action => action && !isExplicitNothingAction(action))) return true;
   // All three unset falls through to the default more-info action.
@@ -344,6 +356,12 @@ export class UcGestureService {
     const state = this.getGestureState(elementId);
     const { tap_action, hold_action, double_tap_action, entity, module } = gestureConfig;
 
+    // A popup trigger opens its popup on tap even when the module's own tap
+    // action is "nothing" (handleAction checks the popup registry first), so
+    // people can trigger a popup without also firing more-info.
+    const tapDoesNothing = () =>
+      isExplicitNothingAction(tap_action) && !isPopupTriggerModule(module);
+
     // Default exclude selectors for editor controls and interactive elements
     const defaultExcludeSelectors = [
       '.layout-child-actions',
@@ -526,7 +544,7 @@ export class UcGestureService {
           // If double-tap is not configured or is explicitly "nothing", execute tap immediately
           if (!double_tap_action || isExplicitNothingAction(double_tap_action)) {
             // No double-tap configured or set to nothing, execute tap action immediately
-            if (!isExplicitNothingAction(tap_action)) {
+            if (!tapDoesNothing()) {
               UltraLinkComponent.handleAction(
                 tap_action || ({ action: 'default', entity } as any),
                 hass,
@@ -540,7 +558,7 @@ export class UcGestureService {
           } else {
             // Double-tap is configured with a real action, wait before executing single tap
             state.clickTimeout = setTimeout(() => {
-              if (state.clickCount === 1 && !isExplicitNothingAction(tap_action)) {
+              if (state.clickCount === 1 && !tapDoesNothing()) {
                 UltraLinkComponent.handleAction(
                   tap_action || ({ action: 'default', entity } as any),
                   hass,
@@ -588,7 +606,7 @@ export class UcGestureService {
         e.preventDefault();
         e.stopPropagation();
 
-        if (isExplicitNothingAction(tap_action)) return;
+        if (tapDoesNothing()) return;
 
         UltraLinkComponent.handleAction(
           tap_action || ({ action: 'default', entity } as any),
