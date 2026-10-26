@@ -289,7 +289,8 @@
         "attribute": "Attribut",
         "time_from": "Von",
         "time_to": "Bis",
-        "template": "Vorlage"
+        "template": "Vorlage",
+        "variable": "Variable"
       },
       "condition_header": "Bedingung",
       "custom_name": "Benutzerdefinierter Name",
@@ -1370,6 +1371,14 @@
       "show_audio_button": {
         "title": "Ton-Taste",
         "desc": "Zeige eine Schaltfläche zum Stummschalten/Entstummschalten über dem Stream an."
+      },
+      "show_mode_badge": {
+        "title": "Live-/Snapshot-Anzeige",
+        "desc": "Zeigt oben in der Ecke ein kleines Abzeichen, ob die Kamera live streamt oder Standbilder anzeigt."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
       },
       "show_controls": {
         "title": "Steuerung",
@@ -2591,7 +2600,9 @@
       "confirm_clear_card": "Sind Sie sicher, dass Sie alle kartenbezogenen Variablen löschen möchten?",
       "value_type_attribute": "Attribut",
       "value_type_attribute_desc": "Attributwert (z.B. temperature, friendly_name)",
-      "attribute_name": "Attributname"
+      "attribute_name": "Attributname",
+      "make_global_conflict": "Es gibt bereits eine globale Variable mit diesem Namen. Bitte benennen Sie diese zuerst um.",
+      "make_global": "Global machen (auf jeder Karte verwenden)"
     },
     "export_import": {
       "include_variables": "Sie haben benutzerdefinierte Variable(n). Soll them in den Export einbezogen werden?",
@@ -2840,6 +2851,10 @@
       "show_state_desc": "Gesperrt / Entsperrt Text anzeigen",
       "show_open_button": "Öffnen-Schaltfläche anzeigen",
       "show_open_button_desc": "Öffnen anzeigen, wenn das Schloss das Entriegeln unterstützt (ÖFFNEN-Funktion)",
+      "show_lock_buttons": "Sperren-/Entsperren-Schaltflächen anzeigen",
+      "show_lock_buttons_desc": "Die Schaltflächen Sperren und Entsperren anzeigen (das kompakte Layout zeigt eine Umschalt-Schaltfläche)",
+      "show_open_button_unsupported": "Dieses Schloss kann nicht entriegeln (keine Öffnen-Funktion), daher gibt es keine Öffnen-Schaltfläche",
+      "align_spread": "Verteilt",
       "layout_section": "Layout",
       "layout_desc": "Visueller Stil und Ausrichtung.",
       "layout": "Layout",
@@ -2864,7 +2879,29 @@
       "action_lock": "Verriegeln",
       "action_unlock": "Entsperren",
       "action_open": "Öffnen",
-      "actions": "Verriegelungsaktionen"
+      "actions": "Verriegelungsaktionen",
+      "unlock_style": "Entsperren mit",
+      "unlock_style_desc": "Schieben ersetzt die Tasten Entsperren und Öffnen durch Schieberegler, damit ein versehentliches Tippen nicht entsperrt. Layouts Hero und Standard.",
+      "unlock_style_buttons": "Tasten",
+      "unlock_style_slide": "Zum Entsperren schieben",
+      "ask_code": "PIN-Code abfragen",
+      "ask_code_desc": "Zeigt ein Tastenfeld und sendet den Code an das Schloss. Automatisch fragt, wenn das Schloss einen Code benötigt. Wählen Sie Nie, wenn Sie in Home Assistant einen Standardcode für das Schloss festgelegt haben.",
+      "ask_code_auto": "Automatisch",
+      "ask_code_always": "Immer",
+      "ask_code_never": "Nie",
+      "cancel": "Abbrechen",
+      "code_clear": "Löschen",
+      "code_placeholder": "Code",
+      "slide_to_unlock": "Zum Entsperren schieben",
+      "slide_to_open": "Zum Öffnen schieben",
+      "unlock_style_pattern": "Muster zeichnen",
+      "pattern_title": "Entsperrmuster",
+      "pattern_desc": "Zeichnen Sie das Muster, mit dem dieses Schloss entsperrt und geöffnet wird. Es wird im Dashboard gespeichert und verhindert so versehentliches Entsperren, ist aber kein echtes Passwort.",
+      "pattern_prompt": "Zeichnen Sie Ihr Muster",
+      "pattern_wrong": "Falsches Muster, bitte erneut versuchen",
+      "pattern_saved": "Muster gespeichert. Zeichnen Sie erneut, um es zu ändern.",
+      "pattern_none": "Noch kein Muster, daher wird beim Entsperren die normale Bestätigung verwendet.",
+      "pattern_too_short": "Verbinden Sie mindestens 4 Punkte"
     },
     "text_input": {
       "entity": {
@@ -3284,7 +3321,21 @@
       "autohide_enable_desc": "Im macOS-Stil: Nach Inaktivität ausblenden, beim Bewegen des Mauszeigers über den Rand einblenden. Nur für Desktop-Mäuse.",
       "autohide_delay": "Verzögerung ausblenden",
       "autohide_delay_desc": "Sekunden der Inaktivität, bevor die Navigationsleiste ausgeblendet wird.",
-      "autohide_disabled_by_collapse": "Die automatische Ausblendung ist nicht verfügbar, solange die Zusammenklappfunktion aktiviert ist. Deaktivieren Sie die Zusammenklappfunktion, um die automatische Ausblendung zu nutzen."
+      "autohide_disabled_by_collapse": "Die automatische Ausblendung ist nicht verfügbar, solange die Zusammenklappfunktion aktiviert ist. Deaktivieren Sie die Zusammenklappfunktion, um die automatische Ausblendung zu nutzen.",
+      "visibility": {
+        "title": "Sichtbarkeit",
+        "hide_on": "Ausblenden auf",
+        "hide_on_desc": "Blendet diesen Eintrag aus, solange die Navigationsleiste ihr Desktop- oder Mobil-Layout verwendet.",
+        "desktop": "Desktop",
+        "mobile": "Mobil",
+        "show_when": "Nur anzeigen, wenn",
+        "show_when_desc": "Zeigt diesen Eintrag nur, solange eine Entität einen bestimmten Zustand hat (oder nicht hat), zum Beispiel ein Gastmodus-Schalter. Lassen Sie die Entität leer, um ihn immer anzuzeigen.",
+        "entity": "Entität",
+        "is": "ist",
+        "is_not": "ist nicht",
+        "condition": "Bedingung",
+        "state": "Zustand"
+      }
     },
     "climate": {
       "error_no_entity": "Keine Klimaanlage",
@@ -3347,7 +3398,18 @@
         "no_data": "Keine Wetterdaten verfügbar"
       },
       "icon_style_fill": "Ausgefüllt",
-      "icon_style_line": "Umrissen"
+      "icon_style_line": "Umrissen",
+      "swipe_more": "Wischen für mehr",
+      "swipe_more_desc": "Lädt alle Tage oder Stunden, die Ihr Wetterdienst liefert, und Sie können seitlich durch sie wischen. Die Einstellungen für Vorhersagetage und -stunden legen dann fest, wie viele gleichzeitig angezeigt werden.",
+      "chart_color_mode": "Farben",
+      "chart_color_mode_desc": "Nach Wert färbt jeden Balken oder Punkt nach seinem Wert: UV nach der WHO-Skala, Temperatur von Blau bis Rot, Regen von Hell- bis Dunkelblau, Wind von Grün bis Rot.",
+      "chart_color_single": "Eine Farbe",
+      "chart_color_value": "Nach Wert",
+      "hour_number_only": "Nur Stundenzahl",
+      "hour_number_only_desc": "Zeigt nur die Stunde, zum Beispiel 14 statt 14 Uhr. AM und PM bleiben bei 12-Stunden-Sprachen erhalten.",
+      "chart_values_desc": "Haken Sie die anzuzeigenden Werte an, wählen Sie für jeden Balken oder Linie und ändern Sie die Reihenfolge mit den Pfeilen. Werte, die Ihre Wetter-Integration nicht liefert, werden übersprungen.",
+      "move_up": "Nach oben",
+      "move_down": "Nach unten"
     },
     "animated_weather": {
       "entity_section": "Wetterentität",

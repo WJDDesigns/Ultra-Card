@@ -7,6 +7,27 @@ import type { CardModule, CardColumn, CardRow, DeviceBreakpoint, UserVisibility 
 import { localize } from '../localize/localize';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
+import { renderHideOnDevicesSection } from '../tabs/uc-hide-on-devices-section';
+import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+
+/** Entity id to show for a condition, with a `$variable` resolved (global variables). */
+function conditionEntityDisplay(cond: { entity?: string | undefined }): string {
+  const raw = cond.entity || '';
+  if (!raw.startsWith('$')) return raw;
+  return ucCustomVariablesService.resolveEntityField(raw, undefined) || raw;
+}
+
+/** "Uses $name" note under the entity picker when the condition is bound to a variable. */
+function conditionEntityHint(
+  cond: { entity?: string | undefined },
+  lang: string
+): TemplateResult | typeof nothing {
+  const raw = cond.entity || '';
+  if (!raw.startsWith('$')) return nothing;
+  return html`<div style="font-size: 12px; color: var(--secondary-text-color); margin: -8px 0 12px;">
+    ${localize('editor.layout_logic.condition_fields.variable', lang, 'Variable')} <code>${raw}</code>
+  </div>`;
+}
 import type { GlobalLogicArgs, GlobalLogicTarget } from '../tabs/global-logic-tab';
 
 /** Unified-template output keys row/column visibility templates read. */
@@ -56,18 +77,6 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
   const lang = hass?.locale?.language || 'en';
   const showUnifiedLayoutVisibility = logicTarget === 'row' || logicTarget === 'column';
   const rowCol = module as any;
-
-  // Helper to toggle device visibility
-  const toggleDeviceHidden = (device: DeviceBreakpoint): void => {
-    const current = [...hiddenOnDevices];
-    const index = current.indexOf(device);
-    if (index === -1) {
-      current.push(device);
-    } else {
-      current.splice(index, 1);
-    }
-    updateModule({ hidden_on_devices: current.length > 0 ? current : undefined } as any);
-  };
 
   const userVisibility = ((module as any).user_visibility || undefined) as
     | UserVisibility
@@ -204,87 +213,11 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
           `
         : ''}
 
-      <!-- Hide on Devices Section -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px; border-left: 3px solid var(--primary-color);"
-      >
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-          <ha-icon icon="mdi:responsive" style="color: var(--primary-color);"></ha-icon>
-          <span style="font-size: 16px; font-weight: 700; color: var(--primary-text-color);">
-            ${localize('editor.logic.hide_on_devices', lang, 'Hide on Devices')}
-          </span>
-        </div>
-        <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;">
-          ${localize(
-            'editor.logic.hide_on_devices_desc',
-            lang,
-            'Hide this element on specific screen sizes. Use this to create different layouts for different devices.'
-          )}
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-          <label
-            style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('desktop') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
-          >
-            <ha-checkbox
-              .checked=${hiddenOnDevices.includes('desktop')}
-              @change=${() => toggleDeviceHidden('desktop')}
-            ></ha-checkbox>
-            <ha-icon icon="mdi:monitor" style="color: ${hiddenOnDevices.includes('desktop') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
-            <div style="flex: 1;">
-              <div style="font-weight: 500; font-size: 13px;">Desktop</div>
-              <div style="font-size: 11px; color: var(--secondary-text-color);">≥1381px</div>
-            </div>
-          </label>
-          <label
-            style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('laptop') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
-          >
-            <ha-checkbox
-              .checked=${hiddenOnDevices.includes('laptop')}
-              @change=${() => toggleDeviceHidden('laptop')}
-            ></ha-checkbox>
-            <ha-icon icon="mdi:laptop" style="color: ${hiddenOnDevices.includes('laptop') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
-            <div style="flex: 1;">
-              <div style="font-weight: 500; font-size: 13px;">Laptop</div>
-              <div style="font-size: 11px; color: var(--secondary-text-color);">1025-1380px</div>
-            </div>
-          </label>
-          <label
-            style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('tablet') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
-          >
-            <ha-checkbox
-              .checked=${hiddenOnDevices.includes('tablet')}
-              @change=${() => toggleDeviceHidden('tablet')}
-            ></ha-checkbox>
-            <ha-icon icon="mdi:tablet" style="color: ${hiddenOnDevices.includes('tablet') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
-            <div style="flex: 1;">
-              <div style="font-weight: 500; font-size: 13px;">Tablet</div>
-              <div style="font-size: 11px; color: var(--secondary-text-color);">601-1024px</div>
-            </div>
-          </label>
-          <label
-            style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('mobile') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
-          >
-            <ha-checkbox
-              .checked=${hiddenOnDevices.includes('mobile')}
-              @change=${() => toggleDeviceHidden('mobile')}
-            ></ha-checkbox>
-            <ha-icon icon="mdi:cellphone" style="color: ${hiddenOnDevices.includes('mobile') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
-            <div style="flex: 1;">
-              <div style="font-weight: 500; font-size: 13px;">Mobile</div>
-              <div style="font-size: 11px; color: var(--secondary-text-color);">≤600px</div>
-            </div>
-          </label>
-        </div>
-        ${hiddenOnDevices.length > 0
-          ? html`
-              <div style="margin-top: 12px; padding: 8px 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 4px; font-size: 12px; color: var(--primary-color);">
-                <ha-icon icon="mdi:information-outline" style="--mdc-icon-size: 14px; vertical-align: middle; margin-right: 4px;"></ha-icon>
-                This element will be hidden on: ${hiddenOnDevices.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
-              </div>
-            `
-          : ''}
-      </div>
+      ${renderHideOnDevicesSection(
+        hiddenOnDevices,
+        next => updateModule({ hidden_on_devices: next } as any),
+        lang
+      )}
 
       <!-- Display Mode -->
       <div
@@ -389,6 +322,14 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                     const next = [...conditions];
                     next[index] = { ...cond, ...updates };
                     updateModule({ display_conditions: next } as any);
+                  };
+                  // A `$variable` entity shows its resolved entity in the picker, so HA
+                  // doesn't flag it as unknown. Re-affirmations of that same entity must
+                  // not overwrite the variable; only a different pick replaces it.
+                  const onConditionEntity = (picked: string | undefined) => {
+                    const raw = (cond as any).entity || '';
+                    if ((picked || '') === conditionEntityDisplay(cond) || picked === raw) return;
+                    onChange({ entity: picked || '' });
                   };
                   const remove = () => {
                     const next = conditions.filter((_, i) => i !== index);
@@ -585,10 +526,11 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     ),
                                     '',
                                     hass,
-                                    { entity: (cond as any).entity || '' },
+                                    { entity: conditionEntityDisplay(cond) },
                                     [FormUtils.createSchemaItem('entity', { entity: {} })],
-                                    (e: CustomEvent) => onChange(e.detail.value)
+                                    (e: CustomEvent) => onConditionEntity(e.detail.value?.entity)
                                   )}
+                                  ${conditionEntityHint(cond, lang)}
                                   ${FormUtils.renderField(
                                     localize(
                                       'editor.layout_logic.condition_fields.operator',
@@ -628,7 +570,12 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     '',
                                     hass,
                                     { value: (cond as any).value || '' },
-                                    [FormUtils.createSchemaItem('value', { text: {} })],
+                                    [
+                                      UcFormUtils.conditionValue('value', hass, {
+                                        ...cond,
+                                        entity: conditionEntityDisplay(cond),
+                                      }),
+                                    ],
                                     (e: CustomEvent) => onChange(e.detail.value)
                                   )}
                                 `;
@@ -644,10 +591,11 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     ),
                                     '',
                                     hass,
-                                    { entity: (cond as any).entity || '' },
+                                    { entity: conditionEntityDisplay(cond) },
                                     [FormUtils.createSchemaItem('entity', { entity: {} })],
-                                    (e: CustomEvent) => onChange(e.detail.value)
+                                    (e: CustomEvent) => onConditionEntity(e.detail.value?.entity)
                                   )}
+                                  ${conditionEntityHint(cond, lang)}
                                   ${FormUtils.renderField(
                                     localize(
                                       'editor.layout_logic.condition_fields.attribute',
@@ -697,7 +645,12 @@ export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn
                                     '',
                                     hass,
                                     { value: (cond as any).value || '' },
-                                    [FormUtils.createSchemaItem('value', { text: {} })],
+                                    [
+                                      UcFormUtils.conditionValue('value', hass, {
+                                        ...cond,
+                                        entity: conditionEntityDisplay(cond),
+                                      }),
+                                    ],
                                     (e: CustomEvent) => onChange(e.detail.value)
                                   )}
                                 `;

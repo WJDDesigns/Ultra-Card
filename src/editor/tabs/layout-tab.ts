@@ -20557,7 +20557,7 @@ export class LayoutTab extends LitElement {
   }
 
   private _handlePresetSelectorRefresh(): void {
-    ucPresetsService.refreshWordPressPresets();
+    ucPresetsService.refreshWordPressPresets(true);
   }
 
   private _handlePresetSelectorOpenImage(e: CustomEvent<{ url: string; title: string }>): void {

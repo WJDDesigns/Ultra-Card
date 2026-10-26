@@ -1260,6 +1260,14 @@
         "add": "Add Button",
         "position": "Button Position",
         "tap_again": "Tap again to confirm"
+      },
+      "show_mode_badge": {
+        "title": "Live / Snapshot Badge",
+        "desc": "Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
       }
     },
     "separator": {
@@ -1352,7 +1360,8 @@
         "attribute": "Atrybut",
         "time_from": "Od",
         "time_to": "Do",
-        "template": "Szablon"
+        "template": "Szablon",
+        "variable": "Zmienna"
       },
       "condition_header": "Warunek",
       "custom_name": "Nazwa własna",
@@ -2587,7 +2596,9 @@
       "confirm_clear_card": "Czy na pewno chcesz usunąć wszystkie zmienne specyficzne dla karty?",
       "value_type_attribute": "Atrybut",
       "value_type_attribute_desc": "Wartość atrybutu (np. temperatura, friendly_name)",
-      "attribute_name": "Nazwa atrybutu"
+      "attribute_name": "Nazwa atrybutu",
+      "make_global_conflict": "Zmienna globalna o tej nazwie już istnieje. Najpierw zmień nazwę tej zmiennej.",
+      "make_global": "Ustaw jako globalną (używaj na każdej karcie)"
     },
     "export_import": {
       "include_variables": "Masz zmienną(y) niestandardową(e). Dołączyć them do eksportu?",
@@ -2836,6 +2847,10 @@
       "show_state_desc": "Wyświetl tekst zablokowany / odblokowany",
       "show_open_button": "Pokaż przycisk otwierania",
       "show_open_button_desc": "Pokaż Otwórz, gdy zamek obsługuje odblokowanie (funkcja OTWÓRZ)",
+      "show_lock_buttons": "Pokaż przyciski zablokuj / odblokuj",
+      "show_lock_buttons_desc": "Pokaż przyciski Zablokuj i Odblokuj (układ kompaktowy pokazuje jeden przełącznik)",
+      "show_open_button_unsupported": "Ten zamek nie obsługuje otwierania (brak funkcji Otwórz), więc nie ma przycisku Otwórz",
+      "align_spread": "Rozłożone",
       "layout_section": "Układ",
       "layout_desc": "Styl wizualny i wyrównanie.",
       "layout": "Układ",
@@ -2860,7 +2875,29 @@
       "action_lock": "Zablokuj",
       "action_unlock": "Odblokuj",
       "action_open": "Otwórz",
-      "actions": "Akcje blokady"
+      "actions": "Akcje blokady",
+      "unlock_style": "Odblokuj przez",
+      "unlock_style_desc": "Przesuwanie zastępuje przyciski Odblokuj i Otwórz suwakami, więc przypadkowe dotknięcie nie odblokuje. Układy Hero i Standardowy.",
+      "unlock_style_buttons": "Przyciski",
+      "unlock_style_slide": "Przesuń, aby odblokować",
+      "ask_code": "Pytaj o kod PIN",
+      "ask_code_desc": "Wyświetla klawiaturę i wysyła kod do zamka. Automatycznie pyta, gdy zamek wymaga kodu. Wybierz Nigdy, jeśli ustawiono domyślny kod zamka w Home Assistant.",
+      "ask_code_auto": "Automatycznie",
+      "ask_code_always": "Zawsze",
+      "ask_code_never": "Nigdy",
+      "cancel": "Anuluj",
+      "code_clear": "Wyczyść",
+      "code_placeholder": "Kod",
+      "slide_to_unlock": "Przesuń, aby odblokować",
+      "slide_to_open": "Przesuń, aby otworzyć",
+      "unlock_style_pattern": "Narysuj wzór",
+      "pattern_title": "Wzór odblokowania",
+      "pattern_desc": "Narysuj wzór, który odblokowuje i otwiera ten zamek. Jest zapisany w panelu, więc chroni przed przypadkowym odblokowaniem, ale nie jest prawdziwym hasłem.",
+      "pattern_prompt": "Narysuj swój wzór",
+      "pattern_wrong": "Nieprawidłowy wzór, spróbuj ponownie",
+      "pattern_saved": "Wzór zapisany. Narysuj ponownie, aby go zmienić.",
+      "pattern_none": "Brak wzoru, więc odblokowanie używa zwykłego potwierdzenia.",
+      "pattern_too_short": "Połącz co najmniej 4 punkty"
     },
     "text_input": {
       "entity": {
@@ -3280,7 +3317,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Widoczność",
+        "hide_on": "Ukryj na",
+        "hide_on_desc": "Ukrywa ten element, gdy pasek nawigacji używa układu na komputer lub telefon.",
+        "desktop": "Komputer",
+        "mobile": "Telefon",
+        "show_when": "Pokaż tylko gdy",
+        "show_when_desc": "Pokazuje ten element tylko wtedy, gdy encja jest (lub nie jest) w danym stanie, np. przełącznik trybu gościa. Pozostaw encję pustą, aby pokazywać go zawsze.",
+        "entity": "Encja",
+        "is": "jest",
+        "is_not": "nie jest",
+        "condition": "Warunek",
+        "state": "Stan"
+      }
     },
     "climate": {
       "error_no_entity": "Brak jednostki klimatyzacji",
@@ -3343,7 +3394,18 @@
         "no_data": "Brak dostępnych danych prognozy"
       },
       "icon_style_fill": "Wypełniony",
-      "icon_style_line": "Obrysowany"
+      "icon_style_line": "Obrysowany",
+      "swipe_more": "Przesuń, aby zobaczyć więcej",
+      "swipe_more_desc": "Wczytuje wszystkie dni lub godziny udostępniane przez usługę pogodową i pozwala przewijać je w bok. Ustawienia dni i godzin prognozy określają wtedy, ile jest widocznych naraz.",
+      "chart_color_mode": "Kolory",
+      "chart_color_mode_desc": "Według wartości koloruje każdy słupek lub punkt według jego wartości: UV według skali WHO, temperatura od niebieskiego do czerwonego, deszcz od jasno- do ciemnoniebieskiego, wiatr od zielonego do czerwonego.",
+      "chart_color_single": "Jeden kolor",
+      "chart_color_value": "Według wartości",
+      "hour_number_only": "Tylko numer godziny",
+      "hour_number_only_desc": "Pokazuje tylko godzinę, np. 14 zamiast 14 Uhr. AM i PM zostają w językach 12-godzinnych.",
+      "chart_values_desc": "Zaznacz wartości do pokazania, wybierz dla każdej Słupki lub Linię i zmień kolejność strzałkami. Wartości, których nie dostarcza integracja pogody, są pomijane.",
+      "move_up": "Przenieś w górę",
+      "move_down": "Przenieś w dół"
     },
     "animated_weather": {
       "entity_section": "Jednostka Pogodowa",

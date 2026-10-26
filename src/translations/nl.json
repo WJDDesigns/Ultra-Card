@@ -1260,6 +1260,14 @@
         "add": "Add Button",
         "position": "Button Position",
         "tap_again": "Tap again to confirm"
+      },
+      "show_mode_badge": {
+        "title": "Live / Snapshot Badge",
+        "desc": "Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
       }
     },
     "separator": {
@@ -1352,7 +1360,8 @@
         "attribute": "Attribuut",
         "time_from": "Van",
         "time_to": "Tot",
-        "template": "Sjabloon"
+        "template": "Sjabloon",
+        "variable": "Variabele"
       },
       "condition_header": "Voorwaarde",
       "custom_name": "Aangepaste naam",
@@ -2587,7 +2596,9 @@
       "confirm_clear_card": "Weet je zeker dat je alle kaart-specifieke variabelen wilt verwijderen?",
       "value_type_attribute": "Attribuut",
       "value_type_attribute_desc": "Attribuutwaarde (bijv., temmperatuur, friendly_name)",
-      "attribute_name": "Attribuutnaam"
+      "attribute_name": "Attribuutnaam",
+      "make_global_conflict": "Er bestaat al een globale variabele met deze naam. Hernoem deze eerst.",
+      "make_global": "Globaal maken (op elke kaart gebruiken)"
     },
     "export_import": {
       "include_variables": "Je hebt aangepaste variabele(n). Inclusief them in de export?",
@@ -2836,6 +2847,10 @@
       "show_state_desc": "Weergeven vergrendeld / ontgrendeld tekst",
       "show_open_button": "Toon open knop",
       "show_open_button_desc": "Toon Open wanneer het slot ontgrendelen ondersteunt (OPEN functie)",
+      "show_lock_buttons": "Knoppen vergrendelen / ontgrendelen tonen",
+      "show_lock_buttons_desc": "Toon de knoppen Vergrendelen en Ontgrendelen (de compacte indeling toont één schakelknop)",
+      "show_open_button_unsupported": "Dit slot kan niet openen (geen Openen-functie), dus er is geen Openen-knop",
+      "align_spread": "Verspreid",
       "layout_section": "Indeling",
       "layout_desc": "Visuele stijl en uitlijning.",
       "layout": "Indeling",
@@ -2860,7 +2875,29 @@
       "action_lock": "Slot",
       "action_unlock": "Ontgrendel",
       "action_open": "Open",
-      "actions": "Slotacties"
+      "actions": "Slotacties",
+      "unlock_style": "Ontgrendelen met",
+      "unlock_style_desc": "Schuiven vervangt de knoppen Ontgrendelen en Openen door schuifknoppen, zodat een per ongeluk getikte knop niet ontgrendelt. Hero- en Standaard-indeling.",
+      "unlock_style_buttons": "Knoppen",
+      "unlock_style_slide": "Schuif om te ontgrendelen",
+      "ask_code": "Vraag om pincode",
+      "ask_code_desc": "Toont een toetsenblok en stuurt de code naar het slot. Automatisch vraagt erom als het slot een code nodig heeft. Kies Nooit als je in Home Assistant een standaardcode voor het slot hebt ingesteld.",
+      "ask_code_auto": "Automatisch",
+      "ask_code_always": "Altijd",
+      "ask_code_never": "Nooit",
+      "cancel": "Annuleren",
+      "code_clear": "Wissen",
+      "code_placeholder": "Code",
+      "slide_to_unlock": "Schuif om te ontgrendelen",
+      "slide_to_open": "Schuif om te openen",
+      "unlock_style_pattern": "Patroon tekenen",
+      "pattern_title": "Ontgrendelpatroon",
+      "pattern_desc": "Teken het patroon dat dit slot ontgrendelt en opent. Het wordt in het dashboard opgeslagen, dus het voorkomt per ongeluk ontgrendelen, maar het is geen echt wachtwoord.",
+      "pattern_prompt": "Teken je patroon",
+      "pattern_wrong": "Verkeerd patroon, probeer het opnieuw",
+      "pattern_saved": "Patroon opgeslagen. Teken opnieuw om het te wijzigen.",
+      "pattern_none": "Nog geen patroon, dus ontgrendelen gebruikt de normale bevestiging.",
+      "pattern_too_short": "Verbind minstens 4 punten"
     },
     "text_input": {
       "entity": {
@@ -3280,7 +3317,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Zichtbaarheid",
+        "hide_on": "Verbergen op",
+        "hide_on_desc": "Verbergt dit item zolang de navigatiebalk de desktop- of mobiele indeling gebruikt.",
+        "desktop": "Desktop",
+        "mobile": "Mobiel",
+        "show_when": "Alleen tonen wanneer",
+        "show_when_desc": "Toont dit item alleen zolang een entiteit (niet) in een bepaalde status is, bijvoorbeeld een gastmodusschakelaar. Laat de entiteit leeg om het altijd te tonen.",
+        "entity": "Entiteit",
+        "is": "is",
+        "is_not": "is niet",
+        "condition": "Voorwaarde",
+        "state": "Status"
+      }
     },
     "climate": {
       "error_no_entity": "Geen Klimaat Entiteit",
@@ -3343,7 +3394,18 @@
         "no_data": "Geen weersvoorspellingsgegevens beschikbaar"
       },
       "icon_style_fill": "Vervuld",
-      "icon_style_line": "Omrand"
+      "icon_style_line": "Omrand",
+      "swipe_more": "Veeg voor meer",
+      "swipe_more_desc": "Laadt alle dagen of uren die je weerdienst levert en laat je er zijwaarts doorheen vegen. De instellingen Voorspellingsdagen en -uren bepalen dan hoeveel er tegelijk worden getoond.",
+      "chart_color_mode": "Kleuren",
+      "chart_color_mode_desc": "Op waarde kleurt elke balk of punt naar de waarde: UV volgens de WHO-schaal, temperatuur van blauw naar rood, regen van licht- naar donkerblauw, wind van groen naar rood.",
+      "chart_color_single": "Eén kleur",
+      "chart_color_value": "Op waarde",
+      "hour_number_only": "Alleen uurgetal",
+      "hour_number_only_desc": "Toont alleen het uur, bijvoorbeeld 14 in plaats van 14 Uhr. AM en PM blijven staan bij 12-uurstalen.",
+      "chart_values_desc": "Vink de waarden aan die je wilt tonen, kies per waarde Balken of Lijn en verander de volgorde met de pijlen. Waarden die je weerintegratie niet levert, worden overgeslagen.",
+      "move_up": "Omhoog",
+      "move_down": "Omlaag"
     },
     "animated_weather": {
       "entity_section": "Weer Entiteit",

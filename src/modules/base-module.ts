@@ -692,6 +692,7 @@ export abstract class BaseUltraModule implements UltraModule {
   // Schema shortcuts for common field types
   protected entityField = UcFormUtils.entity;
   protected textField = UcFormUtils.text;
+  protected conditionValueField = UcFormUtils.conditionValue;
   protected selectField = UcFormUtils.select;
   protected iconField = UcFormUtils.icon;
   protected booleanField = UcFormUtils.boolean;

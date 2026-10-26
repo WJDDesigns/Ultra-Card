@@ -12,6 +12,7 @@ import {
   IconConfig,
   HoverEffectConfig,
   DeviceBreakpoint,
+  UserVisibility,
 } from '../types';
 
 /** Per-render context passed to row/column/module helpers to avoid recomputing per module. */
@@ -79,6 +80,17 @@ import { releaseUnusedModuleInstances } from '../services/uc-module-lifecycle-se
 import { ucTimeMachineService } from '../services/uc-time-machine-service';
 import { ensureLocaleLoaded, onLocaleLoaded } from '../localize/localize';
 
+type UserFiltered = { user_visibility?: UserVisibility | undefined };
+
+/** Item has a Visible to Users filter (Show only for / Hide for). */
+const hasUserFilter = (item: unknown): boolean =>
+  !!(item as UserFiltered | undefined)?.user_visibility?.users?.length;
+
+/** Item is hidden from the current user by its Visible to Users filter. */
+const isHiddenForUser = (item: unknown): boolean =>
+  hasUserFilter(item) &&
+  !logicService.evaluateUserVisibility((item as UserFiltered).user_visibility);
+
 @customElement('ultra-card')
 export class UltraCard extends LitElement {
   private _hass: HomeAssistant | undefined;
@@ -95,6 +107,8 @@ export class UltraCard extends LitElement {
     // Only update external card containers and logic service if hass object reference changed
     // (HA creates new objects when state changes, so reference check is sufficient)
     if (value && value !== oldHass) {
+      // Pull or push global custom variables via the HA user's data (first call only).
+      ucCustomVariablesService.syncWithHomeAssistant(value);
       // Start fetching the user's locale chunk on first hass so strings are
       // translated by the time most cards paint (English until it lands).
       if (value.locale?.language && value.locale.language !== oldHass?.locale?.language) {
@@ -208,6 +222,13 @@ export class UltraCard extends LitElement {
   private _navigationRegistrationToken = 0;
   /** Tracks invisible state across renders for parent visibility side-effects. */
   private _lastInvisibleState: boolean | null = null;
+  /** Visibility last reported to Home Assistant via `card-visibility-changed`. */
+  private _reportedHidden = false;
+  /**
+   * Keeps HA's hui-card from detaching this element while it is hidden, so Logic
+   * conditions keep being evaluated and the card can show itself again.
+   */
+  public connectedWhileHidden = true;
   /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
   private _layoutColumnsParsedCache = new Map<string, { raw: string; value: CardColumn[] }>();
   private _layoutModulesParsedCache = new Map<string, { raw: string; value: CardModule[] }>();
@@ -227,7 +248,7 @@ export class UltraCard extends LitElement {
     moduleTypes: Set<string>;
     onlyInvisibleModules: boolean;
     onlyPopupModules: boolean;
-    /** Any module uses "Hide when empty"; skips the collapse checks otherwise. */
+    /** Any module uses "Hide when empty", or anything is hidden per user; skips the collapse checks otherwise. */
     hasHideWhenEmpty: boolean;
     allPopupsInvisible: boolean;
     hasLogicConditions: boolean;
@@ -435,7 +456,11 @@ export class UltraCard extends LitElement {
       moduleTypes,
       onlyInvisibleModules,
       onlyPopupModules,
-      hasHideWhenEmpty: allModules.some(m => m.hide_when_empty === true),
+      hasHideWhenEmpty:
+        allModules.some(m => m.hide_when_empty === true || hasUserFilter(m)) ||
+        (layout?.rows || []).some(
+          r => hasUserFilter(r) || (r.columns || []).some(c => hasUserFilter(c))
+        ),
       allPopupsInvisible,
       hasLogicConditions,
       videoBgModules,
@@ -1565,6 +1590,8 @@ export class UltraCard extends LitElement {
     if (!this._hass) {
       logicService.setHass(hass);
     }
+    // Logic conditions on `$variable` entities resolve against this card's variables.
+    logicService.setCardConfig(this.config);
 
     const cardStyle = this._getCardStyle();
 
@@ -1772,6 +1799,20 @@ export class UltraCard extends LitElement {
    * Extracted from render() so side-effects run in updated() lifecycle.
    */
   private _syncParentVisibility(invisible: boolean): void {
+    // Tell Home Assistant, the same way its own conditional cards do. Without this the
+    // wrapper is only styled away, so masonry keeps the card's column and a section
+    // whose cards are all hidden still takes its grid slot.
+    if (this._reportedHidden !== invisible) {
+      this._reportedHidden = invisible;
+      this.hidden = invisible;
+      this.dispatchEvent(
+        new CustomEvent('card-visibility-changed', {
+          detail: { value: !invisible },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }
     try {
       let parent: HTMLElement | null = this.parentElement;
       let depth = 0;
@@ -2198,7 +2239,8 @@ export class UltraCard extends LitElement {
     const hiddenOnDevices = (row as any).hidden_on_devices;
     const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-row-${rowId}`,
-      hiddenOnDevices
+      hiddenOnDevices,
+      ctx.isInCardEditor
     );
 
     // Generate responsive design CSS if device-specific overrides exist
@@ -2508,7 +2550,8 @@ export class UltraCard extends LitElement {
     const hiddenOnDevices = (column as any).hidden_on_devices;
     const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-col-${colId}`,
-      hiddenOnDevices
+      hiddenOnDevices,
+      ctx.isInCardEditor
     );
 
     // Generate responsive design CSS if device-specific overrides exist
@@ -2707,7 +2750,7 @@ export class UltraCard extends LitElement {
 
   /**
    * A column collapses when every module in it is hidden and at least one of them is
-   * hidden as empty, so layouts that never use "Hide when empty" render as before.
+   * hidden as empty or by Visible to Users, so layouts that use neither render as before.
    */
   private _isColumnCollapsedEmpty(column: CardColumn, colId: string, ctx: RenderContext): boolean {
     if (!this._configCache?.hasHideWhenEmpty || ctx.isInCardEditor || ctx.isDashboardEditMode) {
@@ -2715,7 +2758,10 @@ export class UltraCard extends LitElement {
     }
     let anyEmpty = false;
     for (const module of this._resolveModules(column, colId)) {
-      if (!this._isLogicVisible(module, logicService.evaluateModuleVisibility(module))) continue;
+      if (!this._isLogicVisible(module, logicService.evaluateModuleVisibility(module))) {
+        if (isHiddenForUser(module)) anyEmpty = true;
+        continue;
+      }
       if (!this._isModuleEmptyHidden(module, ctx)) return false;
       anyEmpty = true;
     }
@@ -2732,6 +2778,7 @@ export class UltraCard extends LitElement {
     for (let i = 0; i < columns.length; i++) {
       const column = columns[i];
       if (!this._isLogicVisible(column, logicService.evaluateColumnVisibility(column, this.config))) {
+        if (isHiddenForUser(column)) anyEmpty = true;
         continue;
       }
       if (!this._isColumnCollapsedEmpty(column, column.id ?? `col-${i}`, ctx)) return false;
@@ -2742,16 +2789,36 @@ export class UltraCard extends LitElement {
 
   /** Whole card hides (no dashboard gap) when every row collapsed as empty. */
   private _isLayoutCollapsedEmpty(ctx: RenderContext): boolean {
-    if (!this._configCache?.hasHideWhenEmpty) return false;
     const rows = this.config?.layout?.rows || [];
+    // Every row hidden by its Logic (users, entity conditions, template) or by Hide on
+    // Devices: nothing is left to show, so the whole card hides and leaves no gap.
+    if (rows.length > 0 && rows.every(row => this._isRowHiddenByLogic(row, ctx))) return true;
+    if (!this._configCache?.hasHideWhenEmpty) return false;
     let anyEmpty = false;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      if (!this._isLogicVisible(row, logicService.evaluateRowVisibility(row, this.config))) continue;
+      if (!this._isLogicVisible(row, logicService.evaluateRowVisibility(row, this.config))) {
+        if (isHiddenForUser(row)) anyEmpty = true;
+        continue;
+      }
       if (!this._isRowCollapsedEmpty(row, ctx, i)) return false;
       anyEmpty = true;
     }
     return anyEmpty;
+  }
+
+  private _isRowHiddenByLogic(row: CardRow, ctx: RenderContext): boolean {
+    if (row.hidden_on_devices?.includes(ctx.breakpoint)) return true;
+    if (!this._isLogicVisible(row, logicService.evaluateRowVisibility(row, this.config))) return true;
+    const columns = row.columns || [];
+    return (
+      columns.length > 0 &&
+      columns.every(
+        column =>
+          column.hidden_on_devices?.includes(ctx.breakpoint) ||
+          !this._isLogicVisible(column, logicService.evaluateColumnVisibility(column, this.config))
+      )
+    );
   }
 
   private _renderModule(module: CardModule, ctx: RenderContext): TemplateResult {
@@ -2782,7 +2849,8 @@ export class UltraCard extends LitElement {
     const hiddenOnDevices = (module as any).hidden_on_devices;
     const moduleHideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-mod-${moduleId}`,
-      hiddenOnDevices
+      hiddenOnDevices,
+      ctx.isInCardEditor
     );
 
     // Generate responsive design CSS if device-specific overrides exist

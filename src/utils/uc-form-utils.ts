@@ -72,24 +72,28 @@ export class UcFormUtils {
             style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px;"
           >
             <div style="flex: 1;">
-              ${title
-                ? html`<div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: ${description
-                      ? '4px'
-                      : '0'};"
-                  >
-                    ${title}
-                  </div>`
-                : ''}
-              ${description
-                ? html`<div
-                    class="field-description"
-                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 0; opacity: 0.8; line-height: 1.4;"
-                  >
-                    ${description}
-                  </div>`
-                : ''}
+              ${
+                title
+                  ? html`<div
+                      class="field-title"
+                      style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: ${
+                        description ? '4px' : '0'
+                      };"
+                    >
+                      ${title}
+                    </div>`
+                  : ''
+              }
+              ${
+                description
+                  ? html`<div
+                      class="field-description"
+                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 0; opacity: 0.8; line-height: 1.4;"
+                    >
+                      ${description}
+                    </div>`
+                  : ''
+              }
             </div>
             <div style="flex-shrink: 0;">
               ${UcFormUtils.renderForm(hass, data, schema, onChange, false)}
@@ -102,22 +106,26 @@ export class UcFormUtils {
     // For non-boolean fields, use the original vertical layout
     return html`
       <div class="field-section" style="margin-bottom: 16px;">
-        ${title
-          ? html`<div
-              class="field-title"
-              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-            >
-              ${title}
-            </div>`
-          : ''}
-        ${description
-          ? html`<div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-            >
-              ${description}
-            </div>`
-          : ''}
+        ${
+          title
+            ? html`<div
+                class="field-title"
+                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+              >
+                ${title}
+              </div>`
+            : ''
+        }
+        ${
+          description
+            ? html`<div
+                class="field-description"
+                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+              >
+                ${description}
+              </div>`
+            : ''
+        }
         ${UcFormUtils.renderForm(hass, data, schema, onChange, false)}
       </div>
     `;
@@ -143,25 +151,29 @@ export class UcFormUtils {
         class="settings-section"
         style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
       >
-        ${title
-          ? html`
-              <div
-                class="section-title"
-                style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
-              >
-                ${title}
-              </div>
-            `
-          : ''}
-        ${description
-          ? html`
-              <div
-                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-              >
-                ${description}
-              </div>
-            `
-          : ''}
+        ${
+          title
+            ? html`
+                <div
+                  class="section-title"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
+                >
+                  ${title}
+                </div>
+              `
+            : ''
+        }
+        ${
+          description
+            ? html`
+                <div
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                >
+                  ${description}
+                </div>
+              `
+            : ''
+        }
         ${fields.map(field =>
           UcFormUtils.renderFieldSection(
             field.title,
@@ -185,6 +197,28 @@ export class UcFormUtils {
       selector: {
         entity: domain ? { domain } : {},
       },
+    };
+  }
+
+  /**
+   * Value field for an entity condition. For "=" and "!=" on a real entity it is Home
+   * Assistant's state picker, which lists the entity's known states (on/off, open/closed…)
+   * and still accepts a typed value; anything else stays a plain text box.
+   */
+  static conditionValue(
+    name: string,
+    hass: { states?: Record<string, unknown> } | undefined,
+    condition: { entity?: string; operator?: string; attribute?: string } | undefined
+  ): { name: string; selector: Record<string, unknown> } {
+    const id = (condition?.entity || '').trim();
+    const op = condition?.operator || '=';
+    const pickable =
+      (op === '=' || op === '!=') && !!id && !/[${}]/.test(id) && !!hass?.states?.[id];
+    if (!pickable) return { name, selector: { text: {} } };
+    const attr = (condition?.attribute || '').trim();
+    return {
+      name,
+      selector: { state: attr ? { entity_id: id, attribute: attr } : { entity_id: id } },
     };
   }
 
@@ -371,42 +405,46 @@ export class UcFormUtils {
       ${UcFormUtils.renderVariableIndicator(currentValue, config)}
       <div
         class="${varInfo.isVariable ? 'uc-entity-field-with-variable' : ''}"
-        style="${varInfo.isVariable
-          ? `
+        style="${
+          varInfo.isVariable
+            ? `
         position: relative;
       `
-          : ''}"
+            : ''
+        }"
       >
-        ${varInfo.isVariable
-          ? html`
-              <style>
-                .uc-entity-field-with-variable ha-entity-picker,
-                .uc-entity-field-with-variable ha-selector-entity {
-                  opacity: 0.7;
-                  pointer-events: none;
-                }
-                .uc-entity-field-with-variable::after {
-                  content: 'Click to change';
-                  position: absolute;
-                  right: 12px;
-                  top: 50%;
-                  transform: translateY(-50%);
-                  font-size: 10px;
-                  color: var(--secondary-text-color);
-                  pointer-events: none;
-                }
-              </style>
-              <div
-                style="position: absolute; inset: 0; cursor: pointer; z-index: 1;"
-                @click=${(e: Event) => {
-                  e.stopPropagation();
-                  // Clear the variable to allow selecting a new entity
-                  onChange('');
-                }}
-                title="Click to clear variable and select a different entity"
-              ></div>
-            `
-          : ''}
+        ${
+          varInfo.isVariable
+            ? html`
+                <style>
+                  .uc-entity-field-with-variable ha-entity-picker,
+                  .uc-entity-field-with-variable ha-selector-entity {
+                    opacity: 0.7;
+                    pointer-events: none;
+                  }
+                  .uc-entity-field-with-variable::after {
+                    content: 'Click to change';
+                    position: absolute;
+                    right: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 10px;
+                    color: var(--secondary-text-color);
+                    pointer-events: none;
+                  }
+                </style>
+                <div
+                  style="position: absolute; inset: 0; cursor: pointer; z-index: 1;"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    // Clear the variable to allow selecting a new entity
+                    onChange('');
+                  }}
+                  title="Click to clear variable and select a different entity"
+                ></div>
+              `
+            : ''
+        }
         ${UcFormUtils.renderForm(
           hass,
           { [fieldName]: displayValue },
@@ -506,9 +544,9 @@ export class UcFormUtils {
                 gap: 4px;
                 white-space: nowrap;
               "
-              title="${isGlobal ? '🌐 Global' : '📋 Card'}: $${v.name} → ${v.entity}${resolvedValue
-                ? ` (${resolvedValue})`
-                : ''}"
+              title="${isGlobal ? '🌐 Global' : '📋 Card'}: $${v.name} → ${v.entity}${
+                resolvedValue ? ` (${resolvedValue})` : ''
+              }"
               @click=${() => onSelect(v.entity)}
             >
               <span style="opacity: 0.7;">${isGlobal ? '🌐' : '📋'}</span>
@@ -546,14 +584,16 @@ export class UcFormUtils {
     // sibling fields use the bold .field-title style).
     return html`
       <div class="field-section uc-entity-picker-field" style="margin-bottom: 16px;">
-        ${label
-          ? html`<div
-              class="field-title"
-              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px;"
-            >
-              ${label}
-            </div>`
-          : ''}
+        ${
+          label
+            ? html`<div
+                class="field-title"
+                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px;"
+              >
+                ${label}
+              </div>`
+            : ''
+        }
         ${UcFormUtils.renderForm(
           hass,
           { [fieldName]: resolvedDisplay || '' },

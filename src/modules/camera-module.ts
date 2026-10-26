@@ -41,6 +41,8 @@ type CameraViewMode = 'auto' | 'live' | 'snapshot';
 type CameraFitMode = 'cover' | 'contain' | 'fill';
 
 const DEFAULT_ASPECT_RATIO = 16 / 9;
+/** How long the app must have been in the background before a live stream is rebuilt on return. */
+const STREAM_RESUME_REBUILD_MS = 30_000;
 
 /**
  * Runtime state for a single camera instance.
@@ -63,6 +65,8 @@ interface CameraRuntimeState {
   snapshotSrc?: string | undefined;
   snapshotEntity?: string | undefined;
   snapshotInFlight?: boolean | undefined;
+  /** Bumped when the app returns from a long sleep, so a stalled live stream is rebuilt. */
+  streamEpoch?: number | undefined;
   audioOverride?: boolean | undefined;
   clickTimeout?: any;
   holdTimeout?: any;
@@ -80,6 +84,7 @@ export class UltraCameraModule extends BaseUltraModule {
   private _runtime: Map<string, CameraRuntimeState> = new Map();
   private _playerRefs: Map<string, (element: Element | undefined) => void> = new Map();
   private _visibilityListener: (() => void) | undefined;
+  private _hiddenAt: number | undefined;
   /** Latest `hass` seen by any render, used by timers that outlive a render pass. */
   private _hass: HomeAssistant | undefined;
 
@@ -520,6 +525,24 @@ export class UltraCameraModule extends BaseUltraModule {
                     hass,
                     { show_audio_button: cameraModule.show_audio_button !== false },
                     [this.booleanField('show_audio_button')],
+                    (e: CustomEvent) => {
+                      updateModule(e.detail.value);
+                      this.triggerPreviewUpdate();
+                    }
+                  )}
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.camera.show_mode_badge.title', lang, 'Live / Snapshot Badge'),
+                    localize(
+                      'editor.camera.show_mode_badge.desc',
+                      lang,
+                      'Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots.'
+                    ),
+                    hass,
+                    { show_mode_badge: cameraModule.show_mode_badge === true },
+                    [this.booleanField('show_mode_badge')],
                     (e: CustomEvent) => {
                       updateModule(e.detail.value);
                       this.triggerPreviewUpdate();
@@ -1270,7 +1293,8 @@ export class UltraCameraModule extends BaseUltraModule {
 
     // The player is only rebuilt when something it genuinely depends on changes. Re-keying it on
     // unrelated state updates tears the stream down and restarts the handshake.
-    const playerKey = `${cameraModule.id}|${cameraEntity || 'none'}|${viewMode}`;
+    const playerKey = `${cameraModule.id}|${cameraEntity || 'none'}|${viewMode}|${state.streamEpoch || 0}`;
+    if (isLiveMode) this._ensureVisibilityListener();
 
     // Get camera name - use template overlay text if provided
     const cameraName =
@@ -1391,6 +1415,16 @@ export class UltraCameraModule extends BaseUltraModule {
     const audioActive = isLiveMode && this._isAudioActive(cameraModule);
     const showAudioToggle = isLiveMode && cameraModule.show_audio_button !== false;
 
+    const modeBadge =
+      cameraModule.show_mode_badge === true
+        ? html`<div class="camera-mode-badge ${isLiveMode ? 'live' : 'snapshot'}">
+            <span class="camera-mode-badge-dot"></span>
+            ${isLiveMode
+              ? localize('editor.camera.mode_badge.live', lang, 'Live')
+              : localize('editor.camera.mode_badge.snapshot', lang, 'Snapshot')}
+          </div>`
+        : '';
+
     const nameOverlay =
       cameraModule.show_name !== false
         ? html`<div
@@ -1506,6 +1540,7 @@ export class UltraCameraModule extends BaseUltraModule {
                     })
                   )}
                   ${nameOverlay}
+                  ${modeBadge}
                   ${showAudioToggle
                     ? html`
                         <button
@@ -2213,16 +2248,46 @@ export class UltraCameraModule extends BaseUltraModule {
     const base =
       typeof (hass as any).hassUrl === 'function' ? (hass as any).hassUrl(picture) : picture;
     const src = `${base}${base.includes('?') ? '&' : '?'}_uc=${Date.now()}`;
-    state.snapshotSrc = src;
 
-    const element = state.player as HTMLImageElement | undefined;
-    if (applyToElement) {
-      if (element instanceof HTMLImageElement) {
-        element.src = src;
-      } else {
-        this.triggerPreviewUpdate();
-      }
+    if (!applyToElement) {
+      state.snapshotSrc = src;
+      return;
     }
+    this._swapSnapshot(moduleId, entityId, src, true);
+  }
+
+  /**
+   * Loads the next frame off-screen and only then shows it, so a failed load keeps the last good
+   * frame on screen instead of the browser's broken-image icon. `entity_picture` carries an access
+   * token that Home Assistant rotates every few minutes; after the app has been in the background
+   * the copy in `hass.states` can be stale for a moment, so a failure falls back once to a freshly
+   * signed proxy path.
+   */
+  private _swapSnapshot(
+    moduleId: string,
+    entityId: string,
+    src: string,
+    retrySigned: boolean
+  ): void {
+    const state = this._runtime.get(moduleId);
+    if (!state) return;
+    const element = state.player;
+    if (!(element instanceof HTMLImageElement) || typeof Image === 'undefined') {
+      state.snapshotSrc = src;
+      this.triggerPreviewUpdate();
+      return;
+    }
+    const probe = new Image();
+    probe.onload = () => {
+      const current = this._runtime.get(moduleId);
+      if (!current || current.player !== element) return;
+      current.snapshotSrc = src;
+      element.src = src;
+    };
+    probe.onerror = () => {
+      if (retrySigned) void this._resolveSignedSnapshot(moduleId, entityId);
+    };
+    probe.src = src;
   }
 
   /** Cameras without an `entity_picture` (no access token yet) need a signed proxy path. */
@@ -2242,13 +2307,12 @@ export class UltraCameraModule extends BaseUltraModule {
         typeof (hass as any).hassUrl === 'function'
           ? (hass as any).hassUrl(signed.path)
           : signed.path;
-      state.snapshotSrc = `${base}${base.includes('?') ? '&' : '?'}_uc=${Date.now()}`;
-      const element = state.player as HTMLImageElement | undefined;
-      if (element instanceof HTMLImageElement) {
-        element.src = state.snapshotSrc;
-      } else {
-        this.triggerPreviewUpdate();
-      }
+      this._swapSnapshot(
+        moduleId,
+        entityId,
+        `${base}${base.includes('?') ? '&' : '?'}_uc=${Date.now()}`,
+        false
+      );
     } catch {
       // Leave the previous frame in place; the next tick retries.
     } finally {
@@ -2268,16 +2332,34 @@ export class UltraCameraModule extends BaseUltraModule {
     void this._resolveSignedSnapshot(cameraModule.id, entityId);
   }
 
-  /** Background tabs skip refreshes; this catches them up the moment the tab is shown again. */
+  /**
+   * Background tabs skip refreshes; this catches them up the moment the tab is shown again. The
+   * frame is fetched through a freshly signed path because the token in `entity_picture` may have
+   * rotated while the app was asleep.
+   */
   private _ensureVisibilityListener(): void {
     if (this._visibilityListener || typeof document === 'undefined') return;
     this._visibilityListener = () => {
-      if (document.hidden) return;
+      if (document.hidden) {
+        this._hiddenAt = Date.now();
+        return;
+      }
+      // Mobile apps freeze the page in the background and the stream's connection rarely survives
+      // that; after a real sleep the live player is rebuilt rather than left on a dead stream.
+      const slept =
+        this._hiddenAt !== undefined && Date.now() - this._hiddenAt >= STREAM_RESUME_REBUILD_MS;
+      this._hiddenAt = undefined;
+      let rebuild = false;
       this._runtime.forEach((state, moduleId) => {
         if (state.snapshotTimer && state.snapshotEntity) {
-          this._refreshSnapshot(moduleId, state.snapshotEntity, true);
+          void this._resolveSignedSnapshot(moduleId, state.snapshotEntity);
+        }
+        if (slept && state.renderedLive) {
+          state.streamEpoch = (state.streamEpoch || 0) + 1;
+          rebuild = true;
         }
       });
+      if (rebuild) this.triggerPreviewUpdate(true, true);
     };
     document.addEventListener('visibilitychange', this._visibilityListener);
   }
@@ -3612,6 +3694,39 @@ export class UltraCameraModule extends BaseUltraModule {
         transition: opacity 0.3s ease;
       }
 
+      .camera-mode-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 12;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        line-height: 1.4;
+        pointer-events: none;
+      }
+      .camera-mode-badge-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.7);
+      }
+      .camera-mode-badge.live .camera-mode-badge-dot {
+        background: #e53935;
+        animation: camera-live-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes camera-live-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
+      }
       .camera-audio-toggle {
         position: absolute;
         bottom: 10px;

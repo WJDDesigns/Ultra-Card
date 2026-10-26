@@ -1260,6 +1260,14 @@
         "add": "Add Button",
         "position": "Button Position",
         "tap_again": "Tap again to confirm"
+      },
+      "show_mode_badge": {
+        "title": "Live / Snapshot Badge",
+        "desc": "Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
       }
     },
     "separator": {
@@ -1352,7 +1360,8 @@
         "attribute": "Attributt",
         "time_from": "Frå",
         "time_to": "Til",
-        "template": "Mal"
+        "template": "Mal",
+        "variable": "Variabel"
       },
       "condition_header": "Vilkår",
       "custom_name": "Tilpassa namn",
@@ -2587,7 +2596,9 @@
       "confirm_clear_card": "Er du sikker på at du vil slette alle kortspesifikke variabler?",
       "value_type_attribute": "Attributt",
       "value_type_attribute_desc": "Attributt Verdi (f.eks. temmpatur, friendly_name)",
-      "attribute_name": "Attributt Navn"
+      "attribute_name": "Attributt Navn",
+      "make_global_conflict": "Det finst allereie ein global variabel med dette namnet. Gi denne eit nytt namn først.",
+      "make_global": "Gjer global (bruk på alle kort)"
     },
     "export_import": {
       "include_variables": "Du har eigne variabel(ar). Inkludere them i eksporten?",
@@ -2836,6 +2847,10 @@
       "show_state_desc": "Vis låst / ulåst tekst",
       "show_open_button": "Vis opne knapp",
       "show_open_button_desc": "Vis Open når låsen støttar oppheving (OPEN-funksjon)",
+      "show_lock_buttons": "Vis lås / lås opp-knappar",
+      "show_lock_buttons_desc": "Vis knappane Lås og Lås opp (kompakt oppsett viser éin vekslarknapp)",
+      "show_open_button_unsupported": "Denne låsen kan ikkje opne (ingen Opne-funksjon), så det finst ingen Opne-knapp å vise",
+      "align_spread": "Spreidd",
       "layout_section": "Oppsett",
       "layout_desc": "Visuell stil og justering.",
       "layout": "Oppsett",
@@ -2860,7 +2875,29 @@
       "action_lock": "Lås",
       "action_unlock": "Lås opp",
       "action_open": "Opne",
-      "actions": "Lås handlingar"
+      "actions": "Lås handlingar",
+      "unlock_style": "Lås opp med",
+      "unlock_style_desc": "Skyv erstattar knappane Lås opp og Opne med glidebrytarar, så eit utilsikta trykk ikkje låser opp. Hero- og Standard-oppsett.",
+      "unlock_style_buttons": "Knappar",
+      "unlock_style_slide": "Skyv for å låse opp",
+      "ask_code": "Spør om PIN-kode",
+      "ask_code_desc": "Viser eit tastatur og sender koden til låsen. Automatisk spør når låsen krev ein kode. Vel Aldri om du har sett ein standardkode for låsen i Home Assistant.",
+      "ask_code_auto": "Automatisk",
+      "ask_code_always": "Alltid",
+      "ask_code_never": "Aldri",
+      "cancel": "Avbryt",
+      "code_clear": "Tøm",
+      "code_placeholder": "Kode",
+      "slide_to_unlock": "Skyv for å låse opp",
+      "slide_to_open": "Skyv for å opne",
+      "unlock_style_pattern": "Teikn eit mønster",
+      "pattern_title": "Opplåsingsmønster",
+      "pattern_desc": "Teikn mønsteret som låser opp og opnar denne låsen. Det blir lagra i dashbordet, så det hindrar utilsikta opplåsing, men det er ikkje eit ekte passord.",
+      "pattern_prompt": "Teikn mønsteret ditt",
+      "pattern_wrong": "Feil mønster, prøv igjen",
+      "pattern_saved": "Mønster lagra. Teikn på nytt for å endre det.",
+      "pattern_none": "Inkje mønster enno, så opplåsing brukar vanleg stadfesting.",
+      "pattern_too_short": "Kopla saman minst 4 prikkar"
     },
     "text_input": {
       "entity": {
@@ -3280,7 +3317,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Synlegheit",
+        "hide_on": "Skjul på",
+        "hide_on_desc": "Skjuler dette elementet medan navigasjonslinja brukar skrivebords- eller mobiloppsettet.",
+        "desktop": "Skrivebord",
+        "mobile": "Mobil",
+        "show_when": "Vis berre når",
+        "show_when_desc": "Viser berre dette elementet medan ei entitet er (eller ikkje er) i ein tilstand, til dømes ein gjestemodusbrytar. La entiteten stå tom for alltid å vise det.",
+        "entity": "Entitet",
+        "is": "er",
+        "is_not": "er ikkje",
+        "condition": "Vilkår",
+        "state": "Tilstand"
+      }
     },
     "climate": {
       "error_no_entity": "Ingen klimaenhet",
@@ -3343,7 +3394,18 @@
         "no_data": "Ingen prognosedata tilgjengeleg"
       },
       "icon_style_fill": "Utfylt",
-      "icon_style_line": "Omriss"
+      "icon_style_line": "Omriss",
+      "swipe_more": "Sveip for meir",
+      "swipe_more_desc": "Lastar inn alle dagar eller timar vêrtenesta di tilbyr, og lèt deg sveipe sidelengs gjennom dei. Innstillingane for prognosedagar og -timar bestemmer då kor mange som blir viste samtidig.",
+      "chart_color_mode": "Fargar",
+      "chart_color_mode_desc": "Etter verdi fargar kvar søyle eller punkt etter verdien: UV etter WHO-skalaen, temperatur frå blått til raudt, regn frå lys- til mørkeblått, vind frå grønt til raudt.",
+      "chart_color_single": "Éin farge",
+      "chart_color_value": "Etter verdi",
+      "hour_number_only": "Berre timetal",
+      "hour_number_only_desc": "Viser berre timen, til dømes 14 i staden for 14 Uhr. AM og PM blir verande for 12-timarsspråk.",
+      "chart_values_desc": "Kryss av verdiane som skal visast, vel Søyler eller Linje for kvar, og bruk pilene til å endre rekkjefølgja. Verdiar vêrintegrasjonen ikkje leverer, blir hoppa over.",
+      "move_up": "Flytt opp",
+      "move_down": "Flytt ned"
     },
     "animated_weather": {
       "entity_section": "Vêr Enhet",

@@ -110,3 +110,96 @@ describe('LogicService evaluateUserVisibility', () => {
     ).toBe(true);
   });
 });
+
+describe('LogicService evaluateOverlayModuleVisibility', () => {
+  const nav = {
+    id: 'nav1',
+    type: 'navigation',
+    display_mode: 'always',
+    user_visibility: { mode: 'hide', users: ['pi'] },
+  };
+
+  beforeEach(() => {
+    logicService.setHass(hassWithUser('pi'));
+  });
+
+  it('hides a module whose own user visibility excludes the current user', () => {
+    expect(logicService.evaluateOverlayModuleVisibility(nav)).toBe(false);
+    logicService.setHass(hassWithUser('admin'));
+    expect(logicService.evaluateOverlayModuleVisibility(nav)).toBe(true);
+  });
+
+  it('honours user visibility on the parent row and column', () => {
+    const plain = { id: 'bg1', type: 'background', display_mode: 'always' };
+    const config = (rowVis?: object, colVis?: object) =>
+      ({
+        type: 'custom:ultra-card',
+        layout: {
+          rows: [
+            {
+              id: 'r1',
+              user_visibility: rowVis,
+              columns: [{ id: 'c1', user_visibility: colVis, modules: [plain] }],
+            },
+          ],
+        },
+      }) as any;
+
+    expect(logicService.evaluateOverlayModuleVisibility(plain, config())).toBe(true);
+    expect(
+      logicService.evaluateOverlayModuleVisibility(plain, config({ mode: 'hide', users: ['pi'] }))
+    ).toBe(false);
+    expect(
+      logicService.evaluateOverlayModuleVisibility(
+        plain,
+        config(undefined, { mode: 'show', users: ['admin'] })
+      )
+    ).toBe(false);
+  });
+
+  it('still applies display mode', () => {
+    logicService.setHass(hassWithUser('admin'));
+    expect(logicService.evaluateOverlayModuleVisibility({ ...nav, display_mode: 'never' })).toBe(
+      false
+    );
+  });
+});
+
+describe('LogicService $variable condition entities', () => {
+  it('resolves a global variable used as the condition entity', async () => {
+    const { ucCustomVariablesService } = await import('./uc-custom-variables-service');
+    const v = ucCustomVariablesService.addVariable('window_office', 'binary_sensor.office_window');
+    logicService.setHass({
+      states: { 'binary_sensor.office_window': { state: 'on', attributes: {} } },
+    } as unknown as HomeAssistant);
+    const cond = (value: string) => ({
+      id: 'c1',
+      type: 'entity_state' as const,
+      entity: '$window_office',
+      operator: '=' as const,
+      value,
+    });
+    expect(logicService.evaluateDisplayConditions([cond('on')], 'every')).toBe(true);
+    expect(logicService.evaluateDisplayConditions([cond('off')], 'every')).toBe(false);
+    if (v) ucCustomVariablesService.deleteVariable(v.id);
+  });
+
+  it('prefers the card variable over a global one with the same name', () => {
+    logicService.setHass({
+      states: {
+        'light.card': { state: 'on', attributes: {} },
+      },
+    } as unknown as HomeAssistant);
+    logicService.setCardConfig({
+      type: 'custom:ultra-card',
+      layout: { rows: [] },
+      _customVariables: [
+        { id: 'x', name: 'lamp', entity: 'light.card', value_type: 'state', order: 0, created: '', isGlobal: false },
+      ],
+    } as any);
+    const cond = (value: string) => ({ id: 'c', type: 'entity_state' as const, entity: '$lamp', operator: '=' as const, value });
+    expect(logicService.evaluateDisplayConditions([cond('on')], 'every')).toBe(true);
+    expect(logicService.evaluateDisplayConditions([cond('off')], 'every')).toBe(false);
+    logicService.setCardConfig(undefined);
+  });
+});

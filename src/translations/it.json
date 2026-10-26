@@ -289,7 +289,8 @@
         "attribute": "Attributo",
         "time_from": "Da",
         "time_to": "A",
-        "template": "Modello"
+        "template": "Modello",
+        "variable": "Variabile"
       },
       "condition_header": "Condizione",
       "custom_name": "Nome personalizzato",
@@ -1411,6 +1412,14 @@
         "add": "Add Button",
         "position": "Button Position",
         "tap_again": "Tap again to confirm"
+      },
+      "show_mode_badge": {
+        "title": "Live / Snapshot Badge",
+        "desc": "Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
       }
     },
     "separator": {
@@ -2587,7 +2596,9 @@
       "confirm_clear_card": "È sicuro che desidera eliminare tutte le variabili specifiche della scheda?",
       "value_type_attribute": "Attributo",
       "value_type_attribute_desc": "Valore dell'Attributo (ad es., temperatura, friendly_name)",
-      "attribute_name": "Nome dell'Attributo"
+      "attribute_name": "Nome dell'Attributo",
+      "make_global_conflict": "Esiste già una variabile globale con questo nome. Rinomina prima questa.",
+      "make_global": "Rendi globale (usa su ogni scheda)"
     },
     "export_import": {
       "include_variables": "Hai variabile(e) personalizzata(e). Includere them nell'esportazione?",
@@ -2836,6 +2847,10 @@
       "show_state_desc": "Visualizza testo bloccato / sbloccato",
       "show_open_button": "Mostra pulsante di apertura",
       "show_open_button_desc": "Mostra Apri quando il lucchetto supporta lo sblocco (funzione APERTURA)",
+      "show_lock_buttons": "Mostra pulsanti blocca / sblocca",
+      "show_lock_buttons_desc": "Mostra i pulsanti Blocca e Sblocca (il layout compatto mostra un solo pulsante)",
+      "show_open_button_unsupported": "Questa serratura non può aprire lo scrocco (nessuna funzione Apri), quindi non c'è un pulsante Apri",
+      "align_spread": "Distribuito",
       "layout_section": "Layout",
       "layout_desc": "Stile visivo e allineamento.",
       "layout": "Layout",
@@ -2860,7 +2875,29 @@
       "action_lock": "Blocco",
       "action_unlock": "Sblocco",
       "action_open": "Apri",
-      "actions": "Azioni di blocco"
+      "actions": "Azioni di blocco",
+      "unlock_style": "Sblocca con",
+      "unlock_style_desc": "Scorrimento sostituisce i pulsanti Sblocca e Apri con cursori, così un tocco accidentale non sblocca. Layout Hero e Standard.",
+      "unlock_style_buttons": "Pulsanti",
+      "unlock_style_slide": "Scorri per sbloccare",
+      "ask_code": "Chiedi codice PIN",
+      "ask_code_desc": "Mostra un tastierino e invia il codice alla serratura. Automatico lo chiede quando la serratura richiede un codice. Scegli Mai se hai impostato un codice predefinito per la serratura in Home Assistant.",
+      "ask_code_auto": "Automatico",
+      "ask_code_always": "Sempre",
+      "ask_code_never": "Mai",
+      "cancel": "Annulla",
+      "code_clear": "Cancella",
+      "code_placeholder": "Codice",
+      "slide_to_unlock": "Scorri per sbloccare",
+      "slide_to_open": "Scorri per aprire",
+      "unlock_style_pattern": "Disegna una sequenza",
+      "pattern_title": "Sequenza di sblocco",
+      "pattern_desc": "Disegna la sequenza che sblocca e apre questa serratura. Viene salvata nella dashboard: evita sblocchi accidentali, ma non è una vera password.",
+      "pattern_prompt": "Disegna la tua sequenza",
+      "pattern_wrong": "Sequenza errata, riprova",
+      "pattern_saved": "Sequenza salvata. Disegnala di nuovo per cambiarla.",
+      "pattern_none": "Nessuna sequenza ancora, quindi lo sblocco usa la conferma normale.",
+      "pattern_too_short": "Collega almeno 4 punti"
     },
     "text_input": {
       "entity": {
@@ -3280,7 +3317,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Visibilità",
+        "hide_on": "Nascondi su",
+        "hide_on_desc": "Nasconde questa voce mentre la barra di navigazione usa il layout desktop o mobile.",
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "show_when": "Mostra solo quando",
+        "show_when_desc": "Mostra questa voce solo mentre un'entità è (o non è) in uno stato, ad esempio un interruttore modalità ospite. Lascia vuota l'entità per mostrarla sempre.",
+        "entity": "Entità",
+        "is": "è",
+        "is_not": "non è",
+        "condition": "Condizione",
+        "state": "Stato"
+      }
     },
     "climate": {
       "error_no_entity": "Nessuna Entità Climatica",
@@ -3343,7 +3394,18 @@
         "no_data": "Nessun dato di previsione disponibile"
       },
       "icon_style_fill": "Compilato",
-      "icon_style_line": "Contornato"
+      "icon_style_line": "Contornato",
+      "swipe_more": "Scorri per altro",
+      "swipe_more_desc": "Carica tutti i giorni o le ore forniti dal tuo servizio meteo e permette di scorrerli lateralmente. Le impostazioni Giorni e Ore di previsione indicano quanti ne vengono mostrati alla volta.",
+      "chart_color_mode": "Colori",
+      "chart_color_mode_desc": "Per valore colora ogni barra o punto in base al valore: UV secondo la scala OMS, temperatura dal blu al rosso, pioggia dall'azzurro al blu scuro, vento dal verde al rosso.",
+      "chart_color_single": "Un colore",
+      "chart_color_value": "Per valore",
+      "hour_number_only": "Solo numero dell'ora",
+      "hour_number_only_desc": "Mostra solo l'ora, ad esempio 14 invece di 14 Uhr. AM e PM restano per le lingue a 12 ore.",
+      "chart_values_desc": "Spunta i valori da mostrare, scegli Barre o Linea per ciascuno e usa le frecce per cambiarne l'ordine. I valori non forniti dalla tua integrazione meteo vengono saltati.",
+      "move_up": "Sposta su",
+      "move_down": "Sposta giù"
     },
     "animated_weather": {
       "entity_section": "Entità Meteo",
