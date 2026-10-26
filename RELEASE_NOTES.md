@@ -1,5 +1,52 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.2
+
+Stable 3.14.2 brings everything from the eight 3.14.2 betas into one release. The Lock module can now ask for a slide, a PIN code or a drawn pattern before it unlocks, the weather modules read your own station sensors and get a wind compass, hourly forecasts and charts, and global variables sync across your devices. Hidden cards now close up properly, and cameras work again inside Horizontal containers, Popups and Drawers. Thanks to everyone who tested the betas, and especially to larrysansan for most of the ideas and bug reports in this release.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Using the Hub?** The Hub's new global variable search and groups come with Ultra Card Connect 1.11.0, released alongside this version.
+
+### 🚀 New Features
+
+- **Lock: slide to unlock** - Set "Unlock with" to Slide and the Unlock and Open buttons become sliders, so a stray tap can't unlock the door. Works in the Hero and Standard layouts. The slider knob icon switches from locked to unlocked when you reach the end
+- **Lock: PIN code keypad** - "Ask for PIN code" shows a keypad and sends the code to the lock, so locks that need a code now work from the card. Automatic asks only when the lock needs one
+- **Lock: draw a pattern to unlock** - Set "Unlock with" to "Draw a pattern" and draw your pattern (at least 4 dots) in the editor. Unlock and Open then ask for the pattern first, like a phone's lock screen. The pattern is saved in the dashboard, so it stops accidental unlocks but isn't a real password
+- **Lock "Show lock / unlock buttons"** - New Display option to hide the Lock and Unlock buttons, for example for a status-only lock
+- **Weather station sensors** - Weather and Animated Weather can read temperature, humidity, feels like, dew point, pressure, wind, gust, rain and UV from your own sensors. A sensor wins over the weather entity and falls back to it when unavailable
+- **Wind compass and more weather details** - Weather shows a wind direction arrow and optional feels like, gust, pressure, rain, UV and dew point. Animated Weather gets the same items plus a wind compass dial. New items stay off unless you turn them on
+- **Hourly forecast and forecast charts** - Animated Forecast can start on hourly, open a day's hours when tapped, and show chart rows (chance of rain, rain, UV, temperature, wind) under the forecast. Each value picks Bars or Line, and arrows set their order. Graphs forecast mode adds Chance of Rain and UV Index
+- **Animated Forecast: swipe for more** - Turn on "Swipe for More" to scroll sideways through up to 14 days or 48 hours
+- **Animated Forecast: colour by value** - Set Colors to "By Value" to colour bars and lines by their value: UV by the WHO scale, temperature from blue to red, rain from light to dark blue, wind from green to red
+- **Animated Forecast: Hour Number Only** - Shows just the hour (for example "14") instead of "14 Uhr" or "2 PM" in hourly forecasts
+- **Global variables on every device** - Global Custom Variables are now saved to your Home Assistant user, so every browser and the companion app you sign in with gets the same set. If two devices have different copies, the newest one wins
+- **Make a card variable global** - Card variables have a new globe button that moves them to your global variables, so every card can use them
+- **Search entities and group global variables** - The Entity field in the Hub's Variables tab searches by entity ID or name as you type, and global variables can have a Group with filter chips to show one group at a time (needs Ultra Card Connect 1.11.0)
+- **Navigation: visibility per item** - Each path and stack has a Visibility section: Visible to Users, Hide on Devices (the same Desktop, Laptop, Tablet and Mobile picker as other modules), and Show only when an entity is (or isn't) a state
+- **Update Monitor "Hide when up to date"** - Hides the module on the dashboard when no updates are pending
+- **Camera Live / Snapshot badge** - Optional small badge in the top corner showing whether the camera is live or a snapshot
+
+### 🔧 Improvements
+
+- **State picker for condition values** - For "=" and "!=" conditions on an entity, the Value field now lists that entity's states (such as on/off) and still accepts a typed value. Applies to the Logic tab, Popup triggers, Accordion and Grid filters
+- **Hidden rows stay visible in the editor** - Rows, columns and modules set to hide on the device you're editing on now show faded with a dashed outline in the card editor instead of disappearing
+- **Lock alignment in every layout** - Left and Right now move the lock to that side in the Standard and Compact layouts too, not only Hero. Their default stays spread across the card and is now called "Spread out", so existing cards look the same
+- **Clearer Lock "Show open button"** - The option is greyed out with a note when your lock can't unlatch, since the Open button can never show for it
+
+### 🐛 Bug Fixes
+
+- **Hidden Ultra Card leaving a gap** - When a card hides itself through Visible to Users, an entity condition, Logic or Hide on Devices, it now closes up instead of leaving an empty box or a gap in the sections view. Home Assistant always shows hidden cards while the dashboard is in edit mode
+- **Cameras inside a Horizontal container** - A Camera set to a percentage width (the default 100%) now shows inside a Horizontal container instead of shrinking to nothing. Map, Weather Radar, Camera Grid and Stack modules are fixed too
+- **Live cameras in Popups and Drawers** - A live Camera inside a Popup or Drawer now plays instead of staying blank, and modules inside a Popup get all of their styling
+- **Camera after returning to the app** - A camera no longer shows the broken-image icon or goes blank after the app has been in the background
+- **Toggle action on locks** - Toggle as a tap, hold or double-tap action now works on lock entities. Buttons and input buttons now get pressed and scenes get activated the same way
+- **Visible to Users on Navigation** - Logic > Visible to Users now works on Navigation, Background, Video Background, Dynamic Weather and Living Canvas
+- **Global variables in Logic conditions** - A $variable picked as a Logic condition entity showed "unknown entity" and never matched. Conditions now use card variables first, then global ones
+- **Dynamic List and Action sources going stale** - Changing a To-do list template or an Action source kept showing the old result until the page was reloaded
+- **Forecast line chart** - The line chart under Animated Forecast drew nothing, and once drawn its points drifted away from their columns. Both are fixed
+- **Readable dropdowns in dark themes** - The add dropdowns in Lunar Phase hidden items and other list settings no longer show near-white text on a white list
+
 ## Version 3.14.2-beta8
 
 The eighth 3.14.2 beta adds pattern unlock to the Lock module. This is a pre-release for testing — please report anything odd on GitHub or Discord.
