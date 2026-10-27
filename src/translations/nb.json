@@ -2848,7 +2848,7 @@
       "show_open_button": "Vis åpningsknapp",
       "show_open_button_desc": "Vis Åpne når låsen støtter utlåsning (ÅPNE-funksjon)",
       "show_lock_buttons": "Vis lås / lås opp-knapper",
-      "show_lock_buttons_desc": "Vis knappene Lås og Lås opp (kompakt oppsett viser én veksleknapp)",
+      "show_lock_buttons_desc": "Vis knappene Lås og Lås opp (kompakt oppsett viser én veksleknapp). Uten dem kan du sette trykkhandlingen til Veksle for å låse og låse opp ved å trykke på kortet.",
       "show_open_button_unsupported": "Denne låsen kan ikke åpne (ingen Åpne-funksjon), så det finnes ingen Åpne-knapp å vise",
       "align_spread": "Spredt",
       "layout_section": "Oppsett",
@@ -2877,7 +2877,7 @@
       "action_open": "Åpne",
       "actions": "Lås handlinger",
       "unlock_style": "Lås opp med",
-      "unlock_style_desc": "Skyv erstatter knappene Lås opp og Åpne med glidebrytere, så et utilsiktet trykk ikke låser opp. Hero- og Standard-oppsett.",
+      "unlock_style_desc": "Skyv erstatter knappene Lås opp og Åpne med glidebrytere, så et utilsiktet trykk ikke låser opp (oppsettene Hero og Standard; ellers bes det om bekreftelse). Mønster og PIN sjekkes i kortet før opplåsing.",
       "unlock_style_buttons": "Knapper",
       "unlock_style_slide": "Skyv for å låse opp",
       "ask_code": "Spør om PIN-kode",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Feil mønster, prøv igjen",
       "pattern_saved": "Mønster lagret. Tegn på nytt for å endre det.",
       "pattern_none": "Ingen mønster ennå, så opplåsing bruker vanlig bekreftelse.",
-      "pattern_too_short": "Koble sammen minst 4 prikker"
+      "pattern_too_short": "Koble sammen minst 4 prikker",
+      "unlock_style_pin": "Skriv inn en PIN",
+      "pin_title": "PIN for opplåsing",
+      "pin_desc": "PIN-en som låser opp og åpner denne låsen. Den sjekkes i kortet og lagres i dashbordet, så den hindrer utilsiktet opplåsing, men det er ikke et ekte passord. Den sendes ikke til låsen.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN lagret.",
+      "pin_none": "Skriv inn minst 4 sifre. Inntil da bruker opplåsing vanlig bekreftelse.",
+      "pin_prompt": "Skriv inn PIN-en din",
+      "pin_wrong": "Feil PIN, prøv igjen"
     },
     "text_input": {
       "entity": {

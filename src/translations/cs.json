@@ -2848,7 +2848,7 @@
       "show_open_button": "Zobrazit tlačítko Otevřít",
       "show_open_button_desc": "Zobrazit Otevřít, když zámek podporuje odemčení (funkce OTEVŘÍT)",
       "show_lock_buttons": "Zobrazit tlačítka zamknout / odemknout",
-      "show_lock_buttons_desc": "Zobrazit tlačítka Zamknout a Odemknout (kompaktní rozložení zobrazuje jedno přepínací tlačítko)",
+      "show_lock_buttons_desc": "Zobrazit tlačítka Zamknout a Odemknout (kompaktní rozložení zobrazuje jedno přepínací tlačítko). Bez nich nastavte akci klepnutí na Přepnout, abyste zamykali a odemykali klepnutím na kartu.",
       "show_open_button_unsupported": "Tento zámek neumí odjistit (chybí funkce Otevřít), takže tlačítko Otevřít nelze zobrazit",
       "align_spread": "Roztažené",
       "layout_section": "Rozložení",
@@ -2877,7 +2877,7 @@
       "action_open": "Otevřít",
       "actions": "Akce zámku",
       "unlock_style": "Odemknout pomocí",
-      "unlock_style_desc": "Posuvník nahradí tlačítka Odemknout a Otevřít posuvníky, takže náhodné klepnutí nic neodemkne. Rozvržení Hero a Standardní.",
+      "unlock_style_desc": "Posunutí nahradí tlačítka Odemknout a Otevřít posuvníky, aby náhodné klepnutí neodemklo (rozložení Hero a Standardní; jinde se vyžádá potvrzení). Gesto a PIN se před odemčením ověřují v kartě.",
       "unlock_style_buttons": "Tlačítka",
       "unlock_style_slide": "Posunutím odemknout",
       "ask_code": "Vyžádat PIN kód",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Špatné gesto, zkuste to znovu",
       "pattern_saved": "Gesto uloženo. Nakreslete znovu pro změnu.",
       "pattern_none": "Zatím žádné gesto, odemčení proto používá běžné potvrzení.",
-      "pattern_too_short": "Spojte alespoň 4 body"
+      "pattern_too_short": "Spojte alespoň 4 body",
+      "unlock_style_pin": "Zadat PIN",
+      "pin_title": "PIN pro odemčení",
+      "pin_desc": "PIN, který odemyká a otevírá tento zámek. Ověřuje se v kartě a ukládá se do dashboardu, takže brání nechtěnému odemčení, ale není to skutečné heslo. Do zámku se neodesílá.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN uložen.",
+      "pin_none": "Zadejte alespoň 4 číslice. Do té doby odemčení používá běžné potvrzení.",
+      "pin_prompt": "Zadejte svůj PIN",
+      "pin_wrong": "Špatný PIN, zkuste to znovu"
     },
     "text_input": {
       "entity": {

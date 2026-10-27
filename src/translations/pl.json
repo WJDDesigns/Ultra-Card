@@ -2848,7 +2848,7 @@
       "show_open_button": "Pokaż przycisk otwierania",
       "show_open_button_desc": "Pokaż Otwórz, gdy zamek obsługuje odblokowanie (funkcja OTWÓRZ)",
       "show_lock_buttons": "Pokaż przyciski zablokuj / odblokuj",
-      "show_lock_buttons_desc": "Pokaż przyciski Zablokuj i Odblokuj (układ kompaktowy pokazuje jeden przełącznik)",
+      "show_lock_buttons_desc": "Pokaż przyciski Zablokuj i Odblokuj (układ kompaktowy pokazuje jeden przełącznik). Bez nich ustaw akcję dotknięcia na Przełącz, aby blokować i odblokowywać dotknięciem karty.",
       "show_open_button_unsupported": "Ten zamek nie obsługuje otwierania (brak funkcji Otwórz), więc nie ma przycisku Otwórz",
       "align_spread": "Rozłożone",
       "layout_section": "Układ",
@@ -2877,7 +2877,7 @@
       "action_open": "Otwórz",
       "actions": "Akcje blokady",
       "unlock_style": "Odblokuj przez",
-      "unlock_style_desc": "Przesuwanie zastępuje przyciski Odblokuj i Otwórz suwakami, więc przypadkowe dotknięcie nie odblokuje. Układy Hero i Standardowy.",
+      "unlock_style_desc": "Przesunięcie zastępuje przyciski Odblokuj i Otwórz suwakami, żeby przypadkowe dotknięcie nie odblokowało (układy Hero i Standardowy; w innych pojawia się potwierdzenie). Wzór i PIN są sprawdzane w karcie przed odblokowaniem.",
       "unlock_style_buttons": "Przyciski",
       "unlock_style_slide": "Przesuń, aby odblokować",
       "ask_code": "Pytaj o kod PIN",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Nieprawidłowy wzór, spróbuj ponownie",
       "pattern_saved": "Wzór zapisany. Narysuj ponownie, aby go zmienić.",
       "pattern_none": "Brak wzoru, więc odblokowanie używa zwykłego potwierdzenia.",
-      "pattern_too_short": "Połącz co najmniej 4 punkty"
+      "pattern_too_short": "Połącz co najmniej 4 punkty",
+      "unlock_style_pin": "Wpisz PIN",
+      "pin_title": "PIN odblokowania",
+      "pin_desc": "PIN, który odblokowuje i otwiera ten zamek. Jest sprawdzany w karcie i zapisany w panelu, więc chroni przed przypadkowym odblokowaniem, ale nie jest prawdziwym hasłem. Nie jest wysyłany do zamka.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN zapisany.",
+      "pin_none": "Wpisz co najmniej 4 cyfry. Do tego czasu odblokowanie używa zwykłego potwierdzenia.",
+      "pin_prompt": "Wpisz swój PIN",
+      "pin_wrong": "Błędny PIN, spróbuj ponownie"
     },
     "text_input": {
       "entity": {

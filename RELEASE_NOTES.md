@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta1
+
+The first 3.14.3 beta lets you unlock a Lock module by tapping the card, adds a PIN you set in the card, and fixes Popups triggered by a module. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Lock: unlock with a PIN** - Set "Unlock with" to "Enter a PIN" and type a PIN of at least 4 digits in the editor. Unlock and Open then show a keypad and only go ahead with the right PIN; a wrong one shakes and lets you try again. The PIN is checked in the card and never sent to the lock, so it works with any lock. Thanks to larrysansan for the idea
+- **Lock: tap the card to lock and unlock** - The Lock module's Tap, Hold and Double tap actions now work. Set one to Toggle and tapping the card locks or unlocks, going through your "Unlock with" choice (pattern, PIN or confirmation) first. Handy with the lock / unlock buttons hidden for an icon-only lock
+
+### 🐛 Bug Fixes
+
+- **Pattern unlock in icon-only mode** - With the lock / unlock buttons hidden, there was no way to reach the pattern. Tapping the card (Tap action set to Toggle) now asks for it. With Slide to unlock, a tap outside the slider always asks for confirmation first. Thanks to larrysansan for the report
+- **Popup "Trigger via Module" with Tap action None** - A popup set to open from a module didn't open when that module's Tap action was None. It now opens on tap. Thanks to Steve Markus for the report
+
 ## Version 3.14.2
 
 Stable 3.14.2 brings everything from the eight 3.14.2 betas into one release. The Lock module can now ask for a slide, a PIN code or a drawn pattern before it unlocks, the weather modules read your own station sensors and get a wind compass, hourly forecasts and charts, and global variables sync across your devices. Hidden cards now close up properly, and cameras work again inside Horizontal containers, Popups and Drawers. Thanks to everyone who tested the betas, and especially to larrysansan for most of the ideas and bug reports in this release.

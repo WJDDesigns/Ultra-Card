@@ -2848,7 +2848,7 @@
       "show_open_button": "Afficher le bouton Ouvrir",
       "show_open_button_desc": "Afficher Ouvrir lorsque le verrou prend en charge le déverrouillage (fonction OUVRIR)",
       "show_lock_buttons": "Afficher les boutons verrouiller / déverrouiller",
-      "show_lock_buttons_desc": "Afficher les boutons Verrouiller et Déverrouiller (la disposition compacte affiche un seul bouton)",
+      "show_lock_buttons_desc": "Afficher les boutons Verrouiller et Déverrouiller (la disposition compacte affiche un seul bouton). Sans eux, réglez l'action d'appui sur Basculer pour verrouiller et déverrouiller en touchant la carte.",
       "show_open_button_unsupported": "Ce verrou ne peut pas s'ouvrir (pas de fonction Ouvrir), il n'y a donc pas de bouton Ouvrir",
       "align_spread": "Réparti",
       "layout_section": "Disposition",
@@ -2877,7 +2877,7 @@
       "action_open": "Ouvrir",
       "actions": "Actions de verrouillage",
       "unlock_style": "Déverrouiller avec",
-      "unlock_style_desc": "Glisser remplace les boutons Déverrouiller et Ouvrir par des curseurs, pour qu'un appui accidentel ne déverrouille pas. Dispositions Hero et Standard.",
+      "unlock_style_desc": "Glisser remplace les boutons Déverrouiller et Ouvrir par des curseurs, pour qu'un appui accidentel ne déverrouille pas (dispositions Hero et Standard ; ailleurs, une confirmation est demandée). Le schéma et le code PIN sont vérifiés dans la carte avant le déverrouillage.",
       "unlock_style_buttons": "Boutons",
       "unlock_style_slide": "Glisser pour déverrouiller",
       "ask_code": "Demander le code PIN",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Schéma incorrect, réessayez",
       "pattern_saved": "Schéma enregistré. Dessinez à nouveau pour le modifier.",
       "pattern_none": "Aucun schéma pour l'instant, le déverrouillage utilise donc la confirmation normale.",
-      "pattern_too_short": "Reliez au moins 4 points"
+      "pattern_too_short": "Reliez au moins 4 points",
+      "unlock_style_pin": "Saisir un code PIN",
+      "pin_title": "Code PIN de déverrouillage",
+      "pin_desc": "Le code PIN qui déverrouille et ouvre cette serrure. Il est vérifié dans la carte et enregistré dans le tableau de bord : il évite les déverrouillages accidentels, mais ce n'est pas un vrai mot de passe. Il n'est pas envoyé à la serrure.",
+      "pin_field": "Code PIN",
+      "pin_saved": "Code PIN enregistré.",
+      "pin_none": "Saisissez au moins 4 chiffres. En attendant, le déverrouillage utilise la confirmation normale.",
+      "pin_prompt": "Saisissez votre code PIN",
+      "pin_wrong": "Code PIN incorrect, réessayez"
     },
     "text_input": {
       "entity": {

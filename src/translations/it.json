@@ -2848,7 +2848,7 @@
       "show_open_button": "Mostra pulsante di apertura",
       "show_open_button_desc": "Mostra Apri quando il lucchetto supporta lo sblocco (funzione APERTURA)",
       "show_lock_buttons": "Mostra pulsanti blocca / sblocca",
-      "show_lock_buttons_desc": "Mostra i pulsanti Blocca e Sblocca (il layout compatto mostra un solo pulsante)",
+      "show_lock_buttons_desc": "Mostra i pulsanti Blocca e Sblocca (il layout compatto mostra un solo pulsante). Senza di essi, imposta l'azione al tocco su Commuta per bloccare e sbloccare toccando la scheda.",
       "show_open_button_unsupported": "Questa serratura non può aprire lo scrocco (nessuna funzione Apri), quindi non c'è un pulsante Apri",
       "align_spread": "Distribuito",
       "layout_section": "Layout",
@@ -2877,7 +2877,7 @@
       "action_open": "Apri",
       "actions": "Azioni di blocco",
       "unlock_style": "Sblocca con",
-      "unlock_style_desc": "Scorrimento sostituisce i pulsanti Sblocca e Apri con cursori, così un tocco accidentale non sblocca. Layout Hero e Standard.",
+      "unlock_style_desc": "Scorri sostituisce i pulsanti Sblocca e Apri con cursori, così un tocco accidentale non sblocca (layout Hero e Standard; altrove chiede conferma). Sequenza e PIN vengono verificati nella scheda prima dello sblocco.",
       "unlock_style_buttons": "Pulsanti",
       "unlock_style_slide": "Scorri per sbloccare",
       "ask_code": "Chiedi codice PIN",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Sequenza errata, riprova",
       "pattern_saved": "Sequenza salvata. Disegnala di nuovo per cambiarla.",
       "pattern_none": "Nessuna sequenza ancora, quindi lo sblocco usa la conferma normale.",
-      "pattern_too_short": "Collega almeno 4 punti"
+      "pattern_too_short": "Collega almeno 4 punti",
+      "unlock_style_pin": "Inserisci un PIN",
+      "pin_title": "PIN di sblocco",
+      "pin_desc": "Il PIN che sblocca e apre questa serratura. Viene verificato nella scheda e salvato nella dashboard: evita sblocchi accidentali, ma non è una vera password. Non viene inviato alla serratura.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN salvato.",
+      "pin_none": "Inserisci almeno 4 cifre. Fino ad allora, lo sblocco usa la conferma normale.",
+      "pin_prompt": "Inserisci il tuo PIN",
+      "pin_wrong": "PIN errato, riprova"
     },
     "text_input": {
       "entity": {

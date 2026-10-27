@@ -2848,7 +2848,7 @@
       "show_open_button": "Vis åbningsknap",
       "show_open_button_desc": "Vis Åbn når låsen understøtter aflåsning (ÅBEN funktion)",
       "show_lock_buttons": "Vis lås / lås op-knapper",
-      "show_lock_buttons_desc": "Vis knapperne Lås og Lås op (det kompakte layout viser én skifteknap)",
+      "show_lock_buttons_desc": "Vis knapperne Lås og Lås op (det kompakte layout viser én skifteknap). Uden dem kan du sætte trykhandlingen til Skift for at låse og låse op ved at trykke på kortet.",
       "show_open_button_unsupported": "Denne lås kan ikke åbne (ingen Åbn-funktion), så der er ingen Åbn-knap at vise",
       "align_spread": "Fordelt",
       "layout_section": "Layout",
@@ -2877,7 +2877,7 @@
       "action_open": "Åbn",
       "actions": "Lås Handlinger",
       "unlock_style": "Lås op med",
-      "unlock_style_desc": "Skyd erstatter knapperne Lås op og Åbn med skydere, så et utilsigtet tryk ikke låser op. Hero- og Standard-layout.",
+      "unlock_style_desc": "Skub erstatter knapperne Lås op og Åbn med skydere, så et utilsigtet tryk ikke låser op (layouterne Hero og Standard; andre steder bedes om bekræftelse). Mønster og PIN tjekkes i kortet før oplåsning.",
       "unlock_style_buttons": "Knapper",
       "unlock_style_slide": "Skyd for at låse op",
       "ask_code": "Spørg om PIN-kode",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Forkert mønster, prøv igen",
       "pattern_saved": "Mønster gemt. Tegn igen for at ændre det.",
       "pattern_none": "Intet mønster endnu, så oplåsning bruger den normale bekræftelse.",
-      "pattern_too_short": "Forbind mindst 4 prikker"
+      "pattern_too_short": "Forbind mindst 4 prikker",
+      "unlock_style_pin": "Indtast en PIN",
+      "pin_title": "PIN til oplåsning",
+      "pin_desc": "Den PIN, der låser op og åbner denne lås. Den tjekkes i kortet og gemmes i dashboardet, så den forhindrer utilsigtet oplåsning, men det er ikke en rigtig adgangskode. Den sendes ikke til låsen.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN gemt.",
+      "pin_none": "Indtast mindst 4 cifre. Indtil da bruger oplåsning den normale bekræftelse.",
+      "pin_prompt": "Indtast din PIN",
+      "pin_wrong": "Forkert PIN, prøv igen"
     },
     "text_input": {
       "entity": {

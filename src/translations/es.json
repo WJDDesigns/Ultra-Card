@@ -2848,7 +2848,7 @@
       "show_open_button": "Mostrar botón de abrir",
       "show_open_button_desc": "Mostrar Abrir cuando el candado admite desbloqueo (función ABRIR)",
       "show_lock_buttons": "Mostrar botones de bloquear / desbloquear",
-      "show_lock_buttons_desc": "Mostrar los botones Bloquear y Desbloquear (el diseño compacto muestra un solo botón)",
+      "show_lock_buttons_desc": "Mostrar los botones Bloquear y Desbloquear (el diseño compacto muestra un solo botón). Sin ellos, pon la acción de toque en Alternar para bloquear y desbloquear tocando la tarjeta.",
       "show_open_button_unsupported": "Esta cerradura no puede abrir el pestillo (sin función Abrir), así que no hay botón Abrir",
       "align_spread": "Repartido",
       "layout_section": "Diseño",
@@ -2877,7 +2877,7 @@
       "action_open": "Abrir",
       "actions": "Acciones de bloqueo",
       "unlock_style": "Desbloquear con",
-      "unlock_style_desc": "Deslizar sustituye los botones Desbloquear y Abrir por controles deslizantes, para que un toque accidental no desbloquee. Diseños Hero y Estándar.",
+      "unlock_style_desc": "Deslizar sustituye los botones Desbloquear y Abrir por controles deslizantes, para que un toque accidental no desbloquee (diseños Hero y Estándar; en los demás pide confirmación). El patrón y el PIN se comprueban en la tarjeta antes de desbloquear.",
       "unlock_style_buttons": "Botones",
       "unlock_style_slide": "Deslizar para desbloquear",
       "ask_code": "Pedir código PIN",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Patrón incorrecto, inténtalo de nuevo",
       "pattern_saved": "Patrón guardado. Dibuja de nuevo para cambiarlo.",
       "pattern_none": "Aún no hay patrón, así que el desbloqueo usa la confirmación normal.",
-      "pattern_too_short": "Une al menos 4 puntos"
+      "pattern_too_short": "Une al menos 4 puntos",
+      "unlock_style_pin": "Introducir un PIN",
+      "pin_title": "PIN de desbloqueo",
+      "pin_desc": "El PIN que desbloquea y abre esta cerradura. Se comprueba en la tarjeta y se guarda en el panel, así que evita desbloqueos accidentales, pero no es una contraseña real. No se envía a la cerradura.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN guardado.",
+      "pin_none": "Introduce al menos 4 dígitos. Hasta entonces, el desbloqueo usa la confirmación normal.",
+      "pin_prompt": "Introduce tu PIN",
+      "pin_wrong": "PIN incorrecto, inténtalo de nuevo"
     },
     "text_input": {
       "entity": {

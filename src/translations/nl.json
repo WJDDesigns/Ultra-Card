@@ -2848,7 +2848,7 @@
       "show_open_button": "Toon open knop",
       "show_open_button_desc": "Toon Open wanneer het slot ontgrendelen ondersteunt (OPEN functie)",
       "show_lock_buttons": "Knoppen vergrendelen / ontgrendelen tonen",
-      "show_lock_buttons_desc": "Toon de knoppen Vergrendelen en Ontgrendelen (de compacte indeling toont één schakelknop)",
+      "show_lock_buttons_desc": "Toon de knoppen Vergrendelen en Ontgrendelen (de compacte indeling toont één schakelknop). Zonder deze knoppen zet je de tikactie op Schakelen om te vergrendelen en ontgrendelen door op de kaart te tikken.",
       "show_open_button_unsupported": "Dit slot kan niet openen (geen Openen-functie), dus er is geen Openen-knop",
       "align_spread": "Verspreid",
       "layout_section": "Indeling",
@@ -2877,7 +2877,7 @@
       "action_open": "Open",
       "actions": "Slotacties",
       "unlock_style": "Ontgrendelen met",
-      "unlock_style_desc": "Schuiven vervangt de knoppen Ontgrendelen en Openen door schuifknoppen, zodat een per ongeluk getikte knop niet ontgrendelt. Hero- en Standaard-indeling.",
+      "unlock_style_desc": "Schuiven vervangt de knoppen Ontgrendelen en Openen door schuifregelaars, zodat een onbedoelde tik niet ontgrendelt (indelingen Hero en Standaard; elders wordt om bevestiging gevraagd). Patroon en pincode worden vóór het ontgrendelen in de kaart gecontroleerd.",
       "unlock_style_buttons": "Knoppen",
       "unlock_style_slide": "Schuif om te ontgrendelen",
       "ask_code": "Vraag om pincode",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Verkeerd patroon, probeer het opnieuw",
       "pattern_saved": "Patroon opgeslagen. Teken opnieuw om het te wijzigen.",
       "pattern_none": "Nog geen patroon, dus ontgrendelen gebruikt de normale bevestiging.",
-      "pattern_too_short": "Verbind minstens 4 punten"
+      "pattern_too_short": "Verbind minstens 4 punten",
+      "unlock_style_pin": "Pincode invoeren",
+      "pin_title": "Ontgrendelpincode",
+      "pin_desc": "De pincode die dit slot ontgrendelt en opent. Hij wordt in de kaart gecontroleerd en in het dashboard opgeslagen, dus hij voorkomt per ongeluk ontgrendelen, maar het is geen echt wachtwoord. Hij wordt niet naar het slot gestuurd.",
+      "pin_field": "Pincode",
+      "pin_saved": "Pincode opgeslagen.",
+      "pin_none": "Voer minstens 4 cijfers in. Tot die tijd gebruikt ontgrendelen de normale bevestiging.",
+      "pin_prompt": "Voer je pincode in",
+      "pin_wrong": "Verkeerde pincode, probeer opnieuw"
     },
     "text_input": {
       "entity": {

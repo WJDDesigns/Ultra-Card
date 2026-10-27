@@ -183,7 +183,7 @@ export class UltraLockModule extends BaseUltraModule {
               description: localize(
                 'editor.lock.show_lock_buttons_desc',
                 lang,
-                'Show the Lock and Unlock buttons (the compact layout shows one toggle button)'
+                'Show the Lock and Unlock buttons (the compact layout shows one toggle button). Without them, set the tap action to Toggle to lock and unlock by tapping the card.'
               ),
               hass,
               data: { show_lock_buttons: lock.show_lock_buttons !== false },
@@ -241,7 +241,7 @@ export class UltraLockModule extends BaseUltraModule {
               description: localize(
                 'editor.lock.unlock_style_desc',
                 lang,
-                'Slide replaces the Unlock and Open buttons with sliders, so a stray tap can\'t unlock. Hero and Standard layouts.'
+                'Slide replaces the Unlock and Open buttons with sliders, so a stray tap can\'t unlock (Hero and Standard layouts; elsewhere it asks for confirmation). Pattern and PIN are checked in the card before unlocking.'
               ),
               hass,
               data: { unlock_style: lock.unlock_style || 'buttons' },
@@ -250,6 +250,7 @@ export class UltraLockModule extends BaseUltraModule {
                   { value: 'buttons', label: localize('editor.lock.unlock_style_buttons', lang, 'Buttons') },
                   { value: 'slide', label: localize('editor.lock.unlock_style_slide', lang, 'Slide to unlock') },
                   { value: 'pattern', label: localize('editor.lock.unlock_style_pattern', lang, 'Draw a pattern') },
+                  { value: 'pin', label: localize('editor.lock.unlock_style_pin', lang, 'Enter a PIN') },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -282,6 +283,7 @@ export class UltraLockModule extends BaseUltraModule {
         )}
 
         ${lock.unlock_style === 'pattern' ? this.renderPatternRecorder(lock, updateModule, lang) : nothing}
+        ${lock.unlock_style === 'pin' ? this.renderPinSetting(lock, hass, updateModule, lang) : nothing}
 
         ${this.renderSettingsSection(
           localize('editor.lock.layout_section', lang, 'Layout'),
@@ -387,6 +389,44 @@ export class UltraLockModule extends BaseUltraModule {
     `;
   }
 
+  /** Editor block where the card's own unlock PIN is set. */
+  private renderPinSetting(
+    lock: LockModuleConfig,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CardModule>) => void,
+    lang: string
+  ): TemplateResult {
+    const pin = lock.unlock_pin || '';
+    const status =
+      pin.length >= 4
+        ? localize('editor.lock.pin_saved', lang, 'PIN saved.')
+        : localize('editor.lock.pin_none', lang, 'Enter at least 4 digits. Until then, unlocking uses the normal confirmation.');
+    return html`
+      ${this.renderSettingsSection(
+        localize('editor.lock.pin_title', lang, 'Unlock PIN'),
+        localize(
+          'editor.lock.pin_desc',
+          lang,
+          "The PIN that unlocks and opens this lock. It's checked in the card and saved in the dashboard, so it stops accidental unlocks but isn't a real password. It is not sent to the lock."
+        ),
+        [
+          {
+            title: localize('editor.lock.pin_field', lang, 'PIN'),
+            description: status,
+            hass,
+            data: { unlock_pin: pin },
+            schema: [this.textField('unlock_pin')],
+            onChange: (e: CustomEvent) => {
+              const digits = String(e.detail.value?.unlock_pin ?? '').replace(/\D/g, '');
+              updateModule({ unlock_pin: digits });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            },
+          },
+        ]
+      )}
+    `;
+  }
+
   private injectLockStyles(): TemplateResult {
     return html`<style>
       ${this.getStyles()}
@@ -483,6 +523,9 @@ export class UltraLockModule extends BaseUltraModule {
     // Until a pattern of at least 4 dots is saved, unlock falls back to the normal confirmation.
     const unlockPattern = lockCfg.unlock_pattern || '';
     const patternMode = lockCfg.unlock_style === 'pattern' && unlockPattern.length >= 4;
+    // Same fallback for the card's own PIN.
+    const unlockPin = lockCfg.unlock_pin || '';
+    const pinMode = lockCfg.unlock_style === 'pin' && unlockPin.length >= 4;
 
     const actionLabel = (service: LockPendingAction) =>
       service === 'open'
@@ -513,8 +556,13 @@ export class UltraLockModule extends BaseUltraModule {
       this.triggerPreviewUpdate(true);
     };
 
-    // Unlock/open are security-sensitive: confirm before calling unless disabled
-    const confirmSensitive = async (service: 'unlock' | 'open'): Promise<boolean> => {
+    // Unlock/open are security-sensitive: confirm before calling unless disabled.
+    // `fromSlider` is true only when a slider was completed; a tap elsewhere in slide mode
+    // (e.g. the tap action with the buttons hidden) still has to be confirmed.
+    const confirmSensitive = async (
+      service: 'unlock' | 'open',
+      fromSlider = false
+    ): Promise<boolean> => {
       if (patternMode) {
         return promptForPattern({
           title: `${actionLabel(service)} ${name}`,
@@ -524,8 +572,22 @@ export class UltraLockModule extends BaseUltraModule {
           cancelText: localize('editor.lock.cancel', lang, 'Cancel'),
         });
       }
+      if (pinMode) {
+        const entered = await promptForCode({
+          title: `${actionLabel(service)} ${name}`,
+          confirmText: actionLabel(service),
+          cancelText: localize('editor.lock.cancel', lang, 'Cancel'),
+          clearLabel: localize('editor.lock.code_clear', lang, 'Clear'),
+          placeholder: localize('editor.lock.pin_prompt', lang, 'Enter your PIN'),
+          expected: unlockPin,
+          wrongText: localize('editor.lock.pin_wrong', lang, 'Wrong PIN, try again'),
+        });
+        return entered !== null;
+      }
       // Typing the code or completing the slide is already a deliberate step.
-      if (lockCfg.require_confirmation === false || needsCode || slideMode) return true;
+      if (fromSlider || needsCode) return true;
+      // Slide mode exists to stop stray taps, so a tap outside the slider always confirms.
+      if (lockCfg.require_confirmation === false && !slideMode) return true;
       ucActionConfirmationService.setHass(hass);
       return ucActionConfirmationService.showConfirmation(
         { action: 'perform-action', perform_action: `lock.${service}`, entity: entityId },
@@ -545,15 +607,15 @@ export class UltraLockModule extends BaseUltraModule {
       setPending('lock');
       call('lock', code);
     };
-    const onUnlock = async () => {
-      if (!(await confirmSensitive('unlock'))) return;
+    const onUnlock = async (fromSlider = false) => {
+      if (!(await confirmSensitive('unlock', fromSlider))) return;
       const code = await getCode('unlock');
       if (code === null) return;
       setPending('unlock');
       call('unlock', code);
     };
-    const onOpen = async () => {
-      if (!(await confirmSensitive('open'))) return;
+    const onOpen = async (fromSlider = false) => {
+      if (!(await confirmSensitive('open', fromSlider))) return;
       const code = await getCode('open');
       if (code === null) return;
       setPending('open');
@@ -561,6 +623,28 @@ export class UltraLockModule extends BaseUltraModule {
     };
 
     const controlsDisabled = isUnavailable || isBusy;
+
+    // The module's own tap / hold / double-tap actions. "Toggle" goes through the same
+    // unlock checks as the buttons (pattern, PIN, confirmation), so hiding the buttons and
+    // tapping the card can't skip them. Unset actions do nothing, as before.
+    const onToggle = () => {
+      if (controlsDisabled) return;
+      void (isLocked ? onUnlock() : onLock());
+    };
+    const gestures = this.createGestureHandlers(
+      `${module.id}-lock`,
+      {
+        tap_action: lockCfg.tap_action || { action: 'nothing' },
+        hold_action: lockCfg.hold_action || { action: 'nothing' },
+        double_tap_action: lockCfg.double_tap_action || { action: 'nothing' },
+        entity: entityId,
+        module,
+        onToggle,
+      },
+      hass,
+      config,
+      ['.uc-lock-btn', '.uc-lock-chip-btn', 'uc-slide-confirm']
+    );
 
     const lockedVisual = isLocked || stateStr === 'locking';
 
@@ -582,7 +666,7 @@ export class UltraLockModule extends BaseUltraModule {
                   .icon=${'mdi:lock'}
                   .doneIcon=${'mdi:lock-open-variant'}
                   ?disabled=${controlsDisabled}
-                  @confirmed=${onUnlock}
+                  @confirmed=${() => onUnlock(true)}
                 ></uc-slide-confirm>`
               : nothing}
             ${showOpen
@@ -591,7 +675,7 @@ export class UltraLockModule extends BaseUltraModule {
                   .icon=${'mdi:door-closed'}
                   .doneIcon=${'mdi:door-open'}
                   ?disabled=${controlsDisabled}
-                  @confirmed=${onOpen}
+                  @confirmed=${() => onOpen(true)}
                 ></uc-slide-confirm>`
               : nothing}
           </div>`
@@ -740,8 +824,16 @@ export class UltraLockModule extends BaseUltraModule {
     return html`
       ${this.injectLockStyles()}
       <div
-        class="uc-lock-wrapper ${hoverClass} ${isJammed ? 'uc-lock-wrapper--jammed' : ''}"
+        class="uc-lock-wrapper ${hoverClass} ${isJammed ? 'uc-lock-wrapper--jammed' : ''} ${gestures.isActionable ? 'uc-lock-wrapper--actionable' : ''}"
         data-uc-role="pane"
+        @pointerdown=${gestures.onPointerDown}
+        @pointermove=${gestures.onPointerMove}
+        @pointerup=${gestures.onPointerUp}
+        @pointerleave=${gestures.onPointerLeave}
+        @pointercancel=${gestures.onPointerCancel}
+        @keydown=${gestures.onKeyDown}
+        role=${gestures.isActionable ? 'button' : nothing}
+        tabindex=${gestures.isActionable ? '0' : nothing}
         style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
@@ -752,6 +844,7 @@ export class UltraLockModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .uc-lock-wrapper { box-sizing: border-box; }
+      .uc-lock-wrapper--actionable { cursor: pointer; }
       .uc-lock { box-sizing: border-box; color: var(--primary-text-color); }
 
       /* ═══ HERO ═══════════════════════════════════ */
