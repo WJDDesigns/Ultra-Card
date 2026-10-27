@@ -2835,8 +2835,8 @@
       "entity_section_desc": "Selezioni il lucchetto da controllare.",
       "entity": "Entità lucchetto",
       "entity_field_desc": "Entità lucchetto Home Assistant",
-      "icon_override": "Sovrascrittura icona",
-      "icon_override_desc": "Icona mdi: opzionale; lasci em vuoto per le icone di lucchetto predefinite",
+      "icon_override": "Icona",
+      "icon_override_desc": "Cerca un'icona o lascia vuoto per le icone predefinite della serratura. Usata in ogni stato, a meno che tu non imposti un'icona sbloccata qui sotto.",
       "display_section": "Visualizzazione",
       "display_desc": "Scegli cosa mostrare sulla scheda.",
       "show_title": "Mostra titolo",
@@ -2905,7 +2905,17 @@
       "pin_saved": "PIN salvato.",
       "pin_none": "Inserisci almeno 4 cifre. Fino ad allora, lo sblocco usa la conferma normale.",
       "pin_prompt": "Inserisci il tuo PIN",
-      "pin_wrong": "PIN errato, riprova"
+      "pin_wrong": "PIN errato, riprova",
+      "name": "Nome",
+      "name_desc": "Mostrato al posto del nome della serratura in Home Assistant. Lascia vuoto per usare quel nome.",
+      "icon_unlocked": "Icona sbloccata",
+      "icon_unlocked_desc": "Icona facoltativa quando la serratura è sbloccata o aperta",
+      "colors_section": "Colori",
+      "colors_desc": "Colora icona, anello, pulsante attivo e stato in base allo stato. Lascia vuoto per usare il colore del tema.",
+      "locked_color": "Colore bloccata",
+      "unlocked_color": "Colore sbloccata",
+      "card_color": "Colore della scheda",
+      "card_color_desc": "Sfondo della scheda serratura. Stessa impostazione di Colore di sfondo nella scheda Design."
     },
     "text_input": {
       "entity": {

@@ -190,14 +190,17 @@ export function promptForCode(options: CodePromptOptions): Promise<string | null
       .uc-code-input:focus {
         border-color: var(--primary-color);
       }
+      /* The wide code spacing is for the dots; a hint like "Geben Sie Ihre PIN ein" needs normal spacing */
+      .uc-code-input::placeholder {
+        letter-spacing: normal;
+        font-size: 15px;
+      }
       .uc-code-input--wrong {
         border-color: var(--error-color, #db4437);
         animation: uc-code-shake 0.35s ease;
       }
       .uc-code-input--wrong::placeholder {
         color: var(--error-color, #db4437);
-        letter-spacing: normal;
-        font-size: 15px;
       }
       @keyframes uc-code-shake {
         0%, 100% { transform: translateX(0); }

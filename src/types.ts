@@ -4883,7 +4883,14 @@ export interface LockModule extends BaseModule {
   /** Lock entity */
   entity: string;
   name?: string | undefined;
+  /** Icon in every state, unless icon_unlocked is set for the unlocked state */
   icon?: string | undefined;
+  /** Icon while unlocked / open (falls back to icon, then the default) */
+  icon_unlocked?: string | undefined;
+  /** Accent colour (icon, ring, active button, badge) while locked; theme colour when empty */
+  locked_color?: string | undefined;
+  /** Accent colour while unlocked / open; theme colour when empty */
+  unlocked_color?: string | undefined;
 
   layout?: 'hero' | 'standard' | 'compact' | undefined;
   alignment?: 'left' | 'center' | 'right' | undefined;

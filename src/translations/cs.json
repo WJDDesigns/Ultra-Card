@@ -2835,8 +2835,8 @@
       "entity_section_desc": "Vyber zámek, který chceš ovládat.",
       "entity": "Zámková entita",
       "entity_field_desc": "Home Assistant zámková entita",
-      "icon_override": "Přepsání ikony",
-      "icon_override_desc": "Volitelná mdi: ikona; nech em prázdné pro výchozí zámkové ikony",
+      "icon_override": "Ikona",
+      "icon_override_desc": "Vyhledejte ikonu nebo ponechte prázdné pro výchozí ikony zámku. Používá se ve všech stavech, pokud níže nenastavíte ikonu pro odemčeno.",
       "display_section": "Zobrazit",
       "display_desc": "Vyber, co se má na kartě zobrazit.",
       "show_title": "Zobrazit název",
@@ -2905,7 +2905,17 @@
       "pin_saved": "PIN uložen.",
       "pin_none": "Zadejte alespoň 4 číslice. Do té doby odemčení používá běžné potvrzení.",
       "pin_prompt": "Zadejte svůj PIN",
-      "pin_wrong": "Špatný PIN, zkuste to znovu"
+      "pin_wrong": "Špatný PIN, zkuste to znovu",
+      "name": "Název",
+      "name_desc": "Zobrazí se místo názvu zámku z Home Assistantu. Ponechte prázdné pro použití tohoto názvu.",
+      "icon_unlocked": "Ikona odemčeno",
+      "icon_unlocked_desc": "Volitelná ikona, když je zámek odemčený nebo otevřený",
+      "colors_section": "Barvy",
+      "colors_desc": "Obarví ikonu, kroužek, aktivní tlačítko a stav podle stavu. Ponechte prázdné pro barvu motivu.",
+      "locked_color": "Barva zamčeno",
+      "unlocked_color": "Barva odemčeno",
+      "card_color": "Barva karty",
+      "card_color_desc": "Pozadí karty zámku. Stejné nastavení jako Barva pozadí na kartě Design."
     },
     "text_input": {
       "entity": {
