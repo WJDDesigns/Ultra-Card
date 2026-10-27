@@ -1958,7 +1958,16 @@
     "editor.lock.pattern_wrong",
     "editor.lock.pattern_saved",
     "editor.lock.pattern_none",
-    "editor.lock.pattern_too_short"
+    "editor.lock.pattern_too_short",
+    "editor.lock.unlock_style_pin",
+    "editor.lock.pin_title",
+    "editor.lock.pin_desc",
+    "editor.lock.pin_field",
+    "editor.lock.pin_saved",
+    "editor.lock.pin_none",
+    "editor.lock.pin_prompt",
+    "editor.lock.pin_wrong",
+    "editor.lock.show_lock_buttons_desc"
   ],
   "lastRun": "2026-05-03T22:41:08.408Z",
   "engine": "openai:gpt-4o-mini"

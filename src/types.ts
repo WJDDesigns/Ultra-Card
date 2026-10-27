@@ -4897,9 +4897,11 @@ export interface LockModule extends BaseModule {
   /** Ask for confirmation before unlock / open (default true) */
   require_confirmation?: boolean | undefined;
   /** How unlock / open are triggered in the hero and standard layouts (default buttons) */
-  unlock_style?: 'buttons' | 'slide' | 'pattern' | undefined;
+  unlock_style?: 'buttons' | 'slide' | 'pattern' | 'pin' | undefined;
   /** Pattern for unlock_style 'pattern': dot numbers 1-9 in drawing order, e.g. "14789" */
   unlock_pattern?: string | undefined;
+  /** PIN for unlock_style 'pin', at least 4 digits. Checked in the card, never sent to the lock. */
+  unlock_pin?: string | undefined;
   /**
    * Ask for the lock's PIN code and send it with the service call. 'auto' asks when the
    * lock reports a code format (default auto).

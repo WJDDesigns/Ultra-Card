@@ -2848,7 +2848,7 @@
       "show_open_button": "Visa öppna knapp",
       "show_open_button_desc": "Visa Öppna när låset stöder avlåsning (ÖPPNA-funktion)",
       "show_lock_buttons": "Visa lås / lås upp-knappar",
-      "show_lock_buttons_desc": "Visa knapparna Lås och Lås upp (kompakt layout visar en växlingsknapp)",
+      "show_lock_buttons_desc": "Visa knapparna Lås och Lås upp (kompakt layout visar en växlingsknapp). Utan dem kan du ställa in tryckåtgärden på Växla för att låsa och låsa upp genom att trycka på kortet.",
       "show_open_button_unsupported": "Det här låset kan inte öppna (ingen Öppna-funktion), så det finns ingen Öppna-knapp att visa",
       "align_spread": "Utspritt",
       "layout_section": "Layout",
@@ -2877,7 +2877,7 @@
       "action_open": "Öppna",
       "actions": "Lås åtgärder",
       "unlock_style": "Lås upp med",
-      "unlock_style_desc": "Skjut ersätter knapparna Lås upp och Öppna med reglage, så att ett oavsiktligt tryck inte låser upp. Hero- och Standard-layout.",
+      "unlock_style_desc": "Dra ersätter knapparna Lås upp och Öppna med reglage, så att ett oavsiktligt tryck inte låser upp (layouterna Hero och Standard; annars visas en bekräftelse). Mönster och PIN kontrolleras i kortet före upplåsning.",
       "unlock_style_buttons": "Knappar",
       "unlock_style_slide": "Skjut för att låsa upp",
       "ask_code": "Fråga efter PIN-kod",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Fel mönster, försök igen",
       "pattern_saved": "Mönster sparat. Rita igen för att ändra det.",
       "pattern_none": "Inget mönster än, så upplåsning använder den vanliga bekräftelsen.",
-      "pattern_too_short": "Anslut minst 4 punkter"
+      "pattern_too_short": "Anslut minst 4 punkter",
+      "unlock_style_pin": "Ange en PIN",
+      "pin_title": "PIN för upplåsning",
+      "pin_desc": "PIN-koden som låser upp och öppnar det här låset. Den kontrolleras i kortet och sparas i instrumentpanelen, så den förhindrar oavsiktlig upplåsning, men det är inget riktigt lösenord. Den skickas inte till låset.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN sparad.",
+      "pin_none": "Ange minst 4 siffror. Tills dess använder upplåsning den vanliga bekräftelsen.",
+      "pin_prompt": "Ange din PIN",
+      "pin_wrong": "Fel PIN, försök igen"
     },
     "text_input": {
       "entity": {

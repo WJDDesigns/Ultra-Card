@@ -2848,7 +2848,7 @@
       "show_open_button": "Mostrar botó obert",
       "show_open_button_desc": "Mostra Obert quan el bloqueig suporta deslligar (funció OBERT)",
       "show_lock_buttons": "Mostra els botons de bloquejar / desbloquejar",
-      "show_lock_buttons_desc": "Mostra els botons Bloqueja i Desbloqueja (el disseny compacte mostra un sol botó)",
+      "show_lock_buttons_desc": "Mostra els botons Bloqueja i Desbloqueja (el disseny compacte mostra un sol botó). Sense ells, posa l'acció de toc a Commuta per bloquejar i desbloquejar tocant la targeta.",
       "show_open_button_unsupported": "Aquest pany no es pot obrir (sense la funció Obrir), així que no hi ha botó Obrir",
       "align_spread": "Repartit",
       "layout_section": "Disseny",
@@ -2877,7 +2877,7 @@
       "action_open": "Obre",
       "actions": "Accions de tancament",
       "unlock_style": "Desbloquejar amb",
-      "unlock_style_desc": "Lliscar substitueix els botons Desbloqueja i Obre per controls lliscants, perquè un toc accidental no desbloquegi. Dissenys Hero i Estàndard.",
+      "unlock_style_desc": "Lliscar substitueix els botons Desbloqueja i Obre per controls lliscants, perquè un toc accidental no desbloquegi (dissenys Hero i Estàndard; als altres demana confirmació). El patró i el PIN es comproven a la targeta abans de desbloquejar.",
       "unlock_style_buttons": "Botons",
       "unlock_style_slide": "Llisca per desbloquejar",
       "ask_code": "Demanar codi PIN",
@@ -2897,7 +2897,15 @@
       "pattern_wrong": "Patró incorrecte, torna-ho a provar",
       "pattern_saved": "Patró desat. Dibuixa'l de nou per canviar-lo.",
       "pattern_none": "Encara no hi ha cap patró, així que el desbloqueig fa servir la confirmació normal.",
-      "pattern_too_short": "Connecta almenys 4 punts"
+      "pattern_too_short": "Connecta almenys 4 punts",
+      "unlock_style_pin": "Introduir un PIN",
+      "pin_title": "PIN de desbloqueig",
+      "pin_desc": "El PIN que desbloqueja i obre aquest pany. Es comprova a la targeta i es desa al tauler, així que evita desbloquejos accidentals, però no és una contrasenya real. No s'envia al pany.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN desat.",
+      "pin_none": "Introdueix almenys 4 dígits. Fins aleshores, el desbloqueig fa servir la confirmació normal.",
+      "pin_prompt": "Introdueix el teu PIN",
+      "pin_wrong": "PIN incorrecte, torna-ho a provar"
     },
     "text_input": {
       "entity": {

@@ -168,6 +168,53 @@ describe('keyboard activation', () => {
   });
 });
 
+describe('onToggle override', () => {
+  it('runs onToggle instead of the stock toggle for its own entity', () => {
+    const { host } = makeElements();
+    const onToggle = vi.fn();
+    const handlers = ucGestureService.createGestureHandlers(
+      't-own',
+      { tap_action: { action: 'toggle' }, entity: 'lock.front', onToggle },
+      hass
+    );
+
+    handlers.onKeyDown(keyEvent('Enter', host, host));
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(handleAction).not.toHaveBeenCalled();
+  });
+
+  it('leaves a toggle aimed at another entity to the stock handler', () => {
+    const { host } = makeElements();
+    const onToggle = vi.fn();
+    const handlers = ucGestureService.createGestureHandlers(
+      't-other',
+      { tap_action: { action: 'toggle', entity: 'light.hall' }, entity: 'lock.front', onToggle },
+      hass
+    );
+
+    handlers.onKeyDown(keyEvent('Enter', host, host));
+
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(handleAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves other actions to the stock handler', () => {
+    const { host } = makeElements();
+    const onToggle = vi.fn();
+    const handlers = ucGestureService.createGestureHandlers(
+      't-more',
+      { tap_action: { action: 'more-info' }, entity: 'lock.front', onToggle },
+      hass
+    );
+
+    handlers.onKeyDown(keyEvent('Enter', host, host));
+
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(handleAction).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('hasActionableGesture', () => {
   it('is true for a configured action', () => {
     expect(hasActionableGesture({ tap_action: { action: 'toggle' } })).toBe(true);

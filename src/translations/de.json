@@ -2852,7 +2852,7 @@
       "show_open_button": "Öffnen-Schaltfläche anzeigen",
       "show_open_button_desc": "Öffnen anzeigen, wenn das Schloss das Entriegeln unterstützt (ÖFFNEN-Funktion)",
       "show_lock_buttons": "Sperren-/Entsperren-Schaltflächen anzeigen",
-      "show_lock_buttons_desc": "Die Schaltflächen Sperren und Entsperren anzeigen (das kompakte Layout zeigt eine Umschalt-Schaltfläche)",
+      "show_lock_buttons_desc": "Die Schaltflächen Sperren und Entsperren anzeigen (das kompakte Layout zeigt eine Umschalt-Schaltfläche). Ohne sie stellen Sie die Tippen-Aktion auf Umschalten, um durch Tippen auf die Karte zu sperren und zu entsperren.",
       "show_open_button_unsupported": "Dieses Schloss kann nicht entriegeln (keine Öffnen-Funktion), daher gibt es keine Öffnen-Schaltfläche",
       "align_spread": "Verteilt",
       "layout_section": "Layout",
@@ -2881,7 +2881,7 @@
       "action_open": "Öffnen",
       "actions": "Verriegelungsaktionen",
       "unlock_style": "Entsperren mit",
-      "unlock_style_desc": "Schieben ersetzt die Tasten Entsperren und Öffnen durch Schieberegler, damit ein versehentliches Tippen nicht entsperrt. Layouts Hero und Standard.",
+      "unlock_style_desc": "Schieben ersetzt die Tasten Entsperren und Öffnen durch Schieberegler, damit ein versehentliches Tippen nicht entsperrt (Layouts Hero und Standard; sonst wird eine Bestätigung abgefragt). Muster und PIN werden vor dem Entsperren in der Karte geprüft.",
       "unlock_style_buttons": "Tasten",
       "unlock_style_slide": "Zum Entsperren schieben",
       "ask_code": "PIN-Code abfragen",
@@ -2901,7 +2901,15 @@
       "pattern_wrong": "Falsches Muster, bitte erneut versuchen",
       "pattern_saved": "Muster gespeichert. Zeichnen Sie erneut, um es zu ändern.",
       "pattern_none": "Noch kein Muster, daher wird beim Entsperren die normale Bestätigung verwendet.",
-      "pattern_too_short": "Verbinden Sie mindestens 4 Punkte"
+      "pattern_too_short": "Verbinden Sie mindestens 4 Punkte",
+      "unlock_style_pin": "PIN eingeben",
+      "pin_title": "Entsperr-PIN",
+      "pin_desc": "Die PIN, mit der dieses Schloss entsperrt und geöffnet wird. Sie wird in der Karte geprüft und im Dashboard gespeichert und verhindert so versehentliches Entsperren, ist aber kein echtes Passwort. Sie wird nicht an das Schloss gesendet.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN gespeichert.",
+      "pin_none": "Geben Sie mindestens 4 Ziffern ein. Bis dahin wird beim Entsperren die normale Bestätigung verwendet.",
+      "pin_prompt": "Geben Sie Ihre PIN ein",
+      "pin_wrong": "Falsche PIN, bitte erneut versuchen"
     },
     "text_input": {
       "entity": {

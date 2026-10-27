@@ -13,6 +13,13 @@ export interface CodePromptOptions {
   cancelText: string;
   clearLabel: string;
   placeholder: string;
+  /**
+   * A PIN saved in the card. When set, the prompt checks the typed code itself and
+   * stays open on a wrong one instead of passing it on.
+   */
+  expected?: string | undefined;
+  /** Shown in the field after a wrong `expected` code. */
+  wrongText?: string | undefined;
 }
 
 function formatRegex(codeFormat?: string): RegExp | null {
@@ -71,6 +78,25 @@ export function promptForCode(options: CodePromptOptions): Promise<string | null
     confirm.className = 'uc-code-btn primary';
     confirm.textContent = options.confirmText;
     actions.append(cancel, confirm);
+
+    const showWrong = (): void => {
+      input.value = '';
+      input.placeholder = options.wrongText || options.placeholder;
+      input.classList.remove('uc-code-input--wrong');
+      // Restart the shake on repeated misses
+      void input.offsetWidth;
+      input.classList.add('uc-code-input--wrong');
+      refresh();
+    };
+    /** Resolves when the code is acceptable; a wrong saved PIN keeps the prompt open. */
+    const submit = (): void => {
+      if (!isValid()) return;
+      if (options.expected !== undefined && input.value !== options.expected) {
+        showWrong();
+        return;
+      }
+      finish(input.value);
+    };
 
     const isValid = (): boolean => {
       const v = input.value;
@@ -164,6 +190,20 @@ export function promptForCode(options: CodePromptOptions): Promise<string | null
       .uc-code-input:focus {
         border-color: var(--primary-color);
       }
+      .uc-code-input--wrong {
+        border-color: var(--error-color, #db4437);
+        animation: uc-code-shake 0.35s ease;
+      }
+      .uc-code-input--wrong::placeholder {
+        color: var(--error-color, #db4437);
+        letter-spacing: normal;
+        font-size: 15px;
+      }
+      @keyframes uc-code-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
+      }
       .uc-code-pad {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -231,7 +271,7 @@ export function promptForCode(options: CodePromptOptions): Promise<string | null
       } else if (e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
-        if (isValid()) finish(input.value);
+        submit();
       } else if (numeric && /^[0-9]$/.test(e.key)) {
         e.preventDefault();
         e.stopPropagation();
@@ -247,9 +287,7 @@ export function promptForCode(options: CodePromptOptions): Promise<string | null
 
     input.addEventListener('input', refresh);
     cancel.addEventListener('click', () => finish(null));
-    confirm.addEventListener('click', () => {
-      if (isValid()) finish(input.value);
-    });
+    confirm.addEventListener('click', submit);
     backdrop.addEventListener('click', () => finish(null));
 
     refresh();
