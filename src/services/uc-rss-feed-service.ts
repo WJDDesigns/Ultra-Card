@@ -223,7 +223,7 @@ export function parseFeed(raw: string, feedUrl: string): ParsedFeed | null {
 async function fetchViaConnect(
   hass: HomeAssistant,
   url: string
-): Promise<{ ok: boolean; status: number; body: string } | null> {
+): Promise<{ ok: boolean; status: number; body: string; refused?: boolean } | null> {
   type FeedApiResponse = { ok?: unknown; status?: unknown; body?: unknown } | null;
   const callApi = (hass as { callApi?: unknown } | undefined)?.callApi;
   if (typeof callApi !== 'function') return null;
@@ -244,40 +244,60 @@ async function fetchViaConnect(
     const e = (err || {}) as { status_code?: unknown; status?: unknown; error?: unknown };
     const status = Number(e.status_code ?? e.status ?? 0);
     if (status === 400 || status === 403) {
-      return { ok: false, status, body: String(e.error || '') };
+      // Connect itself refused the address (bad URL or a private one).
+      return { ok: false, status, body: String(e.error || ''), refused: true };
     }
     return null;
   }
+}
+
+/** Fetch straight from the browser; only works for feeds that allow CORS. */
+async function fetchDirect(url: string): Promise<{ ok: boolean; status: number; body: string } | null> {
+  let res: Response;
+  try {
+    res = await fetch(url, { credentials: 'omit', cache: 'no-cache' });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return { ok: false, status: res.status, body: '' };
+  return { ok: true, status: res.status, body: await res.text() };
 }
 
 async function loadFeed(hass: HomeAssistant, url: string): Promise<void> {
   const entry = cache.get(url) || { fetchedAt: 0 };
   try {
     let raw: string | null = null;
+    let parsed: ParsedFeed | null = null;
     const viaConnect = await fetchViaConnect(hass, url);
-    if (viaConnect) {
-      if (!viaConnect.ok) {
-        entry.error = viaConnect.status === 403 || viaConnect.status === 400 ? 'blocked' : 'http';
-        entry.errorDetail = viaConnect.status ? String(viaConnect.status) : viaConnect.body;
-        return;
-      }
-      raw = viaConnect.body;
-    } else {
-      let res: Response;
-      try {
-        res = await fetch(url, { credentials: 'omit', cache: 'no-cache' });
-      } catch {
-        entry.error = 'cors';
-        return;
-      }
-      if (!res.ok) {
-        entry.error = 'http';
-        entry.errorDetail = String(res.status);
-        return;
-      }
-      raw = await res.text();
+    if (viaConnect?.refused) {
+      entry.error = 'blocked';
+      entry.errorDetail = viaConnect.body || String(viaConnect.status);
+      return;
     }
-    const parsed = parseFeed(raw || '', url);
+    if (viaConnect?.ok) {
+      raw = viaConnect.body;
+      parsed = parseFeed(raw, url);
+    }
+    if (!parsed) {
+      // Connect missing, or the site turned Home Assistant away (some news
+      // sites block servers but let browsers in): try the browser directly.
+      const direct = await fetchDirect(url);
+      if (direct?.ok) {
+        raw = direct.body;
+        parsed = parseFeed(raw, url);
+      } else if (!raw) {
+        if (viaConnect && !viaConnect.ok) {
+          entry.error = 'http';
+          entry.errorDetail = viaConnect.status ? String(viaConnect.status) : viaConnect.body;
+        } else if (direct) {
+          entry.error = 'http';
+          entry.errorDetail = String(direct.status);
+        } else {
+          entry.error = 'cors';
+        }
+        return;
+      }
+    }
     if (!parsed) {
       entry.error = 'parse';
       return;

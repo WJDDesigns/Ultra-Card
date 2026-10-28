@@ -1,6 +1,15 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect } from 'vitest';
-import { htmlToText, mergeFeedItems, parseFeed, relativeTime, safeUrl } from './uc-rss-feed-service';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import {
+  clearFeedCache,
+  getFeedState,
+  htmlToText,
+  mergeFeedItems,
+  parseFeed,
+  relativeTime,
+  safeUrl,
+} from './uc-rss-feed-service';
+import type { HomeAssistant } from '../ha/types';
 
 const RSS = `<?xml version="1.0"?>
 <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
@@ -101,5 +110,49 @@ describe('uc-rss-feed-service', () => {
     expect(relativeTime(Date.parse('2026-10-28T11:00:00Z'), 'en', Date.parse('2026-10-28T12:00:00Z'))).toBe(
       '1 hour ago'
     );
+  });
+
+  describe('loading', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      clearFeedCache();
+    });
+
+    const hassWith = (callApi: (...args: unknown[]) => unknown) =>
+      ({ callApi: vi.fn(callApi) }) as unknown as HomeAssistant;
+
+    const settle = async (hass: HomeAssistant, url: string) => {
+      getFeedState(hass, url, 600_000);
+      for (let i = 0; i < 20; i++) await Promise.resolve();
+      await new Promise(r => setTimeout(r, 0));
+      return getFeedState(hass, url, 600_000);
+    };
+
+    it('falls back to the browser when the site turns Home Assistant away', async () => {
+      const fetchMock = vi.fn(async () => new Response(ATOM, { status: 200 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const hass = hassWith(async () => ({ ok: false, status: 403, body: '' }));
+      const state = await settle(hass, 'https://news.example.de/atom.xml');
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(state.error).toBeUndefined();
+      expect(state.feed?.items[0]?.title).toBe('Version 2');
+    });
+
+    it('reports the site error when neither Connect nor the browser can read it', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))));
+      const hass = hassWith(async () => ({ ok: false, status: 403, body: '' }));
+      const state = await settle(hass, 'https://news.example.de/rss');
+      expect(state.error).toBe('http');
+      expect(state.errorDetail).toBe('403');
+    });
+
+    it('does not retry in the browser when Connect refuses the address', async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+      const hass = hassWith(async () => Promise.reject({ status_code: 403, error: 'private_address' }));
+      const state = await settle(hass, 'https://router.example/feed');
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(state.error).toBe('blocked');
+    });
   });
 });
