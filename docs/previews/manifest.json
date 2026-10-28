@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-27T14:50:11.273Z",
-  "ultraCardVersion": "3.14.3-beta1",
+  "generatedAt": "2026-10-28T15:44:46.122Z",
+  "ultraCardVersion": "3.14.3-beta2",
   "counts": {
-    "total": 104,
-    "free": 71,
+    "total": 105,
+    "free": 72,
     "pro": 33
   },
   "modules": [
@@ -1331,6 +1331,26 @@
         "interactive"
       ],
       "preview": "previews/fridge.png",
+      "status": "ok"
+    },
+    {
+      "type": "rss_feed",
+      "title": "RSS Feed",
+      "description": "Latest headlines from RSS, Atom or JSON feeds, merged newest first",
+      "category": "content",
+      "icon": "mdi:rss",
+      "pro": false,
+      "tags": [
+        "rss",
+        "atom",
+        "feed",
+        "news",
+        "headlines",
+        "blog",
+        "podcast",
+        "content"
+      ],
+      "preview": "previews/rss_feed.png",
       "status": "ok"
     },
     {

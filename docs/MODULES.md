@@ -1,8 +1,8 @@
 # Ultra Card module gallery
 
-_Generated from v3.14.3-beta1 on 2026-10-27 — do not edit by hand._
+_Generated from v3.14.3-beta2 on 2026-10-28 — do not edit by hand._
 
-**104 modules** · 71 free · 33 PRO
+**105 modules** · 72 free · 33 PRO
 
 ## content
 
@@ -20,6 +20,7 @@ _Generated from v3.14.3-beta1 on 2026-10-27 — do not edit by hand._
 <tr><td width="220"><img src="previews/markdown.png" width="200" alt="Markdown"></td><td><b>Markdown</b><br>Display rich markdown content</td></tr>
 <tr><td width="220"><img src="previews/native_card.png" width="200" alt="Native HA Card"></td><td><b>Native HA Card</b><br>Native Home Assistant card</td></tr>
 <tr><td width="220"><img src="previews/qr_code.png" width="200" alt="QR Code"></td><td><b>QR Code</b> · <sub>PRO</sub><br>Generate QR codes from URL, text, template, or entity state</td></tr>
+<tr><td width="220"><img src="previews/rss_feed.png" width="200" alt="RSS Feed"></td><td><b>RSS Feed</b><br>Latest headlines from RSS, Atom or JSON feeds, merged newest first</td></tr>
 <tr><td width="220"><img src="previews/separator.png" width="200" alt="Separator"></td><td><b>Separator</b><br>Visual dividers and spacing</td></tr>
 <tr><td width="220"><img src="previews/text.png" width="200" alt="Text"></td><td><b>Text</b><br>Display custom text content</td></tr>
 </table>
