@@ -1,5 +1,30 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta2
+
+The second 3.14.3 beta adds a free RSS Feed module, many new QR code types, separator icons and more Lock styling, and fixes link underlines and Stack alignment. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.0 too.** The RSS Feed module loads feeds through Connect, so it can read sites that block being loaded straight from a dashboard.
+
+### 🚀 New Features
+
+- **RSS Feed module (free)** - Paste one or more RSS, Atom or JSON Feed links and get the latest headlines, merged newest first. Choose a list with thumbnails, compact headlines or large image cards, with optional summaries, time ago and feed name. Keyword filters and an age limit hide what you don't want. Thanks to larrysansan for the idea
+- **QR Code: content types** - Pick what the code is for and fill in the fields: Wi-Fi, a map location or route (from an entity or an address), WhatsApp, phone, text message, email, a contact card (name from a person entity), what a Spotify player is playing, or a social profile. Thanks to larrysansan for the idea
+- **Separator: icon and alignment** - Add an icon before or after the separator text, with its own size and colour, and place the text and icon left, centre or right. Leave the text empty for an icon-only separator. Thanks to larrysansan for the idea
+- **Calendar: open locations in a maps app** - New "Open location in" setting makes an event's location tappable, opening it in Google Maps, Apple Maps, OpenStreetMap or Waze. Thanks to larrysansan for the idea
+
+### 🔧 Improvements
+
+- **Lock: name, icons and colours** - New Name field, a searchable icon picker, a separate Unlocked icon, and Locked / Unlocked colours for the icon, ring, glow, button and badge. Card colour sets the background. The Design tab's text colour, size, weight, font and alignment now apply to the Lock. Thanks to larrysansan for the requests
+- **Stack: one anchor for all layers** - Each Stack layer has its own anchor. A new "Use this anchor for all layers" button copies the selected layer's anchor and offsets to every layer in one click. Thanks to Martin for the report
+
+### 🐛 Bug Fixes
+
+- **Text links stuck blue and underlined** - Links in the Text module always got an underline in the theme colour, even after you coloured the link. The underline now takes the link's colour, and a new "Underline links" switch turns it off. Thanks to larrysansan for the report
+- **Lock PIN hint too wide** - The PIN keypad's hint text now fits on one line in longer languages
+
 ## Version 3.14.3-beta1
 
 The first 3.14.3 beta lets you unlock a Lock module by tapping the card, adds a PIN you set in the card, and fixes Popups triggered by a module. This is a pre-release for testing — please report anything odd on GitHub or Discord.
