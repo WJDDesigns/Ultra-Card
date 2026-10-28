@@ -944,6 +944,8 @@ export class UltraLockModule extends BaseUltraModule {
     return `
       .uc-lock-wrapper { box-sizing: border-box; }
       .uc-lock-wrapper--actionable { cursor: pointer; }
+      /* Sliders follow the locked / unlocked colour like the buttons do */
+      .uc-lock-wrapper uc-slide-confirm { --uc-slide-accent: var(--uc-lock-accent, var(--primary-color)); }
       .uc-lock {
         box-sizing: border-box;
         color: var(--uc-lock-text, var(--primary-text-color));
