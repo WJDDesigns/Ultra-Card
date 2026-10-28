@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta3
+
+The third 3.14.3 beta fixes RSS feeds from sites that block Home Assistant and makes the Lock slider follow your colours. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.1 too.** It fixes loading feeds from news sites that turn away Home Assistant.
+
+### 🐛 Bug Fixes
+
+- **RSS Feed: some news feeds wouldn't load** - Several big news sites (heise, Focus, Zeit, FAZ, Stern) refuse feed requests that don't look like a browser. Connect 1.12.1 now fetches feeds like a browser does, and if Connect still can't get a feed, the card tries loading it straight from the browser before showing an error. Thanks to larrysansan for the report
+- **Lock: slide-to-unlock stayed blue** - With Locked / Unlocked colours set, the buttons took the colour but the swipe slider kept the theme's blue. The slider now follows your Locked / Unlocked colours too. Thanks to larrysansan for the report
+
 ## Version 3.14.3-beta2
 
 The second 3.14.3 beta adds a free RSS Feed module, many new QR code types, separator icons and more Lock styling, and fixes link underlines and Stack alignment. This is a pre-release for testing — please report anything odd on GitHub or Discord.
