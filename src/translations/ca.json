@@ -2850,8 +2850,8 @@
       "entity_section_desc": "Selecciona el bloqueig a controlar.",
       "entity": "Entitat de bloqueig",
       "entity_field_desc": "Home Assistant entitat de bloqueig",
-      "icon_override": "Substitució d'icona",
-      "icon_override_desc": "Icona opcional mdi:; deixa em buida per a icones de bloqueig per defecte",
+      "icon_override": "Icona",
+      "icon_override_desc": "Cerca una icona o deixa-ho buit per a les icones de pany per defecte. S'utilitza en tots els estats, tret que definiu una icona de desbloquejat a sota.",
       "display_section": "Visualització",
       "display_desc": "Tria què mostrar a la targeta.",
       "show_title": "Mostrar títol",
@@ -2920,7 +2920,17 @@
       "pin_saved": "PIN desat.",
       "pin_none": "Introdueix almenys 4 dígits. Fins aleshores, el desbloqueig fa servir la confirmació normal.",
       "pin_prompt": "Introdueix el teu PIN",
-      "pin_wrong": "PIN incorrecte, torna-ho a provar"
+      "pin_wrong": "PIN incorrecte, torna-ho a provar",
+      "name": "Nom",
+      "name_desc": "Es mostra en lloc del nom del pany de Home Assistant. Deixa-ho buit per fer servir aquest nom.",
+      "icon_unlocked": "Icona desbloquejat",
+      "icon_unlocked_desc": "Icona opcional mentre el pany està desbloquejat o obert",
+      "colors_section": "Colors",
+      "colors_desc": "Acoloreix la icona, l'anell, el botó actiu i l'estat segons l'estat. Deixa-ho buit per fer servir el color del tema.",
+      "locked_color": "Color bloquejat",
+      "unlocked_color": "Color desbloquejat",
+      "card_color": "Color de la targeta",
+      "card_color_desc": "Fons de la targeta del pany. És el mateix ajust que el color de fons de la pestanya Disseny."
     },
     "text_input": {
       "entity": {

@@ -2850,8 +2850,8 @@
       "entity_section_desc": "Velg låsen du vil kontrollere.",
       "entity": "Lås-enhet",
       "entity_field_desc": "Home Assistant lås-enhet",
-      "icon_override": "Ikonoverstyring",
-      "icon_override_desc": "Valfri mdi: ikon; la emtom for standard låsikoner",
+      "icon_override": "Ikon",
+      "icon_override_desc": "Søk etter eit ikon, eller la feltet stå tomt for standard låseikon. Blir brukt i alle tilstandar, med mindre du set eit ikon for opplåst nedanfor.",
       "display_section": "Visning",
       "display_desc": "Velg kva som skal visast på kortet.",
       "show_title": "Vis tittel",
@@ -2920,7 +2920,17 @@
       "pin_saved": "PIN lagra.",
       "pin_none": "Skriv inn minst 4 siffer. Fram til då brukar opplåsing vanleg stadfesting.",
       "pin_prompt": "Skriv inn PIN-en din",
-      "pin_wrong": "Feil PIN, prøv igjen"
+      "pin_wrong": "Feil PIN, prøv igjen",
+      "name": "Namn",
+      "name_desc": "Blir vist i staden for namnet på låsen frå Home Assistant. La feltet stå tomt for å bruke det namnet.",
+      "icon_unlocked": "Ikon for opplåst",
+      "icon_unlocked_desc": "Valfritt ikon medan låsen er låst opp eller open",
+      "colors_section": "Fargar",
+      "colors_desc": "Farg ikon, ring, aktiv knapp og status etter tilstand. La feltet stå tomt for å bruke temafargen.",
+      "locked_color": "Farge for låst",
+      "unlocked_color": "Farge for opplåst",
+      "card_color": "Kortfarge",
+      "card_color_desc": "Bakgrunnen til låsekortet. Same innstilling som Bakgrunnsfarge i Design-fana."
     },
     "text_input": {
       "entity": {

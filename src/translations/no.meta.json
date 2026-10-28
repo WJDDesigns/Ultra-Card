@@ -2100,7 +2100,17 @@
     "editor.rss_feed.summary_lines_desc",
     "editor.rss_feed.title",
     "editor.rss_feed.title_desc",
-    "editor.rss_feed.unit_days"
+    "editor.rss_feed.unit_days",
+    "editor.lock.name",
+    "editor.lock.name_desc",
+    "editor.lock.icon_unlocked",
+    "editor.lock.icon_unlocked_desc",
+    "editor.lock.colors_section",
+    "editor.lock.colors_desc",
+    "editor.lock.locked_color",
+    "editor.lock.unlocked_color",
+    "editor.lock.card_color",
+    "editor.lock.card_color_desc"
   ],
   "lastRun": "2026-05-03T22:41:08.443Z",
   "engine": "openai:gpt-4o-mini"

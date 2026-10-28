@@ -2850,8 +2850,8 @@
       "entity_section_desc": "Wybierz zamek do kontrolowania.",
       "entity": "Encja zamka",
       "entity_field_desc": "Home Assistant encja zamka",
-      "icon_override": "Nadpisanie ikony",
-      "icon_override_desc": "Opcjonalna ikona mdi:; pozostaw em pustą dla domyślnych ikon zamków",
+      "icon_override": "Ikona",
+      "icon_override_desc": "Wyszukaj ikonę lub zostaw puste, aby użyć domyślnych ikon zamka. Używana we wszystkich stanach, chyba że poniżej ustawisz ikonę dla odblokowanego.",
       "display_section": "Wyświetl",
       "display_desc": "Wybierz, co pokazać na karcie.",
       "show_title": "Pokaż tytuł",
@@ -2920,7 +2920,17 @@
       "pin_saved": "PIN zapisany.",
       "pin_none": "Wpisz co najmniej 4 cyfry. Do tego czasu odblokowanie używa zwykłego potwierdzenia.",
       "pin_prompt": "Wpisz swój PIN",
-      "pin_wrong": "Błędny PIN, spróbuj ponownie"
+      "pin_wrong": "Błędny PIN, spróbuj ponownie",
+      "name": "Nazwa",
+      "name_desc": "Wyświetlana zamiast nazwy zamka z Home Assistant. Zostaw puste, aby użyć tej nazwy.",
+      "icon_unlocked": "Ikona odblokowanego",
+      "icon_unlocked_desc": "Opcjonalna ikona, gdy zamek jest odblokowany lub otwarty",
+      "colors_section": "Kolory",
+      "colors_desc": "Koloruje ikonę, pierścień, aktywny przycisk i status zależnie od stanu. Zostaw puste, aby użyć koloru motywu.",
+      "locked_color": "Kolor zablokowanego",
+      "unlocked_color": "Kolor odblokowanego",
+      "card_color": "Kolor karty",
+      "card_color_desc": "Tło karty zamka. To samo ustawienie co Kolor tła na karcie Wygląd."
     },
     "text_input": {
       "entity": {

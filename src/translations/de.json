@@ -2854,8 +2854,8 @@
       "entity_section_desc": "Wählen Sie das zu steuernde Schloss aus.",
       "entity": "Schlusseinheit",
       "entity_field_desc": "Home Assistant Schlusseinheit",
-      "icon_override": "Symbolüberschreibung",
-      "icon_override_desc": "Optional mdi: Symbol; lassen Sie em leer für Standard-Schlosssymbole",
+      "icon_override": "Symbol",
+      "icon_override_desc": "Suchen Sie ein Symbol oder lassen Sie das Feld leer für die Standard-Schlosssymbole. Wird in jedem Zustand verwendet, sofern Sie unten kein Symbol für entsperrt festlegen.",
       "display_section": "Anzeige",
       "display_desc": "Wählen Sie aus, was auf der Karte angezeigt werden soll.",
       "show_title": "Titel anzeigen",
@@ -2924,7 +2924,17 @@
       "pin_saved": "PIN gespeichert.",
       "pin_none": "Geben Sie mindestens 4 Ziffern ein. Bis dahin wird beim Entsperren die normale Bestätigung verwendet.",
       "pin_prompt": "Geben Sie Ihre PIN ein",
-      "pin_wrong": "Falsche PIN, bitte erneut versuchen"
+      "pin_wrong": "Falsche PIN, bitte erneut versuchen",
+      "name": "Name",
+      "name_desc": "Wird statt des Namens des Schlosses aus Home Assistant angezeigt. Leer lassen, um diesen Namen zu verwenden.",
+      "icon_unlocked": "Symbol entsperrt",
+      "icon_unlocked_desc": "Optionales Symbol, solange das Schloss entsperrt oder geöffnet ist",
+      "colors_section": "Farben",
+      "colors_desc": "Färbt Symbol, Ring, aktive Schaltfläche und Status je nach Zustand. Leer lassen, um die Designfarbe zu verwenden.",
+      "locked_color": "Farbe verriegelt",
+      "unlocked_color": "Farbe entsperrt",
+      "card_color": "Kartenfarbe",
+      "card_color_desc": "Hintergrund der Schloss-Karte. Dieselbe Einstellung wie die Hintergrundfarbe im Design-Tab."
     },
     "text_input": {
       "entity": {

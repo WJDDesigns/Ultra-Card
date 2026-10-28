@@ -2850,8 +2850,8 @@
       "entity_section_desc": "Seleccione el bloqueo a controlar.",
       "entity": "Entidad de bloqueo",
       "entity_field_desc": "Entidad de bloqueo Home Assistant",
-      "icon_override": "Sobrescribir ícono",
-      "icon_override_desc": "Ícono opcional mdi:; deje em vacío para íconos de bloqueo predeterminados",
+      "icon_override": "Icono",
+      "icon_override_desc": "Busca un icono o déjalo vacío para los iconos de cerradura predeterminados. Se usa en todos los estados salvo que definas un icono de desbloqueado abajo.",
       "display_section": "Mostrar",
       "display_desc": "Elija qué mostrar en la tarjeta.",
       "show_title": "Mostrar título",
@@ -2920,7 +2920,17 @@
       "pin_saved": "PIN guardado.",
       "pin_none": "Introduce al menos 4 dígitos. Hasta entonces, el desbloqueo usa la confirmación normal.",
       "pin_prompt": "Introduce tu PIN",
-      "pin_wrong": "PIN incorrecto, inténtalo de nuevo"
+      "pin_wrong": "PIN incorrecto, inténtalo de nuevo",
+      "name": "Nombre",
+      "name_desc": "Se muestra en lugar del nombre de la cerradura en Home Assistant. Déjalo vacío para usar ese nombre.",
+      "icon_unlocked": "Icono desbloqueado",
+      "icon_unlocked_desc": "Icono opcional mientras la cerradura está desbloqueada o abierta",
+      "colors_section": "Colores",
+      "colors_desc": "Colorea el icono, el anillo, el botón activo y el estado según el estado. Déjalo vacío para usar el color del tema.",
+      "locked_color": "Color bloqueado",
+      "unlocked_color": "Color desbloqueado",
+      "card_color": "Color de la tarjeta",
+      "card_color_desc": "Fondo de la tarjeta de la cerradura. Es el mismo ajuste que Color de fondo en la pestaña Diseño."
     },
     "text_input": {
       "entity": {

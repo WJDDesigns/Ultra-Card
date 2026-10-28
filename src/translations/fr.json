@@ -2850,8 +2850,8 @@
       "entity_section_desc": "Sélectionnez le verrou à contrôler.",
       "entity": "Entité de verrouillage",
       "entity_field_desc": "Home Assistant entité de verrouillage",
-      "icon_override": "Remplacement d'icône",
-      "icon_override_desc": "Icône mdi: optionnelle ; laissez em vide pour les icônes de verrou par défaut",
+      "icon_override": "Icône",
+      "icon_override_desc": "Recherchez une icône, ou laissez vide pour les icônes de serrure par défaut. Utilisée dans tous les états, sauf si vous définissez une icône déverrouillée ci-dessous.",
       "display_section": "Affichage",
       "display_desc": "Choisissez ce que vous souhaitez afficher sur la carte.",
       "show_title": "Afficher le titre",
@@ -2920,7 +2920,17 @@
       "pin_saved": "Code PIN enregistré.",
       "pin_none": "Saisissez au moins 4 chiffres. En attendant, le déverrouillage utilise la confirmation normale.",
       "pin_prompt": "Saisissez votre code PIN",
-      "pin_wrong": "Code PIN incorrect, réessayez"
+      "pin_wrong": "Code PIN incorrect, réessayez",
+      "name": "Nom",
+      "name_desc": "Affiché à la place du nom de la serrure dans Home Assistant. Laissez vide pour utiliser ce nom.",
+      "icon_unlocked": "Icône déverrouillée",
+      "icon_unlocked_desc": "Icône facultative lorsque la serrure est déverrouillée ou ouverte",
+      "colors_section": "Couleurs",
+      "colors_desc": "Colore l'icône, l'anneau, le bouton actif et le statut selon l'état. Laissez vide pour utiliser la couleur du thème.",
+      "locked_color": "Couleur verrouillée",
+      "unlocked_color": "Couleur déverrouillée",
+      "card_color": "Couleur de la carte",
+      "card_color_desc": "Fond de la carte de la serrure. Même réglage que Couleur de fond dans l'onglet Design."
     },
     "text_input": {
       "entity": {

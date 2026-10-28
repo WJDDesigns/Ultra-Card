@@ -2850,8 +2850,8 @@
       "entity_section_desc": "Selecteer het slot om te bedienen.",
       "entity": "Slotentiteit",
       "entity_field_desc": "Home Assistant slotentiteit",
-      "icon_override": "Pictogram overschrijven",
-      "icon_override_desc": "Optioneel mdi: icoon; laat empty voor standaard sloticonen",
+      "icon_override": "Pictogram",
+      "icon_override_desc": "Zoek een pictogram, of laat leeg voor de standaard slotpictogrammen. Wordt in elke status gebruikt, tenzij je hieronder een pictogram voor ontgrendeld instelt.",
       "display_section": "Weergeven",
       "display_desc": "Kies wat je op de kaart wilt tonen.",
       "show_title": "Toon titel",
@@ -2920,7 +2920,17 @@
       "pin_saved": "Pincode opgeslagen.",
       "pin_none": "Voer minstens 4 cijfers in. Tot die tijd gebruikt ontgrendelen de normale bevestiging.",
       "pin_prompt": "Voer je pincode in",
-      "pin_wrong": "Verkeerde pincode, probeer opnieuw"
+      "pin_wrong": "Verkeerde pincode, probeer opnieuw",
+      "name": "Naam",
+      "name_desc": "Wordt getoond in plaats van de naam van het slot in Home Assistant. Laat leeg om die naam te gebruiken.",
+      "icon_unlocked": "Pictogram ontgrendeld",
+      "icon_unlocked_desc": "Optioneel pictogram terwijl het slot ontgrendeld of open is",
+      "colors_section": "Kleuren",
+      "colors_desc": "Kleur het pictogram, de ring, de actieve knop en de status per status. Laat leeg om de themakleur te gebruiken.",
+      "locked_color": "Kleur vergrendeld",
+      "unlocked_color": "Kleur ontgrendeld",
+      "card_color": "Kaartkleur",
+      "card_color_desc": "Achtergrond van de slotkaart. Dezelfde instelling als Achtergrondkleur op het tabblad Design."
     },
     "text_input": {
       "entity": {
