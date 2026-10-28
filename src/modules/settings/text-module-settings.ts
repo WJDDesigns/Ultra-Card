@@ -156,6 +156,21 @@ export class UltraTextModuleSettings extends UltraTextModule {
                       }}
                     ></ultra-wysiwyg-editor>
                   </div>
+                  <div style="margin-top: 16px;">
+                    ${UcFormUtils.renderFieldSection(
+                      localize('editor.text.link_underline', lang, 'Underline links'),
+                      localize(
+                        'editor.text.link_underline_desc',
+                        lang,
+                        'Show an underline under links. The underline takes the color you give the link text.'
+                      ),
+                      hass,
+                      { link_underline: textModule.link_underline !== false },
+                      [this.booleanField('link_underline')],
+                      (e: CustomEvent) =>
+                        updateModule({ link_underline: e.detail.value.link_underline })
+                    )}
+                  </div>
                 `;
               })()
             : html`
