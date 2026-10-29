@@ -1,5 +1,20 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta4
+
+The fourth 3.14.3 beta adds visibility settings for the whole card and updates German translations. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Card Settings: Visibility for the whole card** - The old "Visible to Users" section is now "Visibility", with the same options rows and modules have: Visible to Users, Hide on Devices, and display conditions (entity state, attribute, time or template). While you edit, a hidden card stays visible but faded so you can still change it
+
+### 🔧 Improvements
+
+- **German translations** - Better wording for the Lock and QR Code modules, and the 3D Printer module is now translated. Thanks to larrysansan
+- **Library updates** - Updated the drag-and-drop, text editor and build tools the card uses. Nothing should look different
+
 ## Version 3.14.3-beta3
 
 The third 3.14.3 beta fixes RSS feeds from sites that block Home Assistant and makes the Lock slider follow your colours. This is a pre-release for testing — please report anything odd on GitHub or Discord.
