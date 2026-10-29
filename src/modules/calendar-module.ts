@@ -972,6 +972,29 @@ export class UltraCalendarModule extends BaseUltraModule {
             )
           : ''}
 
+        ${module.show_event_location !== false
+          ? this.renderSegmentedField(
+              localize('editor.calendar.location_link', lang, 'Open location in'),
+              localize(
+                'editor.calendar.location_link_desc',
+                lang,
+                'Make the location tappable so it opens in a maps app.'
+              ),
+              module.location_link || 'none',
+              [
+                { value: 'none', label: localize('editor.calendar.location_link_none', lang, 'Off') },
+                { value: 'google', label: 'Google Maps' },
+                { value: 'apple', label: 'Apple Maps' },
+                { value: 'osm', label: 'OpenStreetMap' },
+                { value: 'waze', label: 'Waze' },
+              ],
+              (next: string) =>
+                updateModule({
+                  location_link: next as NonNullable<CalendarModule['location_link']>,
+                })
+            )
+          : ''}
+
         ${this.renderFieldSection(
           'Show Description',
           'Display event description',
@@ -2153,6 +2176,13 @@ export class UltraCalendarModule extends BaseUltraModule {
         gap: 6px;
         font-size: ${module.location_font_size || '12px'};
         color: ${module.location_color || 'var(--secondary-text-color)'};
+      }
+
+      .uc-calendar-location-link {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 2px;
       }
 
       .uc-calendar-event-location ha-icon {

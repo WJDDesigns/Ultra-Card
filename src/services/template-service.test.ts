@@ -137,6 +137,29 @@ describe('TemplateService subscription churn (P1)', () => {
     expect(unsubscribeCount).toBe(1);
   });
 
+  it('resubscribes when the template text changes under the same key', async () => {
+    // Dynamic List writes todo items / action responses into the template text,
+    // so a changed list arrives as new text with the same key and no variables.
+    const hass = makeHass({});
+    const service = new TemplateService(hass);
+    const tpl = (items: string) => `{% set items = ${items} %}{{ items | tojson }}`;
+
+    service.subscribeToTemplate(tpl('[1,2]'), 'dyn', undefined, {}, undefined, 'sig|a');
+    await settle();
+    expect(subscribeCount).toBe(1);
+
+    service.subscribeToTemplate(tpl('[2]'), 'dyn', undefined, {}, undefined, 'sig|b');
+    await settle();
+    expect(subscribeCount).toBe(2);
+    expect(unsubscribeCount).toBe(1);
+    expect(lastPayload?.template).toContain('[2]');
+
+    // Unchanged text stays on the same subscription.
+    service.subscribeToTemplate(tpl('[2]'), 'dyn', undefined, {}, undefined, 'sig|b');
+    await settle();
+    expect(subscribeCount).toBe(2);
+  });
+
   it('tears everything down on unsubscribeAllTemplates', async () => {
     const hass = makeHass({ 'sensor.x': { state: '1' } });
     const service = new TemplateService(hass);

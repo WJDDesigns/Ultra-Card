@@ -1,6 +1,7 @@
 import type { HomeAssistant } from './ha/types';
 import { LinkAction } from './services/link-service';
 import type { WeatherStationSensorFields } from './utils/uc-weather-station';
+import type { QrContentData, QrContentType } from './services/uc-qr-content-builder';
 
 // Global window interface extensions
 declare global {
@@ -229,7 +230,8 @@ export interface BaseModule {
     | 'irrigation'
     | 'linked_row'
     | 'energy_price'
-    | 'rain_radar';
+    | 'rain_radar'
+    | 'rss_feed';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -394,6 +396,8 @@ export interface TextModule extends BaseModule {
         service_data?: Record<string, any> | undefined;
       }
     | undefined;
+  /** Underline links in rich text (default true). */
+  link_underline?: boolean | undefined;
   icon?: string | undefined;
   icon_color?: string | undefined;
   icon_position?: 'before' | 'after' | 'none' | undefined;
@@ -448,6 +452,13 @@ export interface SeparatorModule extends BaseModule {
   title_uppercase?: boolean | undefined;
   title_strikethrough?: boolean | undefined;
   title_underline?: boolean | undefined;
+  /** Optional icon shown with the title (or alone when the title is empty). */
+  title_icon?: string | undefined;
+  title_icon_position?: 'before' | 'after' | undefined;
+  title_icon_size?: number | undefined;
+  title_icon_color?: string | undefined;
+  /** Where the title / icon sits on a horizontal line (Design tab text_align wins). */
+  title_align?: 'left' | 'center' | 'right' | undefined;
   // Global action configuration
   tap_action?:
     | {
@@ -4090,13 +4101,17 @@ export interface AnimatedForecastModule extends BaseModule {
   day_tap_hourly?: boolean | undefined; // Tapping a day opens its hours (default: false)
   temperature_unit?: 'F' | 'C' | undefined; // Temperature unit (default: F)
   allow_wrap?: boolean | undefined; // Allow forecast days to wrap to new rows
+  swipe_more?: boolean | undefined; // Load more days/hours and swipe sideways to see them (default: false)
+  hour_number_only?: boolean | undefined; // Hourly labels show just the hour, e.g. "14" not "14 Uhr" (default: false)
 
   // Chart rows under the forecast
   show_chart?: boolean | undefined;
   chart_metrics?: AnimatedForecastChartMetric[] | undefined; // default: ['precipitation_probability']
   chart_style?: 'bar' | 'line' | undefined; // default: bar
+  chart_metric_styles?: Partial<Record<AnimatedForecastChartMetric, 'bar' | 'line'>> | undefined; // per value, overrides chart_style
   chart_height?: number | undefined; // Height of each row in px (default: 48)
   chart_color?: string | undefined; // default: accent color
+  chart_color_mode?: 'single' | 'value' | undefined; // 'value' colours each point by its value (default: single)
 
   // Styling - Text Sizes
   forecast_day_size?: number | undefined; // Forecast day name size (default: 14)
@@ -4237,6 +4252,10 @@ export interface QrCodeModule extends BaseModule {
   type: 'qr_code';
   // Content source: static URL/text, unified template, or entity state/attribute
   content_mode: 'static' | 'entity' | 'unified';
+  /** What the code is for. 'text' (default) uses content_mode; the rest build the text from qr_data. */
+  content_type?: QrContentType | undefined;
+  /** Fields for the structured content types (Wi-Fi, map, contact, ...). */
+  qr_data?: QrContentData | undefined;
   content_static?: string | undefined; // For static: URL or text to encode
   unified_template_mode?: boolean | undefined;
   unified_template?: string | undefined;
@@ -4538,7 +4557,19 @@ export interface NavBadgeConfig {
   textColor?: string | undefined;
 }
 
-export interface NavRoute {
+/** Visibility options a route or stack can set in the editor. */
+export interface NavItemVisibility {
+  /** Show only for / hide for these Home Assistant users */
+  user_visibility?: UserVisibility | undefined;
+  /** Hide on these screen sizes (same breakpoints as module Hide on Devices) */
+  hidden_on_devices?: DeviceBreakpoint[] | undefined;
+  /** @deprecated 3.14.2-beta6 only: navbar desktop/mobile layout. Still honoured until edited. */
+  hide_on?: Array<'desktop' | 'mobile'> | undefined;
+  /** Show only while an entity is (or is not) in a state */
+  show_when?: { entity: string; operator?: '=' | '!=' | undefined; state?: string | undefined } | undefined;
+}
+
+export interface NavRoute extends NavItemVisibility {
   id: string;
   url?: string | undefined;
   icon?: string | undefined;
@@ -4557,7 +4588,7 @@ export interface NavRoute {
 }
 
 /** A stack item that can contain child routes */
-export interface NavStackItem {
+export interface NavStackItem extends NavItemVisibility {
   id: string;
   /** Icon for the stack button */
   icon?: string | undefined;
@@ -4867,7 +4898,14 @@ export interface LockModule extends BaseModule {
   /** Lock entity */
   entity: string;
   name?: string | undefined;
+  /** Icon in every state, unless icon_unlocked is set for the unlocked state */
   icon?: string | undefined;
+  /** Icon while unlocked / open (falls back to icon, then the default) */
+  icon_unlocked?: string | undefined;
+  /** Accent colour (icon, ring, active button, badge) while locked; theme colour when empty */
+  locked_color?: string | undefined;
+  /** Accent colour while unlocked / open; theme colour when empty */
+  unlocked_color?: string | undefined;
 
   layout?: 'hero' | 'standard' | 'compact' | undefined;
   alignment?: 'left' | 'center' | 'right' | undefined;
@@ -4880,6 +4918,17 @@ export interface LockModule extends BaseModule {
   show_lock_buttons?: boolean | undefined;
   /** Ask for confirmation before unlock / open (default true) */
   require_confirmation?: boolean | undefined;
+  /** How unlock / open are triggered in the hero and standard layouts (default buttons) */
+  unlock_style?: 'buttons' | 'slide' | 'pattern' | 'pin' | undefined;
+  /** Pattern for unlock_style 'pattern': dot numbers 1-9 in drawing order, e.g. "14789" */
+  unlock_pattern?: string | undefined;
+  /** PIN for unlock_style 'pin', at least 4 digits. Checked in the card, never sent to the lock. */
+  unlock_pin?: string | undefined;
+  /**
+   * Ask for the lock's PIN code and send it with the service call. 'auto' asks when the
+   * lock reports a code format (default auto).
+   */
+  ask_code?: 'auto' | 'always' | 'never' | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
@@ -5620,7 +5669,8 @@ export type CardModule =
   | IrrigationModule
   | LinkedRowModule
   | EnergyPriceModule
-  | RainRadarModule;
+  | RainRadarModule
+  | RssFeedModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -6922,6 +6972,7 @@ export interface CustomVariable {
   order: number;
   created?: string | undefined;
   isGlobal?: boolean | undefined; // true = syncs across all cards (default), false = card-specific
+  group?: string | undefined; // Optional label for filtering global variables in the Hub
 }
 
 export interface CustomVariablesExportData {
@@ -7760,6 +7811,8 @@ export interface CalendarModule extends BaseModule {
   show_event_icon?: boolean | undefined;
   time_24h?: boolean | undefined;
   remove_location_country?: boolean | undefined;
+  /** Make the event location a link that opens this maps app. */
+  location_link?: 'none' | 'google' | 'apple' | 'osm' | 'waze' | undefined;
   max_event_title_length?: number | undefined;
   show_past_events?: boolean | undefined;
 
@@ -9386,6 +9439,42 @@ export interface IrrigationModule extends BaseModule {
   /** Soil moisture thresholds (percent). Below dry = dry, above wet = wet. */
   moisture_dry_threshold?: number | undefined;
   moisture_wet_threshold?: number | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// RSS Feed (free) — headlines from one or more RSS / Atom / JSON feeds
+// -------------------------------------------------------------------------
+
+export type RssFeedLayout = 'list' | 'compact' | 'cards';
+
+export interface RssFeedModule extends BaseModule {
+  type: 'rss_feed';
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  /** Feed addresses (RSS, Atom or JSON Feed). Items are merged newest first. */
+  feeds?: string[] | undefined;
+  max_items?: number | undefined;
+  /** How often to fetch the feeds again, in minutes. */
+  refresh_minutes?: number | undefined;
+  layout?: RssFeedLayout | undefined;
+  show_image?: boolean | undefined;
+  show_summary?: boolean | undefined;
+  summary_lines?: number | undefined;
+  show_date?: boolean | undefined;
+  show_source?: boolean | undefined;
+  /** What tapping a headline does. */
+  open_in?: 'new_tab' | 'same_tab' | 'none' | undefined;
+  /** Only show items that mention one of these words. */
+  include_keywords?: string[] | undefined;
+  /** Hide items that mention any of these words. */
+  exclude_keywords?: string[] | undefined;
+  /** Hide items older than this many days (0 = no limit). */
+  max_age_days?: number | undefined;
+  accent_color?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

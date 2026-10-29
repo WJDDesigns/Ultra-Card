@@ -13,6 +13,11 @@ import {
   getWeatherForecast,
 } from '../utils/uc-weather-forecast';
 import type { AnimatedForecastChartMetric } from '../types';
+import { forecastValueColor, ForecastUnits } from '../utils/uc-forecast-colors';
+
+/** Most slots loaded when "Swipe for more" is on. */
+const SWIPE_MAX_DAYS = 14;
+const SWIPE_MAX_HOURS = 48;
 
 /** Which day each module is showing hours for (null = daily view). */
 const openDays = new Map<string, string | null>();
@@ -24,6 +29,24 @@ const CHART_METRIC_LABELS: Record<AnimatedForecastChartMetric, string> = {
   temperature: 'Temperature',
   wind_speed: 'Wind speed',
 };
+
+/**
+ * Hour label for the hourly view. `numberOnly` drops words some languages add,
+ * like the German "Uhr", but keeps AM/PM so 12-hour times stay clear.
+ */
+export function formatForecastHour(date: Date, lang: string, numberOnly: boolean): string {
+  if (!numberOnly) return date.toLocaleTimeString(lang, { hour: 'numeric' });
+  try {
+    const parts = new Intl.DateTimeFormat(lang, { hour: 'numeric' }).formatToParts(date);
+    const hour = parts.find(p => p.type === 'hour')?.value ?? String(date.getHours());
+    const period = parts.find(p => p.type === 'dayPeriod')?.value;
+    const periodFirst = parts.findIndex(p => p.type === 'dayPeriod') < parts.findIndex(p => p.type === 'hour');
+    if (!period) return hour;
+    return periodFirst ? `${period} ${hour}` : `${hour} ${period}`;
+  } catch {
+    return String(date.getHours());
+  }
+}
 
 export class UltraAnimatedForecastModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -192,10 +215,33 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     let isHolding = false;
     let clickCount = 0;
     let lastClickTime = 0;
+    // A swipe through the forecast must not count as a tap or hold.
+    let downX = 0;
+    let downY = 0;
+    let moved = false;
+    const cancelHold = () => {
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+    };
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!moved && Math.hypot(e.clientX - downX, e.clientY - downY) > 10) {
+        moved = true;
+        cancelHold();
+      }
+    };
+    const handlePointerCancel = () => {
+      moved = true;
+      cancelHold();
+    };
 
     const handlePointerDown = (e: PointerEvent) => {
       e.preventDefault();
       isHolding = false;
+      moved = false;
+      downX = e.clientX;
+      downY = e.clientY;
       holdTimeout = setTimeout(() => {
         isHolding = true;
         if (!forecastModule.hold_action || forecastModule.hold_action.action !== 'nothing') {
@@ -213,10 +259,8 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
     const handlePointerUp = (e: PointerEvent) => {
       e.preventDefault();
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
-      }
+      cancelHold();
+      if (moved) return;
 
       if (isHolding) {
         isHolding = false;
@@ -340,12 +384,15 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         class="${hoverClass}"
         style="${designStyles}; ${forecastLayoutStyles}"
         @pointerdown=${handlePointerDown}
+        @pointermove=${handlePointerMove}
         @pointerup=${handlePointerUp}
+        @pointercancel=${handlePointerCancel}
       >
         <div
           class="animated-forecast-module-container"
           style="
             --forecast-days: ${weatherData.columns};
+            --forecast-visible: ${weatherData.visible || weatherData.columns};
             --forecast-day-size: ${forecastModule.forecast_day_size || 14}px;
             --forecast-temp-size: ${forecastModule.forecast_temp_size || 14}px;
             --forecast-icon-size: ${forecastModule.forecast_icon_size || 48}px;
@@ -394,7 +441,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     };
 
     return html`
-      <div class="weather-forecast">
+      <div class="weather-forecast ${data.visible ? 'swipe' : ''}">
         ${data.openDay
           ? html`
               <div class="forecast-hourly-header" @pointerdown=${stop}>
@@ -420,7 +467,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         ${data.slots.map((slot: WeatherForecastSlot) => {
           const date = new Date(slot.datetime);
           const label = isHourly
-            ? date.toLocaleTimeString(lang, { hour: 'numeric' })
+            ? formatForecastHour(date, lang, module.hour_number_only === true)
             : date.toLocaleDateString(lang, { weekday: 'short' });
           const high = typeof slot.temperature === 'number' ? Math.round(slot.temperature) : undefined;
           const low =
@@ -457,7 +504,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
             </div>
           `;
         })}
-        ${module.show_chart === true ? this._renderChartRows(module, data.slots, lang) : nothing}
+        ${module.show_chart === true
+          ? this._renderChartRows(module, data.slots, lang, data.units)
+          : nothing}
       </div>
     `;
   }
@@ -466,14 +515,16 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
   private _renderChartRows(
     module: AnimatedForecastModule,
     slots: WeatherForecastSlot[],
-    lang: string
+    lang: string,
+    units: ForecastUnits
   ): TemplateResult | typeof nothing {
     const metrics = (module.chart_metrics?.length
       ? module.chart_metrics
       : ['precipitation_probability']) as AnimatedForecastChartMetric[];
     const height = module.chart_height || 48;
     const color = module.chart_color || module.accent_color || 'var(--primary-color)';
-    const style = module.chart_style || 'bar';
+    const defaultStyle = module.chart_style || 'bar';
+    const byValue = module.chart_color_mode === 'value';
 
     const rows = metrics
       .map(metric => {
@@ -514,8 +565,21 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
           CHART_METRIC_LABELS[metric]
         );
 
+        const colorOf = (v: number) => (byValue ? forecastValueColor(metric, v, units) : color);
+        const style = module.chart_metric_styles?.[metric] || defaultStyle;
+
         if (style === 'line') {
           const n = values.length;
+          // Colour by value: a left-to-right gradient with a stop at each point's column.
+          const gradientId = `uc-fc-${module.id}-${metric}`.replace(/[^\w-]/g, '_');
+          const stops = byValue
+            ? values
+                .map((v, i) =>
+                  v === undefined
+                    ? nothing
+                    : svg`<stop offset=${`${((i + 0.5) / n) * 100}%`} stop-color=${colorOf(v)}></stop>`
+                )
+            : [];
           const points = values
             .map((v, i) =>
               v === undefined ? null : `${((i + 0.5) / n) * 100},${(1 - ratio(v)) * 90 + 5}`
@@ -525,9 +589,20 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
           return html`
             <div class="forecast-chart-row" aria-label=${label}>
               <div class="forecast-chart-label">${label}</div>
-              <div class="forecast-chart-line" style="height:${height}px;">
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                  ${svg`<polyline points=${points} fill="none" stroke=${color} stroke-width="2"
+              <div
+                class="forecast-chart-line"
+                style="grid-column:1 / -1;height:${height}px;margin:0 -8px;overflow:hidden;"
+              >
+                <svg
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  style="display:block;width:100%;height:100%;"
+                >
+                  ${byValue
+                    ? svg`<defs><linearGradient id=${gradientId} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">${stops}</linearGradient></defs>`
+                    : nothing}
+                  ${svg`<polyline points=${points} fill="none" stroke=${byValue ? `url(#${gradientId})` : color} stroke-width="2"
                     vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>`}
                 </svg>
               </div>
@@ -548,7 +623,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
                     ${v !== undefined
                       ? html`<div
                           class="forecast-chart-bar"
-                          style="height:${Math.max(2, ratio(v) * 100)}%;background:${color};"
+                          style="height:${Math.max(2, ratio(v) * 100)}%;background:${colorOf(v)};"
                         ></div>`
                       : nothing}
                   </div>
@@ -600,6 +675,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     const weatherEntity = hass.states[module.weather_entity || ''];
     const days = Math.max(3, Math.min(7, module.forecast_days || 5));
     const hours = Math.max(3, Math.min(12, module.forecast_hours || 8));
+    // Swipe mode loads everything the integration offers (up to a cap) and keeps the
+    // configured count as the number of columns visible at once.
+    const swipe = module.swipe_more === true;
     const repaint = () => this.triggerPreviewUpdate();
 
     let daily: WeatherForecastSlot[] = [];
@@ -625,21 +703,30 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       const upcoming = hourly.filter(s => new Date(s.datetime).getTime() >= now);
       slots = (openDay ? upcoming.filter(s => forecastDayKey(s.datetime) === openDay) : upcoming).slice(
         0,
-        hours
+        swipe ? SWIPE_MAX_HOURS : hours
       );
     } else {
-      slots = daily.slice(0, days);
+      slots = daily.slice(0, swipe ? SWIPE_MAX_DAYS : days);
     }
 
     // Get temperature unit from weather entity attributes
     const temperatureUnit = weatherEntity?.attributes?.temperature_unit || '°F';
+
+    const shown = view === 'hourly' ? hours : days;
 
     return {
       slots,
       view,
       openDay,
       columns: Math.max(1, slots.length || days),
+      // Scrolling only kicks in when there is more than fits.
+      visible: swipe && slots.length > shown ? shown : 0,
       temperatureUnit: temperatureUnit,
+      units: {
+        temperature: temperatureUnit,
+        wind_speed: weatherEntity?.attributes?.wind_speed_unit,
+        precipitation: weatherEntity?.attributes?.precipitation_unit,
+      } as ForecastUnits,
     };
   }
 
@@ -693,6 +780,33 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         padding: 20px 16px 16px 16px;
         background: var(--forecast-background);
         border-radius: var(--uc-r-12, 12px);
+      }
+
+      /* Swipe for more: columns sized so --forecast-visible fit, the rest scroll sideways.
+         Chart rows are subgrids of this grid, so they scroll with their columns. */
+      .weather-forecast.swipe {
+        grid-template-columns: repeat(
+          var(--forecast-days),
+          calc((100% - (var(--forecast-visible) - 1) * 16px) / var(--forecast-visible))
+        );
+        grid-auto-flow: row;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline: 16px;
+        scrollbar-width: thin;
+        touch-action: pan-x pan-y;
+      }
+
+      .weather-forecast.swipe .forecast-day {
+        scroll-snap-align: start;
+      }
+
+      .weather-forecast.swipe .forecast-chart-label,
+      .weather-forecast.swipe .forecast-hourly-header {
+        justify-self: start;
+        position: sticky;
+        left: 0;
       }
 
       .forecast-day {
