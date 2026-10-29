@@ -2285,7 +2285,7 @@ export class UltraGridModule extends BaseUltraModule {
                 '',
                 hass,
                 { value: cond.value || '' },
-                [UcFormUtils.text('value')],
+                [UcFormUtils.conditionValue('value', hass, cond)],
                 (e: CustomEvent) => updateCondition(e.detail.value)
               )}
             `
@@ -2333,7 +2333,7 @@ export class UltraGridModule extends BaseUltraModule {
                 '',
                 hass,
                 { value: cond.value || '' },
-                [UcFormUtils.text('value')],
+                [UcFormUtils.conditionValue('value', hass, cond)],
                 (e: CustomEvent) => updateCondition(e.detail.value)
               )}
             `

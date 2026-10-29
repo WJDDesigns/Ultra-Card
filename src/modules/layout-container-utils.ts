@@ -159,13 +159,41 @@ export function renderChildModulePreview(
     `;
   }
 
-  // State-based animation wrapper for children when configured
-  const m: any = moduleToRender as any;
+  return wrapChildModuleAnimation(moduleToRender, hass, moduleContent);
+}
+
+/**
+ * Wrap a layout child in its animation wrapper.
+ *
+ * A state animation (`animation_type`) runs while its entity condition holds.
+ * A child with no state animation plays its intro animation when it is first
+ * rendered, or rendered again after logic shows it, the same way top-level
+ * modules do. Outro animations can't play here: a hidden child is removed.
+ */
+export function wrapChildModuleAnimation(
+  child: CardModule,
+  hass: HomeAssistant | undefined,
+  content: TemplateResult
+): TemplateResult {
+  const m: any = child as any;
+  const animationDuration = m.animation_duration || m.design?.animation_duration || '2s';
+  const animationDelay = m.animation_delay || m.design?.animation_delay || '0s';
+  const animationTiming = m.animation_timing || m.design?.animation_timing || 'ease';
+  const wrap = (animation: string) => html`
+    <div
+      class="module-animation-wrapper animation-${animation}"
+      style="
+        --animation-duration: ${animationDuration};
+        --animation-delay: ${animationDelay};
+        --animation-timing: ${animationTiming};
+      "
+    >
+      ${content}
+    </div>
+  `;
+
   const animationType = m.animation_type || m.design?.animation_type;
   if (animationType && animationType !== 'none') {
-    const animationDuration = m.animation_duration || m.design?.animation_duration || '2s';
-    const animationDelay = m.animation_delay || m.design?.animation_delay || '0s';
-    const animationTiming = m.animation_timing || m.design?.animation_timing || 'ease';
     const entityId = m.animation_entity || m.design?.animation_entity;
     const triggerType = m.animation_trigger_type || m.design?.animation_trigger_type || 'state';
     const attribute = m.animation_attribute || m.design?.animation_attribute;
@@ -182,22 +210,11 @@ export function renderChildModulePreview(
         shouldAnimate = entity.state === targetState;
       }
     }
-
-    if (shouldAnimate) {
-      return html`
-        <div
-          class="module-animation-wrapper animation-${animationType}"
-          style="
-            --animation-duration: ${animationDuration};
-            --animation-delay: ${animationDelay};
-            --animation-timing: ${animationTiming};
-          "
-        >
-          ${moduleContent}
-        </div>
-      `;
-    }
+    return shouldAnimate ? wrap(animationType) : content;
   }
 
-  return moduleContent;
+  const introAnimation = m.intro_animation || m.design?.intro_animation;
+  if (introAnimation && introAnimation !== 'none') return wrap(introAnimation);
+
+  return content;
 }

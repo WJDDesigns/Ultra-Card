@@ -10,6 +10,8 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { forwardHaEventsFromPortal } from '../utils/uc-portal-ha-events';
+import { collectPortalChildStyles } from '../utils/uc-portal-child-styles';
 import { getImageUrl } from '../utils/image-upload';
 import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
@@ -2706,7 +2708,7 @@ export class UltraPopupModule extends BaseUltraModule {
                         '',
                         hass,
                         { value: cond.value || '' },
-                        [this.textField('value')],
+                        [this.conditionValueField('value', hass, cond)],
                         (e: CustomEvent) => onChange(e.detail.value)
                       )}
                     `;
@@ -2752,7 +2754,7 @@ export class UltraPopupModule extends BaseUltraModule {
                         '',
                         hass,
                         { value: cond.value || '' },
-                        [this.textField('value')],
+                        [this.conditionValueField('value', hass, cond)],
                         (e: CustomEvent) => onChange(e.detail.value)
                       )}
                     `;
@@ -3621,6 +3623,9 @@ export class UltraPopupModule extends BaseUltraModule {
         portal.removeAttribute('inert');
         document.body.appendChild(portal);
         popupPortals.set(uniquePopupKey, portal);
+        // Cards inside the popup (e.g. a tile card's more-info) fire HA events that
+        // can't reach <home-assistant> from a body-level portal; forward them.
+        forwardHaEventsFromPortal(portal);
       }
 
       // Always ensure portal is not inert on every render
@@ -3888,6 +3893,7 @@ export class UltraPopupModule extends BaseUltraModule {
               animation-duration: 150ms !important;
             }
           }
+          ${collectPortalChildStyles(popupModule.modules)}
         </style>
         <div
           class="ultra-popup-overlay"

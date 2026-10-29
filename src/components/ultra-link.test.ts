@@ -210,3 +210,40 @@ describe('UltraLinkComponent close popup after action', () => {
     button.remove();
   });
 });
+
+describe('UltraLinkComponent toggle', () => {
+  it('unlocks a locked lock instead of calling homeassistant.toggle', async () => {
+    const hass = makeHass();
+    hass.states = { 'lock.front_door': { state: 'locked', attributes: {} } };
+    const element = document.createElement('button');
+
+    await UltraLinkComponent.handleAction(
+      { action: 'toggle', entity: 'lock.front_door' },
+      hass,
+      element,
+      { haptic_feedback: false } as any
+    );
+
+    expect(hass.callService).toHaveBeenCalledWith('lock', 'unlock', {
+      entity_id: 'lock.front_door',
+    });
+    expect(hass.callService).not.toHaveBeenCalledWith('homeassistant', 'toggle', expect.anything());
+  });
+
+  it('still toggles a light through homeassistant.toggle', async () => {
+    const hass = makeHass();
+    hass.states = { 'light.kitchen': { state: 'on', attributes: {} } };
+    const element = document.createElement('button');
+
+    await UltraLinkComponent.handleAction(
+      { action: 'toggle', entity: 'light.kitchen' },
+      hass,
+      element,
+      { haptic_feedback: false } as any
+    );
+
+    expect(hass.callService).toHaveBeenCalledWith('homeassistant', 'toggle', {
+      entity_id: 'light.kitchen',
+    });
+  });
+});

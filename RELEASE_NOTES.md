@@ -1,5 +1,443 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta3
+
+The third 3.14.3 beta fixes RSS feeds from sites that block Home Assistant and makes the Lock slider follow your colours. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.1 too.** It fixes loading feeds from news sites that turn away Home Assistant.
+
+### 🐛 Bug Fixes
+
+- **RSS Feed: some news feeds wouldn't load** - Several big news sites (heise, Focus, Zeit, FAZ, Stern) refuse feed requests that don't look like a browser. Connect 1.12.1 now fetches feeds like a browser does, and if Connect still can't get a feed, the card tries loading it straight from the browser before showing an error. Thanks to larrysansan for the report
+- **Lock: slide-to-unlock stayed blue** - With Locked / Unlocked colours set, the buttons took the colour but the swipe slider kept the theme's blue. The slider now follows your Locked / Unlocked colours too. Thanks to larrysansan for the report
+
+## Version 3.14.3-beta2
+
+The second 3.14.3 beta adds a free RSS Feed module, many new QR code types, separator icons and more Lock styling, and fixes link underlines and Stack alignment. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.0 too.** The RSS Feed module loads feeds through Connect, so it can read sites that block being loaded straight from a dashboard.
+
+### 🚀 New Features
+
+- **RSS Feed module (free)** - Paste one or more RSS, Atom or JSON Feed links and get the latest headlines, merged newest first. Choose a list with thumbnails, compact headlines or large image cards, with optional summaries, time ago and feed name. Keyword filters and an age limit hide what you don't want. Thanks to larrysansan for the idea
+- **QR Code: content types** - Pick what the code is for and fill in the fields: Wi-Fi, a map location or route (from an entity or an address), WhatsApp, phone, text message, email, a contact card (name from a person entity), what a Spotify player is playing, or a social profile. Thanks to larrysansan for the idea
+- **Separator: icon and alignment** - Add an icon before or after the separator text, with its own size and colour, and place the text and icon left, centre or right. Leave the text empty for an icon-only separator. Thanks to larrysansan for the idea
+- **Calendar: open locations in a maps app** - New "Open location in" setting makes an event's location tappable, opening it in Google Maps, Apple Maps, OpenStreetMap or Waze. Thanks to larrysansan for the idea
+
+### 🔧 Improvements
+
+- **Lock: name, icons and colours** - New Name field, a searchable icon picker, a separate Unlocked icon, and Locked / Unlocked colours for the icon, ring, glow, button and badge. Card colour sets the background. The Design tab's text colour, size, weight, font and alignment now apply to the Lock. Thanks to larrysansan for the requests
+- **Stack: one anchor for all layers** - Each Stack layer has its own anchor. A new "Use this anchor for all layers" button copies the selected layer's anchor and offsets to every layer in one click. Thanks to Martin for the report
+
+### 🐛 Bug Fixes
+
+- **Text links stuck blue and underlined** - Links in the Text module always got an underline in the theme colour, even after you coloured the link. The underline now takes the link's colour, and a new "Underline links" switch turns it off. Thanks to larrysansan for the report
+- **Lock PIN hint too wide** - The PIN keypad's hint text now fits on one line in longer languages
+
+## Version 3.14.3-beta1
+
+The first 3.14.3 beta lets you unlock a Lock module by tapping the card, adds a PIN you set in the card, and fixes Popups triggered by a module. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Lock: unlock with a PIN** - Set "Unlock with" to "Enter a PIN" and type a PIN of at least 4 digits in the editor. Unlock and Open then show a keypad and only go ahead with the right PIN; a wrong one shakes and lets you try again. The PIN is checked in the card and never sent to the lock, so it works with any lock. Thanks to larrysansan for the idea
+- **Lock: tap the card to lock and unlock** - The Lock module's Tap, Hold and Double tap actions now work. Set one to Toggle and tapping the card locks or unlocks, going through your "Unlock with" choice (pattern, PIN or confirmation) first. Handy with the lock / unlock buttons hidden for an icon-only lock
+
+### 🐛 Bug Fixes
+
+- **Pattern unlock in icon-only mode** - With the lock / unlock buttons hidden, there was no way to reach the pattern. Tapping the card (Tap action set to Toggle) now asks for it. With Slide to unlock, a tap outside the slider always asks for confirmation first. Thanks to larrysansan for the report
+- **Popup "Trigger via Module" with Tap action None** - A popup set to open from a module didn't open when that module's Tap action was None. It now opens on tap. Thanks to Steve Markus for the report
+
+## Version 3.14.2
+
+Stable 3.14.2 brings everything from the eight 3.14.2 betas into one release. The Lock module can now ask for a slide, a PIN code or a drawn pattern before it unlocks, the weather modules read your own station sensors and get a wind compass, hourly forecasts and charts, and global variables sync across your devices. Hidden cards now close up properly, and cameras work again inside Horizontal containers, Popups and Drawers. Thanks to everyone who tested the betas, and especially to larrysansan for most of the ideas and bug reports in this release.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Using the Hub?** The Hub's new global variable search and groups come with Ultra Card Connect 1.11.0, released alongside this version.
+
+### 🚀 New Features
+
+- **Lock: slide to unlock** - Set "Unlock with" to Slide and the Unlock and Open buttons become sliders, so a stray tap can't unlock the door. Works in the Hero and Standard layouts. The slider knob icon switches from locked to unlocked when you reach the end
+- **Lock: PIN code keypad** - "Ask for PIN code" shows a keypad and sends the code to the lock, so locks that need a code now work from the card. Automatic asks only when the lock needs one
+- **Lock: draw a pattern to unlock** - Set "Unlock with" to "Draw a pattern" and draw your pattern (at least 4 dots) in the editor. Unlock and Open then ask for the pattern first, like a phone's lock screen. The pattern is saved in the dashboard, so it stops accidental unlocks but isn't a real password
+- **Lock "Show lock / unlock buttons"** - New Display option to hide the Lock and Unlock buttons, for example for a status-only lock
+- **Weather station sensors** - Weather and Animated Weather can read temperature, humidity, feels like, dew point, pressure, wind, gust, rain and UV from your own sensors. A sensor wins over the weather entity and falls back to it when unavailable
+- **Wind compass and more weather details** - Weather shows a wind direction arrow and optional feels like, gust, pressure, rain, UV and dew point. Animated Weather gets the same items plus a wind compass dial. New items stay off unless you turn them on
+- **Hourly forecast and forecast charts** - Animated Forecast can start on hourly, open a day's hours when tapped, and show chart rows (chance of rain, rain, UV, temperature, wind) under the forecast. Each value picks Bars or Line, and arrows set their order. Graphs forecast mode adds Chance of Rain and UV Index
+- **Animated Forecast: swipe for more** - Turn on "Swipe for More" to scroll sideways through up to 14 days or 48 hours
+- **Animated Forecast: colour by value** - Set Colors to "By Value" to colour bars and lines by their value: UV by the WHO scale, temperature from blue to red, rain from light to dark blue, wind from green to red
+- **Animated Forecast: Hour Number Only** - Shows just the hour (for example "14") instead of "14 Uhr" or "2 PM" in hourly forecasts
+- **Global variables on every device** - Global Custom Variables are now saved to your Home Assistant user, so every browser and the companion app you sign in with gets the same set. If two devices have different copies, the newest one wins
+- **Make a card variable global** - Card variables have a new globe button that moves them to your global variables, so every card can use them
+- **Search entities and group global variables** - The Entity field in the Hub's Variables tab searches by entity ID or name as you type, and global variables can have a Group with filter chips to show one group at a time (needs Ultra Card Connect 1.11.0)
+- **Navigation: visibility per item** - Each path and stack has a Visibility section: Visible to Users, Hide on Devices (the same Desktop, Laptop, Tablet and Mobile picker as other modules), and Show only when an entity is (or isn't) a state
+- **Update Monitor "Hide when up to date"** - Hides the module on the dashboard when no updates are pending
+- **Camera Live / Snapshot badge** - Optional small badge in the top corner showing whether the camera is live or a snapshot
+
+### 🔧 Improvements
+
+- **State picker for condition values** - For "=" and "!=" conditions on an entity, the Value field now lists that entity's states (such as on/off) and still accepts a typed value. Applies to the Logic tab, Popup triggers, Accordion and Grid filters
+- **Hidden rows stay visible in the editor** - Rows, columns and modules set to hide on the device you're editing on now show faded with a dashed outline in the card editor instead of disappearing
+- **Lock alignment in every layout** - Left and Right now move the lock to that side in the Standard and Compact layouts too, not only Hero. Their default stays spread across the card and is now called "Spread out", so existing cards look the same
+- **Clearer Lock "Show open button"** - The option is greyed out with a note when your lock can't unlatch, since the Open button can never show for it
+
+### 🐛 Bug Fixes
+
+- **Hidden Ultra Card leaving a gap** - When a card hides itself through Visible to Users, an entity condition, Logic or Hide on Devices, it now closes up instead of leaving an empty box or a gap in the sections view. Home Assistant always shows hidden cards while the dashboard is in edit mode
+- **Cameras inside a Horizontal container** - A Camera set to a percentage width (the default 100%) now shows inside a Horizontal container instead of shrinking to nothing. Map, Weather Radar, Camera Grid and Stack modules are fixed too
+- **Live cameras in Popups and Drawers** - A live Camera inside a Popup or Drawer now plays instead of staying blank, and modules inside a Popup get all of their styling
+- **Camera after returning to the app** - A camera no longer shows the broken-image icon or goes blank after the app has been in the background
+- **Toggle action on locks** - Toggle as a tap, hold or double-tap action now works on lock entities. Buttons and input buttons now get pressed and scenes get activated the same way
+- **Visible to Users on Navigation** - Logic > Visible to Users now works on Navigation, Background, Video Background, Dynamic Weather and Living Canvas
+- **Global variables in Logic conditions** - A $variable picked as a Logic condition entity showed "unknown entity" and never matched. Conditions now use card variables first, then global ones
+- **Dynamic List and Action sources going stale** - Changing a To-do list template or an Action source kept showing the old result until the page was reloaded
+- **Forecast line chart** - The line chart under Animated Forecast drew nothing, and once drawn its points drifted away from their columns. Both are fixed
+- **Readable dropdowns in dark themes** - The add dropdowns in Lunar Phase hidden items and other list settings no longer show near-white text on a white list
+
+## Version 3.14.2-beta8
+
+The eighth 3.14.2 beta adds pattern unlock to the Lock module. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Lock: draw a pattern to unlock** - Set "Unlock with" to "Draw a pattern" and draw your pattern (at least 4 dots) in the editor. Unlock and Open then ask for the pattern first, like a phone's lock screen. A wrong pattern flashes red and nothing happens. The pattern is saved in the dashboard, so it stops accidental unlocks but isn't a real password. Thanks to larrysansan for the idea
+
+## Version 3.14.2-beta7
+
+The seventh 3.14.2 beta follows up on Discord feedback from beta6: hidden cards now close up for every kind of condition, Navigation uses the same Hide on Devices picker as other modules, and the Lock slider and Animated Forecast get a few extra options. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Animated Forecast: Bars or Line per value** - Each chart value (temperature, rain, UV, wind and so on) now picks its own Bars or Line style, so you can mix them in one chart
+- **Animated Forecast: change the order** - Up and down arrows next to each chart value set the order the rows show in
+- **Animated Forecast: Hour Number Only** - Shows just the hour (for example "14") instead of "14 Uhr" or "2 PM" in hourly forecasts. Thanks to larrysansan for all three ideas
+
+### 🔧 Improvements
+
+- **Navigation uses Hide on Devices** - Navigation items now use the same Desktop, Laptop, Tablet and Mobile picker as every other module. Existing desktop and mobile settings carry over
+- **Lock slider icon** - The slider knob icon is centred and switches from a locked to an unlocked icon (or closed to open door) when you reach the end. Thanks to larrysansan for the idea
+
+### 🐛 Bug Fixes
+
+- **Hidden Ultra Card still leaving a gap** - beta6 only closed up the space for Visible to Users. Cards whose rows are all hidden by an entity condition, Logic or Hide on Devices now close up too. Note that Home Assistant always shows hidden cards while the dashboard is in edit mode. Thanks to larrysansan for reporting it
+
+## Version 3.14.2-beta6
+
+The sixth 3.14.2 beta works through the Discord feature requests and bug reports: slide to unlock and PIN codes for the Lock module, per-item visibility in Navigation, more forecast and colour by value in Animated Forecast, and easier global variables. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Lock: slide to unlock** - Set "Unlock with" to Slide and the Unlock and Open buttons become sliders, so a stray tap can't unlock the door. Works in the Hero and Standard layouts
+- **Lock: PIN code keypad** - "Ask for PIN code" shows a keypad and sends the code to the lock, so locks that need a code now work from the card. Automatic asks only when the lock needs one. Thanks to larrysansan for the idea
+- **Navigation: visibility per item** - Each path and stack has a Visibility section: Visible to Users, Hide on desktop or mobile, and Show only when an entity is (or isn't) a state
+- **Animated Forecast: swipe for more** - Turn on "Swipe for More" to scroll sideways through up to 14 days or 48 hours. Forecast Days and Hours set how many show at once
+- **Animated Forecast: colour by value** - Set Colors to "By Value" to colour bars and lines by their value: UV by the WHO scale, temperature from blue to red, rain from light to dark blue, wind from green to red. Thanks to larrysansan for the mockups
+- **Make a card variable global** - Card variables have a new globe button that moves them to your global variables, so every card can use them
+- **Search entities for global variables** - The Entity field in the Hub's Variables tab searches by entity ID or name as you type
+- **Group global variables** - Global variables can have a Group, and the Hub shows filter chips so you can see one group at a time
+
+### 🐛 Bug Fixes
+
+- **Global variables in Logic conditions** - A $variable picked as a Logic condition entity showed "unknown entity" and never matched. Conditions now use card variables first, then global ones, and the editor shows which variable is in use. Thanks to larrysansan for reporting it
+- **Dynamic List and Action sources going stale** - Changing a To-do list template or an Action source kept showing the old result until the page was reloaded
+- **Animated Forecast line chart missing** - The line chart style drew nothing because the chart had no size
+- **Hidden Ultra Card leaving a gap** - When an Ultra Card hides itself through its conditions, Home Assistant's sections view now closes up the empty space
+
+## Version 3.14.2-beta5
+
+The fifth 3.14.2 beta makes the Lock module's Alignment setting work in every layout. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Lock alignment in Standard and Compact** - Alignment only worked in the Hero layout. Left and Right now move the lock to that side in the Standard and Compact layouts too. Their default stays spread across the card and is now called "Spread out", so existing cards look the same. Thanks to larrysansan for reporting it
+
+## Version 3.14.2-beta4
+
+The fourth 3.14.2 beta syncs global variables across your devices, adds button options to the Lock module, and fixes two things reported in Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Global variables on every device** - Global Custom Variables are now saved to your Home Assistant user, so every browser and the companion app you sign in with gets the same set. Before, they only lived in the browser where you made them. If two devices have different copies, the newest one wins
+- **Lock "Show lock / unlock buttons"** - New Display option to hide the Lock and Unlock buttons, for example for a status-only lock. Works in the hero, standard and compact layouts
+
+### 🔧 Improvements
+
+- **Clearer Lock "Show open button"** - The option is greyed out with a note when your lock can't unlatch (no Open feature), since the Open button can never show for it. Thanks to larrysansan for the question
+
+### 🐛 Bug Fixes
+
+- **No empty card for hidden users** - When Logic > Visible to Users hides everything in a card, column or row from the current user, it now collapses instead of leaving an empty box with its background and padding. Thanks to larrysansan for reporting it
+- **Forecast line chart lines up** - The line chart under Animated Forecast now puts each point over its day or hour column instead of drifting toward the edges. Thanks to larrysansan for reporting it
+
+## Version 3.14.2-beta3
+
+The third 3.14.2 beta brings station sensors, a wind compass and forecast charts to the weather modules, fixes live cameras inside Popups and Drawers, and adds a few things asked for in Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Weather station sensors** - Weather and Animated Weather can read temperature, humidity, feels like, dew point, pressure, wind, gust, rain and UV from your own sensors. A sensor wins over the weather entity and falls back to it when unavailable
+- **Wind compass and more weather details** - Weather shows a wind direction arrow and optional feels like, gust, pressure, rain, UV and dew point. Animated Weather gets the same items plus a wind compass dial. New items stay off unless you turn them on, so existing cards don't change
+- **Hourly forecast and forecast charts** - Animated Forecast can start on hourly, open a day's hours when tapped, and show bar or line chart rows (chance of rain, rain, UV, temperature, wind) under the forecast. Graphs forecast mode adds Chance of Rain and UV Index
+- **Update Monitor "Hide when up to date"** - Hides the module on the dashboard when no updates are pending. Thanks to larrysansan for the idea
+- **Camera Live / Snapshot badge** - Optional small badge in the top corner showing whether the camera is live or a snapshot. Thanks to larrysansan for the idea
+
+### 🔧 Improvements
+
+- **State picker for condition values** - For "=" and "!=" conditions on an entity, the Value field now lists that entity's states (such as on/off) and still accepts a typed value. Applies to the Logic tab, Popup triggers, Accordion and Grid filters. Thanks to larrysansan for the idea
+- **Hidden rows stay visible in the editor** - Rows, columns and modules set to hide on the device you're editing on now show faded with a dashed outline in the card editor instead of disappearing. Thanks to larrysansan for reporting it
+
+### 🐛 Bug Fixes
+
+- **Readable dropdowns in dark themes** - The add dropdowns in Lunar Phase hidden items and other list settings no longer show near-white text on a white list. Thanks to larrysansan for reporting it
+- **Camera after returning to the app** - A camera no longer shows the broken-image icon or goes blank after the app has been in the background. Snapshots keep the last good frame and fetch a fresh link, and live streams restart after 30 seconds away. Thanks to larrysansan for reporting it
+- **Live cameras in Popups and Drawers** - A live Camera inside a Popup or Drawer now plays instead of staying blank on current Home Assistant versions
+- **Styling inside Popups** - Modules inside a Popup now get all of their styling, matching Drawers
+
+## Version 3.14.2-beta2
+
+The second 3.14.2 beta fixes the Toggle action on locks and makes Visible to Users work on Navigation and other overlay modules. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Toggle action on locks** - Toggle as a tap, hold or double-tap action now works on lock entities: a locked lock unlocks and any other lock locks. Before, nothing happened. Buttons and input buttons now get pressed and scenes get activated the same way. Thanks to larrysansan for reporting it
+- **Visible to Users on Navigation** - Logic > Visible to Users (Show only for / Hide for) now works on Navigation, Background, Video Background, Dynamic Weather and Living Canvas, including user visibility set on their row or column. Thanks to larrysansan for reporting it
+
+## Version 3.14.2-beta1
+
+The first 3.14.2 beta fixes cameras, maps and radar that disappeared inside a Horizontal container. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Cameras inside a Horizontal container** - A Camera set to a percentage width (the default 100%) now shows inside a Horizontal container instead of shrinking to nothing. Map, Weather Radar, Camera Grid and Stack modules had the same problem and are fixed too. They share the row when there's room and move onto their own line on narrow screens
+
+## Version 3.14.1
+
+Stable 3.14.1 makes Ultra Card much lighter on ultracard.io and brings the 3.14.1 beta fix for cards inside Drawers and Popups. The presets and themes catalogs are now cached for hours instead of minutes and are shared by every card on the page, so a dashboard no longer asks ultracard.io for the same list over and over.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Far fewer requests to ultracard.io** - The community presets catalog is cached for 6 hours instead of 5 minutes, and every card on a dashboard shares one request. Opening the Presets tab uses the cached list; the refresh button still loads a fresh one
+- **Gentler when ultracard.io is busy** - If loading presets fails, Ultra Card waits before trying again (from 5 minutes up to 6 hours) and shows the presets it already has, instead of retrying through several fallback routes at once
+- **Account tab and themes load from cache** - Billing details in the Hub's Account tab are reused for 10 minutes, and the themes catalog for an hour
+
+### 🐛 Bug Fixes
+
+- **More info from cards in a Drawer or Popup** - A Home Assistant card inside a Drawer or Popup, such as a tile card set to "More info", now opens the entity's detail view when tapped; before, nothing happened. The same fix applies to other dialogs and actions those cards open. Thanks to larrysansan for reporting it
+
+## Version 3.14.1-beta1
+
+The first 3.14.1 beta fixes cards inside a Drawer or Popup that couldn't open Home Assistant's detail view. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **More info from cards in a Drawer or Popup** - A Home Assistant card inside a Drawer or Popup, such as a tile card set to "More info", now opens the entity's detail view when tapped; before, nothing happened. The same fix applies to other dialogs and actions those cards open. Thanks to larrysansan for reporting it
+
+## Version 3.14.0
+
+Stable 3.14.0 brings everything from the eleven 3.14.0 betas into one release. There are five new modules (Weather Radar, Floorplan and Irrigation for everyone; Energy Price & EV and Linked Row for Pro), a big FreeSpace update with undo, auto height, locking, grouping and fit to screen, and a Camera that works as a video doorbell. The editor is much faster to type in, dashboards repaint less, and every module was checked for readability in light and dark themes. Thanks to everyone who tested the betas and reported issues on GitHub and Discord, to larrysansan for nearly 1,200 German translations, and to Open-Meteo for letting Ultra Card use their weather map layer.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added the Weather Radar module** - An animated radar loop over a map centered on your home, an entity or coordinates, with play/pause, a timeline scrubber, a Light to Heavy legend, a full screen button with pan and zoom, and a map that follows your light or dark theme. RainViewer's free radar is the default, so no key or account is needed
+- **Weather layers on the radar map** - Under "Weather layer", show Temperature, Precipitation, Wind, Clouds or Air quality (PM2.5) under the radar for the current hour, free from Open-Meteo with no key; "Auto" picks the most detailed weather model for your area. These are model forecasts, not radar
+- **More radar sources** - Choose OpenWeather (keys with Weather Maps 2.0 get an hourly loop with three forecast hours) or Rainbow.ai (current rain plus a 2-hour forecast in half-hour steps) and enter your own key
+- **Google, Mapbox and MapTiler maps** - Draw the radar over Google Maps, Mapbox or MapTiler in light, dark, streets or satellite with your own key; Esri stays the free default and takes over again if a key is refused
+- **Added the Floorplan module** - Upload a picture of your floor plan and drop entities on it; icons change with state, lights glow in their own colour, and rooms can fill with colour while something in them is on
+- **Added the Irrigation module** - Sprinkler and valve zones from any integration (OpenSprinkler, Rachio, Irrigation Unlimited, B-hyve or plain switches) with timed runs, remaining time, rain delay, rain sensor, next run, flow, water used and soil moisture
+- **Added the Energy Price & EV module (Pro)** - Pick your Nord Pool, Tibber, Octopus, ENTSO-e, Energi Data Service or Amber price sensor and get today's and tomorrow's price curve, cheap and expensive hours, the cheapest time to run an appliance, and an EV charge plan that reaches your target by departure
+- **Added the Linked Row module (Pro)** - Build a row of modules once, show it on any dashboard, and edit it in one place to update every copy; shared through Ultra Card Connect 1.10.0 or later, and it keeps working from its saved copy if Connect is missing or offline
+- **Camera action buttons** - Add buttons over the camera feed, such as unlocking the front door, opening a gate or switching on a porch light; they also show in the fullscreen view, locks ask for a second tap before they unlock, and the icon follows the entity
+- **Go live on a doorbell ring** - Under Stream Mode, pick an entity in "Go Live When", such as a doorbell event, motion sensor or toggle helper, and a snapshot camera switches to a live stream while it's on, then stays live for the number of seconds you choose. If the browser blocks sound on a stream that starts by itself, it plays muted and the audio button turns the sound on
+- **Clock time from an entity** - Pick a date or time entity under "Time from entity", such as when the dishwasher finishes or an `input_datetime` helper, and the Clock shows that time instead of the current one
+- **Full screen Map** - Turn on "Full Screen Button" under Map Controls to open the map full screen with pan and zoom; it's on for new Map modules and off for existing ones
+- **Hide when empty for Battery Monitor** - The module disappears when no batteries match, for example when "Show only below low threshold" is on and every battery is fine, and a column, row or card left with nothing to show hides too, so no gap is left. It always stays visible while editing ([#156](https://github.com/WJDDesigns/Ultra-Card/issues/156))
+- **Ultra Card in "Add to dashboard > By entity"** - Pick an entity in Home Assistant's Add to dashboard dialog and Ultra Card offers ready-made cards for it, such as light buttons or sliders, a thermostat, a graph or a gauge; Pro modules are only offered to Pro users
+- **FreeSpace Undo and Redo** - Toolbar buttons plus Ctrl+Z and Ctrl+Shift+Z step back through every change to the view while you edit it, including Use Desktop, deletes and edits made in Home Assistant's card editor
+- **FreeSpace Auto height** - A card can grow and shrink with its content instead of having a fixed height, and cards whose content is cut off show a "Cut off" badge while editing
+- **FreeSpace Lock and Group** - Lock a card so it can't be moved or resized by accident, or group cards so clicking one selects and moves them all together
+- **FreeSpace Hide on this screen** - Hide a card on Desktop, Laptop, Tablet or Phone; hidden cards stay visible, faded, while editing
+- **FreeSpace canvas background** - An image (optionally a different one per screen size), colour or gradient behind the cards that moves and scales with them, so a floorplan stays lined up with the cards placed on it
+- **FreeSpace Fit to screen** - A view setting that scales the whole layout to fill the screen with no scrolling, made for wall tablets
+- **FreeSpace starter layouts** - An empty FreeSpace view offers Wall tablet, Phone home and Desktop overview layouts filled with your own lights, weather, camera, thermostat and media player
+- **A "reload to finish updating" notice** - When HACS has installed a newer Ultra Card than the page is still running (the usual "clear your cache" problem), the editor says so and offers a Reload button
+- **Undo after deleting** - Deleting a row, column or module shows a toast with Undo, so a mis-tap next to Duplicate is one click to reverse
+- **Move up / Move down inside layouts** - Modules inside Horizontal, Vertical and nested layouts can be reordered from their ⋯ menu, which works on phones and tablets where dragging is unreliable
+- **Presets button on the layout toolbar** - Opens the preset browser directly instead of only through Add Module
+- **Pro lock cards explain why Pro isn't unlocking** - The card says whether Ultra Card Connect isn't installed, is signed out, needs you to sign in again, can't reach ultracard.io, or the subscription isn't active
+
+### 🔧 Improvements
+
+- **Much faster typing in the editor** - Edits are sent to Home Assistant once you pause instead of on every keystroke, and the dashboard behind the editor no longer redraws as you type
+- **Undo groups your typing** - Edits within a moment of each other are one undo step, so typing a label no longer fills the history one letter at a time
+- **Dashboards repaint less** - A clock showing seconds, a running timer, train or moon-phase module only refreshes its own card, a time condition checks once a minute, and an embedded card no longer triggers a dashboard scan every few seconds; idle repaints dropped by about a quarter to a third in testing
+- **Smaller download** - The main file is about 5% smaller and the editor about 11% smaller; video and background effects load only on cards that use them
+- **Keyboard and screen reader support in the editor** - Tree rows, colour swatches, chips and selector cards work with Enter and Space, menus and tabs are announced properly, there's a visible focus ring, and dialogs close with Escape and keep focus inside
+- **Easier to read in light themes** - Editor headings, action headers, selected buttons and colour picker values read on white, and the layout tree's column and layout headers meet contrast guidelines
+- **Better phone layouts and bigger tap targets** - Lock buttons drop under the title on phones, grid names wrap to two lines, and Climate +/−, moon-phase dots, slider dots and tree buttons are easier to tap
+- **Readable text in more places** - Bar percentage labels, the Virtual Pet screen, UniFi setup badges and labels, printer status pills, activity feed and alarm badges, and the battery fleet count
+- **New modules start ready to use** - Info binds a temperature sensor by default and Button has a default label
+- **Consistent controls** - Row, column and card settings use the same switches, dropdowns and sliders as module settings; the icon colour picker no longer offers gradients, which icons can't show
+- **FreeSpace editing helpers** - Lines and numbers show the distance to the nearest cards while dragging, Keep ratio (or holding Shift) keeps a card's proportions, and Snap to grid remembers how you left it
+- **More of the editor is translated** - The Add Module, Cards, Presets and Favorites selectors, find-and-replace and snapshot dialogs, and new messages are available in all 16 languages
+- **German translations** - Nearly 1,200 strings translated by community contributor larrysansan, and German now uses the formal "Sie" everywhere
+- **Spinbox without an entity says so** - In the editor, a spinbox with no entity notes that its value only changes on screen and isn't saved
+
+### 🐛 Bug Fixes
+
+- **Fixed whole cards going blank before setup** - Area Summary, Boiler, Cleaning Zones, Dishwasher, Dryer, Range, Fridge, Washer, Dog Duty, Laundry Tracker, Plant Care, Solar Analytics, Sports Score, Status Summary and Train now show their "Select a…" placeholder instead of an "invalid configuration" message
+- **Fixed "Access blocked" tiles in the Map module** - The default street style now loads Esri's street map instead of OpenStreetMap tiles, which were being blocked on Home Assistant dashboards
+- **Fixed Slider Control showing 0 for covers and fans** - The bar now reads the cover position or fan speed instead of the on/off state
+- **Fixed text lines running together** - Text modules with more than one paragraph show each paragraph on its own line again
+- **Fixed the FreeSpace menu hiding behind cards** - The card options menu now always opens on top of other cards
+- **Fixed intro animations inside layouts** - Modules inside a Horizontal, Vertical, Stack or Accordion layout now play their intro animation
+- **Fixed animated clocks inside layouts not ticking** - Clocks nested in Horizontal, Tabs and other layouts now update
+- **Fixed editor errors in 61 module editors** - Translation errors and snapshot/backup crashes in the editor are gone
+- **Fixed duplicate Native Card ids** - Native cards added in quick succession could get the same id
+- **Fixed a broken style rule in the Icon module** - A stray brace could stop the toggle slider style that followed it from applying
+- **Fixed the responsive-scaling flash** - Cards with responsive scaling no longer flash to full size on every state change
+- **Fixed popups** - Popups reposition when the window resizes, and dragging and resizing work on touch screens and with a pen
+- **Fixed dialogs overflowing small phone screens**
+- **Fixed the Vertical layout gap description** - It no longer says the gap is in rem when the unit picker shows px
+- **Fixed the Ultra Card Hub logging an error after Ultra Card Connect is updated** while Home Assistant stays open
+
+---
+
+## Version 3.14.0-beta11
+
+The eleventh 3.14.0 beta turns Rain Radar into Weather Radar: alongside the radar, the map can now show temperature, precipitation, wind, clouds or air quality for the current hour, free from Open-Meteo. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Weather layers on the radar map** - Pick a layer under the new "Weather layer" setting: Temperature, Precipitation, Wind, Clouds or Air quality (PM2.5); it draws under the radar for the current hour with a small legend, needs no account or key, and "Auto" picks the most detailed weather model for your area; these are model forecasts from Open-Meteo, not radar
+
+### 🔧 Improvements
+
+- **Rain Radar is now Weather Radar** - The module shows as Weather Radar in the module list; existing cards keep working with no changes
+- **Thanks to Open-Meteo** - For letting Ultra Card use their weather map layer, and to the Discord member who suggested it
+
+## Version 3.14.0-beta10
+
+The tenth 3.14.0 beta fixes the Camera's "Go Live When" trigger, which could leave the card showing a still snapshot instead of the live stream. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Go Live When stuck on snapshot** - When a "Go Live When" entity switched the Camera to live, the stream could sit on a frozen frame until you reloaded the page or opened full screen; it now starts playing right away, and if the browser blocks sound on a stream that starts by itself, it plays muted and the audio button turns the sound on
+
+## Version 3.14.0-beta9
+
+The ninth 3.14.0 beta lets the Clock module show a time from an entity, such as when the dishwasher finishes, plays intro animations on modules inside layouts, and brings a big German translation update from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Clock time from an entity** - Pick a date or time entity under "Time from entity", such as a timestamp sensor or an `input_datetime` helper, and the Clock shows that time instead of the current one; the date line shows only when the entity has a date, and the clock shows --:-- while the entity is unavailable
+
+### 🔧 Improvements
+
+- **German translations** - About 480 German strings updated or newly translated, thanks to larrysansan
+
+### 🐛 Bug Fixes
+
+- **Intro animations inside layouts** - Modules placed inside a Horizontal, Vertical, Stack or Accordion layout now play their intro animation, the same way they already do at the top level of a card; state animations keep working as before
+
+## Version 3.14.0-beta8
+
+The eighth 3.14.0 beta fixes two bugs reported on Discord: text with several lines showing all on one line, and the FreeSpace card menu opening underneath other cards. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Text lines run together** - Text modules with more than one paragraph showed every paragraph side by side on a single line; each paragraph is back on its own line, with left, center and right alignment working as before
+- **FreeSpace menu hidden behind cards** - The card options menu (the ⋮ button or right-click) could open underneath other cards on the canvas; it now always shows on top, and the card goes back to its own layer when the menu closes
+
+## Version 3.14.0-beta7
+
+The seventh 3.14.0 beta turns the Camera module into a video doorbell: buttons over the feed that stay with you in fullscreen, and a live stream that starts by itself when someone rings. The Map module also gets the full screen button from Rain Radar. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Camera action buttons** - Add buttons over the camera feed in the new Action Buttons section, such as unlocking the front door, opening a gate or switching on a porch light; they also show at the bottom of the fullscreen view, locks ask for a second tap before they unlock, and the icon follows the entity, such as an open or closed lock
+- **Go live on a doorbell ring** - Under Stream Mode, pick an entity in "Go Live When", such as a doorbell event, motion sensor or toggle helper, and a snapshot camera switches to a live stream while it's on, then stays live for the number of seconds you choose before dropping back
+- **Full screen Map** - Turn on "Full Screen Button" under Map Controls to open the map full screen with pan and zoom; it's on for new Map modules and off for existing ones
+
+### 🔧 Improvements
+
+- **Doorbell ideas from the community** - Thanks to the Discord member who set up a Ring doorbell and suggested the lock button, full screen Map and live stream switching
+
+## Version 3.14.0-beta6
+
+The sixth 3.14.0 beta adds Rainbow.ai as a Rain Radar source with a 2-hour rain forecast, and a "Hide when empty" option to the Battery Monitor, so a battery list with nothing to show no longer leaves an empty panel or a gap on your dashboard. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Rainbow.ai radar source with forecast** - Choose Rainbow.ai under Map and radar and enter your own key from developer.rainbow.ai to see the current rain plus a 2-hour forecast in half-hour steps; Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, and RainViewer stays the free default
+- **Hide when empty for Battery Monitor** - Turn it on in the General tab and the module disappears from the dashboard when no batteries match, for example when "Show only below low threshold" is on and every battery is fine; a column, row or whole card left with nothing to show hides too, so no gap is left between cards. It always stays visible while editing
+
+### 🔧 Improvements
+
+- **Requested on GitHub** - Thanks to jrdeee for suggesting hiding empty modules (#156)
+- **Rain Radar ideas from the community** - Thanks to larrysansan for suggesting a radar source with a free forecast
+
+## Version 3.14.0-beta5
+
+The fifth 3.14.0 beta builds on the new Rain Radar module with a full screen view, OpenWeather as an optional radar source, and Google, Mapbox or MapTiler maps underneath. Ultra Card also now shows up in Home Assistant's "Add to dashboard > By entity" picker. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Full screen Rain Radar** - A button in the top right corner opens the radar full screen with pan and zoom, and the same button minimizes it again; it can be turned off under Display
+- **OpenWeather radar source** - Choose OpenWeather under Map and radar and enter your own API key; keys with Weather Maps 2.0 get an hourly loop with three forecast hours, other keys show the current rain, and RainViewer stays the free default
+- **Google, Mapbox and MapTiler maps** - Pick a map provider and enter your own key to draw the radar over Google Maps, Mapbox or MapTiler in light, dark, streets or satellite; Esri stays the free default and takes over again if a key is refused
+- **Ultra Card in "Add to dashboard > By entity"** - Pick an entity in Home Assistant's Add to dashboard dialog and Ultra Card now offers ready-made cards for it, such as light buttons or sliders, a thermostat, a graph or a gauge; Pro modules are only offered to Pro users
+
+### 🔧 Improvements
+
+- **Rain Radar ideas from the community** - Full screen and OpenWeather support were suggested by larrysansan on Discord
+
+### 🐛 Bug Fixes
+
+- **Fixed Slider Control showing 0 for covers and fans** - The bar now reads the cover position or fan speed instead of the on/off state
+
 ## Version 3.14.0-beta4
 
 The fourth 3.14.0 beta adds the new Rain Radar module, fixes the Map module's "Access blocked" street maps, and brings another large batch of German translations from the community. This is a pre-release for testing — please report anything odd on GitHub or Discord.

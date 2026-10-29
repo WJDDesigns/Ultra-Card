@@ -383,7 +383,9 @@
       "error_no_content": "Skriv Inn Tekstinnhold",
       "error_no_content_desc": "Legg til tekst i Generelt-fanen",
       "error_no_template": "Konfigurer Template",
-      "error_no_template_desc": "Skriv inn template-kode i Generelt-fanen"
+      "error_no_template_desc": "Skriv inn template-kode i Generelt-fanen",
+      "link_underline": "Understrek lenker",
+      "link_underline_desc": "Vis en strek under lenker. Streken får fargen du gir lenketeksten."
     },
     "bar": {
       "bar_settings": {
@@ -1236,6 +1238,38 @@
       "unavailable": "Camera Unavailable",
       "snapshot_refresh": {
         "section_title": "Snapshot Refresh Settings"
+      },
+      "live_trigger": {
+        "title": "Go Live When",
+        "desc": "Switch to a live stream while this entity is on, such as a doorbell ring, motion sensor or toggle helper. Event entities go live each time they fire."
+      },
+      "live_trigger_hold": {
+        "title": "Stay Live For (seconds)",
+        "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
+      },
+      "action_buttons": {
+        "title": "Action Buttons",
+        "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",
+        "button": "Button",
+        "remove": "Remove button",
+        "entity": "Entity",
+        "icon": "Icon",
+        "icon_desc": "Leave empty to follow the entity, such as an open or closed lock.",
+        "label": "Label",
+        "label_desc": "Shown in fullscreen and as the tooltip. Leave empty to use the entity name.",
+        "confirm": "Tap Twice to Confirm",
+        "confirm_desc": "Ask for a second tap before running, so a stray tap cannot unlock a door. On by default for locks.",
+        "add": "Add Button",
+        "position": "Button Position",
+        "tap_again": "Tap again to confirm"
+      },
+      "show_mode_badge": {
+        "title": "Live / Snapshot Badge",
+        "desc": "Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots."
+      },
+      "mode_badge": {
+        "live": "Live",
+        "snapshot": "Snapshot"
       }
     },
     "separator": {
@@ -1266,7 +1300,7 @@
         "desc": "Farge på separatorlinjen."
       },
       "show_title": "Vis tittel",
-      "show_title_desc": "Legg til tekst i midten av separatorlinjen (f.eks. ------ Tekst ------)",
+      "show_title_desc": "Legg til tekst og/eller et ikon på skillelinjen (f.eks. ------ Tekst ------)",
       "text_content": {
         "title": "Tekstinnhold",
         "desc": "Tekst som skal vises i midten av separatoren."
@@ -1299,7 +1333,20 @@
         "desc": "Velg om separatoren skal gå horisontalt eller vertikalt.",
         "horizontal": "Horisontal",
         "vertical": "Vertikal"
-      }
+      },
+      "title_icon": "Ikon",
+      "title_icon_desc": "Valgfritt ikon ved siden av teksten. La teksten stå tom for en skillelinje med bare ikon.",
+      "title_icon_position": "Ikonplassering",
+      "title_icon_position_before": "Før teksten",
+      "title_icon_position_after": "Etter teksten",
+      "title_icon_size": "Ikonstørrelse",
+      "title_icon_color": "Ikonfarge",
+      "title_icon_color_desc": "La feltet stå tomt for å bruke tekstfargen.",
+      "title_align": "Justering",
+      "title_align_desc": "Hvor teksten og ikonet sitter på linjen.",
+      "title_align_left": "Venstre",
+      "title_align_center": "Midten",
+      "title_align_right": "Høyre"
     },
     "layout_extra": {
       "module_name": "Modulnavn:",
@@ -1328,7 +1375,8 @@
         "attribute": "Attributt",
         "time_from": "Fra",
         "time_to": "Til",
-        "template": "Mal"
+        "template": "Mal",
+        "variable": "Variabel"
       },
       "condition_header": "Betingelse",
       "custom_name": "Tilpasset navn",
@@ -2050,7 +2098,9 @@
         "disable_scroll": "Deaktiver zoom med mus Wheel rulling",
         "disable_scroll_desc": "Forhindre utilsiktet zooming når du ruller på siden",
         "disable_drag": "Deaktiver draing på berøringsskjermer",
-        "disable_drag_desc": "Forhindre kartpanorering på mobile/berøringsenheter"
+        "disable_drag_desc": "Forhindre kartpanorering på mobile/berøringsenheter",
+        "show_fullscreen": "Full Screen Button",
+        "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom."
       },
       "dimensions": {
         "title": "Kartdimensjoner",
@@ -2116,7 +2166,9 @@
       },
       "google_api_key": "Google Kart API Nøkkel (Valgfritt)",
       "google_api_key_desc": "Skriv inn din Google Kart API nøkkel for full JavaScript API funksjonalitet. Uten en nøkkel brukes grunnleggende flislag (begrensede funksjoner).",
-      "how_to_get_api_key": "Hvordan få en Google Kart API Nøkkel →"
+      "how_to_get_api_key": "Hvordan få en Google Kart API Nøkkel →",
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen"
     },
     "entity_mapper": {
       "title": "Kartlegg enheter",
@@ -2559,7 +2611,9 @@
       "confirm_clear_card": "Er du sikker på at du vil slette alle kortspesifikke variabler?",
       "value_type_attribute": "Attributt",
       "value_type_attribute_desc": "Attributt Verdi (f.eks. temmp, friendly_name)",
-      "attribute_name": "Attributt Navn"
+      "attribute_name": "Attributt Navn",
+      "make_global_conflict": "Det finnes allerede en global variabel med dette navnet. Gi denne et nytt navn først.",
+      "make_global": "Gjør global (bruk på alle kort)"
     },
     "export_import": {
       "include_variables": "Du har egne variabel(er). Inkludere them i eksporten?",
@@ -2796,8 +2850,8 @@
       "entity_section_desc": "Velg låsenheten du vil kontrollere.",
       "entity": "Låseenhet",
       "entity_field_desc": "Home Assistant låseenhet",
-      "icon_override": "Ikonoverstyring",
-      "icon_override_desc": "Valgfri mdi: ikon; la em være tom for standard låseikoner",
+      "icon_override": "Ikon",
+      "icon_override_desc": "Søk etter et ikon, eller la feltet stå tomt for standard låseikoner. Brukes i alle tilstander, med mindre du angir et ikon for opplåst nedenfor.",
       "display_section": "Visning",
       "display_desc": "Velg hva som skal vises på kortet.",
       "show_title": "Vis tittel",
@@ -2808,6 +2862,10 @@
       "show_state_desc": "Vis låst / ulåst tekst",
       "show_open_button": "Vis åpningsknapp",
       "show_open_button_desc": "Vis Åpne når låsen støtter utlåsning (ÅPNE-funksjon)",
+      "show_lock_buttons": "Vis lås / lås opp-knapper",
+      "show_lock_buttons_desc": "Vis knappene Lås og Lås opp (kompakt oppsett viser én veksleknapp). Uten dem kan du sette trykkhandlingen til Veksle for å låse og låse opp ved å trykke på kortet.",
+      "show_open_button_unsupported": "Denne låsen kan ikke åpne (ingen Åpne-funksjon), så det finnes ingen Åpne-knapp å vise",
+      "align_spread": "Spredt",
       "layout_section": "Oppsett",
       "layout_desc": "Visuell stil og justering.",
       "layout": "Oppsett",
@@ -2832,7 +2890,47 @@
       "action_lock": "Lås",
       "action_unlock": "Lås opp",
       "action_open": "Åpne",
-      "actions": "Lås handlinger"
+      "actions": "Lås handlinger",
+      "unlock_style": "Lås opp med",
+      "unlock_style_desc": "Skyv erstatter knappene Lås opp og Åpne med glidebrytere, så et utilsiktet trykk ikke låser opp (oppsettene Hero og Standard; ellers bes det om bekreftelse). Mønster og PIN sjekkes i kortet før opplåsing.",
+      "unlock_style_buttons": "Knapper",
+      "unlock_style_slide": "Skyv for å låse opp",
+      "ask_code": "Spør om PIN-kode",
+      "ask_code_desc": "Viser et tastatur og sender koden til låsen. Automatisk spør når låsen krever en kode. Velg Aldri hvis du har satt en standardkode for låsen i Home Assistant.",
+      "ask_code_auto": "Automatisk",
+      "ask_code_always": "Alltid",
+      "ask_code_never": "Aldri",
+      "cancel": "Avbryt",
+      "code_clear": "Tøm",
+      "code_placeholder": "Kode",
+      "slide_to_unlock": "Skyv for å låse opp",
+      "slide_to_open": "Skyv for å åpne",
+      "unlock_style_pattern": "Tegn et mønster",
+      "pattern_title": "Opplåsingsmønster",
+      "pattern_desc": "Tegn mønsteret som låser opp og åpner denne låsen. Det lagres i dashbordet, så det hindrer utilsiktet opplåsing, men det er ikke et ekte passord.",
+      "pattern_prompt": "Tegn mønsteret ditt",
+      "pattern_wrong": "Feil mønster, prøv igjen",
+      "pattern_saved": "Mønster lagret. Tegn på nytt for å endre det.",
+      "pattern_none": "Ingen mønster ennå, så opplåsing bruker vanlig bekreftelse.",
+      "pattern_too_short": "Koble sammen minst 4 prikker",
+      "unlock_style_pin": "Skriv inn en PIN",
+      "pin_title": "PIN for opplåsing",
+      "pin_desc": "PIN-en som låser opp og åpner denne låsen. Den sjekkes i kortet og lagres i dashbordet, så den hindrer utilsiktet opplåsing, men det er ikke et ekte passord. Den sendes ikke til låsen.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN lagret.",
+      "pin_none": "Skriv inn minst 4 sifre. Inntil da bruker opplåsing vanlig bekreftelse.",
+      "pin_prompt": "Skriv inn PIN-en din",
+      "pin_wrong": "Feil PIN, prøv igjen",
+      "name": "Navn",
+      "name_desc": "Vises i stedet for låsens navn fra Home Assistant. La feltet stå tomt for å bruke det navnet.",
+      "icon_unlocked": "Ikon for opplåst",
+      "icon_unlocked_desc": "Valgfritt ikon mens låsen er låst opp eller åpen",
+      "colors_section": "Farger",
+      "colors_desc": "Farg ikon, ring, aktiv knapp og status etter tilstand. La feltet stå tomt for å bruke temafargen.",
+      "locked_color": "Farge for låst",
+      "unlocked_color": "Farge for opplåst",
+      "card_color": "Kortfarge",
+      "card_color_desc": "Bakgrunnen til låsekortet. Samme innstilling som Bakgrunnsfarge i Design-fanen."
     },
     "text_input": {
       "entity": {
@@ -3252,7 +3350,21 @@
       "autohide_enable_desc": "macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.",
       "autohide_delay": "Hide Delay",
       "autohide_delay_desc": "Seconds of inactivity before the navbar hides.",
-      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide."
+      "autohide_disabled_by_collapse": "Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.",
+      "visibility": {
+        "title": "Synlighet",
+        "hide_on": "Skjul på",
+        "hide_on_desc": "Skjuler dette elementet mens navigasjonslinjen bruker skrivebords- eller mobiloppsettet.",
+        "desktop": "Skrivebord",
+        "mobile": "Mobil",
+        "show_when": "Vis bare når",
+        "show_when_desc": "Viser bare dette elementet mens en entitet er (eller ikke er) i en tilstand, for eksempel en gjestemodusbryter. La entiteten stå tom for å alltid vise det.",
+        "entity": "Entitet",
+        "is": "er",
+        "is_not": "er ikke",
+        "condition": "Betingelse",
+        "state": "Tilstand"
+      }
     },
     "climate": {
       "error_no_entity": "Ingen klimaenhet",
@@ -3273,7 +3385,10 @@
     },
     "calendar": {
       "error_no_calendars": "Konfigurer Kalendere",
-      "error_no_calendars_desc": "Velg minst én kalender enhet i Generelt-fanen"
+      "error_no_calendars_desc": "Velg minst én kalender enhet i Generelt-fanen",
+      "location_link": "Åpne sted i",
+      "location_link_desc": "Gjør stedet trykkbart slik at det åpnes i en kartapp.",
+      "location_link_none": "Av"
     },
     "dynamic_list": {
       "error_waiting_ha": "Venter på Home Assistant",
@@ -3315,7 +3430,18 @@
         "no_data": "Ingen prognosedata tilgjengelig"
       },
       "icon_style_fill": "Fyllt",
-      "icon_style_line": "Uthevet"
+      "icon_style_line": "Uthevet",
+      "swipe_more": "Sveip for mer",
+      "swipe_more_desc": "Laster inn alle dager eller timer værtjenesten din tilbyr, og lar deg sveipe sidelengs gjennom dem. Innstillingene for prognosedager og -timer bestemmer da hvor mange som vises samtidig.",
+      "chart_color_mode": "Farger",
+      "chart_color_mode_desc": "Etter verdi farger hver søyle eller punkt etter verdien: UV etter WHO-skalaen, temperatur fra blått til rødt, regn fra lys- til mørkeblått, vind fra grønt til rødt.",
+      "chart_color_single": "Én farge",
+      "chart_color_value": "Etter verdi",
+      "hour_number_only": "Bare timetall",
+      "hour_number_only_desc": "Viser bare timen, for eksempel 14 i stedet for 14 Uhr. AM og PM beholdes for 12-timersspråk.",
+      "chart_values_desc": "Kryss av verdiene som skal vises, velg Søyler eller Linje for hver, og bruk pilene til å endre rekkefølgen. Verdier værintegrasjonen ikke leverer, hoppes over.",
+      "move_up": "Flytt opp",
+      "move_down": "Flytt ned"
     },
     "animated_weather": {
       "entity_section": "Vær-enhet",
@@ -3493,7 +3619,66 @@
       "no_content": "Legg til innhold i Generelt-fanen",
       "generating": "Genererer QR...",
       "cors_error": "Logo ikke lastet — bildeserveren blokkerte forespørsel på tvers av opprinnelse. Bruk en /local/-bane eller en CORS-aktivert URL.",
-      "unified_cheatsheet": "Tem-plate jukseark"
+      "unified_cheatsheet": "Tem-plate jukseark",
+      "maps_provider": "Kartapp",
+      "place_entity_desc": "Valgfritt. Bruker posisjonen til entiteten (person, sporer, sone). La feltet stå tomt for å bruke teksten under.",
+      "wifi_ssid": "Nettverksnavn (SSID)",
+      "wifi_security": "Sikkerhet",
+      "wifi_open": "Ingen (åpent nettverk)",
+      "wifi_password": "Passord",
+      "wifi_hidden": "Skjult nettverk",
+      "wifi_password_note": "Passordet lagres i kortkonfigurasjonen, så alle som kan redigere dashbordet kan lese det.",
+      "location_entity": "Posisjon fra entitet",
+      "location_query": "Adresse eller koordinater",
+      "location_query_desc": "For eksempel \"Alexanderplatz, Berlin\" eller \"52.52,13.405\".",
+      "map_zoom": "Zoom (valgfritt)",
+      "map_zoom_desc": "1 (verden) til 21 (gate). Virker med koordinater.",
+      "route_origin_entity": "Start fra entitet",
+      "route_origin": "Startadresse",
+      "route_origin_desc": "La feltet stå tomt for å starte der telefonen er.",
+      "route_destination_entity": "Mål fra entitet",
+      "route_destination": "Måladresse",
+      "travel_mode": "Reisemåte",
+      "travel_driving": "Bil",
+      "travel_walking": "Gange",
+      "travel_bicycling": "Sykkel",
+      "travel_transit": "Kollektivtransport",
+      "start_navigation": "Start navigasjon med en gang",
+      "phone": "Telefonnummer",
+      "phone_intl_desc": "Med landskode, for eksempel +49 151 2345678.",
+      "message": "Melding (valgfritt)",
+      "email": "E-postadresse",
+      "email_subject": "Emne (valgfritt)",
+      "contact_entity": "Navn fra person",
+      "contact_entity_desc": "Valgfritt. Bruker navnet til personen. Fyll ut feltene under for resten.",
+      "contact_name": "Navn",
+      "contact_phone": "Telefon",
+      "contact_email": "E-post",
+      "contact_org": "Firma (valgfritt)",
+      "contact_address": "Adresse (valgfritt)",
+      "contact_url": "Nettsted (valgfritt)",
+      "spotify_entity": "Mediespiller",
+      "spotify_entity_desc": "Koder det denne Spotify-spilleren spiller akkurat nå. Krever Spotify-integrasjonen.",
+      "spotify_url": "Spotify-lenke",
+      "spotify_url_desc": "Brukes når ingen spiller er valgt eller ingenting spilles. En delingslenke eller en spotify:-URI.",
+      "social_platform": "Plattform",
+      "social_username": "Brukernavn",
+      "social_username_desc": "Brukernavnet ditt, eller lim inn hele profillenken.",
+      "encoded_preview": "Koder:",
+      "fill_fields": "Fyll ut feltene over for å lage koden.",
+      "type_text": "Tekst / URL",
+      "type_wifi": "Wi-Fi",
+      "type_location": "Sted på kart",
+      "type_route": "Rute på kart",
+      "type_whatsapp": "WhatsApp-chat",
+      "type_phone": "Telefonsamtale",
+      "type_sms": "SMS",
+      "type_email": "E-post",
+      "type_contact": "Kontaktkort",
+      "type_spotify": "Spotify",
+      "type_social": "Sosial profil",
+      "content_type": "Type",
+      "content_type_desc": "Hva koden er til. Velg en type og fyll ut feltene; Ultra Card lager koden for deg."
     },
     "area_summary": {
       "validate_area": "Velg et Home Assistant område",
@@ -3710,7 +3895,9 @@
       "err_empty_desc": "Adjust discovery mode, manual entities, or thresholds in the General tab.",
       "default_title": "Battery Monitor",
       "preview_remove": "Remove from list",
-      "strip_hint": "Tap a segment for more-info. Colors reflect battery level."
+      "strip_hint": "Tap a segment for more-info. Colors reflect battery level.",
+      "hide_when_empty": "Hide when empty",
+      "hide_when_empty_desc": "On the dashboard, hide this module when no batteries match. A column, row or card left empty hides too."
     },
     "auto_entity_list": {
       "default_title": "Auto Entities List",
@@ -5210,6 +5397,7 @@
       "wizard_title": "UniFi setup"
     },
     "logic": {
+      "card_visibility_title": "Synlighet",
       "hide_on_devices": "Hide on Devices",
       "hide_on_devices_desc": "Hide this element on specific screen sizes. Use this to create different layouts for different devices.",
       "user_visibility": {
@@ -6076,7 +6264,100 @@
       "unavailable": "Radar unavailable, retrying soon",
       "pause": "Pause",
       "play": "Play",
-      "timeline": "Radar time"
+      "timeline": "Radar time",
+      "radar_source": "Radar source",
+      "radar_source_desc": "RainViewer is free and needs no account. OpenWeather uses your own API key.",
+      "openweather_api_key": "OpenWeather API key",
+      "openweather_api_key_desc": "From your openweathermap.org account. Animated history and forecast need a plan with Weather Maps 2.0; other keys show current rain only. The key is saved in this dashboard, so anyone who can edit it can see the key.",
+      "openweather_api_key_missing": "Enter your key from openweathermap.org. Until then the radar uses RainViewer.",
+      "show_fullscreen": "Full screen button",
+      "show_fullscreen_desc": "A button that opens the map full screen, with pan and zoom.",
+      "fullscreen": "Full screen",
+      "exit_fullscreen": "Exit full screen",
+      "map_provider": "Map provider",
+      "map_provider_desc": "Esri is free and needs no key. Google, Mapbox and MapTiler use your own key.",
+      "map_api_key": "Map API key",
+      "map_api_key_google": "A Google Cloud API key with the Map Tiles API turned on. Google bills by map tile beyond its free monthly allowance.",
+      "map_api_key_mapbox": "A Mapbox access token (starts with pk.) from account.mapbox.com.",
+      "map_api_key_maptiler": "A MapTiler API key from cloud.maptiler.com.",
+      "map_api_key_note": "The key is saved in this dashboard, so anyone who can edit it can see the key. If the key is refused the map switches back to Esri.",
+      "map_api_key_missing": "Enter your key for this provider. Until then the map uses Esri.",
+      "rainbow_api_key": "Rainbow.ai API key",
+      "rainbow_api_key_desc": "From your Rainbow.ai developer account. Shows current rain and a 2-hour forecast. Rainbow.ai includes 30,000 map tiles a month at no cost and bills your account for more, so a map left on screen all day can cost money. The key is saved in this dashboard, so anyone who can edit it can see the key.",
+      "rainbow_api_key_missing": "Enter your key from developer.rainbow.ai. Until then the radar uses RainViewer.",
+      "weather_section": "Værlag",
+      "weather_layer": "Værlag",
+      "weather_layer_desc": "Et værkart for gjeldende time under radaren, fra Open-Meteo. Gratis, ingen nøkkel. Dette er modellprognoser, ikke radar.",
+      "weather_layer_none": "Ingen",
+      "weather_layer_temperature": "Temperatur",
+      "weather_layer_precipitation": "Nedbør",
+      "weather_layer_wind": "Vind",
+      "weather_layer_clouds": "Skyer",
+      "weather_layer_air_quality": "Luftkvalitet (PM2,5)",
+      "weather_layer_opacity": "Værlagets dekkevne",
+      "weather_layer_opacity_desc": "Lavere lar mer av kartet synes.",
+      "weather_model": "Værmodell",
+      "weather_model_desc": "Auto velger den mest detaljerte modellen for kartets midtpunkt.",
+      "weather_model_auto": "Auto",
+      "weather_layer_unavailable": "Værlaget er ikke tilgjengelig"
+    },
+    "stack": {
+      "layer": {
+        "apply_all": "Bruk dette ankeret for alle lag",
+        "apply_all_desc": "Hvert lag har sitt eget anker. Dette kopierer ankeret og forskyvningene over til alle lag."
+      }
+    },
+    "rss_feed": {
+      "accent_color": "Aksentfarge",
+      "accent_color_desc": "Brukes til ikonet og navnet på feeden.",
+      "default_title": "Nyheter",
+      "display_section": "Visning",
+      "empty_desc": "Lim inn en RSS- eller Atom-feedlenke i fanen Generelt.",
+      "empty_title": "Legg til en feed",
+      "error_blocked": "Ultra Card Connect ville ikke hente denne adressen. Bare offentlige http- og https-feeder virker.",
+      "error_cors": "Dette nettstedet lar ikke nettleseren lese feeden. Oppdater Ultra Card Connect så den kan hente feeden for deg.",
+      "error_http": "Nettstedet svarte med en feil ({status}).",
+      "error_network": "Feeden kunne ikke lastes.",
+      "error_parse": "Adressen er ikke en RSS-, Atom- eller JSON-feed.",
+      "exclude_keywords": "Skjul elementer med",
+      "exclude_keywords_desc": "Elementer som nevner noen av disse ordene, skjules.",
+      "feeds": "Feedadresser",
+      "feeds_desc": "Lim inn en RSS-, Atom- eller JSON Feed-lenke og trykk Enter. Legg til flere for å slå dem sammen, nyeste først.",
+      "feeds_section": "Feeder",
+      "filter_section": "Filter",
+      "include_keywords": "Vis bare elementer med",
+      "include_keywords_desc": "La feltet stå tomt for å vise alt. Søker i tittel og sammendrag.",
+      "layout": "Oppsett",
+      "layout_cards": "Kort",
+      "layout_compact": "Kompakt",
+      "layout_desc": "Liste med miniatyrbilder, bare kompakte overskrifter eller store bildekort.",
+      "layout_list": "Liste",
+      "loading": "Laster feed…",
+      "max_age_days": "Skjul elementer eldre enn",
+      "max_age_days_desc": "0 viser elementer uansett alder.",
+      "max_items": "Antall elementer",
+      "max_items_desc": "Hvor mange overskrifter som vises.",
+      "no_items": "Ingen elementer passer akkurat nå.",
+      "open_in": "Trykk på en overskrift",
+      "open_new_tab": "Åpner en ny fane",
+      "open_none": "Gjør ingenting",
+      "open_same_tab": "Åpnes her",
+      "refresh_minutes": "Oppdater hvert",
+      "refresh_minutes_desc": "Hvor ofte feedene sjekkes for nye elementer.",
+      "refresh_now": "Oppdater nå",
+      "show_date": "Vis tidspunkt",
+      "show_date_desc": "Hvor lenge siden hvert element ble publisert.",
+      "show_image": "Vis bilder",
+      "show_image_desc": "Bildet feeden gir for hvert element, når det finnes.",
+      "show_source": "Vis navnet på feeden",
+      "show_source_desc": "Nyttig når du slår sammen flere feeder.",
+      "show_summary": "Vis sammendrag",
+      "show_title": "Vis tittel",
+      "summary_lines": "Linjer i sammendrag",
+      "summary_lines_desc": "Lengre sammendrag kuttes etter så mange linjer.",
+      "title": "Tittel",
+      "title_desc": "La feltet stå tomt for å bruke navnet på feeden.",
+      "unit_days": " dager"
     }
   },
   "hub": {

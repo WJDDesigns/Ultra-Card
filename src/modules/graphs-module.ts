@@ -145,6 +145,8 @@ export class UltraGraphsModule extends BaseUltraModule {
   private readonly FORECAST_ATTRIBUTE_LABELS: Record<string, string> = {
     temperature: 'Temperature',
     precipitation: 'Precipitation',
+    precipitation_probability: 'Chance of Rain',
+    uv_index: 'UV Index',
     wind_speed: 'Wind Speed',
     humidity: 'Humidity',
     pressure: 'Pressure',
@@ -154,6 +156,8 @@ export class UltraGraphsModule extends BaseUltraModule {
   private readonly FORECAST_ATTRIBUTE_UNITS: Record<string, string> = {
     temperature: '°',
     precipitation: 'mm',
+    precipitation_probability: '%',
+    uv_index: '',
     wind_speed: 'km/h',
     humidity: '%',
     pressure: 'hPa',
@@ -672,6 +676,22 @@ export class UltraGraphsModule extends BaseUltraModule {
                                     'editor.graphs.forecast.precip',
                                     lang,
                                     'Precipitation'
+                                  ),
+                                },
+                                {
+                                  value: 'precipitation_probability',
+                                  label: localize(
+                                    'editor.graphs.forecast.precip_probability',
+                                    lang,
+                                    'Chance of Rain'
+                                  ),
+                                },
+                                {
+                                  value: 'uv_index',
+                                  label: localize(
+                                    'editor.graphs.forecast.uv_index',
+                                    lang,
+                                    'UV Index'
                                   ),
                                 },
                                 {

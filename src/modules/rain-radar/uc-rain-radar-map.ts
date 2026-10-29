@@ -24,22 +24,41 @@ import {
   FRAMES_TTL_MS,
   MAX_ZOOM,
   MIN_ZOOM,
-  RAINVIEWER_ATTRIBUTION,
+  radarAttributionFor,
+  RAINBOW_TTL_MS,
   baseMapFor,
   clampNumber,
+  keyedBaseMap,
+  loadGoogleBaseMap,
+  mapApiKey,
+  mapProviderFor,
   entityLatLng,
-  filterByTimeSpan,
+  frameTileUrl,
   isDarkMode,
   latestObservedIndex,
-  loadRadarFrames,
+  loadModuleFrames,
   maxNativeZoomFor,
   minutesFromNow,
-  radarTileUrl,
   resolveCenter,
   resolveMapStyle,
-  sourceUrlFor,
+  sourceKeyFor,
+  type BaseMapStyle,
   type RadarFrame,
+  type RadarFrameSet,
 } from '../../services/uc-rain-radar-service';
+import {
+  DEFAULT_WEATHER_LAYER_OPACITY,
+  EXTRA_COLOR_SCALES,
+  OPEN_METEO_ATTRIBUTION,
+  WEATHER_LAYER_REFRESH_MS,
+  loadOpenMeteoAdapter,
+  weatherDomainFor,
+  weatherLayerOf,
+  weatherLayerUrl,
+  weatherLegendFrom,
+  weatherVariableFor,
+  type WeatherLegend,
+} from '../../services/uc-open-meteo-layer';
 
 /** Universal Blue (RainViewer scheme 2), light drizzle to extreme. Used for the legend only. */
 const LEGEND_GRADIENT =
@@ -75,11 +94,17 @@ export class UcRainRadar extends LitElement {
   @state() private _playing = true;
   @state() private _status: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
   @state() private _moved = false;
+  @state() private _fullscreen = false;
+  /** Fullscreen drawn with CSS where the browser can't (iPhone, some app webviews). */
+  @state() private _pseudoFs = false;
+  @state() private _weatherLegend: WeatherLegend | null = null;
+  @state() private _weatherError = false;
 
   private _map: L.Map | undefined;
   private _baseLayer: L.TileLayer | undefined;
   private _labelsLayer: L.TileLayer | undefined;
   private _baseKey = '';
+  private _baseSeq = 0;
   private _viewKey = '';
   private _optionsKey = '';
   private _radarKey = '';
@@ -87,6 +112,7 @@ export class UcRainRadar extends LitElement {
   private _markerKey = '';
   private _markerLayer: L.LayerGroup | undefined;
   private _host = '';
+  private _provider: RadarFrameSet['provider'];
   private _layers = new Map<string, L.TileLayer>();
   private _shownPath = '';
   private _autoplayApplied: boolean | undefined;
@@ -98,6 +124,10 @@ export class UcRainRadar extends LitElement {
   private _waitedMs = 0;
   private _resizeObserver: ResizeObserver | undefined;
   private _loadSeq = 0;
+  private _weatherLayer: L.GridLayer | undefined;
+  private _weatherKey = '';
+  private _weatherSeq = 0;
+  private _weatherTimer: number | undefined;
 
   static override styles = [
     unsafeCSS(leafletCss),
@@ -205,10 +235,56 @@ export class UcRainRadar extends LitElement {
         border-radius: 3px;
         background: ${unsafeCSS(LEGEND_GRADIENT)};
       }
+      .legend.wx {
+        min-width: 120px;
+      }
+      .legend .wx-name {
+        color: var(--primary-text-color);
+        font-weight: 600;
+      }
+      .wx-error {
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+      }
       .legend .labels {
         display: flex;
         justify-content: space-between;
         color: var(--secondary-text-color);
+      }
+      .wrap.fs {
+        border-radius: 0;
+      }
+      .wrap.pseudo-fs {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        width: 100vw;
+        height: 100vh !important;
+        height: 100dvh !important;
+      }
+      .wrap.has-fs .stamp {
+        right: 58px;
+      }
+      .wrap.has-fs .leaflet-top.leaflet-right {
+        top: 50px;
+      }
+      .fullscreen {
+        position: absolute;
+        z-index: 1100;
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-text-color);
+        background: color-mix(in srgb, var(--uc-rr-surface) 88%, transparent);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
       }
       .recenter {
         position: absolute;
@@ -263,6 +339,7 @@ export class UcRainRadar extends LitElement {
         --mdc-icon-size: 24px;
       }
       .play:focus-visible,
+      .fullscreen:focus-visible,
       .recenter:focus-visible {
         outline: 2px solid var(--primary-text-color);
         outline-offset: 2px;
@@ -450,19 +527,31 @@ export class UcRainRadar extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    document.addEventListener('fullscreenchange', this._onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', this._onFullscreenChange);
     if (this._map) {
       this._observeSize();
       this._map.invalidateSize();
       this._scheduleRefresh(this._frames.length ? FRAMES_TTL_MS : 0);
       this._schedulePlay();
+      // Back on the page: pick up the current hour again.
+      this._weatherKey = '';
+      this._sync();
     }
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    document.removeEventListener('fullscreenchange', this._onFullscreenChange);
+    document.removeEventListener('webkitfullscreenchange', this._onFullscreenChange);
+    window.removeEventListener('keydown', this._onKeydown);
+    if (this._pseudoFs) document.documentElement.style.removeProperty('overflow');
+    this._fullscreen = false;
+    this._pseudoFs = false;
     this._clearTimer('_playTimer');
     this._clearTimer('_refreshTimer');
     this._clearTimer('_sizeTimer');
+    this._clearTimer('_weatherTimer');
     this._resizeObserver?.disconnect();
     this._resizeObserver = undefined;
   }
@@ -473,9 +562,65 @@ export class UcRainRadar extends LitElement {
 
   protected override updated(changed: PropertyValues): void {
     if (this._map && (changed.has('module') || changed.has('hass'))) this._sync();
+    if (this._map && changed.has('_fullscreen')) {
+      this._sync();
+      this._map.invalidateSize();
+      if (!this._fullscreen && this._moved) this._recenter(false);
+    }
   }
 
-  private _clearTimer(key: '_playTimer' | '_refreshTimer' | '_sizeTimer'): void {
+  // ── Fullscreen ─────────────────────────────────────────────────────────────
+
+  private get _wrap(): HTMLElement | null {
+    return this.renderRoot?.querySelector('.wrap') as HTMLElement | null;
+  }
+
+  private _onFullscreenChange = (): void => {
+    const doc = document as Document & { webkitFullscreenElement?: Element | null };
+    const active = !!(document.fullscreenElement || doc.webkitFullscreenElement);
+    if (!active && this._fullscreen && !this._pseudoFs) this._fullscreen = false;
+  };
+
+  private _onKeydown = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape' && this._pseudoFs) this._exitFullscreen();
+  };
+
+  private async _toggleFullscreen(e: Event): Promise<void> {
+    e.stopPropagation();
+    if (this._fullscreen) {
+      this._exitFullscreen();
+      return;
+    }
+    const el = this._wrap as
+      (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | null;
+    if (!el) return;
+    try {
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+      else throw new Error('no fullscreen');
+      this._pseudoFs = false;
+    } catch {
+      this._pseudoFs = true;
+      document.documentElement.style.setProperty('overflow', 'hidden');
+      window.addEventListener('keydown', this._onKeydown);
+    }
+    this._fullscreen = true;
+  }
+
+  private _exitFullscreen(): void {
+    if (this._pseudoFs) {
+      document.documentElement.style.removeProperty('overflow');
+      window.removeEventListener('keydown', this._onKeydown);
+      this._pseudoFs = false;
+    } else {
+      const doc = document as Document & { webkitExitFullscreen?: () => void };
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
+      else doc.webkitExitFullscreen?.();
+    }
+    this._fullscreen = false;
+  }
+
+  private _clearTimer(key: '_playTimer' | '_refreshTimer' | '_sizeTimer' | '_weatherTimer'): void {
     const id = this[key];
     if (id !== undefined) window.clearTimeout(id);
     this[key] = undefined;
@@ -550,11 +695,14 @@ export class UcRainRadar extends LitElement {
     const m = this.module;
     if (!map || !m) return;
 
-    const interactive = m.interactive === true;
-    const zoomControls = m.show_zoom_controls === true;
-    const optionsKey = `${interactive}|${zoomControls}`;
+    // Full screen is for exploring, so pan and zoom are always on there.
+    const interactive = m.interactive === true || this._fullscreen;
+    const zoomControls = m.show_zoom_controls === true || this._fullscreen;
+    const optionsKey = `${interactive}|${zoomControls}|${this._fullscreen}`;
     if (optionsKey !== this._optionsKey) {
       this._optionsKey = optionsKey;
+      if (this._fullscreen) map.scrollWheelZoom.enable();
+      else map.scrollWheelZoom.disable();
       for (const handler of [map.dragging, map.touchZoom, map.doubleClickZoom]) {
         if (!handler) continue;
         if (interactive) handler.enable();
@@ -579,27 +727,12 @@ export class UcRainRadar extends LitElement {
     }
 
     const style = resolveMapStyle(m.map_style, isDarkMode(this.hass));
-    if (style !== this._baseKey) {
-      this._baseKey = style;
-      if (this._baseLayer) map.removeLayer(this._baseLayer);
-      if (this._labelsLayer) map.removeLayer(this._labelsLayer);
-      this._labelsLayer = undefined;
-      const base = baseMapFor(style);
-      this._baseLayer = L.tileLayer(base.url, {
-        attribution: base.attribution,
-        maxZoom: base.maxZoom,
-        zIndex: 1,
-        keepBuffer: 2,
-        referrerPolicy: TILE_REFERRER_POLICY,
-      }).addTo(map);
-      if (base.labelsUrl) {
-        this._labelsLayer = L.tileLayer(base.labelsUrl, {
-          maxZoom: base.maxZoom,
-          zIndex: 20,
-          keepBuffer: 2,
-          referrerPolicy: TILE_REFERRER_POLICY,
-        }).addTo(map);
-      }
+    const provider = mapProviderFor(m);
+    const mapKey = provider === 'esri' ? '' : mapApiKey(m);
+    const baseKey = `${provider}|${style}|${mapKey}`;
+    if (baseKey !== this._baseKey) {
+      this._baseKey = baseKey;
+      void this._applyBase(style, provider, mapKey);
     }
 
     const radarKey = `${m.smooth !== false}|${m.snow_colors !== false}|${maxNativeZoomFor(m)}`;
@@ -611,11 +744,13 @@ export class UcRainRadar extends LitElement {
       this._applyOpacity();
     }
 
-    const sourceKey = `${sourceUrlFor(m)}|${m.show_forecast !== false}|${m.time_span ?? ''}`;
+    const sourceKey = sourceKeyFor(m);
     if (sourceKey !== this._sourceKey) {
       this._sourceKey = sourceKey;
       this._loadFrames(true);
     }
+
+    this._syncWeather(style === 'dark' || style === 'satellite');
 
     const autoplay = m.autoplay !== false;
     if (autoplay !== this._autoplayApplied) {
@@ -625,6 +760,65 @@ export class UcRainRadar extends LitElement {
     }
 
     this._syncMarkers();
+  }
+
+  /** Pick the base map; a keyed provider that fails falls back to Esri. */
+  private async _applyBase(
+    style: ReturnType<typeof resolveMapStyle>,
+    provider: ReturnType<typeof mapProviderFor>,
+    key: string
+  ): Promise<void> {
+    const seq = ++this._baseSeq;
+    let base: BaseMapStyle | null = null;
+    if (provider === 'mapbox' || provider === 'maptiler') {
+      base = keyedBaseMap(provider, style, key);
+    } else if (provider === 'google') {
+      try {
+        base = await loadGoogleBaseMap(style, key, this.language);
+      } catch {
+        base = null;
+      }
+      if (seq !== this._baseSeq || !this._map) return;
+    }
+    if (base) this._setBaseLayer(base, true, style);
+    else this._setBaseLayer(baseMapFor(style), false, style);
+  }
+
+  private _setBaseLayer(
+    base: BaseMapStyle,
+    keyed: boolean,
+    style: ReturnType<typeof resolveMapStyle>
+  ): void {
+    const map = this._map;
+    if (!map) return;
+    if (this._baseLayer) map.removeLayer(this._baseLayer);
+    if (this._labelsLayer) map.removeLayer(this._labelsLayer);
+    this._labelsLayer = undefined;
+    const layer = L.tileLayer(base.url, {
+      attribution: base.attribution,
+      maxZoom: base.maxZoom,
+      zIndex: 1,
+      keepBuffer: 2,
+      referrerPolicy: TILE_REFERRER_POLICY,
+    }).addTo(map);
+    this._baseLayer = layer;
+    if (keyed) {
+      // A bad key or a provider that refuses the page: switch to Esri rather than show a blank map.
+      let loaded = false;
+      let errors = 0;
+      layer.on('tileload', () => (loaded = true));
+      layer.on('tileerror', () => {
+        if (loaded || ++errors < 4 || this._baseLayer !== layer) return;
+        this._setBaseLayer(baseMapFor(style), false, style);
+      });
+    } else if (base.labelsUrl) {
+      this._labelsLayer = L.tileLayer(base.labelsUrl, {
+        maxZoom: base.maxZoom,
+        zIndex: 20,
+        keepBuffer: 2,
+        referrerPolicy: TILE_REFERRER_POLICY,
+      }).addTo(map);
+    }
   }
 
   private _recenter(fromButton: boolean): void {
@@ -729,6 +923,84 @@ export class UcRainRadar extends LitElement {
     );
   }
 
+  // ── Open-Meteo weather layer ───────────────────────────────────────────────
+
+  private _weatherOpacity(): number {
+    return (
+      clampNumber(this.module?.weather_layer_opacity, 0, 100, DEFAULT_WEATHER_LAYER_OPACITY) / 100
+    );
+  }
+
+  private _syncWeather(dark: boolean): void {
+    const m = this.module;
+    const map = this._map;
+    if (!m || !map) return;
+    const layer = weatherLayerOf(m);
+    const center = resolveCenter(m, this.hass);
+    const domain = center ? weatherDomainFor(m, center) : null;
+    const variable = weatherVariableFor(layer);
+    const key = domain && variable ? `${domain}|${variable}|${dark}` : '';
+    if (key === this._weatherKey) {
+      this._weatherLayer?.setOpacity(this._weatherOpacity());
+      return;
+    }
+    this._weatherKey = key;
+    this._removeWeather();
+    if (!domain || !variable) return;
+    void this._addWeather(domain, variable, dark);
+  }
+
+  private async _addWeather(domain: string, variable: string, dark: boolean): Promise<void> {
+    const seq = ++this._weatherSeq;
+    try {
+      const adapter = await loadOpenMeteoAdapter(L);
+      const map = this._map;
+      if (seq !== this._weatherSeq || !map) return;
+      const layer = adapter.createTileLayer(weatherLayerUrl(domain, variable, dark), {
+        opacity: this._weatherOpacity(),
+        zIndex: 5,
+        maxZoom: MAX_ZOOM,
+        attribution: OPEN_METEO_ATTRIBUTION,
+        className: 'uc-rr-weather',
+        keepBuffer: 1,
+      }) as L.GridLayer;
+      layer.addTo(map);
+      this._weatherLayer = layer;
+      this._weatherError = false;
+      try {
+        this._weatherLegend = weatherLegendFrom(
+          EXTRA_COLOR_SCALES[variable] ?? adapter.lib.getColorScale?.(variable, dark),
+          this.hass?.config?.unit_system?.temperature === '°F'
+        );
+      } catch {
+        this._weatherLegend = null;
+      }
+      this._clearTimer('_weatherTimer');
+      this._weatherTimer = window.setTimeout(() => {
+        // Same settings, new hour: rebuild so "now" resolves again.
+        this._weatherKey = '';
+        this._sync();
+      }, WEATHER_LAYER_REFRESH_MS);
+    } catch {
+      if (seq !== this._weatherSeq) return;
+      this._weatherError = true;
+      this._clearTimer('_weatherTimer');
+      this._weatherTimer = window.setTimeout(() => {
+        this._weatherKey = '';
+        this._sync();
+      }, RETRY_MS);
+    }
+  }
+
+  private _removeWeather(): void {
+    this._weatherSeq++;
+    this._clearTimer('_weatherTimer');
+    if (this._weatherLayer) this._map?.removeLayer(this._weatherLayer);
+    this._weatherLayer = undefined;
+    this._weatherLegend = null;
+    this._weatherError = false;
+  }
+
   // ── Frames ─────────────────────────────────────────────────────────────────
 
   private async _loadFrames(sourceChanged: boolean): Promise<void> {
@@ -741,11 +1013,12 @@ export class UcRainRadar extends LitElement {
     }
     if (!this._frames.length) this._status = 'loading';
     try {
-      const set = await loadRadarFrames(sourceUrlFor(m), m.show_forecast !== false);
+      const set = await loadModuleFrames(m);
       if (seq !== this._loadSeq || !this._map) return;
-      const hostChanged = set.host !== this._host;
+      const hostChanged = set.host !== this._host || set.provider !== this._provider;
       this._host = set.host;
-      const frames = filterByTimeSpan(set.frames, m.time_span);
+      this._provider = set.provider;
+      const frames = set.frames;
       const keep = new Set(frames.map(f => f.path));
       this._dropLayers(path => hostChanged || !keep.has(path));
       const wasAtLatest = this._index >= latestObservedIndex(this._frames);
@@ -756,7 +1029,7 @@ export class UcRainRadar extends LitElement {
       this._status = 'ready';
       this._showFrame(this._index);
       this._schedulePlay();
-      this._scheduleRefresh(FRAMES_TTL_MS + 5000);
+      this._scheduleRefresh((set.provider === 'rainbow' ? RAINBOW_TTL_MS : FRAMES_TTL_MS) + 5000);
     } catch {
       if (seq !== this._loadSeq) return;
       if (!this._frames.length) this._status = 'error';
@@ -786,7 +1059,7 @@ export class UcRainRadar extends LitElement {
     let layer = this._layers.get(frame.path);
     if (!layer) {
       layer = L.tileLayer(
-        radarTileUrl(this._host, frame, {
+        frameTileUrl({ host: this._host, provider: this._provider }, frame, {
           smooth: m.smooth !== false,
           snow: m.snow_colors !== false,
         }),
@@ -796,7 +1069,7 @@ export class UcRainRadar extends LitElement {
           tileSize: 256,
           maxNativeZoom: maxNativeZoomFor(m),
           maxZoom: MAX_ZOOM,
-          attribution: RAINVIEWER_ATTRIBUTION,
+          attribution: radarAttributionFor(this._provider),
           className: 'uc-rr-layer',
           referrerPolicy: TILE_REFERRER_POLICY,
           keepBuffer: 1,
@@ -908,6 +1181,10 @@ export class UcRainRadar extends LitElement {
   protected override render(): TemplateResult {
     const m = this.module;
     const height = clampNumber(m?.height, 120, 1000, DEFAULT_HEIGHT);
+    const showFs = m?.show_fullscreen !== false;
+    const fsLabel = this._fullscreen
+      ? this._t('exit_fullscreen', 'Exit full screen')
+      : this._t('fullscreen', 'Full screen');
     const showControls = m?.show_controls !== false;
     const showStamp = m?.show_timestamp !== false;
     const frame = this._frames[this._index];
@@ -915,14 +1192,41 @@ export class UcRainRadar extends LitElement {
     const showTitle = m?.show_title !== false && !!title;
     const hasFrames = this._frames.length > 0;
     const legendBottom = showControls && hasFrames ? 64 : 10;
+    const showRadarLegend = m?.show_legend !== false && hasFrames && !this._provider;
+    const wx = m ? weatherLayerOf(m) : 'none';
+    const wxLegend = m?.show_legend !== false && wx !== 'none' ? this._weatherLegend : null;
+    const wxNames: Record<string, string> = {
+      temperature: this._t('weather_layer_temperature', 'Temperature'),
+      precipitation: this._t('weather_layer_precipitation', 'Precipitation'),
+      wind: this._t('weather_layer_wind', 'Wind'),
+      clouds: this._t('weather_layer_clouds', 'Clouds'),
+      air_quality: this._t('weather_layer_air_quality', 'Air quality (PM2.5)'),
+    };
     const recenterTop = showTitle ? 52 : 10;
 
     return html`
       <div
-        class="wrap ${showControls && hasFrames ? 'has-controls' : ''}"
-        style="height:${height}px"
+        class="wrap ${showControls && hasFrames ? 'has-controls' : ''} ${showFs ? 'has-fs' : ''} ${
+          this._fullscreen ? 'fs' : ''
+        } ${this._pseudoFs ? 'pseudo-fs' : ''}"
+        style="height:${this._fullscreen ? '100%' : `${height}px`}"
       >
         <div class="map"></div>
+        ${
+          showFs
+            ? html`<button
+                type="button"
+                class="fullscreen"
+                aria-label=${fsLabel}
+                title=${fsLabel}
+                @click=${(e: Event) => this._toggleFullscreen(e)}
+              >
+                <ha-icon
+                  icon=${this._fullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}
+                ></ha-icon>
+              </button>`
+            : nothing
+        }
         ${
           showTitle
             ? html`<div class="chip title">
@@ -941,13 +1245,37 @@ export class UcRainRadar extends LitElement {
             : nothing
         }
         ${
-          m?.show_legend !== false && hasFrames
+          // The legend shows RainViewer's colors; keyed sources use their own palettes.
+          showRadarLegend
             ? html`<div class="chip legend" style="bottom:${legendBottom}px" aria-hidden="true">
                 <div class="bar"></div>
                 <div class="labels">
                   <span>${this._t('legend_light', 'Light')}</span>
                   <span>${this._t('legend_heavy', 'Heavy')}</span>
                 </div>
+              </div>`
+            : nothing
+        }
+        ${
+          wxLegend
+            ? html`<div
+                class="chip legend wx"
+                style="bottom:${legendBottom + (showRadarLegend ? 42 : 0)}px"
+                aria-hidden="true"
+              >
+                <div class="wx-name">
+                  ${wxNames[wx] || ''}${wxLegend.unit ? html` · ${wxLegend.unit}` : nothing}
+                </div>
+                <div class="bar" style="background:${wxLegend.gradient}"></div>
+                <div class="labels"><span>${wxLegend.min}</span><span>${wxLegend.max}</span></div>
+              </div>`
+            : nothing
+        }
+        ${
+          this._weatherError && wx !== 'none'
+            ? html`<div class="chip wx-error" role="status" style="bottom:${legendBottom}px">
+                <ha-icon icon="mdi:cloud-alert"></ha-icon
+                ><span>${this._t('weather_layer_unavailable', 'Weather layer unavailable')}</span>
               </div>`
             : nothing
         }

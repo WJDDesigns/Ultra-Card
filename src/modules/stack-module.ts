@@ -2,6 +2,7 @@ import { TemplateResult, html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { wrapChildModuleAnimation } from './layout-container-utils';
 import {
   CardModule,
   UltraCardConfig,
@@ -592,6 +593,27 @@ export class UltraStackModule extends BaseUltraModule {
       applyModules(next);
     };
 
+    // Copy the selected layer's anchor and offsets onto every layer, so the
+    // whole stack lines up to one side in a single click.
+    const applyPositionToAllLayers = () => {
+      if (!selected) return;
+      const src: StackLayerConfig = selected.stack_layer || {};
+      const anchor: StackAnchor = (src.anchor as StackAnchor) || 'center';
+      const next = modules.map(
+        m =>
+          ({
+            ...m,
+            stack_layer: {
+              ...m.stack_layer,
+              anchor,
+              offset_x: src.offset_x ?? '0px',
+              offset_y: src.offset_y ?? '0px',
+            },
+          }) as CardModule
+      );
+      applyModules(next);
+    };
+
     (this as any)._stackDragUpdateFn = (idx: number, patch: Partial<StackLayerConfig>) => {
       const next = modules.map((m, i) =>
         i === idx
@@ -728,7 +750,14 @@ export class UltraStackModule extends BaseUltraModule {
 
         <!-- Layer position (only when something is selected) -->
         ${selected
-          ? this._renderLayerPositionSection(selected, sel, lang, hass, updateSelectedLayer)
+          ? this._renderLayerPositionSection(
+              selected,
+              sel,
+              lang,
+              hass,
+              updateSelectedLayer,
+              modules.length > 1 ? applyPositionToAllLayers : undefined
+            )
           : ''}
       </div>
     `;
@@ -772,6 +801,28 @@ export class UltraStackModule extends BaseUltraModule {
           grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
           gap: 8px;
           margin-bottom: 24px;
+        }
+        .uc-stack-apply-all {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 10px;
+          min-height: 36px;
+          padding: 6px 12px;
+          background: var(--uc-pane-bg, var(--card-background-color));
+          color: var(--primary-text-color);
+          border: 1px solid var(--divider-color);
+          border-radius: var(--uc-r-8, 8px);
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+        }
+        .uc-stack-apply-all:hover {
+          border-color: var(--primary-color);
+          color: var(--primary-color);
+        }
+        .uc-stack-apply-all ha-icon {
+          --mdc-icon-size: 18px;
         }
         .uc-stack-chip {
           display: flex;
@@ -1136,7 +1187,8 @@ export class UltraStackModule extends BaseUltraModule {
     sel: number,
     lang: string,
     hass: HomeAssistant,
-    updateSelectedLayer: (patch: Partial<StackLayerConfig>) => void
+    updateSelectedLayer: (patch: Partial<StackLayerConfig>) => void,
+    applyPositionToAll?: () => void
   ): TemplateResult {
     const meta = getModuleRegistry().getModuleMetadata(selected.type);
     const layerTitle = meta?.title || selected.type;
@@ -1173,6 +1225,31 @@ export class UltraStackModule extends BaseUltraModule {
             `
           )}
         </div>
+
+        ${applyPositionToAll
+          ? html`
+              <button
+                type="button"
+                class="uc-stack-apply-all"
+                data-uc-role="pane"
+                @click=${() => applyPositionToAll()}
+              >
+                <ha-icon icon="mdi:layers-triple"></ha-icon>
+                ${localize(
+                  'editor.stack.layer.apply_all',
+                  lang,
+                  'Use this anchor for all layers'
+                )}
+              </button>
+              <div class="uc-stack-section-desc" style="margin-top:4px;">
+                ${localize(
+                  'editor.stack.layer.apply_all_desc',
+                  lang,
+                  'Each layer has its own anchor. This copies the anchor and offsets above to every layer.'
+                )}
+              </div>
+            `
+          : ''}
 
         <div class="uc-stack-field-label">
           ${localize('editor.stack.layer.offset', lang, 'Offset from anchor')}
@@ -1842,44 +1919,7 @@ export class UltraStackModule extends BaseUltraModule {
       `;
     }
 
-    const m: any = moduleToRender as any;
-    const animationType = m.animation_type || m.design?.animation_type;
-    if (animationType && animationType !== 'none') {
-      const animationDuration = m.animation_duration || m.design?.animation_duration || '2s';
-      const animationDelay = m.animation_delay || m.design?.animation_delay || '0s';
-      const animationTiming = m.animation_timing || m.design?.animation_timing || 'ease';
-      const entityId = m.animation_entity || m.design?.animation_entity;
-      const triggerType = m.animation_trigger_type || m.design?.animation_trigger_type || 'state';
-      const attribute = m.animation_attribute || m.design?.animation_attribute;
-      const targetState = m.animation_state || m.design?.animation_state;
-      let shouldAnimate = false;
-      if (!entityId) {
-        shouldAnimate = true;
-      } else if (targetState && hass && hass.states[entityId]) {
-        const entity = hass.states[entityId];
-        if (triggerType === 'attribute' && attribute) {
-          shouldAnimate = String(entity.attributes[attribute]) === targetState;
-        } else {
-          shouldAnimate = entity.state === targetState;
-        }
-      }
-      if (shouldAnimate) {
-        return html`
-          <div
-            class="module-animation-wrapper animation-${animationType}"
-            style="
-              --animation-duration: ${animationDuration};
-              --animation-delay: ${animationDelay};
-              --animation-timing: ${animationTiming};
-            "
-          >
-            ${moduleContent}
-          </div>
-        `;
-      }
-    }
-
-    return moduleContent;
+    return wrapChildModuleAnimation(moduleToRender, hass, moduleContent);
   }
 
   private applyLayoutDesignToChild(childModule: CardModule, layoutDesign: any): CardModule {

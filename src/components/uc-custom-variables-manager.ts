@@ -143,6 +143,31 @@ export class UcCustomVariablesManager extends LitElement {
     this._nameError = '';
   }
 
+  /** Move a card variable to the global list so every card can use it. */
+  private _makeGlobal(variable: CustomVariable): void {
+    const lang = this.hass?.locale?.language || 'en';
+    if (ucCustomVariablesService.hasVariable(variable.name)) {
+      alert(
+        localize(
+          'editor.custom_variables.make_global_conflict',
+          lang,
+          'A global variable with this name already exists. Rename this one first.'
+        )
+      );
+      return;
+    }
+    const otherCardVars = this._cardVariables.filter(v => v.id !== variable.id);
+    const result = ucCustomVariablesService.addVariable(
+      variable.name,
+      variable.entity,
+      variable.value_type || 'state',
+      true,
+      variable.value_type === 'attribute' ? variable.attribute_name : undefined,
+      otherCardVars
+    );
+    if (result) this._updateCardVariables(otherCardVars);
+  }
+
   private _saveEdit(): void {
     // Use the original entity as fallback if current one is empty (prevents accidental clearing)
     const entityToSave = this._editingEntity || this._originalEditingEntity;
@@ -614,6 +639,17 @@ export class UcCustomVariablesManager extends LitElement {
             </div>
           </div>
           <div class="variable-actions">
+            ${!isGlobal
+              ? html`
+                  <button
+                    class="action-btn make-global-btn"
+                    @click=${() => this._makeGlobal(variable)}
+                    title="${localize('editor.custom_variables.make_global', lang, 'Make global (use on every card)')}"
+                  >
+                    <ha-icon icon="mdi:earth-plus"></ha-icon>
+                  </button>
+                `
+              : ''}
             <button
               class="action-btn edit-btn"
               @click=${() => this._startEdit(variable)}

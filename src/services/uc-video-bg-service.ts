@@ -171,10 +171,11 @@ class UcVideoBgService {
       // Check if enabled
       if (!module.enabled) continue;
 
-      // Check display conditions using logic service
-      const shouldDisplay = logicService.evaluateDisplayConditions(
-        module.display_conditions || [],
-        module.display_mode || 'always'
+      // Check display conditions and user visibility using logic service
+      if (hass) logicService.setHass(hass);
+      const shouldDisplay = logicService.evaluateOverlayModuleVisibility(
+        module,
+        registered.config
       );
 
       if (shouldDisplay) {

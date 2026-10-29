@@ -18,6 +18,15 @@ describe('collectConfigEntityIds', () => {
     expect(incomplete).toBe(false);
   });
 
+  it('includes entities from card-level display conditions', () => {
+    const config = {
+      ...configOf([{ id: 'm', type: 'text', text: 'hello' }]),
+      display_mode: 'every',
+      display_conditions: [{ id: 'c', type: 'entity_state', entity: 'input_boolean.guest' }],
+    } as UltraCardConfig;
+    expect([...collectConfigEntityIds(config).ids]).toEqual(['input_boolean.guest']);
+  });
+
   it('picks up plain and prefixed entity fields', () => {
     const { ids } = collectConfigEntityIds(
       configOf([{ id: 'm', type: 'info', entity: 'light.a', weather_entity: 'weather.b' }])
