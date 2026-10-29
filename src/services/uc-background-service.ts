@@ -166,9 +166,9 @@ class UcBackgroundService {
     for (const registered of modules) {
       const { module } = registered;
 
-      const shouldDisplay = logicService.evaluateDisplayConditions(
-        module.display_conditions || [],
-        module.display_mode || 'always'
+      const shouldDisplay = logicService.evaluateOverlayModuleVisibility(
+        module,
+        registered.config
       );
 
       if (shouldDisplay) {

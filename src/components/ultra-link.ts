@@ -1,6 +1,7 @@
 import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from '../ha/types';
 import { forwardHaptic } from '../ha/helpers';
+import { toggleEntities } from '../utils/uc-entity-toggle';
 import { UltraCardConfig, CardModule } from '../types';
 import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
 import {
@@ -495,8 +496,8 @@ export class UltraLinkComponent {
 
       case 'toggle':
         if (resolvedAction.entity) {
-          // Legacy entity-based toggle
-          hass.callService('homeassistant', 'toggle', { entity_id: resolvedAction.entity });
+          // Legacy entity-based toggle (locks, buttons and scenes need their own service)
+          toggleEntities(hass, resolvedAction.entity);
         } else if (resolvedAction.target) {
           // Modern target-based toggle (supports device_id, area_id, etc.)
           const serviceData: any = {};
@@ -518,7 +519,12 @@ export class UltraLinkComponent {
             serviceData.label_id = resolvedAction.target.label_id;
           }
 
-          hass.callService('homeassistant', 'toggle', serviceData);
+          const targetsOnlyEntities = Object.keys(serviceData).every(key => key === 'entity_id');
+          if (targetsOnlyEntities && serviceData.entity_id) {
+            toggleEntities(hass, serviceData.entity_id);
+          } else {
+            hass.callService('homeassistant', 'toggle', serviceData);
+          }
         }
         break;
 

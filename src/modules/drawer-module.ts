@@ -2,10 +2,11 @@ import { TemplateResult, html, render } from 'lit';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig, DrawerModule } from '../types';
-import { getModuleRegistry } from './module-registry';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { forwardHaEventsFromPortal } from '../utils/uc-portal-ha-events';
+import { collectPortalChildStyles } from '../utils/uc-portal-child-styles';
 import { UcAlignment } from '../utils/uc-alignment';
 import {
   UcTriggerIconChrome,
@@ -543,27 +544,6 @@ export class UltraDrawerModule extends BaseUltraModule {
     );
   }
 
-  /** Concatenate getStyles() for all module types used inside the drawer so
-   *  class-based child styles work in the light-DOM portal. */
-  private _collectChildStyles(modules: CardModule[] | undefined): string {
-    const registry = getModuleRegistry();
-    const seen = new Set<string>();
-    const collect = (list: CardModule[] | undefined): void => {
-      (list || []).forEach(m => {
-        seen.add(m.type);
-        const nested = (m as any).modules;
-        if (Array.isArray(nested)) collect(nested);
-      });
-    };
-    collect(modules);
-    let css = '';
-    seen.forEach(type => {
-      const handler = registry.getModule(type);
-      if (handler?.getStyles) css += handler.getStyles();
-    });
-    return css;
-  }
-
   private _renderPortal(
     drawerModule: DrawerModule,
     hass: HomeAssistant,
@@ -584,6 +564,9 @@ export class UltraDrawerModule extends BaseUltraModule {
       portal.style.pointerEvents = 'auto';
       document.body.appendChild(portal);
       this._portals.set(drawerModule.id, portal);
+      // Cards inside the drawer (e.g. a tile card's more-info) fire HA events that
+      // can't reach <home-assistant> from a body-level portal; forward them.
+      forwardHaEventsFromPortal(portal);
 
       const keydown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
@@ -693,7 +676,7 @@ export class UltraDrawerModule extends BaseUltraModule {
           color: var(--secondary-text-color);
           font-style: italic;
         }
-        ${this._collectChildStyles(children)}
+        ${collectPortalChildStyles(children)}
       </style>
       <div
         class="uc-drawer-overlay"

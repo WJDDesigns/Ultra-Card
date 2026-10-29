@@ -6,6 +6,7 @@ import {
   POINTER_FOCUS_ATTR,
 } from './uc-gesture-service';
 import { UltraLinkComponent } from '../components/ultra-link';
+import { registerPopupTrigger, clearAllTriggers } from './popup-trigger-registry';
 import type { HomeAssistant } from '../ha/types';
 
 /**
@@ -168,6 +169,53 @@ describe('keyboard activation', () => {
   });
 });
 
+describe('onToggle override', () => {
+  it('runs onToggle instead of the stock toggle for its own entity', () => {
+    const { host } = makeElements();
+    const onToggle = vi.fn();
+    const handlers = ucGestureService.createGestureHandlers(
+      't-own',
+      { tap_action: { action: 'toggle' }, entity: 'lock.front', onToggle },
+      hass
+    );
+
+    handlers.onKeyDown(keyEvent('Enter', host, host));
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(handleAction).not.toHaveBeenCalled();
+  });
+
+  it('leaves a toggle aimed at another entity to the stock handler', () => {
+    const { host } = makeElements();
+    const onToggle = vi.fn();
+    const handlers = ucGestureService.createGestureHandlers(
+      't-other',
+      { tap_action: { action: 'toggle', entity: 'light.hall' }, entity: 'lock.front', onToggle },
+      hass
+    );
+
+    handlers.onKeyDown(keyEvent('Enter', host, host));
+
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(handleAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves other actions to the stock handler', () => {
+    const { host } = makeElements();
+    const onToggle = vi.fn();
+    const handlers = ucGestureService.createGestureHandlers(
+      't-more',
+      { tap_action: { action: 'more-info' }, entity: 'lock.front', onToggle },
+      hass
+    );
+
+    handlers.onKeyDown(keyEvent('Enter', host, host));
+
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(handleAction).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('hasActionableGesture', () => {
   it('is true for a configured action', () => {
     expect(hasActionableGesture({ tap_action: { action: 'toggle' } })).toBe(true);
@@ -320,5 +368,56 @@ describe('pointer focus ring suppression', () => {
     handlers.onPointerDown(pointerDown(sibling, sibling));
 
     expect(root.querySelectorAll('#uc-pointer-focus-styles')).toHaveLength(1);
+  });
+});
+
+describe('popup trigger modules', () => {
+  afterEach(() => {
+    clearAllTriggers();
+  });
+
+  /** A pointer tap: down then up at the same spot. */
+  function tap(handlers: ReturnType<typeof ucGestureService.createGestureHandlers>, el: HTMLElement) {
+    const down = new PointerEvent('pointerdown', { pointerId: 1, clientX: 5, clientY: 5 });
+    const up = new PointerEvent('pointerup', { pointerId: 1, clientX: 5, clientY: 5 });
+    for (const e of [down, up]) {
+      Object.defineProperty(e, 'target', { value: el });
+      Object.defineProperty(e, 'currentTarget', { value: el });
+    }
+    handlers.onPointerDown(down);
+    handlers.onPointerUp(up);
+  }
+
+  it('still opens the popup when the module tap action is "none"', () => {
+    // A Weather module with tap action None, picked as a popup's trigger module,
+    // did nothing on tap because "none" short-circuited before the popup check.
+    const { host } = makeElements();
+    const module = { id: 'weather-1', type: 'weather' } as any;
+    registerPopupTrigger('popup-1', 'weather-1');
+    const handlers = ucGestureService.createGestureHandlers(
+      'p-none',
+      { tap_action: { action: 'none' }, module },
+      hass
+    );
+
+    tap(handlers, host);
+    handlers.onKeyDown(keyEvent('Enter', host, host));
+
+    expect(handleAction).toHaveBeenCalledTimes(2);
+    expect(handleAction.mock.calls[0]?.[5]).toBe(module);
+    expect(hasActionableGesture({ tap_action: { action: 'none' }, module })).toBe(true);
+  });
+
+  it('keeps "none" doing nothing on modules that are not popup triggers', () => {
+    const { host } = makeElements();
+    const handlers = ucGestureService.createGestureHandlers(
+      'p-plain',
+      { tap_action: { action: 'none' }, module: { id: 'weather-2', type: 'weather' } as any },
+      hass
+    );
+
+    tap(handlers, host);
+
+    expect(handleAction).not.toHaveBeenCalled();
   });
 });

@@ -23,6 +23,7 @@ import {
 } from '../../utils/uc-user-facing-cloud-error';
 import {
   fetchBillingSummary,
+  clearBillingCache,
   formatBillingDate,
   formatMoney,
   type BillingSummary,
@@ -971,6 +972,7 @@ export class HubAccountTab extends LitElement {
 
     try {
       // Single auth path: store credentials in HA config entry, coordinator handles JWT
+      clearBillingCache();
       await ucCloudAuthService.loginViaHass(this.hass, email, this._password);
       this._username = '';
       this._password = '';
@@ -1016,6 +1018,7 @@ export class HubAccountTab extends LitElement {
   }
 
   private async _handleLogout(): Promise<void> {
+    clearBillingCache();
     await ucCloudAuthService.logoutViaHass(this.hass);
   }
 

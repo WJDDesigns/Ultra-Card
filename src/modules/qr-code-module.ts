@@ -15,6 +15,12 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { getImageUrl } from '../utils/image-upload';
+import {
+  buildQrContent,
+  type QrContentData,
+  type QrContentType,
+  type QrStateMap,
+} from '../services/uc-qr-content-builder';
 import '../components/ultra-color-picker';
 
 /** Event dispatched when QR data URL is ready so the card can re-render */
@@ -170,6 +176,21 @@ function cacheKey(module: QrCodeModule, content: string, hass?: HomeAssistant): 
 /** Unified-template output keys the QR code module reads (plain strings also work). */
 const QR_TEMPLATE_KEYS = ['qr_content', 'content'] as const;
 
+/** Content types offered in the editor, in menu order. */
+const QR_CONTENT_TYPES: ReadonlyArray<{ value: QrContentType; label: string }> = [
+  { value: 'text', label: 'Text / URL' },
+  { value: 'wifi', label: 'Wi-Fi' },
+  { value: 'location', label: 'Map location' },
+  { value: 'route', label: 'Map route' },
+  { value: 'whatsapp', label: 'WhatsApp chat' },
+  { value: 'phone', label: 'Phone call' },
+  { value: 'sms', label: 'Text message (SMS)' },
+  { value: 'email', label: 'Email' },
+  { value: 'contact', label: 'Contact card' },
+  { value: 'spotify', label: 'Spotify' },
+  { value: 'social', label: 'Social profile' },
+];
+
 export class UltraQrCodeModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'qr_code',
@@ -261,129 +282,39 @@ export class UltraQrCodeModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
 
-      <!-- Content source -->
+      <!-- Content type -->
       ${this.renderSettingsSection(
-        localize('editor.qr_code.content_title', lang, 'Content'),
-        localize('editor.qr_code.content_title_desc', lang, 'Configure the text or URL to encode.'),
+        localize('editor.qr_code.content_type', lang, 'Type'),
+        localize(
+          'editor.qr_code.content_type_desc',
+          lang,
+          'What the code is for. Pick a type and fill in the fields; Ultra Card builds the code for you.'
+        ),
         [
           {
-            title: localize('editor.qr_code.content_mode', lang, 'Source'),
-            description: localize('editor.qr_code.content_mode_desc', lang, 'Where to get the text to encode'),
+            title: localize('editor.qr_code.content_type', lang, 'Type'),
+            description: '',
             hass,
-            data: { content_mode: qrModule.content_mode || 'static' },
-            schema: [this.selectField('content_mode', [
-              { value: 'static', label: localize('editor.qr_code.static', lang, 'Static URL / Text') },
-              {
-                value: 'unified',
-                label: localize('editor.qr_code.unified_template', lang, 'Unified template'),
-              },
-              { value: 'entity', label: localize('editor.qr_code.entity', lang, 'Entity State') },
-            ])],
+            data: { content_type: qrModule.content_type || 'text' },
+            schema: [
+              this.selectField(
+                'content_type',
+                QR_CONTENT_TYPES.map(t => ({
+                  value: t.value,
+                  label: localize(`editor.qr_code.type_${t.value}`, lang, t.label),
+                }))
+              ),
+            ],
             onChange: (e: CustomEvent) => {
-              const mode = e.detail.value.content_mode as 'static' | 'entity' | 'unified';
-              updateModule({
-                content_mode: mode,
-                unified_template_mode: mode === 'unified',
-                ...(mode !== 'unified' ? { unified_template: '' } : {}),
-              });
+              updateModule({ content_type: e.detail.value.content_type as QrContentType });
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             },
           },
         ]
       )}
-      ${qrModule.content_mode === 'static'
-        ? this.renderFieldSection(
-            localize('editor.qr_code.static_content', lang, 'URL or text'),
-            localize('editor.qr_code.static_desc', lang, 'Text or URL to encode in the QR code'),
-            hass,
-            { content_static: qrModule.content_static || '' },
-            [this.textField('content_static')],
-            (e: CustomEvent) => { updateModule({ content_static: e.detail.value.content_static }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
-          )
-        : ''}
-      ${qrModule.content_mode === 'unified' || qrModule.unified_template_mode
-        ? html`
-            <div>
-              <div
-                style="font-size: 13px; color: var(--secondary-text-color); margin: 8px 0 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;"
-              >
-                <span
-                  >${localize(
-                    'editor.qr_code.unified_template_desc',
-                    lang,
-                    'JSON with "qr_content" (URL or text to encode), or a plain Jinja string result.'
-                  )}</span
-                >
-                <button
-                  type="button"
-                  class="help-btn"
-                  style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:var(--text-primary-color, #fff);cursor:pointer;border-radius:50%;line-height:0;"
-                  title="${localize('editor.qr_code.unified_cheatsheet', lang, 'Template cheatsheet')}"
-                  @click=${(e: Event) => {
-                    (e.currentTarget as HTMLElement).dispatchEvent(
-                      new CustomEvent('uc-open-template-cheatsheet', {
-                        bubbles: true,
-                        composed: true,
-                        detail: { module: 'qr' },
-                      })
-                    );
-                  }}
-                >
-                  <ha-icon
-                    icon="mdi:help-circle"
-                    style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"
-                  ></ha-icon>
-                </button>
-              </div>
-            <div
-              style="margin-top: 12px;"
-              @mousedown=${(e: Event) => {
-                const t = e.target as HTMLElement;
-                if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
-              }}
-              @dragstart=${(e: Event) => e.stopPropagation()}
-            >
-              <ultra-template-editor
-                .hass=${hass}
-                .value=${qrModule.unified_template || ''}
-                .placeholder=${'{\n  "qr_content": "{{ states(\'sensor.door_lock\') }}"\n}'}
-                .minHeight=${120}
-                .maxHeight=${360}
-                @value-changed=${(e: CustomEvent) => {
-                  updateModule({ unified_template: e.detail.value });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              ></ultra-template-editor>
-              ${this.renderTemplateKeyWarning(
-                qrModule.unified_template,
-                QR_TEMPLATE_KEYS,
-                lang
-              )}
-            </div>
-            </div>
-          `
-        : ''}
-      ${qrModule.content_mode === 'entity'
-        ? html`
-            ${this.renderEntityPickerWithVariables(
-              hass, config, 'content_entity', qrModule.content_entity || '',
-              (value: string) => { updateModule({ content_entity: value }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
-              undefined,
-              localize('editor.qr_code.entity_picker', lang, 'Entity')
-            )}
-            <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
-              ${localize('editor.qr_code.entity_picker_desc', lang, 'Select an entity whose state (or attribute) will be encoded into the QR code.')}
-            </div>
-            ${this.renderFieldSection(
-              localize('editor.qr_code.attribute', lang, 'Attribute (optional)'),
-              localize('editor.qr_code.attribute_desc', lang, 'Leave empty to use state; or e.g. friendly_name'),
-              hass,
-              { content_attribute: qrModule.content_attribute || '' },
-              [this.textField('content_attribute')],
-              (e: CustomEvent) => { updateModule({ content_attribute: e.detail.value.content_attribute || undefined }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
-            )}
-          `
-        : ''}
+      ${qrModule.content_type && qrModule.content_type !== 'text'
+        ? this._renderContentTypeFields(qrModule, hass, config, updateModule, lang)
+        : this._renderTextSourceFields(qrModule, hass, config, updateModule, lang)}
 
       <!-- Display -->
       ${this.renderSettingsSection(
@@ -765,7 +696,399 @@ export class UltraQrCodeModule extends BaseUltraModule {
     `;
   }
 
+  /** Source fields for the plain Text / URL type (static, unified template, entity). */
+  private _renderTextSourceFields(
+    qrModule: QrCodeModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void,
+    lang: string
+  ): TemplateResult {
+    return html`
+      ${this.renderSettingsSection(
+        localize('editor.qr_code.content_title', lang, 'Content'),
+        localize('editor.qr_code.content_title_desc', lang, 'Configure the text or URL to encode.'),
+        [
+          {
+            title: localize('editor.qr_code.content_mode', lang, 'Source'),
+            description: localize('editor.qr_code.content_mode_desc', lang, 'Where to get the text to encode'),
+            hass,
+            data: { content_mode: qrModule.content_mode || 'static' },
+            schema: [this.selectField('content_mode', [
+              { value: 'static', label: localize('editor.qr_code.static', lang, 'Static URL / Text') },
+              {
+                value: 'unified',
+                label: localize('editor.qr_code.unified_template', lang, 'Unified template'),
+              },
+              { value: 'entity', label: localize('editor.qr_code.entity', lang, 'Entity State') },
+            ])],
+            onChange: (e: CustomEvent) => {
+              const mode = e.detail.value.content_mode as 'static' | 'entity' | 'unified';
+              updateModule({
+                content_mode: mode,
+                unified_template_mode: mode === 'unified',
+                ...(mode !== 'unified' ? { unified_template: '' } : {}),
+              });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            },
+          },
+        ]
+      )}
+      ${qrModule.content_mode === 'static'
+        ? this.renderFieldSection(
+            localize('editor.qr_code.static_content', lang, 'URL or text'),
+            localize('editor.qr_code.static_desc', lang, 'Text or URL to encode in the QR code'),
+            hass,
+            { content_static: qrModule.content_static || '' },
+            [this.textField('content_static')],
+            (e: CustomEvent) => { updateModule({ content_static: e.detail.value.content_static }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+          )
+        : ''}
+      ${qrModule.content_mode === 'unified' || qrModule.unified_template_mode
+        ? html`
+            <div>
+              <div
+                style="font-size: 13px; color: var(--secondary-text-color); margin: 8px 0 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;"
+              >
+                <span
+                  >${localize(
+                    'editor.qr_code.unified_template_desc',
+                    lang,
+                    'JSON with "qr_content" (URL or text to encode), or a plain Jinja string result.'
+                  )}</span
+                >
+                <button
+                  type="button"
+                  class="help-btn"
+                  style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:var(--text-primary-color, #fff);cursor:pointer;border-radius:50%;line-height:0;"
+                  title="${localize('editor.qr_code.unified_cheatsheet', lang, 'Template cheatsheet')}"
+                  @click=${(e: Event) => {
+                    (e.currentTarget as HTMLElement).dispatchEvent(
+                      new CustomEvent('uc-open-template-cheatsheet', {
+                        bubbles: true,
+                        composed: true,
+                        detail: { module: 'qr' },
+                      })
+                    );
+                  }}
+                >
+                  <ha-icon
+                    icon="mdi:help-circle"
+                    style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"
+                  ></ha-icon>
+                </button>
+              </div>
+            <div
+              style="margin-top: 12px;"
+              @mousedown=${(e: Event) => {
+                const t = e.target as HTMLElement;
+                if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
+              }}
+              @dragstart=${(e: Event) => e.stopPropagation()}
+            >
+              <ultra-template-editor
+                .hass=${hass}
+                .value=${qrModule.unified_template || ''}
+                .placeholder=${'{\n  "qr_content": "{{ states(\'sensor.door_lock\') }}"\n}'}
+                .minHeight=${120}
+                .maxHeight=${360}
+                @value-changed=${(e: CustomEvent) => {
+                  updateModule({ unified_template: e.detail.value });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              ></ultra-template-editor>
+              ${this.renderTemplateKeyWarning(
+                qrModule.unified_template,
+                QR_TEMPLATE_KEYS,
+                lang
+              )}
+            </div>
+            </div>
+          `
+        : ''}
+      ${qrModule.content_mode === 'entity'
+        ? html`
+            ${this.renderEntityPickerWithVariables(
+              hass, config, 'content_entity', qrModule.content_entity || '',
+              (value: string) => { updateModule({ content_entity: value }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+              undefined,
+              localize('editor.qr_code.entity_picker', lang, 'Entity')
+            )}
+            <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+              ${localize('editor.qr_code.entity_picker_desc', lang, 'Select an entity whose state (or attribute) will be encoded into the QR code.')}
+            </div>
+            ${this.renderFieldSection(
+              localize('editor.qr_code.attribute', lang, 'Attribute (optional)'),
+              localize('editor.qr_code.attribute_desc', lang, 'Leave empty to use state; or e.g. friendly_name'),
+              hass,
+              { content_attribute: qrModule.content_attribute || '' },
+              [this.textField('content_attribute')],
+              (e: CustomEvent) => { updateModule({ content_attribute: e.detail.value.content_attribute || undefined }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+            )}
+          `
+        : ''}
+    `;
+  }
+
+  /** Fields for the structured content types; each writes into qr_data. */
+  private _renderContentTypeFields(
+    qrModule: QrCodeModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void,
+    lang: string
+  ): TemplateResult {
+    const d: QrContentData = qrModule.qr_data || {};
+    const type = qrModule.content_type;
+    const upd = (patch: Partial<QrContentData>) => {
+      updateModule({ qr_data: { ...(qrModule.qr_data || {}), ...patch } });
+      setTimeout(() => this.triggerPreviewUpdate(), 50);
+    };
+    const t = (key: string, fallback: string) => localize(`editor.qr_code.${key}`, lang, fallback);
+    const text = (
+      key: keyof QrContentData,
+      label: string,
+      desc: string = '',
+      multiline = false
+    ): TemplateResult =>
+      this.renderFieldSection(
+        label,
+        desc,
+        hass,
+        { [key]: (d[key] as string | undefined) || '' },
+        [this.textField(key, multiline)],
+        (e: CustomEvent) => upd({ [key]: e.detail.value[key] || undefined })
+      );
+    const bool = (key: keyof QrContentData, label: string, desc: string = ''): TemplateResult =>
+      this.renderFieldSection(
+        label,
+        desc,
+        hass,
+        { [key]: !!d[key] },
+        [this.booleanField(key)],
+        (e: CustomEvent) => upd({ [key]: !!e.detail.value[key] })
+      );
+    const select = (
+      key: keyof QrContentData,
+      label: string,
+      value: string,
+      options: Array<{ value: string; label: string }>
+    ): TemplateResult =>
+      this.renderFieldSection(
+        label,
+        '',
+        hass,
+        { [key]: value },
+        [this.selectField(key, options)],
+        (e: CustomEvent) => upd({ [key]: e.detail.value[key] })
+      );
+    const entity = (
+      key: keyof QrContentData,
+      label: string,
+      domains: string[] | undefined,
+      desc: string
+    ): TemplateResult => html`
+      ${this.renderEntityPickerWithVariables(
+        hass,
+        config,
+        key,
+        (d[key] as string | undefined) || '',
+        (value: string) => upd({ [key]: value || undefined }),
+        domains,
+        label
+      )}
+      <div
+        class="field-description"
+        style="font-size: 13px !important; font-weight: 400 !important; margin: 4px 0 16px; color: var(--secondary-text-color);"
+      >
+        ${desc}
+      </div>
+    `;
+    const provider = select('maps_provider', t('maps_provider', 'Maps app'), d.maps_provider || 'google', [
+      { value: 'google', label: 'Google Maps' },
+      { value: 'apple', label: 'Apple Maps' },
+      { value: 'osm', label: 'OpenStreetMap' },
+    ]);
+    const placeEntityTypes = ['person', 'device_tracker', 'zone', 'sensor'];
+    const placeEntityDesc = t(
+      'place_entity_desc',
+      'Optional. Uses the entity location (person, tracker, zone). Leave empty to use the text below.'
+    );
+
+    let fields: TemplateResult;
+    switch (type) {
+      case 'wifi':
+        fields = html`
+          ${text('wifi_ssid', t('wifi_ssid', 'Network name (SSID)'))}
+          ${select('wifi_security', t('wifi_security', 'Security'), d.wifi_security || 'WPA', [
+            { value: 'WPA', label: 'WPA / WPA2 / WPA3' },
+            { value: 'WEP', label: 'WEP' },
+            { value: 'nopass', label: t('wifi_open', 'None (open network)') },
+          ])}
+          ${d.wifi_security !== 'nopass' ? text('wifi_password', t('wifi_password', 'Password')) : ''}
+          ${bool('wifi_hidden', t('wifi_hidden', 'Hidden network'))}
+          <div class="field-description" style="font-size: 13px; color: var(--warning-color, #ff9800); margin-bottom: 16px;">
+            ${t(
+              'wifi_password_note',
+              'The password is stored in the card config, so anyone who can edit the dashboard can read it.'
+            )}
+          </div>
+        `;
+        break;
+      case 'location':
+        fields = html`
+          ${entity('location_entity', t('location_entity', 'Location from entity'), placeEntityTypes, placeEntityDesc)}
+          ${text(
+            'location_query',
+            t('location_query', 'Address or coordinates'),
+            t('location_query_desc', 'For example "Alexanderplatz, Berlin" or "52.52,13.405".')
+          )}
+          ${provider}
+          ${this.renderFieldSection(
+            t('map_zoom', 'Zoom (optional)'),
+            t('map_zoom_desc', '1 (world) to 21 (street). Works with coordinates.'),
+            hass,
+            { map_zoom: d.map_zoom ?? '' },
+            [this.numberField('map_zoom', 1, 21, 1)],
+            (e: CustomEvent) => {
+              const z = Number(e.detail.value.map_zoom);
+              upd({ map_zoom: Number.isFinite(z) && z > 0 ? z : undefined });
+            }
+          )}
+        `;
+        break;
+      case 'route':
+        fields = html`
+          ${entity('route_origin_entity', t('route_origin_entity', 'Start from entity'), placeEntityTypes, placeEntityDesc)}
+          ${text(
+            'route_origin',
+            t('route_origin', 'Start address'),
+            t('route_origin_desc', 'Leave empty to start where the phone is.')
+          )}
+          ${entity(
+            'route_destination_entity',
+            t('route_destination_entity', 'Destination from entity'),
+            placeEntityTypes,
+            placeEntityDesc
+          )}
+          ${text('route_destination', t('route_destination', 'Destination address'))}
+          ${select('travel_mode', t('travel_mode', 'Travel mode'), d.travel_mode || 'driving', [
+            { value: 'driving', label: t('travel_driving', 'Driving') },
+            { value: 'walking', label: t('travel_walking', 'Walking') },
+            { value: 'bicycling', label: t('travel_bicycling', 'Cycling') },
+            { value: 'transit', label: t('travel_transit', 'Public transport') },
+          ])}
+          ${provider}
+          ${(d.maps_provider || 'google') === 'google'
+            ? bool('start_navigation', t('start_navigation', 'Start navigation straight away'))
+            : ''}
+        `;
+        break;
+      case 'whatsapp':
+        fields = html`
+          ${text(
+            'phone',
+            t('phone', 'Phone number'),
+            t('phone_intl_desc', 'With country code, for example +49 151 2345678.')
+          )}
+          ${text('message', t('message', 'Message (optional)'), '', true)}
+        `;
+        break;
+      case 'phone':
+        fields = html`${text('phone', t('phone', 'Phone number'))}`;
+        break;
+      case 'sms':
+        fields = html`
+          ${text('phone', t('phone', 'Phone number'))}
+          ${text('message', t('message', 'Message (optional)'), '', true)}
+        `;
+        break;
+      case 'email':
+        fields = html`
+          ${text('email', t('email', 'Email address'))}
+          ${text('email_subject', t('email_subject', 'Subject (optional)'))}
+          ${text('message', t('message', 'Message (optional)'), '', true)}
+        `;
+        break;
+      case 'contact':
+        fields = html`
+          ${entity(
+            'contact_entity',
+            t('contact_entity', 'Name from person'),
+            ['person'],
+            t('contact_entity_desc', 'Optional. Uses the person name. Fill in the fields below for the rest.')
+          )}
+          ${text('contact_name', t('contact_name', 'Name'))}
+          ${text('contact_phone', t('contact_phone', 'Phone'))}
+          ${text('contact_email', t('contact_email', 'Email'))}
+          ${text('contact_org', t('contact_org', 'Company (optional)'))}
+          ${text('contact_address', t('contact_address', 'Address (optional)'))}
+          ${text('contact_url', t('contact_url', 'Website (optional)'))}
+        `;
+        break;
+      case 'spotify':
+        fields = html`
+          ${entity(
+            'spotify_entity',
+            t('spotify_entity', 'Media player'),
+            ['media_player'],
+            t(
+              'spotify_entity_desc',
+              'Encodes what this Spotify player is playing right now. Needs the Spotify integration.'
+            )
+          )}
+          ${text(
+            'spotify_url',
+            t('spotify_url', 'Spotify link'),
+            t('spotify_url_desc', 'Used when no player is set or nothing is playing. A share link or spotify: URI.')
+          )}
+        `;
+        break;
+      case 'social':
+        fields = html`
+          ${select('social_platform', t('social_platform', 'Platform'), d.social_platform || 'instagram', [
+            { value: 'instagram', label: 'Instagram' },
+            { value: 'facebook', label: 'Facebook' },
+            { value: 'x', label: 'X' },
+            { value: 'threads', label: 'Threads' },
+            { value: 'tiktok', label: 'TikTok' },
+            { value: 'youtube', label: 'YouTube' },
+            { value: 'linkedin', label: 'LinkedIn' },
+            { value: 'github', label: 'GitHub' },
+          ])}
+          ${text(
+            'social_username',
+            t('social_username', 'Username'),
+            t('social_username_desc', 'Your handle, or paste the full profile link.')
+          )}
+        `;
+        break;
+      default:
+        fields = html``;
+    }
+
+    const preview = buildQrContent(type, d, hass?.states as unknown as QrStateMap | undefined);
+    return html`
+      ${fields}
+      <div
+        class="field-description"
+        style="font-size: 12px; color: var(--secondary-text-color); margin: 4px 0 24px; word-break: break-all;"
+      >
+        ${preview
+          ? html`${t('encoded_preview', 'Encodes:')} <code>${preview}</code>`
+          : t('fill_fields', 'Fill in the fields above to make the code.')}
+      </div>
+    `;
+  }
+
   private _resolveContent(module: QrCodeModule, hass: HomeAssistant, config?: UltraCardConfig): string {
+    if (module.content_type && module.content_type !== 'text') {
+      return buildQrContent(
+        module.content_type,
+        module.qr_data,
+        hass?.states as unknown as QrStateMap | undefined
+      );
+    }
     const legacyTemplate =
       (module as any).content_mode === 'template' && (module as any).content_template;
     const unifiedOn =
@@ -825,7 +1148,9 @@ export class UltraQrCodeModule extends BaseUltraModule {
     const qrModule = module as QrCodeModule;
     const legacyTpl =
       (qrModule as any).content_mode === 'template' && (qrModule as any).content_template;
+    const isStructured = !!qrModule.content_type && qrModule.content_type !== 'text';
     const unifiedPending =
+      !isStructured &&
       (qrModule.unified_template_mode ||
         qrModule.content_mode === 'unified' ||
         !!legacyTpl) &&
@@ -1032,12 +1357,13 @@ export class UltraQrCodeModule extends BaseUltraModule {
     const base = super.validate(module);
     const qr = module as QrCodeModule;
     const errors = [...base.errors];
-    const mode = qr.content_mode || 'static';
+    const mode =
+      qr.content_type && qr.content_type !== 'text' ? 'structured' : qr.content_mode || 'static';
     if (mode === 'static' && !(qr.content_static || '').trim()) {
       errors.push('Static content is required when source is Static');
     }
     if (
-      (mode === 'unified' || qr.unified_template_mode) &&
+      (mode === 'unified' || (mode !== 'structured' && qr.unified_template_mode)) &&
       !(String(qr.unified_template || '').trim())
     ) {
       errors.push('Unified template is required when source is Unified template');

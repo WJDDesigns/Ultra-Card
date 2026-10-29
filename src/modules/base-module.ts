@@ -62,6 +62,13 @@ export interface UltraModule {
   closePortalsForModule?(moduleId: string): void;
 
   /**
+   * Optional: true when the module has nothing to show right now (e.g. a battery
+   * list with no matches). With the module's `hide_when_empty` option on, the card
+   * hides it on the dashboard and collapses a column, row or the whole card left empty.
+   */
+  isEmpty?(module: CardModule, hass: HomeAssistant): boolean;
+
+  /**
    * Optional: fetch the module's settings UI ahead of time. Modules that ship in
    * the core bundle keep their settings tabs in a separate chunk (see
    * uc-lazy-settings.ts); the editor calls this when it opens so the first
@@ -685,6 +692,7 @@ export abstract class BaseUltraModule implements UltraModule {
   // Schema shortcuts for common field types
   protected entityField = UcFormUtils.entity;
   protected textField = UcFormUtils.text;
+  protected conditionValueField = UcFormUtils.conditionValue;
   protected selectField = UcFormUtils.select;
   protected iconField = UcFormUtils.icon;
   protected booleanField = UcFormUtils.boolean;
