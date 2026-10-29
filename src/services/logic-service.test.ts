@@ -203,3 +203,62 @@ describe('LogicService $variable condition entities', () => {
     logicService.setCardConfig(undefined);
   });
 });
+
+describe('LogicService evaluateCardVisibility', () => {
+  const hass = (state: string, userId = 'alice'): HomeAssistant =>
+    ({
+      user: { id: userId, name: userId },
+      states: { 'input_boolean.guest_mode': { entity_id: 'input_boolean.guest_mode', state } },
+    }) as unknown as HomeAssistant;
+
+  const guestOn = {
+    id: 'c1',
+    type: 'entity_state' as const,
+    entity: 'input_boolean.guest_mode',
+    operator: '=' as const,
+    value: 'on',
+  };
+
+  beforeEach(() => {
+    logicService.cleanup();
+  });
+
+  it('shows the card when there is no config or no card logic', () => {
+    logicService.setHass(hass('off'));
+    expect(logicService.evaluateCardVisibility(undefined)).toBe(true);
+    expect(logicService.evaluateCardVisibility({ type: 'custom:ultra-card' } as any)).toBe(true);
+  });
+
+  it('applies the card display conditions', () => {
+    const config = {
+      type: 'custom:ultra-card',
+      display_mode: 'every',
+      display_conditions: [guestOn],
+    } as any;
+    logicService.setHass(hass('off'));
+    expect(logicService.evaluateCardVisibility(config)).toBe(false);
+    logicService.setHass(hass('on'));
+    expect(logicService.evaluateCardVisibility(config)).toBe(true);
+  });
+
+  it('ignores conditions while display mode is always', () => {
+    logicService.setHass(hass('off'));
+    expect(
+      logicService.evaluateCardVisibility({
+        type: 'custom:ultra-card',
+        display_mode: 'always',
+        display_conditions: [guestOn],
+      } as any)
+    ).toBe(true);
+  });
+
+  it('still applies the per-user filter', () => {
+    logicService.setHass(hass('on', 'bob'));
+    expect(
+      logicService.evaluateCardVisibility({
+        type: 'custom:ultra-card',
+        user_visibility: { mode: 'show', users: ['alice'] },
+      } as any)
+    ).toBe(false);
+  });
+});

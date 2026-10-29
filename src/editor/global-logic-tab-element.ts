@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import type { HomeAssistant } from '../ha/types';
 import { FormUtils } from '../utils/form-utils';
 import { UcFormUtils } from '../utils/uc-form-utils';
-import type { CardModule, CardColumn, CardRow, DeviceBreakpoint, UserVisibility } from '../types';
+import type { DeviceBreakpoint, UserVisibility } from '../types';
 import { localize } from '../localize/localize';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
@@ -28,7 +28,7 @@ function conditionEntityHint(
     ${localize('editor.layout_logic.condition_fields.variable', lang, 'Variable')} <code>${raw}</code>
   </div>`;
 }
-import type { GlobalLogicArgs, GlobalLogicTarget } from '../tabs/global-logic-tab';
+import type { GlobalLogicArgs, GlobalLogicItem, GlobalLogicTarget } from '../tabs/global-logic-tab';
 
 /** Unified-template output keys row/column visibility templates read. */
 const LAYOUT_VISIBILITY_TEMPLATE_KEYS = ['visible', 'active', 'is_active'] as const;
@@ -65,7 +65,7 @@ declare global {
   }
 }
 
-export function renderGlobalLogicTab<M extends CardModule | CardRow | CardColumn>(
+export function renderGlobalLogicTab<M extends GlobalLogicItem>(
   module: M,
   hass: HomeAssistant,
   updateModule: (updates: Partial<M>) => void,

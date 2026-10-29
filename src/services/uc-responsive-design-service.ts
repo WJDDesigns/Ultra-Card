@@ -380,9 +380,7 @@ export class ResponsiveDesignService {
     const cssRules: string[] = [];
     // In the card editor the element stays visible but faded, so hiding a row on the device you
     // are editing on doesn't leave an empty preview with nothing to click.
-    const hide = inEditor
-      ? 'opacity: 0.35 !important; outline: 1px dashed var(--secondary-text-color); outline-offset: -1px;'
-      : 'display: none !important;'
+    const hide = inEditor ? HIDDEN_IN_EDITOR_STYLE : 'display: none !important;'
 
     if (hiddenOnDevices.includes('desktop')) {
       cssRules.push(
@@ -612,4 +610,8 @@ export class ResponsiveDesignService {
 }
 
 // Export singleton instance
+/** How a hidden element looks while editing: visible but faded, so it can still be clicked. */
+export const HIDDEN_IN_EDITOR_STYLE =
+  'opacity: 0.35 !important; outline: 1px dashed var(--secondary-text-color); outline-offset: -1px;';
+
 export const responsiveDesignService = ResponsiveDesignService.getInstance();

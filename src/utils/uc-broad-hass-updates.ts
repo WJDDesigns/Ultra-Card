@@ -64,7 +64,7 @@ export function moduleRequiresBroadHassUpdates(module: CardModule | null | undef
 }
 
 /** A condition that changes with the clock rather than with an entity. */
-function hasTimeCondition(conditions: unknown): boolean {
+export function hasTimeCondition(conditions: unknown): boolean {
   if (!Array.isArray(conditions)) return false;
   return conditions.some(c => c && typeof c === 'object' && (c as { type?: unknown }).type === 'time');
 }
