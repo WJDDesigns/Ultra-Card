@@ -4273,6 +4273,8 @@ export class UltraIconModule extends BaseUltraModule {
   private _injectKeyframesForAllSplitPreviewIcons(): void {
     const selector = 'ha-icon[data-animation-debug]:not([data-animation-debug="none"])';
     const collectAndInject = () => {
+      // The retry can fire after the page (or a test's DOM) is gone
+      if (typeof document === 'undefined') return 0;
       const uniqueIcons = new Set<HTMLElement>();
       const roots: Array<Document | ShadowRoot> = [document];
       const renderRoot = (this as any).renderRoot as ShadowRoot | undefined;

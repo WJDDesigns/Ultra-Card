@@ -1,8 +1,8 @@
 # Ultra Card module gallery
 
-_Generated from v3.14.0-beta4 on 2026-10-12 — do not edit by hand._
+_Generated from v3.14.3-beta3 on 2026-10-28 — do not edit by hand._
 
-**104 modules** · 71 free · 33 PRO
+**105 modules** · 72 free · 33 PRO
 
 ## content
 
@@ -20,6 +20,7 @@ _Generated from v3.14.0-beta4 on 2026-10-12 — do not edit by hand._
 <tr><td width="220"><img src="previews/markdown.png" width="200" alt="Markdown"></td><td><b>Markdown</b><br>Display rich markdown content</td></tr>
 <tr><td width="220"><img src="previews/native_card.png" width="200" alt="Native HA Card"></td><td><b>Native HA Card</b><br>Native Home Assistant card</td></tr>
 <tr><td width="220"><img src="previews/qr_code.png" width="200" alt="QR Code"></td><td><b>QR Code</b> · <sub>PRO</sub><br>Generate QR codes from URL, text, template, or entity state</td></tr>
+<tr><td width="220"><img src="previews/rss_feed.png" width="200" alt="RSS Feed"></td><td><b>RSS Feed</b><br>Latest headlines from RSS, Atom or JSON feeds, merged newest first</td></tr>
 <tr><td width="220"><img src="previews/separator.png" width="200" alt="Separator"></td><td><b>Separator</b><br>Visual dividers and spacing</td></tr>
 <tr><td width="220"><img src="previews/text.png" width="200" alt="Text"></td><td><b>Text</b><br>Display custom text content</td></tr>
 </table>
@@ -47,7 +48,6 @@ _Generated from v3.14.0-beta4 on 2026-10-12 — do not edit by hand._
 <tr><td width="220"><img src="previews/laundry_tracker.png" width="200" alt="Laundry Tracker"></td><td><b>Laundry Tracker</b> · <sub>PRO</sub><br>Detects wash and dry cycles from power sensors and nags about forgotten loads</td></tr>
 <tr><td width="220"><img src="previews/people.png" width="200" alt="People"></td><td><b>People</b><br>Display person information with customizable data items</td></tr>
 <tr><td width="220"><img src="previews/plant_care.png" width="200" alt="Plant Care"></td><td><b>Plant Care</b> · <sub>PRO</sub><br>Watering and fertilizing schedules with optional moisture sensors</td></tr>
-<tr><td width="220"><img src="previews/rain_radar.png" width="200" alt="Rain Radar"></td><td><b>Rain Radar</b><br>Animated rain radar over a map, centered on your home, with a play and scrub timeline</td></tr>
 <tr><td width="220"><img src="previews/solar_analytics.png" width="200" alt="Solar Analytics"></td><td><b>Solar Analytics</b> · <sub>PRO</sub><br>Live solar power, grid balance, battery state, and daily energy totals in one glanceable widget</td></tr>
 <tr><td width="220"><img src="previews/sports_score.png" width="200" alt="Sports Score"></td><td><b>Sports Score</b> · <sub>PRO</sub><br>Display live sports scores, upcoming games, and team info for your favorite teams</td></tr>
 <tr><td width="220"><img src="previews/status_summary.png" width="200" alt="Status Summary"></td><td><b>Status Summary</b><br>Display entity activity with timestamps and customizable color coding</td></tr>
@@ -59,6 +59,7 @@ _Generated from v3.14.0-beta4 on 2026-10-12 — do not edit by hand._
 <tr><td width="220"><img src="previews/vampire_power.png" width="200" alt="Vampire Power"></td><td><b>Vampire Power</b> · <sub>PRO</sub><br>Finds always-on standby loads and ranks them by what they cost you</td></tr>
 <tr><td width="220"><img src="previews/vehicle_maintenance.png" width="200" alt="Vehicle Maintenance"></td><td><b>Vehicle Maintenance</b> · <sub>PRO</sub><br>Odometer and time based service intervals with a cost-tracked service log</td></tr>
 <tr><td width="220"><img src="previews/weather.png" width="200" alt="Weather"></td><td><b>Weather</b><br>Current conditions and a simple forecast with clean static icons</td></tr>
+<tr><td width="220"><img src="previews/rain_radar.png" width="200" alt="Weather Radar"></td><td><b>Weather Radar</b><br>Animated rain radar over a map, centered on your home, with a play and scrub timeline and optional weather layers</td></tr>
 </table>
 
 ## input

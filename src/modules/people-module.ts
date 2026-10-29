@@ -12,6 +12,7 @@ import {
 import { formatEntityState } from '../utils/number-format';
 import { localize } from '../localize/localize';
 import { getImageUrl } from '../utils/image-upload';
+import { entityTurnOnOffService } from '../utils/uc-entity-toggle';
 import '../components/ultra-color-picker';
 
 /**
@@ -2301,7 +2302,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     // For toggle items, render a switch
     if (item.type === 'toggle' && item.entity) {
       const toggleState = hass.states[item.entity];
-      const isOn = toggleState?.state === 'on';
+      const isOn = ['on', 'open', 'unlocked'].includes(toggleState?.state ?? '');
 
       return html`
         <div class="people-data-row">
@@ -2318,8 +2319,9 @@ export class UltraPeopleModule extends BaseUltraModule {
             .checked=${isOn}
             @change=${(e: Event) => {
               e.stopPropagation();
-              const service = isOn ? 'turn_off' : 'turn_on';
-              hass.callService('homeassistant', service, { entity_id: item.entity });
+              const entityId = item.entity as string;
+              const { domain, service } = entityTurnOnOffService(entityId, !isOn);
+              hass.callService(domain, service, { entity_id: entityId });
             }}
           ></ha-switch>
         </div>

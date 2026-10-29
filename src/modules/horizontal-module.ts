@@ -2,6 +2,7 @@ import { TemplateResult, html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { wrapChildModuleAnimation } from './layout-container-utils';
 import { createLazySettings } from './uc-lazy-settings';
 import { CardModule, UltraCardConfig } from '../types';
 import { getImageUrl } from '../utils/image-upload';
@@ -449,6 +450,14 @@ export class UltraHorizontalModule extends BaseUltraModule {
                           ? this.getChildPreferredWidth(childModule)
                           : null;
 
+                      const fluidMediaFlex =
+                        !layoutShouldGrow &&
+                        !childShouldGrow &&
+                        !clusterOverlappingChildren &&
+                        !childPreferredWidth
+                          ? this.getFluidMediaFlex(childModule)
+                          : null;
+
                       const flexSegments = [
                         layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
                         childShouldGrow
@@ -460,6 +469,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                         !layoutShouldGrow && !childShouldGrow && childPreferredWidth
                           ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
                           : '',
+                        fluidMediaFlex || '',
                       ].filter(Boolean);
 
                       const baseStyles = `
@@ -672,50 +682,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
         `;
       }
 
-      // Apply state-based animation wrapper for child modules when configured
-      const m: any = moduleToRender as any;
-      const animationType = m.animation_type || m.design?.animation_type;
-
-      if (animationType && animationType !== 'none') {
-        const animationDuration = m.animation_duration || m.design?.animation_duration || '2s';
-        const animationDelay = m.animation_delay || m.design?.animation_delay || '0s';
-        const animationTiming = m.animation_timing || m.design?.animation_timing || 'ease';
-
-        // Evaluate entity condition if provided; otherwise always animate
-        const entityId = m.animation_entity || m.design?.animation_entity;
-        const triggerType = m.animation_trigger_type || m.design?.animation_trigger_type || 'state';
-        const attribute = m.animation_attribute || m.design?.animation_attribute;
-        const targetState = m.animation_state || m.design?.animation_state;
-
-        let shouldAnimate = false;
-        if (!entityId) {
-          shouldAnimate = true;
-        } else if (targetState && hass && hass.states[entityId]) {
-          const entity = hass.states[entityId];
-          if (triggerType === 'attribute' && attribute) {
-            shouldAnimate = String(entity.attributes[attribute]) === targetState;
-          } else {
-            shouldAnimate = entity.state === targetState;
-          }
-        }
-
-        if (shouldAnimate) {
-          return html`
-            <div
-              class="module-animation-wrapper animation-${animationType}"
-              style="
-                --animation-duration: ${animationDuration};
-                --animation-delay: ${animationDelay};
-                --animation-timing: ${animationTiming};
-              "
-            >
-              ${moduleContent}
-            </div>
-          `;
-        }
-      }
-
-      return moduleContent;
+      return wrapChildModuleAnimation(moduleToRender, hass, moduleContent);
     }
 
     // Fallback for unknown module types
@@ -990,6 +957,41 @@ export class UltraHorizontalModule extends BaseUltraModule {
     }
 
     return false;
+  }
+
+  /**
+   * Cameras, maps, radar, camera grids and stacks size themselves to their parent and have no
+   * content width of their own (the media is absolutely positioned inside an aspect-ratio box).
+   * A flex item sized by its content therefore collapses to 0px and the module vanishes. Give
+   * them a real basis to grow from, so they share the row and wrap onto their own line when it
+   * gets too narrow. A fixed design width (e.g. 320px) already gives them a size, so leave
+   * those alone.
+   */
+  private getFluidMediaFlex(childModule: CardModule): string | null {
+    const child = childModule as any;
+    const fluidTypes = ['camera', 'camera_grid', 'map', 'rain_radar', 'stack'];
+    if (!fluidTypes.includes(childModule.type)) {
+      return null;
+    }
+
+    const designWidth = child?.design?.width;
+    const hasWidth =
+      designWidth !== undefined && designWidth !== null && String(designWidth).trim() !== '';
+    // Without a design width the camera falls back to its own pixel width.
+    if (!hasWidth && childModule.type === 'camera') {
+      return null;
+    }
+    if (hasWidth && /^\s*[\d.]+\s*(px|em|rem|vw|vh)\s*$/i.test(String(designWidth))) {
+      return null;
+    }
+
+    const maxWidth = child?.design?.max_width;
+    const maxWidthCss =
+      maxWidth !== undefined && maxWidth !== null && String(maxWidth).trim() !== ''
+        ? `max-width: min(${/^[\d.]+$/.test(String(maxWidth).trim()) ? `${maxWidth}px` : maxWidth}, 100%);`
+        : 'max-width: 100%;';
+
+    return `flex: 1 1 240px; min-width: 0; ${maxWidthCss}`;
   }
 
   private getChildPreferredWidth(childModule: CardModule): string | null {

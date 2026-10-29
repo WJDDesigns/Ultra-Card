@@ -53,7 +53,67 @@ describe('Rain Radar module', () => {
     const wrap = el.shadowRoot!.querySelector('.wrap') as HTMLElement;
     expect(wrap.style.height).toBe('260px');
     expect(el.shadowRoot!.textContent).toContain('Rain near home');
+    expect(el.shadowRoot!.querySelector('button.fullscreen')).toBeTruthy();
     host.remove();
+  });
+
+  it('asks for an OpenWeather key only when OpenWeather is picked', () => {
+    const handler = getModuleRegistry().getModule(TYPE)!;
+    const base = handler.createDefault('rr-5') as RainRadarModule;
+    const rv = renderToHost(handler.renderGeneralTab(base, homeHass, CONFIG, () => {}));
+    expect(rv.textContent).not.toContain('OpenWeather API key');
+    rv.remove();
+    const owm = renderToHost(
+      handler.renderGeneralTab({ ...base, radar_source: 'openweather' }, homeHass, CONFIG, () => {})
+    );
+    expect(owm.textContent).toContain('OpenWeather API key');
+    expect(owm.textContent).not.toContain('Snow colors');
+    owm.remove();
+    expect(rv.textContent).not.toContain('Rainbow.ai API key');
+    const rb = renderToHost(
+      handler.renderGeneralTab({ ...base, radar_source: 'rainbow' }, homeHass, CONFIG, () => {})
+    );
+    expect(rb.textContent).toContain('Rainbow.ai API key');
+    expect(rb.textContent).not.toContain('OpenWeather API key');
+    expect(rb.textContent).not.toContain('Snow colors');
+    rb.remove();
+    const g = renderToHost(
+      handler.renderGeneralTab({ ...base, map_provider: 'google' }, homeHass, CONFIG, () => {})
+    );
+    expect(g.textContent).toContain('Map API key');
+    g.remove();
+  });
+
+  it('shows weather layer options only once a layer is picked', () => {
+    const handler = getModuleRegistry().getModule(TYPE)!;
+    const base = handler.createDefault('rr-6') as RainRadarModule;
+    expect(base.weather_layer).toBe('none');
+    const off = renderToHost(handler.renderGeneralTab(base, homeHass, CONFIG, () => {}));
+    expect(off.textContent).toContain('Weather layer');
+    expect(off.textContent).not.toContain('Weather model');
+    off.remove();
+    const temp = renderToHost(
+      handler.renderGeneralTab(
+        { ...base, weather_layer: 'temperature' },
+        homeHass,
+        CONFIG,
+        () => {}
+      )
+    );
+    expect(temp.textContent).toContain('Weather layer opacity');
+    expect(temp.textContent).toContain('Weather model');
+    temp.remove();
+    const aq = renderToHost(
+      handler.renderGeneralTab(
+        { ...base, weather_layer: 'air_quality' },
+        homeHass,
+        CONFIG,
+        () => {}
+      )
+    );
+    expect(aq.textContent).toContain('Weather layer opacity');
+    expect(aq.textContent).not.toContain('Weather model');
+    aq.remove();
   });
 
   it('shows coordinate fields only in coordinates mode', () => {

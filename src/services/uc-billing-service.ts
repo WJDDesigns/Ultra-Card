@@ -65,7 +65,33 @@ export function formatBillingDate(raw?: string): string {
  * Throws when not authenticated or when the proxy rejects the request
  * (e.g. non-admin HA users); callers should hide the billing UI on error.
  */
+/** Billing rarely changes; reuse one result across Account tab visits for this long. */
+const BILLING_CACHE_TTL = 10 * 60 * 1000;
+let billingCache: { at: number; value: BillingSummary } | null = null;
+let billingInflight: Promise<BillingSummary> | null = null;
+
 export async function fetchBillingSummary(): Promise<BillingSummary> {
+  if (billingCache && Date.now() - billingCache.at < BILLING_CACHE_TTL) {
+    return billingCache.value;
+  }
+  if (billingInflight) return billingInflight;
+  billingInflight = loadBillingSummary()
+    .then(value => {
+      billingCache = { at: Date.now(), value };
+      return value;
+    })
+    .finally(() => {
+      billingInflight = null;
+    });
+  return billingInflight;
+}
+
+/** Drop the cached billing summary (e.g. after sign-in/out). */
+export function clearBillingCache(): void {
+  billingCache = null;
+}
+
+async function loadBillingSummary(): Promise<BillingSummary> {
   const [subRes, invRes] = await Promise.all([
     ucCloudAuthService.authenticatedFetch(`${API_BASE}/subscription`),
     ucCloudAuthService.authenticatedFetch(`${API_BASE}/subscription/invoices`),

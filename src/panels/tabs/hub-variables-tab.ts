@@ -9,6 +9,9 @@ import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-ser
 import { dispatchHubNavigate } from '../hub-navigation';
 import { formatRelativeTime } from '../hub-format';
 import { copyTextToClipboard } from '../../utils/uc-clipboard';
+import '../../components/uc-entity-search';
+
+const NO_GROUP = '\u0000none';
 
 @customElement('hub-variables-tab')
 export class HubVariablesTab extends LitElement {
@@ -22,11 +25,15 @@ export class HubVariablesTab extends LitElement {
   @state() private _newEntity = '';
   @state() private _newValueType: 'entity_id' | 'state' | 'attribute' = 'state';
   @state() private _newAttribute = '';
+  @state() private _newGroup = '';
+  /** '' = all groups, NO_GROUP = only variables without a group. */
+  @state() private _groupFilter = '';
   @state() private _editingId: string | null = null;
   @state() private _editName = '';
   @state() private _editEntity = '';
   @state() private _editValueType: 'entity_id' | 'state' | 'attribute' = 'state';
   @state() private _editAttribute = '';
+  @state() private _editGroup = '';
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _syncStatus: SyncStatus | null = null;
   @state() private _syncing = false;
@@ -253,6 +260,63 @@ export class HubVariablesTab extends LitElement {
       }
 
       /* Variables list */
+      uc-entity-search {
+        --uc-entity-search-bg: var(--primary-background-color);
+      }
+
+      .group-filter {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+
+      .group-filter > ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--secondary-text-color);
+        margin-right: 2px;
+      }
+
+      .group-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+        background: transparent;
+        color: var(--primary-text-color);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .group-chip.active {
+        border-color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.14);
+      }
+
+      .group-chip-count {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+
+      .group-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: none;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+        color: var(--primary-text-color);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        --mdc-icon-size: 14px;
+      }
+
       .vars-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -281,6 +345,8 @@ export class HubVariablesTab extends LitElement {
       }
 
       .var-card.editing {
+        overflow: visible;
+        transform: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
       }
@@ -623,7 +689,9 @@ export class HubVariablesTab extends LitElement {
       entity,
       this._newValueType,
       true,
-      this._newValueType === 'attribute' ? this._newAttribute : undefined
+      this._newValueType === 'attribute' ? this._newAttribute : undefined,
+      [],
+      this._newGroup
     );
 
     if (result) {
@@ -631,6 +699,7 @@ export class HubVariablesTab extends LitElement {
       this._newEntity = '';
       this._newValueType = 'state';
       this._newAttribute = '';
+      this._newGroup = '';
       this._showAddForm = false;
       this._showToast(`Added variable $${result.name}`);
     } else {
@@ -649,6 +718,7 @@ export class HubVariablesTab extends LitElement {
     this._editEntity = v.entity;
     this._editValueType = v.value_type;
     this._editAttribute = v.attribute_name || '';
+    this._editGroup = v.group || '';
   }
 
   private _saveEdit(): void {
@@ -658,6 +728,7 @@ export class HubVariablesTab extends LitElement {
       entity: this._editEntity,
       value_type: this._editValueType,
       attribute_name: this._editValueType === 'attribute' ? this._editAttribute : undefined,
+      group: this._editGroup,
     });
     if (ok) {
       this._editingId = null;
@@ -697,15 +768,65 @@ export class HubVariablesTab extends LitElement {
     }
   }
 
+  private _getGroups(): string[] {
+    const groups = new Set<string>();
+    for (const v of this._variables) if (v.group) groups.add(v.group);
+    return [...groups].sort((a, b) => a.localeCompare(b));
+  }
+
+  /** A filter for a group that no longer exists would hide everything, so it falls back to all. */
+  private _effectiveGroupFilter(): string {
+    const f = this._groupFilter;
+    if (!f) return '';
+    if (f === NO_GROUP) return this._variables.some(v => !v.group) ? f : '';
+    return this._variables.some(v => v.group === f) ? f : '';
+  }
+
   private _getFilteredVariables(): CustomVariable[] {
-    if (!this._search.trim()) return this._variables;
+    let list = this._variables;
+    const filter = this._effectiveGroupFilter();
+    if (filter === NO_GROUP) list = list.filter(v => !v.group);
+    else if (filter) list = list.filter(v => v.group === filter);
+    if (!this._search.trim()) return list;
     const q = this._search.toLowerCase().trim();
-    return this._variables.filter(
+    return list.filter(
       v =>
         v.name.toLowerCase().includes(q) ||
         v.entity.toLowerCase().includes(q) ||
-        (v.attribute_name || '').toLowerCase().includes(q)
+        (v.attribute_name || '').toLowerCase().includes(q) ||
+        (v.group || '').toLowerCase().includes(q)
     );
+  }
+
+  private _renderGroupFilter() {
+    const groups = this._getGroups();
+    if (groups.length === 0) return nothing;
+    const hasUngrouped = this._variables.some(v => !v.group);
+    const current = this._effectiveGroupFilter();
+    const chip = (value: string, label: string, count: number) => html`
+      <button
+        class="group-chip ${current === value ? 'active' : ''}"
+        @click=${() => (this._groupFilter = value)}
+      >
+        ${label}<span class="group-chip-count">${count}</span>
+      </button>
+    `;
+    return html`
+      <div class="group-filter">
+        <ha-icon icon="mdi:tag-multiple-outline"></ha-icon>
+        ${chip('', 'All', this._variables.length)}
+        ${groups.map(g => chip(g, g, this._variables.filter(v => v.group === g).length))}
+        ${hasUngrouped ? chip(NO_GROUP, 'No group', this._variables.filter(v => !v.group).length) : nothing}
+      </div>
+    `;
+  }
+
+  private _renderGroupDatalist() {
+    return html`
+      <datalist id="uc-var-groups">
+        ${this._getGroups().map(g => html`<option value=${g}></option>`)}
+      </datalist>
+    `;
   }
 
   override render() {
@@ -766,16 +887,19 @@ export class HubVariablesTab extends LitElement {
         </button>
       </div>
 
+      ${this._renderGroupFilter()}
+
       <!-- Add form -->
       ${this._showAddForm ? this._renderAddForm() : nothing}
+      ${this._renderGroupDatalist()}
 
       <!-- Variables grid -->
-      ${filtered.length === 0 && this._search
+      ${filtered.length === 0 && (this._search || this._effectiveGroupFilter())
         ? html`
             <div class="empty-state">
               <div class="empty-state-icon"><ha-icon icon="mdi:magnify-close"></ha-icon></div>
               <h3>No Results</h3>
-              <p>No variables match "${this._search}"</p>
+              <p>${this._search ? `No variables match "${this._search}"` : 'No variables in this group'}</p>
             </div>
           `
         : html`
@@ -813,12 +937,24 @@ export class HubVariablesTab extends LitElement {
 
         <div class="form-row">
           <span class="form-label">Entity</span>
+          <uc-entity-search
+            class="form-entity"
+            .hass=${this.hass}
+            .value=${this._newEntity}
+            placeholder="Search, e.g. living room temperature"
+            @value-changed=${(e: CustomEvent) => (this._newEntity = e.detail.value)}
+          ></uc-entity-search>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label">Group</span>
           <input
             type="text"
             class="form-input"
-            placeholder="e.g. sensor.living_room_temperature"
-            .value=${this._newEntity}
-            @input=${(e: InputEvent) => (this._newEntity = (e.target as HTMLInputElement).value)}
+            list="uc-var-groups"
+            placeholder="Optional, e.g. Living room"
+            .value=${this._newGroup}
+            @input=${(e: InputEvent) => (this._newGroup = (e.target as HTMLInputElement).value)}
           />
         </div>
 
@@ -918,11 +1054,21 @@ export class HubVariablesTab extends LitElement {
                 </div>
                 <div class="edit-row">
                   <span class="edit-label">Entity</span>
+                  <uc-entity-search
+                    .hass=${this.hass}
+                    .value=${this._editEntity}
+                    @value-changed=${(e: CustomEvent) => (this._editEntity = e.detail.value)}
+                  ></uc-entity-search>
+                </div>
+                <div class="edit-row">
+                  <span class="edit-label">Group</span>
                   <input
                     type="text"
                     class="edit-input"
-                    .value=${this._editEntity}
-                    @input=${(e: InputEvent) => (this._editEntity = (e.target as HTMLInputElement).value)}
+                    list="uc-var-groups"
+                    placeholder="Optional"
+                    .value=${this._editGroup}
+                    @input=${(e: InputEvent) => (this._editGroup = (e.target as HTMLInputElement).value)}
                   />
                 </div>
                 <div class="edit-row">
@@ -966,6 +1112,16 @@ export class HubVariablesTab extends LitElement {
                   <span class="detail-label">Type</span>
                   <span class="type-badge ${v.value_type}">${v.value_type.replace('_', ' ')}</span>
                 </div>
+                ${v.group
+                  ? html`
+                      <div class="detail-row">
+                        <span class="detail-label">Group</span>
+                        <button class="group-badge" title="Show only this group" @click=${() => (this._groupFilter = v.group || '')}>
+                          <ha-icon icon="mdi:tag-outline"></ha-icon>${v.group}
+                        </button>
+                      </div>
+                    `
+                  : nothing}
                 ${v.value_type === 'attribute' && v.attribute_name
                   ? html`
                       <div class="detail-row">

@@ -14,6 +14,7 @@ import {
   NavAutohideConfig,
   NavCollapseConfig,
   NavCollapseMode,
+  NavItemVisibility,
 } from '../types';
 import { openPopupById } from './popup-trigger-registry';
 import { logicService } from './logic-service';
@@ -631,9 +632,9 @@ class UcNavigationService {
         }
       }
 
-      const shouldDisplay = logicService.evaluateDisplayConditions(
-        module.display_conditions || [],
-        module.display_mode || 'always'
+      const shouldDisplay = logicService.evaluateOverlayModuleVisibility(
+        module,
+        registered.config
       );
 
       if (shouldDisplay) {
@@ -1247,7 +1248,7 @@ class UcNavigationService {
     showLabels: NavShowLabels
   ): TemplateResult {
     const resolvedRoute = this.resolveRoute(route, hass, navModule, registered.config);
-    if (resolvedRoute.hidden) {
+    if (resolvedRoute.hidden || !this.isNavItemVisible(route, hass, navModule)) {
       return html``;
     }
 
@@ -1354,7 +1355,7 @@ class UcNavigationService {
     showLabels: NavShowLabels
   ): TemplateResult {
     const hidden = this.resolveBoolean(stack.hidden, false, hass, navModule, stack, registered.config);
-    if (hidden) return html``;
+    if (hidden || !this.isNavItemVisible(stack, hass, navModule)) return html``;
 
     const icon = stack.icon || 'mdi:dots-horizontal';
     const label = stack.label || '';
@@ -1568,7 +1569,7 @@ class UcNavigationService {
       resolvedChild,
       registered.config
     );
-    if (hidden) return html``;
+    if (hidden || !this.isNavItemVisible(child, hass, navModule)) return html``;
 
     const url = resolvedChild.url || '';
     const label = resolvedChild.label || '';
@@ -3075,6 +3076,34 @@ class UcNavigationService {
     if (current.startsWith(`${normalizedTarget}#`)) return true;
     if (current.startsWith(`${normalizedTarget}/`)) return true;
     return false;
+  }
+
+  /**
+   * Per-route / per-stack visibility set in the editor: users, screen size
+   * (Hide on Devices) and an entity state. Works alongside the `hidden` template.
+   */
+  private isNavItemVisible(
+    item: NavItemVisibility,
+    hass: HomeAssistant,
+    navModule: NavigationModule
+  ): boolean {
+    if (item.user_visibility?.users?.length) {
+      logicService.setHass(hass);
+      if (!logicService.evaluateUserVisibility(item.user_visibility)) return false;
+    }
+    if (item.hidden_on_devices?.length) {
+      if (item.hidden_on_devices.includes(responsiveDesignService.getCurrentBreakpoint())) return false;
+    } else if (item.hide_on?.length) {
+      const device = this.isDesktop(navModule.nav_desktop) ? 'desktop' : 'mobile';
+      if (item.hide_on.includes(device)) return false;
+    }
+    const cond = item.show_when;
+    if (cond?.entity) {
+      const current = hass.states[cond.entity]?.state;
+      const matches = current !== undefined && String(current) === String(cond.state ?? '');
+      if (cond.operator === '!=' ? matches : !matches) return false;
+    }
+    return true;
   }
 
   private resolveBoolean(

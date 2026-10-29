@@ -6,6 +6,20 @@ import { localize } from '../localize/localize';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import '../components/ultra-color-picker';
+import {
+  WEATHER_STATION_SENSORS,
+  WeatherStationKey,
+  bearingToCardinal,
+  formatWeatherReading,
+  hasStationSensor,
+  readWeatherValue,
+  renderWindArrow,
+} from '../utils/uc-weather-station';
+import {
+  WeatherForecastSlot,
+  clearWeatherForecastCache,
+  getWeatherForecast,
+} from '../utils/uc-weather-forecast';
 
 const CONDITION_ICONS: Record<string, string> = {
   'clear-night': 'mdi:weather-night',
@@ -43,20 +57,21 @@ const CONDITION_LABELS: Record<string, string> = {
   'windy-variant': 'Windy',
 };
 
-interface ForecastSlot {
-  datetime: string;
-  condition?: string | undefined;
-  temperature?: number | undefined;
-  templow?: number | undefined;
-}
+type ForecastSlot = WeatherForecastSlot;
 
-interface ForecastCacheEntry {
-  slots: ForecastSlot[];
-  fetchedAt: number;
-  fetching: boolean;
-}
-
-const FORECAST_TTL = 15 * 60 * 1000; // refetch every 15 minutes
+/** Opt-in detail chips under the condition label, in display order. */
+const EXTRA_DETAILS: Array<{
+  key: WeatherStationKey;
+  show: keyof WeatherModule;
+  label: string;
+}> = [
+  { key: 'feels_like', show: 'show_feels_like', label: 'Feels like' },
+  { key: 'wind_gust', show: 'show_wind_gust', label: 'Wind gust' },
+  { key: 'pressure', show: 'show_pressure', label: 'Pressure' },
+  { key: 'precipitation', show: 'show_precipitation', label: 'Rain' },
+  { key: 'uv_index', show: 'show_uv_index', label: 'UV index' },
+  { key: 'dew_point', show: 'show_dew_point', label: 'Dew point' },
+];
 
 export class UltraWeatherModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -70,8 +85,6 @@ export class UltraWeatherModule extends BaseUltraModule {
     tags: ['weather', 'forecast', 'temperature', 'conditions'],
   };
 
-  private _forecastCache: Map<string, ForecastCacheEntry> = new Map();
-
   createDefault(id?: string): WeatherModule {
     return {
       id: id || this.generateId('weather'),
@@ -82,6 +95,7 @@ export class UltraWeatherModule extends BaseUltraModule {
       show_condition_label: true,
       show_humidity: true,
       show_wind: true,
+      show_wind_direction: true,
       show_forecast: true,
       forecast_type: 'daily',
       forecast_count: 5,
@@ -162,6 +176,7 @@ export class UltraWeatherModule extends BaseUltraModule {
             },
           ]
         )}
+        ${this._renderStationSensors(m, hass, config, updateModule, lang)}
         ${this.renderSettingsSection(
           localize('editor.weather.current_section', lang, 'Current conditions'),
           localize('editor.weather.current_section_desc', lang, 'The large current weather block.'),
@@ -212,7 +227,43 @@ export class UltraWeatherModule extends BaseUltraModule {
                 this.triggerPreviewUpdate();
               },
             },
+            {
+              title: localize('editor.weather.show_wind_direction', lang, 'Show wind direction'),
+              description: localize(
+                'editor.weather.show_wind_direction_desc',
+                lang,
+                'An arrow showing which way the wind blows.'
+              ),
+              hass,
+              data: { show_wind_direction: m.show_wind_direction !== false },
+              schema: [this.booleanField('show_wind_direction')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  show_wind_direction: e.detail.value.show_wind_direction,
+                } as Partial<CardModule>);
+                this.triggerPreviewUpdate();
+              },
+            },
           ]
+        )}
+        ${this.renderSettingsSection(
+          localize('editor.weather.details_section', lang, 'Extra details'),
+          localize(
+            'editor.weather.details_section_desc',
+            lang,
+            'Small values under the condition. Each turns on by itself when you pick its station sensor.'
+          ),
+          EXTRA_DETAILS.map(d => ({
+            title: localize(`editor.weather.detail.${d.key}`, lang, d.label),
+            description: '',
+            hass,
+            data: { [d.show]: this._isDetailShown(m, d.key, d.show) },
+            schema: [this.booleanField(d.show as string)],
+            onChange: (e: CustomEvent) => {
+              updateModule({ [d.show]: e.detail.value[d.show as string] } as Partial<CardModule>);
+              this.triggerPreviewUpdate();
+            },
+          }))
         )}
         ${this.renderSettingsSection(
           localize('editor.weather.forecast_section', lang, 'Forecast'),
@@ -243,7 +294,7 @@ export class UltraWeatherModule extends BaseUltraModule {
                 ],
                 (next: string) => {
                   updateModule({ forecast_type: next as 'daily' | 'hourly' } as Partial<CardModule>);
-                  this._forecastCache.clear();
+                  clearWeatherForecastCache(m.weather_entity);
                   this.triggerPreviewUpdate();
                 }
               )}
@@ -300,6 +351,58 @@ export class UltraWeatherModule extends BaseUltraModule {
     `;
   }
 
+  /** Shown when set on, or when unset and its station sensor is picked. */
+  private _isDetailShown(m: WeatherModule, key: WeatherStationKey, show: keyof WeatherModule): boolean {
+    const value = m[show];
+    if (value === true || value === false) return value;
+    return hasStationSensor(m, key);
+  }
+
+  private _renderStationSensors(
+    m: WeatherModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void,
+    lang: string
+  ): TemplateResult {
+    return html`
+      <div
+        class="settings-section uc-weather-station-sensors"
+        style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.weather.station_section', lang, 'Weather station sensors')}
+        </div>
+        <div
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+        >
+          ${localize(
+            'editor.weather.station_section_desc',
+            lang,
+            'Optional. Use your own weather station for the current values. The icon and forecast still come from the weather entity.'
+          )}
+        </div>
+        ${WEATHER_STATION_SENSORS.map(def =>
+          this.renderEntityPickerWithVariables(
+            hass,
+            config,
+            def.field,
+            (m[def.field] as string) || '',
+            (value: string) => {
+              updateModule({ [def.field]: value } as Partial<CardModule>);
+              this.triggerPreviewUpdate();
+            },
+            ['sensor'],
+            localize(`editor.weather.sensor.${def.key}`, lang, def.label)
+          )
+        )}
+      </div>
+    `;
+  }
+
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -309,8 +412,12 @@ export class UltraWeatherModule extends BaseUltraModule {
     const m = module as WeatherModule;
     const lang = hass?.locale?.language || 'en';
     const entityId = this.resolveEntity(m.weather_entity, config) || m.weather_entity;
+    const st = entityId ? hass?.states[entityId] : undefined;
+    const resolve = (id: string) => this.resolveEntity(id, config) || id;
+    const tempSensorId = m.temperature_entity ? resolve(m.temperature_entity) : '';
 
-    if (!entityId || !hass?.states[entityId]) {
+    // A station temperature sensor is enough on its own; the forecast needs the weather entity.
+    if (!st && !(tempSensorId && hass?.states[tempSensorId])) {
       return this.renderGradientErrorState(
         localize('editor.weather.config_needed', lang, 'Select a weather entity'),
         localize('editor.weather.config_needed_desc', lang, 'Choose an entity in the General tab'),
@@ -318,15 +425,28 @@ export class UltraWeatherModule extends BaseUltraModule {
       );
     }
 
-    const st = hass.states[entityId];
-    const a = st.attributes || {};
-    const condition = st.state;
-    const name = m.name?.trim() || (a.friendly_name as string) || entityId;
-    const tempUnit = (a.temperature_unit as string) || '°';
-    const temp = typeof a.temperature === 'number' ? (a.temperature as number) : undefined;
-    const humidity = typeof a.humidity === 'number' ? (a.humidity as number) : undefined;
-    const wind = typeof a.wind_speed === 'number' ? (a.wind_speed as number) : undefined;
-    const windUnit = (a.wind_speed_unit as string) || '';
+    const a = (st?.attributes || {}) as Record<string, unknown>;
+    const read = (key: WeatherStationKey) => readWeatherValue(hass, a, m, key, resolve);
+    const condition = st?.state || '';
+    const name =
+      m.name?.trim() ||
+      (a.friendly_name as string) ||
+      (tempSensorId ? (hass.states[tempSensorId]?.attributes?.friendly_name as string) : '') ||
+      entityId;
+    const tempReading = read('temperature');
+    const tempUnit = tempReading?.unit || (a.temperature_unit as string) || '°';
+    const temp = tempReading?.value;
+    // Forecast values are in the weather entity's unit, not the station sensor's.
+    const forecastUnit = (a.temperature_unit as string) || tempUnit;
+    const humidity = read('humidity');
+    const wind = read('wind_speed');
+    const bearing = read('wind_direction');
+    const extras = EXTRA_DETAILS.filter(d => this._isDetailShown(m, d.key, d.show)).flatMap(d => {
+      const def = WEATHER_STATION_SENSORS.find(x => x.key === d.key);
+      const reading = read(d.key);
+      return def && reading ? [{ def, reading }] : [];
+    });
+    const direction = m.show_wind_direction !== false ? bearing?.value : undefined;
 
     const iconColor = m.icon_color || 'var(--primary-color)';
     const tempColor = m.temp_color || 'var(--primary-text-color)';
@@ -336,16 +456,17 @@ export class UltraWeatherModule extends BaseUltraModule {
 
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const hoverClass = this.getHoverEffectClass(module);
+    const actionEntity = entityId || tempSensorId;
 
     const g = this.createGestureHandlers(
       m.id,
       {
         tap_action: m.tap_action?.action
-          ? { ...m.tap_action, entity: entityId }
-          : { action: 'more-info', entity: entityId },
+          ? { ...m.tap_action, entity: actionEntity }
+          : { action: 'more-info', entity: actionEntity },
         hold_action: m.hold_action,
         double_tap_action: m.double_tap_action,
-        entity: entityId,
+        entity: actionEntity,
         module: m,
       },
       hass,
@@ -354,9 +475,12 @@ export class UltraWeatherModule extends BaseUltraModule {
 
     const count = Math.max(1, Math.min(8, m.forecast_count ?? 5));
     const slots =
-      m.show_forecast !== false
-        ? this._getForecast(entityId, m.forecast_type || 'daily', hass, a).slice(0, count)
+      m.show_forecast !== false && st
+        ? this._getForecast(entityId, m.forecast_type || 'daily', hass).slice(0, count)
         : [];
+    const showWind = m.show_wind !== false && (wind !== undefined || direction !== undefined);
+    const humidityValue = m.show_humidity !== false ? humidity?.value : undefined;
+    const chip = 'display:inline-flex;align-items:center;gap:3px;white-space:nowrap;';
 
     return html`
       <div
@@ -375,7 +499,9 @@ export class UltraWeatherModule extends BaseUltraModule {
               ? html`
                   <div style="display:flex;align-items:center;gap:14px;">
                     <ha-icon
-                      icon=${CONDITION_ICONS[condition] || 'mdi:weather-partly-cloudy'}
+                      icon=${st
+                        ? CONDITION_ICONS[condition] || 'mdi:weather-partly-cloudy'
+                        : 'mdi:thermometer'}
                       style="color:${iconColor};--mdc-icon-size:52px;flex-shrink:0;"
                     ></ha-icon>
                     <div style="flex:1;min-width:0;">
@@ -384,7 +510,7 @@ export class UltraWeatherModule extends BaseUltraModule {
                       >
                         ${name}
                       </div>
-                      ${m.show_condition_label !== false
+                      ${m.show_condition_label !== false && st
                         ? html`<div style="color:${secondary};font-size:13px;">
                             ${localize(
                               `editor.weather.condition.${condition}`,
@@ -393,30 +519,48 @@ export class UltraWeatherModule extends BaseUltraModule {
                             )}
                           </div>`
                         : nothing}
-                      ${(m.show_humidity !== false && humidity !== undefined) ||
-                      (m.show_wind !== false && wind !== undefined)
+                      ${humidityValue !== undefined || showWind || extras.length > 0
                         ? html`
                             <div
-                              style="display:flex;gap:12px;color:${secondary};font-size:12px;margin-top:4px;"
+                              style="display:flex;flex-wrap:wrap;column-gap:12px;row-gap:2px;color:${secondary};font-size:12px;margin-top:4px;"
                             >
-                              ${m.show_humidity !== false && humidity !== undefined
-                                ? html`<span style="display:inline-flex;align-items:center;gap:3px;">
+                              ${humidityValue !== undefined
+                                ? html`<span style=${chip}>
                                     <ha-icon
                                       icon="mdi:water-percent"
                                       style="--mdc-icon-size:14px;"
                                     ></ha-icon>
-                                    ${Math.round(humidity)}%
+                                    ${Math.round(humidityValue)}%
                                   </span>`
                                 : nothing}
-                              ${m.show_wind !== false && wind !== undefined
-                                ? html`<span style="display:inline-flex;align-items:center;gap:3px;">
+                              ${showWind
+                                ? html`<span
+                                    style=${chip}
+                                    title=${direction !== undefined ? bearingToCardinal(direction) : ''}
+                                  >
                                     <ha-icon
                                       icon="mdi:weather-windy"
                                       style="--mdc-icon-size:14px;"
                                     ></ha-icon>
-                                    ${Math.round(wind)} ${windUnit}
+                                    ${wind !== undefined ? formatWeatherReading('wind_speed', wind) : ''}
+                                    ${direction !== undefined
+                                      ? html`${renderWindArrow(direction, 12)}
+                                          <span>${bearingToCardinal(direction)}</span>`
+                                      : nothing}
                                   </span>`
                                 : nothing}
+                              ${extras.map(
+                                x => html`<span
+                                  style=${chip}
+                                  title=${localize(`editor.weather.detail.${x.def.key}`, lang, x.def.label)}
+                                >
+                                  <ha-icon icon=${x.def.icon} style="--mdc-icon-size:14px;"></ha-icon>
+                                  ${x.def.key === 'uv_index' ? 'UV ' : ''}${formatWeatherReading(
+                                    x.def.key,
+                                    x.reading
+                                  )}
+                                </span>`
+                              )}
                             </div>
                           `
                         : nothing}
@@ -434,7 +578,7 @@ export class UltraWeatherModule extends BaseUltraModule {
                   <div
                     style="display:grid;grid-template-columns:repeat(${slots.length},1fr);gap:8px;margin-top:${m.show_current !== false ? '16px' : '0'};"
                   >
-                    ${slots.map(slot => this._renderSlot(slot, m, tempUnit, lang, { iconColor, text, secondary }))}
+                    ${slots.map(slot => this._renderSlot(slot, m, forecastUnit, lang, { iconColor, text, secondary }))}
                   </div>
                 `
               : nothing}
@@ -492,50 +636,9 @@ export class UltraWeatherModule extends BaseUltraModule {
   private _getForecast(
     entityId: string,
     type: 'daily' | 'hourly',
-    hass: HomeAssistant,
-    attributes: Record<string, unknown>
+    hass: HomeAssistant
   ): ForecastSlot[] {
-    const legacy = attributes.forecast;
-    if (Array.isArray(legacy) && legacy.length > 0) {
-      return legacy as ForecastSlot[];
-    }
-
-    const key = `${entityId}|${type}`;
-    const cached = this._forecastCache.get(key);
-    const fresh = cached && Date.now() - cached.fetchedAt < FORECAST_TTL;
-
-    if (!fresh && !cached?.fetching && hass.callWS) {
-      const entry: ForecastCacheEntry = {
-        slots: cached?.slots || [],
-        fetchedAt: cached?.fetchedAt || 0,
-        fetching: true,
-      };
-      this._forecastCache.set(key, entry);
-
-      hass
-        .callWS<{ response?: Record<string, { forecast?: ForecastSlot[] }> }>({
-          type: 'call_service',
-          domain: 'weather',
-          service: 'get_forecasts',
-          service_data: { type },
-          target: { entity_id: entityId },
-          return_response: true,
-        })
-        .then(resp => {
-          const slots = resp?.response?.[entityId]?.forecast || [];
-          this._forecastCache.set(key, { slots, fetchedAt: Date.now(), fetching: false });
-          this.triggerPreviewUpdate();
-        })
-        .catch(() => {
-          this._forecastCache.set(key, {
-            slots: entry.slots,
-            fetchedAt: Date.now(),
-            fetching: false,
-          });
-        });
-    }
-
-    return cached?.slots || [];
+    return getWeatherForecast(hass, entityId, type, () => this.triggerPreviewUpdate());
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -543,7 +646,7 @@ export class UltraWeatherModule extends BaseUltraModule {
     const m = module as WeatherModule;
     if (!module.id) errors.push('Module ID is required');
     if (!module.type) errors.push('Module type is required');
-    if (!m.weather_entity) errors.push('Select a weather entity');
+    if (!m.weather_entity && !m.temperature_entity) errors.push('Select a weather entity');
     return { valid: errors.length === 0, errors };
   }
 

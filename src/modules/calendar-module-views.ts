@@ -237,9 +237,13 @@ function renderCompactEvent(
           ? html`
               <div class="uc-calendar-event-location">
                 <ha-icon icon="mdi:map-marker"></ha-icon>
-                ${module.remove_location_country
-                  ? removeCountryFromLocation(event.location)
-                  : event.location}
+                ${renderLocationText(
+                  module,
+                  event.location,
+                  module.remove_location_country
+                    ? removeCountryFromLocation(event.location)
+                    : event.location
+                )}
               </div>
             `
           : ''}
@@ -566,7 +570,7 @@ export function renderDayView(context: CalendarViewContext): TemplateResult {
                         ? html`
                             <div class="uc-calendar-day-event-location">
                               <ha-icon icon="mdi:map-marker"></ha-icon>
-                              ${event.location}
+                              ${renderLocationText(module, event.location, event.location)}
                             </div>
                           `
                         : ''}
@@ -663,7 +667,11 @@ export function renderTableView(context: CalendarViewContext): TemplateResult {
                     : ''}
                 </td>
                 ${module.table_show_location_column !== false
-                  ? html`<td>${event.location || '-'}</td>`
+                  ? html`<td>
+                      ${event.location
+                        ? renderLocationText(module, event.location, event.location)
+                        : '-'}
+                    </td>`
                   : ''}
                 ${module.table_show_duration_column
                   ? html`<td>${CalendarService.formatDuration(event.start, event.end)}</td>`
@@ -824,6 +832,46 @@ function getContrastColor(hexColor: string): string {
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength - 3) + '...';
+}
+
+/** Maps link for an event location, or null when links are off. */
+export function getLocationMapsUrl(
+  provider: CalendarModule['location_link'],
+  location: string
+): string | null {
+  const q = encodeURIComponent(location.trim());
+  if (!q) return null;
+  switch (provider) {
+    case 'google':
+      return `https://www.google.com/maps/search/?api=1&query=${q}`;
+    case 'apple':
+      return `https://maps.apple.com/?q=${q}`;
+    case 'osm':
+      return `https://www.openstreetmap.org/search?query=${q}`;
+    case 'waze':
+      return `https://waze.com/ul?q=${q}&navigate=yes`;
+    default:
+      return null;
+  }
+}
+
+/** Location text, wrapped in a maps link when the module asks for one. */
+function renderLocationText(
+  module: CalendarModule,
+  location: string,
+  label: string
+): TemplateResult {
+  const url = getLocationMapsUrl(module.location_link, location);
+  if (!url) return html`${label}`;
+  return html`<a
+    class="uc-calendar-location-link"
+    href=${url}
+    target="_blank"
+    rel="noopener noreferrer"
+    @click=${(e: Event) => e.stopPropagation()}
+    @pointerdown=${(e: Event) => e.stopPropagation()}
+    >${label}</a
+  >`;
 }
 
 function removeCountryFromLocation(location: string): string {

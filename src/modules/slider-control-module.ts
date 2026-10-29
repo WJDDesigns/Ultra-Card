@@ -2368,6 +2368,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
           // (0-1) and scale to 0-100 to match the write side in handleSliderInput.
           const volumeLevel = parseFloat(entityState.attributes.volume_level);
           value = isNaN(volumeLevel) ? 0 : volumeLevel * 100;
+        } else if (domain === 'cover' || domain === 'fan') {
+          // Cover/fan state is "open"/"on"; the write side sets position / percentage.
+          const raw = parseFloat(
+            entityState.attributes[domain === 'cover' ? 'current_position' : 'percentage']
+          );
+          value = isNaN(raw) ? 0 : raw;
         } else {
           value = parseFloat(entityState.state) || 0;
         }

@@ -344,7 +344,11 @@ export class UltraTextModule extends BaseUltraModule {
 
     const textElement =
       !textModule.unified_template_mode && effectiveContent
-        ? html`<span class="rich-text-content" style=${textFgCss}
+        ? html`<span
+            class="rich-text-content ${textModule.link_underline === false
+              ? ''
+              : 'uc-link-underline'}"
+            style=${textFgCss}
             >${unsafeHTML(
               sanitizeRichTextHtml(effectiveContent, {
                 trusted: isLocallyAuthoredConfig(config),
@@ -834,10 +838,15 @@ export class UltraTextModule extends BaseUltraModule {
         line-height: 0;
       }
 
-      .text-module-label,
-      .rich-text-content {
+      .text-module-label {
         display: inline-flex;
         align-items: center;
+        min-width: 0;
+      }
+
+      /* Block, not flex: each <p> from the rich text editor must stack on its own line. */
+      .rich-text-content {
+        display: block;
         min-width: 0;
       }
 
@@ -852,6 +861,21 @@ export class UltraTextModule extends BaseUltraModule {
 
       .rich-text-content a {
         color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .rich-text-content.uc-link-underline a {
+        text-decoration: underline;
+      }
+
+      /* A link recoloured in the editor wraps its text in a coloured span. Draw
+         the underline on that span so it takes the chosen colour instead of the
+         link's accent colour. */
+      .rich-text-content.uc-link-underline a:has(span[style*='color']) {
+        text-decoration: none;
+      }
+
+      .rich-text-content.uc-link-underline a span[style*='color'] {
         text-decoration: underline;
       }
 

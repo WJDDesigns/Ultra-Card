@@ -38,16 +38,43 @@ export interface WordPressPresetsResponse {
   current_page: number;
 }
 
+/** HTTP error that reached ultracard.io (so retrying elsewhere only adds load). */
+class PresetsHttpError extends Error {
+  constructor(readonly status: number, statusText: string) {
+    super(`HTTP ${status}: ${statusText}`);
+  }
+}
+
+/**
+ * True when the failure means ultracard.io answered or timed out, i.e. it is up
+ * but struggling. Retrying through proxies or the legacy route only adds load.
+ */
+function isServerSideFailure(error: unknown): boolean {
+  if (error instanceof PresetsHttpError) return true;
+  const name = (error as { name?: string } | null)?.name;
+  return name === 'TimeoutError' || name === 'AbortError';
+}
+
 export class DirectoriesProPresetsAPI {
   private static readonly API_BASE = 'https://ultracard.io/wp-json/wp/v2';
   /** Native Ultra Card catalog (preferred once plugin 1.3+ is deployed). */
   private static readonly UC_API_BASE = 'https://ultracard.io/wp-json/ultra-card/v1';
   private static readonly CACHE_KEY = 'ultra-card-directories-pro-presets-v2';
   private static readonly CACHE_TIMESTAMP_KEY = 'ultra-card-directories-pro-presets-v2-timestamp';
-  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  // The catalog changes a few times a week; every open dashboard used to refetch
+  // it every 5 minutes. The Hub's refresh button still forces a reload.
+  private static readonly CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
   private static readonly EXTENDED_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for CORS fallback
   private static readonly MAX_CACHE_ENTRIES = 10; // Maximum number of cache entries to keep
   private static readonly MAX_ENTRY_SIZE = 500 * 1024; // 500KB max per entry (rough estimate)
+  /** After a failed catalog fetch, wait this long (doubling per failure) before trying again. */
+  private static readonly FAILURE_BACKOFF_BASE = 5 * 60 * 1000; // 5 minutes
+  private static readonly FAILURE_BACKOFF_MAX = 6 * 60 * 60 * 1000; // 6 hours
+
+  /** Shared by every card instance on the page so they never fetch in parallel. */
+  private _inflight: Map<string, Promise<WordPressPresetsResponse>> = new Map();
+  private _failureCount = 0;
+  private _backoffUntil = 0;
 
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   private localStorageDisabled = false; // Flag to disable localStorage if quota keeps failing
@@ -84,6 +111,31 @@ export class DirectoriesProPresetsAPI {
       return localCached.data;
     }
 
+    // A recent fetch failed: serve whatever is cached instead of retrying right away.
+    if (Date.now() < this._backoffUntil) {
+      return this._cachedFallback(cacheKey);
+    }
+
+    const running = this._inflight.get(cacheKey);
+    if (running) return running;
+
+    const promise = this._fetchPresetsFromNetwork(params, cacheKey).finally(() =>
+      this._inflight.delete(cacheKey)
+    );
+    this._inflight.set(cacheKey, promise);
+    return promise;
+  }
+
+  private async _fetchPresetsFromNetwork(
+    params: {
+      page?: number | undefined;
+      per_page?: number | undefined;
+      category?: string | undefined;
+      search?: string | undefined;
+      sort?: 'newest' | 'popular' | 'rating' | 'trending' | undefined;
+    },
+    cacheKey: string
+  ): Promise<WordPressPresetsResponse> {
     try {
       const queryParams = new URLSearchParams();
 
@@ -105,10 +157,18 @@ export class DirectoriesProPresetsAPI {
           const cacheData = { data: nativeMapped, timestamp: Date.now() };
           this.cache.set(cacheKey, cacheData);
           this._saveToLocalStorage(cacheKey, cacheData);
+          this._recordSuccess();
           return nativeMapped;
         }
-      } catch {
-        // Fall through to legacy Directories Pro REST.
+      } catch (nativeError) {
+        // A 5xx/429/timeout means the site is up but busy; the legacy route would
+        // only double the load. Anything else (404, network) falls through.
+        if (
+          isServerSideFailure(nativeError) &&
+          !(nativeError instanceof PresetsHttpError && nativeError.status === 404)
+        ) {
+          throw nativeError;
+        }
       }
 
       // Embed author and media information
@@ -200,34 +260,57 @@ export class DirectoriesProPresetsAPI {
       const cacheData = { data, timestamp: Date.now() };
       this.cache.set(cacheKey, cacheData);
       this._saveToLocalStorage(cacheKey, cacheData);
+      this._recordSuccess();
 
       // Successfully fetched presets (silent)
       return data;
     } catch (error) {
       console.error('Failed to fetch Directories Pro presets:', error);
-
-      // Try to return stale cache if available (extended duration for CORS failures)
-      const staleCache = this._getFromLocalStorage(cacheKey, true);
-      if (staleCache) {
-        console.warn('Using stale cached presets due to fetch error');
-        return staleCache.data;
-      }
-
-      // Try to get any cached presets from any previous successful calls
-      const fallbackCache = this._getFallbackCache();
-      if (fallbackCache) {
-        console.warn('Using fallback cached presets due to fetch error');
-        return fallbackCache;
-      }
-
-      // Return empty response as final fallback
-      return {
-        presets: [],
-        total: 0,
-        pages: 0,
-        current_page: 1,
-      };
+      this._recordFailure();
+      return this._cachedFallback(cacheKey);
     }
+  }
+
+  private _recordSuccess(): void {
+    this._failureCount = 0;
+    this._backoffUntil = 0;
+  }
+
+  private _recordFailure(): void {
+    this._failureCount++;
+    const delay = Math.min(
+      DirectoriesProPresetsAPI.FAILURE_BACKOFF_BASE * 2 ** (this._failureCount - 1),
+      DirectoriesProPresetsAPI.FAILURE_BACKOFF_MAX
+    );
+    this._backoffUntil = Date.now() + delay;
+  }
+
+  /** Stale or fallback cache, else an empty page. Never touches the network. */
+  private _cachedFallback(cacheKey: string): WordPressPresetsResponse {
+    const memory = this.cache.get(cacheKey);
+    if (memory) return memory.data;
+
+    // Try to return stale cache if available (extended duration for CORS failures)
+    const staleCache = this._getFromLocalStorage(cacheKey, true);
+    if (staleCache) {
+      console.warn('Using stale cached presets due to fetch error');
+      return staleCache.data;
+    }
+
+    // Try to get any cached presets from any previous successful calls
+    const fallbackCache = this._getFallbackCache();
+    if (fallbackCache) {
+      console.warn('Using fallback cached presets due to fetch error');
+      return fallbackCache;
+    }
+
+    // Return empty response as final fallback
+    return {
+      presets: [],
+      total: 0,
+      pages: 0,
+      current_page: 1,
+    };
   }
 
   /**
@@ -655,21 +738,25 @@ export class DirectoriesProPresetsAPI {
   private async _fetchWithCorsResilience(url: string): Promise<any> {
     // Method 1: Direct fetch (fastest if CORS is working)
     try {
+      // No Content-Type on a GET: it forces a CORS preflight, doubling every request.
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           Accept: 'application/json',
-          'Content-Type': 'application/json',
         },
         signal: AbortSignal.timeout(8000), // 8 second timeout
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new PresetsHttpError(response.status, response.statusText);
       }
 
       return await response.json();
     } catch (error) {
+      // ultracard.io answered (error status) or timed out: proxies and JSONP
+      // would just send it the same request again, so stop here.
+      if (isServerSideFailure(error)) throw error;
+
       // Direct fetch failed, trying CORS proxies silently
 
       // Method 2: Try CORS proxies

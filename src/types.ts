@@ -1,5 +1,7 @@
 import type { HomeAssistant } from './ha/types';
 import { LinkAction } from './services/link-service';
+import type { WeatherStationSensorFields } from './utils/uc-weather-station';
+import type { QrContentData, QrContentType } from './services/uc-qr-content-builder';
 
 // Global window interface extensions
 declare global {
@@ -9,14 +11,7 @@ declare global {
      * `localStorage['ultra-card-module-preload']` accepts the same strings if this is unset.
      */
     __ultraCardModulePreload?:
-      | 'batched'
-      | 'full'
-      | 'minimal'
-      | 'off'
-      | 'none'
-      | 'parallel'
-      | 'default'
-      | undefined;
+      'batched' | 'full' | 'minimal' | 'off' | 'none' | 'parallel' | 'default' | undefined;
     /** Rollback: set false to eagerly import the editor at card bootstrap. */
     __ultraCardLazyEditor?: boolean | string | undefined;
     /** Rollback hint for docs / tooling (loaders always use dynamic import). */
@@ -26,14 +21,7 @@ declare global {
 
 // Action type definition (includes 'default' for smart resolution)
 export type ActionType =
-  | 'default'
-  | 'more-info'
-  | 'toggle'
-  | 'navigate'
-  | 'url'
-  | 'perform-action'
-  | 'assist'
-  | 'nothing';
+  'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
 
 // Unified Template Response (parsed from JSON template results)
 export interface UnifiedTemplateResponse {
@@ -242,7 +230,8 @@ export interface BaseModule {
     | 'irrigation'
     | 'linked_row'
     | 'energy_price'
-    | 'rain_radar';
+    | 'rain_radar'
+    | 'rss_feed';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -251,6 +240,8 @@ export interface BaseModule {
   user_visibility?: UserVisibility | undefined;
   // Responsive visibility - hide on specific device breakpoints
   hidden_on_devices?: DeviceBreakpoint[] | undefined;
+  /** Hide on the dashboard when the module reports nothing to show (see UltraModule.isEmpty). */
+  hide_when_empty?: boolean | undefined;
   // Legacy design properties (for backward compatibility)
   background_color?: string | undefined;
   background_image?: string | undefined;
@@ -405,6 +396,8 @@ export interface TextModule extends BaseModule {
         service_data?: Record<string, any> | undefined;
       }
     | undefined;
+  /** Underline links in rich text (default true). */
+  link_underline?: boolean | undefined;
   icon?: string | undefined;
   icon_color?: string | undefined;
   icon_position?: 'before' | 'after' | 'none' | undefined;
@@ -444,13 +437,7 @@ export interface TextModule extends BaseModule {
 export interface SeparatorModule extends BaseModule {
   type: 'separator';
   separator_style?:
-    | 'line'
-    | 'double_line'
-    | 'dotted'
-    | 'double_dotted'
-    | 'shadow'
-    | 'blank'
-    | undefined;
+    'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank' | undefined;
   orientation?: 'horizontal' | 'vertical' | undefined;
   thickness?: number | undefined;
   width_percent?: number | string | undefined; // Percentage (e.g., "100%") or pixels (e.g., "200px")
@@ -465,6 +452,13 @@ export interface SeparatorModule extends BaseModule {
   title_uppercase?: boolean | undefined;
   title_strikethrough?: boolean | undefined;
   title_underline?: boolean | undefined;
+  /** Optional icon shown with the title (or alone when the title is empty). */
+  title_icon?: string | undefined;
+  title_icon_position?: 'before' | 'after' | undefined;
+  title_icon_size?: number | undefined;
+  title_icon_color?: string | undefined;
+  /** Where the title / icon sits on a horizontal line (Design tab text_align wins). */
+  title_align?: 'left' | 'center' | 'right' | undefined;
   // Global action configuration
   tap_action?:
     | {
@@ -536,13 +530,7 @@ export interface ImageModule extends BaseModule {
   image_height?: number | undefined;
   image_fit?: 'cover' | 'contain' | 'fill' | 'none' | undefined;
   single_click_action?:
-    | 'none'
-    | 'more-info'
-    | 'toggle'
-    | 'navigate'
-    | 'url'
-    | 'service'
-    | undefined;
+    'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   single_entity?: string | undefined;
   single_navigation_path?: string | undefined;
   single_url?: string | undefined;
@@ -784,13 +772,7 @@ export interface BarModule extends BaseModule {
 
   // Percentage Calculation
   percentage_type?:
-    | 'entity'
-    | 'attribute'
-    | 'difference'
-    | 'template'
-    | 'time_progress'
-    | 'range'
-    | undefined;
+    'entity' | 'attribute' | 'difference' | 'template' | 'time_progress' | 'range' | undefined;
   percentage_entity?: string | undefined;
 
   // Entity Attribute mode
@@ -1479,13 +1461,7 @@ export interface IconConfig {
   // Legacy actions (for backward compatibility)
   click_action?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   double_click_action?:
-    | 'none'
-    | 'more-info'
-    | 'toggle'
-    | 'navigate'
-    | 'url'
-    | 'service'
-    | undefined;
+    'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   hold_action_legacy?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   navigation_path?: string | undefined;
   url?: string | undefined;
@@ -1584,13 +1560,7 @@ export interface HorizontalModule extends BaseModule {
   type: 'horizontal';
   modules: CardModule[];
   alignment?:
-    | 'left'
-    | 'center'
-    | 'right'
-    | 'space-between'
-    | 'space-around'
-    | 'justify'
-    | undefined;
+    'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'justify' | undefined;
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch' | 'baseline' | undefined;
   gap?: number | undefined;
   gap_unit?: 'px' | 'rem' | 'em' | '%' | 'vw' | 'vh' | undefined;
@@ -1802,8 +1772,7 @@ export interface GridLayoutModule extends BaseModule {
   mobile_columns?: number | undefined;
   /** Per-child spans keyed by child module id */
   item_spans?:
-    | Record<string, { columns?: number | undefined; rows?: number | undefined }>
-    | undefined;
+    Record<string, { columns?: number | undefined; rows?: number | undefined }> | undefined;
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
   double_tap_action?: ModuleActionConfig | undefined;
@@ -2403,7 +2372,8 @@ export interface SliderBar {
   overlay_icon_position?: 'top' | 'middle' | 'bottom' | undefined;
 
   // Unified content positioning for all layout modes (deprecated, use individual positions below)
-  content_position?: // Horizontal Overlay: Left, Center, Right
+  content_position?:
+    // Horizontal Overlay: Left, Center, Right
     | 'left'
     | 'center'
     | 'right'
@@ -3024,6 +2994,15 @@ export interface MarkdownModule extends BaseModule {
 }
 
 // Camera Module
+export interface CameraActionButton {
+  id: string;
+  entity: string;
+  icon?: string | undefined;
+  label?: string | undefined;
+  /** Require a second tap within a few seconds. Defaults to on for locks. */
+  confirm?: boolean | undefined;
+}
+
 export interface CameraModule extends BaseModule {
   type: 'camera';
 
@@ -3063,12 +3042,23 @@ export interface CameraModule extends BaseModule {
 
   // Show the mute/unmute button over a live stream
   show_audio_button?: boolean | undefined;
+  /** Badge in the top corner saying whether the camera is live or showing snapshots. */
+  show_mode_badge?: boolean | undefined;
 
   // Stream mode - controls how camera feed is displayed
   view_mode?: 'auto' | 'live' | 'snapshot' | undefined;
 
   // Snapshot refresh settings (only used when view_mode === 'snapshot')
   refresh_interval?: number | undefined; // 1-300 seconds
+
+  // Switch to a live stream while this entity is on (or for a while after an event entity fires),
+  // then fall back to view_mode. Ignored when view_mode is already 'live'.
+  live_trigger_entity?: string | undefined;
+  live_trigger_hold?: number | undefined; // seconds the stream stays live after the trigger ends
+
+  // Buttons over the feed (unlock a door, open a gate) that also show in fullscreen
+  action_buttons?: CameraActionButton[] | undefined;
+  action_buttons_position?: 'bottom-left' | 'bottom-center' | 'bottom-right' | undefined;
 
   // Legacy properties (deprecated, migrated to view_mode)
   auto_refresh?: boolean | undefined;
@@ -3233,6 +3223,8 @@ export interface GraphEntityConfig {
   forecast_attribute?:
     | 'temperature'
     | 'precipitation'
+    | 'precipitation_probability'
+    | 'uv_index'
     | 'wind_speed'
     | 'humidity'
     | 'pressure'
@@ -3284,18 +3276,7 @@ export interface GraphsModule extends BaseModule {
 
   // Time period
   time_period:
-    | 'today'
-    | '1h'
-    | '3h'
-    | '6h'
-    | '12h'
-    | '24h'
-    | '2d'
-    | '7d'
-    | '30d'
-    | '90d'
-    | '365d'
-    | 'custom';
+    'today' | '1h' | '3h' | '6h' | '12h' | '24h' | '2d' | '7d' | '30d' | '90d' | '365d' | 'custom';
   custom_time_start?: string | undefined;
   custom_time_end?: string | undefined;
 
@@ -3348,16 +3329,7 @@ export interface GraphsModule extends BaseModule {
 
   // Data configuration
   data_aggregation?:
-    | 'mean'
-    | 'sum'
-    | 'min'
-    | 'max'
-    | 'median'
-    | 'first'
-    | 'last'
-    | 'count'
-    | 'delta'
-    | undefined;
+    'mean' | 'sum' | 'min' | 'max' | 'median' | 'first' | 'last' | 'count' | 'delta' | undefined;
   data_points_limit?: number | undefined;
   smooth_curves?: boolean | undefined;
 
@@ -3411,15 +3383,7 @@ export interface GraphsModule extends BaseModule {
   // Heatmap
   cell_padding?: number | undefined;
   color_scheme?:
-    | 'viridis'
-    | 'plasma'
-    | 'inferno'
-    | 'magma'
-    | 'blues'
-    | 'reds'
-    | 'greens'
-    | 'greys'
-    | undefined;
+    'viridis' | 'plasma' | 'inferno' | 'magma' | 'blues' | 'reds' | 'greens' | 'greys' | undefined;
   show_values?: boolean | undefined;
   value_format?: string | undefined;
 
@@ -3654,13 +3618,7 @@ export interface LightModule extends BaseModule {
   // Display Configuration
   layout?: 'buttons' | 'grid' | undefined; // How to display presets
   button_alignment?:
-    | 'left'
-    | 'center'
-    | 'right'
-    | 'space-between'
-    | 'space-around'
-    | 'space-evenly'
-    | undefined; // Button alignment
+    'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'space-evenly' | undefined; // Button alignment
   allow_wrapping?: boolean | undefined; // Allow buttons to wrap to next line
   button_gap?: number | undefined; // Gap between buttons in rem
   columns?: number | undefined; // Number of columns for grid layout
@@ -3788,6 +3746,9 @@ export interface MapModule extends BaseModule {
   // Map dimensions
   map_height?: number | undefined; // Height in pixels
   aspect_ratio?: '16:9' | '4:3' | '1:1' | 'custom' | undefined;
+
+  // Button that opens the map full screen with pan and zoom on
+  show_fullscreen?: boolean | undefined;
 
   // Global action configuration
   tap_action?:
@@ -4011,12 +3972,13 @@ export interface AnimatedClockModule extends BaseModule {
 }
 
 // Animated Weather Module (PRO)
-export interface AnimatedWeatherModule extends BaseModule {
+export interface AnimatedWeatherModule extends BaseModule, WeatherStationSensorFields {
   type: 'animated_weather';
 
   // Entity Configuration
   weather_entity?: string | undefined; // weather.* entity (primary)
-  temperature_entity?: string | undefined; // Individual sensor fallback
+  // Station sensors (temperature_entity, humidity_entity, ...) override the
+  // weather entity's current values; see WeatherStationSensorFields.
   condition_entity?: string | undefined; // Individual sensor fallback
   custom_entity?: string | undefined; // Optional custom entity to display (shows as "name: state")
   custom_entity_name?: string | undefined; // Custom name override for custom entity display
@@ -4050,6 +4012,25 @@ export interface AnimatedWeatherModule extends BaseModule {
   show_wind?: boolean | undefined; // Show wind speed and direction (default: false)
   show_pressure?: boolean | undefined; // Show air pressure (default: false)
   show_visibility?: boolean | undefined; // Show visibility (default: false)
+  // Opt-in items: shown when true, or when unset and their station sensor is set
+  show_humidity?: boolean | undefined;
+  show_feels_like?: boolean | undefined;
+  show_dew_point?: boolean | undefined;
+  show_wind_gust?: boolean | undefined;
+  show_uv_index?: boolean | undefined;
+  show_wind_compass?: boolean | undefined; // Compass dial (default: false)
+  humidity_size?: number | undefined;
+  feels_like_size?: number | undefined;
+  dew_point_size?: number | undefined;
+  wind_gust_size?: number | undefined;
+  uv_index_size?: number | undefined;
+  wind_compass_size?: number | undefined; // Dial size in px (default: 96)
+  humidity_color?: string | undefined;
+  feels_like_color?: string | undefined;
+  dew_point_color?: string | undefined;
+  wind_gust_color?: string | undefined;
+  uv_index_color?: string | undefined;
+  wind_compass_color?: string | undefined; // Needle color
 
   // Right Column Display Toggles
   show_date?: boolean | undefined; // Show date (default: true)
@@ -4099,6 +4080,13 @@ export interface AnimatedWeatherModule extends BaseModule {
 }
 
 // Animated Forecast Module (PRO)
+export type AnimatedForecastChartMetric =
+  | 'precipitation_probability'
+  | 'precipitation'
+  | 'uv_index'
+  | 'temperature'
+  | 'wind_speed';
+
 export interface AnimatedForecastModule extends BaseModule {
   type: 'animated_forecast';
 
@@ -4108,8 +4096,22 @@ export interface AnimatedForecastModule extends BaseModule {
 
   // Configuration
   forecast_days?: number | undefined; // Number of forecast days (default: 5, range: 3-7)
+  forecast_type?: 'daily' | 'hourly' | undefined; // View shown first (default: daily)
+  forecast_hours?: number | undefined; // Hours in the hourly view (default: 8, range: 3-12)
+  day_tap_hourly?: boolean | undefined; // Tapping a day opens its hours (default: false)
   temperature_unit?: 'F' | 'C' | undefined; // Temperature unit (default: F)
   allow_wrap?: boolean | undefined; // Allow forecast days to wrap to new rows
+  swipe_more?: boolean | undefined; // Load more days/hours and swipe sideways to see them (default: false)
+  hour_number_only?: boolean | undefined; // Hourly labels show just the hour, e.g. "14" not "14 Uhr" (default: false)
+
+  // Chart rows under the forecast
+  show_chart?: boolean | undefined;
+  chart_metrics?: AnimatedForecastChartMetric[] | undefined; // default: ['precipitation_probability']
+  chart_style?: 'bar' | 'line' | undefined; // default: bar
+  chart_metric_styles?: Partial<Record<AnimatedForecastChartMetric, 'bar' | 'line'>> | undefined; // per value, overrides chart_style
+  chart_height?: number | undefined; // Height of each row in px (default: 48)
+  chart_color?: string | undefined; // default: accent color
+  chart_color_mode?: 'single' | 'value' | undefined; // 'value' colours each point by its value (default: single)
 
   // Styling - Text Sizes
   forecast_day_size?: number | undefined; // Forecast day name size (default: 14)
@@ -4250,6 +4252,10 @@ export interface QrCodeModule extends BaseModule {
   type: 'qr_code';
   // Content source: static URL/text, unified template, or entity state/attribute
   content_mode: 'static' | 'entity' | 'unified';
+  /** What the code is for. 'text' (default) uses content_mode; the rest build the text from qr_data. */
+  content_type?: QrContentType | undefined;
+  /** Fields for the structured content types (Wi-Fi, map, contact, ...). */
+  qr_data?: QrContentData | undefined;
   content_static?: string | undefined; // For static: URL or text to encode
   unified_template_mode?: boolean | undefined;
   unified_template?: string | undefined;
@@ -4268,13 +4274,7 @@ export interface QrCodeModule extends BaseModule {
   qr_margin?: number | undefined; // Quiet zone in modules (0–10), default 1; named to avoid BaseModule.margin
   // Style (qr-code-styling)
   dot_style?:
-    | 'square'
-    | 'dots'
-    | 'rounded'
-    | 'extra-rounded'
-    | 'classy'
-    | 'classy-rounded'
-    | undefined;
+    'square' | 'dots' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded' | undefined;
   corner_square_style?: 'square' | 'extra-rounded' | 'dot' | undefined;
   corner_dot_style?: 'square' | 'dot' | undefined;
   // Logo overlay
@@ -4490,12 +4490,7 @@ export interface ToggleModule extends BaseModule {
   toggle_points: TogglePoint[];
   // Visual style
   visual_style:
-    | 'ios_toggle'
-    | 'segmented'
-    | 'button_group'
-    | 'slider_track'
-    | 'minimal'
-    | 'timeline';
+    'ios_toggle' | 'segmented' | 'button_group' | 'slider_track' | 'minimal' | 'timeline';
   // Tracking
   tracking_entity?: string | undefined; // Entity to watch for state changes
   // Display
@@ -4562,7 +4557,19 @@ export interface NavBadgeConfig {
   textColor?: string | undefined;
 }
 
-export interface NavRoute {
+/** Visibility options a route or stack can set in the editor. */
+export interface NavItemVisibility {
+  /** Show only for / hide for these Home Assistant users */
+  user_visibility?: UserVisibility | undefined;
+  /** Hide on these screen sizes (same breakpoints as module Hide on Devices) */
+  hidden_on_devices?: DeviceBreakpoint[] | undefined;
+  /** @deprecated 3.14.2-beta6 only: navbar desktop/mobile layout. Still honoured until edited. */
+  hide_on?: Array<'desktop' | 'mobile'> | undefined;
+  /** Show only while an entity is (or is not) in a state */
+  show_when?: { entity: string; operator?: '=' | '!=' | undefined; state?: string | undefined } | undefined;
+}
+
+export interface NavRoute extends NavItemVisibility {
   id: string;
   url?: string | undefined;
   icon?: string | undefined;
@@ -4581,7 +4588,7 @@ export interface NavRoute {
 }
 
 /** A stack item that can contain child routes */
-export interface NavStackItem {
+export interface NavStackItem extends NavItemVisibility {
   id: string;
   /** Icon for the stack button */
   icon?: string | undefined;
@@ -4891,7 +4898,14 @@ export interface LockModule extends BaseModule {
   /** Lock entity */
   entity: string;
   name?: string | undefined;
+  /** Icon in every state, unless icon_unlocked is set for the unlocked state */
   icon?: string | undefined;
+  /** Icon while unlocked / open (falls back to icon, then the default) */
+  icon_unlocked?: string | undefined;
+  /** Accent colour (icon, ring, active button, badge) while locked; theme colour when empty */
+  locked_color?: string | undefined;
+  /** Accent colour while unlocked / open; theme colour when empty */
+  unlocked_color?: string | undefined;
 
   layout?: 'hero' | 'standard' | 'compact' | undefined;
   alignment?: 'left' | 'center' | 'right' | undefined;
@@ -4901,8 +4915,20 @@ export interface LockModule extends BaseModule {
   show_state?: boolean | undefined;
   /** Show Open / unlatch when entity supports LockEntityFeature.OPEN */
   show_open_button?: boolean | undefined;
+  show_lock_buttons?: boolean | undefined;
   /** Ask for confirmation before unlock / open (default true) */
   require_confirmation?: boolean | undefined;
+  /** How unlock / open are triggered in the hero and standard layouts (default buttons) */
+  unlock_style?: 'buttons' | 'slide' | 'pattern' | 'pin' | undefined;
+  /** Pattern for unlock_style 'pattern': dot numbers 1-9 in drawing order, e.g. "14789" */
+  unlock_pattern?: string | undefined;
+  /** PIN for unlock_style 'pin', at least 4 digits. Checked in the card, never sent to the lock. */
+  unlock_pin?: string | undefined;
+  /**
+   * Ask for the lock's PIN code and send it with the service call. 'auto' asks when the
+   * lock reports a code format (default auto).
+   */
+  ask_code?: 'auto' | 'always' | 'never' | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
@@ -5643,7 +5669,8 @@ export type CardModule =
   | IrrigationModule
   | LinkedRowModule
   | EnergyPriceModule
-  | RainRadarModule;
+  | RainRadarModule
+  | RssFeedModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -5760,6 +5787,8 @@ export interface UpdateMonitorModule extends BaseModule {
 export interface ClockModule extends BaseModule {
   type: 'clock';
 
+  /** Show this entity's date/time instead of the current time (timestamp sensor, input_datetime, datetime). */
+  entity?: string | undefined;
   time_format?: '12' | '24' | undefined;
   show_seconds?: boolean | undefined;
   show_ampm?: boolean | undefined;
@@ -6109,16 +6138,24 @@ export interface TodoListModule extends BaseModule {
 }
 
 // Basic Weather — current conditions and a simple forecast strip with static MDI icons
-export interface WeatherModule extends BaseModule {
+export interface WeatherModule extends BaseModule, WeatherStationSensorFields {
   type: 'weather';
 
-  weather_entity: string;
+  weather_entity: string; // Optional when a temperature sensor is set
   name?: string | undefined;
 
   show_current?: boolean | undefined;
   show_condition_label?: boolean | undefined;
   show_humidity?: boolean | undefined;
   show_wind?: boolean | undefined;
+  show_wind_direction?: boolean | undefined; // Arrow next to wind (default: true)
+  // Opt-in extras: shown when true, or when unset and their station sensor is set
+  show_feels_like?: boolean | undefined;
+  show_wind_gust?: boolean | undefined;
+  show_pressure?: boolean | undefined;
+  show_precipitation?: boolean | undefined;
+  show_uv_index?: boolean | undefined;
+  show_dew_point?: boolean | undefined;
   show_forecast?: boolean | undefined;
   forecast_type?: 'daily' | 'hourly' | undefined;
   forecast_count?: number | undefined;
@@ -6193,11 +6230,7 @@ export interface BatteryMonitorModule extends BaseModule {
 export type AutoEntityListRowStyle = 'compact' | 'detailed' | 'slim' | 'card' | 'theme';
 export type AutoEntityListSortBy = 'name' | 'last_changed' | 'state' | 'domain';
 export type AutoEntityListStateOperator =
-  | 'equals'
-  | 'not_equals'
-  | 'contains'
-  | 'greater_than'
-  | 'less_than';
+  'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
 
 export interface AutoEntityListPinnedEntity {
   id: string;
@@ -6939,6 +6972,7 @@ export interface CustomVariable {
   order: number;
   created?: string | undefined;
   isGlobal?: boolean | undefined; // true = syncs across all cards (default), false = card-specific
+  group?: string | undefined; // Optional label for filtering global variables in the Hub
 }
 
 export interface CustomVariablesExportData {
@@ -7232,6 +7266,8 @@ export interface UltraCardConfig {
   display_conditions?: DisplayCondition[] | undefined;
   /** Per-HA-user visibility for the whole card. Empty/omitted = everyone. */
   user_visibility?: UserVisibility | undefined;
+  /** Hide the whole card on these device breakpoints (faded instead while editing). */
+  hidden_on_devices?: DeviceBreakpoint[] | undefined;
   // Favorite colors configuration
   favorite_colors?: FavoriteColor[] | undefined;
   // Haptic feedback configuration
@@ -7259,6 +7295,12 @@ export interface CustomCard {
   preview?: boolean | undefined;
   documentationURL?: string | undefined;
   version?: string | undefined;
+  getEntitySuggestion?:
+    | ((
+        hass: HomeAssistant,
+        entityId: string
+      ) => Array<{ label?: string; config: Record<string, unknown> }> | null)
+    | undefined;
 }
 
 // Home Assistant types
@@ -7769,6 +7811,8 @@ export interface CalendarModule extends BaseModule {
   show_event_icon?: boolean | undefined;
   time_24h?: boolean | undefined;
   remove_location_country?: boolean | undefined;
+  /** Make the event location a link that opens this maps app. */
+  location_link?: 'none' | 'google' | 'apple' | 'osm' | 'waze' | undefined;
   max_event_title_length?: number | undefined;
   show_past_events?: boolean | undefined;
 
@@ -7863,22 +7907,11 @@ export type SportsLeague =
 
 // Display style options
 export type SportsDisplayStyle =
-  | 'scorecard'
-  | 'upcoming'
-  | 'compact'
-  | 'detailed'
-  | 'mini'
-  | 'logo_bg';
+  'scorecard' | 'upcoming' | 'compact' | 'detailed' | 'mini' | 'logo_bg';
 
 // Game status types
 export type SportsGameStatus =
-  | 'scheduled'
-  | 'in_progress'
-  | 'halftime'
-  | 'final'
-  | 'delayed'
-  | 'postponed'
-  | 'cancelled';
+  'scheduled' | 'in_progress' | 'halftime' | 'final' | 'delayed' | 'postponed' | 'cancelled';
 
 // Normalized game data interface (used by both HA sensor and ESPN API)
 export interface SportsGameData {
@@ -8103,13 +8136,7 @@ export type GridPaginationStyle = 'numbers' | 'buttons' | 'both';
 
 // Grid load animations
 export type GridLoadAnimation =
-  | 'fadeIn'
-  | 'slideUp'
-  | 'zoomIn'
-  | 'slideDown'
-  | 'slideLeft'
-  | 'slideRight'
-  | 'none';
+  'fadeIn' | 'slideUp' | 'zoomIn' | 'slideDown' | 'slideLeft' | 'slideRight' | 'none';
 
 // Metro size options
 export type MetroSize = 'small' | 'medium' | 'large';
@@ -9347,13 +9374,7 @@ export interface FloorplanModule extends BaseModule {
 export type IrrigationRunMode = 'auto' | 'toggle' | 'service' | 'custom';
 
 export type IrrigationServicePreset =
-  | 'auto'
-  | 'opensprinkler'
-  | 'rachio'
-  | 'irrigation_unlimited'
-  | 'bhyve'
-  | 'valve'
-  | 'switch';
+  'auto' | 'opensprinkler' | 'rachio' | 'irrigation_unlimited' | 'bhyve' | 'valve' | 'switch';
 
 export type IrrigationLayout = 'full' | 'compact';
 
@@ -9418,6 +9439,42 @@ export interface IrrigationModule extends BaseModule {
   /** Soil moisture thresholds (percent). Below dry = dry, above wet = wet. */
   moisture_dry_threshold?: number | undefined;
   moisture_wet_threshold?: number | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// RSS Feed (free) — headlines from one or more RSS / Atom / JSON feeds
+// -------------------------------------------------------------------------
+
+export type RssFeedLayout = 'list' | 'compact' | 'cards';
+
+export interface RssFeedModule extends BaseModule {
+  type: 'rss_feed';
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  /** Feed addresses (RSS, Atom or JSON Feed). Items are merged newest first. */
+  feeds?: string[] | undefined;
+  max_items?: number | undefined;
+  /** How often to fetch the feeds again, in minutes. */
+  refresh_minutes?: number | undefined;
+  layout?: RssFeedLayout | undefined;
+  show_image?: boolean | undefined;
+  show_summary?: boolean | undefined;
+  summary_lines?: number | undefined;
+  show_date?: boolean | undefined;
+  show_source?: boolean | undefined;
+  /** What tapping a headline does. */
+  open_in?: 'new_tab' | 'same_tab' | 'none' | undefined;
+  /** Only show items that mention one of these words. */
+  include_keywords?: string[] | undefined;
+  /** Hide items that mention any of these words. */
+  exclude_keywords?: string[] | undefined;
+  /** Hide items older than this many days (0 = no limit). */
+  max_age_days?: number | undefined;
+  accent_color?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
@@ -9531,6 +9588,21 @@ export type RainRadarCenterMode = 'home' | 'entity' | 'manual';
 /** Base map under the radar. `auto` follows Home Assistant's light / dark mode. */
 export type RainRadarMapStyle = 'auto' | 'light' | 'dark' | 'streets' | 'satellite';
 
+/** Who draws the map under the radar. Everything but `esri` needs the user's own key. */
+export type RainRadarMapProvider = 'esri' | 'google' | 'mapbox' | 'maptiler';
+
+/** Where radar frames come from. `openweather` and `rainbow` need the user's own API key. */
+export type RainRadarSource = 'rainviewer' | 'openweather' | 'rainbow';
+
+/** Open-Meteo weather layer drawn under the radar. */
+export type RainRadarWeatherLayer =
+  | 'none'
+  | 'temperature'
+  | 'precipitation'
+  | 'wind'
+  | 'clouds'
+  | 'air_quality';
+
 export interface RainRadarModule extends BaseModule {
   type: 'rain_radar';
 
@@ -9578,6 +9650,25 @@ export interface RainRadarModule extends BaseModule {
 
   /** RainViewer-compatible weather-maps.json URL (e.g. a self-hosted mirror). Empty = RainViewer. */
   source_url?: string | undefined;
+  /** Radar provider. Defaults to RainViewer; OpenWeather is used only once a key is set. */
+  radar_source?: RainRadarSource | undefined;
+  /** The user's own OpenWeather API key (stored in the dashboard config). */
+  openweather_api_key?: string | undefined;
+  /** The user's own Rainbow.ai API key (stored in the dashboard config). */
+  rainbow_api_key?: string | undefined;
+  /** Show a button that opens the map full screen. */
+  show_fullscreen?: boolean | undefined;
+  /** Base map provider. Defaults to Esri (keyless); others are used only once a key is set. */
+  map_provider?: RainRadarMapProvider | undefined;
+  /** The user's own key for the chosen map provider (stored in the dashboard config). */
+  map_api_key?: string | undefined;
+
+  /** Open-Meteo model layer under the radar (current hour). Defaults to none. */
+  weather_layer?: RainRadarWeatherLayer | undefined;
+  /** Weather layer opacity, 0–100. */
+  weather_layer_opacity?: number | undefined;
+  /** Open-Meteo weather model domain, or 'auto' to pick one from the map center. */
+  weather_model?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

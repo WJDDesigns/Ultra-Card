@@ -199,10 +199,7 @@ class UcLivingCanvasService {
     for (const reg of ordered) {
       if (reg.module.enabled === false) continue;
       logicService.setHass(reg.hass);
-      const ok = logicService.evaluateDisplayConditions(
-        reg.module.display_conditions || [],
-        reg.module.display_mode || 'always'
-      );
+      const ok = logicService.evaluateOverlayModuleVisibility(reg.module, reg.config);
       if (!ok) continue;
 
       const viewContainer = this.findViewContainerForCard(reg.element);

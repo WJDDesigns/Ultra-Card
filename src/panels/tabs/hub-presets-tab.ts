@@ -874,10 +874,13 @@ export class HubPresetsTab extends LitElement {
     `,
   ];
 
-  /** Reload presets from ultracard.io (clears API cache). Called when the Hub Presets tab is opened. */
-  refresh(): void {
+  /**
+   * Reload presets. Opening the tab reuses the cached catalog; `force` (the
+   * refresh button) clears it and refetches from ultracard.io.
+   */
+  refresh(force = false): void {
     ucPresetsService.ensureWordPressLoaded();
-    void ucPresetsService.refreshWordPressPresets();
+    void ucPresetsService.refreshWordPressPresets(force);
     if (this._view === 'mine' && this._cloudUser) {
       void this._loadMyPresets();
     }
@@ -1081,7 +1084,7 @@ export class HubPresetsTab extends LitElement {
   }
 
   private _refreshPresets(): void {
-    this.refresh();
+    this.refresh(true);
   }
 
   private _getOriginLabel(preset: PresetDefinition): string {

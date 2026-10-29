@@ -1,5 +1,6 @@
 import type { HomeAssistant } from '../ha/types';
 import { DisplayCondition, UltraCardConfig, UserVisibility } from '../types';
+import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { TemplateService } from './template-service';
 import { parseUnifiedTemplate, unifiedTemplateVisible } from '../utils/template-parser';
 
@@ -32,6 +33,22 @@ export class LogicService {
       LogicService.instance = new LogicService();
     }
     return LogicService.instance;
+  }
+
+  /**
+   * Card whose `$variables` a condition entity like `$front_door` resolves against.
+   * Cards render synchronously and set this first; global variables resolve without it.
+   */
+  private _cardConfig: UltraCardConfig | undefined;
+
+  public setCardConfig(config: UltraCardConfig | undefined): void {
+    this._cardConfig = config;
+  }
+
+  /** Condition entity with a `$variable` swapped for its entity id. */
+  private _conditionEntity(entity: string): string {
+    if (!entity.startsWith('$')) return entity;
+    return ucCustomVariablesService.resolveEntityField(entity, this._cardConfig) || entity;
   }
 
   public setHass(hass: HomeAssistant | undefined): void {
@@ -163,6 +180,21 @@ export class LogicService {
   }
 
   /**
+   * Whole-card visibility from Card Settings: per-user filter plus the card's
+   * display conditions (same condition types as rows, columns and modules).
+   */
+  public evaluateCardVisibility(config?: UltraCardConfig | null): boolean {
+    if (!config) return true;
+    if (!this.evaluateUserVisibility(config.user_visibility)) {
+      return false;
+    }
+    return this.evaluateDisplayConditions(
+      config.display_conditions || [],
+      config.display_mode || 'always'
+    );
+  }
+
+  /**
    * Evaluate display for a module that may have template_mode enabled
    * @param module The module to evaluate
    * @returns true if element should be visible, false otherwise
@@ -196,6 +228,35 @@ export class LogicService {
     // Users add visibility conditions explicitly in the Logic tab via display_conditions
 
     return this.evaluateDisplayConditions(conditions, displayMode);
+  }
+
+  /**
+   * Visibility for modules a service draws outside the card (navigation, background,
+   * video background, dynamic weather, living canvas). The card never renders these
+   * through _renderModule, so this is where their Logic tab applies. User visibility
+   * on the row and column holding the module counts too, since hiding those hides
+   * everything in them.
+   */
+  public evaluateOverlayModuleVisibility(module: any, cardConfig?: UltraCardConfig): boolean {
+    if (!this.evaluateUserVisibility(module?.user_visibility)) {
+      return false;
+    }
+
+    const moduleId = module?.id;
+    if (moduleId && cardConfig?.layout?.rows) {
+      for (const row of cardConfig.layout.rows) {
+        for (const column of row.columns || []) {
+          if (!(column.modules || []).some(m => m?.id === moduleId)) continue;
+          if (!this.evaluateUserVisibility((row as any).user_visibility)) return false;
+          if (!this.evaluateUserVisibility((column as any).user_visibility)) return false;
+        }
+      }
+    }
+
+    return this.evaluateDisplayConditions(
+      module?.display_conditions || [],
+      module?.display_mode || 'always'
+    );
   }
 
   /**
@@ -313,7 +374,7 @@ export class LogicService {
       return true; // Show by default if no entity or hass available
     }
 
-    const entity = this.hass.states[condition.entity];
+    const entity = this.hass.states[this._conditionEntity(condition.entity)];
     if (!entity) {
       // Track logged errors to prevent console flooding
       this.loggedEntityErrors.add(condition.entity);
@@ -379,7 +440,7 @@ export class LogicService {
       return true; // Show by default if no entity, attribute, or hass available
     }
 
-    const entity = this.hass.states[condition.entity];
+    const entity = this.hass.states[this._conditionEntity(condition.entity)];
     if (!entity) {
       // Track logged errors to prevent console flooding
       this.loggedEntityErrors.add(condition.entity);

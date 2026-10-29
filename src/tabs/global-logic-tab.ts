@@ -1,19 +1,23 @@
 import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from '../ha/types';
-import type { CardModule, CardColumn, CardRow } from '../types';
+import type { CardModule, CardColumn, CardRow, UltraCardConfig } from '../types';
 
-export type GlobalLogicTarget = 'module' | 'row' | 'column';
+/** 'card' is the whole card (Card Settings > Visibility). */
+export type GlobalLogicTarget = 'module' | 'row' | 'column' | 'card';
+
+/** Anything that carries the Logic tab's visibility keys. */
+export type GlobalLogicItem = CardModule | CardRow | CardColumn | UltraCardConfig;
 
 export interface GlobalLogicArgs {
-  target: CardModule | CardRow | CardColumn;
+  target: GlobalLogicItem;
   hass: HomeAssistant;
-  update: (updates: Partial<CardModule | CardRow | CardColumn>) => void;
+  update: (updates: Partial<GlobalLogicItem>) => void;
   logicTarget: GlobalLogicTarget;
 }
 
 /**
- * Logic tab entry point used by modules' `renderOtherTab` and by the layout
- * tab for rows and columns.
+ * Logic tab entry point used by modules' `renderOtherTab`, by the layout
+ * tab for rows and columns, and by Card Settings for the whole card.
  *
  * `render()` only mounts `<ultra-global-logic-tab>`; the element and the form
  * implementation live in `src/editor/global-logic-tab-element.ts` (editor
@@ -22,7 +26,7 @@ export interface GlobalLogicArgs {
  * with its parent, exactly as the inlined template used to.
  */
 export class GlobalLogicTab {
-  static render<M extends CardModule | CardRow | CardColumn>(
+  static render<M extends GlobalLogicItem>(
     module: M,
     hass: HomeAssistant,
     updateModule: (updates: Partial<M>) => void,
