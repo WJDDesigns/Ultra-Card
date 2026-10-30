@@ -1754,12 +1754,34 @@ export const layoutTabStyles = css`
         background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
         border-radius: 10px;
         flex-shrink: 0;
+        /* Size the toolbar by the editor pane, not the window: the pane is narrow
+           in HA's split editor even on a wide screen. */
+        container-type: inline-size;
       }
 
       .toolbar-row {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 0;
+        row-gap: 2px;
+      }
+
+      /* Narrow editor pane: tighten the buttons so the last group (help, full
+         screen) stays inside the toolbar instead of poking out past its edge. */
+      @container (max-width: 400px) {
+        .toolbar-group {
+          padding: 0 3px;
+          gap: 0;
+        }
+        .tb-btn {
+          min-width: 28px;
+          height: 30px;
+          padding: 0 3px;
+        }
+        .tb-btn span {
+          display: none;
+        }
       }
 
       .toolbar-group {

@@ -35,6 +35,13 @@ interface RegisteredModule {
   config: UltraCardConfig;
   element: HTMLElement | null;
   registeredAt: number;
+  /** First URL segment (the dashboard) the card was on when it registered. */
+  dashboardKey: string;
+}
+
+/** Dashboard part of an HA path: "/lovelace-home/2" → "lovelace-home". */
+function dashboardKeyOf(pathname: string): string {
+  return (pathname || '').split('/').filter(Boolean)[0] || '';
 }
 
 interface ViewNavLayer {
@@ -283,6 +290,9 @@ class UcNavigationService {
       config,
       element,
       registeredAt: existing?.registeredAt || Date.now(),
+      // Keep the original dashboard: a 'current_dashboard' navbar stays registered
+      // after leaving its dashboard and must not move along with the user.
+      dashboardKey: existing?.dashboardKey || dashboardKeyOf(window.location.pathname),
     });
 
     this.startObservers();
@@ -415,7 +425,7 @@ class UcNavigationService {
 
     for (const [key, registered] of this.registeredModules.entries()) {
       const navScope = registered.module.nav_scope || 'all_views';
-      if (navScope === 'all_views') {
+      if (navScope === 'all_views' || navScope === 'current_dashboard') {
         globalNavbars.push({
           cardId: registered.cardId,
           moduleId: registered.moduleId,
@@ -628,6 +638,11 @@ class UcNavigationService {
       if (navScope === 'current_view') {
         const cardViewPath = this.getCardViewPath(registered.element);
         if (cardViewPath && !this.isOnSameView(currentPath, cardViewPath)) {
+          continue;
+        }
+      } else if (navScope === 'current_dashboard') {
+        // Every view of the dashboard the card lives on, but not other dashboards.
+        if (registered.dashboardKey && dashboardKeyOf(currentPath) !== registered.dashboardKey) {
           continue;
         }
       }
@@ -4417,7 +4432,7 @@ class UcNavigationService {
     // stays visible when navigating between views (the card's view container
     // gets disconnected when leaving that view)
     const navScope = module.nav_scope || 'all_views';
-    if (navScope === 'all_views') {
+    if (navScope === 'all_views' || navScope === 'current_dashboard') {
       return document.body;
     }
 

@@ -3364,7 +3364,10 @@
         "is_not": "no es",
         "condition": "Condición",
         "state": "Estado"
-      }
+      },
+      "scope_current_dashboard": "Solo el panel actual",
+      "scope_dashboard_label": "Panel actual:",
+      "scope_dashboard_info": "La barra de navegación aparece en todas las vistas de este panel, pero no en tus otros paneles."
     },
     "climate": {
       "error_no_entity": "No hay entidad climática",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Título del Acordeón"
+      },
+      "title_icon": {
+        "section_title": "Icono del título",
+        "section_desc": "Icono opcional delante del título. Déjalo vacío para no mostrar ninguno.",
+        "icon": "Icono",
+        "color": "Color del icono del título"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Los resúmenes más largos se cortan tras estas líneas.",
       "title": "Título",
       "title_desc": "Déjalo vacío para usar el nombre del feed.",
-      "unit_days": " días"
+      "unit_days": " días",
+      "layout_ticker": "Teletipo",
+      "ticker_speed": "Velocidad del teletipo",
+      "ticker_speed_desc": "Segundos que tarda cada titular en pasar. Menos es más rápido.",
+      "unit_seconds": " s",
+      "tabs_section": "Feeds en pestañas",
+      "feed_tabs": "Mostrar una pestaña por feed",
+      "feed_tabs_desc": "Cambia entre tus feeds en lugar de verlos combinados.",
+      "feed_tabs_all": "Añadir una pestaña «Todos»",
+      "feed_tabs_all_desc": "La primera pestaña muestra todos los feeds combinados, los más recientes primero.",
+      "feed_options_desc": "Da a cada feed su propio nombre, icono y color. Se usan en las pestañas y como nombre del feed en los elementos. Las flechas cambian el orden.",
+      "move_up": "Subir",
+      "move_down": "Bajar",
+      "feed_label": "Nombre",
+      "feed_icon": "Icono",
+      "feed_color": "Color",
+      "tab_all": "Todos"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Sigue lo que admite la alarma",
+      "mode_desc_supported": "Tu alarma admite este modo",
+      "mode_desc_unsupported": "Tu alarma no indica este modo; actívalo para mostrarlo de todos modos"
+    },
+    "entity_variable": {
+      "linked": "Usando la variable",
+      "missing": "Variable no encontrada:",
+      "unlink": "Desvincular",
+      "use": "Usar una variable"
     }
   },
   "hub": {

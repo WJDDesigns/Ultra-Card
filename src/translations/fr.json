@@ -3364,7 +3364,10 @@
         "is_not": "n'est pas",
         "condition": "Condition",
         "state": "État"
-      }
+      },
+      "scope_current_dashboard": "Tableau de bord actuel uniquement",
+      "scope_dashboard_label": "Tableau de bord actuel :",
+      "scope_dashboard_info": "La barre de navigation apparaît sur chaque vue de ce tableau de bord, mais pas sur vos autres tableaux de bord."
     },
     "climate": {
       "error_no_entity": "Aucune entité climatique",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Titre de l'accordéon"
+      },
+      "title_icon": {
+        "section_title": "Icône du titre",
+        "section_desc": "Icône facultative affichée devant le titre. Laissez vide pour aucune.",
+        "icon": "Icône",
+        "color": "Couleur de l'icône du titre"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Les résumés plus longs sont coupés après ce nombre de lignes.",
       "title": "Titre",
       "title_desc": "Laissez vide pour utiliser le nom du flux.",
-      "unit_days": " jours"
+      "unit_days": " jours",
+      "layout_ticker": "Défilant",
+      "ticker_speed": "Vitesse du défilement",
+      "ticker_speed_desc": "Secondes nécessaires au défilement d'un titre. Plus bas, c'est plus rapide.",
+      "unit_seconds": " s",
+      "tabs_section": "Flux en onglets",
+      "feed_tabs": "Afficher un onglet par flux",
+      "feed_tabs_desc": "Passez d'un flux à l'autre au lieu de les voir fusionnés.",
+      "feed_tabs_all": "Ajouter un onglet « Tous »",
+      "feed_tabs_all_desc": "Le premier onglet affiche tous les flux fusionnés, les plus récents d'abord.",
+      "feed_options_desc": "Donnez à chaque flux son propre nom, son icône et sa couleur. Utilisés sur les onglets et comme nom du flux sur les articles. Les flèches changent l'ordre.",
+      "move_up": "Monter",
+      "move_down": "Descendre",
+      "feed_label": "Nom",
+      "feed_icon": "Icône",
+      "feed_color": "Couleur",
+      "tab_all": "Tous"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Suit ce que l'alarme prend en charge",
+      "mode_desc_supported": "Votre alarme prend en charge ce mode",
+      "mode_desc_unsupported": "Votre alarme ne signale pas ce mode ; activez pour l'afficher quand même"
+    },
+    "entity_variable": {
+      "linked": "Utilise la variable",
+      "missing": "Variable introuvable :",
+      "unlink": "Dissocier",
+      "use": "Utiliser une variable"
     }
   },
   "hub": {

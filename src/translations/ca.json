@@ -3364,7 +3364,10 @@
         "is_not": "no és",
         "condition": "Condició",
         "state": "Estat"
-      }
+      },
+      "scope_current_dashboard": "Només el tauler actual",
+      "scope_dashboard_label": "Tauler actual:",
+      "scope_dashboard_info": "La barra de navegació apareix a totes les vistes d'aquest tauler, però no als altres taulers."
     },
     "climate": {
       "error_no_entity": "Sense Entitat Climàtica",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Títol D'Accordion"
+      },
+      "title_icon": {
+        "section_title": "Icona del títol",
+        "section_desc": "Icona opcional davant del títol. Deixa-ho buit per no posar-ne cap.",
+        "icon": "Icona",
+        "color": "Color de la icona del títol"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Els resums més llargs es tallen després d'aquestes línies.",
       "title": "Títol",
       "title_desc": "Deixa-ho buit per fer servir el nom del feed.",
-      "unit_days": " dies"
+      "unit_days": " dies",
+      "layout_ticker": "Teletip",
+      "ticker_speed": "Velocitat del teletip",
+      "ticker_speed_desc": "Segons que triga cada titular a passar. Menys és més ràpid.",
+      "unit_seconds": " s",
+      "tabs_section": "Fonts en pestanyes",
+      "feed_tabs": "Mostra una pestanya per font",
+      "feed_tabs_desc": "Canvia entre les teves fonts en lloc de veure-les combinades.",
+      "feed_tabs_all": "Afegeix una pestanya «Totes»",
+      "feed_tabs_all_desc": "La primera pestanya mostra totes les fonts combinades, les més noves primer.",
+      "feed_options_desc": "Dona a cada font el seu propi nom, icona i color. S'utilitzen a les pestanyes i com a nom de la font als elements. Les fletxes canvien l'ordre.",
+      "move_up": "Puja",
+      "move_down": "Baixa",
+      "feed_label": "Nom",
+      "feed_icon": "Icona",
+      "feed_color": "Color",
+      "tab_all": "Totes"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Segueix el que admet l'alarma",
+      "mode_desc_supported": "La teva alarma admet aquest mode",
+      "mode_desc_unsupported": "La teva alarma no indica aquest mode; activa'l per mostrar-lo igualment"
+    },
+    "entity_variable": {
+      "linked": "Fent servir la variable",
+      "missing": "Variable no trobada:",
+      "unlink": "Desvincula",
+      "use": "Fes servir una variable"
     }
   },
   "hub": {

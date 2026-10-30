@@ -818,6 +818,10 @@ export class UltraLockModule extends BaseUltraModule {
         : '';
     const alignment = designAlign || lockCfg.alignment || 'center';
     const alignClass = alignment === 'center' ? '' : `uc-lock--align-${alignment}`;
+    // Only the icon is on: drop the card padding and empty text column so the lock
+    // lines up with an Icon module (larrysansan, Oct 30).
+    const iconOnly = showIcon && !showTitle && !showState && !hasActions && !isJammed;
+    const iconOnlyClass = iconOnly ? 'uc-lock--icon-only' : '';
 
     if (layout === 'hero') {
       content = html`
@@ -846,7 +850,7 @@ export class UltraLockModule extends BaseUltraModule {
       `;
     } else if (layout === 'compact') {
       content = html`
-        <div class="uc-lock uc-lock--compact ${alignClass}">
+        <div class="uc-lock uc-lock--compact ${alignClass} ${iconOnlyClass}">
           <div class="uc-lock-compact__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
@@ -880,17 +884,19 @@ export class UltraLockModule extends BaseUltraModule {
       `;
     } else {
       content = html`
-        <div class="uc-lock uc-lock--standard ${alignClass}">
+        <div class="uc-lock uc-lock--standard ${alignClass} ${iconOnlyClass}">
           <div class="uc-lock-std__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well uc-lock-icon-well--std ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
                   ${lockIconEl(28)}
                 </div>`
               : nothing}
-            <div class="uc-lock-std__meta">
-              ${showTitle ? html`<h2 class="uc-lock-title uc-lock-title--std">${name}</h2>` : nothing}
-              ${showState ? html`<p class="uc-lock-subtitle">${stateLabel}</p>` : nothing}
-            </div>
+            ${iconOnly
+              ? nothing
+              : html`<div class="uc-lock-std__meta">
+                  ${showTitle ? html`<h2 class="uc-lock-title uc-lock-title--std">${name}</h2>` : nothing}
+                  ${showState ? html`<p class="uc-lock-subtitle">${stateLabel}</p>` : nothing}
+                </div>`}
             ${hasActions
               ? html`<div class="uc-lock-std__actions" role="group">${actionBtns()}</div>`
               : nothing}
@@ -1080,6 +1086,17 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock--compact.uc-lock--align-right .uc-lock-chip-label { flex: 0 1 auto; }
       .uc-lock--compact.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
       .uc-lock--compact.uc-lock--align-right .uc-lock-chip-label { text-align: right; }
+
+      /* Icon only: no padding, centred unless Left / Right is picked */
+      .uc-lock--standard.uc-lock--icon-only,
+      .uc-lock--compact.uc-lock--icon-only { padding: 0; }
+      .uc-lock--icon-only .uc-lock-std__row,
+      .uc-lock--icon-only .uc-lock-compact__row { justify-content: center; }
+      .uc-lock--icon-only.uc-lock--align-left .uc-lock-std__row,
+      .uc-lock--icon-only.uc-lock--align-left .uc-lock-compact__row { justify-content: flex-start; }
+      .uc-lock--icon-only.uc-lock--align-right .uc-lock-std__row,
+      .uc-lock--icon-only.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
+      .uc-lock--compact.uc-lock--icon-only .uc-lock-chip-label { display: none; }
 
       /* ═══ COMPACT (chip) ═════════════════════════ */
       .uc-lock--compact { padding: 6px 10px; }

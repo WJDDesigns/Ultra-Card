@@ -40,6 +40,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
   private _codeBuffer = new Map<string, string>();
   /** Which action the user tapped (awaiting code entry); 'alarm_disarm' = pending disarm */
   private _pendingArmMode = new Map<string, ArmMode | 'alarm_disarm'>();
+  /** Compact layout: entities whose arm-mode chooser is open */
+  private _compactChooser = new Set<string>();
 
   override handlesOwnDesignStyles = true;
 
@@ -97,6 +99,25 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
   ): TemplateResult {
     const m = module as AlarmPanelModuleConfig;
     const lang = hass?.locale?.language || 'en';
+    // Toggles start from what the alarm entity supports (Alarmo, Manual, etc.),
+    // so the switches match the buttons the card actually shows.
+    const alarmId = this.resolveEntity(m.entity, config) || m.entity;
+    const alarmState = alarmId ? hass?.states?.[alarmId] : undefined;
+    const sup = alarmState ? supportedFeatures((alarmState.attributes || {}) as Record<string, unknown>) : 0;
+    const detected = (flag: number) => (alarmState ? !!(sup & flag) : true);
+    const flagFor: Record<string, number> = {
+      show_arm_home: FEATURE_ARM_HOME,
+      show_arm_away: FEATURE_ARM_AWAY,
+      show_arm_night: FEATURE_ARM_NIGHT,
+      show_arm_vacation: FEATURE_ARM_VACATION,
+      show_arm_custom: FEATURE_ARM_CUSTOM_BYPASS,
+    };
+    const modeDesc = (key: string) => {
+      if (!alarmState) return localize('editor.alarm_panel.mode_desc_auto', lang, 'Follows what the alarm supports');
+      return detected(flagFor[key])
+        ? localize('editor.alarm_panel.mode_desc_supported', lang, 'Your alarm supports this mode')
+        : localize('editor.alarm_panel.mode_desc_unsupported', lang, 'Your alarm does not report this mode; turn on to show it anyway');
+    };
 
     return html`
       ${this.injectUcFormStyles()}
@@ -198,56 +219,56 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
           [
             {
               title: localize('editor.alarm_panel.show_arm_home', lang, 'Show Arm Home'),
-              description: localize('editor.alarm_panel.show_arm_home_desc', lang, 'Auto-detected when not set'),
+              description: modeDesc('show_arm_home'),
               hass,
-              data: { show_arm_home: m.show_arm_home ?? true },
+              data: { show_arm_home: m.show_arm_home ?? detected(FEATURE_ARM_HOME) },
               schema: [this.booleanField('show_arm_home')],
               onChange: (e: CustomEvent) => {
-                updateModule({ show_arm_home: e.detail.value?.show_arm_home ?? true });
+                updateModule({ show_arm_home: !!e.detail.value?.show_arm_home });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
             {
               title: localize('editor.alarm_panel.show_arm_away', lang, 'Show Arm Away'),
-              description: localize('editor.alarm_panel.show_arm_away_desc', lang, 'Auto-detected when not set'),
+              description: modeDesc('show_arm_away'),
               hass,
-              data: { show_arm_away: m.show_arm_away ?? true },
+              data: { show_arm_away: m.show_arm_away ?? detected(FEATURE_ARM_AWAY) },
               schema: [this.booleanField('show_arm_away')],
               onChange: (e: CustomEvent) => {
-                updateModule({ show_arm_away: e.detail.value?.show_arm_away ?? true });
+                updateModule({ show_arm_away: !!e.detail.value?.show_arm_away });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
             {
               title: localize('editor.alarm_panel.show_arm_night', lang, 'Show Arm Night'),
-              description: localize('editor.alarm_panel.show_arm_night_desc', lang, 'Auto-detected when not set'),
+              description: modeDesc('show_arm_night'),
               hass,
-              data: { show_arm_night: m.show_arm_night ?? true },
+              data: { show_arm_night: m.show_arm_night ?? detected(FEATURE_ARM_NIGHT) },
               schema: [this.booleanField('show_arm_night')],
               onChange: (e: CustomEvent) => {
-                updateModule({ show_arm_night: e.detail.value?.show_arm_night ?? true });
+                updateModule({ show_arm_night: !!e.detail.value?.show_arm_night });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
             {
               title: localize('editor.alarm_panel.show_arm_vacation', lang, 'Show Arm Vacation'),
-              description: localize('editor.alarm_panel.show_arm_vacation_desc', lang, 'Auto-detected when not set'),
+              description: modeDesc('show_arm_vacation'),
               hass,
-              data: { show_arm_vacation: m.show_arm_vacation ?? false },
+              data: { show_arm_vacation: m.show_arm_vacation ?? detected(FEATURE_ARM_VACATION) },
               schema: [this.booleanField('show_arm_vacation')],
               onChange: (e: CustomEvent) => {
-                updateModule({ show_arm_vacation: e.detail.value?.show_arm_vacation ?? false });
+                updateModule({ show_arm_vacation: !!e.detail.value?.show_arm_vacation });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
             {
               title: localize('editor.alarm_panel.show_arm_custom', lang, 'Show Arm Custom Bypass'),
-              description: localize('editor.alarm_panel.show_arm_custom_desc', lang, 'Auto-detected when not set'),
+              description: modeDesc('show_arm_custom'),
               hass,
-              data: { show_arm_custom: m.show_arm_custom ?? false },
+              data: { show_arm_custom: m.show_arm_custom ?? detected(FEATURE_ARM_CUSTOM_BYPASS) },
               schema: [this.booleanField('show_arm_custom')],
               onChange: (e: CustomEvent) => {
-                updateModule({ show_arm_custom: e.detail.value?.show_arm_custom ?? false });
+                updateModule({ show_arm_custom: !!e.detail.value?.show_arm_custom });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
@@ -521,21 +542,25 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
 
     // ── Arm mode buttons ─────────────────────────────────────────────────────
-    const armButtons = () => html`
+    const startArm = (mode: ArmMode) => {
+      if (showKeypad || codeRequiredForArm) {
+        this._pendingArmMode.set(entityId, mode);
+        this._codeBuffer.set(entityId, '');
+        this.triggerPreviewUpdate(true);
+      } else {
+        this._callAlarm(hass, entityId, mode, '');
+      }
+    };
+    if (!isDisarmed) this._compactChooser.delete(entityId);
+    const compactChooserOpen = isDisarmed && this._compactChooser.has(entityId);
+
+    const armButtons = (onPick: (mode: ArmMode) => void = startArm) => html`
       <div class="uc-alarm-arm-btns" role="group" aria-label="${localize('editor.alarm_panel.arm_modes_label', lang, 'Arm modes')}">
         ${visibleModes.map(mode => html`
           <button type="button"
             class="uc-alarm-arm-btn ${this._pendingArmMode.get(entityId) === mode ? 'uc-alarm-arm-btn--active' : ''}"
             ?disabled=${isBusy || isUnavailable}
-            @click=${() => {
-              if (showKeypad || codeRequiredForArm) {
-                this._pendingArmMode.set(entityId, mode);
-                this._codeBuffer.set(entityId, '');
-                this.triggerPreviewUpdate(true);
-              } else {
-                this._callAlarm(hass, entityId, mode, '');
-              }
-            }}
+            @click=${() => onPick(mode)}
           >
             <ha-icon style="--mdc-icon-size:16px;" icon="${this._armModeIcon(mode)}"></ha-icon>
             ${this._armModeLabel(mode, lang)}
@@ -686,7 +711,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
                 </div>
                 <div class="uc-alarm-std__actions" role="group">
                   ${isDisarmed
-                    ? visibleModes.slice(0, 2).map(mode => html`
+                    ? visibleModes.map(mode => html`
                         <button type="button" class="uc-alarm-std-btn ${pendingMode === mode ? 'uc-alarm-arm-btn--active' : ''}"
                           ?disabled=${isBusy || isUnavailable}
                           @click=${() => {
@@ -734,7 +759,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       <style>${this.getStyles()}</style>
       <div class="uc-alarm-wrapper ${hoverClass}"
         data-uc-role="pane"
-        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: ${pendingMode ? '20px' : '999px'}; overflow: hidden; ${styleStr}">
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: ${pendingMode || compactChooserOpen ? '20px' : '999px'}; overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(html`
           <div class="uc-alarm uc-alarm--compact">
             <div class="uc-alarm-compact__row">
@@ -747,21 +772,25 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
                 ${m.show_title !== false ? html`${name} · ` : nothing}${stateLabel}
               </span>
               ${isDisarmed
-                ? html`
-                    <button type="button" class="uc-alarm-compact-btn"
+                ? visibleModes.length === 0
+                  ? nothing
+                  : html`
+                    <button type="button" class="uc-alarm-compact-btn ${compactChooserOpen ? 'uc-alarm-arm-btn--active' : ''}"
                       ?disabled=${isBusy || isUnavailable}
                       @click=${() => {
-                        if (codeRequiredForArm) {
-                          // Same pending-mode + keypad flow as the hero layout
-                          this._pendingArmMode.set(entityId, 'arm_away');
-                          this._codeBuffer.set(entityId, '');
+                        // One arm mode: arm straight away. Several: open the mode chooser.
+                        if (visibleModes.length > 1) {
+                          if (compactChooserOpen) this._compactChooser.delete(entityId);
+                          else this._compactChooser.add(entityId);
                           this.triggerPreviewUpdate(true);
-                        } else {
-                          this._callAlarm(hass, entityId, 'arm_away', '');
+                          return;
                         }
+                        startArm(visibleModes[0]);
                       }}>
-                      <ha-icon style="--mdc-icon-size:13px;" icon="mdi:shield-check"></ha-icon>
-                      ${localize('editor.alarm_panel.action_arm', lang, 'Arm')}
+                      <ha-icon style="--mdc-icon-size:13px;" icon="${visibleModes.length === 1 ? this._armModeIcon(visibleModes[0]) : 'mdi:shield-check'}"></ha-icon>
+                      ${visibleModes.length === 1
+                        ? this._armModeLabel(visibleModes[0], lang)
+                        : localize('editor.alarm_panel.action_arm', lang, 'Arm')}
                     </button>
                   `
                 : html`
@@ -781,6 +810,12 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
                     </button>
                   `}
             </div>
+            ${compactChooserOpen && !pendingMode
+              ? html`<div class="uc-alarm-compact__modes">${armButtons(mode => {
+                  this._compactChooser.delete(entityId);
+                  startArm(mode);
+                })}</div>`
+              : nothing}
             ${pendingMode
               ? html`
                   <div class="uc-alarm-compact__keypad">
@@ -1017,7 +1052,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
       .uc-alarm--standard { padding: 14px 16px; }
       .uc-alarm--standard .uc-alarm-keypad { margin: 12px auto 0; }
       .uc-alarm--standard .uc-alarm-pending-mode-label { justify-content: center; margin-top: 10px; }
-      .uc-alarm-std__row { display: flex; align-items: center; gap: 12px; }
+      .uc-alarm-std__row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
       .uc-alarm-icon-well {
         flex-shrink: 0;
         width: 44px; height: 44px;
@@ -1026,10 +1061,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         background: color-mix(in srgb, var(--alarm-color) 10%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         display: flex; align-items: center; justify-content: center;
       }
-      .uc-alarm-std__meta { flex: 1; min-width: 0; overflow: hidden; }
+      .uc-alarm-std__meta { flex: 1 1 120px; min-width: 0; overflow: hidden; }
       .uc-alarm-std-title { margin: 0; font-size: 0.9375rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .uc-alarm-std-subtitle { margin: 3px 0 0; font-size: 0.8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .uc-alarm-std__actions { flex-shrink: 0; display: flex; gap: 6px; flex-wrap: wrap; max-width: 220px; }
+      .uc-alarm-std__actions { flex: 0 1 auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
       .uc-alarm-std-btn {
         display: flex; align-items: center; gap: 5px;
         font: inherit; font-size: 0.78rem; font-weight: 700;
@@ -1057,6 +1092,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         padding: 10px 4px 8px;
       }
       .uc-alarm-compact__row { display: flex; align-items: center; gap: 8px; }
+      .uc-alarm-compact__modes { padding: 8px 2px 4px; }
       .uc-alarm-icon-compact {
         flex-shrink: 0;
         width: 26px; height: 26px;

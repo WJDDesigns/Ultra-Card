@@ -3364,7 +3364,10 @@
         "is_not": "nie jest",
         "condition": "Warunek",
         "state": "Stan"
-      }
+      },
+      "scope_current_dashboard": "Tylko bieżący pulpit",
+      "scope_dashboard_label": "Bieżący pulpit:",
+      "scope_dashboard_info": "Pasek nawigacji pojawia się w każdym widoku tego pulpitu, ale nie na innych pulpitach."
     },
     "climate": {
       "error_no_entity": "Brak jednostki klimatyzacji",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Tytuł Akordeonu"
+      },
+      "title_icon": {
+        "section_title": "Ikona tytułu",
+        "section_desc": "Opcjonalna ikona przed tytułem. Zostaw puste, aby jej nie było.",
+        "icon": "Ikona",
+        "color": "Kolor ikony tytułu"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Dłuższe streszczenia są ucinane po tylu wierszach.",
       "title": "Tytuł",
       "title_desc": "Zostaw puste, aby użyć nazwy kanału.",
-      "unit_days": " dni"
+      "unit_days": " dni",
+      "layout_ticker": "Pasek wiadomości",
+      "ticker_speed": "Szybkość paska",
+      "ticker_speed_desc": "Sekundy, w ciągu których nagłówek przewija się obok. Mniej to szybciej.",
+      "unit_seconds": " s",
+      "tabs_section": "Kanały jako karty",
+      "feed_tabs": "Pokaż kartę dla każdego kanału",
+      "feed_tabs_desc": "Przełączaj się między kanałami zamiast oglądać je połączone.",
+      "feed_tabs_all": "Dodaj kartę „Wszystkie”",
+      "feed_tabs_all_desc": "Pierwsza karta pokazuje wszystkie kanały połączone, od najnowszych.",
+      "feed_options_desc": "Nadaj każdemu kanałowi własną nazwę, ikonę i kolor. Używane na kartach i jako nazwa kanału przy wpisach. Strzałki zmieniają kolejność.",
+      "move_up": "Przesuń w górę",
+      "move_down": "Przesuń w dół",
+      "feed_label": "Nazwa",
+      "feed_icon": "Ikona",
+      "feed_color": "Kolor",
+      "tab_all": "Wszystkie"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Zgodnie z tym, co obsługuje alarm",
+      "mode_desc_supported": "Twój alarm obsługuje ten tryb",
+      "mode_desc_unsupported": "Twój alarm nie zgłasza tego trybu; włącz, aby i tak go pokazać"
+    },
+    "entity_variable": {
+      "linked": "Używa zmiennej",
+      "missing": "Nie znaleziono zmiennej:",
+      "unlink": "Odłącz",
+      "use": "Użyj zmiennej"
     }
   },
   "hub": {

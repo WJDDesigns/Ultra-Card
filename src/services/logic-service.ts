@@ -73,6 +73,11 @@ export class LogicService {
     // Errors are only cleared when subscriptions are fully reset (last consumer unmounts or cleanup()).
   }
 
+  /** False after the last card unmounted (teardown drops hass) until a card hands it back. */
+  get hasHass(): boolean {
+    return this.hass !== null;
+  }
+
   /** How many live Ultra Card (or other) instances have called registerConsumer without unregisterConsumer. */
   get activeConsumerCount(): number {
     return this.consumerRefCount;

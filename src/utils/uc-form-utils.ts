@@ -2,6 +2,7 @@ import { TemplateResult, html } from 'lit';
 import type { HomeAssistant } from '../ha/types';
 import { CardModule, CustomVariable, UltraCardConfig } from '../types';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import { localize } from '../localize/localize';
 
 // Per-element guard: tracks which ha-form elements are currently processing a change.
 // Using a WeakSet prevents cross-module interference that the old singleton boolean caused —
@@ -628,7 +629,72 @@ export class UcFormUtils {
           },
           false /* hide HA's built-in label; we render our own .field-title above */
         )}
+        ${UcFormUtils._renderEntityVariableControls(hass, config, currentValue, onChange, domain)}
       </div>
+    `;
+  }
+
+  /**
+   * Variable link for entity pickers: shows which $variable a field is bound to
+   * (HA's picker can only show the resolved entity) and lets the user pick or
+   * unlink a variable without switching to the code editor.
+   */
+  private static _renderEntityVariableControls(
+    hass: HomeAssistant,
+    config: UltraCardConfig | undefined,
+    currentValue: string,
+    onChange: (value: string) => void,
+    domain?: string[]
+  ): TemplateResult | string {
+    const lang = hass?.locale?.language || 'en';
+    const variables = ucCustomVariablesService
+      .getVariablesForCard(config)
+      .filter(v => !domain?.length || domain.includes(String(v.entity || '').split('.')[0]));
+    const bound = currentValue?.startsWith('$') ? currentValue.substring(1) : '';
+    const boundVar = bound ? ucCustomVariablesService.getVariableByNameInContext(bound, config) : undefined;
+    if (!bound && variables.length === 0) return '';
+
+    const chipStyle =
+      'display:flex; align-items:center; gap:6px; margin-top:8px; padding:6px 10px; border-radius:8px; font-size:13px; ' +
+      'background: color-mix(in srgb, var(--primary-color) 10%, transparent); color: var(--primary-text-color);';
+    return html`
+      ${bound
+        ? html`<div class="uc-entity-variable-chip" style="${chipStyle}">
+            <ha-icon icon="mdi:variable" style="--mdc-icon-size:16px; color: var(--primary-color);"></ha-icon>
+            <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${boundVar
+                ? html`${localize('editor.entity_variable.linked', lang, 'Using variable')} <b>$${bound}</b> → ${boundVar.entity}`
+                : html`<span style="color: var(--error-color);">${localize('editor.entity_variable.missing', lang, 'Variable not found:')} <b>$${bound}</b></span>`}
+            </span>
+            <button
+              type="button"
+              style="border:none; background:none; color: var(--primary-color); cursor:pointer; font: inherit; font-size:12px; font-weight:600;"
+              @click=${() => onChange(boundVar?.entity || '')}
+            >
+              ${localize('editor.entity_variable.unlink', lang, 'Unlink')}
+            </button>
+          </div>`
+        : ''}
+      ${variables.length
+        ? html`<label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:13px; color: var(--secondary-text-color);">
+            <ha-icon icon="mdi:variable" style="--mdc-icon-size:16px;"></ha-icon>
+            ${localize('editor.entity_variable.use', lang, 'Use a variable')}
+            <select
+              style="flex:1; min-width:0; padding:6px 8px; border-radius:6px; border:1px solid var(--divider-color); background: var(--card-background-color, var(--secondary-background-color)); color: var(--primary-text-color); font: inherit;"
+              @change=${(e: Event) => {
+                const name = (e.target as HTMLSelectElement).value;
+                if (name) onChange(`$${name}`);
+              }}
+            >
+              <option value="" ?selected=${!bound}>—</option>
+              ${variables.map(
+                v => html`<option value=${v.name} ?selected=${bound.toLowerCase() === v.name.toLowerCase()}>
+                  $${v.name} (${v.entity})
+                </option>`
+              )}
+            </select>
+          </label>`
+        : ''}
     `;
   }
 

@@ -3364,7 +3364,10 @@
         "is_not": "non è",
         "condition": "Condizione",
         "state": "Stato"
-      }
+      },
+      "scope_current_dashboard": "Solo dashboard attuale",
+      "scope_dashboard_label": "Dashboard attuale:",
+      "scope_dashboard_info": "La barra di navigazione appare in ogni vista di questa dashboard, ma non nelle altre dashboard."
     },
     "climate": {
       "error_no_entity": "Nessuna Entità Climatica",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Titolo dell'accordion"
+      },
+      "title_icon": {
+        "section_title": "Icona del titolo",
+        "section_desc": "Icona facoltativa mostrata prima del titolo. Lascia vuoto per nessuna.",
+        "icon": "Icona",
+        "color": "Colore dell'icona del titolo"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "I riassunti più lunghi vengono tagliati dopo questo numero di righe.",
       "title": "Titolo",
       "title_desc": "Lascia vuoto per usare il nome del feed.",
-      "unit_days": " giorni"
+      "unit_days": " giorni",
+      "layout_ticker": "Ticker",
+      "ticker_speed": "Velocità del ticker",
+      "ticker_speed_desc": "Secondi impiegati da ogni titolo per scorrere. Meno è più veloce.",
+      "unit_seconds": " s",
+      "tabs_section": "Feed come schede",
+      "feed_tabs": "Mostra una scheda per ogni feed",
+      "feed_tabs_desc": "Passa da un feed all'altro invece di vederli uniti.",
+      "feed_tabs_all": "Aggiungi una scheda \"Tutti\"",
+      "feed_tabs_all_desc": "La prima scheda mostra tutti i feed uniti, dai più recenti.",
+      "feed_options_desc": "Dai a ogni feed un nome, un'icona e un colore propri. Usati sulle schede e come nome del feed sugli elementi. Le frecce cambiano l'ordine.",
+      "move_up": "Sposta su",
+      "move_down": "Sposta giù",
+      "feed_label": "Nome",
+      "feed_icon": "Icona",
+      "feed_color": "Colore",
+      "tab_all": "Tutti"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Segue ciò che l'allarme supporta",
+      "mode_desc_supported": "Il tuo allarme supporta questa modalità",
+      "mode_desc_unsupported": "Il tuo allarme non segnala questa modalità; attivala per mostrarla comunque"
+    },
+    "entity_variable": {
+      "linked": "Usa la variabile",
+      "missing": "Variabile non trovata:",
+      "unlink": "Scollega",
+      "use": "Usa una variabile"
     }
   },
   "hub": {

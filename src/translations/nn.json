@@ -3364,7 +3364,10 @@
         "is_not": "er ikkje",
         "condition": "Vilkår",
         "state": "Tilstand"
-      }
+      },
+      "scope_current_dashboard": "Berre gjeldande dashbord",
+      "scope_dashboard_label": "Gjeldande dashbord:",
+      "scope_dashboard_info": "Navigasjonslinja blir vist på alle visingar i dette dashbordet, men ikkje på dei andre dashborda dine."
     },
     "climate": {
       "error_no_entity": "Ingen klimaenhet",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Akkordeon Tittel"
+      },
+      "title_icon": {
+        "section_title": "Tittelikon",
+        "section_desc": "Valfritt ikon framfor tittelen. La stå tomt for ingen.",
+        "icon": "Ikon",
+        "color": "Farge på tittelikon"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Lengre samandrag vert kutta etter så mange linjer.",
       "title": "Tittel",
       "title_desc": "La feltet stå tomt for å bruke namnet på feeden.",
-      "unit_days": " dagar"
+      "unit_days": " dagar",
+      "layout_ticker": "Nyheitsrull",
+      "ticker_speed": "Fart på nyheitsrull",
+      "ticker_speed_desc": "Sekund kvar overskrift brukar på å rulla forbi. Lågare er raskare.",
+      "unit_seconds": " s",
+      "tabs_section": "Feedar som faner",
+      "feed_tabs": "Vis ei fane for kvar feed",
+      "feed_tabs_desc": "Byt mellom feedane dine i staden for å sjå dei slått saman.",
+      "feed_tabs_all": "Legg til ei «Alle»-fane",
+      "feed_tabs_all_desc": "Første fane viser alle feedar slått saman, nyaste først.",
+      "feed_options_desc": "Gje kvar feed sitt eige namn, ikon og farge. Blir brukt på fanene og som feednamn på element. Pilene endrar rekkjefølgja.",
+      "move_up": "Flytt opp",
+      "move_down": "Flytt ned",
+      "feed_label": "Namn",
+      "feed_icon": "Ikon",
+      "feed_color": "Farge",
+      "tab_all": "Alle"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Følgjer det alarmen støttar",
+      "mode_desc_supported": "Alarmen din støttar denne modusen",
+      "mode_desc_unsupported": "Alarmen din meldar ikkje denne modusen; slå på for å visa han likevel"
+    },
+    "entity_variable": {
+      "linked": "Brukar variabel",
+      "missing": "Fann ikkje variabel:",
+      "unlink": "Kopla frå",
+      "use": "Bruk ein variabel"
     }
   },
   "hub": {

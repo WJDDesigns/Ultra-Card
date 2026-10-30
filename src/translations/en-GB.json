@@ -3369,7 +3369,10 @@
         "is_not": "is not",
         "condition": "Condition",
         "state": "State"
-      }
+      },
+      "scope_current_dashboard": "Current dashboard only",
+      "scope_dashboard_label": "Current dashboard:",
+      "scope_dashboard_info": "Navbar appears on every view of this dashboard, but not on your other dashboards."
     },
     "climate": {
       "error_no_entity": "No Climate Entity",
@@ -3428,6 +3431,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Accordion Title"
+      },
+      "title_icon": {
+        "section_title": "Title Icon",
+        "section_desc": "Optional icon shown in front of the title. Leave empty for none.",
+        "icon": "Icon",
+        "color": "Title icon colour"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Longer summaries are cut off after this many lines.",
       "title": "Title",
       "title_desc": "Leave empty to use the feed name.",
-      "unit_days": " days"
+      "unit_days": " days",
+      "layout_ticker": "Ticker",
+      "ticker_speed": "Ticker speed",
+      "ticker_speed_desc": "Seconds each headline takes to scroll past. Lower is faster.",
+      "unit_seconds": " s",
+      "tabs_section": "Feeds as tabs",
+      "feed_tabs": "Show a tab for each feed",
+      "feed_tabs_desc": "Switch between your feeds instead of seeing them merged.",
+      "feed_tabs_all": "Add an \"All\" tab",
+      "feed_tabs_all_desc": "First tab shows every feed merged, newest first.",
+      "feed_options_desc": "Give each feed its own name, icon and colour. Used on the tabs and as the feed name on items. Arrows change the order.",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "feed_label": "Name",
+      "feed_icon": "Icon",
+      "feed_color": "Colour",
+      "tab_all": "All"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Follows what the alarm supports",
+      "mode_desc_supported": "Your alarm supports this mode",
+      "mode_desc_unsupported": "Your alarm does not report this mode; turn on to show it anyway"
+    },
+    "entity_variable": {
+      "linked": "Using variable",
+      "missing": "Variable not found:",
+      "unlink": "Unlink",
+      "use": "Use a variable"
     }
   },
   "hub": {
