@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta5
+
+The fifth 3.14.3 beta fixes several bugs reported on Discord and adds RSS feed tabs, a news ticker, a "Current dashboard only" Navigation option and Accordion title icons. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.2 too.** It gets RSS feeds through from more sites that turn away Home Assistant, and brings the Hub up to this beta.
+
+### 🚀 New Features
+
+- **RSS Feed: feeds as tabs** - Show each feed in its own tab, with an optional "All" tab. Give every feed its own name, icon and colour, and move feeds up or down to change their order
+- **RSS Feed: ticker layout** - A new Ticker layout scrolls the latest headlines across the card, with a speed setting. It pauses when you hover and stays still if your device asks for reduced motion
+- **Navigation: Current dashboard only** - A new scope shows the navigation bar on every view of the dashboard you added it to, but not on your other dashboards
+- **Accordion: title icon** - Add an icon in front of the Accordion title, with its own colour
+- **Variables in entity fields** - Entity fields that support variables now have a "Use a variable" list. When a field uses a variable, a chip shows which entity it points to, with an Unlink button to go back to a fixed entity
+
+### 🐛 Bug Fixes
+
+- **Lock: icon-only lock not centred** - A Lock showing only its icon now sits in the centre (or left/right if you choose) without extra padding, and a transparent background really is transparent. Thanks to larrysansan for the report
+- **Alarm Panel: arm modes didn't match the alarm** - The arm-mode switches now start from what your alarm says it supports (this helps Alarmo), the standard layout shows every mode you enable, and the compact layout now follows your arm modes too. Thanks to larrysansan for the report
+- **Hidden modules came back after switching views** - Modules hidden by entity state showed up again after moving to another view and back. They now stay hidden. Thanks to larrysansan for the report
+- **Layout names not shown in the editor** - Names you give to Horizontal, Vertical, Tabs, Accordion and other layouts now show in the layout tree. Thanks to larrysansan for the report
+- **Editor toolbar misaligned in full screen** - The toolbar now wraps and shows only icons when the editor is narrow. Thanks to larrysansan for the report
+
 ## Version 3.14.3-beta4
 
 The fourth 3.14.3 beta adds visibility settings for the whole card and updates German translations. This is a pre-release for testing — please report anything odd on GitHub or Discord.
