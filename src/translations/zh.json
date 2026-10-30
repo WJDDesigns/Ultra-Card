@@ -3686,7 +3686,10 @@
         "is_not": "不是",
         "condition": "条件",
         "state": "状态"
-      }
+      },
+      "scope_current_dashboard": "仅当前仪表盘",
+      "scope_dashboard_label": "当前仪表盘：",
+      "scope_dashboard_info": "导航栏会出现在此仪表盘的每个视图中，但不会出现在其他仪表盘中。"
     },
     "climate": {
       "entity_config_title": "实体配置",
@@ -3749,6 +3752,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "手风琴标题"
+      },
+      "title_icon": {
+        "section_title": "标题图标",
+        "section_desc": "标题前显示的可选图标。留空则不显示。",
+        "icon": "图标",
+        "color": "标题图标颜色"
       }
     },
     "animated_forecast": {
@@ -6324,7 +6333,34 @@
       "summary_lines_desc": "较长的摘要会在这么多行后截断。",
       "title": "标题",
       "title_desc": "留空则使用订阅源名称。",
-      "unit_days": " 天"
+      "unit_days": " 天",
+      "layout_ticker": "滚动条",
+      "ticker_speed": "滚动速度",
+      "ticker_speed_desc": "每条标题滚过所需的秒数。数值越小越快。",
+      "unit_seconds": " 秒",
+      "tabs_section": "以标签页显示订阅源",
+      "feed_tabs": "为每个订阅源显示一个标签页",
+      "feed_tabs_desc": "在订阅源之间切换，而不是合并显示。",
+      "feed_tabs_all": "添加“全部”标签页",
+      "feed_tabs_all_desc": "第一个标签页显示所有订阅源的合并内容，最新的在前。",
+      "feed_options_desc": "为每个订阅源设置名称、图标和颜色。用于标签页以及条目上的订阅源名称。箭头可调整顺序。",
+      "move_up": "上移",
+      "move_down": "下移",
+      "feed_label": "名称",
+      "feed_icon": "图标",
+      "feed_color": "颜色",
+      "tab_all": "全部"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "跟随警报系统支持的模式",
+      "mode_desc_supported": "您的警报系统支持此模式",
+      "mode_desc_unsupported": "您的警报系统未报告此模式；开启后仍会显示"
+    },
+    "entity_variable": {
+      "linked": "正在使用变量",
+      "missing": "未找到变量：",
+      "unlink": "取消关联",
+      "use": "使用变量"
     }
   },
   "hub": {

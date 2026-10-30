@@ -24,6 +24,19 @@ import {
 } from '../utils/uc-css-text';
 
 // Module metadata interface
+/** True when a colour value is fully transparent ("transparent", #0000 / #rrggbb00, rgba/hsla with alpha 0). */
+export function isExplicitTransparent(color: unknown): boolean {
+  if (typeof color !== 'string') return false;
+  const c = color.trim().toLowerCase();
+  if (!c) return false;
+  if (c === 'transparent') return true;
+  if (/^#[0-9a-f]{3}0$/.test(c) || /^#[0-9a-f]{6}00$/.test(c)) return true;
+  const m = c.match(/^(?:rgba|hsla|rgb|hsl)\((.*)\)$/);
+  if (!m) return false;
+  const parts = m[1].split(/[\s,/]+/).filter(Boolean);
+  return parts.length === 4 && parseFloat(parts[3]) === 0;
+}
+
 export interface ModuleMetadata {
   type: string;
   title: string;
@@ -1741,6 +1754,11 @@ export abstract class BaseUltraModule implements UltraModule {
       }
       if (bgResult.styles.backgroundColor && bgResult.styles.backgroundColor !== 'transparent') {
         styles.backgroundColor = bgResult.styles.backgroundColor;
+      }
+      // An explicit "transparent" must win over the pane background that card-style
+      // modules (lock, alarm, climate...) paint by default.
+      if (!styles.background && (!bgImage || bgImage === 'none') && isExplicitTransparent(effective.background_color)) {
+        styles.background = 'transparent';
       }
     }
 

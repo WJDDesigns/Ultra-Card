@@ -3364,7 +3364,10 @@
         "is_not": "není",
         "condition": "Podmínka",
         "state": "Stav"
-      }
+      },
+      "scope_current_dashboard": "Jen aktuální nástěnka",
+      "scope_dashboard_label": "Aktuální nástěnka:",
+      "scope_dashboard_info": "Navigační lišta se zobrazí na každém pohledu této nástěnky, ale ne na vašich ostatních nástěnkách."
     },
     "climate": {
       "error_no_entity": "Žádná klimatická entita",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Název akordeonu"
+      },
+      "title_icon": {
+        "section_title": "Ikona nadpisu",
+        "section_desc": "Volitelná ikona před nadpisem. Ponechte prázdné pro žádnou.",
+        "icon": "Ikona",
+        "color": "Barva ikony nadpisu"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Delší shrnutí se po tomto počtu řádků zkrátí.",
       "title": "Nadpis",
       "title_desc": "Nechte prázdné pro název zdroje.",
-      "unit_days": " dní"
+      "unit_days": " dní",
+      "layout_ticker": "Běžící text",
+      "ticker_speed": "Rychlost běžícího textu",
+      "ticker_speed_desc": "Sekundy, za které titulek přejede. Méně je rychleji.",
+      "unit_seconds": " s",
+      "tabs_section": "Kanály jako karty",
+      "feed_tabs": "Zobrazit kartu pro každý kanál",
+      "feed_tabs_desc": "Přepínejte mezi kanály, místo aby byly sloučené.",
+      "feed_tabs_all": "Přidat kartu „Vše“",
+      "feed_tabs_all_desc": "První karta zobrazí všechny kanály sloučené, nejnovější první.",
+      "feed_options_desc": "Dejte každému kanálu vlastní název, ikonu a barvu. Použijí se na kartách a jako název kanálu u položek. Šipky mění pořadí.",
+      "move_up": "Posunout nahoru",
+      "move_down": "Posunout dolů",
+      "feed_label": "Název",
+      "feed_icon": "Ikona",
+      "feed_color": "Barva",
+      "tab_all": "Vše"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Řídí se tím, co alarm podporuje",
+      "mode_desc_supported": "Váš alarm tento režim podporuje",
+      "mode_desc_unsupported": "Váš alarm tento režim nehlásí; zapněte pro zobrazení i tak"
+    },
+    "entity_variable": {
+      "linked": "Používá proměnnou",
+      "missing": "Proměnná nenalezena:",
+      "unlink": "Odpojit",
+      "use": "Použít proměnnou"
     }
   },
   "hub": {

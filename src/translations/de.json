@@ -3368,7 +3368,10 @@
         "is_not": "ist nicht",
         "condition": "Bedingung",
         "state": "Zustand"
-      }
+      },
+      "scope_current_dashboard": "Nur aktuelles Dashboard",
+      "scope_dashboard_label": "Aktuelles Dashboard:",
+      "scope_dashboard_info": "Die Navigationsleiste erscheint in jeder Ansicht dieses Dashboards, aber nicht in Ihren anderen Dashboards."
     },
     "climate": {
       "error_no_entity": "Keine Klimaanlage",
@@ -3427,6 +3430,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Akkordeon-Titel"
+      },
+      "title_icon": {
+        "section_title": "Titelsymbol",
+        "section_desc": "Optionales Symbol vor dem Titel. Leer lassen für keines.",
+        "icon": "Symbol",
+        "color": "Farbe des Titelsymbols"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Längere Zusammenfassungen werden nach so vielen Zeilen abgeschnitten.",
       "title": "Titel",
       "title_desc": "Leer lassen, um den Feed-Namen zu verwenden.",
-      "unit_days": " Tage"
+      "unit_days": " Tage",
+      "layout_ticker": "Laufband",
+      "ticker_speed": "Laufband-Geschwindigkeit",
+      "ticker_speed_desc": "Sekunden, die eine Schlagzeile zum Durchlaufen braucht. Weniger ist schneller.",
+      "unit_seconds": " s",
+      "tabs_section": "Feeds als Tabs",
+      "feed_tabs": "Für jeden Feed einen Tab anzeigen",
+      "feed_tabs_desc": "Wechseln Sie zwischen Ihren Feeds, statt sie zusammengeführt zu sehen.",
+      "feed_tabs_all": "Tab „Alle“ hinzufügen",
+      "feed_tabs_all_desc": "Der erste Tab zeigt alle Feeds zusammengeführt, die neuesten zuerst.",
+      "feed_options_desc": "Geben Sie jedem Feed einen eigenen Namen, ein Symbol und eine Farbe. Wird auf den Tabs und als Feed-Name bei den Einträgen verwendet. Mit den Pfeilen ändern Sie die Reihenfolge.",
+      "move_up": "Nach oben",
+      "move_down": "Nach unten",
+      "feed_label": "Name",
+      "feed_icon": "Symbol",
+      "feed_color": "Farbe",
+      "tab_all": "Alle"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Richtet sich danach, was die Alarmanlage unterstützt",
+      "mode_desc_supported": "Ihre Alarmanlage unterstützt diesen Modus",
+      "mode_desc_unsupported": "Ihre Alarmanlage meldet diesen Modus nicht; einschalten, um ihn trotzdem anzuzeigen"
+    },
+    "entity_variable": {
+      "linked": "Verwendet Variable",
+      "missing": "Variable nicht gefunden:",
+      "unlink": "Trennen",
+      "use": "Variable verwenden"
     }
   },
   "hub": {

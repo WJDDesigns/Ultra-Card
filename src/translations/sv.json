@@ -3364,7 +3364,10 @@
         "is_not": "är inte",
         "condition": "Villkor",
         "state": "Tillstånd"
-      }
+      },
+      "scope_current_dashboard": "Endast aktuell instrumentpanel",
+      "scope_dashboard_label": "Aktuell instrumentpanel:",
+      "scope_dashboard_info": "Navigeringsfältet visas i alla vyer på den här instrumentpanelen, men inte på dina andra instrumentpaneler."
     },
     "climate": {
       "error_no_entity": "Ingen Klimatenhet",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Accordion-titel"
+      },
+      "title_icon": {
+        "section_title": "Titelikon",
+        "section_desc": "Valfri ikon före titeln. Lämna tomt för ingen.",
+        "icon": "Ikon",
+        "color": "Färg på titelikon"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Längre sammanfattningar kortas efter så många rader.",
       "title": "Rubrik",
       "title_desc": "Lämna tomt för att använda flödets namn.",
-      "unit_days": " dagar"
+      "unit_days": " dagar",
+      "layout_ticker": "Nyhetsrad",
+      "ticker_speed": "Hastighet för nyhetsrad",
+      "ticker_speed_desc": "Sekunder det tar för varje rubrik att rulla förbi. Lägre är snabbare.",
+      "unit_seconds": " s",
+      "tabs_section": "Flöden som flikar",
+      "feed_tabs": "Visa en flik för varje flöde",
+      "feed_tabs_desc": "Växla mellan dina flöden i stället för att se dem sammanslagna.",
+      "feed_tabs_all": "Lägg till en flik \"Alla\"",
+      "feed_tabs_all_desc": "Första fliken visar alla flöden sammanslagna, nyaste först.",
+      "feed_options_desc": "Ge varje flöde ett eget namn, ikon och färg. Används på flikarna och som flödesnamn på objekt. Pilarna ändrar ordningen.",
+      "move_up": "Flytta upp",
+      "move_down": "Flytta ned",
+      "feed_label": "Namn",
+      "feed_icon": "Ikon",
+      "feed_color": "Färg",
+      "tab_all": "Alla"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Följer vad larmet stöder",
+      "mode_desc_supported": "Ditt larm stöder det här läget",
+      "mode_desc_unsupported": "Ditt larm rapporterar inte det här läget; slå på för att visa det ändå"
+    },
+    "entity_variable": {
+      "linked": "Använder variabel",
+      "missing": "Variabeln hittades inte:",
+      "unlink": "Koppla bort",
+      "use": "Använd en variabel"
     }
   },
   "hub": {

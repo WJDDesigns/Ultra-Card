@@ -3364,7 +3364,10 @@
         "is_not": "er ikke",
         "condition": "Betingelse",
         "state": "Tilstand"
-      }
+      },
+      "scope_current_dashboard": "Kun nuværende dashboard",
+      "scope_dashboard_label": "Nuværende dashboard:",
+      "scope_dashboard_info": "Navigationslinjen vises på alle visninger i dette dashboard, men ikke på dine andre dashboards."
     },
     "climate": {
       "error_no_entity": "Ingen klimaforhold",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Akkordeon Titel"
+      },
+      "title_icon": {
+        "section_title": "Titelikon",
+        "section_desc": "Valgfrit ikon foran titlen. Lad stå tomt for intet.",
+        "icon": "Ikon",
+        "color": "Farve på titelikon"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Længere resuméer skæres af efter dette antal linjer.",
       "title": "Titel",
       "title_desc": "Lad feltet være tomt for at bruge feedets navn.",
-      "unit_days": " dage"
+      "unit_days": " dage",
+      "layout_ticker": "Nyhedsbånd",
+      "ticker_speed": "Hastighed for nyhedsbånd",
+      "ticker_speed_desc": "Sekunder hver overskrift er om at rulle forbi. Lavere er hurtigere.",
+      "unit_seconds": " s",
+      "tabs_section": "Feeds som faner",
+      "feed_tabs": "Vis en fane for hvert feed",
+      "feed_tabs_desc": "Skift mellem dine feeds i stedet for at se dem samlet.",
+      "feed_tabs_all": "Tilføj en \"Alle\"-fane",
+      "feed_tabs_all_desc": "Første fane viser alle feeds samlet, nyeste først.",
+      "feed_options_desc": "Giv hvert feed sit eget navn, ikon og farve. Bruges på fanerne og som feednavn på elementer. Pilene ændrer rækkefølgen.",
+      "move_up": "Flyt op",
+      "move_down": "Flyt ned",
+      "feed_label": "Navn",
+      "feed_icon": "Ikon",
+      "feed_color": "Farve",
+      "tab_all": "Alle"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Følger hvad alarmen understøtter",
+      "mode_desc_supported": "Din alarm understøtter denne tilstand",
+      "mode_desc_unsupported": "Din alarm melder ikke denne tilstand; slå til for at vise den alligevel"
+    },
+    "entity_variable": {
+      "linked": "Bruger variabel",
+      "missing": "Variabel ikke fundet:",
+      "unlink": "Fjern tilknytning",
+      "use": "Brug en variabel"
     }
   },
   "hub": {

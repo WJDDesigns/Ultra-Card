@@ -10,7 +10,13 @@
 import { TemplateResult, html, nothing } from 'lit';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import type { CardModule, RssFeedLayout, RssFeedModule, UltraCardConfig } from '../types';
+import type {
+  CardModule,
+  RssFeedLayout,
+  RssFeedModule,
+  RssFeedOptions,
+  UltraCardConfig,
+} from '../types';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
 import {
@@ -29,8 +35,27 @@ type UpdateFn = (updates: Partial<CardModule>) => void;
 const DEFAULT_MAX_ITEMS = 6;
 const DEFAULT_REFRESH_MINUTES = 30;
 const DEFAULT_SUMMARY_LINES = 2;
+const DEFAULT_TICKER_SPEED = 8;
+const ALL_TAB = '__all__';
+
+/** Saved options for one feed address. */
+function feedOptionsFor(m: RssFeedModule, url: string): RssFeedOptions {
+  return (m.feed_options || []).find(o => o.url === url) || { url };
+}
+
+/** Short default tab name: the site's host without "www.". */
+function hostLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
 
 export class UltraRssFeedModule extends BaseUltraModule {
+  /** Selected tab per module (feed address or ALL_TAB). */
+  private _activeTab = new Map<string, string>();
+
   metadata: ModuleMetadata = {
     type: 'rss_feed',
     title: 'RSS Feed',
@@ -178,9 +203,23 @@ export class UltraRssFeedModule extends BaseUltraModule {
                 icon: 'mdi:format-list-bulleted',
               },
               { value: 'cards', label: t('layout_cards', 'Cards'), icon: 'mdi:view-grid' },
+              { value: 'ticker', label: t('layout_ticker', 'Ticker'), icon: 'mdi:ticket-outline' },
             ],
             (v: string) => update({ layout: v as RssFeedLayout })
           )}
+          ${layout === 'ticker'
+            ? this.renderSliderField(
+                t('ticker_speed', 'Ticker speed'),
+                t('ticker_speed_desc', 'Seconds each headline takes to scroll past. Lower is faster.'),
+                m.ticker_speed ?? DEFAULT_TICKER_SPEED,
+                DEFAULT_TICKER_SPEED,
+                3,
+                30,
+                1,
+                (v: number) => update({ ticker_speed: v }),
+                t('unit_seconds', ' s')
+              )
+            : nothing}
           ${this.renderFieldSection(
             t('show_image', 'Show images'),
             t('show_image_desc', 'The picture the feed gives for each item, when it has one.'),
@@ -248,6 +287,37 @@ export class UltraRssFeedModule extends BaseUltraModule {
         </div>
 
         <div class="settings-section">
+          <div class="section-title">${t('tabs_section', 'Feeds as tabs')}</div>
+          ${this.renderFieldSection(
+            t('feed_tabs', 'Show a tab for each feed'),
+            t('feed_tabs_desc', 'Switch between your feeds instead of seeing them merged.'),
+            hass,
+            { feed_tabs: !!m.feed_tabs },
+            [this.booleanField('feed_tabs')],
+            (e: CustomEvent) => update({ feed_tabs: e.detail.value.feed_tabs })
+          )}
+          ${m.feed_tabs
+            ? this.renderFieldSection(
+                t('feed_tabs_all', 'Add an "All" tab'),
+                t('feed_tabs_all_desc', 'First tab shows every feed merged, newest first.'),
+                hass,
+                { feed_tabs_all: m.feed_tabs_all !== false },
+                [this.booleanField('feed_tabs_all')],
+                (e: CustomEvent) => update({ feed_tabs_all: e.detail.value.feed_tabs_all })
+              )
+            : nothing}
+          ${(m.feeds || []).length
+            ? html`<div class="field-description" style="margin: 4px 0 8px;">
+                  ${t(
+                    'feed_options_desc',
+                    'Give each feed its own name, icon and color. Used on the tabs and as the feed name on items. Arrows change the order.'
+                  )}
+                </div>
+                ${(m.feeds || []).map((url, i, all) => this._renderFeedOptionsRow(m, url, i, all.length, hass, update, t))}`
+            : nothing}
+        </div>
+
+        <div class="settings-section">
           <div class="section-title">${t('filter_section', 'Filter')}</div>
           ${this.renderChipListField(
             t('include_keywords', 'Only show items with'),
@@ -295,9 +365,186 @@ export class UltraRssFeedModule extends BaseUltraModule {
         .uc-rss-ed-btn ha-icon {
           --mdc-icon-size: 18px;
         }
+        .uc-rss-ed-feed {
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          padding: 10px 12px 2px;
+          margin-bottom: 10px;
+        }
+        .uc-rss-ed-feed-head {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 6px;
+          font-size: 13px;
+          color: var(--secondary-text-color);
+        }
+        .uc-rss-ed-feed-head span {
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .uc-rss-ed-icon-btn {
+          border: none;
+          background: none;
+          color: var(--primary-text-color);
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 6px;
+          display: inline-flex;
+        }
+        .uc-rss-ed-icon-btn:disabled {
+          opacity: 0.3;
+          cursor: default;
+        }
+        .uc-rss-ed-icon-btn ha-icon {
+          --mdc-icon-size: 18px;
+        }
         ${BaseUltraModule.getSliderStyles()}
       </style>
     `;
+  }
+
+  private _renderFeedOptionsRow(
+    m: RssFeedModule,
+    url: string,
+    index: number,
+    count: number,
+    hass: HomeAssistant,
+    update: (patch: Partial<RssFeedModule>) => void,
+    t: (key: string, fallback: string) => string
+  ): TemplateResult {
+    const opts = feedOptionsFor(m, url);
+    const setOpts = (patch: Partial<RssFeedOptions>) => {
+      const others = (m.feed_options || []).filter(o => o.url !== url);
+      update({ feed_options: [...others, { ...opts, ...patch, url }] });
+    };
+    const move = (dir: -1 | 1) => {
+      const feeds = [...(m.feeds || [])];
+      const j = index + dir;
+      if (j < 0 || j >= feeds.length) return;
+      [feeds[index], feeds[j]] = [feeds[j], feeds[index]];
+      update({ feeds });
+    };
+    return html`
+      <div class="uc-rss-ed-feed">
+        <div class="uc-rss-ed-feed-head">
+          <ha-icon icon=${opts.icon || 'mdi:rss'} style="--mdc-icon-size:18px; color:${opts.color || 'inherit'}"></ha-icon>
+          <span title=${url}>${url}</span>
+          <button
+            type="button"
+            class="uc-rss-ed-icon-btn"
+            ?disabled=${index === 0}
+            title=${t('move_up', 'Move up')}
+            @click=${() => move(-1)}
+          >
+            <ha-icon icon="mdi:arrow-up"></ha-icon>
+          </button>
+          <button
+            type="button"
+            class="uc-rss-ed-icon-btn"
+            ?disabled=${index === count - 1}
+            title=${t('move_down', 'Move down')}
+            @click=${() => move(1)}
+          >
+            <ha-icon icon="mdi:arrow-down"></ha-icon>
+          </button>
+        </div>
+        ${this.renderFieldSection(
+          t('feed_label', 'Name'),
+          '',
+          hass,
+          { label: opts.label || '' },
+          [this.textField('label')],
+          (e: CustomEvent) => setOpts({ label: e.detail.value.label })
+        )}
+        ${this.renderFieldSection(
+          t('feed_icon', 'Icon'),
+          '',
+          hass,
+          { icon: opts.icon || '' },
+          [this.iconField('icon')],
+          (e: CustomEvent) => setOpts({ icon: e.detail.value.icon })
+        )}
+        ${this.renderColorField(t('feed_color', 'Color'), '', hass, opts.color || '', '', (v: string) =>
+          setOpts({ color: v })
+        )}
+      </div>
+    `;
+  }
+
+  private _renderTabs(
+    m: RssFeedModule,
+    feeds: string[],
+    states: FeedState[],
+    active: string,
+    lang: string
+  ): TemplateResult {
+    const tabs: Array<{ key: string; label: string; icon: string; color: string }> = [];
+    if (m.feed_tabs_all !== false) {
+      tabs.push({
+        key: ALL_TAB,
+        label: localize('editor.rss_feed.tab_all', lang, 'All'),
+        icon: 'mdi:rss',
+        color: '',
+      });
+    }
+    feeds.forEach((url, i) => {
+      const o = feedOptionsFor(m, url);
+      tabs.push({
+        key: url,
+        label: o.label?.trim() || states[i]?.feed?.title || hostLabel(url),
+        icon: o.icon || '',
+        color: o.color || '',
+      });
+    });
+    return html`
+      <div class="uc-rss-tabs" role="tablist">
+        ${tabs.map(
+          tab => html`<button
+            type="button"
+            role="tab"
+            class="uc-rss-tab ${tab.key === active ? 'active' : ''}"
+            aria-selected=${tab.key === active ? 'true' : 'false'}
+            style=${tab.color ? `--uc-rss-tab-color:${tab.color}` : ''}
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              this._activeTab.set(m.id, tab.key);
+              this.triggerPreviewUpdate(true);
+            }}
+          >
+            ${tab.icon ? html`<ha-icon icon=${tab.icon}></ha-icon>` : nothing}
+            <span>${tab.label}</span>
+          </button>`
+        )}
+      </div>
+    `;
+  }
+
+  private _renderTicker(m: RssFeedModule, items: FeedItem[]): TemplateResult {
+    const perItem = Math.max(3, Math.min(30, m.ticker_speed ?? DEFAULT_TICKER_SPEED));
+    const duration = Math.max(6, items.length * perItem);
+    const run = (copy: boolean) => html`<div class="uc-rss-ticker-run" aria-hidden=${copy ? 'true' : nothing}>
+      ${items.map(
+        item => html`<a
+          class="uc-rss-ticker-item"
+          href=${item.link || nothing}
+          tabindex=${copy ? '-1' : nothing}
+          rel="noopener noreferrer"
+          @click=${(e: Event) => (item.link ? this._open(e, m, item) : e.preventDefault())}
+        >
+          ${m.show_source !== false && item.source
+            ? html`<span class="uc-rss-source">${item.source}</span>`
+            : nothing}
+          <span>${item.title || item.link}</span>
+        </a>`
+      )}
+    </div>`;
+    return html`<div class="uc-rss-ticker" style="--uc-rss-ticker-duration:${duration}s">
+      <div class="uc-rss-ticker-track">${run(false)}${run(true)}</div>
+    </div>`;
   }
 
   // ── Preview ──────────────────────────────────────────────────────────────
@@ -421,8 +668,16 @@ export class UltraRssFeedModule extends BaseUltraModule {
     const refreshMs = Math.max(5, m.refresh_minutes ?? DEFAULT_REFRESH_MINUTES) * 60_000;
     const states: FeedState[] = feeds.map(url => getFeedState(hass, url, refreshMs));
     const now = Date.now();
+    const tabsOn = !!m.feed_tabs && feeds.length > 1;
+    let active = this._activeTab.get(m.id) || '';
+    if (tabsOn && active !== ALL_TAB && !feeds.includes(active)) {
+      active = m.feed_tabs_all !== false ? ALL_TAB : feeds[0];
+    }
+    const shown = feeds
+      .map((url, i) => ({ url, state: states[i] }))
+      .filter(f => !tabsOn || active === ALL_TAB || f.url === active);
     const items = mergeFeedItems(
-      states.map(s => ({ feed: s.feed })),
+      shown.map(f => ({ feed: f.state.feed, label: feedOptionsFor(m, f.url).label?.trim() || undefined })),
       {
         maxItems: m.max_items ?? DEFAULT_MAX_ITEMS,
         include: m.include_keywords,
@@ -431,8 +686,8 @@ export class UltraRssFeedModule extends BaseUltraModule {
       },
       now
     );
-    const loading = states.some(s => s.loading);
-    const firstError = states.find(s => s.error && !s.feed);
+    const loading = shown.some(f => f.state.loading);
+    const firstError = shown.map(f => f.state).find(s => s.error && !s.feed);
     const layout = m.layout || 'list';
     const accent = m.accent_color ? `--uc-rss-accent:${m.accent_color};` : '';
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
@@ -442,7 +697,9 @@ export class UltraRssFeedModule extends BaseUltraModule {
       m.title?.trim() || feedTitle || localize('editor.rss_feed.default_title', lang, 'News');
 
     let body: TemplateResult;
-    if (items.length) {
+    if (items.length && layout === 'ticker') {
+      body = this._renderTicker(m, items);
+    } else if (items.length) {
       body = html`<div class="uc-rss-items ${layout}">
         ${items.map(item => this._renderItem(m, item, layout, lang, now))}
       </div>`;
@@ -472,6 +729,7 @@ export class UltraRssFeedModule extends BaseUltraModule {
                   <span>${title}</span>
                 </div>`
               : nothing}
+            ${tabsOn ? this._renderTabs(m, feeds, states, active, lang) : nothing}
             ${body}
           `,
           module,
@@ -558,6 +816,32 @@ export class UltraRssFeedModule extends BaseUltraModule {
       .uc-rss-status.error ha-icon { color: var(--warning-color, #ffa600); flex-shrink: 0; }
       .uc-rss-status .spin { animation: uc-rss-spin 1s linear infinite; }
       @keyframes uc-rss-spin { to { transform: rotate(360deg); } }
+      .uc-rss-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+      .uc-rss-tabs::-webkit-scrollbar { display: none; }
+      .uc-rss-tab {
+        --uc-rss-tab-c: var(--uc-rss-tab-color, var(--uc-rss-accent-resolved));
+        display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+        padding: 6px 12px; border-radius: 999px; cursor: pointer;
+        border: 1px solid color-mix(in srgb, var(--uc-rss-tab-c) 35%, var(--divider-color));
+        background: transparent; color: var(--primary-text-color); font: inherit; font-size: 13px;
+      }
+      .uc-rss-tab ha-icon { --mdc-icon-size: 16px; color: var(--uc-rss-tab-c); }
+      .uc-rss-tab.active { background: color-mix(in srgb, var(--uc-rss-tab-c) 18%, transparent); border-color: var(--uc-rss-tab-c); font-weight: 600; }
+      .uc-rss-ticker { overflow: hidden; min-width: 0; mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
+      .uc-rss-ticker-track { display: flex; width: max-content; animation: uc-rss-ticker var(--uc-rss-ticker-duration, 40s) linear infinite; }
+      .uc-rss-ticker:hover .uc-rss-ticker-track { animation-play-state: paused; }
+      .uc-rss-ticker-run { display: flex; flex-shrink: 0; }
+      .uc-rss-ticker-item {
+        display: inline-flex; align-items: baseline; gap: 8px; white-space: nowrap;
+        padding: 4px 28px 4px 0; color: inherit; text-decoration: none; font-weight: 500; font-size: 14px;
+      }
+      .uc-rss-ticker-item::after { content: '•'; margin-left: 20px; color: var(--secondary-text-color); }
+      @keyframes uc-rss-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+      @media (prefers-reduced-motion: reduce) {
+        .uc-rss-ticker { overflow-x: auto; mask-image: none; }
+        .uc-rss-ticker-track { animation: none; }
+        .uc-rss-ticker-run[aria-hidden='true'] { display: none; }
+      }
     `;
   }
 }

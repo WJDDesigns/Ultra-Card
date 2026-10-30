@@ -2720,6 +2720,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'tabs') {
       layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -3117,7 +3119,7 @@ export class LayoutTab extends LitElement {
     const isNestedLayout = this._isLayoutModule(childModule.type);
 
     if (isNestedLayout) {
-      const nestedLayoutTitle =
+      const nestedLayoutTypeTitle =
         childModule.type === 'horizontal'
           ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
           : childModule.type === 'vertical'
@@ -3129,6 +3131,7 @@ export class LayoutTab extends LitElement {
                 : childModule.type === 'slider'
                   ? localize('editor.layout.slider_module', lang, 'Slider Module')
                   : metadata.title;
+      const nestedLayoutTitle = this._customModuleName(childModule) || nestedLayoutTypeTitle;
 
       const nestedModules = childModule.modules || [];
       const layoutKey = `tabs-nested-layout-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${childIndex}`;
@@ -4047,6 +4050,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'tabs') {
       layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -4692,6 +4697,8 @@ export class LayoutTab extends LitElement {
     } else if (childModule.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(childModule) || layoutTitle;
 
     return html`
       <div
@@ -5093,6 +5100,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -5594,6 +5603,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -6011,6 +6022,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -6336,6 +6349,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     const newParentPath = [...parentPath, childIndex];
 
@@ -13333,6 +13348,8 @@ export class LayoutTab extends LitElement {
     } else if (isTabs) {
       layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(layoutModule) || layoutTitle;
 
     return html`
       <div class="nested-layout-module-container layout-module-container very-deep-nested-layout">
@@ -16700,6 +16717,12 @@ export class LayoutTab extends LitElement {
     // For other modules, use the standard pattern
     return `${localize('editor.layout.module_settings_title', lang, 'Module Settings')} - ${this._formatModuleTypeName(module.type)}`;
   }
+  /** The user's Module Name (General tab), or '' when not set. */
+  private _customModuleName(module: CardModule | undefined): string {
+    const name = (module as { module_name?: unknown } | undefined)?.module_name;
+    return typeof name === 'string' && name.trim() ? name.trim() : '';
+  }
+
   private _getModuleDisplayName(module: CardModule): string {
     // Guard against null/undefined module or missing type
     if (!module || !module.type) {

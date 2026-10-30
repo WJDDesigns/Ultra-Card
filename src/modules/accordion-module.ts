@@ -271,6 +271,44 @@ export class UltraAccordionModule extends BaseUltraModule {
             `
           : ''}
 
+        <!-- Title Icon (shown before the title text) -->
+        ${this.renderSettingsSection(
+          localize('editor.accordion.title_icon.section_title', lang, 'Title Icon'),
+          localize(
+            'editor.accordion.title_icon.section_desc',
+            lang,
+            'Optional icon shown in front of the title. Leave empty for none.'
+          ),
+          [
+            {
+              title: localize('editor.accordion.title_icon.icon', lang, 'Icon'),
+              description: '',
+              hass,
+              data: { title_icon: accordionModule.title_icon || '' },
+              schema: [this.iconField('title_icon')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ title_icon: e.detail.value?.title_icon || '' });
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
+            },
+          ]
+        )}
+        ${accordionModule.title_icon
+          ? this.renderColorField(
+              localize('editor.accordion.title_icon.color', lang, 'Title icon color'),
+              '',
+              hass,
+              accordionModule.title_icon_color || '',
+              '',
+              next => {
+                updateModule({ title_icon_color: next });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )
+          : ''}
+
         <!-- Icon Configuration Section -->
         ${this.renderSettingsSection(
           localize('editor.accordion.icon.section_title', lang, 'Control Icon'),
@@ -1491,6 +1529,8 @@ export class UltraAccordionModule extends BaseUltraModule {
       titleText = accordionModule.title_text || localize('editor.accordion.preview.title_fallback', lang, 'Accordion Title');
     }
 
+    const titleIcon = accordionModule.title_icon?.trim() || '';
+
     // Get the control icon (chevron)
     const iconToDisplay = accordionModule.icon || 'mdi:chevron-down';
     const headerAlignment = accordionModule.header_alignment || 'apart';
@@ -1721,9 +1761,20 @@ export class UltraAccordionModule extends BaseUltraModule {
           }}
         >
           <!-- Title -->
-          <span class="ultra-accordion-title" style="${this.buildStyleString(titleStyles)}"
-            >${titleText}</span
-          >
+          ${titleIcon
+            ? html`<span
+                class="ultra-accordion-title ultra-accordion-title--with-icon"
+                style="${this.buildStyleString({ ...titleStyles, display: 'flex', alignItems: 'center', gap: '8px' })}"
+              >
+                <ha-icon
+                  icon="${titleIcon}"
+                  style="flex-shrink: 0; --mdc-icon-size: 1.25em; color: ${accordionModule.title_icon_color || 'inherit'};"
+                ></ha-icon>
+                <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">${titleText}</span>
+              </span>`
+            : html`<span class="ultra-accordion-title" style="${this.buildStyleString(titleStyles)}"
+                >${titleText}</span
+              >`}
 
           <!-- Control Icon (Chevron) -->
           <ha-icon

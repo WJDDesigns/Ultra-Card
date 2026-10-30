@@ -1594,7 +1594,10 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    if (!this._hass) {
+    // Also when the logic service lost hass: switching views unmounts every card,
+    // which clears it, and coming back re-renders before HA sends a new hass object.
+    // Without this, conditions fail open and hidden modules flash back in.
+    if (!this._hass || !logicService.hasHass) {
       logicService.setHass(hass);
     }
     // Logic conditions on `$variable` entities resolve against this card's variables.

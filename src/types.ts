@@ -1878,6 +1878,8 @@ export interface AccordionModule extends BaseModule {
   title_entity?: string | undefined;
   show_entity_name?: boolean | undefined; // Show entity name when using entity title mode
   icon?: string | undefined; // Main chevron/control icon (defaults to mdi:chevron-down)
+  title_icon?: string | undefined; // Optional icon in front of the title
+  title_icon_color?: string | undefined;
   header_alignment?: 'center' | 'apart' | undefined; // How title and icon are aligned
   icon_side?: 'left' | 'right' | undefined; // Which side the icon appears on
 
@@ -4727,8 +4729,8 @@ export interface NavigationModule extends BaseModule {
   nav_routes: NavRoute[];
   /** Stack items that contain child routes */
   nav_stacks?: NavStackItem[] | undefined;
-  /** Controls where the navbar is visible: 'current_view' = only on this view, 'all_views' = on all dashboard views */
-  nav_scope?: 'current_view' | 'all_views' | undefined;
+  /** Where the navbar shows: 'current_view' = this view, 'current_dashboard' = every view of this dashboard, 'all_views' = everywhere */
+  nav_scope?: 'current_view' | 'current_dashboard' | 'all_views' | undefined;
   nav_style?:
     | 'uc_modern'
     | 'uc_minimal'
@@ -9449,7 +9451,15 @@ export interface IrrigationModule extends BaseModule {
 // RSS Feed (free) — headlines from one or more RSS / Atom / JSON feeds
 // -------------------------------------------------------------------------
 
-export type RssFeedLayout = 'list' | 'compact' | 'cards';
+export type RssFeedLayout = 'list' | 'compact' | 'cards' | 'ticker';
+
+/** Per-feed name, icon and colour (tabs and the feed name on items). */
+export interface RssFeedOptions {
+  url: string;
+  label?: string | undefined;
+  icon?: string | undefined;
+  color?: string | undefined;
+}
 
 export interface RssFeedModule extends BaseModule {
   type: 'rss_feed';
@@ -9475,6 +9485,14 @@ export interface RssFeedModule extends BaseModule {
   /** Hide items older than this many days (0 = no limit). */
   max_age_days?: number | undefined;
   accent_color?: string | undefined;
+  /** Show one tab per feed (plus All) instead of only the merged list. */
+  feed_tabs?: boolean | undefined;
+  /** Show the "All" tab first when tabs are on. */
+  feed_tabs_all?: boolean | undefined;
+  /** Name, icon and colour for each feed, matched by address. */
+  feed_options?: RssFeedOptions[] | undefined;
+  /** Ticker layout: seconds for one headline to scroll past. */
+  ticker_speed?: number | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

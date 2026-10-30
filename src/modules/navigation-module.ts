@@ -503,6 +503,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                   label: localize('editor.navigation.scope_all_views', lang, 'All views (global)'),
                 },
                 {
+                  value: 'current_dashboard',
+                  label: localize(
+                    'editor.navigation.scope_current_dashboard',
+                    lang,
+                    'Current dashboard only'
+                  ),
+                },
+                {
                   value: 'current_view',
                   label: localize(
                     'editor.navigation.scope_current_view',
@@ -525,6 +533,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                 'editor.navigation.scope_all_info',
                 lang,
                 'Navbar appears on every view in your dashboard.'
+              )}<br />
+              <strong
+                >${localize('editor.navigation.scope_dashboard_label', lang, 'Current dashboard:')}</strong
+              >
+              ${localize(
+                'editor.navigation.scope_dashboard_info',
+                lang,
+                'Navbar appears on every view of this dashboard, but not on your other dashboards.'
               )}<br />
               <strong
                 >${localize('editor.navigation.scope_current_label', lang, 'Current view:')}</strong
@@ -1590,7 +1606,11 @@ export class UltraNavigationModule extends BaseUltraModule {
           <div
             style="font-size: 11px; color: var(--secondary-text-color); margin-top: 8px; opacity: 0.7;"
           >
-            ${navModule.nav_scope === 'all_views' ? 'Global (all views)' : 'Current view only'}
+            ${(navModule.nav_scope || 'all_views') === 'all_views'
+              ? 'Global (all views)'
+              : navModule.nav_scope === 'current_dashboard'
+                ? 'Current dashboard only'
+                : 'Current view only'}
           </div>
           <div
             style="font-size: 10px; color: var(--secondary-text-color); margin-top: 12px; opacity: 0.6; font-style: italic;"

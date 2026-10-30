@@ -3364,7 +3364,10 @@
         "is_not": "is niet",
         "condition": "Voorwaarde",
         "state": "Status"
-      }
+      },
+      "scope_current_dashboard": "Alleen huidig dashboard",
+      "scope_dashboard_label": "Huidig dashboard:",
+      "scope_dashboard_info": "De navigatiebalk verschijnt op elke weergave van dit dashboard, maar niet op je andere dashboards."
     },
     "climate": {
       "error_no_entity": "Geen Klimaat Entiteit",
@@ -3423,6 +3426,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Accordion Titel"
+      },
+      "title_icon": {
+        "section_title": "Titelpictogram",
+        "section_desc": "Optioneel pictogram voor de titel. Leeg laten voor geen.",
+        "icon": "Pictogram",
+        "color": "Kleur titelpictogram"
       }
     },
     "animated_forecast": {
@@ -6357,7 +6366,34 @@
       "summary_lines_desc": "Langere samenvattingen worden na dit aantal regels afgekapt.",
       "title": "Titel",
       "title_desc": "Leeg laten om de feednaam te gebruiken.",
-      "unit_days": " dagen"
+      "unit_days": " dagen",
+      "layout_ticker": "Nieuwsticker",
+      "ticker_speed": "Tickersnelheid",
+      "ticker_speed_desc": "Seconden die elke kop nodig heeft om voorbij te schuiven. Lager is sneller.",
+      "unit_seconds": " s",
+      "tabs_section": "Feeds als tabbladen",
+      "feed_tabs": "Een tabblad per feed tonen",
+      "feed_tabs_desc": "Wissel tussen je feeds in plaats van ze samengevoegd te zien.",
+      "feed_tabs_all": "Een tabblad \"Alle\" toevoegen",
+      "feed_tabs_all_desc": "Het eerste tabblad toont alle feeds samengevoegd, nieuwste eerst.",
+      "feed_options_desc": "Geef elke feed een eigen naam, pictogram en kleur. Gebruikt op de tabbladen en als feednaam bij items. Met de pijlen wijzig je de volgorde.",
+      "move_up": "Omhoog",
+      "move_down": "Omlaag",
+      "feed_label": "Naam",
+      "feed_icon": "Pictogram",
+      "feed_color": "Kleur",
+      "tab_all": "Alle"
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Volgt wat het alarm ondersteunt",
+      "mode_desc_supported": "Je alarm ondersteunt deze modus",
+      "mode_desc_unsupported": "Je alarm meldt deze modus niet; zet aan om hem toch te tonen"
+    },
+    "entity_variable": {
+      "linked": "Gebruikt variabele",
+      "missing": "Variabele niet gevonden:",
+      "unlink": "Ontkoppelen",
+      "use": "Een variabele gebruiken"
     }
   },
   "hub": {
