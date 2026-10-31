@@ -744,45 +744,27 @@ export class UltraNavigationModule extends BaseUltraModule {
         )}
 
         <!-- Desktop Offset Slider -->
-        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-          <div>
-            <div
-              class="field-title"
-              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-            >
-              ${localize('editor.navigation.desktop_offset', lang, 'Desktop Offset')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color);"
-            >
-              ${localize(
-                'editor.navigation.offset_desc',
-                lang,
-                'Distance from screen edge (px). Pushes the dock away from the edge.'
-              )}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-            <ha-slider
-              style="flex: 1;"
-              .min=${0}
-              .max=${100}
-              .step=${1}
-              .value=${navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0)}
-              @change=${(e: Event) =>
-                updateModule({
-                  nav_desktop: {
-                    ...navModule.nav_desktop,
-                    offset: parseInt((e.target as any).value, 10),
-                  },
-                })}
-            ></ha-slider>
-            <span style="min-width: 40px; text-align: center; font-weight: 600;">
-              ${navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0)}px
-            </span>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.navigation.desktop_offset', lang, 'Desktop Offset'),
+          localize(
+            'editor.navigation.offset_desc',
+            lang,
+            'Distance from screen edge (px). Pushes the dock away from the edge.'
+          ),
+          navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0),
+          navModule.nav_desktop?.mode === 'floating' ? 16 : 0,
+          0,
+          100,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_desktop: {
+                ...navModule.nav_desktop,
+                offset: value,
+              },
+            }),
+          'px'
+        )}
 
         <!-- Mobile Configuration Section -->
         ${this.renderSettingsSection(
@@ -937,86 +919,46 @@ export class UltraNavigationModule extends BaseUltraModule {
         )}
 
         <!-- Mobile Offset Slider -->
-        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-          <div>
-            <div
-              class="field-title"
-              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-            >
-              ${localize('editor.navigation.mobile_offset', lang, 'Mobile Offset')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color);"
-            >
-              ${localize(
-                'editor.navigation.offset_desc',
-                lang,
-                'Distance from screen edge (px). Pushes the dock away from the edge.'
-              )}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-            <ha-slider
-              style="flex: 1;"
-              .min=${0}
-              .max=${100}
-              .step=${1}
-              .value=${navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0)}
-              @change=${(e: Event) =>
-                updateModule({
-                  nav_mobile: {
-                    ...navModule.nav_mobile,
-                    offset: parseInt((e.target as any).value, 10),
-                  },
-                })}
-            ></ha-slider>
-            <span style="min-width: 40px; text-align: center; font-weight: 600;">
-              ${navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0)}px
-            </span>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.navigation.mobile_offset', lang, 'Mobile Offset'),
+          localize(
+            'editor.navigation.offset_desc',
+            lang,
+            'Distance from screen edge (px). Pushes the dock away from the edge.'
+          ),
+          navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0),
+          navModule.nav_mobile?.mode === 'floating' ? 16 : 0,
+          0,
+          100,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_mobile: {
+                ...navModule.nav_mobile,
+                offset: value,
+              },
+            }),
+          'px'
+        )}
 
         <!-- Icon Spacing Section -->
-        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-          <div>
-            <div
-              class="field-title"
-              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-            >
-              ${localize('editor.navigation.icon_spacing', lang, 'Icon Spacing')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color);"
-            >
-              ${localize(
-                'editor.navigation.icon_spacing_desc',
-                lang,
-                'Gap between icons in the dock (px).'
-              )}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-            <ha-slider
-              style="flex: 1;"
-              .min=${0}
-              .max=${32}
-              .step=${1}
-              .value=${navModule.nav_layout?.icon_gap ?? 8}
-              @change=${(e: Event) =>
-                updateModule({
-                  nav_layout: {
-                    ...navModule.nav_layout,
-                    icon_gap: parseInt((e.target as any).value, 10),
-                  },
-                })}
-            ></ha-slider>
-            <span style="min-width: 40px; text-align: center; font-weight: 600;">
-              ${navModule.nav_layout?.icon_gap ?? 8}px
-            </span>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.navigation.icon_spacing', lang, 'Icon Spacing'),
+          localize('editor.navigation.icon_spacing_desc', lang, 'Gap between icons in the dock (px).'),
+          navModule.nav_layout?.icon_gap ?? 8,
+          8,
+          0,
+          32,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_layout: {
+                ...navModule.nav_layout,
+                icon_gap: value,
+              },
+            }),
+          'px'
+        )}
 
         <!-- Collapse & Auto-Hide Section -->
         <div

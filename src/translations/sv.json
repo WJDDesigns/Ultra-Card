@@ -1350,7 +1350,7 @@
     },
     "layout_extra": {
       "module_name": "Modulnamn:",
-      "module_name_placeholder": "Ge denna modul ett anpassat namn för att göra det lättare att identifiera i redigeraren.",
+      "module_name_placeholder": "t.ex. Köksbelysning",
       "module_name_help": "Ge denna modul ett anpassat namn för att göra det lättare att identifiera i redigeraren."
     },
     "layout_logic": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Titelikon",
-        "section_desc": "Valfri ikon före titeln. Lämna tomt för ingen.",
+        "section_desc": "Valfri ikon bredvid titeln. Lämna tomt för ingen.",
         "icon": "Ikon",
         "color": "Färg på titelikon"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Namn",
       "feed_icon": "Ikon",
       "feed_color": "Färg",
-      "tab_all": "Alla"
+      "tab_all": "Alla",
+      "ticker_unused": "Nyhetsrad-layouten visar bara rubriker, så de här alternativen påverkar inte den."
     },
     "alarm_panel": {
       "mode_desc_auto": "Följer vad larmet stöder",

@@ -1254,7 +1254,7 @@
     },
     "layout_extra": {
       "module_name": "Nom du module :",
-      "module_name_placeholder": "Donnez un nom personnalisé à ce module pour l'identifier plus facilement dans l'éditeur.",
+      "module_name_placeholder": "ex. Lumières cuisine",
       "module_name_help": "Donnez un nom personnalisé à ce module pour l'identifier plus facilement dans l'éditeur."
     },
     "camera": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Icône du titre",
-        "section_desc": "Icône facultative affichée devant le titre. Laissez vide pour aucune.",
+        "section_desc": "Icône facultative affichée à côté du titre. Laissez vide pour aucune.",
         "icon": "Icône",
         "color": "Couleur de l'icône du titre"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Nom",
       "feed_icon": "Icône",
       "feed_color": "Couleur",
-      "tab_all": "Tous"
+      "tab_all": "Tous",
+      "ticker_unused": "La disposition Défilant n'affiche que les titres, ces options n'y ont donc aucun effet."
     },
     "alarm_panel": {
       "mode_desc_auto": "Suit ce que l'alarme prend en charge",

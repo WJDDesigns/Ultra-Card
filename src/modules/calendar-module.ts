@@ -54,11 +54,20 @@ export class UltraCalendarModule extends BaseUltraModule {
   };
 
   private _calendarService: CalendarService | null = null;
-  private _events: ProcessedCalendarEvent[] = [];
-  private _loading: boolean = false;
-  private _error: string | null = null;
-  private _lastFetch: number = 0;
-  private _expandedState: boolean = false;
+  // One shared module instance renders every Calendar module on the dashboard,
+  // so fetched events and UI state are kept per module id. A single shared slot
+  // made each Calendar show whichever calendar was fetched first.
+  private _states: Map<
+    string,
+    {
+      events: ProcessedCalendarEvent[];
+      loading: boolean;
+      error: string | null;
+      lastFetch: number;
+      expanded: boolean;
+      signature: string;
+    }
+  > = new Map();
   private _hass: HomeAssistant | null = null;
   private _refreshInterval: ReturnType<typeof setInterval> | null = null;
   
@@ -330,7 +339,6 @@ export class UltraCalendarModule extends BaseUltraModule {
                 <div class="calendar-item-content">
                   <!-- Entity Picker -->
                   <div class="field-row">
-                    <div class="field-title">Entity</div>
                     ${this.renderEntityPickerWithVariables(
                       hass, undefined as any, 'entity', cal.entity || '',
                       (value: string) => this.updateCalendarEntity(index, 'entity', value, module, updateModule),
@@ -1666,9 +1674,8 @@ export class UltraCalendarModule extends BaseUltraModule {
     this._hass = hass;
 
     // Check for valid calendars
-    const validCalendars = (calendarModule.calendars || []).filter(
-      cal => cal.entity && cal.entity.trim() !== '' && cal.visible !== false
-    );
+    const validCalendars = this._resolvedCalendars(calendarModule, config);
+    const st = this._stateFor(calendarModule.id);
 
     if (validCalendars.length === 0) {
       return this.renderGradientErrorState(
@@ -1683,7 +1690,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     }
 
     // Fetch events if needed
-    this.fetchEventsIfNeeded(calendarModule, hass);
+    this.fetchEventsIfNeeded(calendarModule, hass, validCalendars);
 
     // Check if we need scroll navigation (hidden overflow mode with nav buttons enabled)
     const needsScrollNav = calendarModule.compact_auto_fit_height && 
@@ -1699,12 +1706,13 @@ export class UltraCalendarModule extends BaseUltraModule {
     const context: CalendarViewContext = {
       module: calendarModule,
       hass,
-      events: this._events,
-      loading: this._loading,
-      error: this._error,
-      expanded: this._expandedState,
-      onEventClick: (event: ProcessedCalendarEvent) => this.handleEventClick(event, calendarModule, hass),
-      onExpandToggle: () => this.handleExpandToggle(),
+      events: st.events,
+      loading: st.loading,
+      error: st.error,
+      expanded: st.expanded,
+      onEventClick: (event: ProcessedCalendarEvent) =>
+        this.handleEventClick(event, calendarModule, hass, validCalendars),
+      onExpandToggle: () => this.handleExpandToggle(calendarModule.id),
       formatTime: (date: Date) => this.formatTime(date, calendarModule),
       formatDate: (date: Date) => this.formatDate(date, calendarModule, hass),
       // Scroll navigation props (only when needed)
@@ -1743,6 +1751,26 @@ export class UltraCalendarModule extends BaseUltraModule {
         ${this.renderCalendarView(context)}
       </div>
     `, module, hass);
+  }
+
+  private _stateFor(moduleId: string) {
+    let st = this._states.get(moduleId);
+    if (!st) {
+      st = { events: [], loading: false, error: null, lastFetch: 0, expanded: false, signature: '' };
+      this._states.set(moduleId, st);
+    }
+    return st;
+  }
+
+  /** Calendars with an entity set and visible, with variables resolved to entity ids. */
+  private _resolvedCalendars(module: CalendarModule, config?: UltraCardConfig) {
+    return (module.calendars || [])
+      .map(cal => {
+        const raw = (cal.entity || '').trim();
+        const entity = raw ? this.resolveEntity(raw, config) || raw : '';
+        return { ...cal, entity };
+      })
+      .filter(cal => cal.entity !== '' && cal.visible !== false);
   }
 
   private renderCalendarView(context: CalendarViewContext): TemplateResult {
@@ -1792,30 +1820,37 @@ export class UltraCalendarModule extends BaseUltraModule {
     `;
   }
 
-  private async fetchEventsIfNeeded(module: CalendarModule, hass: HomeAssistant): Promise<void> {
+  private async fetchEventsIfNeeded(
+    module: CalendarModule,
+    hass: HomeAssistant,
+    validCalendars: CalendarEntityConfig[]
+  ): Promise<void> {
     const now = Date.now();
     const refreshMs = (module.refresh_interval || 15) * 60 * 1000;
+    const st = this._stateFor(module.id);
+    // Refetch straight away when the calendars or range change, not only on the timer.
+    const signature = JSON.stringify([
+      validCalendars.map(c => [c.id, c.entity]),
+      module.days_to_show || 7,
+      !!module.show_past_events,
+    ]);
 
-    // Check if we need to refresh
-    if (this._events.length > 0 && now - this._lastFetch < refreshMs) {
+    if (st.signature === signature && st.lastFetch > 0 && now - st.lastFetch < refreshMs) {
       return;
     }
 
-    if (this._loading) {
+    if (st.loading && st.signature === signature) {
       return;
     }
 
-    this._loading = true;
-    this._error = null;
+    st.loading = true;
+    st.error = null;
+    st.signature = signature;
 
     try {
-      const validCalendars = (module.calendars || []).filter(
-        cal => cal.entity && cal.entity.trim() !== '' && cal.visible !== false
-      );
-
       if (validCalendars.length === 0) {
-        this._events = [];
-        this._loading = false;
+        st.events = [];
+        st.loading = false;
         return;
       }
 
@@ -1835,21 +1870,26 @@ export class UltraCalendarModule extends BaseUltraModule {
         endDate
       );
 
+      // A newer request (different calendars) started while this one ran: drop this result.
+      if (st.signature !== signature) return;
+
       // Filter past events if needed
       const filteredEvents = module.show_past_events
         ? events
         : events.filter(event => event.end > new Date());
 
-      this._events = filteredEvents;
-      this._lastFetch = now;
-      this._loading = false;
+      st.events = filteredEvents;
+      st.lastFetch = now;
+      st.loading = false;
 
       // Trigger preview update
       this.triggerPreviewUpdate();
     } catch (error) {
+      if (st.signature !== signature) return;
       console.error('Calendar module: Failed to fetch events', error);
-      this._error = 'Failed to load calendar events';
-      this._loading = false;
+      st.error = 'Failed to load calendar events';
+      st.loading = false;
+      st.lastFetch = now;
       this.triggerPreviewUpdate();
     }
   }
@@ -1857,11 +1897,13 @@ export class UltraCalendarModule extends BaseUltraModule {
   private handleEventClick(
     event: ProcessedCalendarEvent,
     module: CalendarModule,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    validCalendars: CalendarEntityConfig[] = []
   ): void {
     if (module.tap_action_expand) {
       // Toggle expand state
-      this._expandedState = !this._expandedState;
+      const st = this._stateFor(module.id);
+      st.expanded = !st.expanded;
       this.triggerPreviewUpdate();
       return;
     }
@@ -1870,7 +1912,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     const action = module.event_tap_action || { action: 'more-info' };
     if (action.action === 'more-info') {
       // Find the calendar entity for this event
-      const calendar = (module.calendars || []).find(cal => cal.id === event.calendarId);
+      const calendar = validCalendars.find(cal => cal.id === event.calendarId);
       if (calendar?.entity) {
         UltraLinkComponent.handleAction(
           { ...action, entity: calendar.entity },
@@ -1885,8 +1927,9 @@ export class UltraCalendarModule extends BaseUltraModule {
     }
   }
 
-  private handleExpandToggle(): void {
-    this._expandedState = !this._expandedState;
+  private handleExpandToggle(moduleId: string): void {
+    const st = this._stateFor(moduleId);
+    st.expanded = !st.expanded;
     this.triggerPreviewUpdate();
   }
 

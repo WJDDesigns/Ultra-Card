@@ -1875,7 +1875,7 @@
     },
     "layout_extra": {
       "module_name": "Nom del mòdul:",
-      "module_name_placeholder": "Poseu un nom personalitzat a aquest mòdul per a identificar-lo més fàcilment en l'editor.",
+      "module_name_placeholder": "p. ex. Llums de la cuina",
       "module_name_help": "Poseu un nom personalitzat a aquest mòdul per a identificar-lo més fàcilment en l'editor."
     },
     "camera": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Icona del títol",
-        "section_desc": "Icona opcional davant del títol. Deixa-ho buit per no posar-ne cap.",
+        "section_desc": "Icona opcional al costat del títol. Deixeu-ho buit per a cap.",
         "icon": "Icona",
         "color": "Color de la icona del títol"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Nom",
       "feed_icon": "Icona",
       "feed_color": "Color",
-      "tab_all": "Totes"
+      "tab_all": "Totes",
+      "ticker_unused": "La disposició Teletip només mostra titulars, així que aquestes opcions no hi tenen efecte."
     },
     "alarm_panel": {
       "mode_desc_auto": "Segueix el que admet l'alarma",

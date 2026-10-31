@@ -19,6 +19,7 @@ import { installFreeSpaceViewEditorPatch } from './freespace/uc-freespace-view-e
 import { ucSectionsLayoutService } from './services/uc-sections-layout-service';
 import { getUltraCardEntitySuggestions } from './services/uc-entity-suggestions';
 import { ucCloudAuthService } from './services/uc-cloud-auth-service';
+import { restoreRememberedNavigation } from './services/uc-navigation-bootstrap';
 
 // Custom view/strategy tags must be defined before anything below can throw:
 // Home Assistant shows "Configuration error" for a view whose element never
@@ -34,6 +35,10 @@ void preloadDefaultLocale();
 if (!isLazyEditorEnabled()) {
   void loadUltraCardEditor();
 }
+
+// Bring back "All views" / "Current dashboard only" navbars after a reload on a
+// view that doesn't hold the card (only runs if this browser has seen one).
+restoreRememberedNavigation();
 
 const moduleRegistry = getModuleRegistry();
 // Default preload is `minimal` so lazy chunks are not burst-loaded at startup.

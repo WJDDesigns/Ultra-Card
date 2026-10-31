@@ -1,5 +1,28 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta6
+
+🎃 **Happy Halloween!** The sixth 3.14.3 beta is a treat, not a trick: it fixes cards going blank, brings the navigation bar back after a reload, gets Alarmo arming again and clears up a long list of editor issues reported on Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+No Ultra Card Connect update is needed for this beta. Connect 1.12.2 is still current.
+
+### 🚀 New Features
+
+- **Accordion: title icon before or after** - Put the title icon in front of or behind the title. The icon, its position and its colour now sit together in one box
+- **RSS Feed: clearer ticker settings** - In the Ticker layout, the image, summary and time options are greyed out with a note, because the ticker only shows headlines
+
+### 🐛 Bug Fixes
+
+- **Cards went blank** - A People, To-do, Weather, Vacuum or Climate module with no entity picked yet made the whole card disappear. The card now stays visible and the module asks you to pick an entity. Thanks to larrysansan for the report
+- **Navigation bar missing after a reload** - An "All views" or "Current dashboard only" navigation bar only showed once you had opened the view its card is on. It now shows straight away after a browser reload on any view. Thanks to larrysansan for the report
+- **Alarm Panel: Alarmo wouldn't arm** - The arm buttons called the wrong Home Assistant service, so nothing happened. They now arm your alarm, and Vacation mode is detected correctly. Thanks to larrysansan for the report
+- **Calendar: wrong events** - Several Calendar modules on one dashboard could show each other's events. Each now keeps its own, updates as soon as you change calendars, and "Strip country" works in the table view and on addresses over several lines. Thanks to larrysansan for the report
+- **Energy Display: Show icons did nothing** - Icons now show in both the circle and box layouts. Thanks to larrysansan for the report
+- **Select Input: raw option names** - Options now show the translated names Home Assistant uses, and the dropdown list follows your theme colours. Thanks to larrysansan for the report
+- **Editor fixes** - Number boxes are wider so values aren't cut off, long descriptions wrap instead of ending in "…", global actions set to "Nothing" show it, the Navigation offset and spacing sliders get a number box and reset button, the full-screen toolbar wraps on narrower screens, and the Responsive Column Layout popup stays on screen on phones. Thanks to larrysansan for the reports
+
 ## Version 3.14.3-beta5
 
 The fifth 3.14.3 beta fixes several bugs reported on Discord and adds RSS feed tabs, a news ticker, a "Current dashboard only" Navigation option and Accordion title icons. This is a pre-release for testing — please report anything odd on GitHub or Discord.

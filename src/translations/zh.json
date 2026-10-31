@@ -1940,7 +1940,7 @@
     },
     "layout_extra": {
       "module_name": "模块名称：",
-      "module_name_placeholder": "为此模块指定一个自定义名称，以便在编辑器中更容易识别。",
+      "module_name_placeholder": "例如：厨房灯",
       "module_name_help": "为此模块指定一个自定义名称，以便在编辑器中更容易识别。"
     },
     "camera": {
@@ -3755,7 +3755,7 @@
       },
       "title_icon": {
         "section_title": "标题图标",
-        "section_desc": "标题前显示的可选图标。留空则不显示。",
+        "section_desc": "标题旁显示的可选图标。留空则不显示。",
         "icon": "图标",
         "color": "标题图标颜色"
       }
@@ -6349,7 +6349,8 @@
       "feed_label": "名称",
       "feed_icon": "图标",
       "feed_color": "颜色",
-      "tab_all": "全部"
+      "tab_all": "全部",
+      "ticker_unused": "滚动条布局只显示标题，因此这些选项在该布局中不起作用。"
     },
     "alarm_panel": {
       "mode_desc_auto": "跟随警报系统支持的模式",

@@ -18988,9 +18988,9 @@ export class LayoutTab extends LitElement {
           transform: scale(1.1);
         }
         .gap-input {
-          width: 48px !important;
-          max-width: 48px !important;
-          min-width: 48px !important;
+          width: 64px !important;
+          max-width: 64px !important;
+          min-width: 64px !important;
           padding: 4px 6px !important;
           border: 1px solid var(--divider-color);
           border-radius: 4px;
@@ -19000,6 +19000,16 @@ export class LayoutTab extends LitElement {
           text-align: center;
           transition: border-color 0.2s ease;
         }
+        .gap-input::-webkit-outer-spin-button,
+        .gap-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        .gap-input {
+          -moz-appearance: textfield;
+        }
+
         .gap-input:focus {
           outline: none;
           border-color: var(--primary-color);

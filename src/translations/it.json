@@ -1254,7 +1254,7 @@
     },
     "layout_extra": {
       "module_name": "Nome del modulo:",
-      "module_name_placeholder": "Assegna un nome personalizzato a questo modulo per identificarlo più facilmente nell'editor.",
+      "module_name_placeholder": "es. Luci cucina",
       "module_name_help": "Assegna un nome personalizzato a questo modulo per identificarlo più facilmente nell'editor."
     },
     "camera": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Icona del titolo",
-        "section_desc": "Icona facoltativa mostrata prima del titolo. Lascia vuoto per nessuna.",
+        "section_desc": "Icona facoltativa accanto al titolo. Lascia vuoto per nessuna.",
         "icon": "Icona",
         "color": "Colore dell'icona del titolo"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Nome",
       "feed_icon": "Icona",
       "feed_color": "Colore",
-      "tab_all": "Tutti"
+      "tab_all": "Tutti",
+      "ticker_unused": "Il layout Ticker mostra solo i titoli, quindi queste opzioni non hanno effetto."
     },
     "alarm_panel": {
       "mode_desc_auto": "Segue ciò che l'allarme supporta",

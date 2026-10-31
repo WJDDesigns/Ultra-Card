@@ -1258,7 +1258,7 @@
     },
     "layout_extra": {
       "module_name": "Modulname:",
-      "module_name_placeholder": "Geben Sie diesem Modul einen benutzerdefinierten Namen, um es im Editor leichter zu identifizieren.",
+      "module_name_placeholder": "z. B. Küchenlicht",
       "module_name_help": "Geben Sie diesem Modul einen benutzerdefinierten Namen, um es im Editor leichter zu identifizieren."
     },
     "camera": {
@@ -3433,7 +3433,7 @@
       },
       "title_icon": {
         "section_title": "Titelsymbol",
-        "section_desc": "Optionales Symbol vor dem Titel. Leer lassen für keines.",
+        "section_desc": "Optionales Symbol neben dem Titel. Leer lassen für keines.",
         "icon": "Symbol",
         "color": "Farbe des Titelsymbols"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Name",
       "feed_icon": "Symbol",
       "feed_color": "Farbe",
-      "tab_all": "Alle"
+      "tab_all": "Alle",
+      "ticker_unused": "Das Laufband-Layout zeigt nur Schlagzeilen, daher wirken diese Optionen dort nicht."
     },
     "alarm_panel": {
       "mode_desc_auto": "Richtet sich danach, was die Alarmanlage unterstützt",

@@ -216,9 +216,12 @@ export class UltraGlobalActionsTab extends LitElement {
       this.tabTitle || localize('editor.actions.title', lang, 'Actions Configuration');
 
     const moduleHasEntity = this._moduleHasEntity(this.module);
-    const tapAction = this._config.tap_action || {};
-    const holdAction = this._config.hold_action || {};
-    const doubleTapAction = this._config.double_tap_action || {};
+    // Ultra Card stores "do nothing" as 'nothing'; HA's action picker only knows 'none',
+    // so it showed the raw word "nothing" instead of its own translated "None" entry.
+    const forPicker = (a: { action?: string } | undefined): Record<string, unknown> => (a?.action === 'nothing' ? { ...a, action: 'none' } : a || {});
+    const tapAction = forPicker(this._config.tap_action);
+    const holdAction = forPicker(this._config.hold_action);
+    const doubleTapAction = forPicker(this._config.double_tap_action);
 
     return html`
       <div class="actions-section">
@@ -1255,9 +1258,9 @@ export class UltraGlobalActionsTab extends LitElement {
       }
 
       .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
+        width: 64px !important;
+        max-width: 64px !important;
+        min-width: 64px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
@@ -1269,6 +1272,24 @@ export class UltraGlobalActionsTab extends LitElement {
         flex-shrink: 0;
         box-sizing: border-box;
       }
+
+      .gap-input::-webkit-outer-spin-button,
+
+      .gap-input::-webkit-inner-spin-button {
+
+        -webkit-appearance: none;
+
+        margin: 0;
+
+      }
+
+
+      .gap-input {
+
+        -moz-appearance: textfield;
+
+      }
+
 
       .gap-input:focus {
         outline: none;

@@ -1350,7 +1350,7 @@
     },
     "layout_extra": {
       "module_name": "Název modulu:",
-      "module_name_placeholder": "Dejte tomuto modulu vlastní název, aby se lépe identifikoval v editoru.",
+      "module_name_placeholder": "např. Světla v kuchyni",
       "module_name_help": "Dejte tomuto modulu vlastní název, aby se lépe identifikoval v editoru."
     },
     "layout_logic": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Ikona nadpisu",
-        "section_desc": "Volitelná ikona před nadpisem. Ponechte prázdné pro žádnou.",
+        "section_desc": "Volitelná ikona vedle názvu. Ponechte prázdné pro žádnou.",
         "icon": "Ikona",
         "color": "Barva ikony nadpisu"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Název",
       "feed_icon": "Ikona",
       "feed_color": "Barva",
-      "tab_all": "Vše"
+      "tab_all": "Vše",
+      "ticker_unused": "Rozložení Běžící text zobrazuje jen titulky, takže tyto volby tam nic nedělají."
     },
     "alarm_panel": {
       "mode_desc_auto": "Řídí se tím, co alarm podporuje",

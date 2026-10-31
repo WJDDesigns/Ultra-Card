@@ -220,43 +220,54 @@ export class UltraRssFeedModule extends BaseUltraModule {
                 t('unit_seconds', ' s')
               )
             : nothing}
-          ${this.renderFieldSection(
-            t('show_image', 'Show images'),
-            t('show_image_desc', 'The picture the feed gives for each item, when it has one.'),
-            hass,
-            { show_image: m.show_image !== false },
-            [this.booleanField('show_image')],
-            (e: CustomEvent) => update({ show_image: e.detail.value.show_image })
-          )}
-          ${this.renderFieldSection(
-            t('show_summary', 'Show summary'),
-            '',
-            hass,
-            { show_summary: m.show_summary !== false },
-            [this.booleanField('show_summary')],
-            (e: CustomEvent) => update({ show_summary: e.detail.value.show_summary })
-          )}
-          ${m.show_summary !== false && layout !== 'compact'
-            ? this.renderSliderField(
-                t('summary_lines', 'Summary lines'),
-                t('summary_lines_desc', 'Longer summaries are cut off after this many lines.'),
-                m.summary_lines ?? DEFAULT_SUMMARY_LINES,
-                DEFAULT_SUMMARY_LINES,
-                1,
-                8,
-                1,
-                (v: number) => update({ summary_lines: v }),
-                ''
-              )
-            : nothing}
-          ${this.renderFieldSection(
-            t('show_date', 'Show time'),
-            t('show_date_desc', 'How long ago each item was published.'),
-            hass,
-            { show_date: m.show_date !== false },
-            [this.booleanField('show_date')],
-            (e: CustomEvent) => update({ show_date: e.detail.value.show_date })
-          )}
+          <div
+            class="uc-rss-ticker-unused"
+            style=${layout === 'ticker' ? 'opacity: 0.45; pointer-events: none;' : ''}
+            aria-disabled=${layout === 'ticker' ? 'true' : 'false'}
+          >
+            ${layout === 'ticker'
+              ? html`<div class="field-description" style="margin: 0 0 8px; font-style: italic;">
+                  ${t('ticker_unused', 'The Ticker layout shows only headlines, so these options do nothing there.')}
+                </div>`
+              : nothing}
+            ${this.renderFieldSection(
+              t('show_image', 'Show images'),
+              t('show_image_desc', 'The picture the feed gives for each item, when it has one.'),
+              hass,
+              { show_image: m.show_image !== false },
+              [this.booleanField('show_image')],
+              (e: CustomEvent) => update({ show_image: e.detail.value.show_image })
+            )}
+            ${this.renderFieldSection(
+              t('show_summary', 'Show summary'),
+              '',
+              hass,
+              { show_summary: m.show_summary !== false },
+              [this.booleanField('show_summary')],
+              (e: CustomEvent) => update({ show_summary: e.detail.value.show_summary })
+            )}
+            ${m.show_summary !== false && layout !== 'compact'
+              ? this.renderSliderField(
+                  t('summary_lines', 'Summary lines'),
+                  t('summary_lines_desc', 'Longer summaries are cut off after this many lines.'),
+                  m.summary_lines ?? DEFAULT_SUMMARY_LINES,
+                  DEFAULT_SUMMARY_LINES,
+                  1,
+                  8,
+                  1,
+                  (v: number) => update({ summary_lines: v }),
+                  ''
+                )
+              : nothing}
+            ${this.renderFieldSection(
+              t('show_date', 'Show time'),
+              t('show_date_desc', 'How long ago each item was published.'),
+              hass,
+              { show_date: m.show_date !== false },
+              [this.booleanField('show_date')],
+              (e: CustomEvent) => update({ show_date: e.detail.value.show_date })
+            )}
+          </div>
           ${this.renderFieldSection(
             t('show_source', 'Show feed name'),
             t('show_source_desc', 'Useful when you merge several feeds.'),

@@ -297,7 +297,10 @@ export class ConfigValidationService {
           return module;
         } else {
           errors.push(...moduleResult.errors);
-          return null;
+          // A known module that only fails its own checks (e.g. no entity picked yet)
+          // stays in the layout so it can show its own setup hint; only unknown or
+          // typeless modules are dropped.
+          return moduleResult.correctedModule ?? null;
         }
       })
       .filter((module: any) => module !== null);
@@ -345,7 +348,7 @@ export class ConfigValidationService {
       const validationResult = moduleHandler.validate(migratedModule);
       if (!validationResult.valid) {
         errors.push(...validationResult.errors.map(err => `Module ${module.id}: ${err}`));
-        return { valid: false, errors, warnings };
+        return { valid: false, errors, warnings, correctedModule: migratedModule };
       }
 
       const defaultModule = moduleHandler.createDefault(module.id);

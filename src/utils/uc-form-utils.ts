@@ -898,9 +898,9 @@ export class UcFormUtils {
       }
 
       .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
+        width: 64px !important;
+        max-width: 64px !important;
+        min-width: 64px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
@@ -912,6 +912,24 @@ export class UcFormUtils {
         flex-shrink: 0;
         box-sizing: border-box;
       }
+
+      .gap-input::-webkit-outer-spin-button,
+
+      .gap-input::-webkit-inner-spin-button {
+
+        -webkit-appearance: none;
+
+        margin: 0;
+
+      }
+
+
+      .gap-input {
+
+        -moz-appearance: textfield;
+
+      }
+
 
       .gap-input:focus {
         outline: none;

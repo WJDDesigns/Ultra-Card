@@ -15,7 +15,7 @@ type DynamicWeatherServiceApi = Pick<
 
 type NavigationServiceApi = Pick<
   typeof import('./uc-navigation-service').ucNavigationService,
-  'registerModule' | 'unregisterModule'
+  'registerModule' | 'unregisterModule' | 'registerRestoredModule'
 >;
 
 type VideoBgServiceApi = Pick<

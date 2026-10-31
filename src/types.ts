@@ -1878,7 +1878,8 @@ export interface AccordionModule extends BaseModule {
   title_entity?: string | undefined;
   show_entity_name?: boolean | undefined; // Show entity name when using entity title mode
   icon?: string | undefined; // Main chevron/control icon (defaults to mdi:chevron-down)
-  title_icon?: string | undefined; // Optional icon in front of the title
+  title_icon?: string | undefined; // Optional icon next to the title
+  title_icon_position?: 'before' | 'after' | undefined; // Icon before (default) or after the title
   title_icon_color?: string | undefined;
   header_alignment?: 'center' | 'apart' | undefined; // How title and icon are aligned
   icon_side?: 'left' | 'right' | undefined; // Which side the icon appears on

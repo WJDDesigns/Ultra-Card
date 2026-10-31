@@ -271,43 +271,76 @@ export class UltraAccordionModule extends BaseUltraModule {
             `
           : ''}
 
-        <!-- Title Icon (shown before the title text) -->
-        ${this.renderSettingsSection(
-          localize('editor.accordion.title_icon.section_title', lang, 'Title Icon'),
-          localize(
-            'editor.accordion.title_icon.section_desc',
-            lang,
-            'Optional icon shown in front of the title. Leave empty for none.'
-          ),
-          [
-            {
-              title: localize('editor.accordion.title_icon.icon', lang, 'Icon'),
-              description: '',
-              hass,
-              data: { title_icon: accordionModule.title_icon || '' },
-              schema: [this.iconField('title_icon')],
-              onChange: (e: CustomEvent) => {
-                updateModule({ title_icon: e.detail.value?.title_icon || '' });
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
-              },
-            },
-          ]
-        )}
-        ${accordionModule.title_icon
-          ? this.renderColorField(
-              localize('editor.accordion.title_icon.color', lang, 'Title icon color'),
-              '',
-              hass,
-              accordionModule.title_icon_color || '',
-              '',
-              next => {
-                updateModule({ title_icon_color: next });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }
-            )
-          : ''}
+        <!-- Title Icon (before or after the title text) -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.accordion.title_icon.section_title', lang, 'Title Icon')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.accordion.title_icon.section_desc',
+              lang,
+              'Optional icon shown next to the title. Leave empty for none.'
+            )}
+          </div>
+          ${this.renderFieldSection(
+            localize('editor.accordion.title_icon.icon', lang, 'Icon'),
+            '',
+            hass,
+            { title_icon: accordionModule.title_icon || '' },
+            [this.iconField('title_icon')],
+            (e: CustomEvent) => {
+              updateModule({ title_icon: e.detail.value?.title_icon || '' });
+              setTimeout(() => {
+                this.triggerPreviewUpdate();
+              }, 50);
+            }
+          )}
+          ${accordionModule.title_icon
+            ? html`
+                ${this.renderSegmentedField(
+                  localize('editor.text.icon_position', lang, 'Icon Position'),
+                  '',
+                  accordionModule.title_icon_position || 'before',
+                  [
+                    {
+                      value: 'before',
+                      label: localize('editor.text.before_text', lang, 'Before Text'),
+                      icon: 'mdi:format-align-left',
+                    },
+                    {
+                      value: 'after',
+                      label: localize('editor.text.after_text', lang, 'After Text'),
+                      icon: 'mdi:format-align-right',
+                    },
+                  ],
+                  next => {
+                    updateModule({ title_icon_position: next as 'before' | 'after' });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                )}
+                ${this.renderColorField(
+                  localize('editor.accordion.title_icon.color', lang, 'Title icon color'),
+                  '',
+                  hass,
+                  accordionModule.title_icon_color || '',
+                  '',
+                  next => {
+                    updateModule({ title_icon_color: next });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                )}
+              `
+            : ''}
+        </div>
 
         <!-- Icon Configuration Section -->
         ${this.renderSettingsSection(
@@ -1766,11 +1799,17 @@ export class UltraAccordionModule extends BaseUltraModule {
                 class="ultra-accordion-title ultra-accordion-title--with-icon"
                 style="${this.buildStyleString({ ...titleStyles, display: 'flex', alignItems: 'center', gap: '8px' })}"
               >
-                <ha-icon
-                  icon="${titleIcon}"
-                  style="flex-shrink: 0; --mdc-icon-size: 1.25em; color: ${accordionModule.title_icon_color || 'inherit'};"
-                ></ha-icon>
-                <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">${titleText}</span>
+                ${accordionModule.title_icon_position === 'after'
+                  ? html`<span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">${titleText}</span>
+                      <ha-icon
+                        icon="${titleIcon}"
+                        style="flex-shrink: 0; --mdc-icon-size: 1.25em; color: ${accordionModule.title_icon_color || 'inherit'};"
+                      ></ha-icon>`
+                  : html`<ha-icon
+                        icon="${titleIcon}"
+                        style="flex-shrink: 0; --mdc-icon-size: 1.25em; color: ${accordionModule.title_icon_color || 'inherit'};"
+                      ></ha-icon>
+                      <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">${titleText}</span>`}
               </span>`
             : html`<span class="ultra-accordion-title" style="${this.buildStyleString(titleStyles)}"
                 >${titleText}</span
