@@ -8,7 +8,7 @@ import { AlarmPanelModule as AlarmPanelModuleConfig, CardModule, UltraCardConfig
 const FEATURE_ARM_HOME          = 1;
 const FEATURE_ARM_AWAY          = 2;
 const FEATURE_ARM_NIGHT         = 4;
-const FEATURE_ARM_VACATION      = 8;
+const FEATURE_ARM_VACATION      = 32; // HA AlarmControlPanelEntityFeature.ARM_VACATION (8 is TRIGGER)
 const FEATURE_ARM_CUSTOM_BYPASS = 16;
 
 // ─── Alarm state sets ─────────────────────────────────────────────────────────
@@ -364,7 +364,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
   ): void {
     const data: Record<string, string> = { entity_id: entityId };
     if (code) data.code = code;
-    hass.callService('alarm_control_panel', service, data);
+    // Arm modes are named 'arm_home' etc. in the card, but HA's services are
+    // 'alarm_arm_home' etc. Calling 'arm_home' did nothing (Alarmo report, Oct 2026).
+    const haService = service.startsWith('arm_') ? `alarm_${service}` : service;
+    hass.callService('alarm_control_panel', haService, data);
     this._codeBuffer.set(entityId, '');
     this._pendingArmMode.delete(entityId);
     this._pending.set(entityId, service);

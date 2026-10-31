@@ -39,6 +39,9 @@ interface RegisteredModule {
   dashboardKey: string;
 }
 
+/** cardId of navbars restored from the dashboard config (matches uc-navigation-bootstrap). */
+const RESTORED_CARD_ID = 'uc-restored';
+
 /** Dashboard part of an HA path: "/lovelace-home/2" → "lovelace-home". */
 function dashboardKeyOf(pathname: string): string {
   return (pathname || '').split('/').filter(Boolean)[0] || '';
@@ -278,6 +281,11 @@ class UcNavigationService {
     const key = `${cardId}-${moduleId}`;
     const existing = this.registeredModules.get(key);
 
+    // The real card took over from the copy restored at page load (see uc-navigation-bootstrap).
+    if (cardId !== RESTORED_CARD_ID) {
+      this.registeredModules.delete(`${RESTORED_CARD_ID}-${moduleId}`);
+    }
+
     // DON'T clear preview override on re-registration
     // Re-registration happens on every config change during editing
     // Preview override will be cleared manually when editor closes
@@ -298,6 +306,36 @@ class UcNavigationService {
     this.startObservers();
     this.scheduleUpdate();
     // Start/stop the media player watcher as needed
+    this.manageMediaPlayerWatcher();
+  }
+
+  /**
+   * Register a navbar read from the saved dashboard config after a page reload, when
+   * the card that holds it isn't on screen. Skipped if that card already registered it.
+   */
+  registerRestoredModule(
+    cardId: string,
+    moduleId: string,
+    module: NavigationModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    dashboardKey: string
+  ): void {
+    for (const reg of this.registeredModules.values()) {
+      if (reg.moduleId === moduleId) return;
+    }
+    this.registeredModules.set(`${cardId}-${moduleId}`, {
+      cardId,
+      moduleId,
+      module,
+      hass,
+      config,
+      element: null,
+      registeredAt: Date.now(),
+      dashboardKey,
+    });
+    this.startObservers();
+    this.scheduleUpdate();
     this.manageMediaPlayerWatcher();
   }
 

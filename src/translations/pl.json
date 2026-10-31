@@ -1350,7 +1350,7 @@
     },
     "layout_extra": {
       "module_name": "Nazwa modułu:",
-      "module_name_placeholder": "Nadaj temu modułowi niestandardową nazwę, aby łatwiej go identyfikować w edytorze.",
+      "module_name_placeholder": "np. Światła w kuchni",
       "module_name_help": "Nadaj temu modułowi niestandardową nazwę, aby łatwiej go identyfikować w edytorze."
     },
     "layout_logic": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Ikona tytułu",
-        "section_desc": "Opcjonalna ikona przed tytułem. Zostaw puste, aby jej nie było.",
+        "section_desc": "Opcjonalna ikona obok tytułu. Pozostaw puste, aby nie wyświetlać.",
         "icon": "Ikona",
         "color": "Kolor ikony tytułu"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Nazwa",
       "feed_icon": "Ikona",
       "feed_color": "Kolor",
-      "tab_all": "Wszystkie"
+      "tab_all": "Wszystkie",
+      "ticker_unused": "Układ Pasek wiadomości pokazuje tylko nagłówki, więc te opcje nic tam nie zmieniają."
     },
     "alarm_panel": {
       "mode_desc_auto": "Zgodnie z tym, co obsługuje alarm",

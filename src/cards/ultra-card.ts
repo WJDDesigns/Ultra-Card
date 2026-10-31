@@ -27,6 +27,7 @@ import { getModuleRegistry, isProModule } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
 import { prefetchModuleChunksForLayout } from '../utils/uc-module-chunk-prefetch';
+import { rememberNavigationDashboard } from '../services/uc-navigation-bootstrap';
 import {
   hasTimeCondition,
   layoutHasTimeConditions,
@@ -1199,7 +1200,11 @@ export class UltraCard extends LitElement {
           '[UltraCard] Config validation reported problems:',
           validationResult.errors.join(', ')
         );
-        return;
+        // Still render: these are module-level problems such as "no entity picked yet",
+        // and each module shows its own "select an entity" hint. Bailing out here left
+        // the whole card blank as soon as a People, Climate, Weather, Vacuum or To-do
+        // module was added without an entity.
+        if (!validationResult.correctedConfig) return;
       }
 
       const isPreviewContext = this._detectEditorPreviewContext();
@@ -4137,6 +4142,10 @@ export class UltraCard extends LitElement {
         if (!this.config || !this.hass || !this._instanceId) return;
         for (const { id, module } of this._getConfigCache().navigationModules) {
           svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+          // Remember this dashboard so the navbar comes back after a reload on another view.
+          if (!this._isEditorPreviewCard && !this._isCardPickerPreview) {
+            rememberNavigationDashboard((module as { nav_scope?: 'current_view' | 'current_dashboard' | 'all_views' }).nav_scope);
+          }
         }
       })
       .catch(err => console.warn('Ultra Card: navigation service failed to load', err));

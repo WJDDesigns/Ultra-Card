@@ -1350,7 +1350,7 @@
     },
     "layout_extra": {
       "module_name": "Modulenaam:",
-      "module_name_placeholder": "Geef deze module een aangepaste naam om het makkelijker te identificeren in de editor.",
+      "module_name_placeholder": "bijv. Keukenlampen",
       "module_name_help": "Geef deze module een aangepaste naam om het makkelijker te identificeren in de editor."
     },
     "layout_logic": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Titelpictogram",
-        "section_desc": "Optioneel pictogram voor de titel. Leeg laten voor geen.",
+        "section_desc": "Optioneel pictogram naast de titel. Laat leeg voor geen.",
         "icon": "Pictogram",
         "color": "Kleur titelpictogram"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Naam",
       "feed_icon": "Pictogram",
       "feed_color": "Kleur",
-      "tab_all": "Alle"
+      "tab_all": "Alle",
+      "ticker_unused": "De Nieuwsticker-indeling toont alleen koppen, dus deze opties doen daar niets."
     },
     "alarm_panel": {
       "mode_desc_auto": "Volgt wat het alarm ondersteunt",

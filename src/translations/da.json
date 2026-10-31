@@ -1350,7 +1350,7 @@
     },
     "layout_extra": {
       "module_name": "Modulnavn:",
-      "module_name_placeholder": "Giv dette modul et brugerdefineret navn for at gøre det lettere at identificere i editoren.",
+      "module_name_placeholder": "f.eks. Køkkenlys",
       "module_name_help": "Giv dette modul et brugerdefineret navn for at gøre det lettere at identificere i editoren."
     },
     "layout_logic": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Titelikon",
-        "section_desc": "Valgfrit ikon foran titlen. Lad stå tomt for intet.",
+        "section_desc": "Valgfrit ikon ved siden af titlen. Lad feltet stå tomt for intet.",
         "icon": "Ikon",
         "color": "Farve på titelikon"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Navn",
       "feed_icon": "Ikon",
       "feed_color": "Farve",
-      "tab_all": "Alle"
+      "tab_all": "Alle",
+      "ticker_unused": "Nyhedsbånd-layoutet viser kun overskrifter, så disse indstillinger gør intet der."
     },
     "alarm_panel": {
       "mode_desc_auto": "Følger hvad alarmen understøtter",

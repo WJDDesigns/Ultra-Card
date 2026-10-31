@@ -1267,9 +1267,9 @@ export abstract class BaseUltraModule implements UltraModule {
       }
 
       .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
+        width: 64px !important;
+        max-width: 64px !important;
+        min-width: 64px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
         border-radius: var(--uc-r-4, 4px);
@@ -1281,6 +1281,24 @@ export abstract class BaseUltraModule implements UltraModule {
         flex-shrink: 0;
         box-sizing: border-box;
       }
+
+      .gap-input::-webkit-outer-spin-button,
+
+      .gap-input::-webkit-inner-spin-button {
+
+        -webkit-appearance: none;
+
+        margin: 0;
+
+      }
+
+
+      .gap-input {
+
+        -moz-appearance: textfield;
+
+      }
+
 
       .gap-input:focus {
         outline: none;
@@ -1492,9 +1510,10 @@ export abstract class BaseUltraModule implements UltraModule {
         font-size: 12px;
         color: var(--secondary-text-color);
         opacity: 0.8;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        /* Wrap instead of cutting the hint off (longer in German and other languages). */
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.35;
       }
 
       /* Compact Warning Banner */

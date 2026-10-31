@@ -143,6 +143,18 @@ export class UltraSelectInputModule extends BaseUltraModule {
 
     const options: string[] = entityState.attributes?.options || [];
     const current = entityState.state || '';
+    // Show HA's translated option names (e.g. "Baumwolle Eco 40-60") instead of the raw
+    // option keys integrations expose; the raw key is still what gets sent back.
+    const fmt = (hass as { formatEntityState?: (s: unknown, v: string) => string } | undefined)
+      ?.formatEntityState;
+    const label = (opt: string): string => {
+      if (typeof fmt !== 'function') return opt;
+      try {
+        return fmt(entityState, opt) || opt;
+      } catch {
+        return opt;
+      }
+    };
     const designProperties = (selMod as any).design || {};
     const fontSize = selMod.font_size ?? 14;
     const textColor = selMod.text_color || 'var(--primary-text-color)';
@@ -176,7 +188,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
           ${showLabel ? html`<div class="sel-label">${selMod.label}</div>` : ''}
           <div class="sel-seg-${mid}">
             ${options.map(opt => html`
-              <button class="sel-seg-btn-${mid} ${opt === current ? 'active' : ''}" @click=${() => selectOption(opt)}>${opt}</button>
+              <button class="sel-seg-btn-${mid} ${opt === current ? 'active' : ''}" @click=${() => selectOption(opt)}>${label(opt)}</button>
             `)}
           </div>
         </div>
@@ -198,7 +210,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
           ${showLabel ? html`<div class="sel-label">${selMod.label}</div>` : ''}
           <div class="sel-chips-${mid}">
             ${options.map(opt => html`
-              <button class="sel-chip-${mid} ${opt === current ? 'active' : ''}" @click=${() => selectOption(opt)}>${opt}</button>
+              <button class="sel-chip-${mid} ${opt === current ? 'active' : ''}" @click=${() => selectOption(opt)}>${label(opt)}</button>
             `)}
           </div>
         </div>
@@ -213,6 +225,8 @@ export class UltraSelectInputModule extends BaseUltraModule {
           background:transparent; border:1px solid var(--divider-color); border-radius:var(--uc-r-8, 8px); cursor:pointer;
           appearance:none; -webkit-appearance:none; outline:none; transition:border-color .2s, box-shadow .2s; }
         .sel-dd-${mid}:focus { border-color:${activeColor}; box-shadow:0 0 0 1px ${activeColor}; }
+        /* The open list is drawn by the browser; give it the theme's colours so options stay readable. */
+        .sel-dd-${mid} option { background:var(--primary-background-color, #fff); color:var(--primary-text-color); }
         .sel-dd-arrow { position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none;
           color:var(--secondary-text-color); --mdc-icon-size:20px; }
         .sel-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
@@ -221,7 +235,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
         ${showLabel ? html`<div class="sel-label">${selMod.label}</div>` : ''}
         <div class="sel-dd-wrap-${mid}">
           <select class="sel-dd-${mid}" .value=${current} @change=${(e: Event) => selectOption((e.target as HTMLSelectElement).value)}>
-            ${options.map(opt => html`<option value=${opt} ?selected=${opt === current}>${opt}</option>`)}
+            ${options.map(opt => html`<option value=${opt} ?selected=${opt === current}>${label(opt)}</option>`)}
           </select>
           <span class="sel-dd-arrow"><ha-icon icon="mdi:chevron-down"></ha-icon></span>
         </div>

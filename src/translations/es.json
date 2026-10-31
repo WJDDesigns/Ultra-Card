@@ -269,7 +269,7 @@
     },
     "layout_extra": {
       "module_name": "Nombre del módulo:",
-      "module_name_placeholder": "Asigna un nombre para identificarlo fácilmente en el editor.",
+      "module_name_placeholder": "p. ej. Luces de cocina",
       "module_name_help": "Asigna un nombre para identificarlo fácilmente en el editor."
     },
     "layout_logic": {
@@ -3429,7 +3429,7 @@
       },
       "title_icon": {
         "section_title": "Icono del título",
-        "section_desc": "Icono opcional delante del título. Déjalo vacío para no mostrar ninguno.",
+        "section_desc": "Icono opcional junto al título. Déjalo vacío para no mostrar ninguno.",
         "icon": "Icono",
         "color": "Color del icono del título"
       }
@@ -6382,7 +6382,8 @@
       "feed_label": "Nombre",
       "feed_icon": "Icono",
       "feed_color": "Color",
-      "tab_all": "Todos"
+      "tab_all": "Todos",
+      "ticker_unused": "El diseño Teletipo solo muestra titulares, así que estas opciones no tienen efecto ahí."
     },
     "alarm_panel": {
       "mode_desc_auto": "Sigue lo que admite la alarma",

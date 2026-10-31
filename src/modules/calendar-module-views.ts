@@ -570,7 +570,7 @@ export function renderDayView(context: CalendarViewContext): TemplateResult {
                         ? html`
                             <div class="uc-calendar-day-event-location">
                               <ha-icon icon="mdi:map-marker"></ha-icon>
-                              ${renderLocationText(module, event.location, event.location)}
+                              ${renderLocationText(module, event.location, displayLocation(module, event.location))}
                             </div>
                           `
                         : ''}
@@ -669,7 +669,7 @@ export function renderTableView(context: CalendarViewContext): TemplateResult {
                 ${module.table_show_location_column !== false
                   ? html`<td>
                       ${event.location
-                        ? renderLocationText(module, event.location, event.location)
+                        ? renderLocationText(module, event.location, displayLocation(module, event.location))
                         : '-'}
                     </td>`
                   : ''}
@@ -875,12 +875,19 @@ function renderLocationText(
 }
 
 function removeCountryFromLocation(location: string): string {
-  // Common patterns for removing country
-  const parts = location.split(',');
+  // Addresses come as "street, city, country" or one part per line; drop the last part.
+  const parts = location
+    .split(/,|\n/)
+    .map(p => p.trim())
+    .filter(Boolean);
   if (parts.length > 1) {
-    // Remove the last part (usually country)
-    return parts.slice(0, -1).join(',').trim();
+    return parts.slice(0, -1).join(', ');
   }
   return location;
+}
+
+/** Location text as shown, honouring "Strip country name". */
+function displayLocation(module: CalendarModule, location: string): string {
+  return module.remove_location_country ? removeCountryFromLocation(location) : location;
 }
 

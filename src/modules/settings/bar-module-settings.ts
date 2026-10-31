@@ -609,17 +609,19 @@ export class UltraBarModuleSettings extends UltraBarModule {
                     ${!barModule.entity && barModule.percentage_type !== 'difference'
                       ? html`
                           <div
-                            style="color: var(--warning-color); font-size: 12px; margin-top: 4px; font-style: italic;"
+                            style="color: var(--warning-color); font-size: 12px; margin-top: 4px; font-style: italic; display: flex; align-items: flex-start; gap: 6px;"
                           >
                             <ha-icon
                               icon="mdi:information-outline"
-                              style="font-size: 14px; margin-right: 4px;"
+                              style="--mdc-icon-size: 16px; flex-shrink: 0;"
                             ></ha-icon>
-                            ${localize(
-                              'editor.bar.entity.no_entity_warning',
-                              lang,
-                              'No entity selected - Please choose a sensor with values between 0-100'
-                            )}
+                            <span
+                              >${localize(
+                                'editor.bar.entity.no_entity_warning',
+                                lang,
+                                'No entity selected - Please choose a sensor with values between 0-100'
+                              )}</span
+                            >
                           </div>
                         `
                       : html`

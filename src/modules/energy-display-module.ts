@@ -828,6 +828,15 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     return '2s';
   }
 
+  /** Node icon drawn inside the SVG (Show icons). Centred on (cx, cy). */
+  private _svgNodeIcon(node: EnergyNode, cx: number, cy: number, size: number, color: string) {
+    const icon = node.icon || DEFAULT_NODE_ICONS[node.node_type];
+    if (!icon) return svg``;
+    return svg`<foreignObject x="${cx - size / 2}" y="${cy - size / 2}" width="${size}" height="${size}" style="overflow: visible;">
+      <ha-icon icon="${icon}" style="--mdc-icon-size: ${size}px; width: ${size}px; height: ${size}px; display: flex; color: ${color};"></ha-icon>
+    </foreignObject>`;
+  }
+
   private _renderCircleFlow(
     module: EnergyDisplayModule,
     hass: HomeAssistant,
@@ -840,12 +849,17 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     const devices = this._getDeviceNodes(module);
     const showValues = module.show_values !== false;
     const showLabels = module.show_labels !== false;
+    const showIcons = module.show_icons !== false;
     const circleSize = Math.max(24, Math.min(96, module.circle_size ?? 48));
     const lineWidth = Math.max(1, Math.min(6, module.flow_line_width ?? 2));
     const flowDuration = this._getFlowDuration(module.animation_speed || 'normal');
     const animate = flowDuration !== '0s';
 
     const half = circleSize / 2;
+    // Icon sits in the upper part of the circle with the value below it.
+    const iconSize = Math.round(Math.max(12, Math.min(28, circleSize * 0.34)));
+    const iconShift = Math.round(circleSize * 0.18);
+    const valueShift = Math.round(circleSize * 0.2);
     const enabledDevices = devices.filter(d => d.enabled !== false);
     const deviceCount = enabledDevices.length;
 
@@ -969,8 +983,9 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
               <g class="energy-node" data-node-id="${node.id}">
                 ${showLabels ? svg`<text x="${x}" y="${labelY}" text-anchor="middle" font-size="11" fill="var(--secondary-text-color)" dominant-baseline="${labelBelow ? 'hanging' : 'auto'}">${label}</text>` : svg``}
                 <circle cx="${x}" cy="${y}" r="${half}" fill="var(--card-background-color)" stroke="${color}" stroke-width="2"/>
-                ${showValues ? svg`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="var(--primary-text-color)">${valueText}</text>` : svg``}
-                ${secondaryText ? svg`<text x="${x}" y="${y + 13}" text-anchor="middle" font-size="10" fill="var(--secondary-text-color)">${secondaryText}</text>` : svg``}
+                ${showIcons ? this._svgNodeIcon(node, x, showValues ? y - iconShift : y, iconSize, color) : svg``}
+                ${showValues ? svg`<text x="${x}" y="${showIcons ? y + valueShift : y}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="var(--primary-text-color)">${valueText}</text>` : svg``}
+                ${secondaryText ? svg`<text x="${x}" y="${(showIcons ? y + valueShift : y) + 13}" text-anchor="middle" font-size="10" fill="var(--secondary-text-color)">${secondaryText}</text>` : svg``}
               </g>
             `;
           })}
@@ -1136,12 +1151,14 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     });
 
     // Render a box with label+value in SVG
+    const showIcons = module.show_icons !== false;
     const renderBox = (
       x: number, y: number, w: number, h: number,
-      color: string, label: string, value: string, rx: number, bw: number
+      color: string, label: string, value: string, rx: number, bw: number, node?: EnergyNode
     ) => svg`
       <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"
         fill="var(--card-background-color)" stroke="${color}" stroke-width="${bw}" opacity="0.95"/>
+      ${showIcons && node ? this._svgNodeIcon(node, x + 8 + Math.min(18, h * 0.4) / 2, y + h / 2, Math.min(18, h * 0.4), color) : svg``}
       ${showValues ? svg`<text x="${x + w / 2}" y="${y + h / 2 - (showLabels ? 7 : 0)}"
         text-anchor="middle" dominant-baseline="central"
         font-size="13" font-weight="700" fill="var(--primary-text-color)">${value}</text>` : svg``}
@@ -1190,7 +1207,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
             const label = node.label || DEFAULT_NODE_LABELS[node.node_type];
             const bx = node.node_type === 'solar' || node.node_type === 'battery' ? xLeft : xRight;
             const by = node.node_type === 'solar' || node.node_type === 'grid' ? yTop : yBot;
-            return renderBox(bx, by, bW, bH, color, label, valueText, borderRadius, borderWidth);
+            return renderBox(bx, by, bW, bH, color, label, valueText, borderRadius, borderWidth, node);
           })}
 
           <!-- Device boxes -->
@@ -1204,7 +1221,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
             const color = d.color || DEFAULT_NODE_COLORS.device;
             const label = d.label || DEFAULT_NODE_LABELS.device;
             const dcx = devCenters[i];
-            return renderBox(dcx - bW / 2, yDev, bW, bH, color, label, valueText, borderRadius, borderWidth);
+            return renderBox(dcx - bW / 2, yDev, bW, bH, color, label, valueText, borderRadius, borderWidth, d);
           })}
         </svg>
       </div>

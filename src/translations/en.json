@@ -1940,7 +1940,7 @@
     },
     "layout_extra": {
       "module_name": "Module Name:",
-      "module_name_placeholder": "Give this module a custom name to make it easier to identify in the editor.",
+      "module_name_placeholder": "e.g. Kitchen lights",
       "module_name_help": "Give this module a custom name to make it easier to identify in the editor."
     },
     "camera": {
@@ -3755,7 +3755,7 @@
       },
       "title_icon": {
         "section_title": "Title Icon",
-        "section_desc": "Optional icon shown in front of the title. Leave empty for none.",
+        "section_desc": "Optional icon shown next to the title. Leave empty for none.",
         "icon": "Icon",
         "color": "Title icon color"
       }
@@ -6349,7 +6349,8 @@
       "feed_label": "Name",
       "feed_icon": "Icon",
       "feed_color": "Color",
-      "tab_all": "All"
+      "tab_all": "All",
+      "ticker_unused": "The Ticker layout shows only headlines, so these options do nothing there."
     },
     "alarm_panel": {
       "mode_desc_auto": "Follows what the alarm supports",

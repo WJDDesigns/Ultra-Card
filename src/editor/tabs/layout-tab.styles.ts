@@ -1768,8 +1768,9 @@ export const layoutTabStyles = css`
       }
 
       /* Narrow editor pane: tighten the buttons so the last group (help, full
-         screen) stays inside the toolbar instead of poking out past its edge. */
-      @container (max-width: 400px) {
+         screen) stays on the same line instead of dropping to a row of its own.
+         560px covers HA's split editor on a laptop, not only phones. */
+      @container (max-width: 560px) {
         .toolbar-group {
           padding: 0 3px;
           gap: 0;
@@ -3067,8 +3068,11 @@ export const layoutTabStyles = css`
       /* Mobile optimization for selector popup */
       @media (max-width: 768px), (max-height: 768px) {
         .selector-content.draggable-popup {
-          width: calc(100vw - 20px) !important; /* Full width with 10px padding each side */
-          height: calc(100vh - 40px) !important; /* Full height with 20px padding top/bottom */
+          /* min(…, 100%): inside HA's edit dialog the popup is positioned against the
+             dialog, not the window, so a plain 100vw overflowed it and the left side of
+             the Responsive Column Layout popup ended up off screen on laptops. */
+          width: calc(min(100vw, 100%) - 20px) !important;
+          height: calc(min(100vh, 100%) - 40px) !important;
           max-width: none !important; /* Remove max-width constraint on mobile */
           max-height: none !important; /* Remove max-height constraint on mobile */
           /* Ensure proper centering on mobile */
@@ -5011,11 +5015,18 @@ export const layoutTabStyles = css`
       }
 
       .gap-input {
-        flex: 0 0 60px;
-        min-width: 60px;
-        max-width: 60px;
+        flex: 0 0 64px;
+        min-width: 64px;
+        max-width: 64px;
         text-align: center;
-        padding: 6px 8px !important;
+        padding: 6px 4px !important;
+        -moz-appearance: textfield;
+      }
+
+      .gap-input::-webkit-outer-spin-button,
+      .gap-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
       }
 
       /* Ensure form elements fit properly */
