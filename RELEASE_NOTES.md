@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta7
+
+The seventh 3.14.3 beta fixes the Lock, Text, Navigation and Toggle issues reported on Discord this weekend. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+No Ultra Card Connect update is needed for this beta. Connect 1.12.2 is still current.
+
+### 🚀 New Features
+
+- **Lock: slide to unlock in Compact** - The Compact layout now works with "Slide to unlock". The slider sits under the chip
+- **Navigation: put stacks anywhere** - Drag a stack between your paths and the navigation bar keeps that order. Before, stacks always came after all the paths. Thanks to larrysansan for the request
+
+### 🐛 Bug Fixes
+
+- **Lock: buttons ignored Alignment** - With the name and state both hidden, the buttons always sat on the right. "Spread out" now centres them, and Left or Right moves them to that side. Thanks to larrysansan for the report
+- **Lock: empty circle in Hero** - The Hero layout showed an empty circle when the icon was turned off. It's gone now. Thanks to larrysansan for the report
+- **Text: icon jumped above the text** - Adding a tap, hold or double-tap action moved the icon above the text. It now stays in front of or behind the text as you set it. Thanks to larrysansan for the report
+- **Toggle: title didn't update** - Turning "Show title" on or off, or changing the title, now updates the preview straight away, inside a Slider too. Thanks to larrysansan for the report
+- **Navigation: slider knob cut off** - The editor sliders no longer cut the knob in half at 0. Thanks to larrysansan for the report
+- **Translations** - The Lock alignment and confirmation options and the Toggle and More Info labels in the Actions tab are now translated
+
 ## Version 3.14.3-beta6
 
 🎃 **Happy Halloween!** The sixth 3.14.3 beta is a treat, not a trick: it fixes cards going blank, brings the navigation bar back after a reload, gets Alarmo arming again and clears up a long list of editor issues reported on Discord. This is a pre-release for testing — please report anything odd on GitHub or Discord.
