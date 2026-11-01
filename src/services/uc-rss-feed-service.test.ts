@@ -98,6 +98,23 @@ describe('uc-rss-feed-service', () => {
     expect(feed?.items[0]?.link).toBe('https://x.de/a?b=1&c=2');
   });
 
+  it('keeps the complete items of a feed that was cut off', () => {
+    const cut = `<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:content="https://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>Südhessen</title>
+<item><title>Eins</title><link><![CDATA[https://x.de/1.html]]></link><content:encoded><![CDATA[<img src="https://x.de/1.jpg">Text]]></content:encoded></item>
+<item><title>Zwei</title><link><![CDATA[https://x.de/2.html]]></link></item>
+<item><title>Drei</title><content:encoded><![CDATA[<img src="https://x.de/3.jpg"> Abgeschnit`;
+    const feed = parseFeed(cut, 'https://x.de/index.rss');
+    expect(feed?.title).toBe('Südhessen');
+    expect(feed?.items.map(i => i.title)).toEqual(['Eins', 'Zwei']);
+    expect(feed?.items[0]?.image).toBe('https://x.de/1.jpg');
+    const atom = parseFeed(
+      '<feed xmlns="http://www.w3.org/2005/Atom"><title>A</title><entry><title>One</title></entry><entry><title>Tw',
+      'https://x.de/atom'
+    );
+    expect(atom?.items.map(i => i.title)).toEqual(['One']);
+  });
+
   it('finds the feed links a web page advertises', () => {
     const page = `<!DOCTYPE html><html><head>
       <link rel="alternate" type="application/rss+xml" title="RSS" href="/suedhessen/index.rss">
