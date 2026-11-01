@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta8
+
+The eighth 3.14.3 beta fixes the builder toolbar and makes the RSS Feed module read more news sites. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+No Ultra Card Connect update is needed for this beta. Connect 1.12.2 is still current.
+
+### 🚀 New Features
+
+- **RSS Feed: paste a web page** - If you paste a news page instead of its feed, the module now finds the feed that page links to and loads it
+
+### 🐛 Bug Fixes
+
+- **Builder toolbar: icons on a second row** - In a narrow editor, the keyboard shortcuts and full screen buttons dropped onto a line of their own. All toolbar icons now stay on one line. Thanks to larrysansan for the report
+- **RSS Feed: "not a feed" error** - Feeds that use web-page characters such as `&nbsp;` or `&ouml;` now load instead of showing "This address isn't an RSS, Atom or JSON feed". Thanks to larrysansan for the report
+
 ## Version 3.14.3-beta7
 
 The seventh 3.14.3 beta fixes the Lock, Text, Navigation and Toggle issues reported on Discord this weekend. This is a pre-release for testing — please report anything odd on GitHub or Discord.
