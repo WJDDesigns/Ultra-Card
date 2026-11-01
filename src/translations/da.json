@@ -2892,7 +2892,7 @@
       "action_open": "Åbn",
       "actions": "Lås Handlinger",
       "unlock_style": "Lås op med",
-      "unlock_style_desc": "Skub erstatter knapperne Lås op og Åbn med skydere, så et utilsigtet tryk ikke låser op (layouterne Hero og Standard; andre steder bedes om bekræftelse). Mønster og PIN tjekkes i kortet før oplåsning.",
+      "unlock_style_desc": "Skub erstatter knapperne Lås op og Åbn med skydere, så et utilsigtet tryk ikke låser op. Mønster og PIN tjekkes i kortet før oplåsning.",
       "unlock_style_buttons": "Knapper",
       "unlock_style_slide": "Skyd for at låse op",
       "ask_code": "Spørg om PIN-kode",
@@ -2930,7 +2930,14 @@
       "locked_color": "Farve for låst",
       "unlocked_color": "Farve for oplåst",
       "card_color": "Kortfarve",
-      "card_color_desc": "Baggrund for låsekortet. Samme indstilling som Baggrundsfarve under fanen Design."
+      "card_color_desc": "Baggrund for låsekortet. Samme indstilling som Baggrundsfarve under fanen Design.",
+      "align_left": "Venstre",
+      "align_right": "Højre",
+      "align_center": "Centreret",
+      "behavior_section": "Adfærd",
+      "behavior_desc": "Sikkerhedsindstillinger for låsehandlinger.",
+      "require_confirmation": "Bekræft oplåsning / åbning",
+      "require_confirmation_desc": "Bed om bekræftelse før oplåsning eller åbning"
     },
     "text_input": {
       "entity": {

@@ -2892,7 +2892,7 @@
       "action_open": "Apri",
       "actions": "Azioni di blocco",
       "unlock_style": "Sblocca con",
-      "unlock_style_desc": "Scorri sostituisce i pulsanti Sblocca e Apri con cursori, così un tocco accidentale non sblocca (layout Hero e Standard; altrove chiede conferma). Sequenza e PIN vengono verificati nella scheda prima dello sblocco.",
+      "unlock_style_desc": "Scorri sostituisce i pulsanti Sblocca e Apri con cursori, così un tocco accidentale non sblocca. Sequenza e PIN vengono verificati nella scheda prima dello sblocco.",
       "unlock_style_buttons": "Pulsanti",
       "unlock_style_slide": "Scorri per sbloccare",
       "ask_code": "Chiedi codice PIN",
@@ -2930,7 +2930,14 @@
       "locked_color": "Colore bloccata",
       "unlocked_color": "Colore sbloccata",
       "card_color": "Colore della scheda",
-      "card_color_desc": "Sfondo della scheda serratura. Stessa impostazione di Colore di sfondo nella scheda Design."
+      "card_color_desc": "Sfondo della scheda serratura. Stessa impostazione di Colore di sfondo nella scheda Design.",
+      "align_left": "Sinistra",
+      "align_right": "Destra",
+      "align_center": "Centro",
+      "behavior_section": "Comportamento",
+      "behavior_desc": "Opzioni di sicurezza per le azioni della serratura.",
+      "require_confirmation": "Conferma sblocco / apertura",
+      "require_confirmation_desc": "Chiedi conferma prima di sbloccare o aprire"
     },
     "text_input": {
       "entity": {

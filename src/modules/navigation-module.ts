@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { applyNavItemOrder, NAV_MEDIA_PLAYER_ID } from '../utils/uc-nav-item-order';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
@@ -205,11 +206,12 @@ export class UltraNavigationModule extends BaseUltraModule {
       if (mpPos === 'start') pos = 0;
       else if (mpPos === 'end') pos = topItems.length;
       else if (typeof mpPos === 'number') pos = mpPos;
-      topItems.push({ type: 'media_player', id: '__media_player__', position: pos });
+      topItems.push({ type: 'media_player', id: NAV_MEDIA_PLAYER_ID, position: pos });
     }
 
-    // Sort top-level items by position
+    // Sort top-level items by position, then apply the order saved by dragging
     topItems.sort((a, b) => a.position - b.position);
+    const orderedTop = applyNavItemOrder(topItems, i => i.id, navModule.nav_item_order);
 
     // Build result with stack children inserted after their parent stacks
     const result: Array<{
@@ -220,7 +222,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       parentStackId?: string | undefined;
     }> = [];
 
-    topItems.forEach(item => {
+    orderedTop.forEach(item => {
       result.push(item);
       if (item.type === 'stack' && item.data) {
         const stack = item.data as NavStackItem;
@@ -1760,10 +1762,16 @@ export class UltraNavigationModule extends BaseUltraModule {
       }
       routes.splice(insertIdx, 0, ejectedChild);
 
+      // Put the path where it was dropped in the saved order too
+      const topIds = items.filter(i => i.type !== 'stack_child').map(i => i.id);
+      const targetPos = topIds.indexOf(targetItem.id);
+      topIds.splice(targetPos < 0 ? topIds.length : targetPos, 0, ejectedChild.id);
+
       updateModule({
         nav_routes: routes,
         nav_stacks: stacks,
-      });
+        nav_item_order: topIds,
+      } as Partial<CardModule>);
       return;
     }
 
@@ -1844,11 +1852,13 @@ export class UltraNavigationModule extends BaseUltraModule {
     updateModule({
       nav_routes: newRoutes,
       nav_stacks: newStacks,
+      // Remember the full order so stacks can sit between paths (larrysansan, Nov 1)
+      nav_item_order: newTopItems.map(i => i.id),
       nav_media_player: {
         ...navModule.nav_media_player,
         icon_position: mediaPlayerPosition,
       },
-    });
+    } as Partial<CardModule>);
   }
 
   // Handle dropping an item onto a stack header (to add as a child)
@@ -3641,6 +3651,11 @@ export class UltraNavigationModule extends BaseUltraModule {
     return `
       .module-settings {
         padding-bottom: 24px;
+      }
+      /* Sliders outside a section sit on the editor's clipped edge; inset them so the
+         knob isn't cut in half at 0 (larrysansan, Oct 31). */
+      .module-settings > .field-container .uc-ha-slider {
+        margin-inline: 10px 0;
       }
       .settings-section {
         background: var(--secondary-background-color);

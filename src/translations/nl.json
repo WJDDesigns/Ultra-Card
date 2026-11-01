@@ -2892,7 +2892,7 @@
       "action_open": "Open",
       "actions": "Slotacties",
       "unlock_style": "Ontgrendelen met",
-      "unlock_style_desc": "Schuiven vervangt de knoppen Ontgrendelen en Openen door schuifregelaars, zodat een onbedoelde tik niet ontgrendelt (indelingen Hero en Standaard; elders wordt om bevestiging gevraagd). Patroon en pincode worden vóór het ontgrendelen in de kaart gecontroleerd.",
+      "unlock_style_desc": "Schuiven vervangt de knoppen Ontgrendelen en Openen door schuifregelaars, zodat een onbedoelde tik niet ontgrendelt. Patroon en pincode worden vóór het ontgrendelen in de kaart gecontroleerd.",
       "unlock_style_buttons": "Knoppen",
       "unlock_style_slide": "Schuif om te ontgrendelen",
       "ask_code": "Vraag om pincode",
@@ -2930,7 +2930,14 @@
       "locked_color": "Kleur vergrendeld",
       "unlocked_color": "Kleur ontgrendeld",
       "card_color": "Kaartkleur",
-      "card_color_desc": "Achtergrond van de slotkaart. Dezelfde instelling als Achtergrondkleur op het tabblad Design."
+      "card_color_desc": "Achtergrond van de slotkaart. Dezelfde instelling als Achtergrondkleur op het tabblad Design.",
+      "align_left": "Links",
+      "align_right": "Rechts",
+      "align_center": "Midden",
+      "behavior_section": "Gedrag",
+      "behavior_desc": "Veiligheidsopties voor slotacties.",
+      "require_confirmation": "Ontgrendelen / openen bevestigen",
+      "require_confirmation_desc": "Om bevestiging vragen voor het ontgrendelen of openen"
     },
     "text_input": {
       "entity": {

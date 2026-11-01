@@ -2844,7 +2844,7 @@
       "action_open": "打开",
       "actions": "门锁操作",
       "unlock_style": "解锁方式",
-      "unlock_style_desc": "滑动会用滑块替换解锁和打开按钮，避免误触解锁（Hero 和标准布局；其他布局会弹出确认）。图案和 PIN 会在解锁前于卡片中校验。",
+      "unlock_style_desc": "滑动会用滑块替换解锁和打开按钮，避免误触解锁。图案和 PIN 会在解锁前于卡片中校验。",
       "unlock_style_buttons": "按钮",
       "unlock_style_slide": "滑动解锁",
       "ask_code": "询问 PIN 码",
@@ -2882,7 +2882,14 @@
       "locked_color": "上锁颜色",
       "unlocked_color": "解锁颜色",
       "card_color": "卡片颜色",
-      "card_color_desc": "门锁卡片的背景。与设计选项卡中的背景颜色是同一设置。"
+      "card_color_desc": "门锁卡片的背景。与设计选项卡中的背景颜色是同一设置。",
+      "align_left": "左对齐",
+      "align_right": "右对齐",
+      "align_center": "居中",
+      "behavior_section": "行为",
+      "behavior_desc": "门锁操作的安全选项。",
+      "require_confirmation": "确认解锁 / 打开",
+      "require_confirmation_desc": "解锁或打开前先请求确认"
     },
     "living_canvas": {
       "title": "Living Canvas",

@@ -1,4 +1,5 @@
 import type { HomeAssistant } from '../ha/types';
+import { applyNavItemOrder, NAV_MEDIA_PLAYER_ID } from '../utils/uc-nav-item-order';
 import { forwardHaptic } from '../ha/helpers';
 import { html, render, TemplateResult } from 'lit';
 import {
@@ -1889,6 +1890,24 @@ class UcNavigationService {
         position: mediaPlayer.icon_position ?? 'end',
         template: mediaPlayerIcon,
       });
+    }
+
+    // An order saved by dragging in the editor places every item, stacks included
+    const savedOrder = navModule.nav_item_order;
+    if (Array.isArray(savedOrder) && savedOrder.length > 0) {
+      const entries: Array<{ id: string; template: TemplateResult }> = [
+        ...routes.map((route, idx) => ({ id: route.id, template: routeTemplates[idx] })),
+        ...stacks.map((stack, idx) => ({ id: stack.id, template: stackTemplates[idx] })),
+      ];
+      const mp = specialItems.find(item => item.type === 'media_player');
+      if (mp) {
+        const entry = { id: NAV_MEDIA_PLAYER_ID, template: mp.template };
+        if (mp.position === 'start') entries.unshift(entry);
+        else if (typeof mp.position === 'number')
+          entries.splice(Math.max(0, Math.min(mp.position, entries.length)), 0, entry);
+        else entries.push(entry);
+      }
+      return applyNavItemOrder(entries, e => e.id, savedOrder).map(e => e.template);
     }
 
     // If no special items, just return routes

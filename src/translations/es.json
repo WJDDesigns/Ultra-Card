@@ -2892,7 +2892,7 @@
       "action_open": "Abrir",
       "actions": "Acciones de bloqueo",
       "unlock_style": "Desbloquear con",
-      "unlock_style_desc": "Deslizar sustituye los botones Desbloquear y Abrir por controles deslizantes, para que un toque accidental no desbloquee (diseños Hero y Estándar; en los demás pide confirmación). El patrón y el PIN se comprueban en la tarjeta antes de desbloquear.",
+      "unlock_style_desc": "Deslizar sustituye los botones Desbloquear y Abrir por controles deslizantes, para que un toque accidental no desbloquee. El patrón y el PIN se comprueban en la tarjeta antes de desbloquear.",
       "unlock_style_buttons": "Botones",
       "unlock_style_slide": "Deslizar para desbloquear",
       "ask_code": "Pedir código PIN",
@@ -2930,7 +2930,14 @@
       "locked_color": "Color bloqueado",
       "unlocked_color": "Color desbloqueado",
       "card_color": "Color de la tarjeta",
-      "card_color_desc": "Fondo de la tarjeta de la cerradura. Es el mismo ajuste que Color de fondo en la pestaña Diseño."
+      "card_color_desc": "Fondo de la tarjeta de la cerradura. Es el mismo ajuste que Color de fondo en la pestaña Diseño.",
+      "align_left": "Izquierda",
+      "align_right": "Derecha",
+      "align_center": "Centro",
+      "behavior_section": "Comportamiento",
+      "behavior_desc": "Opciones de seguridad para las acciones de la cerradura.",
+      "require_confirmation": "Confirmar desbloqueo / apertura",
+      "require_confirmation_desc": "Pedir confirmación antes de desbloquear o abrir"
     },
     "text_input": {
       "entity": {

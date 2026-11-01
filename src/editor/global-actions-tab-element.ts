@@ -741,20 +741,20 @@ export class UltraGlobalActionsTab extends LitElement {
                 class="conditional-fields-header"
                 style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
               >
-                ${actionLabel} - More Info Configuration
+                ${actionLabel} - ${localize('editor.actions.more_info_config', lang, 'More Info Configuration')}
               </div>
               <div class="conditional-fields-content" style="padding: 16px;">
                 <div
                   class="field-title"
                   style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
                 >
-                  Entity
+                  ${localize('editor.actions.entity', lang, 'Entity')}
                 </div>
                 <div
                   class="field-description"
                   style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
                 >
-                  Select which entity to show more information for
+                  ${localize('editor.actions.entity_more_info_desc', lang, 'Select which entity to show more information for')}
                 </div>
                 <ha-form
                   .hass=${this.hass}
@@ -762,10 +762,11 @@ export class UltraGlobalActionsTab extends LitElement {
                   .schema=${[
                     {
                       name: 'entity',
-                      label: 'Entity',
+                      label: localize('editor.actions.entity', lang, 'Entity'),
                       selector: { entity: {} },
                     },
                   ]}
+                  .computeLabel=${() => ''}
                   @value-changed=${(e: CustomEvent) => {
                     const entity = e.detail.value?.entity;
                     const updatedAction = { ...action, entity };
@@ -794,20 +795,20 @@ export class UltraGlobalActionsTab extends LitElement {
                 class="conditional-fields-header"
                 style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
               >
-                ${actionLabel} - Toggle Configuration
+                ${actionLabel} - ${localize('editor.actions.toggle_config', lang, 'Toggle Configuration')}
               </div>
               <div class="conditional-fields-content" style="padding: 16px;">
                 <div
                   class="field-title"
                   style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
                 >
-                  Entity
+                  ${localize('editor.actions.entity', lang, 'Entity')}
                 </div>
                 <div
                   class="field-description"
                   style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
                 >
-                  Select which entity to toggle on/off
+                  ${localize('editor.actions.entity_toggle_desc', lang, 'Select which entity to toggle on/off')}
                 </div>
                 <ha-form
                   .hass=${this.hass}
@@ -815,10 +816,11 @@ export class UltraGlobalActionsTab extends LitElement {
                   .schema=${[
                     {
                       name: 'entity',
-                      label: 'Entity',
+                      label: localize('editor.actions.entity', lang, 'Entity'),
                       selector: { entity: {} },
                     },
                   ]}
+                  .computeLabel=${() => ''}
                   @value-changed=${(e: CustomEvent) => {
                     const entity = e.detail.value?.entity;
                     const updatedAction = { ...action, entity };

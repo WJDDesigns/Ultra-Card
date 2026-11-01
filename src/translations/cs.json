@@ -2892,7 +2892,7 @@
       "action_open": "Otevřít",
       "actions": "Akce zámku",
       "unlock_style": "Odemknout pomocí",
-      "unlock_style_desc": "Posunutí nahradí tlačítka Odemknout a Otevřít posuvníky, aby náhodné klepnutí neodemklo (rozložení Hero a Standardní; jinde se vyžádá potvrzení). Gesto a PIN se před odemčením ověřují v kartě.",
+      "unlock_style_desc": "Posunutí nahradí tlačítka Odemknout a Otevřít posuvníky, aby náhodné klepnutí neodemklo. Gesto a PIN se před odemčením ověřují v kartě.",
       "unlock_style_buttons": "Tlačítka",
       "unlock_style_slide": "Posunutím odemknout",
       "ask_code": "Vyžádat PIN kód",
@@ -2930,7 +2930,14 @@
       "locked_color": "Barva zamčeno",
       "unlocked_color": "Barva odemčeno",
       "card_color": "Barva karty",
-      "card_color_desc": "Pozadí karty zámku. Stejné nastavení jako Barva pozadí na kartě Design."
+      "card_color_desc": "Pozadí karty zámku. Stejné nastavení jako Barva pozadí na kartě Design.",
+      "align_left": "Vlevo",
+      "align_right": "Vpravo",
+      "align_center": "Na střed",
+      "behavior_section": "Chování",
+      "behavior_desc": "Bezpečnostní možnosti pro akce zámku.",
+      "require_confirmation": "Potvrdit odemčení / otevření",
+      "require_confirmation_desc": "Před odemčením nebo otevřením požádat o potvrzení"
     },
     "text_input": {
       "entity": {
