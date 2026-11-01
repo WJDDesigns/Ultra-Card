@@ -2892,7 +2892,7 @@
       "action_open": "Ouvrir",
       "actions": "Actions de verrouillage",
       "unlock_style": "Déverrouiller avec",
-      "unlock_style_desc": "Glisser remplace les boutons Déverrouiller et Ouvrir par des curseurs, pour qu'un appui accidentel ne déverrouille pas (dispositions Hero et Standard ; ailleurs, une confirmation est demandée). Le schéma et le code PIN sont vérifiés dans la carte avant le déverrouillage.",
+      "unlock_style_desc": "Glisser remplace les boutons Déverrouiller et Ouvrir par des curseurs, pour qu'un appui accidentel ne déverrouille pas. Le schéma et le code PIN sont vérifiés dans la carte avant le déverrouillage.",
       "unlock_style_buttons": "Boutons",
       "unlock_style_slide": "Glisser pour déverrouiller",
       "ask_code": "Demander le code PIN",
@@ -2930,7 +2930,14 @@
       "locked_color": "Couleur verrouillée",
       "unlocked_color": "Couleur déverrouillée",
       "card_color": "Couleur de la carte",
-      "card_color_desc": "Fond de la carte de la serrure. Même réglage que Couleur de fond dans l'onglet Design."
+      "card_color_desc": "Fond de la carte de la serrure. Même réglage que Couleur de fond dans l'onglet Design.",
+      "align_left": "Gauche",
+      "align_right": "Droite",
+      "align_center": "Centre",
+      "behavior_section": "Comportement",
+      "behavior_desc": "Options de sécurité pour les actions de la serrure.",
+      "require_confirmation": "Confirmer le déverrouillage / l'ouverture",
+      "require_confirmation_desc": "Demander une confirmation avant de déverrouiller ou d'ouvrir"
     },
     "text_input": {
       "entity": {

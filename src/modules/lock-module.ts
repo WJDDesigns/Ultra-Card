@@ -318,7 +318,7 @@ export class UltraLockModule extends BaseUltraModule {
               description: localize(
                 'editor.lock.unlock_style_desc',
                 lang,
-                'Slide replaces the Unlock and Open buttons with sliders, so a stray tap can\'t unlock (Hero and Standard layouts; elsewhere it asks for confirmation). Pattern and PIN are checked in the card before unlocking.'
+                'Slide replaces the Unlock and Open buttons with sliders, so a stray tap can\'t unlock. Pattern and PIN are checked in the card before unlocking.'
               ),
               hass,
               data: { unlock_style: lock.unlock_style || 'buttons' },
@@ -598,7 +598,8 @@ export class UltraLockModule extends BaseUltraModule {
     const codeFormat = typeof attrs.code_format === 'string' ? attrs.code_format : undefined;
     const askCode = lockCfg.ask_code || 'auto';
     const needsCode = askCode === 'always' || (askCode === 'auto' && !!codeFormat);
-    const slideMode = lockCfg.unlock_style === 'slide' && layout !== 'compact';
+    // Compact shows the slider under the chip (larrysansan, Nov 1: it used to fall back to a button).
+    const slideMode = lockCfg.unlock_style === 'slide';
     // Until a pattern of at least 4 dots is saved, unlock falls back to the normal confirmation.
     const unlockPattern = lockCfg.unlock_pattern || '';
     const patternMode = lockCfg.unlock_style === 'pattern' && unlockPattern.length >= 4;
@@ -822,16 +823,24 @@ export class UltraLockModule extends BaseUltraModule {
     // lines up with an Icon module (larrysansan, Oct 30).
     const iconOnly = showIcon && !showTitle && !showState && !hasActions && !isJammed;
     const iconOnlyClass = iconOnly ? 'uc-lock--icon-only' : '';
+    // Name and state both hidden: drop the empty text column so Alignment can move the
+    // icon and buttons (larrysansan, Nov 1: buttons stuck on the right).
+    const noMeta = !showTitle && !showState && !iconOnly;
+    const noMetaClass = noMeta
+      ? `uc-lock--no-meta ${showIcon ? '' : 'uc-lock--controls-only'}`
+      : '';
 
     if (layout === 'hero') {
       content = html`
         <div class="uc-lock uc-lock--hero ${alignClass}">
-          <div class="uc-lock__visual">
-            <div class="uc-lock__glow ${lockedVisual ? 'uc-lock__glow--on' : ''}"></div>
-            <div class="uc-lock-circle ${lockedVisual ? 'uc-lock-circle--locked' : ''} ${isJammed ? 'uc-lock-circle--jammed' : ''}">
-              ${showIcon ? lockIconEl(56) : nothing}
-            </div>
-          </div>
+          ${showIcon
+            ? html`<div class="uc-lock__visual">
+                <div class="uc-lock__glow ${lockedVisual ? 'uc-lock__glow--on' : ''}"></div>
+                <div class="uc-lock-circle ${lockedVisual ? 'uc-lock-circle--locked' : ''} ${isJammed ? 'uc-lock-circle--jammed' : ''}">
+                  ${lockIconEl(56)}
+                </div>
+              </div>`
+            : nothing}
           <div class="uc-lock__identity">
             ${showTitle ? html`<h2 class="uc-lock-title">${name}</h2>` : nothing}
             ${showState
@@ -850,14 +859,14 @@ export class UltraLockModule extends BaseUltraModule {
       `;
     } else if (layout === 'compact') {
       content = html`
-        <div class="uc-lock uc-lock--compact ${alignClass} ${iconOnlyClass}">
+        <div class="uc-lock uc-lock--compact ${alignClass} ${iconOnlyClass} ${noMetaClass}">
           <div class="uc-lock-compact__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
                   ${lockIconEl(18)}
                 </div>`
               : nothing}
-            <span class="uc-lock-chip-label">
+            ${noMeta ? nothing : html`<span class="uc-lock-chip-label">
               ${showTitle
                 ? html`<span class="uc-lock-chip-name">${name}</span>`
                 : showState
@@ -866,8 +875,8 @@ export class UltraLockModule extends BaseUltraModule {
               ${showTitle && showState
                 ? html`<span class="uc-lock-chip-state">${stateLabel}</span>`
                 : nothing}
-            </span>
-            ${showLockBtns
+            </span>`}
+            ${showLockBtns && !(slideMode && !isUnlocked)
               ? html`<button
                   type="button"
                   class="uc-lock-chip-btn ${lockedVisual ? '' : 'uc-lock-chip-btn--active'}"
@@ -880,18 +889,19 @@ export class UltraLockModule extends BaseUltraModule {
                 </button>`
               : nothing}
           </div>
+          ${slideControls()}
         </div>
       `;
     } else {
       content = html`
-        <div class="uc-lock uc-lock--standard ${alignClass} ${iconOnlyClass}">
+        <div class="uc-lock uc-lock--standard ${alignClass} ${iconOnlyClass} ${noMetaClass}">
           <div class="uc-lock-std__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well uc-lock-icon-well--std ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
                   ${lockIconEl(28)}
                 </div>`
               : nothing}
-            ${iconOnly
+            ${iconOnly || noMeta
               ? nothing
               : html`<div class="uc-lock-std__meta">
                   ${showTitle ? html`<h2 class="uc-lock-title uc-lock-title--std">${name}</h2>` : nothing}
@@ -1097,6 +1107,18 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock--icon-only.uc-lock--align-right .uc-lock-std__row,
       .uc-lock--icon-only.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
       .uc-lock--compact.uc-lock--icon-only .uc-lock-chip-label { display: none; }
+
+      /* No name or state: icon and buttons spread out, buttons alone centre,
+         and Left / Right pack everything to that side */
+      .uc-lock--no-meta .uc-lock-std__row,
+      .uc-lock--no-meta .uc-lock-compact__row { justify-content: space-between; }
+      .uc-lock--no-meta.uc-lock--controls-only .uc-lock-std__row,
+      .uc-lock--no-meta.uc-lock--controls-only .uc-lock-compact__row { justify-content: center; }
+      .uc-lock--no-meta.uc-lock--align-left .uc-lock-std__row,
+      .uc-lock--no-meta.uc-lock--align-left .uc-lock-compact__row { justify-content: flex-start; }
+      .uc-lock--no-meta.uc-lock--align-right .uc-lock-std__row,
+      .uc-lock--no-meta.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
+      .uc-lock--compact .uc-lock__slides { margin-top: 8px; }
 
       /* ═══ COMPACT (chip) ═════════════════════════ */
       .uc-lock--compact { padding: 6px 10px; }

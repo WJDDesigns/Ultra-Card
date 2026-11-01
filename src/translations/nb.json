@@ -2892,7 +2892,7 @@
       "action_open": "Åpne",
       "actions": "Lås handlinger",
       "unlock_style": "Lås opp med",
-      "unlock_style_desc": "Skyv erstatter knappene Lås opp og Åpne med glidebrytere, så et utilsiktet trykk ikke låser opp (oppsettene Hero og Standard; ellers bes det om bekreftelse). Mønster og PIN sjekkes i kortet før opplåsing.",
+      "unlock_style_desc": "Skyv erstatter knappene Lås opp og Åpne med glidebrytere, så et utilsiktet trykk ikke låser opp. Mønster og PIN sjekkes i kortet før opplåsing.",
       "unlock_style_buttons": "Knapper",
       "unlock_style_slide": "Skyv for å låse opp",
       "ask_code": "Spør om PIN-kode",
@@ -2930,7 +2930,14 @@
       "locked_color": "Farge for låst",
       "unlocked_color": "Farge for opplåst",
       "card_color": "Kortfarge",
-      "card_color_desc": "Bakgrunnen til låsekortet. Samme innstilling som Bakgrunnsfarge i Design-fanen."
+      "card_color_desc": "Bakgrunnen til låsekortet. Samme innstilling som Bakgrunnsfarge i Design-fanen.",
+      "align_left": "Venstre",
+      "align_right": "Høyre",
+      "align_center": "Midtstilt",
+      "behavior_section": "Oppførsel",
+      "behavior_desc": "Sikkerhetsvalg for låsehandlinger.",
+      "require_confirmation": "Bekreft opplåsing / åpning",
+      "require_confirmation_desc": "Be om bekreftelse før opplåsing eller åpning"
     },
     "text_input": {
       "entity": {

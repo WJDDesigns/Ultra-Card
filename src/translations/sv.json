@@ -2892,7 +2892,7 @@
       "action_open": "Öppna",
       "actions": "Lås åtgärder",
       "unlock_style": "Lås upp med",
-      "unlock_style_desc": "Dra ersätter knapparna Lås upp och Öppna med reglage, så att ett oavsiktligt tryck inte låser upp (layouterna Hero och Standard; annars visas en bekräftelse). Mönster och PIN kontrolleras i kortet före upplåsning.",
+      "unlock_style_desc": "Dra ersätter knapparna Lås upp och Öppna med reglage, så att ett oavsiktligt tryck inte låser upp. Mönster och PIN kontrolleras i kortet före upplåsning.",
       "unlock_style_buttons": "Knappar",
       "unlock_style_slide": "Skjut för att låsa upp",
       "ask_code": "Fråga efter PIN-kod",
@@ -2930,7 +2930,14 @@
       "locked_color": "Färg för låst",
       "unlocked_color": "Färg för upplåst",
       "card_color": "Kortfärg",
-      "card_color_desc": "Bakgrund för låskortet. Samma inställning som Bakgrundsfärg på fliken Design."
+      "card_color_desc": "Bakgrund för låskortet. Samma inställning som Bakgrundsfärg på fliken Design.",
+      "align_left": "Vänster",
+      "align_right": "Höger",
+      "align_center": "Centrerad",
+      "behavior_section": "Beteende",
+      "behavior_desc": "Säkerhetsalternativ för låsåtgärder.",
+      "require_confirmation": "Bekräfta upplåsning / öppning",
+      "require_confirmation_desc": "Be om bekräftelse innan upplåsning eller öppning"
     },
     "text_input": {
       "entity": {

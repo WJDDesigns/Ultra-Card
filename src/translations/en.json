@@ -2844,7 +2844,7 @@
       "action_open": "Open",
       "actions": "Lock actions",
       "unlock_style": "Unlock with",
-      "unlock_style_desc": "Slide replaces the Unlock and Open buttons with sliders, so a stray tap can't unlock (Hero and Standard layouts; elsewhere it asks for confirmation). Pattern and PIN are checked in the card before unlocking.",
+      "unlock_style_desc": "Slide replaces the Unlock and Open buttons with sliders, so a stray tap can't unlock. Pattern and PIN are checked in the card before unlocking.",
       "unlock_style_buttons": "Buttons",
       "unlock_style_slide": "Slide to unlock",
       "ask_code": "Ask for PIN code",
@@ -2882,7 +2882,14 @@
       "locked_color": "Locked colour",
       "unlocked_color": "Unlocked colour",
       "card_color": "Card colour",
-      "card_color_desc": "Background of the lock card. Same setting as Background colour in the Design tab."
+      "card_color_desc": "Background of the lock card. Same setting as Background colour in the Design tab.",
+      "align_left": "Left",
+      "align_right": "Right",
+      "align_center": "Center",
+      "behavior_section": "Behavior",
+      "behavior_desc": "Safety options for lock actions.",
+      "require_confirmation": "Confirm unlock / open",
+      "require_confirmation_desc": "Ask for confirmation before unlocking or opening"
     },
     "living_canvas": {
       "title": "Living Canvas",

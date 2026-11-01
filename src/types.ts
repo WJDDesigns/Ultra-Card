@@ -4730,6 +4730,12 @@ export interface NavigationModule extends BaseModule {
   nav_routes: NavRoute[];
   /** Stack items that contain child routes */
   nav_stacks?: NavStackItem[] | undefined;
+  /**
+   * Order of the top-level navbar items (path ids, stack ids and '__media_player__'),
+   * saved when items are dragged in the editor so stacks can sit between paths.
+   * Items missing from the list keep their default place after the listed ones.
+   */
+  nav_item_order?: string[] | undefined;
   /** Where the navbar shows: 'current_view' = this view, 'current_dashboard' = every view of this dashboard, 'all_views' = everywhere */
   nav_scope?: 'current_view' | 'current_dashboard' | 'all_views' | undefined;
   nav_style?:

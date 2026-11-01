@@ -355,7 +355,10 @@ export class UltraToggleModule extends BaseUltraModule {
               hass,
               data: { title: toggleModule.title || 'Toggle' },
               schema: [this.textField('title')],
-              onChange: (e: CustomEvent) => updateModule({ title: e.detail.value.title }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ title: e.detail.value.title });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.toggle.show_title', lang, 'Show Title'),
@@ -367,7 +370,11 @@ export class UltraToggleModule extends BaseUltraModule {
               hass,
               data: { show_title: toggleModule.show_title },
               schema: [this.booleanField('show_title')],
-              onChange: (e: CustomEvent) => updateModule({ show_title: e.detail.value.show_title }),
+              onChange: (e: CustomEvent) => {
+                // Refresh right away so the title shows or hides inside a Slider too (larrysansan, Oct 31)
+                updateModule({ show_title: e.detail.value.show_title });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
           ])}
           ${this.renderFieldSection(

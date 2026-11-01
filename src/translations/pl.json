@@ -2892,7 +2892,7 @@
       "action_open": "Otwórz",
       "actions": "Akcje blokady",
       "unlock_style": "Odblokuj przez",
-      "unlock_style_desc": "Przesunięcie zastępuje przyciski Odblokuj i Otwórz suwakami, żeby przypadkowe dotknięcie nie odblokowało (układy Hero i Standardowy; w innych pojawia się potwierdzenie). Wzór i PIN są sprawdzane w karcie przed odblokowaniem.",
+      "unlock_style_desc": "Przesunięcie zastępuje przyciski Odblokuj i Otwórz suwakami, żeby przypadkowe dotknięcie nie odblokowało. Wzór i PIN są sprawdzane w karcie przed odblokowaniem.",
       "unlock_style_buttons": "Przyciski",
       "unlock_style_slide": "Przesuń, aby odblokować",
       "ask_code": "Pytaj o kod PIN",
@@ -2930,7 +2930,14 @@
       "locked_color": "Kolor zablokowanego",
       "unlocked_color": "Kolor odblokowanego",
       "card_color": "Kolor karty",
-      "card_color_desc": "Tło karty zamka. To samo ustawienie co Kolor tła na karcie Wygląd."
+      "card_color_desc": "Tło karty zamka. To samo ustawienie co Kolor tła na karcie Wygląd.",
+      "align_left": "Do lewej",
+      "align_right": "Do prawej",
+      "align_center": "Do środka",
+      "behavior_section": "Zachowanie",
+      "behavior_desc": "Opcje bezpieczeństwa dla akcji zamka.",
+      "require_confirmation": "Potwierdzaj odblokowanie / otwarcie",
+      "require_confirmation_desc": "Pytaj o potwierdzenie przed odblokowaniem lub otwarciem"
     },
     "text_input": {
       "entity": {

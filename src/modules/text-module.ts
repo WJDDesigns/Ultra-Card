@@ -366,11 +366,12 @@ export class UltraTextModule extends BaseUltraModule {
       content = textElement;
     }
 
-    // Wrap in link or add click handlers if provided
+    // Wrap in link or add click handlers if provided. The wrapper uses display: contents so
+    // the icon stays beside the text in the preview's flex row (larrysansan, Nov 1).
     const element = this.hasActiveLink(textModule)
       ? html`<div
           class="${GlobalActionsTab.getClickableClass(textModule)}"
-          style="${GlobalActionsTab.getClickableStyle(textModule)}"
+          style="display: contents; cursor: pointer; ${GlobalActionsTab.getClickableStyle(textModule)}"
           @click=${(e: Event) => this.handleClick(e, textModule, hass, config)}
           @dblclick=${(e: Event) => this.handleDoubleClick(e, textModule, hass)}
           @mousedown=${(e: Event) => this.handleMouseDown(e, textModule, hass)}

@@ -357,8 +357,8 @@
       "double_tap_behavior_desc": "Aktion, die ausgeführt wird, wenn das Element doppelt getippt/geklickt wird.",
       "haptic_feedback": "Haptisches Feedback",
       "haptic_feedback_desc": "Probieten haptisches Feedback, wenn Tasten auf unterstützten Geräten gedrückt werden",
-      "more_info_config": "Weitere Informationen zur Konfiguration",
-      "toggle_config": "Konfiguration umschalten",
+      "more_info_config": "Einstellungen für Weitere Infos",
+      "toggle_config": "Einstellungen für Umschalten",
       "entity": "Entität",
       "entity_more_info_desc": "Wählen Sie, für welche Entität weitere Informationen angezeigt werden sollen",
       "entity_toggle_desc": "Wählen Sie, welche Entität ein-/ausgeschaltet werden soll"
@@ -2896,7 +2896,7 @@
       "action_open": "Öffnen",
       "actions": "Verriegelungsaktionen",
       "unlock_style": "Entsperren mit",
-      "unlock_style_desc": "Schieben ersetzt die Tasten Entsperren und Öffnen durch Schieberegler, damit ein versehentliches Tippen nicht entsperrt (Layouts Hero und Standard; sonst wird eine Bestätigung abgefragt). Muster und PIN werden vor dem Entsperren in der Karte geprüft.",
+      "unlock_style_desc": "Schieben ersetzt die Tasten Entsperren und Öffnen durch Schieberegler, damit ein versehentliches Tippen nicht entsperrt. Muster und PIN werden vor dem Entsperren in der Karte geprüft.",
       "unlock_style_buttons": "Tasten",
       "unlock_style_slide": "Zum Entsperren schieben",
       "ask_code": "PIN-Code abfragen",
@@ -2934,7 +2934,14 @@
       "locked_color": "Farbe verriegelt",
       "unlocked_color": "Farbe entsperrt",
       "card_color": "Kartenfarbe",
-      "card_color_desc": "Hintergrund der Schloss-Karte. Dieselbe Einstellung wie die Hintergrundfarbe im Design-Tab."
+      "card_color_desc": "Hintergrund der Schloss-Karte. Dieselbe Einstellung wie die Hintergrundfarbe im Design-Tab.",
+      "align_left": "Links",
+      "align_right": "Rechts",
+      "align_center": "Mittig",
+      "behavior_section": "Verhalten",
+      "behavior_desc": "Sicherheitsoptionen für Schlossaktionen.",
+      "require_confirmation": "Entsperren / Öffnen bestätigen",
+      "require_confirmation_desc": "Vor dem Entsperren oder Öffnen eine Bestätigung abfragen"
     },
     "text_input": {
       "entity": {

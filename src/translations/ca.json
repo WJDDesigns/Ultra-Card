@@ -2892,7 +2892,7 @@
       "action_open": "Obre",
       "actions": "Accions de tancament",
       "unlock_style": "Desbloquejar amb",
-      "unlock_style_desc": "Lliscar substitueix els botons Desbloqueja i Obre per controls lliscants, perquè un toc accidental no desbloquegi (dissenys Hero i Estàndard; als altres demana confirmació). El patró i el PIN es comproven a la targeta abans de desbloquejar.",
+      "unlock_style_desc": "Lliscar substitueix els botons Desbloqueja i Obre per controls lliscants, perquè un toc accidental no desbloquegi. El patró i el PIN es comproven a la targeta abans de desbloquejar.",
       "unlock_style_buttons": "Botons",
       "unlock_style_slide": "Llisca per desbloquejar",
       "ask_code": "Demanar codi PIN",
@@ -2930,7 +2930,14 @@
       "locked_color": "Color bloquejat",
       "unlocked_color": "Color desbloquejat",
       "card_color": "Color de la targeta",
-      "card_color_desc": "Fons de la targeta del pany. És el mateix ajust que el color de fons de la pestanya Disseny."
+      "card_color_desc": "Fons de la targeta del pany. És el mateix ajust que el color de fons de la pestanya Disseny.",
+      "align_left": "Esquerra",
+      "align_right": "Dreta",
+      "align_center": "Centre",
+      "behavior_section": "Comportament",
+      "behavior_desc": "Opcions de seguretat per a les accions del pany.",
+      "require_confirmation": "Confirma el desbloqueig / l'obertura",
+      "require_confirmation_desc": "Demana confirmació abans de desbloquejar o obrir"
     },
     "text_input": {
       "entity": {
