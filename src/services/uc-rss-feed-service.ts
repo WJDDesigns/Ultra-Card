@@ -158,19 +158,72 @@ function parseJsonFeed(raw: string, feedUrl: string): ParsedFeed | null {
   return { title, items };
 }
 
+const XML_ENTITIES = new Set(['amp', 'lt', 'gt', 'quot', 'apos']);
+
+/** Turn HTML-only named entities into characters and escape stray "&". */
+export function fixXmlEntities(xml: string): string {
+  return xml.replace(/&(#\d+;|#x[0-9a-f]+;|([a-z][a-z0-9]*);)?/gi, (m, ent: string, name: string) => {
+    if (!ent) return '&amp;';
+    if (!name || XML_ENTITIES.has(name)) return m;
+    try {
+      const decoded = new DOMParser().parseFromString(`<p>${m}</p>`, 'text/html').body?.textContent || '';
+      if (decoded && decoded !== m) {
+        return decoded.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      }
+    } catch {
+      // fall through
+    }
+    return '&amp;' + ent;
+  });
+}
+
+/** True when the text is a web page rather than a feed. */
+export function looksLikeHtml(raw: string): boolean {
+  return /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!doctype\s+html|<html[\s>])/i.test(raw);
+}
+
+const FEED_LINK_TYPES = /^(application\/(rss|atom|feed|rdf)\+(xml|json)|application\/json|text\/xml|application\/xml)$/i;
+
+/**
+ * Feed links a web page advertises (<link rel="alternate" type="application/rss+xml">),
+ * so pasting a news page instead of its feed still works.
+ */
+export function findFeedLinks(html: string, pageUrl: string): string[] {
+  if (!html || !/<link/i.test(html)) return [];
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const out: string[] = [];
+    for (const link of Array.from(doc.querySelectorAll('link[href]'))) {
+      const rel = (link.getAttribute('rel') || '').toLowerCase().split(/\s+/);
+      const type = (link.getAttribute('type') || '').trim();
+      if (!rel.includes('alternate') || !FEED_LINK_TYPES.test(type)) continue;
+      const href = safeUrl(link.getAttribute('href') || '', pageUrl);
+      if (href && href !== pageUrl && !out.includes(href)) out.push(href);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 /** Parse RSS 2.0, RSS 1.0 (RDF), Atom or JSON Feed text. Null when it isn't a feed. */
 export function parseFeed(raw: string, feedUrl: string): ParsedFeed | null {
   const trimmed = (raw || '').trim();
   if (!trimmed) return null;
   if (trimmed.startsWith('{')) return parseJsonFeed(trimmed, feedUrl);
 
-  let doc: Document;
-  try {
-    doc = new DOMParser().parseFromString(trimmed, 'application/xml');
-  } catch {
-    return null;
-  }
-  if (doc.getElementsByTagName('parsererror').length > 0) return null;
+  const parseXml = (src: string): Document | null => {
+    try {
+      const d = new DOMParser().parseFromString(src, 'application/xml');
+      return d.getElementsByTagName('parsererror').length > 0 ? null : d;
+    } catch {
+      return null;
+    }
+  };
+  // Many feeds use HTML entities (&nbsp;, &auml;) or a bare "&" that strict XML
+  // rejects; browsers' feed readers shrug these off, so retry with them fixed.
+  const doc = parseXml(trimmed) || (looksLikeHtml(trimmed) ? null : parseXml(fixXmlEntities(trimmed)));
+  if (!doc) return null;
   const root = doc.documentElement;
   if (!root) return null;
 
@@ -263,6 +316,18 @@ async function fetchDirect(url: string): Promise<{ ok: boolean; status: number; 
   return { ok: true, status: res.status, body: await res.text() };
 }
 
+/** One fetch-and-parse for a discovered feed link (Connect first, then the browser). */
+async function fetchAndParse(hass: HomeAssistant, url: string): Promise<ParsedFeed | null> {
+  const viaConnect = await fetchViaConnect(hass, url);
+  if (viaConnect?.refused) return null;
+  if (viaConnect?.ok) {
+    const parsed = parseFeed(viaConnect.body, url);
+    if (parsed) return parsed;
+  }
+  const direct = await fetchDirect(url);
+  return direct?.ok ? parseFeed(direct.body, url) : null;
+}
+
 async function loadFeed(hass: HomeAssistant, url: string): Promise<void> {
   const entry = cache.get(url) || { fetchedAt: 0 };
   try {
@@ -296,6 +361,13 @@ async function loadFeed(hass: HomeAssistant, url: string): Promise<void> {
           entry.error = 'cors';
         }
         return;
+      }
+    }
+    if (!parsed && raw && looksLikeHtml(raw)) {
+      // A web page, not a feed: follow the feed link it advertises, if any.
+      for (const feedUrl of findFeedLinks(raw, url).slice(0, 2)) {
+        parsed = await fetchAndParse(hass, feedUrl);
+        if (parsed) break;
       }
     }
     if (!parsed) {

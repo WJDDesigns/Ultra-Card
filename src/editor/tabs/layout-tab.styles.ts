@@ -1767,24 +1767,6 @@ export const layoutTabStyles = css`
         row-gap: 2px;
       }
 
-      /* Narrow editor pane: tighten the buttons so the last group (help, full
-         screen) stays on the same line instead of dropping to a row of its own.
-         560px covers HA's split editor on a laptop, not only phones. */
-      @container (max-width: 560px) {
-        .toolbar-group {
-          padding: 0 3px;
-          gap: 0;
-        }
-        .tb-btn {
-          min-width: 28px;
-          height: 30px;
-          padding: 0 3px;
-        }
-        .tb-btn span {
-          display: none;
-        }
-      }
-
       .toolbar-group {
         display: flex;
         align-items: center;
@@ -1857,6 +1839,25 @@ export const layoutTabStyles = css`
 
       .tb-btn.has-clipboard:hover {
         background: rgba(76, 175, 80, 0.15);
+      }
+
+      /* Narrow editor pane: tighten the buttons so the last group (help, full
+         screen) stays on the same line instead of dropping to a row of its own.
+         Must come after the base .toolbar-group/.tb-btn rules or they win.
+         560px covers HA's split editor on a laptop, not only phones. */
+      @container (max-width: 560px) {
+        .toolbar-group {
+          padding: 0 3px;
+          gap: 0;
+        }
+        .tb-btn {
+          min-width: 28px;
+          height: 30px;
+          padding: 0 3px;
+        }
+        .tb-btn span {
+          display: none;
+        }
       }
 
       @keyframes pulse-glow {

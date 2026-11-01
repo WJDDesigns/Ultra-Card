@@ -6,6 +6,8 @@ import {
   htmlToText,
   mergeFeedItems,
   parseFeed,
+  findFeedLinks,
+  looksLikeHtml,
   relativeTime,
   safeUrl,
 } from './uc-rss-feed-service';
@@ -87,6 +89,27 @@ describe('uc-rss-feed-service', () => {
     expect(parseFeed('', 'https://example.com')).toBeNull();
   });
 
+  it('reads feeds with HTML entities or stray ampersands', () => {
+    const rss = `<?xml version="1.0"?><rss version="2.0"><channel><title>hr&nbsp;News</title>
+      <item><title>K&ouml;ln &amp; Frankfurt & mehr</title><link>https://x.de/a?b=1&c=2</link></item></channel></rss>`;
+    const feed = parseFeed(rss, 'https://x.de/index.rss');
+    expect(feed?.title).toBe('hr News');
+    expect(feed?.items[0]?.title).toBe('Köln & Frankfurt & mehr');
+    expect(feed?.items[0]?.link).toBe('https://x.de/a?b=1&c=2');
+  });
+
+  it('finds the feed links a web page advertises', () => {
+    const page = `<!DOCTYPE html><html><head>
+      <link rel="alternate" type="application/rss+xml" title="RSS" href="/suedhessen/index.rss">
+      <link rel="alternate" hreflang="en" href="https://x.de/en">
+      <link rel="stylesheet" href="/a.css"></head><body></body></html>`;
+    expect(looksLikeHtml(page)).toBe(true);
+    expect(looksLikeHtml(RSS)).toBe(false);
+    expect(findFeedLinks(page, 'https://www.x.de/suedhessen/index.html')).toEqual([
+      'https://www.x.de/suedhessen/index.rss',
+    ]);
+  });
+
   it('merges feeds newest first with filters and de-duplication', () => {
     const rss = parseFeed(RSS, 'https://example.com/feed.xml')!;
     const atom = parseFeed(ATOM, 'https://example.com/atom')!;
@@ -144,6 +167,20 @@ describe('uc-rss-feed-service', () => {
       const state = await settle(hass, 'https://news.example.de/rss');
       expect(state.error).toBe('http');
       expect(state.errorDetail).toBe('403');
+    });
+
+    it('follows the feed link when given a web page', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))));
+      const page =
+        '<!doctype html><html><head><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head></html>';
+      const hass = hassWith(async (_m: unknown, path: unknown) =>
+        String(path).includes(encodeURIComponent('/atom.xml'))
+          ? { ok: true, status: 200, body: ATOM }
+          : { ok: true, status: 200, body: page }
+      );
+      const state = await settle(hass, 'https://news.example.de/region/index.html');
+      expect(state.error).toBeUndefined();
+      expect(state.feed?.items[0]?.title).toBe('Version 2');
     });
 
     it('does not retry in the browser when Connect refuses the address', async () => {
