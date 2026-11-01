@@ -177,6 +177,24 @@ export function fixXmlEntities(xml: string): string {
   });
 }
 
+/**
+ * A feed cut off part-way (older Ultra Card Connect versions only passed on the
+ * first few KB): keep the complete items and close the document.
+ */
+export function closeTruncatedFeed(xml: string): string {
+  const lastItem = xml.lastIndexOf('</item>');
+  const lastEntry = xml.lastIndexOf('</entry>');
+  if (lastEntry > lastItem && /<feed[\s>]/i.test(xml)) {
+    return xml.slice(0, lastEntry + '</entry>'.length) + '</feed>';
+  }
+  if (lastItem < 0) return xml;
+  const head = xml.slice(0, lastItem + '</item>'.length);
+  if (/<rss[\s>]/i.test(xml)) return head + '</channel></rss>';
+  const rdf = xml.match(/<([\w-]+:)?RDF[\s>]/);
+  if (rdf) return head + `</${rdf[1] || ''}RDF>`;
+  return xml;
+}
+
 /** True when the text is a web page rather than a feed. */
 export function looksLikeHtml(raw: string): boolean {
   return /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!doctype\s+html|<html[\s>])/i.test(raw);
@@ -222,7 +240,11 @@ export function parseFeed(raw: string, feedUrl: string): ParsedFeed | null {
   };
   // Many feeds use HTML entities (&nbsp;, &auml;) or a bare "&" that strict XML
   // rejects; browsers' feed readers shrug these off, so retry with them fixed.
-  const doc = parseXml(trimmed) || (looksLikeHtml(trimmed) ? null : parseXml(fixXmlEntities(trimmed)));
+  const doc =
+    parseXml(trimmed) ||
+    (looksLikeHtml(trimmed)
+      ? null
+      : parseXml(fixXmlEntities(trimmed)) || parseXml(fixXmlEntities(closeTruncatedFeed(trimmed))));
   if (!doc) return null;
   const root = doc.documentElement;
   if (!root) return null;

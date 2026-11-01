@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3-beta9
+
+The ninth 3.14.3 beta fixes RSS feeds that showed "This address isn't an RSS, Atom or JSON feed" even though the address was right. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.3 too.** It passes on the whole feed instead of only the first part, and brings the Hub up to this beta.
+
+### 🐛 Bug Fixes
+
+- **RSS Feed: "not a feed" on some sites** - Ultra Card Connect only passed on the first few KB of a feed, so longer feeds such as hessenschau.de were cut off and couldn't be read. Connect 1.12.3 passes on the whole feed, and the module now also shows the complete headlines from a cut-off feed if you're still on an older Connect. Thanks to larrysansan for the report
+
 ## Version 3.14.3-beta8
 
 The eighth 3.14.3 beta fixes the builder toolbar and makes the RSS Feed module read more news sites. This is a pre-release for testing — please report anything odd on GitHub or Discord.
