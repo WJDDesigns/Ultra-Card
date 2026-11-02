@@ -206,7 +206,7 @@ class UcSnapshotSchedulerService {
    * Get last snapshot time from localStorage
    */
   private _getLastSnapshotTime(): string | null {
-    let stored: string | null = null;
+    let stored: string | null;
     try {
       stored = localStorage.getItem(STORAGE_KEY_LAST_SNAPSHOT);
     } catch {
