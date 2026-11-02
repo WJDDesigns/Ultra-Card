@@ -6335,6 +6335,8 @@
       "error_http": "Nettstedet svarte med en feil ({status}).",
       "error_network": "Feeden kunne ikke lastes.",
       "error_parse": "Adressen er ikke en RSS-, Atom- eller JSON-feed.",
+      "error_redirects": "Nettstedet fortsatte å videresende og sendte aldri feeden. Oppdater Ultra Card Connect, eller prøv feedadressen uten ekstra valg.",
+      "error_refused": "Dette nettstedet nekter å dele feeden sin med Home Assistant ({status}). Se etter en annen feedadresse på nettstedet.",
       "exclude_keywords": "Skjul elementer med",
       "exclude_keywords_desc": "Elementer som nevner noen av disse ordene, skjules.",
       "feeds": "Feedadresser",

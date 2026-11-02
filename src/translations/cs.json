@@ -6335,6 +6335,8 @@
       "error_http": "Web odpověděl chybou ({status}).",
       "error_network": "Zdroj se nepodařilo načíst.",
       "error_parse": "Tato adresa není zdroj RSS, Atom ani JSON.",
+      "error_redirects": "Web stále přesměrovával a kanál nikdy neodeslal. Aktualizujte Ultra Card Connect nebo zkuste adresu kanálu bez dalších voleb.",
+      "error_refused": "Tento web odmítá sdílet svůj kanál s Home Assistantem ({status}). Najděte na webu jinou adresu kanálu.",
       "exclude_keywords": "Skrýt položky obsahující",
       "exclude_keywords_desc": "Položky, které zmiňují kterékoli z těchto slov, se skryjí.",
       "feeds": "Adresy zdrojů",

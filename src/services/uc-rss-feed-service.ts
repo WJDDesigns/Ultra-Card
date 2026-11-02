@@ -295,6 +295,26 @@ export function parseFeed(raw: string, feedUrl: string): ParsedFeed | null {
   return { title, items };
 }
 
+/**
+ * Feed addresses that sites block for apps but redirect browsers away from,
+ * mapped to where the feed actually lives. capital.de/rss answers apps with
+ * "Zugriff unterbunden" (403) while /feed/standard/ is open to everyone.
+ */
+const KNOWN_FEED_ADDRESSES: Record<string, string> = {
+  'capital.de/rss': 'https://www.capital.de/feed/standard/',
+};
+
+/** The address to fetch for a feed URL, swapping in a known working one. */
+export function feedFetchUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const key = `${u.hostname.replace(/^www\./, '')}${u.pathname.replace(/\/+$/, '')}`.toLowerCase();
+    return (!u.search && KNOWN_FEED_ADDRESSES[key]) || url;
+  } catch {
+    return url;
+  }
+}
+
 async function fetchViaConnect(
   hass: HomeAssistant,
   url: string
@@ -350,8 +370,9 @@ async function fetchAndParse(hass: HomeAssistant, url: string): Promise<ParsedFe
   return direct?.ok ? parseFeed(direct.body, url) : null;
 }
 
-async function loadFeed(hass: HomeAssistant, url: string): Promise<void> {
-  const entry = cache.get(url) || { fetchedAt: 0 };
+async function loadFeed(hass: HomeAssistant, feedUrl: string): Promise<void> {
+  const entry = cache.get(feedUrl) || { fetchedAt: 0 };
+  const url = feedFetchUrl(feedUrl);
   try {
     let raw: string | null = null;
     let parsed: ParsedFeed | null = null;
@@ -387,8 +408,8 @@ async function loadFeed(hass: HomeAssistant, url: string): Promise<void> {
     }
     if (!parsed && raw && looksLikeHtml(raw)) {
       // A web page, not a feed: follow the feed link it advertises, if any.
-      for (const feedUrl of findFeedLinks(raw, url).slice(0, 2)) {
-        parsed = await fetchAndParse(hass, feedUrl);
+      for (const linkUrl of findFeedLinks(raw, url).slice(0, 2)) {
+        parsed = await fetchAndParse(hass, linkUrl);
         if (parsed) break;
       }
     }
@@ -404,7 +425,7 @@ async function loadFeed(hass: HomeAssistant, url: string): Promise<void> {
   } finally {
     entry.fetchedAt = Date.now();
     entry.pending = undefined;
-    cache.set(url, entry);
+    cache.set(feedUrl, entry);
     notifyFeedReady();
   }
 }

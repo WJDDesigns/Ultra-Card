@@ -6302,6 +6302,8 @@
       "error_http": "网站返回了错误（{status}）。",
       "error_network": "无法加载订阅源。",
       "error_parse": "该地址不是 RSS、Atom 或 JSON 订阅源。",
+      "error_redirects": "该网站不断重定向，始终没有发送订阅源。请更新 Ultra Card Connect，或尝试不带额外选项的订阅源地址。",
+      "error_refused": "此网站拒绝向 Home Assistant 提供其订阅源（{status}）。请在该网站上查找其他订阅源地址。",
       "exclude_keywords": "隐藏包含以下词的条目",
       "exclude_keywords_desc": "提到这些词之一的条目会被隐藏。",
       "feeds": "订阅源地址",

@@ -6335,6 +6335,8 @@
       "error_http": "Die Website hat mit einem Fehler geantwortet ({status}).",
       "error_network": "Der Feed konnte nicht geladen werden.",
       "error_parse": "Diese Adresse ist kein RSS-, Atom- oder JSON-Feed.",
+      "error_redirects": "Die Website hat immer wieder weitergeleitet und nie den Feed gesendet. Aktualisieren Sie Ultra Card Connect oder versuchen Sie die Feed-Adresse ohne zusätzliche Optionen.",
+      "error_refused": "Diese Website verweigert Home Assistant den Zugriff auf ihren Feed ({status}). Suchen Sie auf der Website nach einer anderen Feed-Adresse.",
       "exclude_keywords": "Einträge ausblenden mit",
       "exclude_keywords_desc": "Einträge, die eines dieser Wörter erwähnen, werden ausgeblendet.",
       "feeds": "Feed-Adressen",

@@ -575,6 +575,20 @@ export class UltraRssFeedModule extends BaseUltraModule {
           'Ultra Card Connect would not load this address. Only public http and https feeds work.'
         );
       case 'http':
+        if (detail === '401' || detail === '403' || detail === '429') {
+          return localize(
+            'editor.rss_feed.error_refused',
+            lang,
+            'This site refuses to share its feed with Home Assistant ({status}). Look for another feed address on the site.'
+          ).replace('{status}', detail);
+        }
+        if (detail === '310') {
+          return localize(
+            'editor.rss_feed.error_redirects',
+            lang,
+            'The site kept redirecting and never sent the feed. Update Ultra Card Connect, or try the feed address without extra options.'
+          );
+        }
         return localize(
           'editor.rss_feed.error_http',
           lang,

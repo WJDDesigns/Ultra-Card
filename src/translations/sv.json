@@ -6335,6 +6335,8 @@
       "error_http": "Webbplatsen svarade med ett fel ({status}).",
       "error_network": "Flödet kunde inte hämtas.",
       "error_parse": "Adressen är inte ett RSS-, Atom- eller JSON-flöde.",
+      "error_redirects": "Webbplatsen fortsatte att omdirigera och skickade aldrig flödet. Uppdatera Ultra Card Connect eller prova flödesadressen utan extra alternativ.",
+      "error_refused": "Den här webbplatsen vägrar dela sitt flöde med Home Assistant ({status}). Leta efter en annan flödesadress på webbplatsen.",
       "exclude_keywords": "Dölj objekt med",
       "exclude_keywords_desc": "Objekt som nämner något av dessa ord döljs.",
       "feeds": "Flödesadresser",

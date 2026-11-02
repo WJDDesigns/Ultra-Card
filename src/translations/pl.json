@@ -6335,6 +6335,8 @@
       "error_http": "Witryna odpowiedziała błędem ({status}).",
       "error_network": "Nie udało się wczytać kanału.",
       "error_parse": "Ten adres nie jest kanałem RSS, Atom ani JSON.",
+      "error_redirects": "Witryna ciągle przekierowywała i nigdy nie wysłała kanału. Zaktualizuj Ultra Card Connect lub spróbuj adresu kanału bez dodatkowych opcji.",
+      "error_refused": "Ta witryna odmawia udostępnienia swojego kanału Home Assistantowi ({status}). Poszukaj innego adresu kanału na tej witrynie.",
       "exclude_keywords": "Ukryj elementy zawierające",
       "exclude_keywords_desc": "Elementy wspominające którekolwiek z tych słów są ukrywane.",
       "feeds": "Adresy kanałów",

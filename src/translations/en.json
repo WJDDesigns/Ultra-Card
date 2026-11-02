@@ -6302,6 +6302,8 @@
       "error_http": "The site answered with an error ({status}).",
       "error_network": "The feed could not be loaded.",
       "error_parse": "That address is not an RSS, Atom or JSON feed.",
+      "error_redirects": "The site kept redirecting and never sent the feed. Update Ultra Card Connect, or try the feed address without extra options.",
+      "error_refused": "This site refuses to share its feed with Home Assistant ({status}). Look for another feed address on the site.",
       "exclude_keywords": "Hide items with",
       "exclude_keywords_desc": "Items that mention any of these words are hidden.",
       "feeds": "Feed addresses",
