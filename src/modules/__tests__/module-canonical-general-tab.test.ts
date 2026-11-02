@@ -111,6 +111,7 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'irrigation-module.ts',
   'floorplan-module.ts',
   'rain-radar-module.ts',
+  'rss-feed-module.ts',
   'appliance-module.ts',
   'todo-list-module.ts',
   'weather-module.ts',

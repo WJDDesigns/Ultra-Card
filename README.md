@@ -55,11 +55,17 @@ Written how-to pages also live in the [GitHub wiki](https://github.com/WJDDesign
 
 ### Install
 
-**HACS (recommended)**
+**Home Assistant Marketplace (Home Assistant 2026.11 and newer)**
+
+[![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=WJDDesigns&repository=Ultra-Card&category=plugin)
+
+Or go to **Settings → Marketplace**, search for **Ultra Card**, click **Download**, then reload your browser. If you already installed Ultra Card with HACS, it moves to the Marketplace on its own when you update Home Assistant.
+
+**HACS (Home Assistant 2026.10 and older)**
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=Ultra-Card&category=plugin)
 
-Or add `https://github.com/WJDDesigns/Ultra-Card` as a custom Lovelace repository in HACS, install Ultra Card, then restart Home Assistant.
+Or search for **Ultra Card** in HACS, install it, then restart Home Assistant.
 
 **Manual**
 
@@ -67,11 +73,11 @@ Or add `https://github.com/WJDDesigns/Ultra-Card` as a custom Lovelace repositor
 2. Copy that entire folder’s contents into `config/www` (for example `config/www/ultra-card/`), keeping the same filenames next to each other.
 3. Add **one** Lovelace resource: _Settings_ → _Dashboards_ → _Resources_ → Add Resource → URL pointing at the **main** bundle only, for example `/local/ultra-card/ultra-card.js` (or `/local/ultra-card.js` if you put files directly under `www`), type **JavaScript Module**.
 
-If you use the Ultra Card dashboard panel or Hub features, ensure `ultra-card-panel.js` is in that same directory as well (HACS installs everything automatically).
+If you use the Ultra Card dashboard panel or Hub features, ensure `ultra-card-panel.js` is in that same directory as well (the Marketplace and HACS install everything automatically).
 
 ### Ultra Card Connect (recommended for Hub & Pro)
 
-Install the separate **[Ultra Card Connect](https://github.com/WJDDesigns/ultra-card-connect)** Home Assistant integration (HACS → Integrations) when you want:
+Install the separate **[Ultra Card Connect](https://github.com/WJDDesigns/ultra-card-connect)** Home Assistant integration (from the Marketplace, or HACS → Integrations on older versions) when you want:
 
 - The **Ultra Card Hub** sidebar (presets, account, docs)
 - Shared Pro sign-in that persists across devices (credentials stay in HA)
@@ -174,7 +180,7 @@ Contributions are welcome: translations, presets, code, and documentation. See [
 
 ## Technical Details
 
-- **Requirements:** Home Assistant 2024.1.0+, modern browser (ES2015+). HACS recommended.
+- **Requirements:** Home Assistant 2024.1.0+, modern browser (ES2015+). Marketplace or HACS recommended.
 - **Stack:** TypeScript, smart caching, responsive layout.
 - **Privacy:** No tracking; free tier is local-only; Pro sync uses encrypted connections. Open source on GitHub.
 

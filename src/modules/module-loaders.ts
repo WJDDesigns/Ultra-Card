@@ -381,4 +381,8 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackChunkName: "m-rain-radar" */ './rain-radar-module').then(
       m => new m.UltraRainRadarModule()
     ),
+  rss_feed: () =>
+    import(/* webpackChunkName: "m-rss-feed" */ './rss-feed-module').then(
+      m => new m.UltraRssFeedModule()
+    ),
 };

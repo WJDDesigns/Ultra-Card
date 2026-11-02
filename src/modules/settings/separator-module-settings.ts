@@ -260,7 +260,7 @@ export class UltraSeparatorModuleSettings extends UltraSeparatorModule {
                   localize(
                     'editor.separator.show_title_desc',
                     lang,
-                    'Add text in the middle of the separator line (e.g., ------ Text ------)'
+                    'Add text and/or an icon on the separator line (e.g., ------ Text ------)'
                   ),
                   hass,
                   { show_title: separatorModule.show_title || false },
@@ -301,6 +301,105 @@ export class UltraSeparatorModuleSettings extends UltraSeparatorModule {
                             updateModule({ title: e.detail.value.title })}
                         ></ha-form>
                       </div>
+
+                      <!-- Icon -->
+                      ${this.renderIconField(
+                        localize('editor.separator.title_icon', lang, 'Icon'),
+                        localize(
+                          'editor.separator.title_icon_desc',
+                          lang,
+                          'Optional icon next to the text. Leave the text empty for an icon-only separator.'
+                        ),
+                        hass,
+                        separatorModule.title_icon || '',
+                        (next: string) => updateModule({ title_icon: next || undefined })
+                      )}
+                      ${separatorModule.title_icon
+                        ? html`
+                            ${this.renderSegmentedField(
+                              localize('editor.separator.title_icon_position', lang, 'Icon position'),
+                              '',
+                              separatorModule.title_icon_position || 'before',
+                              [
+                                {
+                                  value: 'before',
+                                  label: localize(
+                                    'editor.separator.title_icon_position_before',
+                                    lang,
+                                    'Before text'
+                                  ),
+                                },
+                                {
+                                  value: 'after',
+                                  label: localize(
+                                    'editor.separator.title_icon_position_after',
+                                    lang,
+                                    'After text'
+                                  ),
+                                },
+                              ],
+                              (next: string) =>
+                                updateModule({
+                                  title_icon_position: next as 'before' | 'after',
+                                })
+                            )}
+                            <div class="field-container" style="margin-bottom: 16px;">
+                              ${this.renderSliderField(
+                                localize('editor.separator.title_icon_size', lang, 'Icon size'),
+                                '',
+                                separatorModule.title_icon_size || 18,
+                                18,
+                                10,
+                                64,
+                                1,
+                                (v: number) => updateModule({ title_icon_size: v })
+                              )}
+                            </div>
+                            ${this.renderColorField(
+                              localize('editor.separator.title_icon_color', lang, 'Icon color'),
+                              localize(
+                                'editor.separator.title_icon_color_desc',
+                                lang,
+                                'Leave empty to use the text color.'
+                              ),
+                              hass,
+                              separatorModule.title_icon_color || '',
+                              '',
+                              (next: string) =>
+                                updateModule({ title_icon_color: next || undefined })
+                            )}
+                          `
+                        : ''}
+
+                      <!-- Alignment -->
+                      ${this.renderSegmentedField(
+                        localize('editor.separator.title_align', lang, 'Alignment'),
+                        localize(
+                          'editor.separator.title_align_desc',
+                          lang,
+                          'Where the text and icon sit on the line.'
+                        ),
+                        separatorModule.title_align || 'center',
+                        [
+                          {
+                            value: 'left',
+                            label: localize('editor.separator.title_align_left', lang, 'Left'),
+                            icon: 'mdi:format-align-left',
+                          },
+                          {
+                            value: 'center',
+                            label: localize('editor.separator.title_align_center', lang, 'Center'),
+                            icon: 'mdi:format-align-center',
+                          },
+                          {
+                            value: 'right',
+                            label: localize('editor.separator.title_align_right', lang, 'Right'),
+                            icon: 'mdi:format-align-right',
+                          },
+                        ],
+                        (next: string) =>
+                          updateModule({ title_align: next as 'left' | 'center' | 'right' })
+                      )}
 
                       <!-- Font Size -->
                       <div class="field-container" style="margin-bottom: 24px;">

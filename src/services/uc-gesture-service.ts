@@ -12,6 +12,11 @@ export interface GestureConfig {
   double_tap_action?: TapActionConfig | undefined;
   entity?: string | undefined;
   module?: CardModule | undefined;
+  /**
+   * Runs instead of the stock toggle when an action is "toggle" on this entity, so a
+   * module can put its own checks (PIN, pattern, confirmation) in front of it.
+   */
+  onToggle?: (() => void) | undefined;
 }
 
 /**
@@ -354,7 +359,15 @@ export class UcGestureService {
     excludeSelectors: string[] = []
   ) {
     const state = this.getGestureState(elementId);
-    const { tap_action, hold_action, double_tap_action, entity, module } = gestureConfig;
+    const { tap_action, hold_action, double_tap_action, entity, module, onToggle } = gestureConfig;
+
+    const runAction = (action: TapActionConfig, target: HTMLElement): void => {
+      if (onToggle && action.action === 'toggle' && (!action.entity || action.entity === entity)) {
+        onToggle();
+        return;
+      }
+      UltraLinkComponent.handleAction(action, hass, target, cardConfig, entity, module);
+    };
 
     // A popup trigger opens its popup on tap even when the module's own tap
     // action is "nothing" (handleAction checks the popup registry first), so
@@ -436,14 +449,7 @@ export class UcGestureService {
           // Suppress hold action if the user has started scrolling/dragging
           if (state.hasMoved) return;
           state.isHolding = true;
-          UltraLinkComponent.handleAction(
-            hold_action || ({ action: 'default', entity } as any),
-            hass,
-            target,
-            cardConfig,
-            entity,
-            module
-          );
+          runAction(hold_action || ({ action: 'default', entity } as any), target);
         }, 500); // 500ms hold threshold
       },
 
@@ -521,14 +527,7 @@ export class UcGestureService {
 
           // Execute double-tap if configured and not explicitly "nothing"
           if (!isExplicitNothingAction(double_tap_action)) {
-            UltraLinkComponent.handleAction(
-              double_tap_action || ({ action: 'default', entity } as any),
-              hass,
-              target,
-              cardConfig,
-              entity,
-              module
-            );
+            runAction(double_tap_action || ({ action: 'default', entity } as any), target);
           }
         } else {
           // This might be a single click, but wait to see if double click follows
@@ -545,28 +544,14 @@ export class UcGestureService {
           if (!double_tap_action || isExplicitNothingAction(double_tap_action)) {
             // No double-tap configured or set to nothing, execute tap action immediately
             if (!tapDoesNothing()) {
-              UltraLinkComponent.handleAction(
-                tap_action || ({ action: 'default', entity } as any),
-                hass,
-                target,
-                cardConfig,
-                entity,
-                module
-              );
+              runAction(tap_action || ({ action: 'default', entity } as any), target);
             }
             state.clickCount = 0;
           } else {
             // Double-tap is configured with a real action, wait before executing single tap
             state.clickTimeout = setTimeout(() => {
               if (state.clickCount === 1 && !tapDoesNothing()) {
-                UltraLinkComponent.handleAction(
-                  tap_action || ({ action: 'default', entity } as any),
-                  hass,
-                  target,
-                  cardConfig,
-                  entity,
-                  module
-                );
+                runAction(tap_action || ({ action: 'default', entity } as any), target);
               }
               state.clickCount = 0;
             }, 300); // Wait 300ms to distinguish from double click
@@ -608,14 +593,7 @@ export class UcGestureService {
 
         if (tapDoesNothing()) return;
 
-        UltraLinkComponent.handleAction(
-          tap_action || ({ action: 'default', entity } as any),
-          hass,
-          target,
-          cardConfig,
-          entity,
-          module
-        );
+        runAction(tap_action || ({ action: 'default', entity } as any), target);
       },
 
       onPointerLeave: () => {

@@ -73,6 +73,11 @@ export class LogicService {
     // Errors are only cleared when subscriptions are fully reset (last consumer unmounts or cleanup()).
   }
 
+  /** False after the last card unmounted (teardown drops hass) until a card hands it back. */
+  get hasHass(): boolean {
+    return this.hass !== null;
+  }
+
   /** How many live Ultra Card (or other) instances have called registerConsumer without unregisterConsumer. */
   get activeConsumerCount(): number {
     return this.consumerRefCount;
@@ -177,6 +182,21 @@ export class LogicService {
       default:
         return true;
     }
+  }
+
+  /**
+   * Whole-card visibility from Card Settings: per-user filter plus the card's
+   * display conditions (same condition types as rows, columns and modules).
+   */
+  public evaluateCardVisibility(config?: UltraCardConfig | null): boolean {
+    if (!config) return true;
+    if (!this.evaluateUserVisibility(config.user_visibility)) {
+      return false;
+    }
+    return this.evaluateDisplayConditions(
+      config.display_conditions || [],
+      config.display_mode || 'always'
+    );
   }
 
   /**

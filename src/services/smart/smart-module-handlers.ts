@@ -1127,6 +1127,33 @@ function sanitizeIrrigationModule(
   };
 }
 
+function sanitizeRssFeedModule(module: SmartModule, id: string): SmartModule | null {
+  const feeds = (Array.isArray(module.feeds) ? (module.feeds as unknown[]) : [])
+    .map(value => String(value || '').trim())
+    .filter(url => /^https?:\/\//i.test(url));
+  if (feeds.length === 0) return null;
+  const keywords = (value: unknown): string[] =>
+    (Array.isArray(value) ? value : []).map(v => String(v || '').trim()).filter(Boolean);
+  return {
+    id,
+    type: 'rss_feed',
+    title: String(module.title || ''),
+    show_title: module.show_title !== false,
+    feeds,
+    max_items: numberInRange(module.max_items, 1, 30, 6),
+    refresh_minutes: numberInRange(module.refresh_minutes, 5, 240, 30),
+    layout: oneOf(module.layout, ['list', 'compact', 'cards'] as const, 'list'),
+    show_image: module.show_image !== false,
+    show_summary: module.show_summary !== false,
+    show_date: true,
+    show_source: true,
+    open_in: 'new_tab',
+    include_keywords: keywords(module.include_keywords),
+    exclude_keywords: keywords(module.exclude_keywords),
+    ...defaultDisplayActions(),
+  };
+}
+
 function sanitizeRainRadarModule(
   module: SmartModule,
   hass: SmartSanitizeHass,
@@ -1482,6 +1509,10 @@ export const supplementalSmartModuleHandlers = {
             ctx.id
           )
         : null,
+  },
+  rss_feed: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeRssFeedModule(module, id)),
+    defaultBuilder: () => null,
   },
   rain_radar: {
     sanitize: wrapSanitize(sanitizeRainRadarModule),

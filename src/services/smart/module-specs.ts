@@ -62,6 +62,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   printer_3d: ['3d printer', 'octoprint', 'moonraker', 'klipper', 'prusa', 'prusalink', 'print progress'],
   floorplan: ['floorplan', 'floor plan', 'house map', 'home map', 'room map', 'picture elements'],
   rain_radar: ['rain radar', 'weather radar', 'radar', 'precipitation map', 'rain map', 'storm radar', 'rainviewer'],
+  rss_feed: ['rss', 'rss feed', 'news feed', 'atom feed', 'headlines', 'news', 'blog feed', 'podcast feed'],
   irrigation: ['irrigation', 'sprinkler', 'sprinklers', 'sprinkler zones', 'garden watering', 'lawn watering', 'opensprinkler', 'rachio'],
   energy_price: ['energy price', 'electricity price', 'spot price', 'nordpool', 'nord pool', 'tibber', 'octopus agile', 'cheapest hours', 'ev charging plan', 'smart charging'],
   calendar: ['events', 'schedule', 'agenda'],
@@ -522,6 +523,17 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
       ],
       default_duration_minutes: 10,
       layout: 'full',
+    },
+  },
+  rss_feed: {
+    purpose:
+      'Latest headlines from one or more RSS, Atom or JSON Feed URLs, merged newest first, with optional images, summaries, keyword filters and list / compact / cards layouts. Needs no entities.',
+    fields: ['feeds', 'max_items', 'layout', 'title', 'show_image', 'show_summary', 'include_keywords'],
+    example: {
+      type: 'rss_feed',
+      feeds: ['https://example.com/feed.xml'],
+      max_items: 6,
+      layout: 'list',
     },
   },
   rain_radar: {

@@ -14,6 +14,17 @@ const LOCK_FEATURE_OPEN = 1;
 
 type LockPendingAction = 'lock' | 'unlock' | 'open';
 
+/** Design tab text and background fields the lock reads (root or `design`, design wins). */
+interface LockDesignText {
+  color?: string;
+  text_align?: string;
+  font_size?: string | number;
+  font_weight?: string | number;
+  font_family?: string;
+  background_color?: string;
+}
+type LockWithDesign = LockModuleConfig & LockDesignText & { design?: LockDesignText };
+
 function lockSupportedFeatures(attrs: Record<string, unknown>): number {
   const v = attrs.supported_features;
   return typeof v === 'number' ? v : 0;
@@ -96,6 +107,7 @@ export class UltraLockModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const lock = module as LockModuleConfig;
+    const styled = lock as LockWithDesign;
     const lang = hass?.locale?.language || 'en';
     const lockState = lock.entity ? hass?.states?.[lock.entity] : undefined;
     // No entity yet (or not loaded): leave the toggle usable
@@ -124,22 +136,87 @@ export class UltraLockModule extends BaseUltraModule {
         </div>
         ${this.renderSettingsSection('', '', [
             {
-              title: localize('editor.lock.icon_override', lang, 'Icon override'),
+              title: localize('editor.lock.name', lang, 'Name'),
               description: localize(
-                'editor.lock.icon_override_desc',
+                'editor.lock.name_desc',
                 lang,
-                'Optional mdi: icon; leave empty for default lock icons'
+                "Shown instead of the lock's name from Home Assistant. Leave empty to use that name."
               ),
               hass,
-              data: { icon: lock.icon || '' },
-              schema: [this.textField('icon')],
+              data: { name: lock.name || '' },
+              schema: [this.textField('name')],
               onChange: (e: CustomEvent) => {
-                updateModule({ icon: (e.detail.value?.icon as string) ?? '' });
+                updateModule({ name: (e.detail.value?.name as string) ?? '' });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
           ]
         )}
+        ${this.renderIconField(
+          localize('editor.lock.icon_override', lang, 'Icon'),
+          localize(
+            'editor.lock.icon_override_desc',
+            lang,
+            'Search for an icon, or leave empty for the default lock icons. Used in every state unless you set an unlocked icon below.'
+          ),
+          hass,
+          lock.icon || '',
+          next => updateModule({ icon: next })
+        )}
+        ${this.renderIconField(
+          localize('editor.lock.icon_unlocked', lang, 'Unlocked icon'),
+          localize(
+            'editor.lock.icon_unlocked_desc',
+            lang,
+            'Optional icon while the lock is unlocked or open'
+          ),
+          hass,
+          lock.icon_unlocked || '',
+          next => updateModule({ icon_unlocked: next })
+        )}
+
+        ${this.renderSettingsSection(
+          localize('editor.lock.colors_section', lang, 'Colors'),
+          localize(
+            'editor.lock.colors_desc',
+            lang,
+            'Colour the icon, ring, active button and status by state. Leave empty to use the theme colour.'
+          ),
+          []
+        )}
+        ${this.renderColorField(
+          localize('editor.lock.locked_color', lang, 'Locked colour'),
+          '',
+          hass,
+          lock.locked_color || '',
+          '',
+          next => updateModule({ locked_color: next })
+        )}
+        ${this.renderColorField(
+          localize('editor.lock.unlocked_color', lang, 'Unlocked colour'),
+          '',
+          hass,
+          lock.unlocked_color || '',
+          '',
+          next => updateModule({ unlocked_color: next })
+        )}
+        ${this.renderColorField(
+          localize('editor.lock.card_color', lang, 'Card colour'),
+          localize(
+            'editor.lock.card_color_desc',
+            lang,
+            'Background of the lock card. Same setting as Background colour in the Design tab.'
+          ),
+          hass,
+          styled.design?.background_color || styled.background_color || '',
+          '',
+          next =>
+            updateModule({
+              background_color: next,
+              ...(styled.design ? { design: { ...styled.design, background_color: next } } : {}),
+            } as Partial<CardModule>)
+        )}
+        <div style="margin-bottom: 24px;"></div>
 
         ${this.renderSettingsSection(
           localize('editor.lock.display_section', lang, 'Display'),
@@ -183,7 +260,7 @@ export class UltraLockModule extends BaseUltraModule {
               description: localize(
                 'editor.lock.show_lock_buttons_desc',
                 lang,
-                'Show the Lock and Unlock buttons (the compact layout shows one toggle button)'
+                'Show the Lock and Unlock buttons (the compact layout shows one toggle button). Without them, set the tap action to Toggle to lock and unlock by tapping the card.'
               ),
               hass,
               data: { show_lock_buttons: lock.show_lock_buttons !== false },
@@ -241,7 +318,7 @@ export class UltraLockModule extends BaseUltraModule {
               description: localize(
                 'editor.lock.unlock_style_desc',
                 lang,
-                'Slide replaces the Unlock and Open buttons with sliders, so a stray tap can\'t unlock. Hero and Standard layouts.'
+                'Slide replaces the Unlock and Open buttons with sliders, so a stray tap can\'t unlock. Pattern and PIN are checked in the card before unlocking.'
               ),
               hass,
               data: { unlock_style: lock.unlock_style || 'buttons' },
@@ -250,6 +327,7 @@ export class UltraLockModule extends BaseUltraModule {
                   { value: 'buttons', label: localize('editor.lock.unlock_style_buttons', lang, 'Buttons') },
                   { value: 'slide', label: localize('editor.lock.unlock_style_slide', lang, 'Slide to unlock') },
                   { value: 'pattern', label: localize('editor.lock.unlock_style_pattern', lang, 'Draw a pattern') },
+                  { value: 'pin', label: localize('editor.lock.unlock_style_pin', lang, 'Enter a PIN') },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -282,6 +360,7 @@ export class UltraLockModule extends BaseUltraModule {
         )}
 
         ${lock.unlock_style === 'pattern' ? this.renderPatternRecorder(lock, updateModule, lang) : nothing}
+        ${lock.unlock_style === 'pin' ? this.renderPinSetting(lock, hass, updateModule, lang) : nothing}
 
         ${this.renderSettingsSection(
           localize('editor.lock.layout_section', lang, 'Layout'),
@@ -387,6 +466,44 @@ export class UltraLockModule extends BaseUltraModule {
     `;
   }
 
+  /** Editor block where the card's own unlock PIN is set. */
+  private renderPinSetting(
+    lock: LockModuleConfig,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CardModule>) => void,
+    lang: string
+  ): TemplateResult {
+    const pin = lock.unlock_pin || '';
+    const status =
+      pin.length >= 4
+        ? localize('editor.lock.pin_saved', lang, 'PIN saved.')
+        : localize('editor.lock.pin_none', lang, 'Enter at least 4 digits. Until then, unlocking uses the normal confirmation.');
+    return html`
+      ${this.renderSettingsSection(
+        localize('editor.lock.pin_title', lang, 'Unlock PIN'),
+        localize(
+          'editor.lock.pin_desc',
+          lang,
+          "The PIN that unlocks and opens this lock. It's checked in the card and saved in the dashboard, so it stops accidental unlocks but isn't a real password. It is not sent to the lock."
+        ),
+        [
+          {
+            title: localize('editor.lock.pin_field', lang, 'PIN'),
+            description: status,
+            hass,
+            data: { unlock_pin: pin },
+            schema: [this.textField('unlock_pin')],
+            onChange: (e: CustomEvent) => {
+              const digits = String(e.detail.value?.unlock_pin ?? '').replace(/\D/g, '');
+              updateModule({ unlock_pin: digits });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            },
+          },
+        ]
+      )}
+    `;
+  }
+
   private injectLockStyles(): TemplateResult {
     return html`<style>
       ${this.getStyles()}
@@ -473,16 +590,22 @@ export class UltraLockModule extends BaseUltraModule {
     })();
 
     const defaultIcon = isLocked ? 'mdi:lock' : 'mdi:lock-open-variant';
-    const iconName = iconOverride || defaultIcon;
+    const unlockedIcon = lockCfg.icon_unlocked?.trim();
+    const showsUnlocked = isUnlocked || stateStr === 'unlocking' || stateStr === 'open' || stateStr === 'opening';
+    const iconName = (showsUnlocked && unlockedIcon) || iconOverride || defaultIcon;
 
     // PIN code: 'auto' asks when the lock reports a code format, like HA's own dialog.
     const codeFormat = typeof attrs.code_format === 'string' ? attrs.code_format : undefined;
     const askCode = lockCfg.ask_code || 'auto';
     const needsCode = askCode === 'always' || (askCode === 'auto' && !!codeFormat);
-    const slideMode = lockCfg.unlock_style === 'slide' && layout !== 'compact';
+    // Compact shows the slider under the chip (larrysansan, Nov 1: it used to fall back to a button).
+    const slideMode = lockCfg.unlock_style === 'slide';
     // Until a pattern of at least 4 dots is saved, unlock falls back to the normal confirmation.
     const unlockPattern = lockCfg.unlock_pattern || '';
     const patternMode = lockCfg.unlock_style === 'pattern' && unlockPattern.length >= 4;
+    // Same fallback for the card's own PIN.
+    const unlockPin = lockCfg.unlock_pin || '';
+    const pinMode = lockCfg.unlock_style === 'pin' && unlockPin.length >= 4;
 
     const actionLabel = (service: LockPendingAction) =>
       service === 'open'
@@ -513,8 +636,13 @@ export class UltraLockModule extends BaseUltraModule {
       this.triggerPreviewUpdate(true);
     };
 
-    // Unlock/open are security-sensitive: confirm before calling unless disabled
-    const confirmSensitive = async (service: 'unlock' | 'open'): Promise<boolean> => {
+    // Unlock/open are security-sensitive: confirm before calling unless disabled.
+    // `fromSlider` is true only when a slider was completed; a tap elsewhere in slide mode
+    // (e.g. the tap action with the buttons hidden) still has to be confirmed.
+    const confirmSensitive = async (
+      service: 'unlock' | 'open',
+      fromSlider = false
+    ): Promise<boolean> => {
       if (patternMode) {
         return promptForPattern({
           title: `${actionLabel(service)} ${name}`,
@@ -524,8 +652,22 @@ export class UltraLockModule extends BaseUltraModule {
           cancelText: localize('editor.lock.cancel', lang, 'Cancel'),
         });
       }
+      if (pinMode) {
+        const entered = await promptForCode({
+          title: `${actionLabel(service)} ${name}`,
+          confirmText: actionLabel(service),
+          cancelText: localize('editor.lock.cancel', lang, 'Cancel'),
+          clearLabel: localize('editor.lock.code_clear', lang, 'Clear'),
+          placeholder: localize('editor.lock.pin_prompt', lang, 'Enter your PIN'),
+          expected: unlockPin,
+          wrongText: localize('editor.lock.pin_wrong', lang, 'Wrong PIN, try again'),
+        });
+        return entered !== null;
+      }
       // Typing the code or completing the slide is already a deliberate step.
-      if (lockCfg.require_confirmation === false || needsCode || slideMode) return true;
+      if (fromSlider || needsCode) return true;
+      // Slide mode exists to stop stray taps, so a tap outside the slider always confirms.
+      if (lockCfg.require_confirmation === false && !slideMode) return true;
       ucActionConfirmationService.setHass(hass);
       return ucActionConfirmationService.showConfirmation(
         { action: 'perform-action', perform_action: `lock.${service}`, entity: entityId },
@@ -545,15 +687,15 @@ export class UltraLockModule extends BaseUltraModule {
       setPending('lock');
       call('lock', code);
     };
-    const onUnlock = async () => {
-      if (!(await confirmSensitive('unlock'))) return;
+    const onUnlock = async (fromSlider = false) => {
+      if (!(await confirmSensitive('unlock', fromSlider))) return;
       const code = await getCode('unlock');
       if (code === null) return;
       setPending('unlock');
       call('unlock', code);
     };
-    const onOpen = async () => {
-      if (!(await confirmSensitive('open'))) return;
+    const onOpen = async (fromSlider = false) => {
+      if (!(await confirmSensitive('open', fromSlider))) return;
       const code = await getCode('open');
       if (code === null) return;
       setPending('open');
@@ -562,12 +704,34 @@ export class UltraLockModule extends BaseUltraModule {
 
     const controlsDisabled = isUnavailable || isBusy;
 
+    // The module's own tap / hold / double-tap actions. "Toggle" goes through the same
+    // unlock checks as the buttons (pattern, PIN, confirmation), so hiding the buttons and
+    // tapping the card can't skip them. Unset actions do nothing, as before.
+    const onToggle = () => {
+      if (controlsDisabled) return;
+      void (isLocked ? onUnlock() : onLock());
+    };
+    const gestures = this.createGestureHandlers(
+      `${module.id}-lock`,
+      {
+        tap_action: lockCfg.tap_action || { action: 'nothing' },
+        hold_action: lockCfg.hold_action || { action: 'nothing' },
+        double_tap_action: lockCfg.double_tap_action || { action: 'nothing' },
+        entity: entityId,
+        module,
+        onToggle,
+      },
+      hass,
+      config,
+      ['.uc-lock-btn', '.uc-lock-chip-btn', 'uc-slide-confirm']
+    );
+
     const lockedVisual = isLocked || stateStr === 'locking';
 
     const lockIconEl = (px: number) => html`
       <ha-icon
         class="uc-lock-ha-icon ${lockedVisual ? 'uc-lock-ha-icon--locked' : ''}"
-        style="--mdc-icon-size: ${px}px; color: var(--primary-color);"
+        style="--mdc-icon-size: ${px}px; color: var(--uc-lock-accent, var(--primary-color));"
         icon="${iconName}"
       ></ha-icon>
     `;
@@ -582,7 +746,7 @@ export class UltraLockModule extends BaseUltraModule {
                   .icon=${'mdi:lock'}
                   .doneIcon=${'mdi:lock-open-variant'}
                   ?disabled=${controlsDisabled}
-                  @confirmed=${onUnlock}
+                  @confirmed=${() => onUnlock(true)}
                 ></uc-slide-confirm>`
               : nothing}
             ${showOpen
@@ -591,7 +755,7 @@ export class UltraLockModule extends BaseUltraModule {
                   .icon=${'mdi:door-closed'}
                   .doneIcon=${'mdi:door-open'}
                   ?disabled=${controlsDisabled}
-                  @confirmed=${onOpen}
+                  @confirmed=${() => onOpen(true)}
                 ></uc-slide-confirm>`
               : nothing}
           </div>`
@@ -645,18 +809,38 @@ export class UltraLockModule extends BaseUltraModule {
 
     let content: TemplateResult;
 
-    const alignment = lockCfg.alignment || 'center';
+    // Design tab text settings: colour and font go to the name and state, and a text
+    // alignment of left / center / right moves the content like the Alignment option.
+    const styled = lockCfg as LockWithDesign;
+    const design: LockDesignText = { ...styled, ...(styled.design || {}) };
+    const designAlign =
+      design.text_align === 'left' || design.text_align === 'center' || design.text_align === 'right'
+        ? design.text_align
+        : '';
+    const alignment = designAlign || lockCfg.alignment || 'center';
     const alignClass = alignment === 'center' ? '' : `uc-lock--align-${alignment}`;
+    // Only the icon is on: drop the card padding and empty text column so the lock
+    // lines up with an Icon module (larrysansan, Oct 30).
+    const iconOnly = showIcon && !showTitle && !showState && !hasActions && !isJammed;
+    const iconOnlyClass = iconOnly ? 'uc-lock--icon-only' : '';
+    // Name and state both hidden: drop the empty text column so Alignment can move the
+    // icon and buttons (larrysansan, Nov 1: buttons stuck on the right).
+    const noMeta = !showTitle && !showState && !iconOnly;
+    const noMetaClass = noMeta
+      ? `uc-lock--no-meta ${showIcon ? '' : 'uc-lock--controls-only'}`
+      : '';
 
     if (layout === 'hero') {
       content = html`
         <div class="uc-lock uc-lock--hero ${alignClass}">
-          <div class="uc-lock__visual">
-            <div class="uc-lock__glow ${lockedVisual ? 'uc-lock__glow--on' : ''}"></div>
-            <div class="uc-lock-circle ${lockedVisual ? 'uc-lock-circle--locked' : ''} ${isJammed ? 'uc-lock-circle--jammed' : ''}">
-              ${showIcon ? lockIconEl(56) : nothing}
-            </div>
-          </div>
+          ${showIcon
+            ? html`<div class="uc-lock__visual">
+                <div class="uc-lock__glow ${lockedVisual ? 'uc-lock__glow--on' : ''}"></div>
+                <div class="uc-lock-circle ${lockedVisual ? 'uc-lock-circle--locked' : ''} ${isJammed ? 'uc-lock-circle--jammed' : ''}">
+                  ${lockIconEl(56)}
+                </div>
+              </div>`
+            : nothing}
           <div class="uc-lock__identity">
             ${showTitle ? html`<h2 class="uc-lock-title">${name}</h2>` : nothing}
             ${showState
@@ -675,14 +859,14 @@ export class UltraLockModule extends BaseUltraModule {
       `;
     } else if (layout === 'compact') {
       content = html`
-        <div class="uc-lock uc-lock--compact ${alignClass}">
+        <div class="uc-lock uc-lock--compact ${alignClass} ${iconOnlyClass} ${noMetaClass}">
           <div class="uc-lock-compact__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
                   ${lockIconEl(18)}
                 </div>`
               : nothing}
-            <span class="uc-lock-chip-label">
+            ${noMeta ? nothing : html`<span class="uc-lock-chip-label">
               ${showTitle
                 ? html`<span class="uc-lock-chip-name">${name}</span>`
                 : showState
@@ -691,8 +875,8 @@ export class UltraLockModule extends BaseUltraModule {
               ${showTitle && showState
                 ? html`<span class="uc-lock-chip-state">${stateLabel}</span>`
                 : nothing}
-            </span>
-            ${showLockBtns
+            </span>`}
+            ${showLockBtns && !(slideMode && !isUnlocked)
               ? html`<button
                   type="button"
                   class="uc-lock-chip-btn ${lockedVisual ? '' : 'uc-lock-chip-btn--active'}"
@@ -705,21 +889,24 @@ export class UltraLockModule extends BaseUltraModule {
                 </button>`
               : nothing}
           </div>
+          ${slideControls()}
         </div>
       `;
     } else {
       content = html`
-        <div class="uc-lock uc-lock--standard ${alignClass}">
+        <div class="uc-lock uc-lock--standard ${alignClass} ${iconOnlyClass} ${noMetaClass}">
           <div class="uc-lock-std__row">
             ${showIcon
               ? html`<div class="uc-lock-icon-well uc-lock-icon-well--std ${lockedVisual ? 'uc-lock-icon-well--locked' : ''} ${isJammed ? 'uc-lock-icon-well--jammed' : ''}">
                   ${lockIconEl(28)}
                 </div>`
               : nothing}
-            <div class="uc-lock-std__meta">
-              ${showTitle ? html`<h2 class="uc-lock-title uc-lock-title--std">${name}</h2>` : nothing}
-              ${showState ? html`<p class="uc-lock-subtitle">${stateLabel}</p>` : nothing}
-            </div>
+            ${iconOnly || noMeta
+              ? nothing
+              : html`<div class="uc-lock-std__meta">
+                  ${showTitle ? html`<h2 class="uc-lock-title uc-lock-title--std">${name}</h2>` : nothing}
+                  ${showState ? html`<p class="uc-lock-subtitle">${stateLabel}</p>` : nothing}
+                </div>`}
             ${hasActions
               ? html`<div class="uc-lock-std__actions" role="group">${actionBtns()}</div>`
               : nothing}
@@ -737,12 +924,32 @@ export class UltraLockModule extends BaseUltraModule {
       .join('; ');
     const hoverClass = this.getHoverEffectClass(module);
 
+    const stateColor = lockedVisual ? lockCfg.locked_color : lockCfg.unlocked_color;
+    const sizeValue = (v: unknown) => (/^\d+(\.\d+)?$/.test(String(v)) ? `${v}px` : String(v));
+    const cssVars = [
+      stateColor ? `--uc-lock-accent: ${stateColor}` : '',
+      design.color ? `--uc-lock-text: ${design.color}` : '',
+      design.font_size ? `--uc-lock-title-size: ${sizeValue(design.font_size)}` : '',
+      design.font_weight ? `--uc-lock-title-weight: ${design.font_weight}` : '',
+      design.font_family ? `--uc-lock-font: ${design.font_family}` : '',
+    ]
+      .filter(Boolean)
+      .join('; ');
+
     return html`
       ${this.injectLockStyles()}
       <div
-        class="uc-lock-wrapper ${hoverClass} ${isJammed ? 'uc-lock-wrapper--jammed' : ''}"
+        class="uc-lock-wrapper ${hoverClass} ${isJammed ? 'uc-lock-wrapper--jammed' : ''} ${gestures.isActionable ? 'uc-lock-wrapper--actionable' : ''}"
         data-uc-role="pane"
-        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${styleStr}"
+        @pointerdown=${gestures.onPointerDown}
+        @pointermove=${gestures.onPointerMove}
+        @pointerup=${gestures.onPointerUp}
+        @pointerleave=${gestures.onPointerLeave}
+        @pointercancel=${gestures.onPointerCancel}
+        @keydown=${gestures.onKeyDown}
+        role=${gestures.isActionable ? 'button' : nothing}
+        tabindex=${gestures.isActionable ? '0' : nothing}
+        style="background: var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))); border: var(--uc-pane-border, none); box-shadow: var(--uc-pane-shadow, none); border-radius: var(--uc-r-18, 18px); overflow: hidden; ${cssVars}; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
@@ -752,7 +959,14 @@ export class UltraLockModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .uc-lock-wrapper { box-sizing: border-box; }
-      .uc-lock { box-sizing: border-box; color: var(--primary-text-color); }
+      .uc-lock-wrapper--actionable { cursor: pointer; }
+      /* Sliders follow the locked / unlocked colour like the buttons do */
+      .uc-lock-wrapper uc-slide-confirm { --uc-slide-accent: var(--uc-lock-accent, var(--primary-color)); }
+      .uc-lock {
+        box-sizing: border-box;
+        color: var(--uc-lock-text, var(--primary-text-color));
+        font-family: var(--uc-lock-font, inherit);
+      }
 
       /* ═══ HERO ═══════════════════════════════════ */
       .uc-lock--hero {
@@ -772,7 +986,7 @@ export class UltraLockModule extends BaseUltraModule {
         position: absolute;
         inset: -14px;
         border-radius: 50%;
-        background: radial-gradient(circle, color-mix(in srgb, var(--primary-color) 12%, transparent) 0%, transparent 70%);
+        background: radial-gradient(circle, color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 12%, transparent) 0%, transparent 70%);
         opacity: 0;
         transition: opacity 0.4s ease;
         pointer-events: none;
@@ -784,8 +998,8 @@ export class UltraLockModule extends BaseUltraModule {
         border-radius: 50%;
         background: radial-gradient(
           circle at 38% 32%,
-          color-mix(in srgb, var(--primary-color) 12%, var(--card-background-color, var(--ha-card-background))) 0%,
-          color-mix(in srgb, var(--card-background-color, var(--ha-card-background)) 92%, var(--primary-color)) 100%
+          color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 12%, var(--card-background-color, var(--ha-card-background))) 0%,
+          color-mix(in srgb, var(--card-background-color, var(--ha-card-background)) 92%, var(--uc-lock-accent, var(--primary-color))) 100%
         );
         border: 1.5px solid color-mix(in srgb, var(--divider-color) 40%, transparent);
         display: flex;
@@ -797,8 +1011,8 @@ export class UltraLockModule extends BaseUltraModule {
         z-index: 1;
       }
       .uc-lock-circle--locked {
-        border-color: color-mix(in srgb, var(--primary-color) 35%, transparent);
-        box-shadow: inset 0 2px 16px rgba(0,0,0,0.14), 0 0 40px color-mix(in srgb, var(--primary-color) 12%, transparent);
+        border-color: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 35%, transparent);
+        box-shadow: inset 0 2px 16px rgba(0,0,0,0.14), 0 0 40px color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 12%, transparent);
       }
       .uc-lock-circle--jammed {
         border-color: color-mix(in srgb, var(--error-color, #db4437) 45%, transparent);
@@ -859,12 +1073,15 @@ export class UltraLockModule extends BaseUltraModule {
         border-radius: 999px;
       }
       .uc-lock-icon-well--std { width: 40px; height: 40px; }
-      .uc-lock-title--std { font-size: 0.9375rem; font-weight: 700; }
+      .uc-lock-title--std {
+        font-size: var(--uc-lock-title-size, 0.9375rem);
+        font-weight: var(--uc-lock-title-weight, 700);
+      }
       .uc-lock-subtitle {
         margin: 3px 0 0;
         font-size: 0.8125rem;
         line-height: 1.35;
-        color: var(--secondary-text-color);
+        color: var(--uc-lock-text, var(--secondary-text-color));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -880,6 +1097,29 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock--compact.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
       .uc-lock--compact.uc-lock--align-right .uc-lock-chip-label { text-align: right; }
 
+      /* Icon only: no padding, centred unless Left / Right is picked */
+      .uc-lock--standard.uc-lock--icon-only,
+      .uc-lock--compact.uc-lock--icon-only { padding: 0; }
+      .uc-lock--icon-only .uc-lock-std__row,
+      .uc-lock--icon-only .uc-lock-compact__row { justify-content: center; }
+      .uc-lock--icon-only.uc-lock--align-left .uc-lock-std__row,
+      .uc-lock--icon-only.uc-lock--align-left .uc-lock-compact__row { justify-content: flex-start; }
+      .uc-lock--icon-only.uc-lock--align-right .uc-lock-std__row,
+      .uc-lock--icon-only.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
+      .uc-lock--compact.uc-lock--icon-only .uc-lock-chip-label { display: none; }
+
+      /* No name or state: icon and buttons spread out, buttons alone centre,
+         and Left / Right pack everything to that side */
+      .uc-lock--no-meta .uc-lock-std__row,
+      .uc-lock--no-meta .uc-lock-compact__row { justify-content: space-between; }
+      .uc-lock--no-meta.uc-lock--controls-only .uc-lock-std__row,
+      .uc-lock--no-meta.uc-lock--controls-only .uc-lock-compact__row { justify-content: center; }
+      .uc-lock--no-meta.uc-lock--align-left .uc-lock-std__row,
+      .uc-lock--no-meta.uc-lock--align-left .uc-lock-compact__row { justify-content: flex-start; }
+      .uc-lock--no-meta.uc-lock--align-right .uc-lock-std__row,
+      .uc-lock--no-meta.uc-lock--align-right .uc-lock-compact__row { justify-content: flex-end; }
+      .uc-lock--compact .uc-lock__slides { margin-top: 8px; }
+
       /* ═══ COMPACT (chip) ═════════════════════════ */
       .uc-lock--compact { padding: 6px 10px; }
       .uc-lock-compact__row {
@@ -894,7 +1134,7 @@ export class UltraLockModule extends BaseUltraModule {
         flex-direction: column;
         font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--primary-text-color);
+        color: var(--uc-lock-text, var(--primary-text-color));
         white-space: nowrap;
         overflow: hidden;
       }
@@ -925,13 +1165,13 @@ export class UltraLockModule extends BaseUltraModule {
       }
       .uc-lock-chip-btn:disabled { opacity: 0.45; cursor: not-allowed; }
       .uc-lock-chip-btn:focus-visible {
-        outline: 2px solid var(--primary-color);
+        outline: 2px solid var(--uc-lock-accent, var(--primary-color));
         outline-offset: 2px;
       }
       .uc-lock-chip-btn--active {
-        border-color: color-mix(in srgb, var(--primary-color) 50%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
-        color: var(--primary-color);
+        border-color: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 50%, transparent);
+        background: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
+        color: var(--uc-lock-accent, var(--primary-color));
       }
 
       /* ═══ SHARED ═════════════════════════════════ */
@@ -941,7 +1181,7 @@ export class UltraLockModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: color-mix(in srgb, var(--primary-color) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
+        background: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 8%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
         border: 1px solid color-mix(in srgb, var(--divider-color) 55%, transparent);
         transition: box-shadow 0.2s ease, border-color 0.2s ease;
       }
@@ -951,8 +1191,8 @@ export class UltraLockModule extends BaseUltraModule {
         border: none;
       }
       .uc-lock-icon-well--locked {
-        border-color: color-mix(in srgb, var(--primary-color) 38%, transparent);
-        box-shadow: 0 2px 14px color-mix(in srgb, var(--primary-color) 12%, transparent);
+        border-color: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 38%, transparent);
+        box-shadow: 0 2px 14px color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 12%, transparent);
       }
       .uc-lock-icon-well--jammed {
         border-color: color-mix(in srgb, var(--error-color, #db4437) 40%, transparent);
@@ -966,11 +1206,11 @@ export class UltraLockModule extends BaseUltraModule {
 
       .uc-lock-title {
         margin: 0;
-        font-size: 1.25rem;
-        font-weight: 800;
+        font-size: var(--uc-lock-title-size, 1.25rem);
+        font-weight: var(--uc-lock-title-weight, 800);
         letter-spacing: -0.02em;
         line-height: 1.25;
-        color: var(--primary-text-color);
+        color: var(--uc-lock-text, var(--primary-text-color));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -990,9 +1230,9 @@ export class UltraLockModule extends BaseUltraModule {
         border: 1px solid color-mix(in srgb, var(--divider-color) 35%, transparent);
       }
       .uc-lock-badge--locked {
-        background: color-mix(in srgb, var(--primary-color) 12%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
-        color: var(--primary-color);
-        border-color: color-mix(in srgb, var(--primary-color) 25%, transparent);
+        background: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 12%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
+        color: var(--uc-lock-accent, var(--primary-color));
+        border-color: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 25%, transparent);
       }
       .uc-lock-badge--jammed {
         background: color-mix(in srgb, var(--error-color, #db4437) 12%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
@@ -1003,8 +1243,8 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock-status-dot {
         width: 7px; height: 7px;
         border-radius: 50%;
-        background: var(--primary-color);
-        box-shadow: 0 0 6px color-mix(in srgb, var(--primary-color) 60%, transparent);
+        background: var(--uc-lock-accent, var(--primary-color));
+        box-shadow: 0 0 6px color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 60%, transparent);
         flex-shrink: 0;
       }
       .uc-lock-warn {
@@ -1038,18 +1278,18 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock-btn:active:not(:disabled) { transform: scale(0.97); }
       .uc-lock-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       .uc-lock-btn--active {
-        border-color: color-mix(in srgb, var(--primary-color) 50%, transparent);
-        background: color-mix(in srgb, var(--primary-color) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
-        color: var(--primary-color);
+        border-color: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 50%, transparent);
+        background: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 14%, var(--uc-pane-bg, var(--card-background-color, var(--ha-card-background))));
+        color: var(--uc-lock-accent, var(--primary-color));
       }
       .uc-lock-btn:hover:not(:disabled) {
-        border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
-        box-shadow: 0 4px 16px color-mix(in srgb, var(--primary-color) 10%, transparent);
+        border-color: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 30%, transparent);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 10%, transparent);
       }
       .uc-lock-btn:focus-visible {
-        border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
-        box-shadow: 0 4px 16px color-mix(in srgb, var(--primary-color) 10%, transparent);
-        outline: 2px solid var(--primary-color);
+        border-color: color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 30%, transparent);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--uc-lock-accent, var(--primary-color)) 10%, transparent);
+        outline: 2px solid var(--uc-lock-accent, var(--primary-color));
         outline-offset: 2px;
       }
       .uc-lock-btn--ghost {

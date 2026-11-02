@@ -38,6 +38,12 @@ class UcSnapshotSchedulerService {
   private _cachedSettingsAt = 0;
   private _visibilityHandler: (() => void) | null = null;
   private _settingsChangedHandler: (() => void) | null = null;
+  /**
+   * In-memory copy of the last auto-snapshot time. Some wall tablets and kiosk
+   * browsers can't keep localStorage, and without this copy every one-minute
+   * check thought no snapshot had run yet and sent a new one.
+   */
+  private _memLastSnapshot: string | null = null;
 
   constructor() {
     this._loadLastSnapshotTime();
@@ -200,23 +206,29 @@ class UcSnapshotSchedulerService {
    * Get last snapshot time from localStorage
    */
   private _getLastSnapshotTime(): string | null {
+    let stored: string | null;
     try {
-      return localStorage.getItem(STORAGE_KEY_LAST_SNAPSHOT);
-    } catch (error) {
-      console.error('Failed to read last snapshot time:', error);
-      return null;
+      stored = localStorage.getItem(STORAGE_KEY_LAST_SNAPSHOT);
+    } catch {
+      stored = null;
     }
+    if (!stored) return this._memLastSnapshot;
+    if (!this._memLastSnapshot) return stored;
+    return stored > this._memLastSnapshot ? stored : this._memLastSnapshot;
   }
 
   /**
    * Save current time as last snapshot time
    */
   private _saveLastSnapshotTime(): void {
+    const now = new Date().toISOString();
+    this._memLastSnapshot = now;
     try {
-      const now = new Date().toISOString();
       localStorage.setItem(STORAGE_KEY_LAST_SNAPSHOT, now);
-    } catch (error) {
-      console.error('Failed to save last snapshot time:', error);
+    } catch {
+      // Storage unavailable (kiosk, private mode, quota). The in-memory copy
+      // still stops this page from snapshotting again today, and the server
+      // refuses a second auto snapshot within 20 hours.
     }
   }
 

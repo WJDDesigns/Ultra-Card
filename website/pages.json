@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T15:08:07.548Z",
+  "generatedAt": "2026-11-02T15:44:14.869Z",
   "repo": "WJDDesigns/Ultra-Card",
   "demoBundle": "dist-demo/ultra-card-demo.js",
   "pages": [
@@ -54,8 +54,8 @@
       "title": "Ultra Card Pro (product description)",
       "path": "/product/ultra-card-pro/",
       "needsDemoBundle": false,
-      "bytes": 18718,
-      "sha256": "a9960ce3e803579ecf47434a4ac0b891ee5e10b66d7497f94a3b50c2d84c4c50"
+      "bytes": 18747,
+      "sha256": "65130339cd6660519ab66deb883c99b1706357d17ca65cb4af6a4ca09153728d"
     },
     {
       "id": "terms",

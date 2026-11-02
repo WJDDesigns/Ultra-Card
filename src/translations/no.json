@@ -383,7 +383,9 @@
       "error_no_content": "Skriv Inn Tekstinnhold",
       "error_no_content_desc": "Legg til tekst i Generelt-fanen",
       "error_no_template": "Konfigurer Template",
-      "error_no_template_desc": "Skriv inn template-kode i Generelt-fanen"
+      "error_no_template_desc": "Skriv inn template-kode i Generelt-fanen",
+      "link_underline": "Understrek lenker",
+      "link_underline_desc": "Vis en strek under lenker. Streken får fargen du gir lenketeksten."
     },
     "bar": {
       "bar_settings": {
@@ -1298,7 +1300,7 @@
         "desc": "Farge på separatorlinjen."
       },
       "show_title": "Vis tittel",
-      "show_title_desc": "Legg til tekst i midten av separatorlinjen (f.eks. ------ Tekst ------)",
+      "show_title_desc": "Legg til tekst og/eller et ikon på skillelinjen (f.eks. ------ Tekst ------)",
       "text_content": {
         "title": "Tekstinnhold",
         "desc": "Tekst som skal vises i midten av separatoren."
@@ -1331,11 +1333,24 @@
         "desc": "Velg om separatoren skal gå horisontalt eller vertikalt.",
         "horizontal": "Horisontal",
         "vertical": "Vertikal"
-      }
+      },
+      "title_icon": "Ikon",
+      "title_icon_desc": "Valgfritt ikon ved siden av teksten. La teksten stå tom for en skillelinje med bare ikon.",
+      "title_icon_position": "Ikonplassering",
+      "title_icon_position_before": "Før teksten",
+      "title_icon_position_after": "Etter teksten",
+      "title_icon_size": "Ikonstørrelse",
+      "title_icon_color": "Ikonfarge",
+      "title_icon_color_desc": "La feltet stå tomt for å bruke tekstfargen.",
+      "title_align": "Justering",
+      "title_align_desc": "Hvor teksten og ikonet sitter på linjen.",
+      "title_align_left": "Venstre",
+      "title_align_center": "Midten",
+      "title_align_right": "Høyre"
     },
     "layout_extra": {
       "module_name": "Modulnavn:",
-      "module_name_placeholder": "Gi denne modulen et tilpasset navn for å gjøre det lettere å identifisere i redigereren.",
+      "module_name_placeholder": "f.eks. Kjøkkenlys",
       "module_name_help": "Gi denne modulen et tilpasset navn for å gjøre det lettere å identifisere i redigereren."
     },
     "layout_logic": {
@@ -2835,8 +2850,8 @@
       "entity_section_desc": "Velg låsenheten du vil kontrollere.",
       "entity": "Låsenhet",
       "entity_field_desc": "Home Assistant låsenhet",
-      "icon_override": "Ikonoverstyring",
-      "icon_override_desc": "Valgfri mdi: ikon; la em være tom for standard låseikoner",
+      "icon_override": "Ikon",
+      "icon_override_desc": "Søk etter et ikon, eller la feltet stå tomt for standard låseikoner. Brukes i alle tilstander, med mindre du angir et ikon for opplåst nedenfor.",
       "display_section": "Visning",
       "display_desc": "Velg hva som skal vises på kortet.",
       "show_title": "Vis tittel",
@@ -2848,7 +2863,7 @@
       "show_open_button": "Vis åpningsknapp",
       "show_open_button_desc": "Vis Åpne når låsen støtter oppheving (ÅPNE-funksjon)",
       "show_lock_buttons": "Vis lås / lås opp-knapper",
-      "show_lock_buttons_desc": "Vis knappene Lås og Lås opp (kompakt oppsett viser én veksleknapp)",
+      "show_lock_buttons_desc": "Vis knappene Lås og Lås opp (kompakt oppsett viser én veksleknapp). Uten dem kan du sette trykkhandlingen til Veksle for å låse og låse opp ved å trykke på kortet.",
       "show_open_button_unsupported": "Denne låsen kan ikke åpne (ingen Åpne-funksjon), så det finnes ingen Åpne-knapp å vise",
       "align_spread": "Spredt",
       "layout_section": "Oppsett",
@@ -2877,7 +2892,7 @@
       "action_open": "Åpne",
       "actions": "Lås handlinger",
       "unlock_style": "Lås opp med",
-      "unlock_style_desc": "Skyv erstatter knappene Lås opp og Åpne med glidebrytere, så et utilsiktet trykk ikke låser opp. Hero- og Standard-oppsett.",
+      "unlock_style_desc": "Skyv erstatter knappene Lås opp og Åpne med glidebrytere, så et utilsiktet trykk ikke låser opp. Mønster og PIN sjekkes i kortet før opplåsing.",
       "unlock_style_buttons": "Knapper",
       "unlock_style_slide": "Skyv for å låse opp",
       "ask_code": "Spør om PIN-kode",
@@ -2897,7 +2912,32 @@
       "pattern_wrong": "Feil mønster, prøv igjen",
       "pattern_saved": "Mønster lagret. Tegn på nytt for å endre det.",
       "pattern_none": "Ingen mønster ennå, så opplåsing bruker vanlig bekreftelse.",
-      "pattern_too_short": "Koble sammen minst 4 prikker"
+      "pattern_too_short": "Koble sammen minst 4 prikker",
+      "unlock_style_pin": "Skriv inn en PIN",
+      "pin_title": "PIN for opplåsing",
+      "pin_desc": "PIN-en som låser opp og åpner denne låsen. Den sjekkes i kortet og lagres i dashbordet, så den hindrer utilsiktet opplåsing, men det er ikke et ekte passord. Den sendes ikke til låsen.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN lagret.",
+      "pin_none": "Skriv inn minst 4 sifre. Inntil da bruker opplåsing vanlig bekreftelse.",
+      "pin_prompt": "Skriv inn PIN-en din",
+      "pin_wrong": "Feil PIN, prøv igjen",
+      "name": "Navn",
+      "name_desc": "Vises i stedet for låsens navn fra Home Assistant. La feltet stå tomt for å bruke det navnet.",
+      "icon_unlocked": "Ikon for opplåst",
+      "icon_unlocked_desc": "Valgfritt ikon mens låsen er låst opp eller åpen",
+      "colors_section": "Farger",
+      "colors_desc": "Farg ikon, ring, aktiv knapp og status etter tilstand. La feltet stå tomt for å bruke temafargen.",
+      "locked_color": "Farge for låst",
+      "unlocked_color": "Farge for opplåst",
+      "card_color": "Kortfarge",
+      "card_color_desc": "Bakgrunnen til låsekortet. Samme innstilling som Bakgrunnsfarge i Design-fanen.",
+      "align_left": "Venstre",
+      "align_right": "Høyre",
+      "align_center": "Midtstilt",
+      "behavior_section": "Oppførsel",
+      "behavior_desc": "Sikkerhetsvalg for låsehandlinger.",
+      "require_confirmation": "Bekreft opplåsing / åpning",
+      "require_confirmation_desc": "Be om bekreftelse før opplåsing eller åpning"
     },
     "text_input": {
       "entity": {
@@ -3331,7 +3371,10 @@
         "is_not": "er ikke",
         "condition": "Betingelse",
         "state": "Tilstand"
-      }
+      },
+      "scope_current_dashboard": "Bare gjeldende dashbord",
+      "scope_dashboard_label": "Gjeldende dashbord:",
+      "scope_dashboard_info": "Navigasjonslinjen vises på alle visninger i dette dashbordet, men ikke på de andre dashbordene dine."
     },
     "climate": {
       "error_no_entity": "Ingen klimaanhet",
@@ -3352,7 +3395,10 @@
     },
     "calendar": {
       "error_no_calendars": "Konfigurer Kalendere",
-      "error_no_calendars_desc": "Velg minst én kalenderenhet i Generelt-fanen"
+      "error_no_calendars_desc": "Velg minst én kalenderenhet i Generelt-fanen",
+      "location_link": "Åpne sted i",
+      "location_link_desc": "Gjør stedet trykkbart slik at det åpnes i en kartapp.",
+      "location_link_none": "Av"
     },
     "dynamic_list": {
       "error_waiting_ha": "Venter på Home Assistant",
@@ -3387,6 +3433,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Akordeontittel"
+      },
+      "title_icon": {
+        "section_title": "Tittelikon",
+        "section_desc": "Valgfritt ikon ved siden av tittelen. La stå tomt for ingen.",
+        "icon": "Ikon",
+        "color": "Farge på tittelikon"
       }
     },
     "animated_forecast": {
@@ -3583,7 +3635,66 @@
       "no_content": "Legg til innhold i Generelt-fanen",
       "generating": "Genererer QR...",
       "cors_error": "Logo ikke lastet — bildeserveren blokkerte forespørsel på tvers av opprinnelse. Bruk en /local/-bane eller en CORS-aktivert URL.",
-      "unified_cheatsheet": "Tem-mal hurtigreferanse"
+      "unified_cheatsheet": "Tem-mal hurtigreferanse",
+      "maps_provider": "Kartapp",
+      "place_entity_desc": "Valgfritt. Bruker posisjonen til entiteten (person, sporer, sone). La feltet stå tomt for å bruke teksten under.",
+      "wifi_ssid": "Nettverksnavn (SSID)",
+      "wifi_security": "Sikkerhet",
+      "wifi_open": "Ingen (åpent nettverk)",
+      "wifi_password": "Passord",
+      "wifi_hidden": "Skjult nettverk",
+      "wifi_password_note": "Passordet lagres i kortkonfigurasjonen, så alle som kan redigere dashbordet kan lese det.",
+      "location_entity": "Posisjon fra entitet",
+      "location_query": "Adresse eller koordinater",
+      "location_query_desc": "For eksempel \"Alexanderplatz, Berlin\" eller \"52.52,13.405\".",
+      "map_zoom": "Zoom (valgfritt)",
+      "map_zoom_desc": "1 (verden) til 21 (gate). Virker med koordinater.",
+      "route_origin_entity": "Start fra entitet",
+      "route_origin": "Startadresse",
+      "route_origin_desc": "La feltet stå tomt for å starte der telefonen er.",
+      "route_destination_entity": "Mål fra entitet",
+      "route_destination": "Måladresse",
+      "travel_mode": "Reisemåte",
+      "travel_driving": "Bil",
+      "travel_walking": "Gange",
+      "travel_bicycling": "Sykkel",
+      "travel_transit": "Kollektivtransport",
+      "start_navigation": "Start navigasjon med en gang",
+      "phone": "Telefonnummer",
+      "phone_intl_desc": "Med landskode, for eksempel +49 151 2345678.",
+      "message": "Melding (valgfritt)",
+      "email": "E-postadresse",
+      "email_subject": "Emne (valgfritt)",
+      "contact_entity": "Navn fra person",
+      "contact_entity_desc": "Valgfritt. Bruker navnet til personen. Fyll ut feltene under for resten.",
+      "contact_name": "Navn",
+      "contact_phone": "Telefon",
+      "contact_email": "E-post",
+      "contact_org": "Firma (valgfritt)",
+      "contact_address": "Adresse (valgfritt)",
+      "contact_url": "Nettsted (valgfritt)",
+      "spotify_entity": "Mediespiller",
+      "spotify_entity_desc": "Koder det denne Spotify-spilleren spiller akkurat nå. Krever Spotify-integrasjonen.",
+      "spotify_url": "Spotify-lenke",
+      "spotify_url_desc": "Brukes når ingen spiller er valgt eller ingenting spilles. En delingslenke eller en spotify:-URI.",
+      "social_platform": "Plattform",
+      "social_username": "Brukernavn",
+      "social_username_desc": "Brukernavnet ditt, eller lim inn hele profillenken.",
+      "encoded_preview": "Koder:",
+      "fill_fields": "Fyll ut feltene over for å lage koden.",
+      "type_text": "Tekst / URL",
+      "type_wifi": "Wi-Fi",
+      "type_location": "Sted på kart",
+      "type_route": "Rute på kart",
+      "type_whatsapp": "WhatsApp-chat",
+      "type_phone": "Telefonsamtale",
+      "type_sms": "SMS",
+      "type_email": "E-post",
+      "type_contact": "Kontaktkort",
+      "type_spotify": "Spotify",
+      "type_social": "Sosial profil",
+      "content_type": "Type",
+      "content_type_desc": "Hva koden er til. Velg en type og fyll ut feltene; Ultra Card lager koden for deg."
     },
     "area_summary": {
       "validate_area": "Velg et Home Assistant område",
@@ -5302,6 +5413,7 @@
       "wizard_title": "UniFi setup"
     },
     "logic": {
+      "card_visibility_title": "Synlighet",
       "hide_on_devices": "Hide on Devices",
       "hide_on_devices_desc": "Hide this element on specific screen sizes. Use this to create different layouts for different devices.",
       "user_visibility": {
@@ -6204,6 +6316,99 @@
       "weather_model_desc": "Auto velger den mest detaljerte modellen for kartets midtpunkt.",
       "weather_model_auto": "Auto",
       "weather_layer_unavailable": "Værlaget er ikke tilgjengelig"
+    },
+    "stack": {
+      "layer": {
+        "apply_all": "Bruk dette ankeret for alle lag",
+        "apply_all_desc": "Hvert lag har sitt eget anker. Dette kopierer ankeret og forskyvningene over til alle lag."
+      }
+    },
+    "rss_feed": {
+      "accent_color": "Aksentfarge",
+      "accent_color_desc": "Brukes til ikonet og navnet på feeden.",
+      "default_title": "Nyheter",
+      "display_section": "Visning",
+      "empty_desc": "Lim inn en RSS- eller Atom-feedlenke i fanen Generelt.",
+      "empty_title": "Legg til en feed",
+      "error_blocked": "Ultra Card Connect ville ikke hente denne adressen. Bare offentlige http- og https-feeder virker.",
+      "error_cors": "Dette nettstedet lar ikke nettleseren lese feeden. Oppdater Ultra Card Connect så den kan hente feeden for deg.",
+      "error_http": "Nettstedet svarte med en feil ({status}).",
+      "error_network": "Feeden kunne ikke lastes.",
+      "error_parse": "Adressen er ikke en RSS-, Atom- eller JSON-feed.",
+      "error_redirects": "Nettstedet fortsatte å videresende og sendte aldri feeden. Oppdater Ultra Card Connect, eller prøv feedadressen uten ekstra valg.",
+      "error_refused": "Dette nettstedet nekter å dele feeden sin med Home Assistant ({status}). Se etter en annen feedadresse på nettstedet.",
+      "exclude_keywords": "Skjul elementer med",
+      "exclude_keywords_desc": "Elementer som nevner noen av disse ordene, skjules.",
+      "feeds": "Feedadresser",
+      "feeds_desc": "Lim inn en RSS-, Atom- eller JSON Feed-lenke og trykk Enter. Legg til flere for å slå dem sammen, nyeste først.",
+      "feeds_section": "Feeder",
+      "filter_section": "Filter",
+      "include_keywords": "Vis bare elementer med",
+      "include_keywords_desc": "La feltet stå tomt for å vise alt. Søker i tittel og sammendrag.",
+      "layout": "Oppsett",
+      "layout_cards": "Kort",
+      "layout_compact": "Kompakt",
+      "layout_desc": "Liste med miniatyrbilder, bare kompakte overskrifter eller store bildekort.",
+      "layout_list": "Liste",
+      "loading": "Laster feed…",
+      "max_age_days": "Skjul elementer eldre enn",
+      "max_age_days_desc": "0 viser elementer uansett alder.",
+      "max_items": "Antall elementer",
+      "max_items_desc": "Hvor mange overskrifter som vises.",
+      "no_items": "Ingen elementer passer akkurat nå.",
+      "open_in": "Trykk på en overskrift",
+      "open_new_tab": "Åpner en ny fane",
+      "open_none": "Gjør ingenting",
+      "open_same_tab": "Åpnes her",
+      "refresh_minutes": "Oppdater hvert",
+      "refresh_minutes_desc": "Hvor ofte feedene sjekkes for nye elementer.",
+      "refresh_now": "Oppdater nå",
+      "show_date": "Vis tidspunkt",
+      "show_date_desc": "Hvor lenge siden hvert element ble publisert.",
+      "show_image": "Vis bilder",
+      "show_image_desc": "Bildet feeden gir for hvert element, når det finnes.",
+      "show_source": "Vis navnet på feeden",
+      "show_source_desc": "Nyttig når du slår sammen flere feeder.",
+      "show_summary": "Vis sammendrag",
+      "show_title": "Vis tittel",
+      "summary_lines": "Linjer i sammendrag",
+      "summary_lines_desc": "Lengre sammendrag kuttes etter så mange linjer.",
+      "title": "Tittel",
+      "title_desc": "La feltet stå tomt for å bruke navnet på feeden.",
+      "unit_days": " dager",
+      "layout_ticker": "Nyhetsrulle",
+      "ticker_speed": "Hastighet på nyhetsrulle",
+      "ticker_speed_desc": "Sekunder hver overskrift bruker på å rulle forbi. Lavere er raskere.",
+      "unit_seconds": " s",
+      "tabs_section": "Feeder som faner",
+      "feed_tabs": "Vis en fane for hver feed",
+      "feed_tabs_desc": "Bytt mellom feedene dine i stedet for å se dem slått sammen.",
+      "feed_tabs_all": "Legg til en «Alle»-fane",
+      "feed_tabs_all_desc": "Første fane viser alle feeder slått sammen, nyeste først.",
+      "feed_options_desc": "Gi hver feed sitt eget navn, ikon og farge. Brukes på fanene og som feednavn på elementer. Pilene endrer rekkefølgen.",
+      "move_up": "Flytt opp",
+      "move_down": "Flytt ned",
+      "feed_label": "Navn",
+      "feed_icon": "Ikon",
+      "feed_color": "Farge",
+      "tab_all": "Alle",
+      "ticker_unused": "Nyhetsrulle-oppsettet viser bare overskrifter, så disse valgene har ingen effekt der."
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Følger det alarmen støtter",
+      "mode_desc_supported": "Alarmen din støtter denne modusen",
+      "mode_desc_unsupported": "Alarmen din melder ikke denne modusen; slå på for å vise den likevel"
+    },
+    "entity_variable": {
+      "linked": "Bruker variabel",
+      "missing": "Fant ikke variabel:",
+      "unlink": "Koble fra",
+      "use": "Bruk en variabel"
+    },
+    "sections": {
+      "expand_all": "Utvid alle",
+      "collapse_all": "Skjul alle",
+      "edited": "Endret fra standard"
     }
   },
   "hub": {

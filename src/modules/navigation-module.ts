@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { applyNavItemOrder, NAV_MEDIA_PLAYER_ID } from '../utils/uc-nav-item-order';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
@@ -205,11 +206,12 @@ export class UltraNavigationModule extends BaseUltraModule {
       if (mpPos === 'start') pos = 0;
       else if (mpPos === 'end') pos = topItems.length;
       else if (typeof mpPos === 'number') pos = mpPos;
-      topItems.push({ type: 'media_player', id: '__media_player__', position: pos });
+      topItems.push({ type: 'media_player', id: NAV_MEDIA_PLAYER_ID, position: pos });
     }
 
-    // Sort top-level items by position
+    // Sort top-level items by position, then apply the order saved by dragging
     topItems.sort((a, b) => a.position - b.position);
+    const orderedTop = applyNavItemOrder(topItems, i => i.id, navModule.nav_item_order);
 
     // Build result with stack children inserted after their parent stacks
     const result: Array<{
@@ -220,7 +222,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       parentStackId?: string | undefined;
     }> = [];
 
-    topItems.forEach(item => {
+    orderedTop.forEach(item => {
       result.push(item);
       if (item.type === 'stack' && item.data) {
         const stack = item.data as NavStackItem;
@@ -503,6 +505,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                   label: localize('editor.navigation.scope_all_views', lang, 'All views (global)'),
                 },
                 {
+                  value: 'current_dashboard',
+                  label: localize(
+                    'editor.navigation.scope_current_dashboard',
+                    lang,
+                    'Current dashboard only'
+                  ),
+                },
+                {
                   value: 'current_view',
                   label: localize(
                     'editor.navigation.scope_current_view',
@@ -525,6 +535,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                 'editor.navigation.scope_all_info',
                 lang,
                 'Navbar appears on every view in your dashboard.'
+              )}<br />
+              <strong
+                >${localize('editor.navigation.scope_dashboard_label', lang, 'Current dashboard:')}</strong
+              >
+              ${localize(
+                'editor.navigation.scope_dashboard_info',
+                lang,
+                'Navbar appears on every view of this dashboard, but not on your other dashboards.'
               )}<br />
               <strong
                 >${localize('editor.navigation.scope_current_label', lang, 'Current view:')}</strong
@@ -703,8 +721,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                 });
               },
             },
-          ]
-        )}
+          ],
+          html`
 
         ${this.renderSliderField(
           localize('editor.navigation.min_width', lang, 'Min Width'),
@@ -728,45 +746,28 @@ export class UltraNavigationModule extends BaseUltraModule {
         )}
 
         <!-- Desktop Offset Slider -->
-        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-          <div>
-            <div
-              class="field-title"
-              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-            >
-              ${localize('editor.navigation.desktop_offset', lang, 'Desktop Offset')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color);"
-            >
-              ${localize(
-                'editor.navigation.offset_desc',
-                lang,
-                'Distance from screen edge (px). Pushes the dock away from the edge.'
-              )}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-            <ha-slider
-              style="flex: 1;"
-              .min=${0}
-              .max=${100}
-              .step=${1}
-              .value=${navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0)}
-              @change=${(e: Event) =>
-                updateModule({
-                  nav_desktop: {
-                    ...navModule.nav_desktop,
-                    offset: parseInt((e.target as any).value, 10),
-                  },
-                })}
-            ></ha-slider>
-            <span style="min-width: 40px; text-align: center; font-weight: 600;">
-              ${navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0)}px
-            </span>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.navigation.desktop_offset', lang, 'Desktop Offset'),
+          localize(
+            'editor.navigation.offset_desc',
+            lang,
+            'Distance from screen edge (px). Pushes the dock away from the edge.'
+          ),
+          navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0),
+          navModule.nav_desktop?.mode === 'floating' ? 16 : 0,
+          0,
+          100,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_desktop: {
+                ...navModule.nav_desktop,
+                offset: value,
+              },
+            }),
+          'px'
+        )}`
+        )}
 
         <!-- Mobile Configuration Section -->
         ${this.renderSettingsSection(
@@ -917,90 +918,51 @@ export class UltraNavigationModule extends BaseUltraModule {
                 });
               },
             },
-          ]
-        )}
+          ],
+          html`
 
         <!-- Mobile Offset Slider -->
-        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-          <div>
-            <div
-              class="field-title"
-              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-            >
-              ${localize('editor.navigation.mobile_offset', lang, 'Mobile Offset')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color);"
-            >
-              ${localize(
-                'editor.navigation.offset_desc',
-                lang,
-                'Distance from screen edge (px). Pushes the dock away from the edge.'
-              )}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-            <ha-slider
-              style="flex: 1;"
-              .min=${0}
-              .max=${100}
-              .step=${1}
-              .value=${navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0)}
-              @change=${(e: Event) =>
-                updateModule({
-                  nav_mobile: {
-                    ...navModule.nav_mobile,
-                    offset: parseInt((e.target as any).value, 10),
-                  },
-                })}
-            ></ha-slider>
-            <span style="min-width: 40px; text-align: center; font-weight: 600;">
-              ${navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0)}px
-            </span>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.navigation.mobile_offset', lang, 'Mobile Offset'),
+          localize(
+            'editor.navigation.offset_desc',
+            lang,
+            'Distance from screen edge (px). Pushes the dock away from the edge.'
+          ),
+          navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0),
+          navModule.nav_mobile?.mode === 'floating' ? 16 : 0,
+          0,
+          100,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_mobile: {
+                ...navModule.nav_mobile,
+                offset: value,
+              },
+            }),
+          'px'
+        )}
 
         <!-- Icon Spacing Section -->
-        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-          <div>
-            <div
-              class="field-title"
-              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-            >
-              ${localize('editor.navigation.icon_spacing', lang, 'Icon Spacing')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color);"
-            >
-              ${localize(
-                'editor.navigation.icon_spacing_desc',
-                lang,
-                'Gap between icons in the dock (px).'
-              )}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-            <ha-slider
-              style="flex: 1;"
-              .min=${0}
-              .max=${32}
-              .step=${1}
-              .value=${navModule.nav_layout?.icon_gap ?? 8}
-              @change=${(e: Event) =>
-                updateModule({
-                  nav_layout: {
-                    ...navModule.nav_layout,
-                    icon_gap: parseInt((e.target as any).value, 10),
-                  },
-                })}
-            ></ha-slider>
-            <span style="min-width: 40px; text-align: center; font-weight: 600;">
-              ${navModule.nav_layout?.icon_gap ?? 8}px
-            </span>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.navigation.icon_spacing', lang, 'Icon Spacing'),
+          localize('editor.navigation.icon_spacing_desc', lang, 'Gap between icons in the dock (px).'),
+          navModule.nav_layout?.icon_gap ?? 8,
+          8,
+          0,
+          32,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_layout: {
+                ...navModule.nav_layout,
+                icon_gap: value,
+              },
+            }),
+          'px'
+        )}`
+        )}
 
         <!-- Collapse & Auto-Hide Section -->
         <div
@@ -1590,7 +1552,11 @@ export class UltraNavigationModule extends BaseUltraModule {
           <div
             style="font-size: 11px; color: var(--secondary-text-color); margin-top: 8px; opacity: 0.7;"
           >
-            ${navModule.nav_scope === 'all_views' ? 'Global (all views)' : 'Current view only'}
+            ${(navModule.nav_scope || 'all_views') === 'all_views'
+              ? 'Global (all views)'
+              : navModule.nav_scope === 'current_dashboard'
+                ? 'Current dashboard only'
+                : 'Current view only'}
           </div>
           <div
             style="font-size: 10px; color: var(--secondary-text-color); margin-top: 12px; opacity: 0.6; font-style: italic;"
@@ -1798,10 +1764,16 @@ export class UltraNavigationModule extends BaseUltraModule {
       }
       routes.splice(insertIdx, 0, ejectedChild);
 
+      // Put the path where it was dropped in the saved order too
+      const topIds = items.filter(i => i.type !== 'stack_child').map(i => i.id);
+      const targetPos = topIds.indexOf(targetItem.id);
+      topIds.splice(targetPos < 0 ? topIds.length : targetPos, 0, ejectedChild.id);
+
       updateModule({
         nav_routes: routes,
         nav_stacks: stacks,
-      });
+        nav_item_order: topIds,
+      } as Partial<CardModule>);
       return;
     }
 
@@ -1882,11 +1854,13 @@ export class UltraNavigationModule extends BaseUltraModule {
     updateModule({
       nav_routes: newRoutes,
       nav_stacks: newStacks,
+      // Remember the full order so stacks can sit between paths (larrysansan, Nov 1)
+      nav_item_order: newTopItems.map(i => i.id),
       nav_media_player: {
         ...navModule.nav_media_player,
         icon_position: mediaPlayerPosition,
       },
-    });
+    } as Partial<CardModule>);
   }
 
   // Handle dropping an item onto a stack header (to add as a child)
@@ -3679,6 +3653,11 @@ export class UltraNavigationModule extends BaseUltraModule {
     return `
       .module-settings {
         padding-bottom: 24px;
+      }
+      /* Sliders outside a section sit on the editor's clipped edge; inset them so the
+         knob isn't cut in half at 0 (larrysansan, Oct 31). */
+      .module-settings > .field-container .uc-ha-slider {
+        margin-inline: 10px 0;
       }
       .settings-section {
         background: var(--secondary-background-color);

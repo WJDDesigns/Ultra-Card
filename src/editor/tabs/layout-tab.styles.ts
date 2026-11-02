@@ -1754,12 +1754,17 @@ export const layoutTabStyles = css`
         background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
         border-radius: 10px;
         flex-shrink: 0;
+        /* Size the toolbar by the editor pane, not the window: the pane is narrow
+           in HA's split editor even on a wide screen. */
+        container-type: inline-size;
       }
 
       .toolbar-row {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 0;
+        row-gap: 2px;
       }
 
       .toolbar-group {
@@ -1834,6 +1839,25 @@ export const layoutTabStyles = css`
 
       .tb-btn.has-clipboard:hover {
         background: rgba(76, 175, 80, 0.15);
+      }
+
+      /* Narrow editor pane: tighten the buttons so the last group (help, full
+         screen) stays on the same line instead of dropping to a row of its own.
+         Must come after the base .toolbar-group/.tb-btn rules or they win.
+         560px covers HA's split editor on a laptop, not only phones. */
+      @container (max-width: 560px) {
+        .toolbar-group {
+          padding: 0 3px;
+          gap: 0;
+        }
+        .tb-btn {
+          min-width: 28px;
+          height: 30px;
+          padding: 0 3px;
+        }
+        .tb-btn span {
+          display: none;
+        }
       }
 
       @keyframes pulse-glow {
@@ -3045,8 +3069,11 @@ export const layoutTabStyles = css`
       /* Mobile optimization for selector popup */
       @media (max-width: 768px), (max-height: 768px) {
         .selector-content.draggable-popup {
-          width: calc(100vw - 20px) !important; /* Full width with 10px padding each side */
-          height: calc(100vh - 40px) !important; /* Full height with 20px padding top/bottom */
+          /* min(…, 100%): inside HA's edit dialog the popup is positioned against the
+             dialog, not the window, so a plain 100vw overflowed it and the left side of
+             the Responsive Column Layout popup ended up off screen on laptops. */
+          width: calc(min(100vw, 100%) - 20px) !important;
+          height: calc(min(100vh, 100%) - 40px) !important;
           max-width: none !important; /* Remove max-width constraint on mobile */
           max-height: none !important; /* Remove max-height constraint on mobile */
           /* Ensure proper centering on mobile */
@@ -4989,11 +5016,18 @@ export const layoutTabStyles = css`
       }
 
       .gap-input {
-        flex: 0 0 60px;
-        min-width: 60px;
-        max-width: 60px;
+        flex: 0 0 64px;
+        min-width: 64px;
+        max-width: 64px;
         text-align: center;
-        padding: 6px 8px !important;
+        padding: 6px 4px !important;
+        -moz-appearance: textfield;
+      }
+
+      .gap-input::-webkit-outer-spin-button,
+      .gap-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
       }
 
       /* Ensure form elements fit properly */
@@ -5008,6 +5042,79 @@ export const layoutTabStyles = css`
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
+      }
+
+      /* Collapsible settings sections (uc-collapsible-sections). The wrapper marks
+         sections and headers with data attributes; content stays in this tree. */
+      .settings-section[data-uc-collapsed]
+        > :not([data-uc-sec-head]):not(style):not(script) {
+        display: none !important;
+      }
+      [data-uc-sec-owned-hidden] {
+        display: none !important;
+      }
+      .settings-section[data-uc-collapsible] > [data-uc-sec-head] {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 6px;
+      }
+      .settings-section[data-uc-collapsed] > [data-uc-sec-head] {
+        margin-bottom: 0 !important;
+      }
+      .settings-section[data-uc-collapsed] {
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        margin-bottom: 12px !important;
+      }
+      [data-uc-sec-head] > .uc-sec-meta {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--secondary-text-color);
+      }
+      [data-uc-sec-head] .uc-sec-summary {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      [data-uc-sec-head] .uc-sec-dot {
+        display: none;
+        flex: 0 0 auto;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary-color);
+      }
+      .settings-section[data-uc-collapsed] > [data-uc-edited] .uc-sec-dot {
+        display: inline-block;
+      }
+      [data-uc-sec-head] > .uc-sec-chevron {
+        flex: 0 0 auto;
+        --mdc-icon-size: 22px;
+        color: var(--secondary-text-color);
+        transition: transform 0.2s ease;
+        transform: rotate(180deg);
+      }
+      .settings-section[data-uc-collapsed] > [data-uc-sec-head] > .uc-sec-chevron {
+        transform: rotate(0deg);
+      }
+      [data-uc-sec-head]:hover > .uc-sec-chevron {
+        color: var(--primary-color);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [data-uc-sec-head] > .uc-sec-chevron {
+          transition: none;
+        }
       }
 
       /* Consistent styling for all module settings */

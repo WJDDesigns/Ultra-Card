@@ -110,6 +110,7 @@ import '../uc-favorites-selector-tab';
 import '../uc-modules-selector-tab';
 import '../uc-smart-selector-tab';
 import '../../components/uc-template-cheatsheet';
+import '../../components/uc-collapsible-sections';
 import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
@@ -2720,6 +2721,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'tabs') {
       layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -3117,7 +3120,7 @@ export class LayoutTab extends LitElement {
     const isNestedLayout = this._isLayoutModule(childModule.type);
 
     if (isNestedLayout) {
-      const nestedLayoutTitle =
+      const nestedLayoutTypeTitle =
         childModule.type === 'horizontal'
           ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
           : childModule.type === 'vertical'
@@ -3129,6 +3132,7 @@ export class LayoutTab extends LitElement {
                 : childModule.type === 'slider'
                   ? localize('editor.layout.slider_module', lang, 'Slider Module')
                   : metadata.title;
+      const nestedLayoutTitle = this._customModuleName(childModule) || nestedLayoutTypeTitle;
 
       const nestedModules = childModule.modules || [];
       const layoutKey = `tabs-nested-layout-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${childIndex}`;
@@ -4047,6 +4051,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'tabs') {
       layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -4692,6 +4698,8 @@ export class LayoutTab extends LitElement {
     } else if (childModule.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(childModule) || layoutTitle;
 
     return html`
       <div
@@ -5093,6 +5101,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -5594,6 +5604,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -6011,6 +6023,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     return html`
       <div
@@ -6336,6 +6350,8 @@ export class LayoutTab extends LitElement {
     } else if (module.type === 'accordion') {
       layoutTitle = localize('editor.layout.accordion_layout', lang, 'Accordion');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(module) || layoutTitle;
 
     const newParentPath = [...parentPath, childIndex];
 
@@ -13333,6 +13349,8 @@ export class LayoutTab extends LitElement {
     } else if (isTabs) {
       layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
     }
+    // A custom Module Name wins over the type label (larrysansan, Oct 28)
+    layoutTitle = this._customModuleName(layoutModule) || layoutTitle;
 
     return html`
       <div class="nested-layout-module-container layout-module-container very-deep-nested-layout">
@@ -16700,6 +16718,12 @@ export class LayoutTab extends LitElement {
     // For other modules, use the standard pattern
     return `${localize('editor.layout.module_settings_title', lang, 'Module Settings')} - ${this._formatModuleTypeName(module.type)}`;
   }
+  /** The user's Module Name (General tab), or '' when not set. */
+  private _customModuleName(module: CardModule | undefined): string {
+    const name = (module as { module_name?: unknown } | undefined)?.module_name;
+    return typeof name === 'string' && name.trim() ? name.trim() : '';
+  }
+
   private _getModuleDisplayName(module: CardModule): string {
     // Guard against null/undefined module or missing type
     if (!module || !module.type) {
@@ -17293,11 +17317,24 @@ export class LayoutTab extends LitElement {
       return html`<div>Module does not support general settings</div>`;
     }
 
-    return (
+    return this._wrapSections(
+      module,
+      'general',
       moduleHandler.renderGeneralTab(module, this.hass!, this.config, (updates: any) =>
         this._updateTabsSectionChild(updates)
       ) ?? html``
     );
+  }
+
+  /** Makes the titled settings sections of a module editor tab collapsible. */
+  private _wrapSections(module: CardModule, tab: string, content: unknown): TemplateResult {
+    return html`<uc-collapsible-sections
+      .moduleType=${module?.type || ''}
+      .tab=${tab}
+      .module=${module as unknown as Record<string, unknown>}
+      .hass=${this.hass}
+      >${content}</uc-collapsible-sections
+    >`;
   }
 
   private _renderTabsSectionChildYamlTab(module: any): TemplateResult {
@@ -17775,16 +17812,16 @@ export class LayoutTab extends LitElement {
             ? module.type === 'external_card' &&
               !ucExternalCardsService.hasCardEditor((module as any).card_type)
               ? ''
-              : this._renderGeneralTab(module)
+              : this._wrapSections(module, 'general', this._renderGeneralTab(module))
             : ''}
           ${this._activeModuleTab === 'yaml' && module.type === 'external_card'
             ? this._renderYamlTab(module)
             : ''}
           ${this._activeModuleTab === 'actions' && hasActionsTab
-            ? this._renderActionsTab(module)
+            ? this._wrapSections(module, 'actions', this._renderActionsTab(module))
             : ''}
           ${this._activeModuleTab === 'other' && hasOtherTab
-            ? this._renderOtherTab(module)
+            ? this._wrapSections(module, 'other', this._renderOtherTab(module))
             : ''}
           ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
           ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
@@ -18278,7 +18315,7 @@ export class LayoutTab extends LitElement {
         updates => this._updateLayoutChildModule(updates)
       );
 
-      return html` ${moduleNameField} ${moduleContent} `;
+      return this._wrapSections(module, 'general', html` ${moduleNameField} ${moduleContent} `);
     }
 
     return html` ${moduleNameField} ${this._renderModuleSettingsUnavailable(module)} `;
@@ -18965,9 +19002,9 @@ export class LayoutTab extends LitElement {
           transform: scale(1.1);
         }
         .gap-input {
-          width: 48px !important;
-          max-width: 48px !important;
-          min-width: 48px !important;
+          width: 64px !important;
+          max-width: 64px !important;
+          min-width: 64px !important;
           padding: 4px 6px !important;
           border: 1px solid var(--divider-color);
           border-radius: 4px;
@@ -18977,6 +19014,16 @@ export class LayoutTab extends LitElement {
           text-align: center;
           transition: border-color 0.2s ease;
         }
+        .gap-input::-webkit-outer-spin-button,
+        .gap-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        .gap-input {
+          -moz-appearance: textfield;
+        }
+
         .gap-input:focus {
           outline: none;
           border-color: var(--primary-color);

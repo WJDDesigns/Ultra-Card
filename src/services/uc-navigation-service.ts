@@ -1,4 +1,5 @@
 import type { HomeAssistant } from '../ha/types';
+import { applyNavItemOrder, NAV_MEDIA_PLAYER_ID } from '../utils/uc-nav-item-order';
 import { forwardHaptic } from '../ha/helpers';
 import { html, render, TemplateResult } from 'lit';
 import {
@@ -35,6 +36,16 @@ interface RegisteredModule {
   config: UltraCardConfig;
   element: HTMLElement | null;
   registeredAt: number;
+  /** First URL segment (the dashboard) the card was on when it registered. */
+  dashboardKey: string;
+}
+
+/** cardId of navbars restored from the dashboard config (matches uc-navigation-bootstrap). */
+const RESTORED_CARD_ID = 'uc-restored';
+
+/** Dashboard part of an HA path: "/lovelace-home/2" → "lovelace-home". */
+function dashboardKeyOf(pathname: string): string {
+  return (pathname || '').split('/').filter(Boolean)[0] || '';
 }
 
 interface ViewNavLayer {
@@ -271,6 +282,11 @@ class UcNavigationService {
     const key = `${cardId}-${moduleId}`;
     const existing = this.registeredModules.get(key);
 
+    // The real card took over from the copy restored at page load (see uc-navigation-bootstrap).
+    if (cardId !== RESTORED_CARD_ID) {
+      this.registeredModules.delete(`${RESTORED_CARD_ID}-${moduleId}`);
+    }
+
     // DON'T clear preview override on re-registration
     // Re-registration happens on every config change during editing
     // Preview override will be cleared manually when editor closes
@@ -283,11 +299,44 @@ class UcNavigationService {
       config,
       element,
       registeredAt: existing?.registeredAt || Date.now(),
+      // Keep the original dashboard: a 'current_dashboard' navbar stays registered
+      // after leaving its dashboard and must not move along with the user.
+      dashboardKey: existing?.dashboardKey || dashboardKeyOf(window.location.pathname),
     });
 
     this.startObservers();
     this.scheduleUpdate();
     // Start/stop the media player watcher as needed
+    this.manageMediaPlayerWatcher();
+  }
+
+  /**
+   * Register a navbar read from the saved dashboard config after a page reload, when
+   * the card that holds it isn't on screen. Skipped if that card already registered it.
+   */
+  registerRestoredModule(
+    cardId: string,
+    moduleId: string,
+    module: NavigationModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    dashboardKey: string
+  ): void {
+    for (const reg of this.registeredModules.values()) {
+      if (reg.moduleId === moduleId) return;
+    }
+    this.registeredModules.set(`${cardId}-${moduleId}`, {
+      cardId,
+      moduleId,
+      module,
+      hass,
+      config,
+      element: null,
+      registeredAt: Date.now(),
+      dashboardKey,
+    });
+    this.startObservers();
+    this.scheduleUpdate();
     this.manageMediaPlayerWatcher();
   }
 
@@ -415,7 +464,7 @@ class UcNavigationService {
 
     for (const [key, registered] of this.registeredModules.entries()) {
       const navScope = registered.module.nav_scope || 'all_views';
-      if (navScope === 'all_views') {
+      if (navScope === 'all_views' || navScope === 'current_dashboard') {
         globalNavbars.push({
           cardId: registered.cardId,
           moduleId: registered.moduleId,
@@ -628,6 +677,11 @@ class UcNavigationService {
       if (navScope === 'current_view') {
         const cardViewPath = this.getCardViewPath(registered.element);
         if (cardViewPath && !this.isOnSameView(currentPath, cardViewPath)) {
+          continue;
+        }
+      } else if (navScope === 'current_dashboard') {
+        // Every view of the dashboard the card lives on, but not other dashboards.
+        if (registered.dashboardKey && dashboardKeyOf(currentPath) !== registered.dashboardKey) {
           continue;
         }
       }
@@ -1836,6 +1890,24 @@ class UcNavigationService {
         position: mediaPlayer.icon_position ?? 'end',
         template: mediaPlayerIcon,
       });
+    }
+
+    // An order saved by dragging in the editor places every item, stacks included
+    const savedOrder = navModule.nav_item_order;
+    if (Array.isArray(savedOrder) && savedOrder.length > 0) {
+      const entries: Array<{ id: string; template: TemplateResult }> = [
+        ...routes.map((route, idx) => ({ id: route.id, template: routeTemplates[idx] })),
+        ...stacks.map((stack, idx) => ({ id: stack.id, template: stackTemplates[idx] })),
+      ];
+      const mp = specialItems.find(item => item.type === 'media_player');
+      if (mp) {
+        const entry = { id: NAV_MEDIA_PLAYER_ID, template: mp.template };
+        if (mp.position === 'start') entries.unshift(entry);
+        else if (typeof mp.position === 'number')
+          entries.splice(Math.max(0, Math.min(mp.position, entries.length)), 0, entry);
+        else entries.push(entry);
+      }
+      return applyNavItemOrder(entries, e => e.id, savedOrder).map(e => e.template);
     }
 
     // If no special items, just return routes
@@ -4417,7 +4489,7 @@ class UcNavigationService {
     // stays visible when navigating between views (the card's view container
     // gets disconnected when leaving that view)
     const navScope = module.nav_scope || 'all_views';
-    if (navScope === 'all_views') {
+    if (navScope === 'all_views' || navScope === 'current_dashboard') {
       return document.body;
     }
 

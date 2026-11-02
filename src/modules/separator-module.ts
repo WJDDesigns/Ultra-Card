@@ -318,6 +318,18 @@ export class UltraSeparatorModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    const hasTitleText = !!(separatorModule.title && separatorModule.title.trim() !== '');
+    const hasTitleBlock = !!separatorModule.show_title && (hasTitleText || !!separatorModule.title_icon);
+    const titleIconPosition = separatorModule.title_icon_position || 'before';
+    const titleIcon = separatorModule.title_icon
+      ? html`<ha-icon
+          class="separator-title-icon"
+          icon="${separatorModule.title_icon}"
+          style="--mdc-icon-size: ${separatorModule.title_icon_size ||
+          18}px; color: ${separatorModule.title_icon_color || 'inherit'};"
+        ></ha-icon>`
+      : null;
+
     return this.wrapWithAnimation(
       html`
         <div
@@ -341,7 +353,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
               : ''}"
             style="width: 100%; text-align: left;"
           >
-            ${separatorModule.show_title && separatorModule.title
+            ${hasTitleBlock
               ? html`
                   <div
                     class="separator-with-title ${separatorModule.orientation === 'vertical'
@@ -349,7 +361,8 @@ export class UltraSeparatorModule extends BaseUltraModule {
                       : ''}"
                     style="${this.getTitleContainerStyles(
                       (separatorModule as any).design || {},
-                      separatorModule.orientation === 'vertical'
+                      separatorModule.orientation === 'vertical',
+                      separatorModule.title_align
                     )}"
                   >
                     <div
@@ -366,7 +379,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
                         (separatorModule as any).design || {}
                       )}"
                     >
-                      ${separatorModule.title}
+                      ${titleIcon && titleIconPosition === 'before' ? titleIcon : ''}${separatorModule.title
+                        ? html`<span>${separatorModule.title}</span>`
+                        : ''}${titleIcon && titleIconPosition === 'after' ? titleIcon : ''}
                     </div>
                     <div
                       class="separator-line-right"
@@ -450,7 +465,8 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
     if (
       separatorModule.show_title &&
-      (!separatorModule.title || separatorModule.title.trim() === '')
+      (!separatorModule.title || separatorModule.title.trim() === '') &&
+      !separatorModule.title_icon
     ) {
       errors.push('Title text is required when show title is enabled');
     }
@@ -788,9 +804,13 @@ export class UltraSeparatorModule extends BaseUltraModule {
       styles.margin = position === 'left' ? '0 8px 0 0' : '0 0 0 8px';
     }
 
-    // Respect global text alignment by adjusting line flex sizes
-    const textAlign = ((separatorModule as any).design || {}).text_align;
-    if (textAlign && textAlign !== 'inherit') {
+    // Respect alignment by adjusting line flex sizes (Design tab wins over General)
+    const textAlign = this.resolveTitleAlign(
+      (separatorModule as any).design || {},
+      isVertical,
+      separatorModule.title_align
+    );
+    if (textAlign) {
       if (isVertical) {
         // For vertical separators, adjust based on vertical alignment
         if (textAlign === 'top') {
@@ -881,9 +901,27 @@ export class UltraSeparatorModule extends BaseUltraModule {
       .join('; ');
   }
 
-  private getTitleContainerStyles(design: any = {}, isVertical: boolean = false): string {
-    const textAlign =
-      design?.text_align && design.text_align !== 'inherit' ? design.text_align : 'center';
+  /**
+   * Effective title alignment. The Design tab's text alignment wins; otherwise
+   * the General tab's title_align (left/right map to top/bottom when vertical).
+   */
+  private resolveTitleAlign(
+    design: { text_align?: string } | undefined,
+    isVertical: boolean,
+    titleAlign: SeparatorModule['title_align']
+  ): string | undefined {
+    if (design?.text_align && design.text_align !== 'inherit') return design.text_align;
+    if (!titleAlign || titleAlign === 'center') return undefined;
+    if (isVertical) return titleAlign === 'left' ? 'top' : 'bottom';
+    return titleAlign;
+  }
+
+  private getTitleContainerStyles(
+    design: any = {},
+    isVertical: boolean = false,
+    titleAlign?: SeparatorModule['title_align']
+  ): string {
+    const textAlign = this.resolveTitleAlign(design, isVertical, titleAlign) || 'center';
 
     const styles: Record<string, string> = {
       position: 'relative',
@@ -934,6 +972,10 @@ export class UltraSeparatorModule extends BaseUltraModule {
       letterSpacing: design.letter_spacing || undefined,
       lineHeight: design.line_height || undefined,
       textAlign: design.text_align || undefined,
+      display: 'inline-flex',
+      flexDirection: isVertical ? 'column' : 'row',
+      alignItems: 'center',
+      gap: '6px',
       margin: '0',
       padding: isVertical ? '8px 0' : '0 8px',
       backgroundColor: 'transparent',

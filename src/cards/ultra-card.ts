@@ -27,7 +27,9 @@ import { getModuleRegistry, isProModule } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
 import { prefetchModuleChunksForLayout } from '../utils/uc-module-chunk-prefetch';
+import { rememberNavigationDashboard } from '../services/uc-navigation-bootstrap';
 import {
+  hasTimeCondition,
   layoutHasTimeConditions,
   layoutRequiresBroadHassUpdates,
 } from '../utils/uc-broad-hass-updates';
@@ -48,7 +50,10 @@ import {
   lazyBackgroundService,
   lazyNavigationService,
 } from '../services/uc-heavy-services';
-import { responsiveDesignService } from '../services/uc-responsive-design-service';
+import {
+  HIDDEN_IN_EDITOR_STYLE,
+  responsiveDesignService,
+} from '../services/uc-responsive-design-service';
 import { UcGestureService } from '../services/uc-gesture-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
@@ -351,7 +356,10 @@ export class UltraCard extends LitElement {
    * start of each minute while the layout has one (they compare HH:MM).
    */
   private _syncTimeConditionTimer(): void {
-    const wanted = this.isConnected && layoutHasTimeConditions(this.config?.layout);
+    const wanted =
+      this.isConnected &&
+      (layoutHasTimeConditions(this.config?.layout) ||
+        hasTimeCondition(this.config?.display_conditions));
     if (!wanted) {
       if (this._timeConditionTimer !== null) clearTimeout(this._timeConditionTimer);
       this._timeConditionTimer = null;
@@ -1192,7 +1200,11 @@ export class UltraCard extends LitElement {
           '[UltraCard] Config validation reported problems:',
           validationResult.errors.join(', ')
         );
-        return;
+        // Still render: these are module-level problems such as "no entity picked yet",
+        // and each module shows its own "select an entity" hint. Bailing out here left
+        // the whole card blank as soon as a People, Climate, Weather, Vacuum or To-do
+        // module was added without an entity.
+        if (!validationResult.correctedConfig) return;
       }
 
       const isPreviewContext = this._detectEditorPreviewContext();
@@ -1587,7 +1599,10 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    if (!this._hass) {
+    // Also when the logic service lost hass: switching views unmounts every card,
+    // which clears it, and coming back re-renders before HA sends a new hass object.
+    // Without this, conditions fail open and hidden modules flash back in.
+    if (!this._hass || !logicService.hasHass) {
       logicService.setHass(hass);
     }
     // Logic conditions on `$variable` entities resolve against this card's variables.
@@ -1662,12 +1677,11 @@ export class UltraCard extends LitElement {
       hass: effectiveHass,
     };
 
-    // Card-level per-user visibility (skip in editor so you can still edit when hidden from yourself)
-    if (
-      !isInCardEditor &&
-      !isDashboardEditMode &&
-      !logicService.evaluateUserVisibility(this.config.user_visibility)
-    ) {
+    // Card-level visibility (Card Settings > Visibility): per-user filter and display
+    // conditions. While editing, the card stays visible but faded so it can still be edited.
+    const isEditing = isInCardEditor || isDashboardEditMode;
+    const cardLogicVisible = logicService.evaluateCardVisibility(this.config);
+    if (!isEditing && !cardLogicVisible) {
       this.setAttribute('data-invisible', 'true');
       this.style.display = 'none';
       this.style.height = '0';
@@ -1702,9 +1716,27 @@ export class UltraCard extends LitElement {
       this.style.removeProperty('padding');
     }
 
+    // Card-level hide on devices, plus the faded look for a hidden card while editing
+    const cardVisibilityCSS = [
+      cardLogicVisible ? '' : `:host { ${HIDDEN_IN_EDITOR_STYLE} }`,
+      responsiveDesignService.generateHideOnDevicesCSS(
+        ':host',
+        this.config.hidden_on_devices,
+        isEditing
+      ),
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const cardVisibilityStyle = cardVisibilityCSS
+      ? html`<style>
+          ${cardVisibilityCSS}
+        </style>`
+      : '';
+
     // If only popup modules with invisible triggers (logic/page_load) and NOT in card editor, render with display: contents (no visible container)
     if (allPopupsInvisible && !isInCardEditor) {
       return html`
+        ${cardVisibilityStyle}
         <div style="display: contents;">
           ${repeat(this.config.layout.rows, (row) => row.id, (row, ri) => this._renderRow(row, renderCtx, ri))}
         </div>
@@ -1715,11 +1747,13 @@ export class UltraCard extends LitElement {
     // Popups need to render their triggers, but still need the card background styling
     if (onlyPopupModules && !isInCardEditor) {
       return html`
+        ${cardVisibilityStyle}
         <div style="${cardStyle}">${repeat(this.config.layout.rows, (row) => row.id, (row, ri) => this._renderRow(row, renderCtx, ri))}</div>
       `;
     }
 
     return html`
+      ${cardVisibilityStyle}
       <ha-card
         class="card-container"
         style="${cardStyle}"
@@ -4108,6 +4142,10 @@ export class UltraCard extends LitElement {
         if (!this.config || !this.hass || !this._instanceId) return;
         for (const { id, module } of this._getConfigCache().navigationModules) {
           svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+          // Remember this dashboard so the navbar comes back after a reload on another view.
+          if (!this._isEditorPreviewCard && !this._isCardPickerPreview) {
+            rememberNavigationDashboard((module as { nav_scope?: 'current_view' | 'current_dashboard' | 'all_views' }).nav_scope);
+          }
         }
       })
       .catch(err => console.warn('Ultra Card: navigation service failed to load', err));

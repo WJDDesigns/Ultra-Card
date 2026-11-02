@@ -33,8 +33,8 @@ export class UcSlideConfirm extends LitElement {
       position: relative;
       height: var(--uc-slide-height);
       border-radius: 999px;
-      background: color-mix(in srgb, var(--primary-color) 14%, var(--secondary-background-color, #2a2a2a));
-      border: 1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+      background: color-mix(in srgb, var(--uc-slide-accent, var(--primary-color)) 14%, var(--secondary-background-color, #2a2a2a));
+      border: 1px solid color-mix(in srgb, var(--uc-slide-accent, var(--primary-color)) 30%, transparent);
       overflow: hidden;
       user-select: none;
       -webkit-user-select: none;
@@ -44,7 +44,7 @@ export class UcSlideConfirm extends LitElement {
       position: absolute;
       inset: 0 auto 0 0;
       border-radius: 999px;
-      background: color-mix(in srgb, var(--primary-color) 30%, transparent);
+      background: color-mix(in srgb, var(--uc-slide-accent, var(--primary-color)) 30%, transparent);
       pointer-events: none;
     }
     .label {
@@ -74,7 +74,7 @@ export class UcSlideConfirm extends LitElement {
       padding: 0;
       display: grid;
       place-items: center;
-      background: var(--primary-color);
+      background: var(--uc-slide-accent, var(--primary-color));
       color: var(--text-primary-color, #fff);
       cursor: grab;
       touch-action: none;

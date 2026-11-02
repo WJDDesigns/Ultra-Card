@@ -146,6 +146,11 @@ export function collectConfigEntityIds(config: UltraCardConfig | undefined): Con
     }
   };
 
+  // Card-level display conditions (Card Settings > Visibility)
+  config.display_conditions?.forEach(c => {
+    if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);
+  });
+
   for (const row of config.layout.rows) {
     row.display_conditions?.forEach(c => {
       if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);

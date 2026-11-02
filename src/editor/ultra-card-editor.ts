@@ -16,7 +16,8 @@ import { ucCustomVariablesService } from '../services/uc-custom-variables-servic
 import { ucEntityPickerEnhancer } from '../services/uc-entity-picker-enhancer';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import '../services/uc-export-import-service';
-import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
+import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import './global-logic-tab-element';
 import { ucSnapshotSchedulerService } from '../services/uc-snapshot-scheduler-service';
 import '../utils/uc-config-encoder';
 import { uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
@@ -1822,25 +1823,26 @@ export class UltraCardEditor extends LitElement {
             ` : ''}
           </div>
 
-          <!-- Visibility Accordion (per-user) -->
+          <!-- Visibility Accordion (users, devices, display conditions) -->
           <div class="cs-accordion">
             <button
               class="cs-accordion-header ${this._expandedCardSections.has('visibility') ? 'expanded' : ''}"
               @click=${() => this._toggleCardSection('visibility')}
             >
-              <ha-icon icon="mdi:account-eye" style="--mdc-icon-size: 20px;"></ha-icon>
+              <ha-icon icon="mdi:eye-settings" style="--mdc-icon-size: 20px;"></ha-icon>
               <span class="cs-accordion-title">
-                ${localize('editor.logic.user_visibility.title', lang, 'Visible to Users')}
+                ${localize('editor.logic.card_visibility_title', lang, 'Visibility')}
               </span>
               <ha-icon icon="mdi:chevron-${this._expandedCardSections.has('visibility') ? 'up' : 'down'}" style="--mdc-icon-size: 20px; margin-left: auto;"></ha-icon>
             </button>
             ${this._expandedCardSections.has('visibility')
               ? html`
                   <div class="cs-accordion-content">
-                    ${renderUserVisibilitySection(
-                      this.config.user_visibility,
-                      this.hass,
-                      next => this._updateConfig({ user_visibility: next })
+                    ${GlobalLogicTab.render(
+                      this.config,
+                      this.hass as HomeAssistant,
+                      updates => this._updateConfig(updates),
+                      'card'
                     )}
                   </div>
                 `

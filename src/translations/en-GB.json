@@ -517,7 +517,9 @@
       "error_no_content": "Enter Text Content",
       "error_no_content_desc": "Add text in the General tab",
       "error_no_template": "Configure Template",
-      "error_no_template_desc": "Enter template code in the General tab"
+      "error_no_template_desc": "Enter template code in the General tab",
+      "link_underline": "Underline links",
+      "link_underline_desc": "Show an underline under links. The underline takes the colour you give the link text."
     },
     "markdown": {
       "content": {
@@ -1257,7 +1259,7 @@
     },
     "layout_extra": {
       "module_name": "Module Name:",
-      "module_name_placeholder": "Give this module a custom name to make it easier to identify in the editor.",
+      "module_name_placeholder": "e.g. Kitchen lights",
       "module_name_help": "Give this module a custom name to make it easier to identify in the editor."
     },
     "camera": {
@@ -1455,7 +1457,7 @@
         "desc": "Colour of the separator line."
       },
       "show_title": "Show Title",
-      "show_title_desc": "Add text in the middle of the separator line (e.g., ------ Text ------)",
+      "show_title_desc": "Add text and/or an icon on the separator line (e.g., ------ Text ------)",
       "show_title_toggle": {
         "enable_toggle_desc": "Enable the toggle above to configure title settings"
       },
@@ -1488,7 +1490,20 @@
         "desc": "Choose whether the separator runs horizontally or vertically.",
         "horizontal": "Horizontal",
         "vertical": "Vertical"
-      }
+      },
+      "title_icon": "Icon",
+      "title_icon_desc": "Optional icon next to the text. Leave the text empty for an icon-only separator.",
+      "title_icon_position": "Icon position",
+      "title_icon_position_before": "Before text",
+      "title_icon_position_after": "After text",
+      "title_icon_size": "Icon size",
+      "title_icon_color": "Icon colour",
+      "title_icon_color_desc": "Leave empty to use the text colour.",
+      "title_align": "Alignment",
+      "title_align_desc": "Where the text and icon sit on the line.",
+      "title_align_left": "Left",
+      "title_align_center": "Centre",
+      "title_align_right": "Right"
     },
     "design": {
       "copy": "Copy",
@@ -2840,8 +2855,8 @@
       "entity_section_desc": "Select the lock to control.",
       "entity": "Lock entity",
       "entity_field_desc": "Home Assistant lock entity",
-      "icon_override": "Icon override",
-      "icon_override_desc": "Optional mdi: icon; leave empty for default lock icons",
+      "icon_override": "Icon",
+      "icon_override_desc": "Search for an icon, or leave empty for the default lock icons. Used in every state unless you set an unlocked icon below.",
       "display_section": "Display",
       "display_desc": "Choose what to show on the card.",
       "show_title": "Show title",
@@ -2853,7 +2868,7 @@
       "show_open_button": "Show open button",
       "show_open_button_desc": "Show Open when the lock supports unlatch (OPEN feature)",
       "show_lock_buttons": "Show lock / unlock buttons",
-      "show_lock_buttons_desc": "Show the Lock and Unlock buttons (the compact layout shows one toggle button)",
+      "show_lock_buttons_desc": "Show the Lock and Unlock buttons (the compact layout shows one toggle button). Without them, set the tap action to Toggle to lock and unlock by tapping the card.",
       "show_open_button_unsupported": "This lock can't unlatch (no Open feature), so there's no Open button to show",
       "align_spread": "Spread out",
       "layout_section": "Layout",
@@ -2882,7 +2897,7 @@
       "action_open": "Open",
       "actions": "Lock actions",
       "unlock_style": "Unlock with",
-      "unlock_style_desc": "Slide replaces the Unlock and Open buttons with sliders, so a stray tap can't unlock. Hero and Standard layouts.",
+      "unlock_style_desc": "Slide replaces the Unlock and Open buttons with sliders, so a stray tap can't unlock. Pattern and PIN are checked in the card before unlocking.",
       "unlock_style_buttons": "Buttons",
       "unlock_style_slide": "Slide to unlock",
       "ask_code": "Ask for PIN code",
@@ -2902,7 +2917,32 @@
       "pattern_wrong": "Wrong pattern, try again",
       "pattern_saved": "Pattern saved. Draw again to change it.",
       "pattern_none": "No pattern yet, so unlocking uses the normal confirmation.",
-      "pattern_too_short": "Connect at least 4 dots"
+      "pattern_too_short": "Connect at least 4 dots",
+      "unlock_style_pin": "Enter a PIN",
+      "pin_title": "Unlock PIN",
+      "pin_desc": "The PIN that unlocks and opens this lock. It's checked in the card and saved in the dashboard, so it stops accidental unlocks but isn't a real password. It is not sent to the lock.",
+      "pin_field": "PIN",
+      "pin_saved": "PIN saved.",
+      "pin_none": "Enter at least 4 digits. Until then, unlocking uses the normal confirmation.",
+      "pin_prompt": "Enter your PIN",
+      "pin_wrong": "Wrong PIN, try again",
+      "name": "Name",
+      "name_desc": "Shown instead of the lock's name from Home Assistant. Leave empty to use that name.",
+      "icon_unlocked": "Unlocked icon",
+      "icon_unlocked_desc": "Optional icon while the lock is unlocked or open",
+      "colors_section": "Colors",
+      "colors_desc": "Colour the icon, ring, active button and status by state. Leave empty to use the theme colour.",
+      "locked_color": "Locked colour",
+      "unlocked_color": "Unlocked colour",
+      "card_color": "Card colour",
+      "card_color_desc": "Background of the lock card. Same setting as Background colour in the Design tab.",
+      "align_left": "Left",
+      "align_right": "Right",
+      "align_center": "Centre",
+      "behavior_section": "Behaviour",
+      "behavior_desc": "Safety options for lock actions.",
+      "require_confirmation": "Confirm unlock / open",
+      "require_confirmation_desc": "Ask for confirmation before unlocking or opening"
     },
     "text_input": {
       "entity": {
@@ -3336,7 +3376,10 @@
         "is_not": "is not",
         "condition": "Condition",
         "state": "State"
-      }
+      },
+      "scope_current_dashboard": "Current dashboard only",
+      "scope_dashboard_label": "Current dashboard:",
+      "scope_dashboard_info": "Navbar appears on every view of this dashboard, but not on your other dashboards."
     },
     "climate": {
       "error_no_entity": "No Climate Entity",
@@ -3357,7 +3400,10 @@
     },
     "calendar": {
       "error_no_calendars": "Configure Calendars",
-      "error_no_calendars_desc": "Select at least one calendar entity in the General tab"
+      "error_no_calendars_desc": "Select at least one calendar entity in the General tab",
+      "location_link": "Open location in",
+      "location_link_desc": "Make the location tappable so it opens in a maps app.",
+      "location_link_none": "Off"
     },
     "dynamic_list": {
       "error_waiting_ha": "Waiting for Home Assistant",
@@ -3392,6 +3438,12 @@
     "accordion": {
       "preview": {
         "title_fallback": "Accordion Title"
+      },
+      "title_icon": {
+        "section_title": "Title Icon",
+        "section_desc": "Optional icon shown next to the title. Leave empty for none.",
+        "icon": "Icon",
+        "color": "Title icon colour"
       }
     },
     "animated_forecast": {
@@ -3588,7 +3640,66 @@
       "no_content": "Add content in General tab",
       "generating": "Generating QR...",
       "cors_error": "Logo not loaded — the image server blocked cross-origin requests. Use a /local/ path or a CORS-enabled URL.",
-      "unified_cheatsheet": "Template cheatsheet"
+      "unified_cheatsheet": "Template cheatsheet",
+      "maps_provider": "Maps app",
+      "place_entity_desc": "Optional. Uses the entity location (person, tracker, zone). Leave empty to use the text below.",
+      "wifi_ssid": "Network name (SSID)",
+      "wifi_security": "Security",
+      "wifi_open": "None (open network)",
+      "wifi_password": "Password",
+      "wifi_hidden": "Hidden network",
+      "wifi_password_note": "The password is stored in the card config, so anyone who can edit the dashboard can read it.",
+      "location_entity": "Location from entity",
+      "location_query": "Address or coordinates",
+      "location_query_desc": "For example \"Alexanderplatz, Berlin\" or \"52.52,13.405\".",
+      "map_zoom": "Zoom (optional)",
+      "map_zoom_desc": "1 (world) to 21 (street). Works with coordinates.",
+      "route_origin_entity": "Start from entity",
+      "route_origin": "Start address",
+      "route_origin_desc": "Leave empty to start where the phone is.",
+      "route_destination_entity": "Destination from entity",
+      "route_destination": "Destination address",
+      "travel_mode": "Travel mode",
+      "travel_driving": "Driving",
+      "travel_walking": "Walking",
+      "travel_bicycling": "Cycling",
+      "travel_transit": "Public transport",
+      "start_navigation": "Start navigation straight away",
+      "phone": "Phone number",
+      "phone_intl_desc": "With country code, for example +49 151 2345678.",
+      "message": "Message (optional)",
+      "email": "Email address",
+      "email_subject": "Subject (optional)",
+      "contact_entity": "Name from person",
+      "contact_entity_desc": "Optional. Uses the person name. Fill in the fields below for the rest.",
+      "contact_name": "Name",
+      "contact_phone": "Phone",
+      "contact_email": "Email",
+      "contact_org": "Company (optional)",
+      "contact_address": "Address (optional)",
+      "contact_url": "Website (optional)",
+      "spotify_entity": "Media player",
+      "spotify_entity_desc": "Encodes what this Spotify player is playing right now. Needs the Spotify integration.",
+      "spotify_url": "Spotify link",
+      "spotify_url_desc": "Used when no player is set or nothing is playing. A share link or spotify: URI.",
+      "social_platform": "Platform",
+      "social_username": "Username",
+      "social_username_desc": "Your handle, or paste the full profile link.",
+      "encoded_preview": "Encodes:",
+      "fill_fields": "Fill in the fields above to make the code.",
+      "type_text": "Text / URL",
+      "type_wifi": "Wi-Fi",
+      "type_location": "Map location",
+      "type_route": "Map route",
+      "type_whatsapp": "WhatsApp chat",
+      "type_phone": "Phone call",
+      "type_sms": "Text message (SMS)",
+      "type_email": "Email",
+      "type_contact": "Contact card",
+      "type_spotify": "Spotify",
+      "type_social": "Social profile",
+      "content_type": "Type",
+      "content_type_desc": "What the code is for. Pick a type and fill in the fields; Ultra Card builds the code for you."
     },
     "area_summary": {
       "validate_area": "Select a Home Assistant area",
@@ -5302,6 +5413,7 @@
       "wizard_title": "UniFi setup"
     },
     "logic": {
+      "card_visibility_title": "Visibility",
       "hide_on_devices": "Hide on Devices",
       "hide_on_devices_desc": "Hide this element on specific screen sizes. Use this to create different layouts for different devices.",
       "user_visibility": {
@@ -6204,6 +6316,99 @@
       "weather_model_desc": "Auto picks the most detailed model for the map center.",
       "weather_model_auto": "Auto",
       "weather_layer_unavailable": "Weather layer unavailable"
+    },
+    "stack": {
+      "layer": {
+        "apply_all": "Use this anchor for all layers",
+        "apply_all_desc": "Each layer has its own anchor. This copies the anchor and offsets above to every layer."
+      }
+    },
+    "rss_feed": {
+      "accent_color": "Accent colour",
+      "accent_color_desc": "Used for the icon and the feed name.",
+      "default_title": "News",
+      "display_section": "Display",
+      "empty_desc": "Paste an RSS or Atom feed link in the General tab.",
+      "empty_title": "Add a feed",
+      "error_blocked": "Ultra Card Connect would not load this address. Only public http and https feeds work.",
+      "error_cors": "This site does not let the browser read its feed. Update Ultra Card Connect so it can load the feed for you.",
+      "error_http": "The site answered with an error ({status}).",
+      "error_network": "The feed could not be loaded.",
+      "error_parse": "That address is not an RSS, Atom or JSON feed.",
+      "error_redirects": "The site kept redirecting and never sent the feed. Update Ultra Card Connect, or try the feed address without extra options.",
+      "error_refused": "This site refuses to share its feed with Home Assistant ({status}). Look for another feed address on the site.",
+      "exclude_keywords": "Hide items with",
+      "exclude_keywords_desc": "Items that mention any of these words are hidden.",
+      "feeds": "Feed addresses",
+      "feeds_desc": "Paste an RSS, Atom or JSON Feed link and press Enter. Add several to merge them, newest first.",
+      "feeds_section": "Feeds",
+      "filter_section": "Filter",
+      "include_keywords": "Only show items with",
+      "include_keywords_desc": "Leave empty to show everything. Matches the title and summary.",
+      "layout": "Layout",
+      "layout_cards": "Cards",
+      "layout_compact": "Compact",
+      "layout_desc": "List with thumbnails, compact headlines only, or large image cards.",
+      "layout_list": "List",
+      "loading": "Loading feed…",
+      "max_age_days": "Hide items older than",
+      "max_age_days_desc": "0 shows items of any age.",
+      "max_items": "Number of items",
+      "max_items_desc": "How many headlines to show.",
+      "no_items": "No items match right now.",
+      "open_in": "Tapping a headline",
+      "open_new_tab": "Opens a new tab",
+      "open_none": "Does nothing",
+      "open_same_tab": "Opens here",
+      "refresh_minutes": "Refresh every",
+      "refresh_minutes_desc": "How often to check the feeds for new items.",
+      "refresh_now": "Refresh now",
+      "show_date": "Show time",
+      "show_date_desc": "How long ago each item was published.",
+      "show_image": "Show images",
+      "show_image_desc": "The picture the feed gives for each item, when it has one.",
+      "show_source": "Show feed name",
+      "show_source_desc": "Useful when you merge several feeds.",
+      "show_summary": "Show summary",
+      "show_title": "Show title",
+      "summary_lines": "Summary lines",
+      "summary_lines_desc": "Longer summaries are cut off after this many lines.",
+      "title": "Title",
+      "title_desc": "Leave empty to use the feed name.",
+      "unit_days": " days",
+      "layout_ticker": "Ticker",
+      "ticker_speed": "Ticker speed",
+      "ticker_speed_desc": "Seconds each headline takes to scroll past. Lower is faster.",
+      "unit_seconds": " s",
+      "tabs_section": "Feeds as tabs",
+      "feed_tabs": "Show a tab for each feed",
+      "feed_tabs_desc": "Switch between your feeds instead of seeing them merged.",
+      "feed_tabs_all": "Add an \"All\" tab",
+      "feed_tabs_all_desc": "First tab shows every feed merged, newest first.",
+      "feed_options_desc": "Give each feed its own name, icon and colour. Used on the tabs and as the feed name on items. Arrows change the order.",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "feed_label": "Name",
+      "feed_icon": "Icon",
+      "feed_color": "Colour",
+      "tab_all": "All",
+      "ticker_unused": "The Ticker layout shows only headlines, so these options do nothing there."
+    },
+    "alarm_panel": {
+      "mode_desc_auto": "Follows what the alarm supports",
+      "mode_desc_supported": "Your alarm supports this mode",
+      "mode_desc_unsupported": "Your alarm does not report this mode; turn on to show it anyway"
+    },
+    "entity_variable": {
+      "linked": "Using variable",
+      "missing": "Variable not found:",
+      "unlink": "Unlink",
+      "use": "Use a variable"
+    },
+    "sections": {
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all",
+      "edited": "Changed from default"
     }
   },
   "hub": {

@@ -344,7 +344,11 @@ export class UltraTextModule extends BaseUltraModule {
 
     const textElement =
       !textModule.unified_template_mode && effectiveContent
-        ? html`<span class="rich-text-content" style=${textFgCss}
+        ? html`<span
+            class="rich-text-content ${textModule.link_underline === false
+              ? ''
+              : 'uc-link-underline'}"
+            style=${textFgCss}
             >${unsafeHTML(
               sanitizeRichTextHtml(effectiveContent, {
                 trusted: isLocallyAuthoredConfig(config),
@@ -362,11 +366,12 @@ export class UltraTextModule extends BaseUltraModule {
       content = textElement;
     }
 
-    // Wrap in link or add click handlers if provided
+    // Wrap in link or add click handlers if provided. The wrapper uses display: contents so
+    // the icon stays beside the text in the preview's flex row (larrysansan, Nov 1).
     const element = this.hasActiveLink(textModule)
       ? html`<div
           class="${GlobalActionsTab.getClickableClass(textModule)}"
-          style="${GlobalActionsTab.getClickableStyle(textModule)}"
+          style="display: contents; cursor: pointer; ${GlobalActionsTab.getClickableStyle(textModule)}"
           @click=${(e: Event) => this.handleClick(e, textModule, hass, config)}
           @dblclick=${(e: Event) => this.handleDoubleClick(e, textModule, hass)}
           @mousedown=${(e: Event) => this.handleMouseDown(e, textModule, hass)}
@@ -857,6 +862,21 @@ export class UltraTextModule extends BaseUltraModule {
 
       .rich-text-content a {
         color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .rich-text-content.uc-link-underline a {
+        text-decoration: underline;
+      }
+
+      /* A link recoloured in the editor wraps its text in a coloured span. Draw
+         the underline on that span so it takes the chosen colour instead of the
+         link's accent colour. */
+      .rich-text-content.uc-link-underline a:has(span[style*='color']) {
+        text-decoration: none;
+      }
+
+      .rich-text-content.uc-link-underline a span[style*='color'] {
         text-decoration: underline;
       }
 
