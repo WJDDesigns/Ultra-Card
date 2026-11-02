@@ -84,7 +84,7 @@
     "@tiptap/extension-underline": "3.31.4",
     "@tiptap/pm": "3.31.4",
     "@tiptap/starter-kit": "3.31.4",
-    "dompurify": "3.4.15",
+    "dompurify": "3.4.17",
     "js-yaml": "4.3.1",
     "leaflet": "1.9.4",
     "lit": "^3.3.3",
