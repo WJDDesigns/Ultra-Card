@@ -6409,6 +6409,31 @@
       "expand_all": "Desplega-ho tot",
       "collapse_all": "Plega-ho tot",
       "edited": "Canviat respecte al valor per defecte"
+    },
+    "state_color": {
+      "by_state": "Color segons l'estat d'una entitat",
+      "summary": "Segons l'estat",
+      "rule_one": "regla",
+      "rule_many": "regles",
+      "use_single": "Fes servir un sol color",
+      "hint": "La primera regla que coincideixi defineix el color. Si cap no coincideix, es fa servir el color de sota.",
+      "rule": "Regla",
+      "active_now": "Activa ara",
+      "move_up": "Puja",
+      "move_down": "Baixa",
+      "remove_rule": "Elimina la regla",
+      "use_color": "Fes servir aquest color",
+      "when": "Quan",
+      "match_every": "totes es compleixen",
+      "match_any": "alguna es compleix",
+      "add_condition": "Afegeix una condició",
+      "remove_condition": "Elimina la condició",
+      "type_state": "Estat de l'entitat",
+      "type_attribute": "Atribut de l'entitat",
+      "type_template": "Plantilla",
+      "attribute": "Atribut",
+      "add_rule": "Afegeix una regla",
+      "otherwise": "Si no, fes servir"
     }
   },
   "hub": {

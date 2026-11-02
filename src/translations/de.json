@@ -6409,6 +6409,31 @@
       "expand_all": "Alle aufklappen",
       "collapse_all": "Alle zuklappen",
       "edited": "Vom Standard geändert"
+    },
+    "state_color": {
+      "by_state": "Farbe nach Entitätszustand",
+      "summary": "Nach Zustand",
+      "rule_one": "Regel",
+      "rule_many": "Regeln",
+      "use_single": "Eine feste Farbe verwenden",
+      "hint": "Die erste passende Regel bestimmt die Farbe. Passt keine, wird die Farbe unten verwendet.",
+      "rule": "Regel",
+      "active_now": "Gerade aktiv",
+      "move_up": "Nach oben",
+      "move_down": "Nach unten",
+      "remove_rule": "Regel entfernen",
+      "use_color": "Diese Farbe verwenden",
+      "when": "Wenn",
+      "match_every": "alle davon zutreffen",
+      "match_any": "eine davon zutrifft",
+      "add_condition": "Bedingung hinzufügen",
+      "remove_condition": "Bedingung entfernen",
+      "type_state": "Entitätszustand",
+      "type_attribute": "Entitätsattribut",
+      "type_template": "Template",
+      "attribute": "Attribut",
+      "add_rule": "Regel hinzufügen",
+      "otherwise": "Sonst verwenden"
     }
   },
   "hub": {

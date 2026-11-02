@@ -6,6 +6,9 @@ import { FavoriteColor } from '../types';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { isGradient } from '../utils/uc-color-utils';
 import { localize, uiLanguage } from '../localize/localize';
+import { isStateColor, toStateColor, resolveStateColor } from '../utils/uc-state-color';
+import type { StateColorValue } from '../utils/uc-state-color';
+import './uc-state-color-editor';
 
 export interface ColorChangedEvent {
   detail: {
@@ -130,7 +133,8 @@ const GRADIENT_PRESETS = [
 @customElement('ultra-color-picker')
 export class UltraColorPicker extends LitElement {
   @property({ attribute: false }) public hass: HomeAssistant | undefined;
-  @property() public value: string | undefined;
+  /** A colour string, or a "colour by state" rule object (see uc-state-color.ts). */
+  @property({ attribute: false }) public value: string | StateColorValue | undefined;
   @property() public label: string | undefined;
   @property() public defaultValue: string | undefined;
   @property({ type: Boolean }) public disabled = false;
@@ -139,6 +143,8 @@ export class UltraColorPicker extends LitElement {
    * is painted with `color`, which cannot be a gradient).
    */
   @property({ type: Boolean, attribute: 'no-gradients' }) public noGradients = false;
+  /** Hide the "By state" option (used by the rule editor's own pickers). */
+  @property({ type: Boolean, attribute: 'no-state' }) public noState = false;
 
   @state() private _currentValue: string | undefined = undefined;
   @state() private _showPalette = false;
@@ -165,11 +171,18 @@ export class UltraColorPicker extends LitElement {
     });
   }
 
+  /** The plain colour the palette works on: a state colour's fallback, else the value. */
+  private get _stringValue(): string | undefined {
+    const v = this.value;
+    if (isStateColor(v)) return v.fallback || undefined;
+    return typeof v === 'string' ? v : undefined;
+  }
+
   protected override firstUpdated(): void {
-    this._currentValue = this.value;
-    this._textInputValue = this.value;
+    this._currentValue = this._stringValue;
+    this._textInputValue = this._stringValue;
     // Extract initial transparency from the value
-    this._transparency = this._extractTransparency(this.value);
+    this._transparency = this._extractTransparency(this._stringValue);
   }
 
   override disconnectedCallback(): void {
@@ -209,10 +222,10 @@ export class UltraColorPicker extends LitElement {
       ucFavoriteColorsService.setHass(this.hass);
     }
     if (changedProps.has('value')) {
-      this._currentValue = this.value;
-      this._textInputValue = this.value;
+      this._currentValue = this._stringValue;
+      this._textInputValue = this._stringValue;
       // Extract transparency from the new value
-      this._transparency = this._extractTransparency(this.value);
+      this._transparency = this._extractTransparency(this._stringValue);
     }
   }
 
@@ -224,9 +237,9 @@ export class UltraColorPicker extends LitElement {
 
     // When opening the palette, ensure transparency is extracted from current value
     if (!this._showPalette) {
-      this._currentValue = this.value;
-      this._textInputValue = this.value;
-      this._transparency = this._extractTransparency(this.value);
+      this._currentValue = this._stringValue;
+      this._textInputValue = this._stringValue;
+      this._transparency = this._extractTransparency(this._stringValue);
     }
 
     this._showPalette = !this._showPalette;
@@ -533,7 +546,7 @@ export class UltraColorPicker extends LitElement {
   }
 
   private _addToFavorites(): void {
-    const currentColor = this._currentValue || this.value;
+    const currentColor = this._currentValue || this._stringValue;
     if (!currentColor || ucFavoriteColorsService.hasColor(currentColor)) {
       return;
     }
@@ -988,7 +1001,71 @@ export class UltraColorPicker extends LitElement {
     this.requestUpdate();
   }
 
+  private _emitValue(value: string | StateColorValue): void {
+    this.dispatchEvent(
+      new CustomEvent('value-changed', { detail: { value }, bubbles: true, composed: true })
+    );
+  }
+
+  private _switchToState(event: Event): void {
+    event.stopPropagation();
+    if (this.disabled) return;
+    this._showPalette = false;
+    this._emitValue(toStateColor(this._stringValue ?? this.defaultValue ?? ''));
+  }
+
+  private _switchToSingle(event: Event): void {
+    event.stopPropagation();
+    if (this.disabled) return;
+    this._emitValue(this._stringValue || '');
+  }
+
+  private _renderStateMode(value: StateColorValue): TemplateResult {
+    const lang = uiLanguage();
+    const now = resolveStateColor(value, this.hass) || this.defaultValue || 'transparent';
+    const count = (value.rules || []).length;
+    return html`
+      <div class="ultra-color-picker-container">
+        ${this.label ? html`<label class="color-label">${this.label}</label>` : ''}
+        <div class="color-picker-wrapper">
+          <div class="color-input-field state-mode ${this.disabled ? 'disabled' : ''}">
+            <span class="state-swatch" style="background: ${now};"></span>
+            <ha-icon icon="mdi:state-machine" class="state-icon"></ha-icon>
+            <span class="color-value"
+              >${localize('editor.state_color.summary', lang, 'By state')} ·
+              ${count}
+              ${count === 1
+                ? localize('editor.state_color.rule_one', lang, 'rule')
+                : localize('editor.state_color.rule_many', lang, 'rules')}</span
+            >
+          </div>
+          <div class="reset-button-wrapper">
+            <ha-icon-button
+              class="reset-button"
+              .disabled=${this.disabled}
+              @click=${this._switchToSingle}
+              .title=${localize('editor.state_color.use_single', lang, 'Use a single color')}
+            >
+              <ha-icon icon="mdi:palette"></ha-icon>
+            </ha-icon-button>
+          </div>
+        </div>
+        <uc-state-color-editor
+          .hass=${this.hass}
+          .value=${value}
+          ?no-gradients=${this.noGradients}
+          @value-changed=${(e: CustomEvent) => {
+            // Re-fire from the picker itself so editors see one event source.
+            e.stopPropagation();
+            this._emitValue(e.detail.value);
+          }}
+        ></uc-state-color-editor>
+      </div>
+    `;
+  }
+
   protected override render(): TemplateResult {
+    if (isStateColor(this.value)) return this._renderStateMode(this.value);
     const displayValue = this._getDisplayValue();
     const nativeInputColor = this._getColorForNativeInput();
     const gradientActive = isGradient(displayValue);
@@ -1046,6 +1123,18 @@ export class UltraColorPicker extends LitElement {
         ${this._showPalette
           ? html`
               <div class="color-palette-accordion">
+                ${this.noState
+                  ? ''
+                  : html`<button class="state-mode-btn" type="button" @click=${this._switchToState}>
+                      <ha-icon icon="mdi:state-machine"></ha-icon>
+                      <span
+                        >${localize(
+                          'editor.state_color.by_state',
+                          uiLanguage(),
+                          'Color by entity state'
+                        )}</span
+                      >
+                    </button>`}
                 <!-- Text Input Section -->
                 <div class="text-input-section">
                   <div class="input-header">
@@ -1351,6 +1440,53 @@ export class UltraColorPicker extends LitElement {
         color: var(--secondary-text-color);
         transition: transform 0.2s ease;
         margin-left: 8px;
+      }
+
+      .color-input-field.state-mode {
+        justify-content: flex-start;
+        gap: 8px;
+        cursor: default;
+        font-family: inherit;
+      }
+
+      .color-input-field.state-mode:hover {
+        background: var(--card-background-color, #fff);
+        border-color: var(--divider-color);
+      }
+
+      .state-swatch {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid var(--divider-color);
+        flex: 0 0 18px;
+      }
+
+      .state-icon {
+        --mdc-icon-size: 18px;
+        color: var(--primary-color);
+      }
+
+      .state-mode-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 12px;
+        padding: 8px 10px;
+        border: 1px dashed var(--primary-color);
+        border-radius: 6px;
+        background: none;
+        color: var(--primary-color);
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        --mdc-icon-size: 18px;
+      }
+
+      .state-mode-btn:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
       }
 
       .reset-button-wrapper {

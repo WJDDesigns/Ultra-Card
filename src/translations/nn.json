@@ -6409,6 +6409,31 @@
       "expand_all": "Utvid alle",
       "collapse_all": "Fald saman alle",
       "edited": "Endra frå standard"
+    },
+    "state_color": {
+      "by_state": "Farge etter tilstanden til eininga",
+      "summary": "Etter tilstand",
+      "rule_one": "regel",
+      "rule_many": "reglar",
+      "use_single": "Bruk éin farge",
+      "hint": "Den første regelen som stemmer avgjer fargen. Stemmer ingen, blir fargen under brukt.",
+      "rule": "Regel",
+      "active_now": "Aktiv no",
+      "move_up": "Flytt opp",
+      "move_down": "Flytt ned",
+      "remove_rule": "Fjern regel",
+      "use_color": "Bruk denne fargen",
+      "when": "Når",
+      "match_every": "alle er sanne",
+      "match_any": "éin er sann",
+      "add_condition": "Legg til vilkår",
+      "remove_condition": "Fjern vilkår",
+      "type_state": "Tilstanden til eininga",
+      "type_attribute": "Attributtet til eininga",
+      "type_template": "Mal",
+      "attribute": "Attributt",
+      "add_rule": "Legg til regel",
+      "otherwise": "Elles bruk"
     }
   },
   "hub": {

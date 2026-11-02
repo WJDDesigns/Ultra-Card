@@ -1,3 +1,4 @@
+import { resolveStateColorsInConfig } from '../utils/uc-state-color';
 import { TemplateResult, html } from 'lit';
 import type { HomeAssistant } from '../ha/types';
 import { CardModule, UltraCardConfig } from './../types';
@@ -102,6 +103,7 @@ export function renderChildModulePreview(
     return html``;
   }
 
+  child = resolveStateColorsInConfig(child, hass);
   const moduleToRender = zeroChildMargins(child);
   const registry = getModuleRegistry();
   const moduleHandler = registry.getModule(moduleToRender.type);

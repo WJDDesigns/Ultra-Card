@@ -6409,6 +6409,31 @@
       "expand_all": "Expandera alla",
       "collapse_all": "Fäll ihop alla",
       "edited": "Ändrad från standard"
+    },
+    "state_color": {
+      "by_state": "Färg efter entitetens tillstånd",
+      "summary": "Efter tillstånd",
+      "rule_one": "regel",
+      "rule_many": "regler",
+      "use_single": "Använd en enda färg",
+      "hint": "Den första regeln som stämmer bestämmer färgen. Stämmer ingen används färgen nedan.",
+      "rule": "Regel",
+      "active_now": "Aktiv nu",
+      "move_up": "Flytta upp",
+      "move_down": "Flytta ned",
+      "remove_rule": "Ta bort regel",
+      "use_color": "Använd den här färgen",
+      "when": "När",
+      "match_every": "alla stämmer",
+      "match_any": "någon stämmer",
+      "add_condition": "Lägg till villkor",
+      "remove_condition": "Ta bort villkor",
+      "type_state": "Entitetens tillstånd",
+      "type_attribute": "Entitetens attribut",
+      "type_template": "Mall",
+      "attribute": "Attribut",
+      "add_rule": "Lägg till regel",
+      "otherwise": "Annars använd"
     }
   },
   "hub": {

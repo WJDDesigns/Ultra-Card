@@ -6409,6 +6409,31 @@
       "expand_all": "Espandi tutto",
       "collapse_all": "Comprimi tutto",
       "edited": "Modificato rispetto al predefinito"
+    },
+    "state_color": {
+      "by_state": "Colore in base allo stato di un'entità",
+      "summary": "Per stato",
+      "rule_one": "regola",
+      "rule_many": "regole",
+      "use_single": "Usa un solo colore",
+      "hint": "La prima regola che corrisponde imposta il colore. Se nessuna corrisponde, si usa il colore qui sotto.",
+      "rule": "Regola",
+      "active_now": "Attiva ora",
+      "move_up": "Sposta su",
+      "move_down": "Sposta giù",
+      "remove_rule": "Rimuovi regola",
+      "use_color": "Usa questo colore",
+      "when": "Quando",
+      "match_every": "sono tutte vere",
+      "match_any": "una è vera",
+      "add_condition": "Aggiungi condizione",
+      "remove_condition": "Rimuovi condizione",
+      "type_state": "Stato dell'entità",
+      "type_attribute": "Attributo dell'entità",
+      "type_template": "Template",
+      "attribute": "Attributo",
+      "add_rule": "Aggiungi regola",
+      "otherwise": "Altrimenti usa"
     }
   },
   "hub": {

@@ -1296,6 +1296,7 @@ export class UcLightColorPicker extends LitElement {
                     <ultra-color-picker
                       .hass=${this.hass}
                       .value=${currentHex}
+                      no-state
                       .disabled=${!this.enable_color}
                       @value-changed=${this.handleUltraColorPickerChange}
                     ></ultra-color-picker>

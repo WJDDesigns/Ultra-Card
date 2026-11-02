@@ -6409,6 +6409,31 @@
       "expand_all": "Fold alle ud",
       "collapse_all": "Fold alle sammen",
       "edited": "Ændret fra standard"
+    },
+    "state_color": {
+      "by_state": "Farve efter enhedens tilstand",
+      "summary": "Efter tilstand",
+      "rule_one": "regel",
+      "rule_many": "regler",
+      "use_single": "Brug én farve",
+      "hint": "Den første regel, der passer, bestemmer farven. Passer ingen, bruges farven nedenfor.",
+      "rule": "Regel",
+      "active_now": "Aktiv nu",
+      "move_up": "Flyt op",
+      "move_down": "Flyt ned",
+      "remove_rule": "Fjern regel",
+      "use_color": "Brug denne farve",
+      "when": "Når",
+      "match_every": "alle er sande",
+      "match_any": "én er sand",
+      "add_condition": "Tilføj betingelse",
+      "remove_condition": "Fjern betingelse",
+      "type_state": "Enhedens tilstand",
+      "type_attribute": "Enhedens attribut",
+      "type_template": "Skabelon",
+      "attribute": "Attribut",
+      "add_rule": "Tilføj regel",
+      "otherwise": "Ellers brug"
     }
   },
   "hub": {
