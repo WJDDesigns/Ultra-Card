@@ -1,5 +1,16 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta1
+
+The first 3.14.4 beta lets any colour follow the state of your entities, and makes long module settings easier to find your way around. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Colour by entity state** - Every colour field can now change with your entities. Open a colour's dropdown and pick "Color by entity state", then add rules such as "turn yellow when a light is on" or "turn red while the radiator is heating", plus a colour to use otherwise. A rule can check an entity's state, one of its attributes or a template, and can need all or any of several entities. The first rule that matches wins, and the editor marks the one that's active right now. It works for module colours, Design tab colours, rows, columns and the card background, with no templates needed. Thanks to the community member who suggested it
+- **Collapsible settings sections** - Long module settings are now split into sections you can fold away. The first section starts open, the rest are collapsed, and each module remembers what you left open. A collapsed section shows a short summary of its settings and a dot when something in it differs from the default. Expand all and Collapse all buttons sit at the top. Thanks to the community member who suggested it
+
 ## Version 3.14.3
 
 Stable 3.14.3 brings everything from the nine 3.14.3 betas into one release. There's a new free RSS Feed module with tabs and a news ticker, QR codes for Wi-Fi, contacts, maps and more, and the Lock module can now be unlocked with a PIN you set or by tapping the card. Cards no longer go blank when a module has no entity yet, the navigation bar is back straight after a reload, Alarmo arms again, and a long list of Discord reports is fixed. Thanks to everyone who tested the betas, and especially to larrysansan for most of the ideas and bug reports in this release.

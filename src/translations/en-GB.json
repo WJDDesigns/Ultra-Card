@@ -6404,6 +6404,36 @@
       "missing": "Variable not found:",
       "unlink": "Unlink",
       "use": "Use a variable"
+    },
+    "sections": {
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all",
+      "edited": "Changed from default"
+    },
+    "state_color": {
+      "by_state": "Colour by entity state",
+      "summary": "By state",
+      "rule_one": "rule",
+      "rule_many": "rules",
+      "use_single": "Use a single colour",
+      "hint": "The first rule that matches sets the colour. If none match, the colour below is used.",
+      "rule": "Rule",
+      "active_now": "Active now",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "remove_rule": "Remove rule",
+      "use_color": "Use this colour",
+      "when": "When",
+      "match_every": "all of these are true",
+      "match_any": "any of these is true",
+      "add_condition": "Add condition",
+      "remove_condition": "Remove condition",
+      "type_state": "Entity state",
+      "type_attribute": "Entity attribute",
+      "type_template": "Template",
+      "attribute": "Attribute",
+      "add_rule": "Add rule",
+      "otherwise": "Otherwise use"
     }
   },
   "hub": {

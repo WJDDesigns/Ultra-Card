@@ -6404,6 +6404,36 @@
       "missing": "Proměnná nenalezena:",
       "unlink": "Odpojit",
       "use": "Použít proměnnou"
+    },
+    "sections": {
+      "expand_all": "Rozbalit vše",
+      "collapse_all": "Sbalit vše",
+      "edited": "Změněno oproti výchozímu"
+    },
+    "state_color": {
+      "by_state": "Barva podle stavu entity",
+      "summary": "Podle stavu",
+      "rule_one": "pravidlo",
+      "rule_many": "pravidla",
+      "use_single": "Použít jednu barvu",
+      "hint": "Barvu určí první pravidlo, které platí. Pokud neplatí žádné, použije se barva níže.",
+      "rule": "Pravidlo",
+      "active_now": "Právě aktivní",
+      "move_up": "Posunout nahoru",
+      "move_down": "Posunout dolů",
+      "remove_rule": "Odebrat pravidlo",
+      "use_color": "Použít tuto barvu",
+      "when": "Když",
+      "match_every": "platí všechny",
+      "match_any": "platí kterákoli",
+      "add_condition": "Přidat podmínku",
+      "remove_condition": "Odebrat podmínku",
+      "type_state": "Stav entity",
+      "type_attribute": "Atribut entity",
+      "type_template": "Šablona",
+      "attribute": "Atribut",
+      "add_rule": "Přidat pravidlo",
+      "otherwise": "Jinak použít"
     }
   },
   "hub": {

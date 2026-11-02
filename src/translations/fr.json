@@ -6404,6 +6404,36 @@
       "missing": "Variable introuvable :",
       "unlink": "Dissocier",
       "use": "Utiliser une variable"
+    },
+    "sections": {
+      "expand_all": "Tout déplier",
+      "collapse_all": "Tout replier",
+      "edited": "Modifié par rapport à la valeur par défaut"
+    },
+    "state_color": {
+      "by_state": "Couleur selon l'état d'une entité",
+      "summary": "Selon l'état",
+      "rule_one": "règle",
+      "rule_many": "règles",
+      "use_single": "Utiliser une seule couleur",
+      "hint": "La première règle qui correspond définit la couleur. Si aucune ne correspond, la couleur ci-dessous est utilisée.",
+      "rule": "Règle",
+      "active_now": "Active",
+      "move_up": "Monter",
+      "move_down": "Descendre",
+      "remove_rule": "Supprimer la règle",
+      "use_color": "Utiliser cette couleur",
+      "when": "Quand",
+      "match_every": "toutes sont vraies",
+      "match_any": "l'une est vraie",
+      "add_condition": "Ajouter une condition",
+      "remove_condition": "Supprimer la condition",
+      "type_state": "État de l'entité",
+      "type_attribute": "Attribut de l'entité",
+      "type_template": "Modèle",
+      "attribute": "Attribut",
+      "add_rule": "Ajouter une règle",
+      "otherwise": "Sinon utiliser"
     }
   },
   "hub": {

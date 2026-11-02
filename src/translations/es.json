@@ -6404,6 +6404,36 @@
       "missing": "Variable no encontrada:",
       "unlink": "Desvincular",
       "use": "Usar una variable"
+    },
+    "sections": {
+      "expand_all": "Expandir todo",
+      "collapse_all": "Contraer todo",
+      "edited": "Cambiado respecto al valor predeterminado"
+    },
+    "state_color": {
+      "by_state": "Color según el estado de una entidad",
+      "summary": "Según estado",
+      "rule_one": "regla",
+      "rule_many": "reglas",
+      "use_single": "Usar un solo color",
+      "hint": "La primera regla que coincida define el color. Si ninguna coincide, se usa el color de abajo.",
+      "rule": "Regla",
+      "active_now": "Activa ahora",
+      "move_up": "Subir",
+      "move_down": "Bajar",
+      "remove_rule": "Eliminar regla",
+      "use_color": "Usar este color",
+      "when": "Cuando",
+      "match_every": "todas se cumplen",
+      "match_any": "alguna se cumple",
+      "add_condition": "Añadir condición",
+      "remove_condition": "Eliminar condición",
+      "type_state": "Estado de la entidad",
+      "type_attribute": "Atributo de la entidad",
+      "type_template": "Plantilla",
+      "attribute": "Atributo",
+      "add_rule": "Añadir regla",
+      "otherwise": "Si no, usar"
     }
   },
   "hub": {

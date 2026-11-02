@@ -721,8 +721,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                 });
               },
             },
-          ]
-        )}
+          ],
+          html`
 
         ${this.renderSliderField(
           localize('editor.navigation.min_width', lang, 'Min Width'),
@@ -766,6 +766,7 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             }),
           'px'
+        )}`
         )}
 
         <!-- Mobile Configuration Section -->
@@ -917,8 +918,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                 });
               },
             },
-          ]
-        )}
+          ],
+          html`
 
         <!-- Mobile Offset Slider -->
         ${this.renderSliderField(
@@ -960,6 +961,7 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             }),
           'px'
+        )}`
         )}
 
         <!-- Collapse & Auto-Hide Section -->

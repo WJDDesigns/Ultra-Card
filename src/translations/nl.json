@@ -6404,6 +6404,36 @@
       "missing": "Variabele niet gevonden:",
       "unlink": "Ontkoppelen",
       "use": "Een variabele gebruiken"
+    },
+    "sections": {
+      "expand_all": "Alles uitklappen",
+      "collapse_all": "Alles inklappen",
+      "edited": "Gewijzigd ten opzichte van standaard"
+    },
+    "state_color": {
+      "by_state": "Kleur op basis van entiteitsstatus",
+      "summary": "Op status",
+      "rule_one": "regel",
+      "rule_many": "regels",
+      "use_single": "Eén vaste kleur gebruiken",
+      "hint": "De eerste regel die klopt bepaalt de kleur. Klopt er geen, dan wordt de kleur hieronder gebruikt.",
+      "rule": "Regel",
+      "active_now": "Nu actief",
+      "move_up": "Omhoog",
+      "move_down": "Omlaag",
+      "remove_rule": "Regel verwijderen",
+      "use_color": "Deze kleur gebruiken",
+      "when": "Als",
+      "match_every": "ze allemaal waar zijn",
+      "match_any": "er één waar is",
+      "add_condition": "Voorwaarde toevoegen",
+      "remove_condition": "Voorwaarde verwijderen",
+      "type_state": "Entiteitsstatus",
+      "type_attribute": "Entiteitsattribuut",
+      "type_template": "Template",
+      "attribute": "Attribuut",
+      "add_rule": "Regel toevoegen",
+      "otherwise": "Anders gebruiken"
     }
   },
   "hub": {

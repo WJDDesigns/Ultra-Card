@@ -37,6 +37,7 @@ import { collectConfigEntityIds } from '../utils/uc-config-entity-ids';
 import { UcMaxWaitDebounce } from '../utils/uc-max-wait-debounce';
 import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
 import { logicService } from '../services/logic-service';
+import { hasStateColors, resolveStateColorsInConfig } from '../utils/uc-state-color';
 import { TemplateService } from '../services/template-service';
 import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
@@ -1807,7 +1808,10 @@ export class UltraCard extends LitElement {
 
     // Only re-register service modules on hass change when config hasn't already triggered it
     if (changedProperties.has('hass') && !changedProperties.has('config')) {
-      if (this._lastRegisteredConfigVersion !== this._configVersion) {
+      if (
+        this._lastRegisteredConfigVersion !== this._configVersion ||
+        this._overlayModulesHaveStateColors()
+      ) {
         this._registerDynamicWeatherModules();
         this._registerLivingCanvasModules();
         this._registerBackgroundModules();
@@ -2249,6 +2253,7 @@ export class UltraCard extends LitElement {
   }
 
   private _renderRow(row: CardRow, ctx: RenderContext, rowIndex: number): TemplateResult {
+    row = resolveStateColorsInConfig(row, this.hass);
     // logicService already has hass from the card's hass setter
 
     // Check row display conditions (handles both template_mode and regular conditions)
@@ -2562,6 +2567,7 @@ export class UltraCard extends LitElement {
   }
 
   private _renderColumn(column: CardColumn, ctx: RenderContext, colIndex: number): TemplateResult {
+    column = resolveStateColorsInConfig(column, this.hass);
     // Check column display conditions (handles both template_mode and regular conditions)
     const shouldShow = logicService.evaluateColumnVisibility(column, this.config);
 
@@ -2856,6 +2862,8 @@ export class UltraCard extends LitElement {
   }
 
   private _renderModule(module: CardModule, ctx: RenderContext): TemplateResult {
+    // "Colour by state" values become plain colours before anything reads them.
+    module = resolveStateColorsInConfig(module, this.hass);
     // Check if this is a pro module and if user has access
     const isProModule = this._isProModule(module);
     const hasProAccess = this._hasProAccess();
@@ -3981,6 +3989,17 @@ export class UltraCard extends LitElement {
     );
   }
 
+  /** Overlay modules with "colour by state" values must re-register as states change. */
+  private _overlayModulesHaveStateColors(): boolean {
+    const cache = this._getConfigCache();
+    return [
+      cache.dynamicWeatherModules,
+      cache.livingCanvasModules,
+      cache.backgroundModules,
+      cache.navigationModules,
+    ].some(list => list.some(({ module }) => hasStateColors(module)));
+  }
+
   /**
    * Register all video background modules with the video background service
    */
@@ -3993,7 +4012,7 @@ export class UltraCard extends LitElement {
       .then(svc => {
         if (!this.isConnected || !this.config || !this.hass || !this._instanceId) return;
         for (const { id, module } of this._getConfigCache().videoBgModules) {
-          svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+          svc.registerModule(this._instanceId, id, resolveStateColorsInConfig(module, this.hass) as any, this.hass, this.config, this as any);
         }
       })
       // createLazyService already reports chunk-load failures.
@@ -4032,7 +4051,7 @@ export class UltraCard extends LitElement {
           svc.registerModule(
             this._instanceId,
             id,
-            module as any,
+            resolveStateColorsInConfig(module, this.hass) as any,
             this.hass,
             this.config,
             this as any,
@@ -4072,7 +4091,7 @@ export class UltraCard extends LitElement {
           svc.registerModule(
             this._instanceId,
             id,
-            module as any,
+            resolveStateColorsInConfig(module, this.hass) as any,
             this.hass,
             this.config,
             this as any,
@@ -4105,7 +4124,7 @@ export class UltraCard extends LitElement {
       .then(svc => {
         if (!this.isConnected || !this.config || !this.hass || !this._instanceId) return;
         for (const { id, module } of this._getConfigCache().backgroundModules) {
-          svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+          svc.registerModule(this._instanceId, id, resolveStateColorsInConfig(module, this.hass) as any, this.hass, this.config, this as any);
         }
       })
       // createLazyService already reports chunk-load failures.
@@ -4141,7 +4160,7 @@ export class UltraCard extends LitElement {
         // card element (a non-forced unregister keeps it), same as before laziness.
         if (!this.config || !this.hass || !this._instanceId) return;
         for (const { id, module } of this._getConfigCache().navigationModules) {
-          svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+          svc.registerModule(this._instanceId, id, resolveStateColorsInConfig(module, this.hass) as any, this.hass, this.config, this as any);
           // Remember this dashboard so the navbar comes back after a reload on another view.
           if (!this._isEditorPreviewCard && !this._isCardPickerPreview) {
             rememberNavigationDashboard((module as { nav_scope?: 'current_view' | 'current_dashboard' | 'all_views' }).nav_scope);

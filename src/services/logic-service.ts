@@ -45,6 +45,11 @@ export class LogicService {
     this._cardConfig = config;
   }
 
+  /** Card whose `$variables` conditions currently resolve against. */
+  public getCardConfig(): UltraCardConfig | undefined {
+    return this._cardConfig;
+  }
+
   /** Condition entity with a `$variable` swapped for its entity id. */
   private _conditionEntity(entity: string): string {
     if (!entity.startsWith('$')) return entity;
