@@ -6404,6 +6404,31 @@
       "missing": "Nie znaleziono zmiennej:",
       "unlink": "Odłącz",
       "use": "Użyj zmiennej"
+    },
+    "state_color": {
+      "by_state": "Kolor według stanu encji",
+      "summary": "Według stanu",
+      "rule_one": "reguła",
+      "rule_many": "reguły",
+      "use_single": "Użyj jednego koloru",
+      "hint": "Pierwsza pasująca reguła ustawia kolor. Jeśli żadna nie pasuje, używany jest kolor poniżej.",
+      "rule": "Reguła",
+      "active_now": "Aktywna teraz",
+      "move_up": "W górę",
+      "move_down": "W dół",
+      "remove_rule": "Usuń regułę",
+      "use_color": "Użyj tego koloru",
+      "when": "Gdy",
+      "match_every": "wszystkie są spełnione",
+      "match_any": "dowolny jest spełniony",
+      "add_condition": "Dodaj warunek",
+      "remove_condition": "Usuń warunek",
+      "type_state": "Stan encji",
+      "type_attribute": "Atrybut encji",
+      "type_template": "Szablon",
+      "attribute": "Atrybut",
+      "add_rule": "Dodaj regułę",
+      "otherwise": "W przeciwnym razie"
     }
   },
   "hub": {

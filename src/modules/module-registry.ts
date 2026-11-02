@@ -3,9 +3,28 @@ import { CORE_MANIFESTS } from './module-manifest-data';
 import { coreLoaders } from './module-loaders';
 import { CardModule } from '../types';
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
+import { resolveStateColorsInConfig } from '../utils/uc-state-color';
 
 /** Sync metadata-only view for selector/editor; supports future async implementation loading. */
 export type ModuleManifest = import('./module-manifest-data').ModuleManifest;
+
+const STATE_COLOR_WRAPPED = Symbol('ucStateColorWrapped');
+
+/**
+ * Every render path (card rows, containers, popups, overlays, editor previews)
+ * goes through `renderPreview`, so resolving "colour by state" values here makes
+ * them work in every module without per-module code.
+ */
+function wrapRenderPreviewForStateColors(module: UltraModule): void {
+  const m = module as any;
+  if (!m || typeof m.renderPreview !== 'function' || m[STATE_COLOR_WRAPPED]) return;
+  const original = m.renderPreview;
+  m.renderPreview = function (this: unknown, config: unknown, hass: unknown, ...rest: unknown[]) {
+    const resolved = resolveStateColorsInConfig(config, hass as any);
+    return original.call(this, resolved, hass, ...rest);
+  };
+  m[STATE_COLOR_WRAPPED] = true;
+}
 
 // Module registry class for managing all available modules (manifest-first, lazy implementation loading)
 export class ModuleRegistry {
@@ -57,6 +76,7 @@ export class ModuleRegistry {
   // Register a new module (after lazy load or for third-party modules)
   public registerModule(module: UltraModule): void {
     const type = module.metadata.type;
+    wrapRenderPreviewForStateColors(module);
     this.modules.set(type, module);
     this.pendingLoads.delete(type);
     this.loadErrors.delete(type);

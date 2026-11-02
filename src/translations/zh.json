@@ -6371,6 +6371,31 @@
       "missing": "未找到变量：",
       "unlink": "取消关联",
       "use": "使用变量"
+    },
+    "state_color": {
+      "by_state": "按实体状态设置颜色",
+      "summary": "按状态",
+      "rule_one": "条规则",
+      "rule_many": "条规则",
+      "use_single": "使用单一颜色",
+      "hint": "第一条匹配的规则决定颜色。如果都不匹配，则使用下面的颜色。",
+      "rule": "规则",
+      "active_now": "当前生效",
+      "move_up": "上移",
+      "move_down": "下移",
+      "remove_rule": "删除规则",
+      "use_color": "使用此颜色",
+      "when": "当",
+      "match_every": "全部满足时",
+      "match_any": "任一满足时",
+      "add_condition": "添加条件",
+      "remove_condition": "删除条件",
+      "type_state": "实体状态",
+      "type_attribute": "实体属性",
+      "type_template": "模板",
+      "attribute": "属性",
+      "add_rule": "添加规则",
+      "otherwise": "否则使用"
     }
   },
   "hub": {

@@ -378,6 +378,7 @@ export class UCGradientEditor extends LitElement {
                 </div>
                 <ultra-color-picker
                   .value=${this._colorPickerCurrentColor}
+                  no-state
                   .defaultValue=${this._colorPickerCurrentColor}
                   @value-changed=${this._handleColorPickerChange}
                 ></ultra-color-picker>

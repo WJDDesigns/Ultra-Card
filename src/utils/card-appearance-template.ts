@@ -11,6 +11,7 @@ import {
 } from './template-parser';
 import { parseTemplateColorResult } from './uc-template-color-result';
 import { ucThemeService } from '../services/uc-theme-service';
+import { resolveStateColorsInConfig } from './uc-state-color';
 
 /** Card-level fields that may contain inline Jinja when unified template mode is off. */
 export const CARD_INLINE_TEMPLATE_FIELDS = [
@@ -248,6 +249,7 @@ export function resolveCardAppearance(
   hass: HomeAssistant | undefined
 ): ResolvedCardAppearance {
   if (!config) return {};
+  config = resolveStateColorsInConfig(config, hass);
 
   const resolved = resolveStaticCardAppearance(config);
 

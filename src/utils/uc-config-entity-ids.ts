@@ -1,6 +1,7 @@
 import type { UltraCardConfig } from '../types';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { forEachNestedChildModules } from './uc-layout-module-types';
+import { collectStateColorEntities } from './uc-state-color';
 
 /**
  * Collecting every entity a card config refers to, so hass updates can be
@@ -136,6 +137,7 @@ export function collectConfigEntityIds(config: UltraCardConfig | undefined): Con
     collectFromAction(mod.tap_action);
     collectFromAction(mod.hold_action);
     collectFromAction(mod.double_tap_action);
+    collectStateColorEntities(mod, addEntityValue);
   };
 
   const processModules = (modules: any[]): void => {
@@ -150,11 +152,13 @@ export function collectConfigEntityIds(config: UltraCardConfig | undefined): Con
   config.display_conditions?.forEach(c => {
     if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);
   });
+  collectStateColorEntities(config, addEntityValue);
 
   for (const row of config.layout.rows) {
     row.display_conditions?.forEach(c => {
       if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);
     });
+    collectStateColorEntities(row, addEntityValue);
     for (const col of row.columns || []) {
       col.display_conditions?.forEach(c => {
         if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);

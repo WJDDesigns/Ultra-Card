@@ -6404,6 +6404,31 @@
       "missing": "Fant ikke variabel:",
       "unlink": "Koble fra",
       "use": "Bruk en variabel"
+    },
+    "state_color": {
+      "by_state": "Farge etter enhetens tilstand",
+      "summary": "Etter tilstand",
+      "rule_one": "regel",
+      "rule_many": "regler",
+      "use_single": "Bruk én farge",
+      "hint": "Den første regelen som stemmer bestemmer fargen. Stemmer ingen, brukes fargen under.",
+      "rule": "Regel",
+      "active_now": "Aktiv nå",
+      "move_up": "Flytt opp",
+      "move_down": "Flytt ned",
+      "remove_rule": "Fjern regel",
+      "use_color": "Bruk denne fargen",
+      "when": "Når",
+      "match_every": "alle er sanne",
+      "match_any": "én er sann",
+      "add_condition": "Legg til betingelse",
+      "remove_condition": "Fjern betingelse",
+      "type_state": "Enhetens tilstand",
+      "type_attribute": "Enhetens attributt",
+      "type_template": "Mal",
+      "attribute": "Attributt",
+      "add_rule": "Legg til regel",
+      "otherwise": "Ellers bruk"
     }
   },
   "hub": {
