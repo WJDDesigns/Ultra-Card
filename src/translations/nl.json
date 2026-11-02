@@ -6335,6 +6335,8 @@
       "error_http": "De site gaf een fout ({status}).",
       "error_network": "De feed kon niet worden geladen.",
       "error_parse": "Dat adres is geen RSS-, Atom- of JSON-feed.",
+      "error_redirects": "De site bleef doorverwijzen en stuurde de feed nooit. Werk Ultra Card Connect bij of probeer het feedadres zonder extra opties.",
+      "error_refused": "Deze site weigert zijn feed met Home Assistant te delen ({status}). Zoek op de site naar een ander feedadres.",
       "exclude_keywords": "Items verbergen met",
       "exclude_keywords_desc": "Items die een van deze woorden noemen, worden verborgen.",
       "feeds": "Feedadressen",

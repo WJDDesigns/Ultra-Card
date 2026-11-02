@@ -7,6 +7,7 @@ import {
   mergeFeedItems,
   parseFeed,
   findFeedLinks,
+  feedFetchUrl,
   looksLikeHtml,
   relativeTime,
   safeUrl,
@@ -208,5 +209,19 @@ describe('uc-rss-feed-service', () => {
       expect(fetchMock).not.toHaveBeenCalled();
       expect(state.error).toBe('blocked');
     });
+  });
+});
+
+describe('feedFetchUrl', () => {
+  it('swaps capital.de/rss for the open feed address', () => {
+    expect(feedFetchUrl('https://www.capital.de/rss')).toBe('https://www.capital.de/feed/standard/');
+    expect(feedFetchUrl('https://capital.de/rss/')).toBe('https://www.capital.de/feed/standard/');
+  });
+  it('leaves other addresses alone', () => {
+    expect(feedFetchUrl('https://www.capital.de/feed/standard/')).toBe('https://www.capital.de/feed/standard/');
+    expect(feedFetchUrl('https://www.pcwelt.de/feed?story_types=news%2Cfeature')).toBe(
+      'https://www.pcwelt.de/feed?story_types=news%2Cfeature'
+    );
+    expect(feedFetchUrl('not a url')).toBe('not a url');
   });
 });

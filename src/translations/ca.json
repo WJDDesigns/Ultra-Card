@@ -6335,6 +6335,8 @@
       "error_http": "El lloc ha respost amb un error ({status}).",
       "error_network": "No s'ha pogut carregar el feed.",
       "error_parse": "Aquesta adreça no és un feed RSS, Atom ni JSON.",
+      "error_redirects": "El lloc ha continuat redirigint i no ha enviat mai el feed. Actualitza Ultra Card Connect o prova l'adreça del feed sense opcions addicionals.",
+      "error_refused": "Aquest lloc es nega a compartir el seu feed amb Home Assistant ({status}). Cerca una altra adreça de feed al lloc.",
       "exclude_keywords": "Amaga els elements amb",
       "exclude_keywords_desc": "S'amaguen els elements que mencionin alguna d'aquestes paraules.",
       "feeds": "Adreces dels feeds",

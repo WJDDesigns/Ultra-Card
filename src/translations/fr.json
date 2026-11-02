@@ -6335,6 +6335,8 @@
       "error_http": "Le site a répondu par une erreur ({status}).",
       "error_network": "Le flux n'a pas pu être chargé.",
       "error_parse": "Cette adresse n'est pas un flux RSS, Atom ou JSON.",
+      "error_redirects": "Le site a redirigé en boucle sans jamais envoyer le flux. Mettez à jour Ultra Card Connect ou essayez l'adresse du flux sans options supplémentaires.",
+      "error_refused": "Ce site refuse de partager son flux avec Home Assistant ({status}). Cherchez une autre adresse de flux sur le site.",
       "exclude_keywords": "Masquer les éléments contenant",
       "exclude_keywords_desc": "Les éléments qui mentionnent l'un de ces mots sont masqués.",
       "feeds": "Adresses des flux",
