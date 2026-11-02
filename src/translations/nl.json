@@ -6404,6 +6404,11 @@
       "missing": "Variabele niet gevonden:",
       "unlink": "Ontkoppelen",
       "use": "Een variabele gebruiken"
+    },
+    "sections": {
+      "expand_all": "Alles uitklappen",
+      "collapse_all": "Alles inklappen",
+      "edited": "Gewijzigd ten opzichte van standaard"
     }
   },
   "hub": {

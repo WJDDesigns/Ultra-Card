@@ -6404,6 +6404,11 @@
       "missing": "Fann ikkje variabel:",
       "unlink": "Kopla frå",
       "use": "Bruk ein variabel"
+    },
+    "sections": {
+      "expand_all": "Utvid alle",
+      "collapse_all": "Fald saman alle",
+      "edited": "Endra frå standard"
     }
   },
   "hub": {

@@ -6404,6 +6404,11 @@
       "missing": "Variabeln hittades inte:",
       "unlink": "Koppla bort",
       "use": "Använd en variabel"
+    },
+    "sections": {
+      "expand_all": "Expandera alla",
+      "collapse_all": "Fäll ihop alla",
+      "edited": "Ändrad från standard"
     }
   },
   "hub": {

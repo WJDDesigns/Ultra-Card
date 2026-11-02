@@ -6404,6 +6404,11 @@
       "missing": "Variable nicht gefunden:",
       "unlink": "Trennen",
       "use": "Variable verwenden"
+    },
+    "sections": {
+      "expand_all": "Alle aufklappen",
+      "collapse_all": "Alle zuklappen",
+      "edited": "Vom Standard geändert"
     }
   },
   "hub": {

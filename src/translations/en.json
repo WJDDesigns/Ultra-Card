@@ -6371,6 +6371,11 @@
       "missing": "Variable not found:",
       "unlink": "Unlink",
       "use": "Use a variable"
+    },
+    "sections": {
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all",
+      "edited": "Changed from default"
     }
   },
   "hub": {

@@ -694,8 +694,9 @@ export abstract class BaseUltraModule implements UltraModule {
       data: Record<string, any>;
       schema: any[];
       onChange: (e: CustomEvent) => void;
-    }>
-  ) => UcFormUtils.renderSettingsSection(title, description, fields);
+    }>,
+    extra?: unknown
+  ) => UcFormUtils.renderSettingsSection(title, description, fields, extra);
 
   /**
    * Inject clean form styles

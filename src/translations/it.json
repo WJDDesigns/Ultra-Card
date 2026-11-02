@@ -6404,6 +6404,11 @@
       "missing": "Variabile non trovata:",
       "unlink": "Scollega",
       "use": "Usa una variabile"
+    },
+    "sections": {
+      "expand_all": "Espandi tutto",
+      "collapse_all": "Comprimi tutto",
+      "edited": "Modificato rispetto al predefinito"
     }
   },
   "hub": {

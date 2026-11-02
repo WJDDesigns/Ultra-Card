@@ -6404,6 +6404,11 @@
       "missing": "Variable introuvable :",
       "unlink": "Dissocier",
       "use": "Utiliser une variable"
+    },
+    "sections": {
+      "expand_all": "Tout déplier",
+      "collapse_all": "Tout replier",
+      "edited": "Modifié par rapport à la valeur par défaut"
     }
   },
   "hub": {

@@ -6404,6 +6404,11 @@
       "missing": "Proměnná nenalezena:",
       "unlink": "Odpojit",
       "use": "Použít proměnnou"
+    },
+    "sections": {
+      "expand_all": "Rozbalit vše",
+      "collapse_all": "Sbalit vše",
+      "edited": "Změněno oproti výchozímu"
     }
   },
   "hub": {

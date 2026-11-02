@@ -6404,6 +6404,11 @@
       "missing": "Variabel ikke fundet:",
       "unlink": "Fjern tilknytning",
       "use": "Brug en variabel"
+    },
+    "sections": {
+      "expand_all": "Fold alle ud",
+      "collapse_all": "Fold alle sammen",
+      "edited": "Ændret fra standard"
     }
   },
   "hub": {
