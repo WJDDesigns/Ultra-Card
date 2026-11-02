@@ -16,11 +16,15 @@ const STATE_COLOR_WRAPPED = Symbol('ucStateColorWrapped');
  * them work in every module without per-module code.
  */
 function wrapRenderPreviewForStateColors(module: UltraModule): void {
-  const m = module as any;
+  type Render = (this: unknown, config: unknown, hass: unknown, ...rest: unknown[]) => unknown;
+  const m = module as unknown as { renderPreview?: Render; [STATE_COLOR_WRAPPED]?: boolean };
   if (!m || typeof m.renderPreview !== 'function' || m[STATE_COLOR_WRAPPED]) return;
   const original = m.renderPreview;
   m.renderPreview = function (this: unknown, config: unknown, hass: unknown, ...rest: unknown[]) {
-    const resolved = resolveStateColorsInConfig(config, hass as any);
+    const resolved = resolveStateColorsInConfig(
+      config,
+      hass as Parameters<typeof resolveStateColorsInConfig>[1]
+    );
     return original.call(this, resolved, hass, ...rest);
   };
   m[STATE_COLOR_WRAPPED] = true;

@@ -81,7 +81,7 @@ export class UcStateColorEditor extends LitElement {
     e.stopPropagation();
   }
 
-  private _form(data: Record<string, unknown>, schema: unknown[], onChange: (v: any) => void): TemplateResult {
+  private _form(data: Record<string, unknown>, schema: unknown[], onChange: (v: Record<string, never>) => void): TemplateResult {
     return html`<ha-form
       .hass=${this.hass}
       .data=${data}
@@ -192,7 +192,7 @@ export class UcStateColorEditor extends LitElement {
                   ? html`<div class="grow">
                       ${this._form(
                         { value: cond.value ?? '' },
-                        [UcFormUtils.conditionValue('value', this.hass, cond as any)],
+                        [UcFormUtils.conditionValue('value', this.hass, cond as { entity?: string; operator?: string; attribute?: string })],
                         v => this._updateCondition(ruleIndex, condIndex, { value: v.value ?? '' })
                       )}
                     </div>`

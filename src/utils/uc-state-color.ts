@@ -162,10 +162,10 @@ function findStateColorPaths(root: object): Path[] {
 }
 
 function getAt(root: unknown, path: Path): unknown {
-  let node: any = root;
+  let node: unknown = root;
   for (const key of path) {
-    if (node == null) return undefined;
-    node = node[key];
+    if (node === null || node === undefined) return undefined;
+    node = (node as Record<string | number, unknown>)[key];
   }
   return node;
 }
@@ -173,10 +173,10 @@ function getAt(root: unknown, path: Path): unknown {
 function setAt<T>(root: T, path: Path, value: unknown): T {
   if (path.length === 0) return value as T;
   const [key, ...rest] = path;
-  const src: any = root;
-  const copy: any = Array.isArray(src) ? [...src] : { ...src };
+  const src = root as unknown as Record<string | number, unknown>;
+  const copy = (Array.isArray(src) ? [...src] : { ...src }) as Record<string | number, unknown>;
   copy[key] = setAt(src?.[key], rest, value);
-  return copy;
+  return copy as unknown as T;
 }
 
 const resolvedCache = new WeakMap<object, { key: string; result: unknown }>();
