@@ -1,5 +1,60 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.3
+
+Stable 3.14.3 brings everything from the nine 3.14.3 betas into one release. There's a new free RSS Feed module with tabs and a news ticker, QR codes for Wi-Fi, contacts, maps and more, and the Lock module can now be unlocked with a PIN you set or by tapping the card. Cards no longer go blank when a module has no entity yet, the navigation bar is back straight after a reload, Alarmo arms again, and a long list of Discord reports is fixed. Thanks to everyone who tested the betas, and especially to larrysansan for most of the ideas and bug reports in this release.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.4 too.** The RSS Feed module loads feeds through Connect, and Connect 1.12.4 also brings the Hub up to this version.
+
+### 🚀 New Features
+
+- **RSS Feed module (free)** - Paste one or more RSS, Atom or JSON Feed links and get the latest headlines, merged newest first. Choose a list with thumbnails, compact headlines or large image cards, with optional summaries, time ago and feed name. Keyword filters and an age limit hide what you don't want. Thanks to larrysansan for the idea
+- **RSS Feed: feeds as tabs** - Show each feed in its own tab, with an optional "All" tab. Give every feed its own name, icon and colour, and move feeds up or down to change their order
+- **RSS Feed: ticker layout** - A Ticker layout scrolls the latest headlines across the card, with a speed setting. It pauses when you hover and stays still if your device asks for reduced motion
+- **RSS Feed: paste a web page** - If you paste a news page instead of its feed, the module finds the feed that page links to and loads it
+- **QR Code: content types** - Pick what the code is for and fill in the fields: Wi-Fi, a map location or route (from an entity or an address), WhatsApp, phone, text message, email, a contact card (name from a person entity), what a Spotify player is playing, or a social profile. Thanks to larrysansan for the idea
+- **Lock: unlock with a PIN** - Set "Unlock with" to "Enter a PIN" and type a PIN of at least 4 digits in the editor. Unlock and Open then show a keypad and only go ahead with the right PIN. The PIN is checked in the card and never sent to the lock, so it works with any lock. Thanks to larrysansan for the idea
+- **Lock: tap the card to lock and unlock** - The Lock module's Tap, Hold and Double tap actions now work. Set one to Toggle and tapping the card locks or unlocks, going through your "Unlock with" choice (pattern, PIN or confirmation) first. Handy for an icon-only lock
+- **Lock: slide to unlock in Compact** - The Compact layout now works with "Slide to unlock". The slider sits under the chip
+- **Card Settings: Visibility for the whole card** - The old "Visible to Users" section is now "Visibility", with the same options rows and modules have: Visible to Users, Hide on Devices, and display conditions (entity state, attribute, time or template). While you edit, a hidden card stays visible but faded
+- **Navigation: Current dashboard only** - A new scope shows the navigation bar on every view of the dashboard you added it to, but not on your other dashboards
+- **Navigation: put stacks anywhere** - Drag a stack between your paths and the navigation bar keeps that order. Thanks to larrysansan for the request
+- **Separator: icon and alignment** - Add an icon before or after the separator text, with its own size and colour, and place the text and icon left, centre or right. Leave the text empty for an icon-only separator. Thanks to larrysansan for the idea
+- **Calendar: open locations in a maps app** - The "Open location in" setting makes an event's location tappable, opening it in Google Maps, Apple Maps, OpenStreetMap or Waze. Thanks to larrysansan for the idea
+- **Accordion: title icon** - Add an icon before or after the Accordion title, with its own colour
+- **Variables in entity fields** - Entity fields that support variables now have a "Use a variable" list. A chip shows which entity the variable points to, with an Unlink button to go back to a fixed entity
+
+### 🔧 Improvements
+
+- **Lock: name, icons and colours** - New Name field, a searchable icon picker, a separate Unlocked icon, and Locked / Unlocked colours for the icon, ring, glow, button, badge and swipe slider. The Design tab's text settings now apply to the Lock. Thanks to larrysansan for the requests
+- **Stack: one anchor for all layers** - A "Use this anchor for all layers" button copies the selected layer's anchor and offsets to every layer in one click. Thanks to Martin for the report
+- **RSS Feed: more news sites load** - Connect fetches feeds like a browser does, reads the whole feed, and handles feeds with web-page characters such as `&nbsp;`. If Connect can't get a feed, the card tries the browser before showing an error. Sites that refuse to share their feed now say so instead of showing a vague error. Thanks to larrysansan and Wayne for testing dozens of feeds
+- **RSS Feed: clearer ticker settings** - In the Ticker layout, the image, summary and time options are greyed out with a note, because the ticker only shows headlines
+- **German translations** - Better wording for the Lock and QR Code modules, and the 3D Printer module is now translated. Thanks to larrysansan
+- **Library updates** - Updated the drag-and-drop, text editor and build tools the card uses. Nothing should look different
+
+### 🐛 Bug Fixes
+
+- **Cards went blank** - A People, To-do, Weather, Vacuum or Climate module with no entity picked yet made the whole card disappear. The card now stays visible and the module asks you to pick an entity. Thanks to larrysansan for the report
+- **Navigation bar missing after a reload** - An "All views" or "Current dashboard only" navigation bar now shows straight away after a browser reload on any view. Thanks to larrysansan for the report
+- **Alarm Panel: Alarmo wouldn't arm** - The arm buttons called the wrong Home Assistant service. They now arm your alarm, Vacation mode is detected, and the arm modes start from what your alarm supports, in both layouts. Thanks to larrysansan for the report
+- **Hidden modules came back after switching views** - Modules hidden by entity state now stay hidden after moving to another view and back. Thanks to larrysansan for the report
+- **Calendar: wrong events** - Several Calendar modules on one dashboard could show each other's events. Each now keeps its own and updates as soon as you change calendars, and "Strip country" works in the table view and on addresses over several lines. Thanks to larrysansan for the report
+- **RSS Feed: PC-WELT, Capital and hessenschau feeds** - Feed addresses with encoded characters such as `%2C` no longer loop on the site's redirect, capital.de/rss loads Capital's open feed, and long feeds are no longer cut off. Thanks to larrysansan and Wayne for the reports
+- **Popup "Trigger via Module" with Tap action None** - A popup set to open from a module now opens on tap even when that module's Tap action is None. Thanks to Steve Markus for the report
+- **Lock fixes** - The pattern can be reached in icon-only mode, an icon-only lock sits centred with a really transparent background, the buttons follow Alignment when name and state are hidden, the Hero layout no longer shows an empty circle, and the PIN hint fits on one line. Thanks to larrysansan for the reports
+- **Text links stuck blue and underlined** - The underline now takes the link's colour, and an "Underline links" switch turns it off. Thanks to larrysansan for the report
+- **Text: icon jumped above the text** - Adding a tap, hold or double-tap action no longer moves the icon above the text. Thanks to larrysansan for the report
+- **Toggle: title didn't update** - Turning "Show title" on or off, or changing the title, now updates the preview straight away. Thanks to larrysansan for the report
+- **Energy Display: Show icons did nothing** - Icons now show in both the circle and box layouts. Thanks to larrysansan for the report
+- **Select Input: raw option names** - Options now show the translated names Home Assistant uses, and the dropdown follows your theme colours. Thanks to larrysansan for the report
+- **Layout names not shown in the editor** - Names you give to Horizontal, Vertical, Tabs, Accordion and other layouts now show in the layout tree. Thanks to larrysansan for the report
+- **Builder toolbar** - All toolbar icons stay on one line in a narrow or full-screen editor. Thanks to larrysansan for the report
+- **Editor fixes** - Number boxes are wider, long descriptions wrap instead of ending in "…", global actions set to "Nothing" show it, Navigation sliders get a number box and reset button and no longer cut the knob in half, and the Responsive Column Layout popup stays on screen on phones. Thanks to larrysansan for the reports
+- **Translations** - The Lock alignment and confirmation options and the Toggle and More Info labels in the Actions tab are now translated
+
 ## Version 3.14.3-beta9
 
 The ninth 3.14.3 beta fixes RSS feeds that showed "This address isn't an RSS, Atom or JSON feed" even though the address was right. This is a pre-release for testing — please report anything odd on GitHub or Discord.
