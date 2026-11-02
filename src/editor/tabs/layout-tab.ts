@@ -110,6 +110,7 @@ import '../uc-favorites-selector-tab';
 import '../uc-modules-selector-tab';
 import '../uc-smart-selector-tab';
 import '../../components/uc-template-cheatsheet';
+import '../../components/uc-collapsible-sections';
 import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
@@ -17316,11 +17317,24 @@ export class LayoutTab extends LitElement {
       return html`<div>Module does not support general settings</div>`;
     }
 
-    return (
+    return this._wrapSections(
+      module,
+      'general',
       moduleHandler.renderGeneralTab(module, this.hass!, this.config, (updates: any) =>
         this._updateTabsSectionChild(updates)
       ) ?? html``
     );
+  }
+
+  /** Makes the titled settings sections of a module editor tab collapsible. */
+  private _wrapSections(module: CardModule, tab: string, content: unknown): TemplateResult {
+    return html`<uc-collapsible-sections
+      .moduleType=${module?.type || ''}
+      .tab=${tab}
+      .module=${module as unknown as Record<string, unknown>}
+      .hass=${this.hass}
+      >${content}</uc-collapsible-sections
+    >`;
   }
 
   private _renderTabsSectionChildYamlTab(module: any): TemplateResult {
@@ -17798,16 +17812,16 @@ export class LayoutTab extends LitElement {
             ? module.type === 'external_card' &&
               !ucExternalCardsService.hasCardEditor((module as any).card_type)
               ? ''
-              : this._renderGeneralTab(module)
+              : this._wrapSections(module, 'general', this._renderGeneralTab(module))
             : ''}
           ${this._activeModuleTab === 'yaml' && module.type === 'external_card'
             ? this._renderYamlTab(module)
             : ''}
           ${this._activeModuleTab === 'actions' && hasActionsTab
-            ? this._renderActionsTab(module)
+            ? this._wrapSections(module, 'actions', this._renderActionsTab(module))
             : ''}
           ${this._activeModuleTab === 'other' && hasOtherTab
-            ? this._renderOtherTab(module)
+            ? this._wrapSections(module, 'other', this._renderOtherTab(module))
             : ''}
           ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
           ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
@@ -18301,7 +18315,7 @@ export class LayoutTab extends LitElement {
         updates => this._updateLayoutChildModule(updates)
       );
 
-      return html` ${moduleNameField} ${moduleContent} `;
+      return this._wrapSections(module, 'general', html` ${moduleNameField} ${moduleContent} `);
     }
 
     return html` ${moduleNameField} ${this._renderModuleSettingsUnavailable(module)} `;

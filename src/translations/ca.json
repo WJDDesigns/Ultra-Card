@@ -6405,6 +6405,11 @@
       "unlink": "Desvincula",
       "use": "Fes servir una variable"
     },
+    "sections": {
+      "expand_all": "Desplega-ho tot",
+      "collapse_all": "Plega-ho tot",
+      "edited": "Canviat respecte al valor per defecte"
+    },
     "state_color": {
       "by_state": "Color segons l'estat d'una entitat",
       "summary": "Segons l'estat",

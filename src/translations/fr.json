@@ -6405,6 +6405,11 @@
       "unlink": "Dissocier",
       "use": "Utiliser une variable"
     },
+    "sections": {
+      "expand_all": "Tout déplier",
+      "collapse_all": "Tout replier",
+      "edited": "Modifié par rapport à la valeur par défaut"
+    },
     "state_color": {
       "by_state": "Couleur selon l'état d'une entité",
       "summary": "Selon l'état",

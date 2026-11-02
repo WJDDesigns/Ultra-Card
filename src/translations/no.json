@@ -6405,6 +6405,11 @@
       "unlink": "Koble fra",
       "use": "Bruk en variabel"
     },
+    "sections": {
+      "expand_all": "Utvid alle",
+      "collapse_all": "Skjul alle",
+      "edited": "Endret fra standard"
+    },
     "state_color": {
       "by_state": "Farge etter enhetens tilstand",
       "summary": "Etter tilstand",

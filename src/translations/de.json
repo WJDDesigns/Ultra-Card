@@ -6405,6 +6405,11 @@
       "unlink": "Trennen",
       "use": "Variable verwenden"
     },
+    "sections": {
+      "expand_all": "Alle aufklappen",
+      "collapse_all": "Alle zuklappen",
+      "edited": "Vom Standard geändert"
+    },
     "state_color": {
       "by_state": "Farbe nach Entitätszustand",
       "summary": "Nach Zustand",

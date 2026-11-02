@@ -6405,6 +6405,11 @@
       "unlink": "Odłącz",
       "use": "Użyj zmiennej"
     },
+    "sections": {
+      "expand_all": "Rozwiń wszystko",
+      "collapse_all": "Zwiń wszystko",
+      "edited": "Zmieniono względem domyślnych"
+    },
     "state_color": {
       "by_state": "Kolor według stanu encji",
       "summary": "Według stanu",

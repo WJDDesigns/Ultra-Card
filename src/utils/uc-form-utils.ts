@@ -145,7 +145,9 @@ export class UcFormUtils {
       data: Record<string, any>;
       schema: any[];
       onChange: (e: CustomEvent) => void;
-    }>
+    }>,
+    /** More content (sliders, custom rows) that belongs inside the same section. */
+    extra?: unknown
   ): TemplateResult {
     return html`
       <div
@@ -185,6 +187,7 @@ export class UcFormUtils {
             field.onChange
           )
         )}
+        ${extra ?? ''}
       </div>
     `;
   }

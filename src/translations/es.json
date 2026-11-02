@@ -6405,6 +6405,11 @@
       "unlink": "Desvincular",
       "use": "Usar una variable"
     },
+    "sections": {
+      "expand_all": "Expandir todo",
+      "collapse_all": "Contraer todo",
+      "edited": "Cambiado respecto al valor predeterminado"
+    },
     "state_color": {
       "by_state": "Color según el estado de una entidad",
       "summary": "Según estado",

@@ -5044,6 +5044,79 @@ export const layoutTabStyles = css`
         box-sizing: border-box;
       }
 
+      /* Collapsible settings sections (uc-collapsible-sections). The wrapper marks
+         sections and headers with data attributes; content stays in this tree. */
+      .settings-section[data-uc-collapsed]
+        > :not([data-uc-sec-head]):not(style):not(script) {
+        display: none !important;
+      }
+      [data-uc-sec-owned-hidden] {
+        display: none !important;
+      }
+      .settings-section[data-uc-collapsible] > [data-uc-sec-head] {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 6px;
+      }
+      .settings-section[data-uc-collapsed] > [data-uc-sec-head] {
+        margin-bottom: 0 !important;
+      }
+      .settings-section[data-uc-collapsed] {
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        margin-bottom: 12px !important;
+      }
+      [data-uc-sec-head] > .uc-sec-meta {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--secondary-text-color);
+      }
+      [data-uc-sec-head] .uc-sec-summary {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      [data-uc-sec-head] .uc-sec-dot {
+        display: none;
+        flex: 0 0 auto;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary-color);
+      }
+      .settings-section[data-uc-collapsed] > [data-uc-edited] .uc-sec-dot {
+        display: inline-block;
+      }
+      [data-uc-sec-head] > .uc-sec-chevron {
+        flex: 0 0 auto;
+        --mdc-icon-size: 22px;
+        color: var(--secondary-text-color);
+        transition: transform 0.2s ease;
+        transform: rotate(180deg);
+      }
+      .settings-section[data-uc-collapsed] > [data-uc-sec-head] > .uc-sec-chevron {
+        transform: rotate(0deg);
+      }
+      [data-uc-sec-head]:hover > .uc-sec-chevron {
+        color: var(--primary-color);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [data-uc-sec-head] > .uc-sec-chevron {
+          transition: none;
+        }
+      }
+
       /* Consistent styling for all module settings */
       .module-tab-content .settings-section,
       .settings-tab-content .settings-section {

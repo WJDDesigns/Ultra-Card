@@ -6405,6 +6405,11 @@
       "unlink": "Odpojit",
       "use": "Použít proměnnou"
     },
+    "sections": {
+      "expand_all": "Rozbalit vše",
+      "collapse_all": "Sbalit vše",
+      "edited": "Změněno oproti výchozímu"
+    },
     "state_color": {
       "by_state": "Barva podle stavu entity",
       "summary": "Podle stavu",

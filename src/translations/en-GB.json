@@ -6405,6 +6405,11 @@
       "unlink": "Unlink",
       "use": "Use a variable"
     },
+    "sections": {
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all",
+      "edited": "Changed from default"
+    },
     "state_color": {
       "by_state": "Colour by entity state",
       "summary": "By state",

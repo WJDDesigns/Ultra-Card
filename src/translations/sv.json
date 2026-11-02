@@ -6405,6 +6405,11 @@
       "unlink": "Koppla bort",
       "use": "Använd en variabel"
     },
+    "sections": {
+      "expand_all": "Expandera alla",
+      "collapse_all": "Fäll ihop alla",
+      "edited": "Ändrad från standard"
+    },
     "state_color": {
       "by_state": "Färg efter entitetens tillstånd",
       "summary": "Efter tillstånd",

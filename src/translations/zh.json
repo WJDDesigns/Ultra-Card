@@ -6372,6 +6372,11 @@
       "unlink": "取消关联",
       "use": "使用变量"
     },
+    "sections": {
+      "expand_all": "全部展开",
+      "collapse_all": "全部折叠",
+      "edited": "与默认值不同"
+    },
     "state_color": {
       "by_state": "按实体状态设置颜色",
       "summary": "按状态",

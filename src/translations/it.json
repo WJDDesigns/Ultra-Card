@@ -6405,6 +6405,11 @@
       "unlink": "Scollega",
       "use": "Usa una variabile"
     },
+    "sections": {
+      "expand_all": "Espandi tutto",
+      "collapse_all": "Comprimi tutto",
+      "edited": "Modificato rispetto al predefinito"
+    },
     "state_color": {
       "by_state": "Colore in base allo stato di un'entità",
       "summary": "Per stato",
