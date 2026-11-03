@@ -6433,7 +6433,11 @@
       "type_template": "Mall",
       "attribute": "Attribut",
       "add_rule": "Lägg till regel",
-      "otherwise": "Annars använd"
+      "otherwise": "Annars använd",
+      "entity_color": "Annars använd en entitets egen färg",
+      "entity_color_desc": "Valfritt. Välj en lampa eller annan entitet vars färg ska följas (till exempel lampans RGB-färg). Lämna tomt för att hoppa över.",
+      "otherwise_missing": "Om entiteten inte är tillgänglig, använd",
+      "entity_color_short": "entitetsfärg"
     }
   },
   "hub": {

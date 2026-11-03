@@ -6433,7 +6433,11 @@
       "type_template": "Skabelon",
       "attribute": "Attribut",
       "add_rule": "Tilføj regel",
-      "otherwise": "Ellers brug"
+      "otherwise": "Ellers brug",
+      "entity_color": "Ellers brug en enheds egen farve",
+      "entity_color_desc": "Valgfrit. Vælg et lys eller en anden enhed, hvis farve skal følges (for eksempel pærens RGB-farve). Lad stå tomt for at springe over.",
+      "otherwise_missing": "Hvis enheden ikke er tilgængelig, brug",
+      "entity_color_short": "enhedsfarve"
     }
   },
   "hub": {

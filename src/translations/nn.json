@@ -6433,7 +6433,11 @@
       "type_template": "Mal",
       "attribute": "Attributt",
       "add_rule": "Legg til regel",
-      "otherwise": "Elles bruk"
+      "otherwise": "Elles bruk",
+      "entity_color": "Elles bruk ein entitet sin eigen farge",
+      "entity_color_desc": "Valfritt. Vel eit lys eller ein annan entitet som fargen skal følgje (til dømes RGB-fargen til pæra). La stå tomt for å hoppe over.",
+      "otherwise_missing": "Om entiteten ikkje er tilgjengeleg, bruk",
+      "entity_color_short": "entitetsfarge"
     }
   },
   "hub": {

@@ -6433,7 +6433,11 @@
       "type_template": "Template",
       "attribute": "Attribuut",
       "add_rule": "Regel toevoegen",
-      "otherwise": "Anders gebruiken"
+      "otherwise": "Anders gebruiken",
+      "entity_color": "Anders de eigen kleur van een entiteit gebruiken",
+      "entity_color_desc": "Optioneel. Kies een lamp of andere entiteit waarvan de kleur gevolgd wordt (bijvoorbeeld de RGB-kleur van de lamp). Laat leeg om over te slaan.",
+      "otherwise_missing": "Als die entiteit niet beschikbaar is, gebruik",
+      "entity_color_short": "entiteitskleur"
     }
   },
   "hub": {

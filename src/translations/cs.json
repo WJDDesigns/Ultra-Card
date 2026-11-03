@@ -6433,7 +6433,11 @@
       "type_template": "Šablona",
       "attribute": "Atribut",
       "add_rule": "Přidat pravidlo",
-      "otherwise": "Jinak použít"
+      "otherwise": "Jinak použít",
+      "entity_color": "Jinak použít vlastní barvu entity",
+      "entity_color_desc": "Volitelné. Vyberte světlo nebo jinou entitu, jejíž barvu chcete převzít (například RGB barvu žárovky). Ponechte prázdné pro přeskočení.",
+      "otherwise_missing": "Pokud entita není dostupná, použít",
+      "entity_color_short": "barva entity"
     }
   },
   "hub": {

@@ -200,9 +200,6 @@ export class UltraPopupModule extends BaseUltraModule {
       trigger_button_text_color: 'white',
       trigger_button_icon_position: 'before',
       trigger_button_icon_size: '24px',
-      trigger_button_use_entity_color: false,
-      trigger_button_color_entity: '',
-      trigger_button_state_colors: {},
 
       // Layout settings
       layout: 'default',
@@ -779,63 +776,6 @@ export class UltraPopupModule extends BaseUltraModule {
                               `
                             : ''}
 
-                          <!-- Colors Section -->
-                          <div style="margin-top: 16px;">
-                            ${this.renderSettingsSection(
-                              localize('editor.button.colors.title', lang, 'Colors'),
-                              '',
-                              [
-                                {
-                                  title: localize('editor.button.use_entity_color', lang, 'Use Entity Color'),
-                                  description: localize('editor.button.use_entity_color_desc', lang, 'Change button background color based on entity state'),
-                                  hass,
-                                  data: { trigger_button_use_entity_color: popupModule.trigger_button_use_entity_color || false },
-                                  schema: [this.booleanField('trigger_button_use_entity_color')],
-                                  onChange: (e: CustomEvent) => {
-                                    const enabled = e.detail.value.trigger_button_use_entity_color;
-                                    updateModule({
-                                      trigger_button_use_entity_color: enabled,
-                                      trigger_button_color_entity: enabled ? popupModule.trigger_button_color_entity : '',
-                                    });
-                                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                                  },
-                                },
-                              ]
-                            )}
-                          </div>
-
-                          ${popupModule.trigger_button_use_entity_color
-                            ? html`
-                                <div style="margin-top: 16px;">
-                                  ${this.renderEntityPickerWithVariables(
-                                    hass, config, 'trigger_button_color_entity', popupModule.trigger_button_color_entity || '',
-                                    (value: string) => {
-                                      updateModule({ trigger_button_color_entity: value });
-                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                                    },
-                                    undefined,
-                                    localize('editor.button.background_color_entity', lang, 'Entity')
-                                  )}
-                                </div>
-                                <div style="margin-top: 16px;">
-                                  <div class="field-title" style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;">
-                                    ${localize('editor.button.state_colors', lang, 'State Colors')}
-                                  </div>
-                                  <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);">
-                                    ${localize('editor.button.state_colors_desc', lang, 'Optional: Map specific entity states to colors (e.g., on: green, off: gray). If not set, will use entity RGB color or state-based defaults.')}
-                                  </div>
-                                  ${this._renderTriggerStateColorsEditor(
-                                    popupModule.trigger_button_state_colors || {},
-                                    hass,
-                                    lang,
-                                    (stateColors: { [state: string]: string }) => {
-                                      updateModule({ trigger_button_state_colors: stateColors });
-                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                                    }
-                                  )}
-                                </div>
-                              `
-                            : html`
                                 <div style="margin-top: 16px;">
                                   <ultra-color-picker
                                     .label=${localize('editor.button.colors.background', lang, 'Background Color')}
@@ -848,7 +788,6 @@ export class UltraPopupModule extends BaseUltraModule {
                                     }}
                                   ></ultra-color-picker>
                                 </div>
-                              `}
 
                           <div style="margin-top: 16px;">
                             <ultra-color-picker
@@ -1062,57 +1001,6 @@ export class UltraPopupModule extends BaseUltraModule {
                           )}
 
                           <!-- Trigger Icon Color -->
-                          ${this.renderFieldSection(
-                            localize('editor.popup.trigger.icon_use_entity_color', lang, 'Use Entity Color'),
-                            localize(
-                              'editor.popup.trigger.icon_use_entity_color_desc',
-                              lang,
-                              'Color the icon from an entity state instead of a fixed color.'
-                            ),
-                            hass,
-                            { trigger_icon_use_entity_color: popupModule.trigger_icon_use_entity_color || false },
-                            [this.booleanField('trigger_icon_use_entity_color')],
-                            (e: CustomEvent) => {
-                              const enabled = !!e.detail.value.trigger_icon_use_entity_color;
-                              updateModule({
-                                trigger_icon_use_entity_color: enabled,
-                                trigger_icon_color_entity: enabled ? popupModule.trigger_icon_color_entity : '',
-                              });
-                              setTimeout(() => this.triggerPreviewUpdate(), 50);
-                            }
-                          )}
-                          ${popupModule.trigger_icon_use_entity_color
-                            ? html`
-                                <div style="margin-bottom: 16px;">
-                                  ${this.renderEntityPickerWithVariables(
-                                    hass, config, 'trigger_icon_color_entity', popupModule.trigger_icon_color_entity || '',
-                                    (value: string) => {
-                                      updateModule({ trigger_icon_color_entity: value });
-                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                                    },
-                                    undefined,
-                                    localize('editor.button.background_color_entity', lang, 'Entity')
-                                  )}
-                                </div>
-                                <div style="margin-bottom: 16px;">
-                                  <div class="field-title" style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;">
-                                    ${localize('editor.button.state_colors', lang, 'State Colors')}
-                                  </div>
-                                  <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);">
-                                    ${localize('editor.button.state_colors_desc', lang, 'Optional: Map specific entity states to colors (e.g., on: green, off: gray). If not set, will use entity RGB color or state-based defaults.')}
-                                  </div>
-                                  ${this._renderTriggerStateColorsEditor(
-                                    popupModule.trigger_icon_state_colors || {},
-                                    hass,
-                                    lang,
-                                    (stateColors: { [state: string]: string }) => {
-                                      updateModule({ trigger_icon_state_colors: stateColors });
-                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                                    }
-                                  )}
-                                </div>
-                              `
-                            : html`
                                 <div style="margin-bottom: 16px;">
                                   <ultra-color-picker
                                     .label=${localize(
@@ -1132,7 +1020,6 @@ export class UltraPopupModule extends BaseUltraModule {
                                     }}
                                   ></ultra-color-picker>
                                 </div>
-                              `}
 
                           <!-- Trigger Icon Background -->
                           ${this.renderSegmentedField(
@@ -1804,166 +1691,6 @@ export class UltraPopupModule extends BaseUltraModule {
           : ''}
       </div>
     `;
-  }
-
-  private _renderTriggerStateColorsEditor(
-    stateColors: { [state: string]: string },
-    hass: HomeAssistant,
-    lang: string,
-    onUpdate: (stateColors: { [state: string]: string }) => void
-  ): TemplateResult {
-    return html`
-      <div class="state-color-editor">
-        ${Object.entries(stateColors).map(
-          ([state, color]) => html`
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; overflow: hidden;">
-              <input
-                type="text"
-                placeholder="State (e.g., on, off)"
-                .value=${state}
-                style="flex: 0 0 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: var(--uc-r-4, 4px); background: var(--secondary-background-color); color: var(--primary-text-color); flex-shrink: 0;"
-                @input=${(e: Event) => {
-                  const newState = (e.target as HTMLInputElement).value;
-                  const updated = { ...stateColors };
-                  delete updated[state];
-                  if (newState.trim()) {
-                    updated[newState.trim()] = color;
-                  }
-                  onUpdate(updated);
-                }}
-              />
-              <div style="flex: 1; min-width: 0; overflow: hidden;">
-                <ultra-color-picker
-                  .label=${''}
-                  .value=${color}
-                  .defaultValue=${'gray'}
-                  .hass=${hass}
-                  style="width: 100%;"
-                  @value-changed=${(e: CustomEvent) => {
-                    const updated = { ...stateColors, [state]: e.detail.value };
-                    onUpdate(updated);
-                  }}
-                ></ultra-color-picker>
-              </div>
-              <ha-icon
-                icon="mdi:delete"
-                style="cursor: pointer; color: var(--error-color); margin-left: 8px; flex-shrink: 0;"
-                @click=${() => {
-                  const updated = { ...stateColors };
-                  delete updated[state];
-                  onUpdate(updated);
-                }}
-              ></ha-icon>
-            </div>
-          `
-        )}
-        <button
-          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); border: none; border-radius: var(--uc-r-4, 4px); cursor: pointer; font-size: 14px;"
-          @click=${() => {
-            const updated = { ...stateColors, new_state: 'gray' };
-            onUpdate(updated);
-          }}
-        >
-          <ha-icon icon="mdi:plus" style="margin-right: 4px;"></ha-icon>
-          ${localize('editor.button.add_state_color', lang, 'Add State Color')}
-        </button>
-      </div>
-    `;
-  }
-
-  private _getTriggerButtonEntityColor(
-    popupModule: PopupModule,
-    hass: HomeAssistant,
-    config?: UltraCardConfig
-  ): string | null {
-    if (!popupModule.trigger_button_use_entity_color) return null;
-    return this._getTriggerEntityColor(
-      popupModule.trigger_button_color_entity,
-      popupModule.trigger_button_state_colors,
-      hass,
-      config
-    );
-  }
-
-  private _getTriggerIconEntityColor(
-    popupModule: PopupModule,
-    hass: HomeAssistant,
-    config?: UltraCardConfig
-  ): string | null {
-    if (!popupModule.trigger_icon_use_entity_color) return null;
-    return this._getTriggerEntityColor(
-      popupModule.trigger_icon_color_entity,
-      popupModule.trigger_icon_state_colors,
-      hass,
-      config
-    );
-  }
-
-  /** State-colour map first, then the entity's own colour, then a domain default. */
-  private _getTriggerEntityColor(
-    colorEntity: string | undefined,
-    stateColors: { [state: string]: string } | undefined,
-    hass: HomeAssistant,
-    config?: UltraCardConfig
-  ): string | null {
-    if (!colorEntity || !hass) {
-      return null;
-    }
-    // Resolve $variable references to the actual entity ID
-    const colorEntityId = this.resolveEntity(colorEntity, config) || colorEntity;
-    const entityState = hass.states[colorEntityId];
-    if (!entityState) return null;
-
-    if (stateColors && Object.keys(stateColors).length > 0) {
-      const mapped = stateColors[entityState.state];
-      if (mapped) return mapped;
-    }
-
-    if (!entityState.attributes) return null;
-
-    if (entityState.attributes.rgb_color && Array.isArray(entityState.attributes.rgb_color)) {
-      return `rgb(${entityState.attributes.rgb_color.join(',')})`;
-    }
-    if (entityState.attributes.hs_color && Array.isArray(entityState.attributes.hs_color)) {
-      const [h, s] = entityState.attributes.hs_color;
-      const hNorm = h / 360;
-      const sNorm = s / 100;
-      const v = 1;
-      const i = Math.floor(hNorm * 6);
-      const f = hNorm * 6 - i;
-      const p = v * (1 - sNorm);
-      const q = v * (1 - f * sNorm);
-      const t = v * (1 - (1 - f) * sNorm);
-      let r = 0, g = 0, b = 0;
-      switch (i % 6) {
-        case 0: r = v; g = t; b = p; break;
-        case 1: r = q; g = v; b = p; break;
-        case 2: r = p; g = v; b = t; break;
-        case 3: r = p; g = q; b = v; break;
-        case 4: r = t; g = p; b = v; break;
-        case 5: r = v; g = p; b = q; break;
-      }
-      return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
-    }
-    if (entityState.attributes.color_name) return entityState.attributes.color_name;
-    if (entityState.attributes.color && typeof entityState.attributes.color === 'string') {
-      return entityState.attributes.color;
-    }
-
-    if (entityState.entity_id) {
-      const domain = entityState.entity_id.split('.')[0];
-      const state = entityState.state;
-      switch (domain) {
-        case 'light': return state === 'on' ? '#FFA500' : '#666666';
-        case 'switch': return state === 'on' ? '#4CAF50' : '#666666';
-        case 'binary_sensor': return state === 'on' ? '#F44336' : '#4CAF50';
-        default:
-          return state === 'on' || state === 'open' || state === 'active'
-            ? 'var(--primary-color)'
-            : '#666666';
-      }
-    }
-    return null;
   }
 
   /**
@@ -3230,9 +2957,7 @@ export class UltraPopupModule extends BaseUltraModule {
         const iconSize = popupModule.trigger_button_icon_size || '24px';
         const hasCustomTextColor = !!popupModule.trigger_button_text_color;
 
-        let bgColor = popupModule.trigger_button_background_color || 'var(--primary-color)';
-        const entityColor = this._getTriggerButtonEntityColor(popupModule, hass, config);
-        if (entityColor) bgColor = entityColor;
+        const bgColor = popupModule.trigger_button_background_color || 'var(--primary-color)';
 
         const textColor = popupModule.trigger_button_text_color || 'white';
 
@@ -3361,7 +3086,6 @@ export class UltraPopupModule extends BaseUltraModule {
       } else if (triggerType === 'icon') {
         const triggerIcon = popupModule.trigger_icon || 'mdi:information';
         const triggerIconColor =
-          this._getTriggerIconEntityColor(popupModule, hass, config) ||
           popupModule.trigger_icon_color ||
           'var(--primary-color)';
         const iconChrome = {

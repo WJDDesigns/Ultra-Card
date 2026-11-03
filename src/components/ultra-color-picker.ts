@@ -1036,7 +1036,9 @@ export class UltraColorPicker extends LitElement {
               ${count}
               ${count === 1
                 ? localize('editor.state_color.rule_one', lang, 'rule')
-                : localize('editor.state_color.rule_many', lang, 'rules')}</span
+                : localize('editor.state_color.rule_many', lang, 'rules')}${value.entity_color
+                ? html` · ${localize('editor.state_color.entity_color_short', lang, 'entity color')}`
+                : ''}</span
             >
           </div>
           <div class="reset-button-wrapper">

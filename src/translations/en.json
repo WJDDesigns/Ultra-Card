@@ -6400,7 +6400,11 @@
       "type_template": "Template",
       "attribute": "Attribute",
       "add_rule": "Add rule",
-      "otherwise": "Otherwise use"
+      "otherwise": "Otherwise use",
+      "entity_color": "Otherwise use an entity's own color",
+      "entity_color_desc": "Optional. Pick a light or other entity to follow its color (for example the bulb's RGB color). Leave empty to skip.",
+      "otherwise_missing": "If that entity is unavailable, use",
+      "entity_color_short": "entity color"
     }
   },
   "hub": {

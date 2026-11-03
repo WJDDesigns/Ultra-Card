@@ -4,6 +4,8 @@ import { html, render } from 'lit';
 import { getModuleRegistry } from '../module-registry';
 import { mockHass } from '../../editor/tabs/__tests__/layout-tab-harness';
 import type { PopupModule } from '../../types';
+import { autoMigrateCardModule } from '../../utils/template-migration';
+import { logicService } from '../../services/logic-service';
 
 /**
  * Issue #128: the popup trigger icon gets the Icon module's background and
@@ -71,24 +73,30 @@ describe('popup module: trigger icon styling', () => {
     host.remove();
   });
 
-  it('colours the icon from the entity when enabled, honouring state colours first', () => {
-    const fromRgb = renderTrigger({
+  it('old "Use Entity Color" configs still colour the icon from the entity, state colours first', () => {
+    // The toggle is gone from the editor; saved configs are converted to
+    // "Color by entity state" values when the card loads.
+    logicService.setHass(hass);
+    const migrated = (o: Partial<PopupModule>) =>
+      autoMigrateCardModule({ id: 'p1', type: 'popup', ...o } as any) as Partial<PopupModule>;
+    const fromRgb = renderTrigger(migrated({
       trigger_icon_use_entity_color: true,
       trigger_icon_color_entity: 'light.kitchen',
       trigger_icon_color: 'blue',
-    });
+    }));
     expect(fromRgb.querySelector<HTMLElement>('.popup-trigger ha-icon')!.style.color).toBe(
       'rgb(255, 0, 0)'
     );
     fromRgb.remove();
 
-    const fromMap = renderTrigger({
+    const fromMap = renderTrigger(migrated({
       trigger_icon_use_entity_color: true,
       trigger_icon_color_entity: 'light.kitchen',
       trigger_icon_state_colors: { on: 'green' },
-    });
+    }));
     expect(fromMap.querySelector<HTMLElement>('.popup-trigger ha-icon')!.style.color).toBe('green');
     fromMap.remove();
+    logicService.setHass(undefined);
   });
 
   it('aligns the trigger to the right of the module, not the left', () => {
