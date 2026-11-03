@@ -3439,6 +3439,29 @@
         "section_desc": "Icône facultative affichée à côté du titre. Laissez vide pour aucune.",
         "icon": "Icône",
         "color": "Couleur de l'icône du titre"
+      },
+      "behavior": {
+        "section_title": "Comportement d'ouverture",
+        "section_desc": "Choisissez dans quelle direction le contenu s'ouvre et comment il interagit avec le reste de la page.",
+        "direction": "Direction d'ouverture",
+        "direction_desc": "Gauche et Droite ouvrent le contenu sur le côté. Auto ouvre vers le haut quand l'accordéon se trouve dans la moitié basse de l'écran.",
+        "direction_down": "Bas",
+        "direction_up": "Haut",
+        "direction_left": "Gauche",
+        "direction_right": "Droite",
+        "direction_auto": "Auto",
+        "style": "Style d'ouverture",
+        "style_desc": "Sur place agrandit l'accordéon et pousse le contenu voisin. Superposé affiche le contenu ouvert par-dessus la page, comme un menu déroulant.",
+        "style_push": "Sur place",
+        "style_overlay": "Superposé",
+        "outside_click": "Fermer au clic extérieur",
+        "outside_click_desc": "Replie l'accordéon dès que vous cliquez ou touchez en dehors.",
+        "side_header": "Style de l'en-tête",
+        "side_header_desc": "Onglet vertical transforme l'en-tête en une bande étroite avec le titre à la verticale. Barre conserve l'en-tête normal.",
+        "side_header_vertical": "Onglet vertical",
+        "side_header_horizontal": "Barre",
+        "panel_width": "Largeur du panneau",
+        "panel_width_desc": "Largeur du panneau de contenu quand il s'ouvre sur le côté, en pixels. Il ne dépasse jamais la largeur de l'écran."
       }
     },
     "animated_forecast": {

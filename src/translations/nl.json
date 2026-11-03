@@ -3439,6 +3439,29 @@
         "section_desc": "Optioneel pictogram naast de titel. Laat leeg voor geen.",
         "icon": "Pictogram",
         "color": "Kleur titelpictogram"
+      },
+      "behavior": {
+        "section_title": "Uitklapgedrag",
+        "section_desc": "Bepaal in welke richting de inhoud opent en hoe die samenwerkt met de rest van de pagina.",
+        "direction": "Uitklaprichting",
+        "direction_desc": "Links en Rechts openen de inhoud opzij. Auto opent omhoog wanneer de accordeon in de onderste helft van het scherm staat.",
+        "direction_down": "Omlaag",
+        "direction_up": "Omhoog",
+        "direction_left": "Links",
+        "direction_right": "Rechts",
+        "direction_auto": "Auto",
+        "style": "Uitklapstijl",
+        "style_desc": "Op zijn plaats vergroot de accordeon en duwt andere inhoud opzij. Overlay legt de geopende inhoud over de pagina, zoals een dropdownmenu.",
+        "style_push": "Op zijn plaats",
+        "style_overlay": "Overlay",
+        "outside_click": "Sluiten bij klik buiten",
+        "outside_click_desc": "Klapt de accordeon dicht zodra je ergens buiten klikt of tikt.",
+        "side_header": "Kopstijl",
+        "side_header_desc": "Verticaal tabblad maakt van de kop een smalle strook met de titel verticaal. Balk behoudt de normale kop.",
+        "side_header_vertical": "Verticaal tabblad",
+        "side_header_horizontal": "Balk",
+        "panel_width": "Paneelbreedte",
+        "panel_width_desc": "Hoe breed het inhoudspaneel is als het opzij opent, in pixels. Het wordt nooit breder dan het scherm."
       }
     },
     "animated_forecast": {

@@ -3765,6 +3765,29 @@
         "section_desc": "标题旁显示的可选图标。留空则不显示。",
         "icon": "图标",
         "color": "标题图标颜色"
+      },
+      "behavior": {
+        "section_title": "展开行为",
+        "section_desc": "控制内容的展开方向，以及它与页面其他部分的交互方式。",
+        "direction": "展开方向",
+        "direction_desc": "向左和向右会从侧面展开内容。自动会在折叠面板位于屏幕下半部分时向上展开。",
+        "direction_down": "向下",
+        "direction_up": "向上",
+        "direction_left": "向左",
+        "direction_right": "向右",
+        "direction_auto": "自动",
+        "style": "展开样式",
+        "style_desc": "原位会让折叠面板变大并推开其他内容。浮层会像下拉菜单一样把展开的内容浮在页面上方。",
+        "style_push": "原位",
+        "style_overlay": "浮层",
+        "outside_click": "点击外部时关闭",
+        "outside_click_desc": "在折叠面板外的任意位置点击或轻触时将其收起。",
+        "side_header": "标题样式",
+        "side_header_desc": "竖向标签会把标题栏变成一条窄条，标题竖排显示。横条保留普通标题栏。",
+        "side_header_vertical": "竖向标签",
+        "side_header_horizontal": "横条",
+        "panel_width": "面板宽度",
+        "panel_width_desc": "向侧面展开时内容面板的宽度（像素）。它不会超过屏幕宽度。"
       }
     },
     "animated_forecast": {

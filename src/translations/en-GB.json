@@ -3444,6 +3444,29 @@
         "section_desc": "Optional icon shown next to the title. Leave empty for none.",
         "icon": "Icon",
         "color": "Title icon colour"
+      },
+      "behavior": {
+        "section_title": "Expand Behaviour",
+        "section_desc": "Control which direction the content opens and how it interacts with the rest of the page.",
+        "direction": "Expand Direction",
+        "direction_desc": "Left and Right open the content sideways. Auto opens upwards when the accordion sits in the lower half of the screen.",
+        "direction_down": "Down",
+        "direction_up": "Up",
+        "direction_left": "Left",
+        "direction_right": "Right",
+        "direction_auto": "Auto",
+        "style": "Expand Style",
+        "style_desc": "In Place grows the accordion and pushes content aside. Overlay floats the open content over the page like a drop-down menu.",
+        "style_push": "In Place",
+        "style_overlay": "Overlay",
+        "outside_click": "Close on Outside Click",
+        "outside_click_desc": "Collapse the accordion whenever you click or tap anywhere outside it.",
+        "side_header": "Header Style",
+        "side_header_desc": "Vertical Tab turns the header into a slim strip with the title running sideways. Bar keeps the normal header.",
+        "side_header_vertical": "Vertical Tab",
+        "side_header_horizontal": "Bar",
+        "panel_width": "Panel Width",
+        "panel_width_desc": "How wide the content panel is when it opens sideways, in pixels. It never grows wider than the screen."
       }
     },
     "animated_forecast": {

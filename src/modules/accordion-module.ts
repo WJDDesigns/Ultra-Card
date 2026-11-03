@@ -466,7 +466,7 @@ export class UltraAccordionModule extends BaseUltraModule {
             localize(
               'editor.accordion.behavior.direction_desc',
               lang,
-              'Auto opens upward when the accordion sits in the lower half of the screen.'
+              'Left and Right open the content sideways. Auto opens upward when the accordion sits in the lower half of the screen.'
             ),
             accordionModule.expand_direction || 'down',
             [
@@ -481,16 +481,86 @@ export class UltraAccordionModule extends BaseUltraModule {
                 icon: 'mdi:arrow-up',
               },
               {
+                value: 'left',
+                label: localize('editor.accordion.behavior.direction_left', lang, 'Left'),
+                icon: 'mdi:arrow-left',
+              },
+              {
+                value: 'right',
+                label: localize('editor.accordion.behavior.direction_right', lang, 'Right'),
+                icon: 'mdi:arrow-right',
+              },
+              {
                 value: 'auto',
                 label: localize('editor.accordion.behavior.direction_auto', lang, 'Auto'),
                 icon: 'mdi:arrow-up-down',
               },
             ],
             next => {
-              updateModule({ expand_direction: next as 'down' | 'up' | 'auto' });
+              updateModule({ expand_direction: next as AccordionModule['expand_direction'] });
               this.triggerPreviewUpdate();
             }
           )}
+
+          ${accordionModule.expand_direction === 'left' ||
+          accordionModule.expand_direction === 'right'
+            ? html`
+                <!-- Side header style (left/right only) -->
+                ${this.renderSegmentedField(
+                  localize('editor.accordion.behavior.side_header', lang, 'Header Style'),
+                  localize(
+                    'editor.accordion.behavior.side_header_desc',
+                    lang,
+                    'Vertical Tab turns the header into a slim strip with the title running sideways. Bar keeps the normal header.'
+                  ),
+                  accordionModule.side_header_style || 'vertical',
+                  [
+                    {
+                      value: 'vertical',
+                      label: localize(
+                        'editor.accordion.behavior.side_header_vertical',
+                        lang,
+                        'Vertical Tab'
+                      ),
+                      icon: 'mdi:tab',
+                    },
+                    {
+                      value: 'horizontal',
+                      label: localize('editor.accordion.behavior.side_header_horizontal', lang, 'Bar'),
+                      icon: 'mdi:view-agenda-outline',
+                    },
+                  ],
+                  next => {
+                    updateModule({ side_header_style: next as 'vertical' | 'horizontal' });
+                    this.triggerPreviewUpdate();
+                  }
+                )}
+
+                <!-- Panel width (left/right only) -->
+                ${this.renderSettingsSection('', '', [
+                  {
+                    title: localize('editor.accordion.behavior.panel_width', lang, 'Panel Width'),
+                    description: localize(
+                      'editor.accordion.behavior.panel_width_desc',
+                      lang,
+                      'How wide the content panel is when it opens sideways, in pixels. It never grows wider than the screen.'
+                    ),
+                    hass,
+                    data: { panel_width: accordionModule.panel_width ?? 300 },
+                    schema: [this.numberField('panel_width', 80, 1200, 10)],
+                    onChange: (e: CustomEvent) => {
+                      const next = Number(e.detail.value?.panel_width);
+                      updateModule({
+                        panel_width: Number.isFinite(next) && next > 0 ? next : undefined,
+                      });
+                      setTimeout(() => {
+                        this.triggerPreviewUpdate();
+                      }, 50);
+                    },
+                  },
+                ])}
+              `
+            : ''}
 
           <!-- Expand Style -->
           ${this.renderSegmentedField(
@@ -1539,6 +1609,13 @@ export class UltraAccordionModule extends BaseUltraModule {
       configuredDirection === 'up' ||
       (configuredDirection === 'auto' &&
         this.accordionResolvedDirections.get(accordionModule.id) === 'up');
+    // Left/right: the content panel slides out sideways next to the header.
+    const isSide = configuredDirection === 'left' || configuredDirection === 'right';
+    const opensRight = configuredDirection === 'right';
+    const verticalTab = isSide && (accordionModule.side_header_style || 'vertical') === 'vertical';
+    const panelWidthPx = Math.max(80, Number(accordionModule.panel_width) || 300);
+    // Never let the panel run wider than the screen (phones).
+    const panelWidthCss = `min(${panelWidthPx}px, calc(100vw - 96px))`;
 
     // Determine title text
     let titleText = '';
@@ -1618,6 +1695,16 @@ export class UltraAccordionModule extends BaseUltraModule {
       background: containerBackground,
       boxShadow: d.container_shadow || 'none',
     };
+    if (isSide) {
+      Object.assign(containerStyles, {
+        // Header and panel sit side by side; opening left puts the panel
+        // before the header.
+        flexDirection: isOverlay || opensRight ? 'row' : 'row-reverse',
+        alignItems: 'stretch',
+        width: 'fit-content',
+        maxWidth: '100%',
+      });
+    }
 
     // Header styles - using design properties
     const headerPadding = d.header_padding ?? 12;
@@ -1638,10 +1725,27 @@ export class UltraAccordionModule extends BaseUltraModule {
       userSelect: 'none',
       gap: headerAlignment === 'center' ? '8px' : '0',
     };
-    // The divider sits between header and content, which is above the header
-    // when expanding upward in place.
-    headerStyles[!isOverlay && expandUp ? 'borderTop' : 'borderBottom'] =
-      `${headerBorderWidth}px solid ${headerBorderColor}`;
+    if (isSide) {
+      headerStyles.flexShrink = '0';
+      if (verticalTab) {
+        Object.assign(headerStyles, {
+          flexDirection: 'column',
+          padding: `16px ${headerPadding}px`,
+          gap: '8px',
+        });
+      }
+      // Divider between the header and the panel beside it (only while open,
+      // so a closed tab doesn't show a doubled edge).
+      if (!isOverlay && isOpen) {
+        headerStyles[opensRight ? 'borderRight' : 'borderLeft'] =
+          `${headerBorderWidth}px solid ${headerBorderColor}`;
+      }
+    } else {
+      // The divider sits between header and content, which is above the
+      // header when expanding upward in place.
+      headerStyles[!isOverlay && expandUp ? 'borderTop' : 'borderBottom'] =
+        `${headerBorderWidth}px solid ${headerBorderColor}`;
+    }
 
     // Content styles - using design properties
     const contentBorderWidth = d.content_border_width ?? 0;
@@ -1675,12 +1779,45 @@ export class UltraAccordionModule extends BaseUltraModule {
         boxShadow: isOpen ? d.container_shadow || '0 4px 16px rgba(0, 0, 0, 0.25)' : 'none',
       });
     }
+    if (isSide) {
+      // Sideways: animate the width instead of the height. The children live
+      // in a fixed-width inner box so they don't squash while it slides.
+      Object.assign(contentStyles, {
+        maxHeight: 'none',
+        width: isOpen ? panelWidthCss : '0',
+        flexShrink: '0',
+        overflow: 'hidden',
+        padding: '0',
+        transition: 'width 0.3s ease-in-out',
+        borderTop: 'none',
+        [opensRight ? 'borderLeft' : 'borderRight']:
+          contentBorderWidth > 0 ? `${contentBorderWidth}px solid ${contentBorderColor}` : 'none',
+      });
+      if (isOverlay) {
+        Object.assign(contentStyles, {
+          top: '0',
+          bottom: 'auto',
+          left: opensRight ? '100%' : 'auto',
+          right: opensRight ? 'auto' : '100%',
+          marginTop: '0',
+          marginBottom: '0',
+          [opensRight ? 'marginLeft' : 'marginRight']: '4px',
+          minHeight: '100%',
+        });
+      }
+    }
 
     // Chevron icon styles - using design properties
     const iconSize = d.icon_size ?? 24;
     const iconColor = d.icon_color || 'inherit';
+    // Sideways the chevron points toward where the panel opens, then flips.
+    const sideAngle = opensRight ? -90 : 90;
     const chevronStyles = {
-      transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      transform: isSide
+        ? `rotate(${isOpen ? -sideAngle : sideAngle}deg)`
+        : isOpen
+          ? 'rotate(180deg)'
+          : 'rotate(0deg)',
       transition: 'transform 0.3s ease',
       order: iconOrder,
       flexShrink: 0,
@@ -1688,7 +1825,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     };
 
     // Title styles
-    const titleStyles = {
+    const titleStyles: Record<string, string | number> = {
       order: titleOrder,
       flexShrink: headerAlignment === 'apart' ? 1 : 0,
       minWidth: 0,
@@ -1696,6 +1833,13 @@ export class UltraAccordionModule extends BaseUltraModule {
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap' as const,
     };
+    if (verticalTab) {
+      // Title runs along the tab: bottom-to-top on a left-hand tab,
+      // top-to-bottom on a right-hand one.
+      titleStyles.writingMode = 'vertical-rl';
+      titleStyles.minHeight = 0;
+      if (opensRight) titleStyles.transform = 'rotate(180deg)';
+    }
 
     // Hover color for header
     const headerHoverColor = d.header_hover_color || 'rgba(var(--rgb-primary-color), 0.1)';
@@ -1756,6 +1900,25 @@ export class UltraAccordionModule extends BaseUltraModule {
       accordionId,
       isOpen && !!accordionModule.close_on_outside_click
     );
+
+    const renderBody = () =>
+      isOpen && hasChildren
+        ? accordionModule.modules.map(childModule =>
+            this._renderAccordionChild(childModule, hass, moduleWithDesign, config, previewContext)
+          )
+        : isOpen && !hasChildren
+          ? html`
+              <div
+                style="padding: 24px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+              >
+                ${localize(
+                  'editor.accordion.preview.no_modules',
+                  lang,
+                  'No modules added. Add modules to this accordion in the Layout tab.'
+                )}
+              </div>
+            `
+          : '';
 
     return this.wrapWithAnimation(html`
       <style>
@@ -1824,29 +1987,15 @@ export class UltraAccordionModule extends BaseUltraModule {
 
         <!-- Accordion Content -->
         <div class="ultra-accordion-content" style="${this.buildStyleString(contentStyles)}">
-          ${isOpen && hasChildren
-            ? accordionModule.modules.map(childModule =>
-                this._renderAccordionChild(
-                  childModule,
-                  hass,
-                  moduleWithDesign,
-                  config,
-                  previewContext
-                )
-              )
-            : isOpen && !hasChildren
-              ? html`
-                  <div
-                    style="padding: 24px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
-                  >
-                    ${localize(
-                      'editor.accordion.preview.no_modules',
-                      lang,
-                      'No modules added. Add modules to this accordion in the Layout tab.'
-                    )}
-                  </div>
-                `
-              : ''}
+          ${isSide
+            ? html`<div
+                class="ultra-accordion-side-panel"
+                style="width: ${panelWidthCss}; box-sizing: border-box; padding: ${d.content_padding ||
+                16}px;"
+              >
+                ${renderBody()}
+              </div>`
+            : renderBody()}
         </div>
       </div>
     `, module, hass);

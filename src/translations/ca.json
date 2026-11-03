@@ -3439,6 +3439,29 @@
         "section_desc": "Icona opcional al costat del títol. Deixeu-ho buit per a cap.",
         "icon": "Icona",
         "color": "Color de la icona del títol"
+      },
+      "behavior": {
+        "section_title": "Comportament d'obertura",
+        "section_desc": "Controla en quina direcció s'obre el contingut i com interactua amb la resta de la pàgina.",
+        "direction": "Direcció d'obertura",
+        "direction_desc": "Esquerra i Dreta obren el contingut cap a un costat. Auto obre cap amunt quan l'acordió és a la meitat inferior de la pantalla.",
+        "direction_down": "Avall",
+        "direction_up": "Amunt",
+        "direction_left": "Esquerra",
+        "direction_right": "Dreta",
+        "direction_auto": "Auto",
+        "style": "Estil d'obertura",
+        "style_desc": "Al lloc fa créixer l'acordió i desplaça el contingut. Superposat mostra el contingut obert per sobre de la pàgina, com un menú desplegable.",
+        "style_push": "Al lloc",
+        "style_overlay": "Superposat",
+        "outside_click": "Tanca en fer clic fora",
+        "outside_click_desc": "Plega l'acordió quan facis clic o toquis en qualsevol lloc fora d'ell.",
+        "side_header": "Estil de la capçalera",
+        "side_header_desc": "Pestanya vertical converteix la capçalera en una franja estreta amb el títol en vertical. Barra manté la capçalera normal.",
+        "side_header_vertical": "Pestanya vertical",
+        "side_header_horizontal": "Barra",
+        "panel_width": "Amplada del panell",
+        "panel_width_desc": "Amplada del panell de contingut quan s'obre cap a un costat, en píxels. Mai no supera l'amplada de la pantalla."
       }
     },
     "animated_forecast": {

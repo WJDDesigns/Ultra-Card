@@ -3439,6 +3439,29 @@
         "section_desc": "Volitelná ikona vedle názvu. Ponechte prázdné pro žádnou.",
         "icon": "Ikona",
         "color": "Barva ikony nadpisu"
+      },
+      "behavior": {
+        "section_title": "Chování rozbalení",
+        "section_desc": "Určete, kterým směrem se obsah otevírá a jak spolupracuje se zbytkem stránky.",
+        "direction": "Směr rozbalení",
+        "direction_desc": "Vlevo a Vpravo otevírají obsah do strany. Auto otevírá nahoru, když je akordeon v dolní polovině obrazovky.",
+        "direction_down": "Dolů",
+        "direction_up": "Nahoru",
+        "direction_left": "Vlevo",
+        "direction_right": "Vpravo",
+        "direction_auto": "Auto",
+        "style": "Styl rozbalení",
+        "style_desc": "Na místě zvětší akordeon a odsune ostatní obsah. Překryv zobrazí otevřený obsah nad stránkou jako rozbalovací nabídku.",
+        "style_push": "Na místě",
+        "style_overlay": "Překryv",
+        "outside_click": "Zavřít kliknutím mimo",
+        "outside_click_desc": "Sbalí akordeon, kdykoli kliknete nebo klepnete kamkoli mimo něj.",
+        "side_header": "Styl záhlaví",
+        "side_header_desc": "Svislá karta promění záhlaví v úzký pruh se svislým názvem. Lišta ponechá běžné záhlaví.",
+        "side_header_vertical": "Svislá karta",
+        "side_header_horizontal": "Lišta",
+        "panel_width": "Šířka panelu",
+        "panel_width_desc": "Šířka panelu s obsahem při otevření do strany, v pixelech. Nikdy není širší než obrazovka."
       }
     },
     "animated_forecast": {

@@ -3439,6 +3439,29 @@
         "section_desc": "Valfri ikon bredvid titeln. Lämna tomt för ingen.",
         "icon": "Ikon",
         "color": "Färg på titelikon"
+      },
+      "behavior": {
+        "section_title": "Expanderingsbeteende",
+        "section_desc": "Styr åt vilket håll innehållet öppnas och hur det samspelar med resten av sidan.",
+        "direction": "Expanderingsriktning",
+        "direction_desc": "Vänster och Höger öppnar innehållet åt sidan. Auto öppnar uppåt när dragspelet sitter i skärmens nedre halva.",
+        "direction_down": "Ned",
+        "direction_up": "Upp",
+        "direction_left": "Vänster",
+        "direction_right": "Höger",
+        "direction_auto": "Auto",
+        "style": "Expanderingsstil",
+        "style_desc": "På plats gör dragspelet större och skjuter undan annat innehåll. Överlägg lägger det öppna innehållet över sidan som en rullgardinsmeny.",
+        "style_push": "På plats",
+        "style_overlay": "Överlägg",
+        "outside_click": "Stäng vid klick utanför",
+        "outside_click_desc": "Fäller ihop dragspelet när du klickar eller trycker någonstans utanför.",
+        "side_header": "Rubrikstil",
+        "side_header_desc": "Lodrät flik gör rubriken till en smal remsa med titeln på längden. List behåller den vanliga rubriken.",
+        "side_header_vertical": "Lodrät flik",
+        "side_header_horizontal": "List",
+        "panel_width": "Panelbredd",
+        "panel_width_desc": "Hur brett innehållspanelen är när den öppnas åt sidan, i pixlar. Den blir aldrig bredare än skärmen."
       }
     },
     "animated_forecast": {
