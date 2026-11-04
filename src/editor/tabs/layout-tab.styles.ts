@@ -5053,21 +5053,50 @@ export const layoutTabStyles = css`
       [data-uc-sec-owned-hidden] {
         display: none !important;
       }
+      /* The header is a tinted bar with an accent edge and a round chevron
+         button, so it can't be mistaken for a field or a dropdown inside it. */
       .settings-section[data-uc-collapsible] > [data-uc-sec-head] {
         display: flex !important;
         align-items: center;
         gap: 8px;
         cursor: pointer;
         user-select: none;
-        border-radius: 6px;
+        margin: -6px -6px 14px !important;
+        padding: 8px 8px 8px 14px;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+        box-shadow: inset 4px 0 0 var(--primary-color);
+        transition: background 0.15s ease;
+      }
+      .settings-section[data-uc-collapsible] > [data-uc-sec-head]:hover {
+        background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+      }
+      .settings-section[data-uc-collapsible] > [data-uc-sec-head]:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
       .settings-section[data-uc-collapsed] > [data-uc-sec-head] {
-        margin-bottom: 0 !important;
+        margin-bottom: -6px !important;
+        background: color-mix(in srgb, var(--primary-color) 5%, transparent);
+        box-shadow: inset 4px 0 0 color-mix(in srgb, var(--primary-color) 45%, transparent);
+      }
+      .settings-section[data-uc-collapsed] > [data-uc-sec-head]:hover {
+        background: color-mix(in srgb, var(--primary-color) 12%, transparent);
       }
       .settings-section[data-uc-collapsed] {
         padding-top: 12px !important;
         padding-bottom: 12px !important;
         margin-bottom: 12px !important;
+      }
+      /* Open section whose fields sit after its box: pull them in under the
+         box, indent them, and let the wrapper draw a guide line beside them. */
+      .settings-section[data-uc-sec-has-owned]:not([data-uc-collapsed]) {
+        margin-bottom: 12px !important;
+      }
+      [data-uc-sec-owned] {
+        margin-inline-start: 16px !important;
+        max-width: calc(100% - 16px) !important;
+        box-sizing: border-box;
       }
       [data-uc-sec-head] > .uc-sec-meta {
         flex: 1 1 auto;
@@ -5100,16 +5129,23 @@ export const layoutTabStyles = css`
       }
       [data-uc-sec-head] > .uc-sec-chevron {
         flex: 0 0 auto;
-        --mdc-icon-size: 22px;
-        color: var(--secondary-text-color);
-        transition: transform 0.2s ease;
+        --mdc-icon-size: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+        color: var(--primary-color);
+        transition: transform 0.2s ease, background 0.15s ease;
         transform: rotate(180deg);
       }
       .settings-section[data-uc-collapsed] > [data-uc-sec-head] > .uc-sec-chevron {
         transform: rotate(0deg);
       }
       [data-uc-sec-head]:hover > .uc-sec-chevron {
-        color: var(--primary-color);
+        background: color-mix(in srgb, var(--primary-color) 28%, transparent);
       }
       @media (prefers-reduced-motion: reduce) {
         [data-uc-sec-head] > .uc-sec-chevron {
