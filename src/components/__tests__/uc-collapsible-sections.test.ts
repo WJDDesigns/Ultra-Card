@@ -85,8 +85,14 @@ describe('uc-collapsible-sections', () => {
     );
     const slider = el.querySelector('#b-slider')!;
     expect(slider.hasAttribute('data-uc-sec-owned-hidden')).toBe(true);
+    expect(slider.hasAttribute('data-uc-sec-owned')).toBe(false);
     el.querySelectorAll<HTMLElement>('.section-title')[1].click();
     expect(slider.hasAttribute('data-uc-sec-owned-hidden')).toBe(false);
+    // Shown fields are marked so they indent under their section's box.
+    expect(slider.hasAttribute('data-uc-sec-owned')).toBe(true);
+    const [, b, c] = Array.from(el.querySelectorAll('.settings-section'));
+    expect(b.hasAttribute('data-uc-sec-has-owned')).toBe(true);
+    expect(c.hasAttribute('data-uc-sec-has-owned')).toBe(false);
   });
 
   it('expand all / collapse all', async () => {
