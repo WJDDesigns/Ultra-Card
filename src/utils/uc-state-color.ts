@@ -35,6 +35,12 @@ export interface StateColorRule {
 export interface StateColorValue {
   kind: typeof STATE_COLOR_KIND;
   fallback?: string;
+  /**
+   * Optional entity whose own colour (a light's RGB colour, a `color`
+   * attribute, or an on/off default for its domain) is used when no rule
+   * matches. The fallback then only applies while that entity is missing.
+   */
+  entity_color?: string;
   rules: StateColorRule[];
 }
 
@@ -109,6 +115,63 @@ function rulePasses(rule: StateColorRule, states: Record<string, unknown> | unde
     : active.every(c => conditionPasses(c, states));
 }
 
+function hsToRgb(h: number, s: number): string {
+  // HSV → RGB with full brightness, as the old per-module helpers did.
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = 1 - s;
+  const q = 1 - f * s;
+  const t = 1 - (1 - f) * s;
+  const table: Array<[number, number, number]> = [
+    [1, t, p],
+    [q, 1, p],
+    [p, 1, t],
+    [p, q, 1],
+    [t, p, 1],
+    [1, p, q],
+  ];
+  const [r, g, b] = table[((i % 6) + 6) % 6];
+  return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
+}
+
+/**
+ * An entity's own colour: its RGB / HS colour, a colour name or `color`
+ * attribute, otherwise an on/off default for its domain. Same order the old
+ * "Use Entity Color" toggle on Popup and Button used, so migrated cards look
+ * the same.
+ */
+export function entityOwnColor(stateObj: unknown): string | null {
+  const st = stateObj as
+    | { entity_id?: string; state?: string; attributes?: Record<string, unknown> }
+    | undefined;
+  if (!st || !st.attributes) return null;
+  const a = st.attributes;
+  if (Array.isArray(a.rgb_color)) return `rgb(${a.rgb_color.join(',')})`;
+  if (Array.isArray(a.hs_color)) {
+    const [h, s] = a.hs_color as number[];
+    return hsToRgb(Number(h) / 360, Number(s) / 100);
+  }
+  if (typeof a.color_name === 'string' && a.color_name) return a.color_name;
+  if (typeof a.color === 'string' && a.color) return a.color;
+  if (st.entity_id) {
+    const domain = st.entity_id.split('.')[0];
+    const state = st.state;
+    switch (domain) {
+      case 'light':
+        return state === 'on' ? '#FFA500' : '#666666';
+      case 'switch':
+        return state === 'on' ? '#4CAF50' : '#666666';
+      case 'binary_sensor':
+        return state === 'on' ? '#F44336' : '#4CAF50';
+      default:
+        return state === 'on' || state === 'open' || state === 'active'
+          ? 'var(--primary-color)'
+          : '#666666';
+    }
+  }
+  return null;
+}
+
 /** The colour a state colour value stands for right now. Plain strings pass through. */
 export function resolveStateColor(
   value: unknown,
@@ -121,6 +184,11 @@ export function resolveStateColor(
       if (rule && typeof rule.color === 'string' && rule.color !== '' && rulePasses(rule, states)) {
         return rule.color;
       }
+    }
+    if (value.entity_color) {
+      const id = conditionEntityId(value.entity_color);
+      const own = id ? entityOwnColor(states[id]) : null;
+      if (own) return own;
     }
   }
   return value.fallback || undefined;
@@ -219,10 +287,42 @@ export function collectStateColorEntities(config: unknown, add: (entity: string)
   for (const path of findStateColorPaths(config)) {
     const value = getAt(config, path);
     if (!isStateColor(value)) continue;
+    if (typeof value.entity_color === 'string' && value.entity_color) add(value.entity_color);
     for (const rule of value.rules || []) {
       for (const cond of rule?.conditions || []) {
         if (cond && typeof cond.entity === 'string' && cond.entity) add(cond.entity);
       }
     }
   }
+}
+
+/**
+ * Turn the old per-module "Use Entity Color" settings (one entity, an optional
+ * state → colour map, then the entity's own colour) into a state colour value.
+ * Returns undefined when there is nothing to convert.
+ */
+export function legacyEntityColorToStateColor(
+  fallback: unknown,
+  entity: string | undefined,
+  stateColors: Record<string, string> | undefined
+): StateColorValue | undefined {
+  if (!entity || typeof entity !== 'string') return undefined;
+  const base = isStateColor(fallback) ? fallback.fallback : typeof fallback === 'string' ? fallback : '';
+  const rules: StateColorRule[] = Object.entries(stateColors || {})
+    .filter(([state, color]) => state !== '' && typeof color === 'string' && color !== '')
+    .map(([state, color], i) => ({
+      id: `scr_legacy_${i}`,
+      color,
+      match: 'every' as const,
+      conditions: [
+        {
+          id: `cond_legacy_${i}`,
+          type: 'entity_state',
+          entity,
+          operator: '=',
+          value: state,
+        } as DisplayCondition,
+      ],
+    }));
+  return { kind: STATE_COLOR_KIND, fallback: base || '', entity_color: entity, rules };
 }

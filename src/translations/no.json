@@ -6433,7 +6433,11 @@
       "type_template": "Mal",
       "attribute": "Attributt",
       "add_rule": "Legg til regel",
-      "otherwise": "Ellers bruk"
+      "otherwise": "Ellers bruk",
+      "entity_color": "Ellers bruk en entitets egen farge",
+      "entity_color_desc": "Valgfritt. Velg et lys eller en annen entitet som fargen skal følge (for eksempel pærens RGB-farge). La stå tomt for å hoppe over.",
+      "otherwise_missing": "Hvis entiteten ikke er tilgjengelig, bruk",
+      "entity_color_short": "entitetsfarge"
     }
   },
   "hub": {

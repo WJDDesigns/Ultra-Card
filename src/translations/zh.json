@@ -6400,7 +6400,11 @@
       "type_template": "模板",
       "attribute": "属性",
       "add_rule": "添加规则",
-      "otherwise": "否则使用"
+      "otherwise": "否则使用",
+      "entity_color": "否则使用实体自身的颜色",
+      "entity_color_desc": "可选。选择一个灯光或其他实体以跟随其颜色（例如灯泡的 RGB 颜色）。留空则跳过。",
+      "otherwise_missing": "如果该实体不可用，则使用",
+      "entity_color_short": "实体颜色"
     }
   },
   "hub": {

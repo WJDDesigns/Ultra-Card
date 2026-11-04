@@ -6433,7 +6433,11 @@
       "type_template": "Modèle",
       "attribute": "Attribut",
       "add_rule": "Ajouter une règle",
-      "otherwise": "Sinon utiliser"
+      "otherwise": "Sinon utiliser",
+      "entity_color": "Sinon utiliser la couleur propre d'une entité",
+      "entity_color_desc": "Facultatif. Choisissez une lumière ou une autre entité dont la couleur sera suivie (par exemple la couleur RVB de l'ampoule). Laissez vide pour ignorer.",
+      "otherwise_missing": "Si cette entité est indisponible, utiliser",
+      "entity_color_short": "couleur de l'entité"
     }
   },
   "hub": {

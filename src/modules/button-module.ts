@@ -42,10 +42,6 @@ export class UltraButtonModule extends BaseUltraModule {
       icon_size: '24px',
       background_color: 'var(--primary-color)',
       text_color: 'white',
-      // Entity-based background color
-      use_entity_color: false,
-      background_color_entity: '',
-      background_state_colors: {},
       // Additional action configuration for future upgrade
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -99,43 +95,8 @@ export class UltraButtonModule extends BaseUltraModule {
         : mirroredFontSize) || '14px';
     const fontSize = this.addPixelUnit(rawFontSize) || '14px';
 
-    // Resolve background color - check entity-based color first if enabled
-    let backgroundColor =
+    const backgroundColor =
       designProperties.background_color || buttonModule.background_color || 'var(--primary-color)';
-
-    if (buttonModule.use_entity_color && buttonModule.background_color_entity && hass) {
-      const resolvedColorEntity =
-        this.resolveEntity(buttonModule.background_color_entity, config) ||
-        buttonModule.background_color_entity;
-      const entityState = hass.states[resolvedColorEntity];
-      if (entityState) {
-        // Check state colors mapping first
-        if (
-          buttonModule.background_state_colors &&
-          Object.keys(buttonModule.background_state_colors).length > 0
-        ) {
-          const stateColor = this.matchStateColor(
-            buttonModule.background_state_colors,
-            entityState.state
-          );
-          if (stateColor) {
-            backgroundColor = stateColor;
-          } else {
-            // Fallback to entity color extraction
-            const entityColor = this.getEntityStateColor(entityState);
-            if (entityColor) {
-              backgroundColor = entityColor;
-            }
-          }
-        } else {
-          // No state colors mapping, use entity color extraction
-          const entityColor = this.getEntityStateColor(entityState);
-          if (entityColor) {
-            backgroundColor = entityColor;
-          }
-        }
-      }
-    }
 
     const hasCustomTextColor =
       !!designProperties.color ||
@@ -467,125 +428,6 @@ export class UltraButtonModule extends BaseUltraModule {
   }
 
   // Trigger preview update for reactive UI
-
-  /**
-   * Look up a state color, tolerating numeric states ("20" matches "20.0")
-   */
-  private matchStateColor(
-    stateColors: { [state: string]: string },
-    state: string
-  ): string | undefined {
-    if (stateColors[state] !== undefined) {
-      return stateColors[state];
-    }
-    // Numeric-tolerant comparison so e.g. "20.0" matches a "20" mapping
-    const toNumber = (value: string): number | null => {
-      const trimmed = value.trim();
-      if (trimmed === '') return null;
-      const num = Number(trimmed);
-      return Number.isFinite(num) ? num : null;
-    };
-    const stateNum = toNumber(state);
-    const stateLower = state.trim().toLowerCase();
-    for (const [key, color] of Object.entries(stateColors)) {
-      const keyNum = toNumber(key);
-      if (stateNum !== null && keyNum !== null) {
-        if (keyNum === stateNum) {
-          return color;
-        }
-      } else if (key.trim().toLowerCase() === stateLower) {
-        return color;
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * Extract color from entity state attributes
-   */
-  private getEntityStateColor(entityState: any): string | null {
-    if (!entityState || !entityState.attributes) return null;
-
-    // Check for RGB color attributes (most common for lights)
-    if (entityState.attributes.rgb_color && Array.isArray(entityState.attributes.rgb_color)) {
-      return `rgb(${entityState.attributes.rgb_color.join(',')})`;
-    }
-
-    // Check for HS color attributes and convert to RGB
-    if (entityState.attributes.hs_color && Array.isArray(entityState.attributes.hs_color)) {
-      const [h, s] = entityState.attributes.hs_color;
-      const rgb = this.hsToRgb(h / 360, s / 100, 1);
-      return `rgb(${rgb.join(',')})`;
-    }
-
-    // Check for color name attribute
-    if (entityState.attributes.color_name) {
-      return entityState.attributes.color_name;
-    }
-
-    // Check for hex color attribute
-    if (entityState.attributes.color && typeof entityState.attributes.color === 'string') {
-      return entityState.attributes.color;
-    }
-
-    // For binary sensors or switches, use state-based colors
-    if (entityState.entity_id) {
-      const domain = entityState.entity_id.split('.')[0];
-      const state = entityState.state;
-
-      switch (domain) {
-        case 'light':
-          return state === 'on' ? '#FFA500' : '#666666'; // Orange when on, gray when off
-        case 'switch':
-          return state === 'on' ? '#4CAF50' : '#666666'; // Green when on, gray when off
-        case 'binary_sensor':
-          return state === 'on' ? '#F44336' : '#4CAF50'; // Red when on, green when off
-        default:
-          return state === 'on' || state === 'open' || state === 'active'
-            ? 'var(--primary-color)'
-            : '#666666';
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Convert HSV to RGB
-   */
-  private hsToRgb(h: number, s: number, v: number): number[] {
-    let r: number, g: number, b: number;
-    const i = Math.floor(h * 6);
-    const f = h * 6 - i;
-    const p = v * (1 - s);
-    const q = v * (1 - f * s);
-    const t = v * (1 - (1 - f) * s);
-
-    switch (i % 6) {
-      case 0:
-        ((r = v), (g = t), (b = p));
-        break;
-      case 1:
-        ((r = q), (g = v), (b = p));
-        break;
-      case 2:
-        ((r = p), (g = v), (b = t));
-        break;
-      case 3:
-        ((r = p), (g = q), (b = v));
-        break;
-      case 4:
-        ((r = t), (g = p), (b = v));
-        break;
-      case 5:
-        ((r = v), (g = p), (b = q));
-        break;
-      default:
-        ((r = 0), (g = 0), (b = 0));
-    }
-
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-  }
 
   // Resolve background images from global design (upload/url/entity)
   private getBackgroundImageCSS(

@@ -4,6 +4,7 @@
  */
 
 import type { CardModule, UltraCardConfig } from '../types';
+import { legacyEntityColorToStateColor } from './uc-state-color';
 
 export type LegacyMigrationKind =
   | 'icon'
@@ -393,9 +394,68 @@ export function autoMigrateConfigSlice(config: any, kind: LegacyMigrationKind): 
   return applyUnifiedMigration(config, kind, migration);
 }
 
+/**
+ * Popup trigger button/icon and Button used to have their own "Use Entity Color"
+ * toggle (entity + state → colour map + the entity's own colour). The colour
+ * pickers now do this with "Color by entity state", so fold the old settings
+ * into the colour field and switch the toggle off.
+ */
+type LooseModule = Record<string, unknown> & { type?: string };
+
+function migrateLegacyEntityColorToggle(m: LooseModule): LooseModule {
+  if (m.type === 'popup') {
+    let next: LooseModule = m;
+    if (m.trigger_button_use_entity_color) {
+      const value = legacyEntityColorToStateColor(
+        m.trigger_button_background_color,
+        m.trigger_button_color_entity as string | undefined,
+        m.trigger_button_state_colors as Record<string, string> | undefined
+      );
+      next = { ...next, trigger_button_use_entity_color: false };
+      if (value) next.trigger_button_background_color = value;
+      delete next.trigger_button_color_entity;
+      delete next.trigger_button_state_colors;
+    }
+    if (m.trigger_icon_use_entity_color) {
+      const value = legacyEntityColorToStateColor(
+        m.trigger_icon_color,
+        m.trigger_icon_color_entity as string | undefined,
+        m.trigger_icon_state_colors as Record<string, string> | undefined
+      );
+      next = { ...next, trigger_icon_use_entity_color: false };
+      if (value) next.trigger_icon_color = value;
+      delete next.trigger_icon_color_entity;
+      delete next.trigger_icon_state_colors;
+    }
+    return next;
+  }
+  if (m.type === 'button' && m.use_entity_color) {
+    // The Design tab's background wins over the module's own field when rendering,
+    // so the converted colour goes wherever the button actually takes it from.
+    const design = (m.design || {}) as Record<string, unknown>;
+    const designBg = design.background_color;
+    const inDesign = designBg !== undefined && designBg !== null && designBg !== '';
+    const value = legacyEntityColorToStateColor(
+      inDesign ? designBg : m.background_color,
+      m.background_color_entity as string | undefined,
+      m.background_state_colors as Record<string, string> | undefined
+    );
+    const next: LooseModule = { ...m, use_entity_color: false };
+    if (value) {
+      if (inDesign) next.design = { ...design, background_color: value };
+      else next.background_color = value;
+    }
+    delete next.background_color_entity;
+    delete next.background_state_colors;
+    return next;
+  }
+  return m;
+}
+
 /** Auto-migrate all legacy template fields on a card module before render. */
 export function autoMigrateCardModule(module: CardModule): CardModule {
-  const m = module as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy config shapes
+  const m = migrateLegacyEntityColorToggle(module as unknown as LooseModule) as any;
   switch (module.type) {
     case 'icon':
       if (m.icons?.length) {

@@ -6433,7 +6433,11 @@
       "type_template": "Plantilla",
       "attribute": "Atributo",
       "add_rule": "Añadir regla",
-      "otherwise": "Si no, usar"
+      "otherwise": "Si no, usar",
+      "entity_color": "Si no, usar el color propio de una entidad",
+      "entity_color_desc": "Opcional. Elige una luz u otra entidad para seguir su color (por ejemplo, el color RGB de la bombilla). Déjalo vacío para omitirlo.",
+      "otherwise_missing": "Si esa entidad no está disponible, usar",
+      "entity_color_short": "color de la entidad"
     }
   },
   "hub": {
