@@ -5128,7 +5128,6 @@ export const layoutTabStyles = css`
       }
       [data-uc-sec-head] > .uc-sec-chevron {
         flex: 0 0 auto;
-        --mdc-icon-size: 20px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -5139,6 +5138,16 @@ export const layoutTabStyles = css`
         color: var(--primary-color);
         transition: transform 0.2s ease, background 0.15s ease;
         transform: rotate(180deg);
+      }
+      [data-uc-sec-head] > .uc-sec-chevron > svg {
+        display: block;
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
       .settings-section[data-uc-collapsed] > [data-uc-sec-head] > .uc-sec-chevron {
         transform: rotate(0deg);

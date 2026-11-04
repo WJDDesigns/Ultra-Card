@@ -477,9 +477,17 @@ export class UcCollapsibleSections extends LitElement {
     summary.className = 'uc-sec-summary';
     meta.append(dot, summary);
 
-    const chevron = document.createElement('ha-icon');
+    // Drawn inline (not ha-icon) so the caret is centred exactly in its circle.
+    const chevron = document.createElement('span');
     chevron.className = 'uc-sec-chevron';
-    chevron.setAttribute('icon', 'mdi:chevron-down');
+    chevron.setAttribute('aria-hidden', 'true');
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    const path = document.createElementNS(svgNs, 'path');
+    path.setAttribute('d', 'M7 9.5l5 5 5-5');
+    svg.append(path);
+    chevron.append(svg);
 
     head.append(meta, chevron);
   }
