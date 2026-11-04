@@ -3520,6 +3520,20 @@ class UcNavigationService {
         --navbar-z-index: 3;
         --navbar-popup-backdrop-z-index: 900;
         --navbar-popup-z-index: 901;
+        /* Phone system bars (gesture bar, status bar, notch). HA's frontend sets
+           --safe-area-inset-* on <html> from the Companion app (--app-safe-area-inset-*)
+           or env(); fall back to env() for older frontends. Newer Android Companion
+           apps draw edge-to-edge, so without this the dock sits under the system
+           navigation bar. */
+        --uc-nav-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+        --uc-nav-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+        --uc-nav-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+        --uc-nav-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+      }
+      /* Floating docks: keep the whole card inside the safe area. */
+      .navbar.floating {
+        padding: var(--uc-nav-safe-top) var(--uc-nav-safe-right) var(--uc-nav-safe-bottom)
+          var(--uc-nav-safe-left);
       }
       .navbar.top {
         align-items: flex-start;
@@ -3614,10 +3628,36 @@ class UcNavigationService {
         border-top-left-radius: 0;
         border-top-right-radius: 0;
       }
+      /* Docked bars: the background still runs to the screen edge (like HA's own
+         footer), but the icons are padded clear of the system bars. */
+      .navbar-card.docked.bottom,
+      .navbar-card.docked.top {
+        box-sizing: border-box;
+        padding-left: calc(10px + var(--uc-nav-safe-left));
+        padding-right: calc(10px + var(--uc-nav-safe-right));
+      }
+      .navbar-card.docked.bottom {
+        padding-bottom: calc(8px + var(--uc-nav-safe-bottom));
+      }
+      .navbar-card.docked.top {
+        padding-top: calc(8px + var(--uc-nav-safe-top));
+      }
       .navbar-card.left,
       .navbar-card.right {
         flex-direction: column;
         padding: 12px 10px;
+      }
+      .navbar-card.docked.left,
+      .navbar-card.docked.right {
+        box-sizing: border-box;
+        padding-top: calc(12px + var(--uc-nav-safe-top));
+        padding-bottom: calc(12px + var(--uc-nav-safe-bottom));
+      }
+      .navbar-card.docked.left {
+        padding-left: calc(10px + var(--uc-nav-safe-left));
+      }
+      .navbar-card.docked.right {
+        padding-right: calc(10px + var(--uc-nav-safe-right));
       }
       .navbar-card.docked.left {
         border-left: none;
@@ -4148,28 +4188,28 @@ class UcNavigationService {
         pointer-events: none;
       }
       .nav-collapse-handle.left {
-        left: 0;
+        left: var(--uc-nav-safe-left);
         top: var(--uc-nav-handle-position, 50%);
         transform: translateY(-50%);
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
       }
       .nav-collapse-handle.right {
-        right: 0;
+        right: var(--uc-nav-safe-right);
         top: var(--uc-nav-handle-position, 50%);
         transform: translateY(-50%);
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
       }
       .nav-collapse-handle.top {
-        top: 0;
+        top: var(--uc-nav-safe-top);
         left: var(--uc-nav-handle-position, 50%);
         transform: translateX(-50%);
         border-top-left-radius: 0;
         border-top-right-radius: 0;
       }
       .nav-collapse-handle.bottom {
-        bottom: 0;
+        bottom: var(--uc-nav-safe-bottom);
         left: var(--uc-nav-handle-position, 50%);
         transform: translateX(-50%);
         border-bottom-left-radius: 0;
@@ -4219,7 +4259,7 @@ class UcNavigationService {
       }
       .media-player.bottom-center {
         left: 50%;
-        bottom: 90px;
+        bottom: calc(90px + var(--uc-nav-safe-bottom, 0px));
         transform: translateX(-50%);
       }
       .media-player.top-center {
@@ -4236,11 +4276,11 @@ class UcNavigationService {
         right: 16px;
       }
       .media-player.bottom-left {
-        bottom: 90px;
+        bottom: calc(90px + var(--uc-nav-safe-bottom, 0px));
         left: 16px;
       }
       .media-player.bottom-right {
-        bottom: 90px;
+        bottom: calc(90px + var(--uc-nav-safe-bottom, 0px));
         right: 16px;
       }
       .media-player-bg {
@@ -4319,7 +4359,7 @@ class UcNavigationService {
       }
       .media-player-icon.bottom-center {
         left: 50%;
-        bottom: 90px;
+        bottom: calc(90px + var(--uc-nav-safe-bottom, 0px));
         transform: translateX(-50%);
       }
       .media-player-icon.top-center {
@@ -4336,11 +4376,11 @@ class UcNavigationService {
         right: 16px;
       }
       .media-player-icon.bottom-left {
-        bottom: 90px;
+        bottom: calc(90px + var(--uc-nav-safe-bottom, 0px));
         left: 16px;
       }
       .media-player-icon.bottom-right {
-        bottom: 90px;
+        bottom: calc(90px + var(--uc-nav-safe-bottom, 0px));
         right: 16px;
       }
       .media-icon-image {
