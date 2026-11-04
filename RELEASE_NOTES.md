@@ -1,5 +1,16 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta2
+
+The second 3.14.4 beta folds the old "Use Entity Color" switch into the new colour-by-state picker, so there's one place to set it up. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Colour by entity state: follow an entity's own colour** - The state colour editor has a new "Otherwise use an entity's own color" setting. Pick a light and the colour follows the bulb's actual RGB colour whenever none of your rules match, with on/off defaults for lights, switches and sensors that have no colour
+- **Old "Use Entity Color" switch removed** - The Popup trigger button, Popup trigger icon and Button module no longer have their own "Use Entity Color" switch, since "Color by entity state" now does the same job. Cards that used it are converted automatically when they load, so they keep the same colours: each state colour becomes a rule and the entity's own colour is used otherwise. Thanks to the tester who spotted the duplicate
+
 ## Version 3.14.4-beta1
 
 The first 3.14.4 beta lets any colour follow the state of your entities, and makes long module settings easier to find your way around. This is a pre-release for testing — please report anything odd on GitHub or Discord.
