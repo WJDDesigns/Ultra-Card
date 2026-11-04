@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta3
+
+The third 3.14.4 beta makes the folding settings sections in the module editors easier to read, so it's clear what each section holds. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Clearer folding settings sections** - Each folding section in a module's settings is now one box with a coloured edge and a round arrow button in its header, so it no longer looks like just another field or dropdown. In modules like Camera, where some settings sat below the section's box, those settings are now drawn inside the same box, so you can see exactly what the section opens and closes. Thanks to larrysansan for the feedback
+
 ## Version 3.14.4-beta2
 
 The second 3.14.4 beta folds the old "Use Entity Color" switch into the new colour-by-state picker, so there's one place to set it up. This is a pre-release for testing — please report anything odd on GitHub or Discord.

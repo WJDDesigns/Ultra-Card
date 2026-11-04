@@ -90,6 +90,7 @@ describe('uc-collapsible-sections', () => {
     expect(slider.hasAttribute('data-uc-sec-owned-hidden')).toBe(false);
     // Shown fields are marked so they indent under their section's box.
     expect(slider.hasAttribute('data-uc-sec-owned')).toBe(true);
+    expect(slider.hasAttribute('data-uc-sec-owned-last')).toBe(true);
     const [, b, c] = Array.from(el.querySelectorAll('.settings-section'));
     expect(b.hasAttribute('data-uc-sec-has-owned')).toBe(true);
     expect(c.hasAttribute('data-uc-sec-has-owned')).toBe(false);

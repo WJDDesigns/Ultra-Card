@@ -40,6 +40,7 @@ const OWN_COLLAPSE = '.settings-section, ha-expansion-panel, [data-uc-no-collaps
 interface Rail {
   top: number;
   left: number;
+  width: number;
   height: number;
 }
 
@@ -236,7 +237,7 @@ export class UcCollapsibleSections extends LitElement {
 
   @state() private _count = 0;
   @state() private _anyCollapsed = false;
-  /** Guide lines drawn beside fields that sit outside their section box. */
+  /** Boxes drawn around an open section plus the fields that sit after it. */
   @state() private _rails: Rail[] = [];
 
   private _resize: ResizeObserver | undefined;
@@ -357,6 +358,12 @@ export class UcCollapsibleSections extends LitElement {
           el.toggleAttribute('data-uc-sec-owned', open);
         }
       });
+      owned.forEach((el, i) => {
+        const last = open && i === owned.length - 1;
+        if (el.hasAttribute('data-uc-sec-owned-last') !== last) {
+          el.toggleAttribute('data-uc-sec-owned-last', last);
+        }
+      });
       const hasOwned = owned.length > 0;
       if (section.hasAttribute('data-uc-sec-has-owned') !== hasOwned) {
         section.toggleAttribute('data-uc-sec-has-owned', hasOwned);
@@ -382,6 +389,9 @@ export class UcCollapsibleSections extends LitElement {
     this.querySelectorAll('[data-uc-sec-owned]').forEach(el => {
       if (!shownNow.has(el)) el.removeAttribute('data-uc-sec-owned');
     });
+    this.querySelectorAll('[data-uc-sec-owned-last]').forEach(el => {
+      if (!shownNow.has(el)) el.removeAttribute('data-uc-sec-owned-last');
+    });
     this.querySelectorAll('.settings-section[data-uc-collapsible]').forEach(el => {
       if (!sectionEls.has(el)) {
         el.removeAttribute('data-uc-collapsible');
@@ -404,8 +414,8 @@ export class UcCollapsibleSections extends LitElement {
   }
 
   /**
-   * One continuous line from an open section box down to the last field it owns
-   * outside the box, so those fields read as part of the section.
+   * One box from an open section's top down to the last field it owns outside
+   * the box, so the section and those fields read as a single accordion.
    */
   private _layoutRails(): void {
     const host = this.getBoundingClientRect();
@@ -419,11 +429,12 @@ export class UcCollapsibleSections extends LitElement {
       if (!owned.length) return;
       const box = section.getBoundingClientRect();
       const last = owned[owned.length - 1].getBoundingClientRect();
-      const height = Math.round(last.bottom - box.bottom);
+      const height = Math.round(last.bottom - box.top + 16);
       if (height <= 0) return;
       rails.push({
-        top: Math.round(box.bottom - host.top),
-        left: Math.round(box.left - host.left + 6),
+        top: Math.round(box.top - host.top),
+        left: Math.round(box.left - host.left),
+        width: Math.round(box.width),
         height,
       });
     });
@@ -433,6 +444,7 @@ export class UcCollapsibleSections extends LitElement {
         (r, i) =>
           r.top === this._rails[i].top &&
           r.left === this._rails[i].left &&
+          r.width === this._rails[i].width &&
           r.height === this._rails[i].height
       );
     if (!same) this._rails = rails;
@@ -465,9 +477,17 @@ export class UcCollapsibleSections extends LitElement {
     summary.className = 'uc-sec-summary';
     meta.append(dot, summary);
 
-    const chevron = document.createElement('ha-icon');
+    // Drawn inline (not ha-icon) so the caret is centred exactly in its circle.
+    const chevron = document.createElement('span');
     chevron.className = 'uc-sec-chevron';
-    chevron.setAttribute('icon', 'mdi:chevron-down');
+    chevron.setAttribute('aria-hidden', 'true');
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    const path = document.createElementNS(svgNs, 'path');
+    path.setAttribute('d', 'M7 9.5l5 5 5-5');
+    svg.append(path);
+    chevron.append(svg);
 
     head.append(meta, chevron);
   }
@@ -547,15 +567,15 @@ export class UcCollapsibleSections extends LitElement {
             </div>`
           : ''
       }
-      <slot></slot>
       ${this._rails.map(
         r =>
           html`<div
             class="rail"
             aria-hidden="true"
-            style="top:${r.top}px;left:${r.left}px;height:${r.height}px"
+            style="top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px"
           ></div>`
       )}
+      <slot></slot>
     `;
   }
 
@@ -563,12 +583,16 @@ export class UcCollapsibleSections extends LitElement {
     :host {
       display: block;
       position: relative;
+      isolation: isolate;
     }
     .rail {
       position: absolute;
-      width: 2px;
-      border-radius: 1px;
-      background: color-mix(in srgb, var(--primary-color) 60%, transparent);
+      z-index: -1;
+      box-sizing: border-box;
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      border: 1px solid var(--divider-color);
+      border-left: 4px solid var(--primary-color);
       pointer-events: none;
     }
     .toolbar {
