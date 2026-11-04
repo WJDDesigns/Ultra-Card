@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta4
+
+The fourth 3.14.4 beta fixes the Navigation bar hiding under the phone's own navigation buttons in the newest Android Companion app. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Navigation bar hidden under the phone's buttons** - The Android Companion app 2026.10 now draws the dashboard right to the bottom of the screen, so a Navigation bar at the bottom sat underneath the phone's own navigation buttons. The bar now leaves room for the phone's system bars the same way Home Assistant's own footer does: a docked bar keeps its background to the screen edge with the icons lifted above the buttons, and a floating bar sits above them. Top, left and right bars, the collapse handle and the media player get the same treatment, so notches and status bars are handled too. Nothing changes on desktop or on phones without these bars. Thanks to larrysansan for the report
+
 ## Version 3.14.4-beta3
 
 The third 3.14.4 beta makes the folding settings sections in the module editors easier to read, so it's clear what each section holds. This is a pre-release for testing — please report anything odd on GitHub or Discord.
