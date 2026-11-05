@@ -3460,6 +3460,11 @@
         "side_header_desc": "Loddrett fane gjør overskriften til en smal stripe med tittelen på langs. Linje beholder den vanlige overskriften.",
         "side_header_vertical": "Loddrett fane",
         "side_header_horizontal": "Linje",
+        "side_title_direction": "Tittelretning",
+        "side_title_direction_desc": "Hvilken vei sidetittelen leses. Automatisk leses oppover på en fane til venstre og nedover på en fane til høyre.",
+        "side_title_auto": "Automatisk",
+        "side_title_up": "Oppover",
+        "side_title_down": "Nedover",
         "panel_width": "Panelbredde",
         "panel_width_desc": "Hvor bredt innholdspanelet er når det åpnes til siden, i piksler. Det blir aldri bredere enn skjermen."
       }

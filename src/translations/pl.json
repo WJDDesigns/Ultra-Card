@@ -3460,6 +3460,11 @@
         "side_header_desc": "Pionowa karta zmienia nagłówek w wąski pasek z tytułem biegnącym pionowo. Pasek zachowuje zwykły nagłówek.",
         "side_header_vertical": "Pionowa karta",
         "side_header_horizontal": "Pasek",
+        "side_title_direction": "Kierunek tytułu",
+        "side_title_direction_desc": "W którą stronę czyta się boczny tytuł. Automatycznie czyta się w górę na karcie po lewej i w dół na karcie po prawej.",
+        "side_title_auto": "Automatycznie",
+        "side_title_up": "W górę",
+        "side_title_down": "W dół",
         "panel_width": "Szerokość panelu",
         "panel_width_desc": "Szerokość panelu zawartości przy otwieraniu na bok, w pikselach. Nigdy nie jest szerszy niż ekran."
       }

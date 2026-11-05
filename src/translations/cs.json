@@ -3460,6 +3460,11 @@
         "side_header_desc": "Svislá karta promění záhlaví v úzký pruh se svislým názvem. Lišta ponechá běžné záhlaví.",
         "side_header_vertical": "Svislá karta",
         "side_header_horizontal": "Lišta",
+        "side_title_direction": "Směr nadpisu",
+        "side_title_direction_desc": "Kterým směrem se čte boční nadpis. Automaticky se čte nahoru na kartě vlevo a dolů na kartě vpravo.",
+        "side_title_auto": "Automaticky",
+        "side_title_up": "Nahoru",
+        "side_title_down": "Dolů",
         "panel_width": "Šířka panelu",
         "panel_width_desc": "Šířka panelu s obsahem při otevření do strany, v pixelech. Nikdy není širší než obrazovka."
       }

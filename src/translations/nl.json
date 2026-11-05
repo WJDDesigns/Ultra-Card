@@ -3460,6 +3460,11 @@
         "side_header_desc": "Verticaal tabblad maakt van de kop een smalle strook met de titel verticaal. Balk behoudt de normale kop.",
         "side_header_vertical": "Verticaal tabblad",
         "side_header_horizontal": "Balk",
+        "side_title_direction": "Titelrichting",
+        "side_title_direction_desc": "Welke kant de zijwaartse titel op leest. Automatisch leest omhoog op een tabblad links en omlaag op een tabblad rechts.",
+        "side_title_auto": "Automatisch",
+        "side_title_up": "Omhoog",
+        "side_title_down": "Omlaag",
         "panel_width": "Paneelbreedte",
         "panel_width_desc": "Hoe breed het inhoudspaneel is als het opzij opent, in pixels. Het wordt nooit breder dan het scherm."
       }

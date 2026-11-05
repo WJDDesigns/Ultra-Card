@@ -1891,6 +1891,7 @@ export interface AccordionModule extends BaseModule {
   expand_direction?: 'down' | 'up' | 'auto' | 'left' | 'right' | undefined; // Which way content opens ('auto' picks up/down from viewport position; left/right open sideways)
   panel_width?: number | undefined; // Width in px of the content panel when opening left/right (default 300)
   side_header_style?: 'vertical' | 'horizontal' | undefined; // Left/right only: 'vertical' = slim tab with rotated title (default), 'horizontal' = normal header bar
+  side_title_direction?: 'auto' | 'up' | 'down' | undefined; // Vertical tab only: 'auto' = up on a left-hand tab, down on a right-hand one; 'up'/'down' force the reading direction
   expand_style?: 'push' | 'overlay' | undefined; // 'push' moves content below; 'overlay' floats over it like a dropdown menu
   close_on_outside_click?: boolean | undefined; // Collapse when the user clicks/taps outside the accordion
 

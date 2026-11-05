@@ -3460,6 +3460,11 @@
         "side_header_desc": "Onglet vertical transforme l'en-tête en une bande étroite avec le titre à la verticale. Barre conserve l'en-tête normal.",
         "side_header_vertical": "Onglet vertical",
         "side_header_horizontal": "Barre",
+        "side_title_direction": "Sens du titre",
+        "side_title_direction_desc": "Sens de lecture du titre latéral. Automatique se lit vers le haut sur un onglet à gauche et vers le bas sur un onglet à droite.",
+        "side_title_auto": "Automatique",
+        "side_title_up": "Vers le haut",
+        "side_title_down": "Vers le bas",
         "panel_width": "Largeur du panneau",
         "panel_width_desc": "Largeur du panneau de contenu quand il s'ouvre sur le côté, en pixels. Il ne dépasse jamais la largeur de l'écran."
       }

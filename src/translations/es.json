@@ -3460,6 +3460,11 @@
         "side_header_desc": "Pestaña vertical convierte el encabezado en una franja estrecha con el título en vertical. Barra mantiene el encabezado normal.",
         "side_header_vertical": "Pestaña vertical",
         "side_header_horizontal": "Barra",
+        "side_title_direction": "Dirección del título",
+        "side_title_direction_desc": "Hacia dónde se lee el título lateral. Automático se lee hacia arriba en una pestaña a la izquierda y hacia abajo en una a la derecha.",
+        "side_title_auto": "Automático",
+        "side_title_up": "Hacia arriba",
+        "side_title_down": "Hacia abajo",
         "panel_width": "Ancho del panel",
         "panel_width_desc": "Ancho del panel de contenido al abrirse hacia un lado, en píxeles. Nunca supera el ancho de la pantalla."
       }

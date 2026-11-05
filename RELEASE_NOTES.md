@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta6
+
+The sixth 3.14.4 beta lets you choose which way the title reads on a sideways Accordion. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Accordion title direction** - When an Accordion opens Left or Right with the Vertical Tab header, a new Title Direction setting picks which way the sideways title reads: Auto (upward on a tab at the left, downward on a tab at the right, as before), Reads Up or Reads Down. This flips only the title, so you no longer need a 3D Transform rotation that turns the whole module upside down. Thanks to larrysansan for the idea
+
 ## Version 3.14.4-beta5
 
 The fifth 3.14.4 beta lets the Accordion open sideways as well as up and down. This is a pre-release for testing — please report anything odd on GitHub or Discord.

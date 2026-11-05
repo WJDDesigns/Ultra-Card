@@ -3465,6 +3465,11 @@
         "side_header_desc": "Vertical Tab turns the header into a slim strip with the title running sideways. Bar keeps the normal header.",
         "side_header_vertical": "Vertical Tab",
         "side_header_horizontal": "Bar",
+        "side_title_direction": "Title Direction",
+        "side_title_direction_desc": "Which way the sideways title reads. Auto reads upward on a tab at the left and downward on a tab at the right.",
+        "side_title_auto": "Auto",
+        "side_title_up": "Reads Up",
+        "side_title_down": "Reads Down",
         "panel_width": "Panel Width",
         "panel_width_desc": "How wide the content panel is when it opens sideways, in pixels. It never grows wider than the screen."
       }
