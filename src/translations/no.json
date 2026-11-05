@@ -3439,6 +3439,29 @@
         "section_desc": "Valgfritt ikon ved siden av tittelen. La stå tomt for ingen.",
         "icon": "Ikon",
         "color": "Farge på tittelikon"
+      },
+      "behavior": {
+        "section_title": "Utvidelsesatferd",
+        "section_desc": "Bestem hvilken retning innholdet åpnes i, og hvordan det samspiller med resten av siden.",
+        "direction": "Utvidelsesretning",
+        "direction_desc": "Venstre og Høyre åpner innholdet til siden. Auto åpner oppover når trekkspillet står i nedre halvdel av skjermen.",
+        "direction_down": "Ned",
+        "direction_up": "Opp",
+        "direction_left": "Venstre",
+        "direction_right": "Høyre",
+        "direction_auto": "Auto",
+        "style": "Utvidelsesstil",
+        "style_desc": "På stedet gjør trekkspillet større og skyver annet innhold til side. Overlegg legger det åpne innholdet over siden som en nedtrekksmeny.",
+        "style_push": "På stedet",
+        "style_overlay": "Overlegg",
+        "outside_click": "Lukk ved klikk utenfor",
+        "outside_click_desc": "Lukker trekkspillet når du klikker eller trykker et sted utenfor.",
+        "side_header": "Overskriftsstil",
+        "side_header_desc": "Loddrett fane gjør overskriften til en smal stripe med tittelen på langs. Linje beholder den vanlige overskriften.",
+        "side_header_vertical": "Loddrett fane",
+        "side_header_horizontal": "Linje",
+        "panel_width": "Panelbredde",
+        "panel_width_desc": "Hvor bredt innholdspanelet er når det åpnes til siden, i piksler. Det blir aldri bredere enn skjermen."
       }
     },
     "animated_forecast": {

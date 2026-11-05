@@ -3439,6 +3439,29 @@
         "section_desc": "Icono opcional junto al título. Déjalo vacío para no mostrar ninguno.",
         "icon": "Icono",
         "color": "Color del icono del título"
+      },
+      "behavior": {
+        "section_title": "Comportamiento de apertura",
+        "section_desc": "Controla en qué dirección se abre el contenido y cómo interactúa con el resto de la página.",
+        "direction": "Dirección de apertura",
+        "direction_desc": "Izquierda y Derecha abren el contenido hacia un lado. Auto abre hacia arriba cuando el acordeón está en la mitad inferior de la pantalla.",
+        "direction_down": "Abajo",
+        "direction_up": "Arriba",
+        "direction_left": "Izquierda",
+        "direction_right": "Derecha",
+        "direction_auto": "Auto",
+        "style": "Estilo de apertura",
+        "style_desc": "En el sitio agranda el acordeón y desplaza el contenido. Superpuesto muestra el contenido abierto sobre la página, como un menú desplegable.",
+        "style_push": "En el sitio",
+        "style_overlay": "Superpuesto",
+        "outside_click": "Cerrar al pulsar fuera",
+        "outside_click_desc": "Cierra el acordeón cuando haces clic o tocas en cualquier lugar fuera de él.",
+        "side_header": "Estilo del encabezado",
+        "side_header_desc": "Pestaña vertical convierte el encabezado en una franja estrecha con el título en vertical. Barra mantiene el encabezado normal.",
+        "side_header_vertical": "Pestaña vertical",
+        "side_header_horizontal": "Barra",
+        "panel_width": "Ancho del panel",
+        "panel_width_desc": "Ancho del panel de contenido al abrirse hacia un lado, en píxeles. Nunca supera el ancho de la pantalla."
       }
     },
     "animated_forecast": {

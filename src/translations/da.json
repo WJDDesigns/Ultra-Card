@@ -3439,6 +3439,29 @@
         "section_desc": "Valgfrit ikon ved siden af titlen. Lad feltet stå tomt for intet.",
         "icon": "Ikon",
         "color": "Farve på titelikon"
+      },
+      "behavior": {
+        "section_title": "Udfoldningsadfærd",
+        "section_desc": "Bestem hvilken retning indholdet åbner i, og hvordan det spiller sammen med resten af siden.",
+        "direction": "Udfoldningsretning",
+        "direction_desc": "Venstre og Højre åbner indholdet til siden. Auto åbner opad, når harmonikaen sidder i den nederste halvdel af skærmen.",
+        "direction_down": "Ned",
+        "direction_up": "Op",
+        "direction_left": "Venstre",
+        "direction_right": "Højre",
+        "direction_auto": "Auto",
+        "style": "Udfoldningsstil",
+        "style_desc": "På stedet gør harmonikaen større og skubber andet indhold til side. Overlejring lægger det åbne indhold over siden som en rullemenu.",
+        "style_push": "På stedet",
+        "style_overlay": "Overlejring",
+        "outside_click": "Luk ved klik udenfor",
+        "outside_click_desc": "Folder harmonikaen sammen, når du klikker eller trykker et sted udenfor.",
+        "side_header": "Overskriftsstil",
+        "side_header_desc": "Lodret fane gør overskriften til en smal stribe med titlen på langs. Bjælke beholder den normale overskrift.",
+        "side_header_vertical": "Lodret fane",
+        "side_header_horizontal": "Bjælke",
+        "panel_width": "Panelbredde",
+        "panel_width_desc": "Hvor bredt indholdspanelet er, når det åbner til siden, i pixels. Det bliver aldrig bredere end skærmen."
       }
     },
     "animated_forecast": {

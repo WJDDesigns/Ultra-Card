@@ -3439,6 +3439,29 @@
         "section_desc": "Valfritt ikon ved sida av tittelen. La stå tomt for inga.",
         "icon": "Ikon",
         "color": "Farge på tittelikon"
+      },
+      "behavior": {
+        "section_title": "Utvidingsåtferd",
+        "section_desc": "Bestem kva retning innhaldet opnar seg i, og korleis det samspelar med resten av sida.",
+        "direction": "Utvidingsretning",
+        "direction_desc": "Venstre og Høgre opnar innhaldet til sida. Auto opnar oppover når trekkspelet står i nedre halvdel av skjermen.",
+        "direction_down": "Ned",
+        "direction_up": "Opp",
+        "direction_left": "Venstre",
+        "direction_right": "Høgre",
+        "direction_auto": "Auto",
+        "style": "Utvidingsstil",
+        "style_desc": "På staden gjer trekkspelet større og skuvar anna innhald til sides. Overlegg legg det opne innhaldet over sida som ein nedtrekksmeny.",
+        "style_push": "På staden",
+        "style_overlay": "Overlegg",
+        "outside_click": "Lukk ved klikk utanfor",
+        "outside_click_desc": "Lukkar trekkspelet når du klikkar eller trykkjer ein stad utanfor.",
+        "side_header": "Overskriftsstil",
+        "side_header_desc": "Loddrett fane gjer overskrifta til ei smal stripe med tittelen på langs. Linje held på den vanlege overskrifta.",
+        "side_header_vertical": "Loddrett fane",
+        "side_header_horizontal": "Linje",
+        "panel_width": "Panelbreidd",
+        "panel_width_desc": "Kor breitt innhaldspanelet er når det opnar seg til sida, i pikslar. Det blir aldri breiare enn skjermen."
       }
     },
     "animated_forecast": {

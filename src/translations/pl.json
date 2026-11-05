@@ -3439,6 +3439,29 @@
         "section_desc": "Opcjonalna ikona obok tytułu. Pozostaw puste, aby nie wyświetlać.",
         "icon": "Ikona",
         "color": "Kolor ikony tytułu"
+      },
+      "behavior": {
+        "section_title": "Sposób rozwijania",
+        "section_desc": "Określ, w którą stronę otwiera się zawartość i jak współgra z resztą strony.",
+        "direction": "Kierunek rozwijania",
+        "direction_desc": "W lewo i W prawo otwierają zawartość na bok. Auto otwiera w górę, gdy akordeon jest w dolnej połowie ekranu.",
+        "direction_down": "W dół",
+        "direction_up": "W górę",
+        "direction_left": "W lewo",
+        "direction_right": "W prawo",
+        "direction_auto": "Auto",
+        "style": "Styl rozwijania",
+        "style_desc": "W miejscu powiększa akordeon i odsuwa pozostałą zawartość. Nakładka wyświetla otwartą zawartość nad stroną, jak menu rozwijane.",
+        "style_push": "W miejscu",
+        "style_overlay": "Nakładka",
+        "outside_click": "Zamknij po kliknięciu obok",
+        "outside_click_desc": "Zwija akordeon po kliknięciu lub dotknięciu w dowolnym miejscu poza nim.",
+        "side_header": "Styl nagłówka",
+        "side_header_desc": "Pionowa karta zmienia nagłówek w wąski pasek z tytułem biegnącym pionowo. Pasek zachowuje zwykły nagłówek.",
+        "side_header_vertical": "Pionowa karta",
+        "side_header_horizontal": "Pasek",
+        "panel_width": "Szerokość panelu",
+        "panel_width_desc": "Szerokość panelu zawartości przy otwieraniu na bok, w pikselach. Nigdy nie jest szerszy niż ekran."
       }
     },
     "animated_forecast": {

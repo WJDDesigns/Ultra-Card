@@ -3443,6 +3443,29 @@
         "section_desc": "Optionales Symbol neben dem Titel. Leer lassen für keines.",
         "icon": "Symbol",
         "color": "Farbe des Titelsymbols"
+      },
+      "behavior": {
+        "section_title": "Aufklappverhalten",
+        "section_desc": "Legen Sie fest, in welche Richtung sich der Inhalt öffnet und wie er mit dem Rest der Seite zusammenspielt.",
+        "direction": "Aufklapprichtung",
+        "direction_desc": "Links und Rechts öffnen den Inhalt seitlich. Automatisch öffnet nach oben, wenn das Akkordeon in der unteren Bildschirmhälfte sitzt.",
+        "direction_down": "Unten",
+        "direction_up": "Oben",
+        "direction_left": "Links",
+        "direction_right": "Rechts",
+        "direction_auto": "Automatisch",
+        "style": "Aufklappstil",
+        "style_desc": "An Ort und Stelle vergrößert das Akkordeon und schiebt anderen Inhalt beiseite. Überlagern legt den geöffneten Inhalt wie ein Dropdown-Menü über die Seite.",
+        "style_push": "An Ort und Stelle",
+        "style_overlay": "Überlagern",
+        "outside_click": "Bei Klick außerhalb schließen",
+        "outside_click_desc": "Klappt das Akkordeon zu, sobald Sie irgendwo außerhalb klicken oder tippen.",
+        "side_header": "Kopfzeilenstil",
+        "side_header_desc": "Senkrechter Reiter macht die Kopfzeile zu einem schmalen Streifen mit seitlich laufendem Titel. Leiste behält die normale Kopfzeile.",
+        "side_header_vertical": "Senkrechter Reiter",
+        "side_header_horizontal": "Leiste",
+        "panel_width": "Panelbreite",
+        "panel_width_desc": "Wie breit das Inhaltspanel beim seitlichen Öffnen ist, in Pixeln. Es wird nie breiter als der Bildschirm."
       }
     },
     "animated_forecast": {

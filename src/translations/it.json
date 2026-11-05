@@ -3439,6 +3439,29 @@
         "section_desc": "Icona facoltativa accanto al titolo. Lascia vuoto per nessuna.",
         "icon": "Icona",
         "color": "Colore dell'icona del titolo"
+      },
+      "behavior": {
+        "section_title": "Comportamento di apertura",
+        "section_desc": "Scegli in quale direzione si apre il contenuto e come interagisce con il resto della pagina.",
+        "direction": "Direzione di apertura",
+        "direction_desc": "Sinistra e Destra aprono il contenuto di lato. Auto apre verso l'alto quando la fisarmonica si trova nella metà inferiore dello schermo.",
+        "direction_down": "Giù",
+        "direction_up": "Su",
+        "direction_left": "Sinistra",
+        "direction_right": "Destra",
+        "direction_auto": "Auto",
+        "style": "Stile di apertura",
+        "style_desc": "Sul posto ingrandisce la fisarmonica e sposta il contenuto vicino. Sovrapposto mostra il contenuto aperto sopra la pagina, come un menu a tendina.",
+        "style_push": "Sul posto",
+        "style_overlay": "Sovrapposto",
+        "outside_click": "Chiudi con clic esterno",
+        "outside_click_desc": "Chiude la fisarmonica quando fai clic o tocchi in un punto qualsiasi al di fuori.",
+        "side_header": "Stile intestazione",
+        "side_header_desc": "Scheda verticale trasforma l'intestazione in una striscia sottile con il titolo in verticale. Barra mantiene l'intestazione normale.",
+        "side_header_vertical": "Scheda verticale",
+        "side_header_horizontal": "Barra",
+        "panel_width": "Larghezza pannello",
+        "panel_width_desc": "Larghezza del pannello dei contenuti quando si apre di lato, in pixel. Non supera mai la larghezza dello schermo."
       }
     },
     "animated_forecast": {
