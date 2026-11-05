@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta5
+
+The fifth 3.14.4 beta lets the Accordion open sideways as well as up and down. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### ✨ New Features
+
+- **Accordion opens left or right** - Expand Direction now has Left and Right next to Down, Up and Auto, and they work with both In Place and Overlay. Picking one shows two more settings: Header Style (Vertical Tab, a slim strip with the title running sideways, or Bar, the normal header) and Panel Width (300 px by default, and never wider than the screen). The panel slides open sideways and the modules inside keep their size while it moves. Existing accordions don't change. Thanks to Steve Markus for the idea
+
 ## Version 3.14.4-beta4
 
 The fourth 3.14.4 beta fixes the Navigation bar hiding under the phone's own navigation buttons in the newest Android Companion app. This is a pre-release for testing — please report anything odd on GitHub or Discord.
