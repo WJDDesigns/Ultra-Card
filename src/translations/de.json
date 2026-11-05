@@ -3464,6 +3464,11 @@
         "side_header_desc": "Senkrechter Reiter macht die Kopfzeile zu einem schmalen Streifen mit seitlich laufendem Titel. Leiste behält die normale Kopfzeile.",
         "side_header_vertical": "Senkrechter Reiter",
         "side_header_horizontal": "Leiste",
+        "side_title_direction": "Titelrichtung",
+        "side_title_direction_desc": "Legen Sie fest, in welche Richtung der seitliche Titel gelesen wird. Automatisch liest auf einem linken Reiter nach oben und auf einem rechten Reiter nach unten.",
+        "side_title_auto": "Automatisch",
+        "side_title_up": "Nach oben",
+        "side_title_down": "Nach unten",
         "panel_width": "Panelbreite",
         "panel_width_desc": "Wie breit das Inhaltspanel beim seitlichen Öffnen ist, in Pixeln. Es wird nie breiter als der Bildschirm."
       }

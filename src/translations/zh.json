@@ -3786,6 +3786,11 @@
         "side_header_desc": "竖向标签会把标题栏变成一条窄条，标题竖排显示。横条保留普通标题栏。",
         "side_header_vertical": "竖向标签",
         "side_header_horizontal": "横条",
+        "side_title_direction": "标题方向",
+        "side_title_direction_desc": "侧边标题的阅读方向。自动：左侧标签向上阅读，右侧标签向下阅读。",
+        "side_title_auto": "自动",
+        "side_title_up": "向上",
+        "side_title_down": "向下",
         "panel_width": "面板宽度",
         "panel_width_desc": "向侧面展开时内容面板的宽度（像素）。它不会超过屏幕宽度。"
       }

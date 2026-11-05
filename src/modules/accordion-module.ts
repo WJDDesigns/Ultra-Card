@@ -536,6 +536,53 @@ export class UltraAccordionModule extends BaseUltraModule {
                   }
                 )}
 
+                ${(accordionModule.side_header_style || 'vertical') === 'vertical'
+                  ? this.renderSegmentedField(
+                      localize(
+                        'editor.accordion.behavior.side_title_direction',
+                        lang,
+                        'Title Direction'
+                      ),
+                      localize(
+                        'editor.accordion.behavior.side_title_direction_desc',
+                        lang,
+                        'Which way the sideways title reads. Auto reads upward on a tab at the left and downward on a tab at the right.'
+                      ),
+                      accordionModule.side_title_direction || 'auto',
+                      [
+                        {
+                          value: 'auto',
+                          label: localize('editor.accordion.behavior.side_title_auto', lang, 'Auto'),
+                          icon: 'mdi:auto-fix',
+                        },
+                        {
+                          value: 'up',
+                          label: localize(
+                            'editor.accordion.behavior.side_title_up',
+                            lang,
+                            'Reads Up'
+                          ),
+                          icon: 'mdi:arrow-up',
+                        },
+                        {
+                          value: 'down',
+                          label: localize(
+                            'editor.accordion.behavior.side_title_down',
+                            lang,
+                            'Reads Down'
+                          ),
+                          icon: 'mdi:arrow-down',
+                        },
+                      ],
+                      next => {
+                        updateModule({
+                          side_title_direction: next as AccordionModule['side_title_direction'],
+                        });
+                        this.triggerPreviewUpdate();
+                      }
+                    )
+                  : ''}
+
                 <!-- Panel width (left/right only) -->
                 ${this.renderSettingsSection('', '', [
                   {
@@ -1838,7 +1885,10 @@ export class UltraAccordionModule extends BaseUltraModule {
       // top-to-bottom on a right-hand one.
       titleStyles.writingMode = 'vertical-rl';
       titleStyles.minHeight = 0;
-      if (opensRight) titleStyles.transform = 'rotate(180deg)';
+      // Optional override: 'up' always reads bottom-to-top, 'down' top-to-bottom.
+      const titleDirection = accordionModule.side_title_direction || 'auto';
+      const readsUp = titleDirection === 'auto' ? opensRight : titleDirection === 'up';
+      if (readsUp) titleStyles.transform = 'rotate(180deg)';
     }
 
     // Hover color for header

@@ -3460,6 +3460,11 @@
         "side_header_desc": "Lodrät flik gör rubriken till en smal remsa med titeln på längden. List behåller den vanliga rubriken.",
         "side_header_vertical": "Lodrät flik",
         "side_header_horizontal": "List",
+        "side_title_direction": "Titelriktning",
+        "side_title_direction_desc": "Åt vilket håll sidotiteln läses. Automatiskt läses uppåt på en flik till vänster och nedåt på en flik till höger.",
+        "side_title_auto": "Automatiskt",
+        "side_title_up": "Uppåt",
+        "side_title_down": "Nedåt",
         "panel_width": "Panelbredd",
         "panel_width_desc": "Hur brett innehållspanelen är när den öppnas åt sidan, i pixlar. Den blir aldrig bredare än skärmen."
       }

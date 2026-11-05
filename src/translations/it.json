@@ -3460,6 +3460,11 @@
         "side_header_desc": "Scheda verticale trasforma l'intestazione in una striscia sottile con il titolo in verticale. Barra mantiene l'intestazione normale.",
         "side_header_vertical": "Scheda verticale",
         "side_header_horizontal": "Barra",
+        "side_title_direction": "Direzione del titolo",
+        "side_title_direction_desc": "In che verso si legge il titolo laterale. Automatico si legge verso l'alto su una scheda a sinistra e verso il basso su una a destra.",
+        "side_title_auto": "Automatico",
+        "side_title_up": "Verso l'alto",
+        "side_title_down": "Verso il basso",
         "panel_width": "Larghezza pannello",
         "panel_width_desc": "Larghezza del pannello dei contenuti quando si apre di lato, in pixel. Non supera mai la larghezza dello schermo."
       }

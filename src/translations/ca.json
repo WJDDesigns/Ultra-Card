@@ -3460,6 +3460,11 @@
         "side_header_desc": "Pestanya vertical converteix la capçalera en una franja estreta amb el títol en vertical. Barra manté la capçalera normal.",
         "side_header_vertical": "Pestanya vertical",
         "side_header_horizontal": "Barra",
+        "side_title_direction": "Direcció del títol",
+        "side_title_direction_desc": "Cap a on es llegeix el títol lateral. Automàtic es llegeix cap amunt en una pestanya a l'esquerra i cap avall en una a la dreta.",
+        "side_title_auto": "Automàtic",
+        "side_title_up": "Cap amunt",
+        "side_title_down": "Cap avall",
         "panel_width": "Amplada del panell",
         "panel_width_desc": "Amplada del panell de contingut quan s'obre cap a un costat, en píxels. Mai no supera l'amplada de la pantalla."
       }

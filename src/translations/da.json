@@ -3460,6 +3460,11 @@
         "side_header_desc": "Lodret fane gør overskriften til en smal stribe med titlen på langs. Bjælke beholder den normale overskrift.",
         "side_header_vertical": "Lodret fane",
         "side_header_horizontal": "Bjælke",
+        "side_title_direction": "Titelretning",
+        "side_title_direction_desc": "Hvilken vej sidetitlen læses. Automatisk læses opad på en fane til venstre og nedad på en fane til højre.",
+        "side_title_auto": "Automatisk",
+        "side_title_up": "Opad",
+        "side_title_down": "Nedad",
         "panel_width": "Panelbredde",
         "panel_width_desc": "Hvor bredt indholdspanelet er, når det åbner til siden, i pixels. Det bliver aldrig bredere end skærmen."
       }
