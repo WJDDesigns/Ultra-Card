@@ -6456,7 +6456,11 @@
       "type_template": "Plantilla",
       "attribute": "Atribut",
       "add_rule": "Afegeix una regla",
-      "otherwise": "Si no, fes servir"
+      "otherwise": "Si no, fes servir",
+      "entity_color": "Si no, fes servir el color propi d'una entitat",
+      "entity_color_desc": "Opcional. Tria un llum o una altra entitat per seguir-ne el color (per exemple, el color RGB de la bombeta). Deixa-ho buit per ometre-ho.",
+      "otherwise_missing": "Si aquesta entitat no està disponible, fes servir",
+      "entity_color_short": "color de l'entitat"
     }
   },
   "hub": {

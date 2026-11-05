@@ -2114,6 +2114,7 @@ export interface PopupModule extends BaseModule {
   trigger_icon_background?: 'none' | 'circle' | 'rounded-square' | undefined;
   trigger_icon_background_color?: string | undefined;
   trigger_icon_background_padding?: number | undefined;
+  /** @deprecated Converted to a "Color by entity state" colour when the card loads. */
   trigger_icon_use_entity_color?: boolean | undefined;
   trigger_icon_color_entity?: string | undefined;
   trigger_icon_state_colors?: { [state: string]: string } | undefined;
@@ -2135,6 +2136,7 @@ export interface PopupModule extends BaseModule {
   trigger_button_text_color?: string | undefined;
   trigger_button_icon_position?: 'before' | 'after' | undefined;
   trigger_button_icon_size?: string | undefined;
+  /** @deprecated Converted to a "Color by entity state" colour when the card loads. */
   trigger_button_use_entity_color?: boolean | undefined;
   trigger_button_color_entity?: string | undefined;
   trigger_button_state_colors?: { [state: string]: string } | undefined;
@@ -2809,6 +2811,7 @@ export interface ButtonModule extends BaseModule {
   enable_hover_effect?: boolean | undefined;
   hover_background_color?: string | undefined;
   // Entity-based background color
+  /** @deprecated Converted to a "Color by entity state" colour when the card loads. */
   use_entity_color?: boolean | undefined;
   background_color_entity?: string | undefined;
   background_state_colors?: { [state: string]: string } | undefined; // e.g., { "on": "#4CAF50", "off": "#666666" }

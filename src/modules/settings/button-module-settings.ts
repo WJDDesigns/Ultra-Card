@@ -227,92 +227,19 @@ export class UltraButtonModuleSettings extends UltraButtonModule {
         <div class="settings-section">
           <div class="section-title">${localize('editor.button.colors.title', lang, 'Colors')}</div>
 
-          <!-- Entity-based Background Color Toggle -->
-          <div class="field-group" style="margin-top: 16px; margin-bottom: 16px;">
-            ${this.renderFieldSection(
-              localize('editor.button.use_entity_color', lang, 'Use Entity Color'),
-              localize(
-                'editor.button.use_entity_color_desc',
-                lang,
-                'Change button background color based on entity state'
-              ),
-              hass,
-              { use_entity_color: buttonModule.use_entity_color || false },
-              [this.booleanField('use_entity_color')],
-              (e: CustomEvent) => {
-                const enabled = e.detail.value.use_entity_color;
-                updateModule({
-                  use_entity_color: enabled,
-                  // Clear entity if disabling
-                  background_color_entity: enabled ? buttonModule.background_color_entity : '',
-                });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }
-            )}
+          <!-- Static Background Color -->
+          <div class="color-controls">
+            <ultra-color-picker
+              .label=${localize('editor.button.colors.background', lang, 'Background Color')}
+              .value=${buttonModule.background_color || 'var(--primary-color)'}
+              .defaultValue=${'var(--primary-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                updateModule({ background_color: e.detail.value });
+                this.triggerPreviewUpdate();
+              }}
+            ></ultra-color-picker>
           </div>
-
-          ${buttonModule.use_entity_color
-            ? html`
-                <!-- Entity Picker -->
-                <div class="field-group" style="margin-bottom: 16px;">
-                  ${this.renderEntityPickerWithVariables(
-                    hass,
-                    config,
-                    'background_color_entity',
-                    buttonModule.background_color_entity || '',
-                    (value: string) => {
-                      updateModule({ background_color_entity: value });
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    },
-                    undefined,
-                    localize('editor.button.background_color_entity', lang, 'Entity')
-                  )}
-                </div>
-
-                <!-- State Colors Mapping -->
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
-                  >
-                    ${localize('editor.button.state_colors', lang, 'State Colors')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
-                  >
-                    ${localize(
-                      'editor.button.state_colors_desc',
-                      lang,
-                      'Optional: Map specific entity states to colors (e.g., on: green, off: gray). If not set, will use entity RGB color or state-based defaults.'
-                    )}
-                  </div>
-                  ${this.renderStateColorsEditor(
-                    buttonModule.background_state_colors || {},
-                    hass,
-                    lang,
-                    (stateColors: { [state: string]: string }) => {
-                      updateModule({ background_state_colors: stateColors });
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }
-                  )}
-                </div>
-              `
-            : html`
-                <!-- Static Background Color -->
-                <div class="color-controls">
-                  <ultra-color-picker
-                    .label=${localize('editor.button.colors.background', lang, 'Background Color')}
-                    .value=${buttonModule.background_color || 'var(--primary-color)'}
-                    .defaultValue=${'var(--primary-color)'}
-                    .hass=${hass}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ background_color: e.detail.value });
-                      this.triggerPreviewUpdate();
-                    }}
-                  ></ultra-color-picker>
-                </div>
-              `}
 
           <!-- Text Color (always visible) -->
           <div class="color-controls" style="margin-top: 16px;">
@@ -361,77 +288,6 @@ export class UltraButtonModuleSettings extends UltraButtonModule {
             ${localize('editor.button.actions.setup', lang, 'Set up button actions')}
           </ha-button>
         </div>
-      </div>
-    `;
-  }
-
-  // Render state colors editor
-  private renderStateColorsEditor(
-    stateColors: { [state: string]: string },
-    hass: HomeAssistant,
-    lang: string,
-    onUpdate: (stateColors: { [state: string]: string }) => void
-  ): TemplateResult {
-    return html`
-      <div class="state-color-editor">
-        ${Object.entries(stateColors).map(
-          ([state, color]) => html`
-            <div
-              class="state-color-row"
-              style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; overflow: hidden;"
-            >
-              <input
-                type="text"
-                class="state-color-input"
-                placeholder="State (e.g., on, off)"
-                .value=${state}
-                style="flex: 0 0 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); flex-shrink: 0;"
-                @input=${(e: Event) => {
-                  const newState = (e.target as HTMLInputElement).value;
-                  const updated = { ...stateColors };
-                  delete updated[state];
-                  if (newState.trim()) {
-                    updated[newState.trim()] = color;
-                  }
-                  onUpdate(updated);
-                }}
-              />
-              <div style="flex: 1; min-width: 0; overflow: hidden;">
-                <ultra-color-picker
-                  .label=${''}
-                  .value=${color}
-                  .defaultValue=${'gray'}
-                  .hass=${hass}
-                  style="width: 100%;"
-                  @value-changed=${(e: CustomEvent) => {
-                    const updated = { ...stateColors, [state]: e.detail.value };
-                    onUpdate(updated);
-                  }}
-                ></ultra-color-picker>
-              </div>
-              <ha-icon
-                icon="mdi:delete"
-                style="cursor: pointer; color: var(--error-color); margin-left: 8px; flex-shrink: 0;"
-                @click=${() => {
-                  const updated = { ...stateColors };
-                  delete updated[state];
-                  onUpdate(updated);
-                }}
-              ></ha-icon>
-            </div>
-          `
-        )}
-        <button
-          class="add-state-color-btn"
-          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
-          @click=${() => {
-            const updated = { ...stateColors, new_state: 'gray' };
-            onUpdate(updated);
-          }}
-        >
-          <ha-icon icon="mdi:plus" style="margin-right: 4px;"></ha-icon>
-          ${localize('editor.button.add_state_color', lang, 'Add State Color')}
-        </button>
       </div>
     `;
   }

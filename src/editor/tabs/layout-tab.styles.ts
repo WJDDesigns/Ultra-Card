@@ -5053,6 +5053,18 @@ export const layoutTabStyles = css`
       [data-uc-sec-owned-hidden] {
         display: none !important;
       }
+      /* The section box itself is the accordion: an accent edge on the box and a
+         round chevron in its header row. No extra box inside it. */
+      .settings-section[data-uc-collapsible] {
+        border-left: 4px solid var(--primary-color) !important;
+      }
+      .settings-section[data-uc-collapsed] {
+        border-left-color: color-mix(in srgb, var(--primary-color) 45%, transparent) !important;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        margin-top: 0 !important;
+        margin-bottom: 12px !important;
+      }
       .settings-section[data-uc-collapsible] > [data-uc-sec-head] {
         display: flex !important;
         align-items: center;
@@ -5061,13 +5073,29 @@ export const layoutTabStyles = css`
         user-select: none;
         border-radius: 6px;
       }
+      .settings-section[data-uc-collapsible] > [data-uc-sec-head]:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 4px;
+      }
       .settings-section[data-uc-collapsed] > [data-uc-sec-head] {
         margin-bottom: 0 !important;
       }
-      .settings-section[data-uc-collapsed] {
-        padding-top: 12px !important;
-        padding-bottom: 12px !important;
-        margin-bottom: 12px !important;
+      /* Open section whose fields sit after its box (Camera and many others): the
+         box goes see-through and the wrapper draws one box around the header and
+         those fields, so they read as the section's content. */
+      .settings-section[data-uc-sec-has-owned]:not([data-uc-collapsed]) {
+        background: transparent !important;
+        border-color: transparent !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 4px !important;
+      }
+      [data-uc-sec-owned] {
+        margin-inline: 20px 16px !important;
+        max-width: calc(100% - 36px) !important;
+        box-sizing: border-box;
+      }
+      [data-uc-sec-owned-last] {
+        margin-bottom: 32px !important;
       }
       [data-uc-sec-head] > .uc-sec-meta {
         flex: 1 1 auto;
@@ -5100,16 +5128,32 @@ export const layoutTabStyles = css`
       }
       [data-uc-sec-head] > .uc-sec-chevron {
         flex: 0 0 auto;
-        --mdc-icon-size: 22px;
-        color: var(--secondary-text-color);
-        transition: transform 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+        color: var(--primary-color);
+        transition: transform 0.2s ease, background 0.15s ease;
         transform: rotate(180deg);
+      }
+      [data-uc-sec-head] > .uc-sec-chevron > svg {
+        display: block;
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
       .settings-section[data-uc-collapsed] > [data-uc-sec-head] > .uc-sec-chevron {
         transform: rotate(0deg);
       }
       [data-uc-sec-head]:hover > .uc-sec-chevron {
-        color: var(--primary-color);
+        background: color-mix(in srgb, var(--primary-color) 28%, transparent);
       }
       @media (prefers-reduced-motion: reduce) {
         [data-uc-sec-head] > .uc-sec-chevron {

@@ -6456,7 +6456,11 @@
       "type_template": "Template",
       "attribute": "Attribut",
       "add_rule": "Regel hinzufügen",
-      "otherwise": "Sonst verwenden"
+      "otherwise": "Sonst verwenden",
+      "entity_color": "Sonst die eigene Farbe einer Entität verwenden",
+      "entity_color_desc": "Optional. Wählen Sie ein Licht oder eine andere Entität, deren Farbe übernommen werden soll (zum Beispiel die RGB-Farbe der Lampe). Leer lassen, um dies zu überspringen.",
+      "otherwise_missing": "Wenn diese Entität nicht verfügbar ist, verwenden",
+      "entity_color_short": "Entitätsfarbe"
     }
   },
   "hub": {

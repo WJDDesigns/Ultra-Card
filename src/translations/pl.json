@@ -6456,7 +6456,11 @@
       "type_template": "Szablon",
       "attribute": "Atrybut",
       "add_rule": "Dodaj regułę",
-      "otherwise": "W przeciwnym razie"
+      "otherwise": "W przeciwnym razie",
+      "entity_color": "W przeciwnym razie użyj własnego koloru encji",
+      "entity_color_desc": "Opcjonalne. Wybierz światło lub inną encję, której kolor ma być użyty (na przykład kolor RGB żarówki). Pozostaw puste, aby pominąć.",
+      "otherwise_missing": "Jeśli encja jest niedostępna, użyj",
+      "entity_color_short": "kolor encji"
     }
   },
   "hub": {

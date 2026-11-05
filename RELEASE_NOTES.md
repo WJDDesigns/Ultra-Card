@@ -1,5 +1,36 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta4
+
+The fourth 3.14.4 beta fixes the Navigation bar hiding under the phone's own navigation buttons in the newest Android Companion app. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🐛 Bug Fixes
+
+- **Navigation bar hidden under the phone's buttons** - The Android Companion app 2026.10 now draws the dashboard right to the bottom of the screen, so a Navigation bar at the bottom sat underneath the phone's own navigation buttons. The bar now leaves room for the phone's system bars the same way Home Assistant's own footer does: a docked bar keeps its background to the screen edge with the icons lifted above the buttons, and a floating bar sits above them. Top, left and right bars, the collapse handle and the media player get the same treatment, so notches and status bars are handled too. Nothing changes on desktop or on phones without these bars. Thanks to larrysansan for the report
+
+## Version 3.14.4-beta3
+
+The third 3.14.4 beta makes the folding settings sections in the module editors easier to read, so it's clear what each section holds. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Clearer folding settings sections** - Each folding section in a module's settings is now one box with a coloured edge and a round arrow button in its header, so it no longer looks like just another field or dropdown. In modules like Camera, where some settings sat below the section's box, those settings are now drawn inside the same box, so you can see exactly what the section opens and closes. Thanks to larrysansan for the feedback
+
+## Version 3.14.4-beta2
+
+The second 3.14.4 beta folds the old "Use Entity Color" switch into the new colour-by-state picker, so there's one place to set it up. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Colour by entity state: follow an entity's own colour** - The state colour editor has a new "Otherwise use an entity's own color" setting. Pick a light and the colour follows the bulb's actual RGB colour whenever none of your rules match, with on/off defaults for lights, switches and sensors that have no colour
+- **Old "Use Entity Color" switch removed** - The Popup trigger button, Popup trigger icon and Button module no longer have their own "Use Entity Color" switch, since "Color by entity state" now does the same job. Cards that used it are converted automatically when they load, so they keep the same colours: each state colour becomes a rule and the entity's own colour is used otherwise. Thanks to the tester who spotted the duplicate
+
 ## Version 3.14.4-beta1
 
 The first 3.14.4 beta lets any colour follow the state of your entities, and makes long module settings easier to find your way around. This is a pre-release for testing — please report anything odd on GitHub or Discord.

@@ -6456,7 +6456,11 @@
       "type_template": "Template",
       "attribute": "Attributo",
       "add_rule": "Aggiungi regola",
-      "otherwise": "Altrimenti usa"
+      "otherwise": "Altrimenti usa",
+      "entity_color": "Altrimenti usa il colore proprio di un'entità",
+      "entity_color_desc": "Facoltativo. Scegli una luce o un'altra entità di cui seguire il colore (ad esempio il colore RGB della lampadina). Lascia vuoto per saltare.",
+      "otherwise_missing": "Se l'entità non è disponibile, usa",
+      "entity_color_short": "colore entità"
     }
   },
   "hub": {

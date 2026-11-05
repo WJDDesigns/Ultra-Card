@@ -301,7 +301,29 @@ export class UcStateColorEditor extends LitElement {
           <ha-icon icon="mdi:plus"></ha-icon>${this._t('add_rule', 'Add rule')}
         </button>
 
-        <div class="sub-label otherwise">${this._t('otherwise', 'Otherwise use')}</div>
+        <div class="sub-label otherwise">${this._t('entity_color', "Otherwise use an entity's own color")}</div>
+        <div class="hint">
+          ${this._t(
+            'entity_color_desc',
+            "Optional. Pick a light or other entity to follow its color (for example the bulb's RGB color). Leave empty to skip."
+          )}
+        </div>
+        ${this._form(
+          { entity_color: this.value.entity_color || '' },
+          [{ name: 'entity_color', selector: { entity: {} } }],
+          v => {
+            const next: StateColorValue = { ...this.value };
+            if (v.entity_color) next.entity_color = v.entity_color;
+            else delete next.entity_color;
+            this._emit(next);
+          }
+        )}
+
+        <div class="sub-label otherwise">
+          ${this.value.entity_color
+            ? this._t('otherwise_missing', 'If that entity is unavailable, use')
+            : this._t('otherwise', 'Otherwise use')}
+        </div>
         <ultra-color-picker
           .hass=${this.hass}
           .value=${this.value.fallback || ''}

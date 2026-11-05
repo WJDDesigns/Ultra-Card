@@ -37,6 +37,13 @@ const INTERACTIVE =
 /** Ancestors that already collapse their own content; sections inside them stay as they are. */
 const OWN_COLLAPSE = '.settings-section, ha-expansion-panel, [data-uc-no-collapse]';
 
+interface Rail {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 type StoredState = Record<string, Record<string, boolean>>;
 
 let storedCache: StoredState | null = null;
@@ -230,6 +237,11 @@ export class UcCollapsibleSections extends LitElement {
 
   @state() private _count = 0;
   @state() private _anyCollapsed = false;
+  /** Boxes drawn around an open section plus the fields that sit after it. */
+  @state() private _rails: Rail[] = [];
+
+  private _resize: ResizeObserver | undefined;
+  private _railFrame = 0;
 
   private _observer: MutationObserver | undefined;
   private _frame = 0;
@@ -246,6 +258,10 @@ export class UcCollapsibleSections extends LitElement {
     this._observer.observe(this, { childList: true, subtree: true });
     this.addEventListener('click', this._onClick);
     this.addEventListener('keydown', this._onKeyDown);
+    if (typeof ResizeObserver !== 'undefined') {
+      this._resize = new ResizeObserver(() => this._scheduleRails());
+      this._resize.observe(this);
+    }
     this._scheduleScan();
   }
 
@@ -253,6 +269,10 @@ export class UcCollapsibleSections extends LitElement {
     super.disconnectedCallback();
     this._observer?.disconnect();
     this._observer = undefined;
+    this._resize?.disconnect();
+    this._resize = undefined;
+    if (this._railFrame) cancelAnimationFrame(this._railFrame);
+    this._railFrame = 0;
     this.removeEventListener('click', this._onClick);
     this.removeEventListener('keydown', this._onKeyDown);
     if (this._frame) cancelAnimationFrame(this._frame);
@@ -307,6 +327,7 @@ export class UcCollapsibleSections extends LitElement {
     let anyCollapsed = false;
     const sectionEls = new Set<Element>(sections.map(x => x.section));
     const hiddenNow = new Set<Element>();
+    const shownNow = new Set<Element>();
 
     sections.forEach(({ section, head }, index) => {
       this._decorate(head);
@@ -329,10 +350,24 @@ export class UcCollapsibleSections extends LitElement {
       const owned = ownedSiblings(section, sectionEls);
       owned.forEach(el => {
         if (!open) hiddenNow.add(el);
+        else shownNow.add(el);
         if (el.hasAttribute('data-uc-sec-owned-hidden') === open) {
           el.toggleAttribute('data-uc-sec-owned-hidden', !open);
         }
+        if (el.hasAttribute('data-uc-sec-owned') !== open) {
+          el.toggleAttribute('data-uc-sec-owned', open);
+        }
       });
+      owned.forEach((el, i) => {
+        const last = open && i === owned.length - 1;
+        if (el.hasAttribute('data-uc-sec-owned-last') !== last) {
+          el.toggleAttribute('data-uc-sec-owned-last', last);
+        }
+      });
+      const hasOwned = owned.length > 0;
+      if (section.hasAttribute('data-uc-sec-has-owned') !== hasOwned) {
+        section.toggleAttribute('data-uc-sec-has-owned', hasOwned);
+      }
 
       const fields = [section, ...owned].flatMap(el => formFields(el));
       const summary = open ? '' : summarizeFields(fields, this.hass);
@@ -351,15 +386,68 @@ export class UcCollapsibleSections extends LitElement {
     this.querySelectorAll('[data-uc-sec-owned-hidden]').forEach(el => {
       if (!hiddenNow.has(el)) el.removeAttribute('data-uc-sec-owned-hidden');
     });
+    this.querySelectorAll('[data-uc-sec-owned]').forEach(el => {
+      if (!shownNow.has(el)) el.removeAttribute('data-uc-sec-owned');
+    });
+    this.querySelectorAll('[data-uc-sec-owned-last]').forEach(el => {
+      if (!shownNow.has(el)) el.removeAttribute('data-uc-sec-owned-last');
+    });
     this.querySelectorAll('.settings-section[data-uc-collapsible]').forEach(el => {
       if (!sectionEls.has(el)) {
         el.removeAttribute('data-uc-collapsible');
         el.removeAttribute('data-uc-collapsed');
+        el.removeAttribute('data-uc-sec-has-owned');
       }
     });
 
     if (this._count !== sections.length) this._count = sections.length;
     if (this._anyCollapsed !== anyCollapsed) this._anyCollapsed = anyCollapsed;
+    this._scheduleRails();
+  }
+
+  private _scheduleRails(): void {
+    if (this._railFrame) return;
+    this._railFrame = requestAnimationFrame(() => {
+      this._railFrame = 0;
+      this._layoutRails();
+    });
+  }
+
+  /**
+   * One box from an open section's top down to the last field it owns outside
+   * the box, so the section and those fields read as a single accordion.
+   */
+  private _layoutRails(): void {
+    const host = this.getBoundingClientRect();
+    const rails: Rail[] = [];
+    const sectionEls = new Set<Element>(this._sections().map(x => x.section));
+    sectionEls.forEach(section => {
+      if (section.hasAttribute('data-uc-collapsed')) return;
+      const owned = ownedSiblings(section, sectionEls).filter(
+        el => el.getBoundingClientRect().height > 0
+      );
+      if (!owned.length) return;
+      const box = section.getBoundingClientRect();
+      const last = owned[owned.length - 1].getBoundingClientRect();
+      const height = Math.round(last.bottom - box.top + 16);
+      if (height <= 0) return;
+      rails.push({
+        top: Math.round(box.top - host.top),
+        left: Math.round(box.left - host.left),
+        width: Math.round(box.width),
+        height,
+      });
+    });
+    const same =
+      rails.length === this._rails.length &&
+      rails.every(
+        (r, i) =>
+          r.top === this._rails[i].top &&
+          r.left === this._rails[i].left &&
+          r.width === this._rails[i].width &&
+          r.height === this._rails[i].height
+      );
+    if (!same) this._rails = rails;
   }
 
   private _titleText(head: HTMLElement): string {
@@ -389,9 +477,17 @@ export class UcCollapsibleSections extends LitElement {
     summary.className = 'uc-sec-summary';
     meta.append(dot, summary);
 
-    const chevron = document.createElement('ha-icon');
+    // Drawn inline (not ha-icon) so the caret is centred exactly in its circle.
+    const chevron = document.createElement('span');
     chevron.className = 'uc-sec-chevron';
-    chevron.setAttribute('icon', 'mdi:chevron-down');
+    chevron.setAttribute('aria-hidden', 'true');
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    const path = document.createElementNS(svgNs, 'path');
+    path.setAttribute('d', 'M7 9.5l5 5 5-5');
+    svg.append(path);
+    chevron.append(svg);
 
     head.append(meta, chevron);
   }
@@ -471,6 +567,14 @@ export class UcCollapsibleSections extends LitElement {
             </div>`
           : ''
       }
+      ${this._rails.map(
+        r =>
+          html`<div
+            class="rail"
+            aria-hidden="true"
+            style="top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px"
+          ></div>`
+      )}
       <slot></slot>
     `;
   }
@@ -478,6 +582,18 @@ export class UcCollapsibleSections extends LitElement {
   static override styles = css`
     :host {
       display: block;
+      position: relative;
+      isolation: isolate;
+    }
+    .rail {
+      position: absolute;
+      z-index: -1;
+      box-sizing: border-box;
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      border: 1px solid var(--divider-color);
+      border-left: 4px solid var(--primary-color);
+      pointer-events: none;
     }
     .toolbar {
       display: flex;
