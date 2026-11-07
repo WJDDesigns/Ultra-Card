@@ -4160,7 +4160,9 @@ export class UltraCard extends LitElement {
         // card element (a non-forced unregister keeps it), same as before laziness.
         if (!this.config || !this.hass || !this._instanceId) return;
         for (const { id, module } of this._getConfigCache().navigationModules) {
-          svc.registerModule(this._instanceId, id, resolveStateColorsInConfig(module, this.hass) as any, this.hass, this.config, this as any);
+          // Pass the module as configured: the service resolves colours by entity
+          // state on every redraw, so they keep up after this card leaves the screen.
+          svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
           // Remember this dashboard so the navbar comes back after a reload on another view.
           if (!this._isEditorPreviewCard && !this._isCardPickerPreview) {
             rememberNavigationDashboard((module as { nav_scope?: 'current_view' | 'current_dashboard' | 'all_views' }).nav_scope);
