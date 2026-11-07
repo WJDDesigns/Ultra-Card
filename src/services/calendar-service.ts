@@ -233,9 +233,12 @@ export class CalendarService {
     startDate: Date,
     endDate: Date
   ): string {
-    const calendarIds = calendars.map(c => c.entity).sort().join('|');
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+    const calendarIds = calendars
+      .map(c => `${c.entity}~${c.id}~${c.color || ''}~${c.name || ''}`)
+      .sort()
+      .join('|');
+    const startStr = startDate.toISOString();
+    const endStr = endDate.toISOString();
     return `${calendarIds}:${startStr}:${endStr}`;
   }
 
@@ -333,8 +336,9 @@ export class CalendarService {
         return true;
       }
       
-      // Check if this is a multi-day event that spans this date
-      if (event.isMultiDay && event.start <= dateEnd && event.end >= dateStart) {
+      // Check if this is a multi-day event that spans this date. The end is
+      // exclusive (an all-day event ending at midnight does not cover that day).
+      if (event.isMultiDay && event.start <= dateEnd && event.end > dateStart) {
         return true;
       }
 
@@ -346,7 +350,11 @@ export class CalendarService {
    * Get date key (YYYY-MM-DD format)
    */
   static getDateKey(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // Local calendar day. toISOString() is UTC, which put events near midnight
+    // (and every all-day event east of UTC) on the previous day.
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${m}-${d}`;
   }
 
   /**
