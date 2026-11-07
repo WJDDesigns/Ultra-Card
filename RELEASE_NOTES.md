@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta7
+
+The seventh 3.14.4 beta gives the Calendar a big update, adds Bosch, Siemens and Neff Home Connect support to the appliance modules, and keeps Navigation icon colours live. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### ✨ New Features
+
+- **Calendar: page through months, weeks and days** - Month, Week and Day views now have previous / next arrows in the header, plus a Today button when you've moved away from today
+- **Calendar: event details on days** - Month view can show event names with their start time inside each day instead of dots (Events in Days setting). Tapping a day lists its events under the month with name, time or All day, location and calendar
+- **Calendar: view switcher** - Optional buttons in the header switch between views, and you choose which ones to offer, for example only Week and Day
+- **Calendar: weather on days** - Pick a weather entity and the daily forecast icon and temperature appear on upcoming days
+- **Calendar: add events** - An optional + button opens a form to create an event (title, all day or start and end time, location, description) on any calendar that accepts new events, such as Local Calendar, Google or CalDAV
+- **Calendar: filter calendars** - Optional chips in the header show or hide calendars, one per calendar or grouped by person (set a person on each calendar). Your choice is remembered on each device
+- **Bosch, Siemens and Neff appliances** - The Washer, Dryer and Dishwasher modules now recognise Home Connect and Home Connect Alt appliances. Pick any entity of the appliance and the card finds operating state, finish time, door, power, child lock, remote control, the running program and the Pause / Resume / Stop buttons, including German entity names and states. Thanks to larrysansan for the idea
+
+### 🐛 Bug Fixes
+
+- **Calendar: second calendar's events missing** - Month, Week and Day views only loaded the next 7 days (Days to Show), so events later in the month, such as a birthdays calendar, never appeared. They now load every date they show
+- **Calendar: all-day events on the wrong day** - In time zones ahead of UTC (most of Europe) all-day events showed one day early in the list view. Multi-day events no longer spill onto the day after they end, and Week and Day views show each event once instead of in every hour it covers
+- **Navigation icon colours stop updating** - Icons coloured by entity state, badges and item visibility in the Navigation bar froze until the app restarted when the card holding the bar wasn't on screen (seen on Android). The bar now follows those entities itself. Thanks to larrysansan for reporting
+
 ## Version 3.14.4-beta6
 
 The sixth 3.14.4 beta lets you choose which way the title reads on a sideways Accordion. This is a pre-release for testing — please report anything odd on GitHub or Discord.
