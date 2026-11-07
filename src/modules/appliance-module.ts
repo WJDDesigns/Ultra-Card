@@ -21,6 +21,23 @@ interface EntityRef {
   attrs: Record<string, any>;
 }
 
+/**
+ * "Bosch Trockner - Finish time" → "Finish time" for device "Trockner".
+ * Returns '' when the name doesn't lead with the device name.
+ */
+function stripDeviceName(friendly: string, deviceName?: string): string {
+  if (!friendly || !deviceName) return '';
+  const idx = friendly.toLowerCase().indexOf(deviceName.toLowerCase());
+  // Allow a short brand in front ("Bosch "), not the name further in
+  if (idx < 0 || idx > 24) return '';
+  const head = friendly.slice(0, idx);
+  if (head && !/^[\p{L}\d .&'-]*\s$/u.test(head)) return '';
+  return friendly
+    .slice(idx + deviceName.length)
+    .replace(/^[\s:–-]+/, '')
+    .trim();
+}
+
 function formatLabel(raw: string): string {
   return raw
     .replace(/([a-z\d])([A-Z])/g, '$1 $2')
@@ -654,20 +671,47 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     };
   }
 
-  private featureLabel(ref: EntityRef, prefix: string, deviceName?: string): string {
+  private featureLabel(
+    ref: EntityRef,
+    prefix: string,
+    deviceName?: string,
+    hass?: HomeAssistant,
+    lang?: string
+  ): string {
+    // Home Connect program pickers: one clear name instead of "<haid> Programs"
+    const tk = hass ? this.translationKey(hass, ref.id) : undefined;
+    if (tk && ['programs', 'active_program', 'selected_program'].includes(tk)) {
+      return localize('editor.appliance.program', lang || 'en', 'Program');
+    }
     const objectId = ref.id.split('.')[1] || '';
-    // Home Connect Alt ids are raw API keys (`…_bsh_common_setting_childlock`);
-    // its friendly names ("Bosch Washer - Child Lock") read far better.
+    const friendly = String(ref.attrs.friendly_name || '');
+    // Friendly name minus the device name first: it is already translated and
+    // covers brand-prefixed names like "Bosch Trockner - Finish time".
+    const fromFriendly = stripDeviceName(friendly, deviceName);
+    if (fromFriendly) return fromFriendly;
+    // Home Connect Alt ids are raw API keys (`…_bsh_common_setting_childlock`)
     const apiKeyId = HOME_CONNECT_KEY_RE.test(objectId);
     if (!apiKeyId && objectId.startsWith(`${prefix}_`)) {
-      return formatLabel(objectId.slice(prefix.length + 1));
-    }
-    const friendly = String(ref.attrs.friendly_name || '');
-    if (deviceName && friendly.toLowerCase().startsWith(deviceName.toLowerCase())) {
-      const stripped = friendly.slice(deviceName.length).replace(/^[\s:–-]+/, '').trim();
-      if (stripped) return stripped;
+      return formatLabel(objectId.slice(prefix.length + 1).replace(/^(\d{6,}|[0-9a-f]{12,})_/, ''));
     }
     return friendly || formatLabel(objectId);
+  }
+
+  /** An option as Home Assistant shows it (translated), else prettified. */
+  private optionLabel(hass: HomeAssistant, ref: EntityRef, option: string): string {
+    const fmt = (hass as unknown as {
+      formatEntityState?: (stateObj: unknown, state?: string) => string;
+    }).formatEntityState;
+    const stateObj = hass.states?.[ref.id];
+    if (fmt && stateObj) {
+      try {
+        const out = fmt(stateObj, option);
+        if (out && out !== option) return out;
+      } catch {
+        /* older HA: fall through */
+      }
+    }
+    return formatLabel(stripStatePrefix(option));
   }
 
   /**
@@ -1688,7 +1732,10 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       (isRange ? links.ovenMode?.state || links.jobState?.state : links.jobState?.state) || '';
     const jobLabel =
       jobRaw && !['none', 'unknown', 'unavailable', 'off'].includes(jobRaw.toLowerCase())
-        ? formatLabel(stripStatePrefix(jobRaw))
+        ? (() => {
+            const ref = isRange ? links.ovenMode || links.jobState : links.jobState;
+            return ref ? this.optionLabel(hass, ref, jobRaw) : formatLabel(stripStatePrefix(jobRaw));
+          })()
         : null;
 
     const completionDate = resolveCompletion(links.completion);
@@ -1958,7 +2005,18 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
                 if (!opts.length) return nothing;
                 return html`
                   <label class="uc-appl-setting uc-appl-ctl">
-                    <span class="uc-appl-setting__label">${this.featureLabel(s, links.prefix, links.deviceName)}</span>
+                    <span class="uc-appl-setting__label">
+                      ${hass.states[s.id]
+                        ? html`<ha-state-icon
+                            class="uc-appl-setting__icon"
+                            .hass=${hass}
+                            .stateObj=${hass.states[s.id]}
+                          ></ha-state-icon>`
+                        : nothing}
+                      <span class="uc-appl-setting__text"
+                        >${this.featureLabel(s, links.prefix, links.deviceName, hass, lang)}</span
+                      >
+                    </span>
                     <span class="uc-appl-setting__select-wrap">
                       <select
                         class="uc-appl-setting__select"
@@ -1976,7 +2034,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
                         }}
                       >
                         ${opts.map(
-                          o => html`<option value="${o}" ?selected=${o === s.state}>${formatLabel(o)}</option>`
+                          o => html`<option value="${o}" ?selected=${o === s.state}>${this.optionLabel(hass, s, o)}</option>`
                         )}
                       </select>
                       <ha-icon icon="mdi:chevron-down"></ha-icon>
@@ -2002,7 +2060,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
                     aria-pressed="${on ? 'true' : 'false'}"
                     @click=${() => toggleFeature(f.id)}
                   >
-                    ${this.featureLabel(f, links.prefix, links.deviceName)}
+                    ${this.featureLabel(f, links.prefix, links.deviceName, hass, lang)}
                   </button>
                 `;
               })}
@@ -2531,12 +2589,27 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         min-width: 0;
       }
       .uc-appl-setting__label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
         font-size: 0.625rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--secondary-text-color);
         white-space: nowrap;
+        overflow: hidden;
+      }
+      .uc-appl-setting__icon {
+        flex: none;
+        --mdc-icon-size: 14px;
+        width: 14px;
+        height: 14px;
+        display: inline-flex;
+      }
+      .uc-appl-setting__text {
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
       }
