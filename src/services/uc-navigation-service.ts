@@ -22,6 +22,8 @@ import { logicService } from './logic-service';
 import { ucActionService } from './uc-action-service';
 import { responsiveDesignService } from './uc-responsive-design-service';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { resolveStateColorsInConfig } from '../utils/uc-state-color';
+import { collectNavLiveEntities } from '../utils/uc-nav-live-entities';
 import { getImageUrl } from '../utils/image-upload';
 import { navigationJsTemplatesAllowedForConfig } from './uc-navigation-js-gating';
 import { setVisibleInterval, UcVisibilityTimer } from '../utils/uc-visibility-timer';
@@ -31,7 +33,10 @@ export { navigationJsTemplatesAllowedForConfig } from './uc-navigation-js-gating
 interface RegisteredModule {
   cardId: string;
   moduleId: string;
+  /** The module with every "colour by entity state" swapped for its current colour. */
   module: NavigationModule;
+  /** The module as configured; `module` is re-resolved from it on each render. */
+  rawModule: NavigationModule;
   hass: HomeAssistant;
   config: UltraCardConfig;
   element: HTMLElement | null;
@@ -103,7 +108,12 @@ declare global {
 // Get or create the shared preview overrides map
 function getPreviewOverrides(): Map<
   string,
-  { module: NavigationModule; config: UltraCardConfig; updatedAt: number }
+  {
+    module: NavigationModule;
+    rawModule?: NavigationModule;
+    config: UltraCardConfig;
+    updatedAt: number;
+  }
 > {
   if (!window.__ucNavigationPreviewOverrides) {
     window.__ucNavigationPreviewOverrides = new Map();
@@ -133,7 +143,8 @@ class UcNavigationService {
   // Media player state watcher – detects track changes even when the
   // originating card is on a non-visible view and not receiving hass updates.
   private _mediaWatchInterval: UcVisibilityTimer | null = null;
-  private _lastMediaSnapshot: Map<string, string> = new Map(); // entity_id → last_updated
+  private _lastMediaSnapshot: Map<string, string> = new Map(); // entity_id → "state|last_updated"
+  private _lastWatchedHass: HomeAssistant | null = null;
 
   /** On mobile, poll for open dialogs (e.g. date picker) inside shadow roots so we hide the navbar. */
   private _mobileOverlayCheckInterval: UcVisibilityTimer | null = null;
@@ -167,6 +178,7 @@ class UcNavigationService {
           if (detail?.module && detail?.moduleId && detail?.config) {
             getPreviewOverrides().set(detail.moduleId, {
               module: detail.module as NavigationModule,
+              rawModule: detail.module as NavigationModule,
               config: detail.config as UltraCardConfig,
               updatedAt: Date.now(),
             });
@@ -294,7 +306,8 @@ class UcNavigationService {
     this.registeredModules.set(key, {
       cardId,
       moduleId,
-      module,
+      module: this.resolveModuleColors(module, hass),
+      rawModule: module,
       hass,
       config,
       element,
@@ -328,7 +341,8 @@ class UcNavigationService {
     this.registeredModules.set(`${cardId}-${moduleId}`, {
       cardId,
       moduleId,
-      module,
+      module: this.resolveModuleColors(module, hass),
+      rawModule: module,
       hass,
       config,
       element: null,
@@ -353,6 +367,12 @@ class UcNavigationService {
     this.manageMediaPlayerWatcher();
   }
 
+  /** The module with colours set "by entity state" resolved against `hass`. */
+  private resolveModuleColors(module: NavigationModule, hass: HomeAssistant): NavigationModule {
+    if (hass) logicService.setHass(hass);
+    return resolveStateColorsInConfig(module, hass);
+  }
+
   /**
    * Retrieve the freshest `hass` object from the HA root element.
    * When the originating card is on a non-visible view, its stored `hass`
@@ -373,36 +393,47 @@ class UcNavigationService {
   }
 
   /**
-   * Collect all media_player entity IDs from currently registered navigation modules.
+   * Entities the registered navbars depend on: the media player, colours set
+   * "by entity state", badges, item visibility and so on. `anyChange` is set
+   * when a navbar uses JS templates, which can read any entity.
    */
-  private getTrackedMediaEntities(): Set<string> {
+  private getTrackedLiveEntities(): { entities: Set<string>; anyChange: boolean } {
     const entities = new Set<string>();
+    let anyChange = false;
     for (const reg of this.registeredModules.values()) {
-      const mp = (reg.module as any)?.nav_media_player;
+      const mp = (reg.rawModule as any)?.nav_media_player;
       if (mp?.enabled !== false && mp?.entity) {
         entities.add(mp.entity as string);
       }
+      const override = this.previewOverrides.get(reg.moduleId);
+      const live = collectNavLiveEntities(override?.rawModule ?? reg.rawModule, reg.config);
+      live.entities.forEach(e => entities.add(e));
+      if (live.anyChange) anyChange = true;
     }
-    return entities;
+    return { entities, anyChange };
   }
 
   /**
-   * Start or stop the media player state watcher based on whether any
-   * registered navigation module has a media player configured.
+   * Start or stop the live state watcher depending on whether any registered
+   * navbar reads entity state.
    */
   private manageMediaPlayerWatcher(): void {
-    const entities = this.getTrackedMediaEntities();
-    if (entities.size > 0 && !this._mediaWatchInterval) {
+    const { entities, anyChange } = this.getTrackedLiveEntities();
+    const needed = entities.size > 0 || anyChange;
+    if (needed && !this._mediaWatchInterval) {
       this.startMediaPlayerWatcher();
-    } else if (entities.size === 0 && this._mediaWatchInterval) {
+    } else if (!needed && this._mediaWatchInterval) {
       this.stopMediaPlayerWatcher();
     }
   }
 
   /**
-   * Poll the HA root element for media player state changes every ~1 s.
-   * When a tracked entity's last_updated changes, trigger a full re-render
-   * so album art / title / artist update in real-time.
+   * Poll the HA root element every ~1 s and redraw the navbar when an entity
+   * it depends on changes. The card that holds the navbar stops getting hass
+   * updates once it leaves the screen (an 'all_views' navbar on another view,
+   * the Companion app resuming from the background), so without this, album
+   * art, badges, item visibility and colours set by entity state froze until
+   * the page or app was reloaded.
    */
   private startMediaPlayerWatcher(): void {
     if (this._mediaWatchInterval) return;
@@ -413,18 +444,22 @@ class UcNavigationService {
         const hass: HomeAssistant | undefined = haEl?.hass;
         if (!hass?.states) return;
 
-        const entities = this.getTrackedMediaEntities();
+        const { entities, anyChange } = this.getTrackedLiveEntities();
         let changed = false;
 
         for (const entityId of entities) {
           const state = hass.states[entityId];
-          if (!state) continue;
+          const curr = state ? `${state.state}|${state.last_updated || ''}` : '';
           const prev = this._lastMediaSnapshot.get(entityId);
-          const curr = state.last_updated || '';
           if (prev !== curr) {
             this._lastMediaSnapshot.set(entityId, curr);
             changed = true;
           }
+        }
+
+        if (anyChange && this._lastWatchedHass !== hass) {
+          this._lastWatchedHass = hass;
+          changed = true;
         }
 
         if (changed) {
@@ -446,6 +481,7 @@ class UcNavigationService {
       this._mediaWatchInterval = null;
     }
     this._lastMediaSnapshot.clear();
+    this._lastWatchedHass = null;
   }
 
   /**
@@ -772,7 +808,16 @@ class UcNavigationService {
   private renderNavigationForContainer(registered: RegisteredModule, container: HTMLElement): void {
     // Always pull the freshest hass so media player state is current
     // even when the originating card is on a non-visible view.
-    this.getFreshHass(registered);
+    const freshHass = this.getFreshHass(registered);
+    // Colours set "by entity state" follow the live state, not the state at registration.
+    // Their conditions are checked by logicService, which only sees hass when a card
+    // hands it over, so hand it the live one first (the card may be off screen).
+    logicService.setHass(freshHass);
+    registered.module = resolveStateColorsInConfig(registered.rawModule, freshHass);
+    const override = this.previewOverrides.get(registered.moduleId);
+    if (override) {
+      override.module = resolveStateColorsInConfig(override.rawModule ?? override.module, freshHass);
+    }
 
     const viewLayer = this.ensureNavLayerForView(container);
     const moduleKey = `${registered.cardId}-${registered.moduleId}`;
