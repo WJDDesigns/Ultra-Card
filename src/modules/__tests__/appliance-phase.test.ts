@@ -46,7 +46,9 @@ describe('resolveAppliancePhase', () => {
   });
 
   it('keeps running while the sub state is mid-cycle', () => {
-    expect(resolveAppliancePhase('device_state_running', 'washer_substate_rinsing')).toBe('running');
+    expect(resolveAppliancePhase('device_state_running', 'washer_substate_rinsing')).toBe(
+      'running'
+    );
   });
 
   it('lets a finished job override a generic "on" machine state', () => {
@@ -73,5 +75,50 @@ describe('stripStatePrefix', () => {
   it('leaves ordinary labels alone', () => {
     expect(stripStatePrefix('Dryer Refresh')).toBe('Dryer Refresh');
     expect(stripStatePrefix('rinse')).toBe('rinse');
+  });
+});
+
+describe('Home Connect (Bosch / Siemens / Neff)', () => {
+  it.each([
+    ['inactive', 'idle'],
+    ['ready', 'idle'],
+    ['delayedstart', 'paused'],
+    ['run', 'running'],
+    ['pause', 'paused'],
+    ['actionrequired', 'paused'],
+    ['finished', 'done'],
+    ['error', 'error'],
+    ['aborting', 'idle'],
+  ])('reads core operation_state options: %s -> %s', (state, phase) => {
+    expect(resolvePhase(state)).toBe(phase);
+  });
+
+  it.each([
+    ['BSH.Common.EnumType.OperationState.Run', 'running'],
+    ['BSH.Common.EnumType.OperationState.DelayedStart', 'paused'],
+    ['BSH.Common.EnumType.OperationState.ActionRequired', 'paused'],
+    ['BSH.Common.EnumType.OperationState.Finished', 'done'],
+    ['BSH.Common.EnumType.OperationState.Ready', 'idle'],
+    ['BSH.Common.EnumType.OperationState.Inactive', 'idle'],
+    ['BSH.Common.EnumType.OperationState.Error', 'error'],
+  ])('reads Home Connect Alt raw API values: %s -> %s', (state, phase) => {
+    expect(resolvePhase(state)).toBe(phase);
+  });
+
+  it.each([
+    ['Läuft', 'running'],
+    ['Fertig', 'done'],
+    ['Bereit', 'idle'],
+    ['Startverzögerung', 'paused'],
+    ['Aktion erforderlich', 'paused'],
+  ])('reads Home Connect Alt German display values: %s -> %s', (state, phase) => {
+    expect(resolvePhase(state)).toBe(phase);
+  });
+
+  it('labels programs without their API namespace', () => {
+    expect(stripStatePrefix('LaundryCare.Washer.Program.Cotton')).toBe('Cotton');
+    expect(stripStatePrefix('laundry_care_washer_program_cotton')).toBe('cotton');
+    expect(stripStatePrefix('laundry_care_dryer_program_synthetic')).toBe('synthetic');
+    expect(stripStatePrefix('dishcare_dishwasher_program_eco_50')).toBe('eco_50');
   });
 });
