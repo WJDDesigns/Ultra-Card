@@ -19239,6 +19239,18 @@
           .uc-graphs-general-tab {
             padding: 8px;
           }
+          /* Two-up option rows inside each entity (Show Points / Fill Area, Line
+             Width / Line Style). Stack when the editor is narrow instead of
+             forcing two columns, which pushed the panel into sideways scrolling. */
+          .uc-graphs-entity-pair {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+            gap: 12px 16px;
+            min-width: 0;
+          }
+          .uc-graphs-entity-pair > * {
+            min-width: 0;
+          }
           .settings-section {
             background: var(--secondary-background-color);
             border-radius: var(--uc-r-12, 12px);
@@ -19432,7 +19444,7 @@
                         <!-- Line Chart Specific Options -->
                         ${["line","area"].includes(b.chart_type)?o.qy`
                               <div
-                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"
+                                class="uc-graphs-entity-pair"
                               >
                                 <div
                                   style="padding: 8px; border-radius: var(--uc-r-6, 6px); background: var(--secondary-background-color);"
@@ -19449,7 +19461,7 @@
 
                               <!-- Line Width and Style -->
                               <div
-                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"
+                                class="uc-graphs-entity-pair"
                               >
                               ${this.renderSliderField((0,g.kg)("editor.graphs.line.line_width",k,"Line Width"),"",e.line_width||2,2,1,8,1,e=>this._updateEntity(b,i,{line_width:e},n),"px")}
 
@@ -20117,7 +20129,7 @@
             </g>`:o.JW``})}
         </svg>
       </div>
-    `}_renderLineChart(e,t,i,n,a,r,s){var l,d;const c=this._historyData[e.id];let u,p;this._historyError[e.id],this._historyLoading[e.id],c?(u=c.timePoints,p=c.datasets):(u=this._generateTimePoints(e.time_period),p=t.map((t,i)=>{e.entities[i];const o=t.value||0,n=new Array(u.length).fill(o);return{name:t.name,color:t.color,values:n,lineWidth:t.lineWidth,showPoints:t.showPoints,fillArea:t.fillArea,lineStyle:t.lineStyle,unit:t.unit||"",entityId:t.entityId}})),p=p.map((t,i)=>{var o,n,l;const d=null===(o=e.entities)||void 0===o?void 0:o[i];let c;c=a&&a[i]?this._formatColor(a[i]):r?this._formatColor(r):this._formatColor(null==d?void 0:d.color)||t.color||this._getDefaultColor(i);const u=void 0!==s?s:!0===(null==d?void 0:d.fill_area)||t.fillArea;return Object.assign(Object.assign({},t),{color:c,lineWidth:null!==(l=null!==(n=null==d?void 0:d.line_width)&&void 0!==n?n:t.lineWidth)&&void 0!==l?l:2,showPoints:!1!==(null==d?void 0:d.show_points),fillArea:u,lineStyle:(null==d?void 0:d.line_style)||t.lineStyle||"solid"})});let _,h,g=p;e.normalize_values&&(g=p.map(e=>{const t=Math.max(...e.values),i=Math.min(...e.values),o=t-i||1;return Object.assign(Object.assign({},e),{originalValues:e.values,values:e.values.map(e=>(e-i)/o*100),normalizedMin:i,normalizedMax:t})})),e.use_fixed_y_axis?(h=null!==(l=e.y_axis_min)&&void 0!==l?l:0,_=null!==(d=e.y_axis_max)&&void 0!==d?d:100,_<=h&&(_=h+1)):(_=Math.max(...g.flatMap(e=>e.values)),h=Math.min(...g.flatMap(e=>e.values)));const v=_-h,y=!1!==e.show_grid,f=!0===e.show_time_intervals,b=e;let w=(e.design||{}).background_color||b.background_color;w="transparent"===w?"var(--card-background-color)":w?this._formatColor(w):"var(--card-background-color, transparent)",Boolean(c&&"history"===c.source);const k="full"===e.chart_layout,x=!1!==e.show_grid_values&&y,S=k?2:x?28:10,z=k?2:5,A=k?2:12,$=300-S-z,C=100-A-(k?2:f?18:8),T=Math.max(1,Math.ceil(u.length/6));return o.qy`
+    `}_renderLineChart(e,t,i,n,a,r,s){var l,d;const c=this._historyData[e.id];let u,p;this._historyError[e.id],this._historyLoading[e.id],c?(u=c.timePoints,p=c.datasets):(u=this._generateTimePoints(e.time_period),p=t.map((t,i)=>{e.entities[i];const o=t.value||0,n=new Array(u.length).fill(o);return{name:t.name,color:t.color,values:n,lineWidth:t.lineWidth,showPoints:t.showPoints,fillArea:t.fillArea,lineStyle:t.lineStyle,unit:t.unit||"",entityId:t.entityId}})),p=p.map((t,i)=>{var o,n,l;const d=null===(o=e.entities)||void 0===o?void 0:o[i];let c;c=a&&a[i]?this._formatColor(a[i]):r?this._formatColor(r):this._formatColor(null==d?void 0:d.color)||t.color||this._getDefaultColor(i);const u=void 0!==s?s:d?!0===d.fill_area:t.fillArea;return Object.assign(Object.assign({},t),{color:c,lineWidth:null!==(l=null!==(n=null==d?void 0:d.line_width)&&void 0!==n?n:t.lineWidth)&&void 0!==l?l:2,showPoints:!1!==(null==d?void 0:d.show_points),fillArea:u,lineStyle:(null==d?void 0:d.line_style)||t.lineStyle||"solid"})});let _,h,g=p;e.normalize_values&&(g=p.map(e=>{const t=Math.max(...e.values),i=Math.min(...e.values),o=t-i||1;return Object.assign(Object.assign({},e),{originalValues:e.values,values:e.values.map(e=>(e-i)/o*100),normalizedMin:i,normalizedMax:t})})),e.use_fixed_y_axis?(h=null!==(l=e.y_axis_min)&&void 0!==l?l:0,_=null!==(d=e.y_axis_max)&&void 0!==d?d:100,_<=h&&(_=h+1)):(_=Math.max(...g.flatMap(e=>e.values)),h=Math.min(...g.flatMap(e=>e.values)));const v=_-h,y=!1!==e.show_grid,f=!0===e.show_time_intervals,b=e;let w=(e.design||{}).background_color||b.background_color;w="transparent"===w?"var(--card-background-color)":w?this._formatColor(w):"var(--card-background-color, transparent)",Boolean(c&&"history"===c.source);const k="full"===e.chart_layout,x=!1!==e.show_grid_values&&y,S=k?2:x?28:10,z=k?2:5,A=k?2:12,$=300-S-z,C=100-A-(k?2:f?18:8),T=Math.max(1,Math.ceil(u.length/6));return o.qy`
       <div
         class="line-chart-container"
         style="
