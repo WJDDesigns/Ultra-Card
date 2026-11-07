@@ -1,7 +1,16 @@
-import { TemplateResult, html } from 'lit';
+import { TemplateResult, html, nothing } from 'lit';
 import type { HomeAssistant } from '../ha/types';
 import { CalendarModule, ProcessedCalendarEvent } from '../types';
 import { CalendarService } from '../services/calendar-service';
+import { localize } from '../localize/localize';
+
+/** Daily forecast shown on a calendar day. */
+export interface CalendarDayWeather {
+  icon: string;
+  condition: string;
+  high?: number | undefined;
+  low?: number | undefined;
+}
 
 /**
  * Scroll state for navigation buttons
@@ -31,6 +40,105 @@ export interface CalendarViewContext {
   onScrollUp?: (() => void) | undefined;
   onScrollDown?: (() => void) | undefined;
   scrollContainerId?: string | undefined; // Unique ID for this module's scroll container
+  /** Date the month / week / day views are showing (navigation moves it). */
+  anchorDate?: Date | undefined;
+  /** Daily weather keyed by local day (YYYY-MM-DD). */
+  weather?: Map<string, CalendarDayWeather> | undefined;
+  /** Day picked in month view; its events are listed under the grid. */
+  selectedDateKey?: string | undefined;
+  onDaySelect?: ((date: Date) => void) | undefined;
+  /** Open a day in day view (week view day headers). */
+  onDayOpen?: ((date: Date) => void) | undefined;
+}
+
+function ctxLang(context: CalendarViewContext): string {
+  return context.module.language || context.hass?.locale?.language || 'en';
+}
+
+/** Small weather badge: icon plus high / low temperature. */
+export function renderDayWeather(
+  context: CalendarViewContext,
+  date: Date,
+  variant: 'cell' | 'header' | 'inline' = 'cell'
+): TemplateResult | typeof nothing {
+  const w = context.weather?.get(CalendarService.getDateKey(date));
+  if (!w) return nothing;
+  const showTemp = context.module.weather_show_temperature !== false;
+  const temps =
+    showTemp && w.high !== undefined
+      ? w.low !== undefined && variant !== 'cell'
+        ? `${Math.round(w.high)}° / ${Math.round(w.low)}°`
+        : `${Math.round(w.high)}°`
+      : '';
+  return html`<span class="uc-calendar-weather uc-calendar-weather--${variant}" title=${w.condition}>
+    <ha-icon icon=${w.icon}></ha-icon>${temps ? html`<span class="uc-calendar-weather-temp">${temps}</span>` : nothing}
+  </span>`;
+}
+
+/** "All day", or "10:00 - 11:30"; multi-day events show their dates too. */
+export function formatEventWhen(context: CalendarViewContext, event: ProcessedCalendarEvent): string {
+  const lang = ctxLang(context);
+  const allDay = localize('editor.calendar.all_day', lang, 'All day');
+  if (event.isMultiDay) {
+    const fmt = (d: Date) => d.toLocaleDateString(lang, { day: 'numeric', month: 'short' });
+    if (event.isAllDay) {
+      const lastDay = new Date(event.end);
+      lastDay.setDate(lastDay.getDate() - 1);
+      return `${allDay} · ${fmt(event.start)} – ${fmt(lastDay)}`;
+    }
+    return `${fmt(event.start)} ${context.formatTime(event.start)} – ${fmt(event.end)} ${context.formatTime(event.end)}`;
+  }
+  if (event.isAllDay) return allDay;
+  return context.module.show_end_time !== false
+    ? `${context.formatTime(event.start)} – ${context.formatTime(event.end)}`
+    : context.formatTime(event.start);
+}
+
+/** Event list with name, time (or all day), location and calendar. */
+export function renderEventDetailsList(
+  context: CalendarViewContext,
+  events: ProcessedCalendarEvent[]
+): TemplateResult {
+  const { module, onEventClick } = context;
+  const lang = ctxLang(context);
+  if (events.length === 0) {
+    return html`<div class="uc-calendar-details-empty">
+      ${localize('editor.calendar.no_events_day', lang, 'No events')}
+    </div>`;
+  }
+  return html`${events.map(
+    event => html`
+      <div
+        class="uc-calendar-details-event"
+        @click=${(e: Event) => {
+          e.stopPropagation();
+          onEventClick(event);
+        }}
+      >
+        <div class="uc-calendar-details-accent" style="background: ${event.calendarColor};"></div>
+        <div class="uc-calendar-details-body">
+          <div class="uc-calendar-details-title">${event.summary}</div>
+          <div class="uc-calendar-details-meta">
+            <ha-icon icon="mdi:clock-outline"></ha-icon>
+            <span>${formatEventWhen(context, event)}</span>
+          </div>
+          ${event.location
+            ? html`<div class="uc-calendar-details-meta">
+                <ha-icon icon="mdi:map-marker"></ha-icon>
+                <span>${renderLocationText(module, event.location, displayLocation(module, event.location))}</span>
+              </div>`
+            : nothing}
+          ${module.show_event_description && event.description
+            ? html`<div class="uc-calendar-details-desc">${event.description}</div>`
+            : nothing}
+          <div class="uc-calendar-details-cal">
+            <span class="uc-calendar-details-dot" style="background: ${event.calendarColor};"></span>
+            ${event.calendarName}
+          </div>
+        </div>
+      </div>
+    `
+  )}`;
 }
 
 // ==========================================
@@ -155,6 +263,7 @@ export function renderCompactListView(context: CalendarViewContext): TemplateRes
                       </span>
                     `
                   : ''}
+                ${renderDayWeather(context, date, 'cell')}
               </div>
               <div class="uc-calendar-events-col">
                 ${dayEvents.length > 0
@@ -270,33 +379,27 @@ function renderCompactEvent(
  */
 export function renderMonthView(context: CalendarViewContext): TemplateResult {
   const { module, events, hass } = context;
-  
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  
-  // Get days for the month grid
+  const lang = ctxLang(context);
+
+  const anchor = context.anchorDate || new Date();
   const days = CalendarService.getMonthDays(
-    currentYear,
-    currentMonth,
+    anchor.getFullYear(),
+    anchor.getMonth(),
     module.first_day_of_week || 'sunday'
   );
 
-  // Get weekday headers
   const weekdays = getWeekdayHeaders(module.first_day_of_week || 'sunday', module.language || hass?.locale?.language);
+  const showTitles = module.month_event_display === 'titles';
+  const showDetails = module.month_show_day_details !== false;
+  const selectedKey = showDetails ? context.selectedDateKey : undefined;
+  const selectedDay = selectedKey ? days.find(d => CalendarService.getDateKey(d.date) === selectedKey) : undefined;
+  const maxTitles = 3;
 
   return html`
     <div class="uc-calendar-month-view">
-      <!-- Month Header -->
-      <div class="uc-calendar-month-view-header">
-        <span class="uc-calendar-month-name">
-          ${now.toLocaleDateString(module.language || undefined, { month: 'long', year: 'numeric' })}
-        </span>
-      </div>
-
       <!-- Weekday Headers -->
-      <div class="uc-calendar-month-header">
-        ${module.show_week_numbers !== 'none'
+      <div class="uc-calendar-month-header ${module.show_week_numbers && module.show_week_numbers !== 'none' ? 'with-week-numbers' : ''}">
+        ${module.show_week_numbers && module.show_week_numbers !== 'none'
           ? html`<div class="uc-calendar-weekday-header uc-calendar-week-num-header"></div>`
           : ''}
         ${weekdays.map(
@@ -305,12 +408,13 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
       </div>
 
       <!-- Calendar Grid -->
-      <div class="uc-calendar-month-grid ${module.show_week_numbers !== 'none' ? 'with-week-numbers' : ''}">
+      <div class="uc-calendar-month-grid ${module.show_week_numbers && module.show_week_numbers !== 'none' ? 'with-week-numbers' : ''}">
         ${days.map((dayInfo, index) => {
           const dayEvents = CalendarService.getEventsForDate(events, dayInfo.date);
           const isToday = CalendarService.isToday(dayInfo.date);
-          const showWeekNum = module.show_week_numbers !== 'none' && index % 7 === 0;
-          
+          const key = CalendarService.getDateKey(dayInfo.date);
+          const showWeekNum = module.show_week_numbers && module.show_week_numbers !== 'none' && index % 7 === 0;
+
           return html`
             ${showWeekNum
               ? html`
@@ -323,35 +427,81 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
                 `
               : ''}
             <div
-              class="uc-calendar-day-cell ${isToday ? 'today' : ''} ${dayInfo.currentMonth ? '' : 'other-month'}"
+              class="uc-calendar-day-cell ${isToday ? 'today' : ''} ${dayInfo.currentMonth ? '' : 'other-month'} ${selectedKey === key ? 'selected' : ''} ${showTitles ? 'with-titles' : ''}"
               data-uc-role="pane"
-              @click=${() => context.onEventClick(dayEvents[0])}
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                if (showDetails && context.onDaySelect) {
+                  context.onDaySelect(dayInfo.date);
+                } else if (dayEvents[0]) {
+                  context.onEventClick(dayEvents[0]);
+                }
+              }}
             >
-              <div class="uc-calendar-day-cell-num">${dayInfo.date.getDate()}</div>
+              <div class="uc-calendar-day-cell-top">
+                <div class="uc-calendar-day-cell-num">${dayInfo.date.getDate()}</div>
+                ${renderDayWeather(context, dayInfo.date, 'cell')}
+              </div>
               ${dayEvents.length > 0
-                ? html`
-                    <div class="uc-calendar-day-cell-events">
-                      ${module.month_show_event_count !== false
-                        ? dayEvents.slice(0, 3).map(
-                            event => html`
-                              <div
-                                class="uc-calendar-day-cell-dot"
-                                style="background: ${event.calendarColor};"
-                                title="${event.summary}"
-                              ></div>
-                            `
-                          )
-                        : ''}
-                      ${dayEvents.length > 3
-                        ? html`<span class="uc-calendar-day-cell-more">+${dayEvents.length - 3}</span>`
-                        : ''}
-                    </div>
-                  `
+                ? showTitles
+                  ? html`
+                      <div class="uc-calendar-day-cell-titles">
+                        ${dayEvents.slice(0, maxTitles).map(
+                          event => html`
+                            <div
+                              class="uc-calendar-day-cell-title ${event.isAllDay ? 'all-day' : ''}"
+                              style="--uc-cal-ev: ${event.calendarColor};"
+                              title="${event.summary}"
+                            >
+                              ${event.isAllDay
+                                ? nothing
+                                : html`<span class="uc-calendar-day-cell-time">${context.formatTime(event.start)}</span>`}
+                              <span class="uc-calendar-day-cell-name">${event.summary}</span>
+                            </div>
+                          `
+                        )}
+                        ${dayEvents.length > maxTitles
+                          ? html`<span class="uc-calendar-day-cell-more">+${dayEvents.length - maxTitles}</span>`
+                          : ''}
+                      </div>
+                    `
+                  : html`
+                      <div class="uc-calendar-day-cell-events">
+                        ${module.month_show_event_count !== false
+                          ? dayEvents.slice(0, 3).map(
+                              event => html`
+                                <div
+                                  class="uc-calendar-day-cell-dot"
+                                  style="background: ${event.calendarColor};"
+                                  title="${event.summary}"
+                                ></div>
+                              `
+                            )
+                          : ''}
+                        ${dayEvents.length > 3
+                          ? html`<span class="uc-calendar-day-cell-more">+${dayEvents.length - 3}</span>`
+                          : ''}
+                      </div>
+                    `
                 : ''}
             </div>
           `;
         })}
       </div>
+
+      ${selectedDay
+        ? html`
+            <div class="uc-calendar-details" data-uc-role="pane">
+              <div class="uc-calendar-details-header">
+                <span>
+                  ${selectedDay.date.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' })}
+                </span>
+                ${renderDayWeather(context, selectedDay.date, 'inline')}
+              </div>
+              ${renderEventDetailsList(context, CalendarService.getEventsForDate(events, selectedDay.date))}
+            </div>
+          `
+        : nothing}
     </div>
   `;
 }
@@ -366,9 +516,9 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
  */
 export function renderWeekView(context: CalendarViewContext): TemplateResult {
   const { module, events, hass, formatTime } = context;
-  
-  const now = new Date();
-  const weekDays = CalendarService.getWeekDays(now, module.first_day_of_week || 'sunday');
+  const lang = ctxLang(context);
+
+  const weekDays = CalendarService.getWeekDays(context.anchorDate || new Date(), module.first_day_of_week || 'sunday');
   
   const startHour = module.week_start_hour ?? 0;
   const endHour = module.week_end_hour ?? 24;
@@ -392,11 +542,19 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
         ${weekDays.map(day => {
           const isToday = CalendarService.isToday(day);
           return html`
-            <div class="uc-calendar-week-day-header ${isToday ? 'today' : ''}">
+            <div
+              class="uc-calendar-week-day-header ${isToday ? 'today' : ''} ${context.onDayOpen ? 'clickable' : ''}"
+              @click=${(e: Event) => {
+                if (!context.onDayOpen) return;
+                e.stopPropagation();
+                context.onDayOpen(day);
+              }}
+            >
               <span class="uc-calendar-week-day-name">
                 ${day.toLocaleDateString(module.language || hass?.locale?.language, { weekday: 'short' })}
               </span>
               <span class="uc-calendar-week-day-num">${day.getDate()}</span>
+              ${renderDayWeather(context, day, 'header')}
             </div>
           `;
         })}
@@ -405,7 +563,7 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
       <!-- All-day events row -->
       <div class="uc-calendar-week-allday-row">
         <div class="uc-calendar-week-time-col">
-          <span class="uc-calendar-time-label">All day</span>
+          <span class="uc-calendar-time-label">${localize('editor.calendar.all_day', lang, 'All day')}</span>
         </div>
         ${weekDays.map(day => {
           const dayEvents = CalendarService.getEventsForDate(events, day).filter(e => e.isAllDay);
@@ -416,7 +574,11 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
                   <div
                     class="uc-calendar-week-allday-event"
                     style="background: ${event.calendarColor}; color: ${getContrastColor(event.calendarColor)};"
-                    @click=${() => context.onEventClick(event)}
+                    title=${event.summary}
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      context.onEventClick(event);
+                    }}
                   >
                     ${event.summary}
                   </div>
@@ -441,10 +603,15 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
               const slotEnd = new Date(slotStart);
               slotEnd.setMinutes(slotEnd.getMinutes() + interval);
 
+              // Each event appears once: in the slot it starts in (or the first
+              // visible slot when it started earlier).
+              const gridStart = new Date(day);
+              gridStart.setHours(startHour, 0, 0, 0);
               const slotEvents = events.filter(event => {
                 if (event.isAllDay) return false;
-                return event.start < slotEnd && event.end > slotStart &&
-                       CalendarService.isSameDay(event.start, day);
+                if (!(event.start < slotEnd && event.end > slotStart)) return false;
+                const shownAt = event.start > gridStart ? event.start : gridStart;
+                return shownAt >= slotStart && shownAt < slotEnd;
               });
 
               return html`
@@ -454,7 +621,11 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
                       <div
                         class="uc-calendar-week-event"
                         style="border-left-color: ${event.calendarColor}; background: rgba(${hexToRgb(event.calendarColor)}, 0.15);"
-                        @click=${() => context.onEventClick(event)}
+                        title="${event.summary} · ${formatEventWhen(context, event)}${event.location ? ` · ${event.location}` : ''}"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          context.onEventClick(event);
+                        }}
                       >
                         <span class="uc-calendar-week-event-title">${event.summary}</span>
                       </div>
@@ -479,9 +650,11 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
  * Shows a single day with all events in detail
  */
 export function renderDayView(context: CalendarViewContext): TemplateResult {
-  const { module, events, hass, formatTime, onEventClick } = context;
-  
-  const now = new Date();
+  const { module, events, formatTime, onEventClick } = context;
+  const lang = ctxLang(context);
+
+  const now = new Date(context.anchorDate || new Date());
+  now.setHours(0, 0, 0, 0);
   const todayEvents = CalendarService.getEventsForDate(events, now);
   
   const startHour = module.day_start_hour ?? 0;
@@ -504,29 +677,25 @@ export function renderDayView(context: CalendarViewContext): TemplateResult {
 
   return html`
     <div class="uc-calendar-day-view">
-      <!-- Day Header -->
-      <div class="uc-calendar-day-header">
-        <span class="uc-calendar-day-view-title">
-          ${now.toLocaleDateString(module.language || hass?.locale?.language, {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </span>
-      </div>
+      ${context.weather?.has(CalendarService.getDateKey(now))
+        ? html`<div class="uc-calendar-day-weather-row">${renderDayWeather(context, now, 'inline')}</div>`
+        : nothing}
 
       <!-- All-day events -->
       ${allDayEvents.length > 0
         ? html`
             <div class="uc-calendar-day-allday">
-              <div class="uc-calendar-day-allday-label">All Day</div>
+              <div class="uc-calendar-day-allday-label">${localize('editor.calendar.all_day', lang, 'All day')}</div>
               <div class="uc-calendar-day-allday-events">
                 ${allDayEvents.map(
                   event => html`
                     <div
                       class="uc-calendar-day-allday-event"
                       style="background: ${event.calendarColor}; color: ${getContrastColor(event.calendarColor)};"
-                      @click=${() => onEventClick(event)}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        onEventClick(event);
+                      }}
                     >
                       ${event.summary}
                     </div>
@@ -545,9 +714,15 @@ export function renderDayView(context: CalendarViewContext): TemplateResult {
           const slotEnd = new Date(slotStart);
           slotEnd.setMinutes(slotEnd.getMinutes() + interval);
 
-          const slotEvents = timedEvents.filter(
-            event => event.start < slotEnd && event.end > slotStart
-          );
+          // Each event appears once: in the slot it starts in (or the first
+          // visible slot when it started earlier).
+          const gridStart = new Date(now);
+          gridStart.setHours(startHour, 0, 0, 0);
+          const slotEvents = timedEvents.filter(event => {
+            if (!(event.start < slotEnd && event.end > slotStart)) return false;
+            const shownAt = event.start > gridStart ? event.start : gridStart;
+            return shownAt >= slotStart && shownAt < slotEnd;
+          });
 
           return html`
             <div class="uc-calendar-day-row">
@@ -560,7 +735,10 @@ export function renderDayView(context: CalendarViewContext): TemplateResult {
                     <div
                       class="uc-calendar-day-event"
                       style="border-left: 3px solid ${event.calendarColor}; background: rgba(${hexToRgb(event.calendarColor)}, 0.1);"
-                      @click=${() => onEventClick(event)}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        onEventClick(event);
+                      }}
                     >
                       <div class="uc-calendar-day-event-title">${event.summary}</div>
                       <div class="uc-calendar-day-event-time">

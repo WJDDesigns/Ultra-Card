@@ -7730,6 +7730,8 @@ export interface CalendarEntityConfig {
   name?: string | undefined;
   color?: string | undefined;
   visible?: boolean | undefined;
+  /** Person this calendar belongs to: a person.* entity or a free-text name. Used to group the header filter. */
+  person?: string | undefined;
 }
 
 // Calendar event from Home Assistant
@@ -7796,6 +7798,28 @@ export interface CalendarModule extends BaseModule {
   show_week_numbers?: WeekNumberFormat | undefined;
   first_day_of_week?: FirstDayOfWeek | undefined;
   month_show_event_count?: boolean | undefined;
+  /** How events appear inside month cells: coloured dots, or event names (with start time). */
+  month_event_display?: 'dots' | 'titles' | undefined;
+  /** Tapping a day in month view lists that day's events (name, time, location) below the grid. */
+  month_show_day_details?: boolean | undefined;
+
+  // Header controls
+  /** Previous / next / today buttons for month, week and day views. Default on. */
+  show_navigation?: boolean | undefined;
+  /** Buttons in the header to switch between views. */
+  show_view_switcher?: boolean | undefined;
+  /** Views offered by the view switcher (defaults to month, week and day). */
+  available_views?: CalendarViewType[] | undefined;
+  /** "+" button that creates an event (calendar.create_event). */
+  show_add_event?: boolean | undefined;
+  /** Chips in the header that show or hide calendars. */
+  show_calendar_filter?: boolean | undefined;
+  /** Filter chips per calendar, or per person (calendars grouped by their person). */
+  calendar_filter_group?: 'calendar' | 'person' | undefined;
+
+  // Weather forecast on days
+  weather_entity?: string | undefined;
+  weather_show_temperature?: boolean | undefined;
 
   // Week view
   week_start_hour?: number | undefined;
