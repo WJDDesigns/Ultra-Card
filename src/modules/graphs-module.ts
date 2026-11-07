@@ -337,6 +337,18 @@ export class UltraGraphsModule extends BaseUltraModule {
           .uc-graphs-general-tab {
             padding: 8px;
           }
+          /* Two-up option rows inside each entity (Show Points / Fill Area, Line
+             Width / Line Style). Stack when the editor is narrow instead of
+             forcing two columns, which pushed the panel into sideways scrolling. */
+          .uc-graphs-entity-pair {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+            gap: 12px 16px;
+            min-width: 0;
+          }
+          .uc-graphs-entity-pair > * {
+            min-width: 0;
+          }
           .settings-section {
             background: var(--secondary-background-color);
             border-radius: var(--uc-r-12, 12px);
@@ -888,7 +900,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                         ${['line', 'area'].includes(graphsModule.chart_type)
                           ? html`
                               <div
-                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"
+                                class="uc-graphs-entity-pair"
                               >
                                 <div
                                   style="padding: 8px; border-radius: var(--uc-r-6, 6px); background: var(--secondary-background-color);"
@@ -935,7 +947,7 @@ export class UltraGraphsModule extends BaseUltraModule {
 
                               <!-- Line Width and Style -->
                               <div
-                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"
+                                class="uc-graphs-entity-pair"
                               >
                               ${this.renderSliderField(
                                 localize('editor.graphs.line.line_width', lang, 'Line Width'),
@@ -3079,11 +3091,15 @@ export class UltraGraphsModule extends BaseUltraModule {
         datasetColor = this._formatColor(cfg?.color) || dataset.color || this._getDefaultColor(i);
       }
 
-      // Determine fill area: template fill_area > entity config > dataset fillArea
+      // Determine fill area: template fill_area > entity config > dataset fillArea.
+      // The live entity config must win over the cached dataset, otherwise turning
+      // Fill Area off in the editor leaves the old fill on screen until a refetch.
       const fillArea =
         templateFillArea !== undefined
           ? templateFillArea
-          : cfg?.fill_area === true || dataset.fillArea;
+          : cfg
+            ? cfg.fill_area === true
+            : dataset.fillArea;
 
       return {
         ...dataset,
