@@ -104,3 +104,54 @@ describe('Washer auto-detection: Home Connect Alt', () => {
     expect(l.programButtons.stop?.id).toBe(`button.${p}_stop`);
   });
 });
+
+describe('Home Connect Alt labels (German dryer)', () => {
+  const p = 'bosch_wrb247c40_465100552660024057';
+  const hass = makeHass({
+    [`sensor.${p}_bsh_common_status_operationstate`]: {
+      state: 'BSH.Common.EnumType.OperationState.Ready',
+      tk: 'statuses',
+    },
+    [`select.${p}_programs`]: {
+      state: 'LaundryCare.Dryer.Program.TimeCold',
+      attributes: {
+        friendly_name: 'Bosch Trockner - Programs',
+        options: ['LaundryCare.Dryer.Program.TimeCold', 'LaundryCare.Dryer.Program.Cotton'],
+      },
+      tk: 'programs',
+    },
+    [`select.${p}_bsh_common_option_finishinrelative`]: {
+      state: '0:00',
+      attributes: { friendly_name: 'Bosch Trockner - Finish time', options: ['0:00'] },
+      tk: 'options',
+    },
+    [`switch.${p}_bsh_common_setting_childlock`]: {
+      state: 'off',
+      attributes: { friendly_name: 'Bosch Trockner - Childproof lock' },
+    },
+  });
+  hass.devices.dev1.name = 'Trockner';
+  hass.formatEntityState = (_s: unknown, v: string) =>
+    v === 'LaundryCare.Dryer.Program.TimeCold' ? 'Trocknen: Zeitprogramm Kalt' : v;
+  const mod = new UltraWasherModule() as any;
+  const ref = (id: string) => ({ id, state: hass.states[id].state, attrs: hass.states[id].attributes });
+
+  it('drops the brand + device name from friendly names', () => {
+    expect(mod.featureLabel(ref(`select.${p}_bsh_common_option_finishinrelative`), p, 'Trockner', hass)).toBe(
+      'Finish time'
+    );
+    expect(mod.featureLabel(ref(`switch.${p}_bsh_common_setting_childlock`), p, 'Trockner', hass)).toBe(
+      'Childproof lock'
+    );
+  });
+
+  it('names the program picker "Program"', () => {
+    expect(mod.featureLabel(ref(`select.${p}_programs`), 'bosch_wrb247c40', 'Trockner', hass)).toBe('Program');
+  });
+
+  it('shows options the way Home Assistant translates them', () => {
+    const r = ref(`select.${p}_programs`);
+    expect(mod.optionLabel(hass, r, 'LaundryCare.Dryer.Program.TimeCold')).toBe('Trocknen: Zeitprogramm Kalt');
+    expect(mod.optionLabel(hass, r, 'LaundryCare.Dryer.Program.Cotton')).toBe('Cotton');
+  });
+});
