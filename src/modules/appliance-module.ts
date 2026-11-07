@@ -112,8 +112,13 @@ const HERO_SIZE = 150;
 const STANDARD_SIZE = 104;
 const COMPACT_SIZE = 40;
 
+/** Home Connect API key namespaces as they appear in Home Connect Alt entity ids. */
+const HOME_CONNECT_KEY_RE =
+  /(^|_)(bsh_common|laundry_care|dishcare|cooking|refrigeration|consumer_products)_\w*?(setting|option|status|command|program)/;
+
 /** Suffixes that mark an entity as appliance telemetry (for prefix scoring) */
 const LINK_SUFFIX_PATTERNS: RegExp[] = [
+  /operation_?state/, /bsh_common_/,
   /machine_state/, /run_state/, /operating_state/, /job_state/, /program_phase/,
   /completion_time/, /remain(ing)?_time/, /(^|_)door/, /temperature/,
   /(^|_)power/, /(^|_)energy/, /filter_status/, /child_lock/, /remote_control/, /sub_?state/,
@@ -306,16 +311,29 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     return best;
   }
 
+  /** Integration translation key of an entity (language independent). */
+  private translationKey(hass: HomeAssistant, id: string): string | undefined {
+    const h = hass as unknown as {
+      entities?: Record<string, { translation_key?: string }>;
+    };
+    return h.entities?.[id]?.translation_key || undefined;
+  }
+
   /**
    * Find the first entity in `domains` matching a pattern. Candidates come
    * from the device-registry pool when available, else from the prefix scope.
+   *
+   * `translationKeys` are checked first: integrations such as Home Connect
+   * name entities in the user's language (`sensor.waschmaschine_betriebszustand`),
+   * so the registry's translation key is the only reliable signal there.
    */
   private autoFind(
     hass: HomeAssistant,
     pool: Set<string> | null,
     prefix: string,
     domains: string[],
-    patterns: RegExp[]
+    patterns: RegExp[],
+    translationKeys: string[] = []
   ): string | undefined {
     if (!pool && !prefix) return undefined;
     const candidates = (pool ? Array.from(pool) : Object.keys(hass.states))
@@ -326,6 +344,12 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
         return objectId === prefix || objectId?.startsWith(`${prefix}_`);
       })
       .sort();
+    if (pool) {
+      for (const key of translationKeys) {
+        const hit = candidates.find(id => this.translationKey(hass, id) === key);
+        if (hit) return hit;
+      }
+    }
     for (const re of patterns) {
       const hit = candidates.find(id => re.test(id.split('.')[1] || ''));
       if (hit) return hit;
@@ -341,10 +365,11 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     pool: Set<string> | null,
     prefix: string,
     domains: string[],
-    patterns: RegExp[]
+    patterns: RegExp[],
+    translationKeys: string[] = []
   ): EntityRef | null {
     if (configured?.trim()) return this.getRef(hass, configured, config);
-    const found = this.autoFind(hass, pool, prefix, domains, patterns);
+    const found = this.autoFind(hass, pool, prefix, domains, patterns, translationKeys);
     return found ? this.getRef(hass, found, config) : null;
   }
 
@@ -358,37 +383,68 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     const pool = this.deviceEntities(hass, main.id);
     const prefix = this.devicePrefix(hass, main.id);
     const deviceName = this.deviceName(hass, main.id);
-    const L = (configured: string | undefined, domains: string[], patterns: RegExp[]) =>
-      this.link(hass, config, configured, pool, prefix, domains, patterns);
+    const L = (
+      configured: string | undefined,
+      domains: string[],
+      patterns: RegExp[],
+      translationKeys: string[] = []
+    ) => this.link(hass, config, configured, pool, prefix, domains, patterns, translationKeys);
 
     // Suffix patterns cover SmartThings (machine_state / job_state /
     // completion_time), LG ThinQ (run_state / remain_time), Miele
-    // (status / program_phase / remaining_time), and generic integrations.
-    const powerSwitch = L(m.power_switch_entity, ['switch'], [
-      new RegExp(`^${prefix}(_\\d+)?$`),
-      /(^|_)power(_switch)?(_\d+)?$/,
-    ]);
-    const machineState = L(m.machine_state_entity, ['sensor'], [
-      /machine_state(_\d+)?$/,
-      /run_state(_\d+)?$/,
-      /operating_state(_\d+)?$/,
-      new RegExp(`^${prefix}_status(_\\d+)?$`),
-      new RegExp(`^${prefix}_state(_\\d+)?$`),
-    ]);
-    const jobState = L(m.job_state_entity, ['sensor'], [
-      /job_state(_\d+)?$/,
-      /program_phase(_\d+)?$/,
-      /(^|_)phase(_\d+)?$/,
-      /current_course(_\d+)?$/,
-      /sub_?state(_\d+)?$/,
-    ]);
-    const completion = L(m.completion_time_entity, ['sensor'], [
-      /completion_time(_\d+)?$/,
-      /complete_time(_\d+)?$/,
-      /(finish|end)_time(_\d+)?$/,
-      /remain(ing)?_time(_\d+)?$/,
-      /time_remaining(_\d+)?$/,
-    ]);
+    // (status / program_phase / remaining_time), Home Connect Alt (entity
+    // ids built from the API key, e.g. `<haid>_bsh_common_status_operationstate`),
+    // and generic integrations. Translation keys cover the core Home Connect
+    // integration, whose entity ids follow the user's language.
+    const powerSwitch = L(
+      m.power_switch_entity,
+      ['switch'],
+      [
+        new RegExp(`^${prefix}(_\\d+)?$`),
+        /(^|_)power(_switch)?(_\d+)?$/,
+        /bsh_common_setting_powerstate(_\d+)?$/,
+      ],
+      ['power']
+    );
+    const machineState = L(
+      m.machine_state_entity,
+      ['sensor'],
+      [
+        /machine_state(_\d+)?$/,
+        /run_state(_\d+)?$/,
+        /operating_state(_\d+)?$/,
+        /operation_?state(_\d+)?$/,
+        new RegExp(`^${prefix}_status(_\\d+)?$`),
+        new RegExp(`^${prefix}_state(_\\d+)?$`),
+      ],
+      ['operation_state']
+    );
+    // Home Connect Alt reports the running program as a sensor
+    // (`<haid>_active_program`); core Home Connect only as the
+    // `active_program` select, matched by translation key.
+    const jobState =
+      L(m.job_state_entity, ['sensor'], [
+        /job_state(_\d+)?$/,
+        /program_?phase(_\d+)?$/,
+        /(^|_)phase(_\d+)?$/,
+        /current_course(_\d+)?$/,
+        /sub_?state(_\d+)?$/,
+        /(^|_)active_program(_\d+)?$/,
+      ]) ??
+      (m.job_state_entity?.trim() ? null : L(undefined, ['select'], [], ['active_program']));
+    const completion = L(
+      m.completion_time_entity,
+      ['sensor'],
+      [
+        /completion_time(_\d+)?$/,
+        /complete_time(_\d+)?$/,
+        /(finish|end)_time(_\d+)?$/,
+        /remain(ing)?_time(_\d+)?$/,
+        /remaining_?program_?time(_\d+)?$/,
+        /time_remaining(_\d+)?$/,
+      ],
+      ['program_finish_time']
+    );
     // Exact `<prefix>_power` first so e.g. `refrigerator_power_energy` can't win
     const power = L(m.power_entity, ['sensor'], [
       new RegExp(`^${prefix}_power(_\\d+)?$`),
@@ -398,13 +454,50 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       new RegExp(`^${prefix}_energy(_\\d+)?$`),
       /(^|_)energy(_\d+)?$/,
     ]);
-    const childLock = L(m.child_lock_entity, ['binary_sensor'], [/child_lock(_\d+)?$/]);
-    const remoteControl = L(m.remote_control_entity, ['binary_sensor'], [/remote_control(_\d+)?$/]);
-    // Generic door only for non-fridge; the fridge has dedicated door sensors
+    // Home Connect exposes child lock as a switch (core `child_lock`, Alt
+    // `<haid>_bsh_common_setting_childlock`); others as a binary sensor.
+    const childLock = L(
+      m.child_lock_entity,
+      ['binary_sensor', 'switch'],
+      [/child_?lock(_\d+)?$/],
+      ['child_lock']
+    );
+    const remoteControl = L(
+      m.remote_control_entity,
+      ['binary_sensor'],
+      [/remote_control(_\d+)?$/, /remote_?control_?active(_\d+)?$/],
+      ['remote_control']
+    );
+    // Generic door only for non-fridge; the fridge has dedicated door sensors.
+    // Core Home Connect reports the door as an enum sensor (open/closed/locked).
     const door =
       this.cardType !== 'fridge'
-        ? L(m.door_entity, ['binary_sensor'], [/(^|_)door(_state)?(_\d+)?$/])
+        ? L(
+            m.door_entity,
+            ['binary_sensor'],
+            [/(^|_)door(_state)?(_\d+)?$/, /bsh_common_status_doorstate(_\d+)?$/],
+            ['door']
+          ) ?? (m.door_entity?.trim() ? null : L(undefined, ['sensor'], [], ['door']))
         : null;
+    // Home Connect has no run/pause/stop select; it uses program buttons
+    // (core `pause_program` / `resume_program` / `stop_program`, Alt
+    // `<haid>_start_pause` / `<haid>_stop`).
+    const isFridgeType = this.cardType === 'fridge';
+    const programButtons = {
+      pause: isFridgeType
+        ? null
+        : L(undefined, ['button'], [/(^|_)pause_program(_\d+)?$/], ['pause_program']),
+      resume: isFridgeType
+        ? null
+        : L(undefined, ['button'], [/(^|_)resume_program(_\d+)?$/], ['resume_program']),
+      stop: isFridgeType
+        ? null
+        : L(undefined, ['button'], [/(^|_)stop_program(_\d+)?$/], ['stop_program']),
+      startPause: isFridgeType ? null : L(undefined, ['button'], [/(^|_)start_pause(_\d+)?$/]),
+    };
+    if (programButtons.stop == null && programButtons.startPause && !isFridgeType) {
+      programButtons.stop = L(undefined, ['button'], [/(^|_)stop(_\d+)?$/]);
+    }
     const wrinklePrevent = L(undefined, ['binary_sensor'], [/wrinkle_prevent_active(_\d+)?$/]);
 
     // The run/pause/stop control select (often the main entity itself)
@@ -537,6 +630,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       door,
       wrinklePrevent,
       controlSelect,
+      programButtons,
       fridgeDoor,
       freezerDoor,
       fridgeTemp,
@@ -562,7 +656,10 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
 
   private featureLabel(ref: EntityRef, prefix: string, deviceName?: string): string {
     const objectId = ref.id.split('.')[1] || '';
-    if (objectId.startsWith(`${prefix}_`)) {
+    // Home Connect Alt ids are raw API keys (`…_bsh_common_setting_childlock`);
+    // its friendly names ("Bosch Washer - Child Lock") read far better.
+    const apiKeyId = HOME_CONNECT_KEY_RE.test(objectId);
+    if (!apiKeyId && objectId.startsWith(`${prefix}_`)) {
       return formatLabel(objectId.slice(prefix.length + 1));
     }
     const friendly = String(ref.attrs.friendly_name || '');
@@ -661,7 +758,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
             : localize(
                 'editor.appliance.entity_section_desc',
                 lang,
-                'Pick the machine-state select or sensor (e.g. select.washer or a run-state sensor). Related sensors and switches are found automatically — works with SmartThings, LG ThinQ, and similar integrations.'
+                'Pick the machine-state select or sensor (e.g. select.washer or a run-state sensor). Related sensors and switches are found automatically — works with SmartThings, LG ThinQ, Home Connect (Bosch, Siemens, Neff), and similar integrations.'
               ),
           []
         )}
@@ -1605,7 +1702,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     const fridgeDoorOpen = links.fridgeDoor?.state === 'on';
     const freezerDoorOpen = links.freezerDoor?.state === 'on';
     const filterProblem = links.filterStatus?.state === 'on';
-    const doorOpen = links.door?.state === 'on';
+    const doorOpen = links.door?.state === 'on' || links.door?.state === 'open';
 
     // Range: cooktop burners + oven light
     const burnersOn = m.show_cooktop === false ? [] : links.cooktop.map(burnerOn);
@@ -1655,8 +1752,38 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
 
     const unavailable = phase === 'unavailable';
 
+    // Home Connect: no run/pause/stop select, so drive the program buttons.
+    // Alt's single start/pause button pauses while running, so Start is only
+    // offered when the machine isn't running.
+    const selectOptions: string[] = Array.isArray(links.controlSelect?.attrs.options)
+      ? links.controlSelect!.attrs.options.map((o: unknown) => String(o).toLowerCase())
+      : [];
+    const pb = links.programButtons;
+    const useProgramButtons =
+      !isFridge &&
+      !['run', 'pause', 'stop'].some(o => selectOptions.includes(o)) &&
+      !!(pb.pause || pb.resume || pb.stop || pb.startPause);
+    const runButton = useProgramButtons
+      ? phase === 'paused'
+        ? pb.resume ?? pb.startPause
+        : phase !== 'running'
+          ? pb.startPause
+          : null
+      : null;
+    const pauseButton = useProgramButtons
+      ? pb.pause ?? (phase === 'running' ? pb.startPause : null)
+      : null;
+    const stopButton = useProgramButtons ? pb.stop : null;
+
     // ── Service helpers ──
     const setMachine = (option: 'run' | 'pause' | 'stop') => {
+      if (useProgramButtons) {
+        const target = option === 'run' ? runButton : option === 'pause' ? pauseButton : stopButton;
+        if (!target) return;
+        hass.callService('button', 'press', { entity_id: target.id });
+        this.triggerPreviewUpdate(true);
+        return;
+      }
       const sel = links.controlSelect;
       if (!sel) return;
       const domain = sel.id.split('.')[0];
@@ -1702,21 +1829,28 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     };
 
     // ── Building blocks ──
-    const options: string[] = Array.isArray(links.controlSelect?.attrs.options)
-      ? links.controlSelect!.attrs.options.map((o: unknown) => String(o).toLowerCase())
-      : [];
-    const canRun = options.includes('run');
-    const canPause = options.includes('pause');
-    const canStop = options.includes('stop');
+    const btnUsable = (b: EntityRef | null | undefined) => !!b && b.state !== 'unavailable';
+    const canRun = useProgramButtons ? btnUsable(runButton) : selectOptions.includes('run');
+    const canPause = useProgramButtons
+      ? btnUsable(pauseButton) && phase === 'running'
+      : selectOptions.includes('pause');
+    const canStop = useProgramButtons
+      ? btnUsable(stopButton) && (phase === 'running' || phase === 'paused')
+      : selectOptions.includes('stop');
+    const hasControls = !!links.controlSelect || useProgramButtons;
+    const runLabel =
+      useProgramButtons && phase === 'paused'
+        ? localize('editor.appliance.resume', lang, 'Resume')
+        : localize('editor.appliance.start', lang, 'Start');
     const remoteEnabled = links.remoteControl ? links.remoteControl.state === 'on' : true;
 
     const controlsRow =
-      !isFridge && m.show_controls !== false && links.controlSelect && (canRun || canPause || canStop)
+      !isFridge && m.show_controls !== false && hasControls && (canRun || canPause || canStop)
         ? html`
             <div class="uc-appl-controls" role="group" title="${!remoteEnabled ? localize('editor.appliance.remote_disabled', lang, 'Enable remote control on the appliance to allow remote start') : ''}">
               ${canRun
                 ? html`<button type="button" class="uc-appl-ctl uc-appl-btn ${phase === 'running' ? 'is-active' : ''}" ?disabled=${unavailable || !remoteEnabled} @click=${() => setMachine('run')}>
-                    <ha-icon icon="mdi:play"></ha-icon>${localize('editor.appliance.start', lang, 'Start')}
+                    <ha-icon icon="mdi:play"></ha-icon>${runLabel}
                   </button>`
                 : nothing}
               ${canPause
@@ -2060,13 +2194,13 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
                   </div>`
                 : nothing}
             </div>
-            ${!isFridge && m.show_controls !== false && links.controlSelect
+            ${!isFridge && m.show_controls !== false && hasControls
               ? html`
                   <div class="uc-appl-compact__ctl">
                     ${phase === 'running' && canPause
                       ? html`<button type="button" class="uc-appl-ctl uc-appl-iconbtn" ?disabled=${unavailable || !remoteEnabled} @click=${() => setMachine('pause')} aria-label="${localize('editor.appliance.pause', lang, 'Pause')}"><ha-icon icon="mdi:pause"></ha-icon></button>`
                       : canRun
-                        ? html`<button type="button" class="uc-appl-ctl uc-appl-iconbtn" ?disabled=${unavailable || !remoteEnabled} @click=${() => setMachine('run')} aria-label="${localize('editor.appliance.start', lang, 'Start')}"><ha-icon icon="mdi:play"></ha-icon></button>`
+                        ? html`<button type="button" class="uc-appl-ctl uc-appl-iconbtn" ?disabled=${unavailable || !remoteEnabled} @click=${() => setMachine('run')} aria-label="${runLabel}"><ha-icon icon="mdi:play"></ha-icon></button>`
                         : nothing}
                   </div>
                 `

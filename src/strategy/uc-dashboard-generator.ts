@@ -750,11 +750,13 @@ function sensorReadings(ctx: Ctx, ids: string[], accent: string | undefined): In
 /* ------------------------------------------------------------------ */
 
 const APPLIANCE_TYPES: ReadonlyArray<{ type: ApplianceModule['type']; match: RegExp }> = [
-  { type: 'washer', match: /\bwash(er|ing)\b/i },
-  { type: 'dryer', match: /\bdryer\b/i },
-  { type: 'dishwasher', match: /\bdishwasher\b/i },
-  { type: 'fridge', match: /\b(fridge|refrigerator|freezer)\b/i },
-  { type: 'range', match: /\b(oven|range|stove|cooktop)\b/i },
+  // German names too: Home Connect (Bosch/Siemens/Neff) devices keep the
+  // name from the app, e.g. "Waschmaschine" or "Wäschetrockner".
+  { type: 'dishwasher', match: /\bdishwasher\b|geschirrsp(ü|ue)l/i },
+  { type: 'washer', match: /\bwash(er|ing)\b|waschmaschine|waschtrockner|waschvollautomat/i },
+  { type: 'dryer', match: /\bdryer\b|trockner/i },
+  { type: 'fridge', match: /\b(fridge|refrigerator|freezer)\b|k(ü|ue)hlschrank|gefrier/i },
+  { type: 'range', match: /\b(oven|range|stove|cooktop)\b|backofen|\bherd\b|kochfeld/i },
 ];
 
 interface ApplianceHit {
@@ -785,7 +787,7 @@ function findAppliances(ctx: Ctx, ids: string[]): ApplianceHit[] {
     const kind = APPLIANCE_TYPES.find(t => t.match.test(device.name));
     if (!kind) continue;
     const main =
-      entities.find(id => /machine_state|job_state|operation_state/.test(id)) ??
+      entities.find(id => /machine_state|job_state|operation_?state/.test(id)) ??
       entities.find(id => domainOf(id) === 'sensor') ??
       entities[0]!;
     hits.push({ type: kind.type, entity: main, name: device.name, entities });
