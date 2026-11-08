@@ -382,7 +382,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
             },
             {
               title: 'Show Absolute Time',
-              description: 'Show exact time (e.g. 3:45 PM).',
+              description: 'Show exact time (e.g. 3:45 PM or 15:45).',
               hass,
               data: { show_absolute_time: feedModule.show_absolute_time },
               schema: [this.booleanField('show_absolute_time')],
@@ -408,6 +408,22 @@ export class UltraActivityFeedModule extends BaseUltraModule {
                 updateModule({ group_by_time: e.detail.value.group_by_time } as any),
             },
           ])}
+          ${feedModule.show_absolute_time
+            ? this.renderSegmentedField(
+                'Time Format',
+                'Auto follows your Home Assistant profile (Time format setting).',
+                feedModule.time_format || 'auto',
+                [
+                  { value: 'auto', label: 'Auto', icon: 'mdi:earth' },
+                  { value: '24', label: '24h', icon: 'mdi:clock-time-eight-outline' },
+                  { value: '12', label: '12h', icon: 'mdi:clock-time-four-outline' },
+                ],
+                next =>
+                  updateModule({
+                    time_format: next as ActivityFeedModule['time_format'],
+                  } as Partial<ActivityFeedModule>)
+              )
+            : ''}
           ${this.renderSliderField(
             'Max Items',
             'Maximum number of events to show.',
@@ -988,7 +1004,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
         oldState: undefined,
         timestamp,
         relativeTime: this._relativeTime(timestamp),
-        absoluteTime: this._absoluteTime(timestamp),
+        absoluteTime: this._absoluteTime(timestamp, feedModule, hass),
         dateLabel: this._dateLabel(timestamp),
       });
     }
@@ -1210,11 +1226,35 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     return `${days}d ago`;
   }
 
-  private _absoluteTime(date: Date): string {
-    const h = date.getHours();
-    const m = date.getMinutes().toString().padStart(2, '0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    return `${h % 12 || 12}:${m} ${ampm}`;
+  /**
+   * Clock time for an event. 'auto' follows the HA profile Time format
+   * (12 / 24 / language / system); explicit '12' or '24' wins over it.
+   */
+  private _absoluteTime(
+    date: Date,
+    feedModule?: Pick<ActivityFeedModule, 'time_format'>,
+    hass?: HomeAssistant
+  ): string {
+    const pref = feedModule?.time_format || 'auto';
+    const locale = hass?.locale as { time_format?: string; language?: string } | undefined;
+    const haPref = String(locale?.time_format || '');
+    const hour12 =
+      pref === '12' ? true : pref === '24' ? false : haPref === '12' ? true : haPref === '24' ? false : undefined;
+    // 'system' means the browser's own locale; otherwise use the HA language.
+    const lang = haPref === 'system' ? undefined : locale?.language || hass?.language || undefined;
+    try {
+      const opts: Intl.DateTimeFormatOptions = {
+        hour: hour12 === false ? '2-digit' : 'numeric',
+        minute: '2-digit',
+      };
+      if (hour12 !== undefined) opts.hour12 = hour12;
+      return new Intl.DateTimeFormat(lang, opts).format(date);
+    } catch {
+      const h = date.getHours();
+      const m = date.getMinutes().toString().padStart(2, '0');
+      if (hour12 === false) return `${h.toString().padStart(2, '0')}:${m}`;
+      return `${h % 12 || 12}:${m} ${h >= 12 ? 'PM' : 'AM'}`;
+    }
   }
 
   private _dateLabel(date: Date): string {
