@@ -51,6 +51,16 @@ export interface CalendarViewContext {
   onDayOpen?: ((date: Date) => void) | undefined;
 }
 
+/** Location shows unless turned off (matches the editor toggle, which defaults on). */
+export function showsLocation(module: CalendarModule): boolean {
+  return module.show_event_location !== false;
+}
+
+/** Icon set on the event by an event rule. */
+function eventIcon(event: ProcessedCalendarEvent): TemplateResult | typeof nothing {
+  return event.icon ? html`<ha-icon class="uc-calendar-ev-icon" icon=${event.icon}></ha-icon>` : nothing;
+}
+
 function ctxLang(context: CalendarViewContext): string {
   return context.module.language || context.hass?.locale?.language || 'en';
 }
@@ -117,12 +127,14 @@ export function renderEventDetailsList(
       >
         <div class="uc-calendar-details-accent" style="background: ${event.calendarColor};"></div>
         <div class="uc-calendar-details-body">
-          <div class="uc-calendar-details-title">${event.summary}</div>
-          <div class="uc-calendar-details-meta">
-            <ha-icon icon="mdi:clock-outline"></ha-icon>
-            <span>${formatEventWhen(context, event)}</span>
-          </div>
-          ${event.location
+          <div class="uc-calendar-details-title">${eventIcon(event)}${event.summary}</div>
+          ${module.show_event_time !== false
+            ? html`<div class="uc-calendar-details-meta">
+                <ha-icon icon="mdi:clock-outline"></ha-icon>
+                <span>${formatEventWhen(context, event)}</span>
+              </div>`
+            : nothing}
+          ${showsLocation(module) && event.location
             ? html`<div class="uc-calendar-details-meta">
                 <ha-icon icon="mdi:map-marker"></ha-icon>
                 <span>${renderLocationText(module, event.location, displayLocation(module, event.location))}</span>
@@ -322,7 +334,7 @@ function renderCompactEvent(
       ></div>
       <div class="uc-calendar-event-content">
         <div class="uc-calendar-event-title">
-          ${module.max_event_title_length && module.max_event_title_length > 0
+          ${eventIcon(event)}${module.max_event_title_length && module.max_event_title_length > 0
             ? truncateText(event.summary, module.max_event_title_length)
             : event.summary}
         </div>
@@ -342,7 +354,7 @@ function renderCompactEvent(
             `
           : ''}
         
-        ${module.show_event_location && event.location
+        ${showsLocation(module) && event.location
           ? html`
               <div class="uc-calendar-event-location">
                 <ha-icon icon="mdi:map-marker"></ha-icon>
@@ -394,6 +406,9 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
   const selectedKey = showDetails ? context.selectedDateKey : undefined;
   const selectedDay = selectedKey ? days.find(d => CalendarService.getDateKey(d.date) === selectedKey) : undefined;
   const maxTitles = 3;
+  const showCount = module.month_show_event_count !== false;
+  const showStart = module.show_event_time !== false;
+  const wrapTitles = module.month_title_fit === 'wrap';
 
   return html`
     <div class="uc-calendar-month-view">
@@ -427,7 +442,7 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
                 `
               : ''}
             <div
-              class="uc-calendar-day-cell ${isToday ? 'today' : ''} ${dayInfo.currentMonth ? '' : 'other-month'} ${selectedKey === key ? 'selected' : ''} ${showTitles ? 'with-titles' : ''}"
+              class="uc-calendar-day-cell ${isToday ? 'today' : ''} ${dayInfo.currentMonth ? '' : 'other-month'} ${selectedKey === key ? 'selected' : ''} ${showTitles ? 'with-titles' : ''} ${showTitles && wrapTitles ? 'wrap-titles' : ''}"
               data-uc-role="pane"
               @click=${(e: Event) => {
                 e.stopPropagation();
@@ -439,7 +454,12 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
               }}
             >
               <div class="uc-calendar-day-cell-top">
-                <div class="uc-calendar-day-cell-num">${dayInfo.date.getDate()}</div>
+                <div class="uc-calendar-day-cell-numwrap">
+                  <div class="uc-calendar-day-cell-num">${dayInfo.date.getDate()}</div>
+                  ${showTitles && showCount && dayEvents.length > 0
+                    ? html`<span class="uc-calendar-day-cell-count">${dayEvents.length}</span>`
+                    : nothing}
+                </div>
                 ${renderDayWeather(context, dayInfo.date, 'cell')}
               </div>
               ${dayEvents.length > 0
@@ -453,10 +473,10 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
                               style="--uc-cal-ev: ${event.calendarColor};"
                               title="${event.summary}"
                             >
-                              ${event.isAllDay
+                              ${event.isAllDay || !showStart
                                 ? nothing
                                 : html`<span class="uc-calendar-day-cell-time">${context.formatTime(event.start)}</span>`}
-                              <span class="uc-calendar-day-cell-name">${event.summary}</span>
+                              ${eventIcon(event)}<span class="uc-calendar-day-cell-name">${event.summary}</span>
                             </div>
                           `
                         )}
@@ -467,7 +487,7 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
                     `
                   : html`
                       <div class="uc-calendar-day-cell-events">
-                        ${module.month_show_event_count !== false
+                        ${showCount
                           ? dayEvents.slice(0, 3).map(
                               event => html`
                                 <div
@@ -580,7 +600,7 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
                       context.onEventClick(event);
                     }}
                   >
-                    ${event.summary}
+                    ${eventIcon(event)}${event.summary}
                   </div>
                 `
               )}
@@ -627,7 +647,7 @@ export function renderWeekView(context: CalendarViewContext): TemplateResult {
                           context.onEventClick(event);
                         }}
                       >
-                        <span class="uc-calendar-week-event-title">${event.summary}</span>
+                        <span class="uc-calendar-week-event-title">${eventIcon(event)}${event.summary}</span>
                       </div>
                     `
                   )}
@@ -697,7 +717,7 @@ export function renderDayView(context: CalendarViewContext): TemplateResult {
                         onEventClick(event);
                       }}
                     >
-                      ${event.summary}
+                      ${eventIcon(event)}${event.summary}
                     </div>
                   `
                 )}
@@ -740,11 +760,18 @@ export function renderDayView(context: CalendarViewContext): TemplateResult {
                         onEventClick(event);
                       }}
                     >
-                      <div class="uc-calendar-day-event-title">${event.summary}</div>
-                      <div class="uc-calendar-day-event-time">
-                        ${formatTime(event.start)} - ${formatTime(event.end)}
-                      </div>
-                      ${module.show_event_location && event.location
+                      <div class="uc-calendar-day-event-title">${eventIcon(event)}${event.summary}</div>
+                      ${module.show_event_time !== false
+                        ? html`<div class="uc-calendar-day-event-time">
+                            ${module.show_end_time !== false
+                              ? `${formatTime(event.start)} - ${formatTime(event.end)}`
+                              : formatTime(event.start)}
+                          </div>`
+                        : nothing}
+                      ${module.show_event_description && event.description
+                        ? html`<div class="uc-calendar-day-event-desc">${truncateText(event.description, 120)}</div>`
+                        : nothing}
+                      ${showsLocation(module) && event.location
                         ? html`
                             <div class="uc-calendar-day-event-location">
                               <ha-icon icon="mdi:map-marker"></ha-icon>
@@ -839,7 +866,7 @@ export function renderTableView(context: CalendarViewContext): TemplateResult {
                     `
                   : ''}
                 <td>
-                  <div class="uc-calendar-table-event-title">${event.summary}</div>
+                  <div class="uc-calendar-table-event-title">${eventIcon(event)}${event.summary}</div>
                   ${module.show_event_description && event.description
                     ? html`<div class="uc-calendar-table-event-desc">${event.description}</div>`
                     : ''}
@@ -901,7 +928,7 @@ export function renderGridView(context: CalendarViewContext): TemplateResult {
               </div>
             </div>
             <div class="uc-calendar-grid-card-body">
-              <div class="uc-calendar-grid-card-title">${event.summary}</div>
+              <div class="uc-calendar-grid-card-title">${eventIcon(event)}${event.summary}</div>
               ${module.show_event_time !== false
                 ? html`
                     <div class="uc-calendar-grid-card-time">
@@ -914,7 +941,7 @@ export function renderGridView(context: CalendarViewContext): TemplateResult {
                     </div>
                   `
                 : ''}
-              ${module.show_event_location && event.location
+              ${showsLocation(module) && event.location
                 ? html`
                     <div class="uc-calendar-grid-card-location">
                       <ha-icon icon="mdi:map-marker"></ha-icon>
