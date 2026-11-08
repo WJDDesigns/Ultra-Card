@@ -24,6 +24,7 @@ import { uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
+import { getSkipDefaultModules } from '../utils/uc-skip-default-modules';
 import { listHaThemeNames } from '../utils/uc-apply-ha-theme';
 import './tabs/layout-tab';
 import './uc-settings-components';
@@ -2342,34 +2343,11 @@ export class UltraCardEditor extends LitElement {
     `;
   }
 
-  // localStorage key for Pro setting to skip default modules
-  private static readonly SKIP_DEFAULT_MODULES_KEY = 'ultra-card-pro-skip-default-modules';
-  // Window-level fallback key when localStorage is full
-  private static readonly SKIP_DEFAULT_MODULES_WINDOW_KEY = '__ultraCardSkipDefaultModules';
-
   /**
    * Get whether to skip default modules when creating new cards (Pro feature)
-   * Checks localStorage, sessionStorage, and window fallback
    */
   public static getSkipDefaultModulesSetting(): boolean {
-    // First check window fallback (takes priority - most recent in session)
-    if ((window as any)[UltraCardEditor.SKIP_DEFAULT_MODULES_WINDOW_KEY] === true) {
-      return true;
-    }
-    // Check sessionStorage (separate quota from localStorage, persists during session)
-    try {
-      if (sessionStorage.getItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true') {
-        return true;
-      }
-    } catch {
-      /* ignore */
-    }
-    // Finally check localStorage
-    try {
-      return safeGetItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true';
-    } catch {
-      return false;
-    }
+    return getSkipDefaultModules();
   }
 
   /**

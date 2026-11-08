@@ -10,6 +10,7 @@ import type { HomeAssistant } from '../../ha/types';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucSnapshotService, SnapshotSettings, SnapshotListItem } from '../../services/uc-snapshot-service';
 import { ucSnapshotSchedulerService } from '../../services/uc-snapshot-scheduler-service';
+import { getSkipDefaultModules, setSkipDefaultModules } from '../../utils/uc-skip-default-modules';
 
 export interface ProAuthData {
   authenticated: boolean;
@@ -1477,19 +1478,13 @@ export class HubProTab extends LitElement {
   }
 
   private _getSkipDefaultModules(): boolean {
-    try {
-      return localStorage.getItem('ultra-card-skip-default-modules') === 'true';
-    } catch {
-      return false;
-    }
+    return getSkipDefaultModules();
   }
 
   private _handleSkipDefaultModulesChange(e: Event): void {
     const checked = (e.target as any).checked;
-    try {
-      localStorage.setItem('ultra-card-skip-default-modules', String(checked));
-      this._showToast(checked ? 'New cards will start empty' : 'New cards will use default modules');
-    } catch { /* ignore */ }
+    setSkipDefaultModules(!!checked);
+    this._showToast(checked ? 'New cards will start empty' : 'New cards will use default modules');
   }
 
   private _handleExportDashboard(): void {
