@@ -85,6 +85,7 @@ import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
 import { releaseUnusedModuleInstances } from '../services/uc-module-lifecycle-service';
 import { ucTimeMachineService } from '../services/uc-time-machine-service';
 import { ensureLocaleLoaded, onLocaleLoaded } from '../localize/localize';
+import { getSkipDefaultModules } from '../utils/uc-skip-default-modules';
 
 type UserFiltered = { user_visibility?: UserVisibility | undefined };
 
@@ -1409,35 +1410,11 @@ export class UltraCard extends LitElement {
     return loadUltraCardEditor().then(() => document.createElement('ultra-card-editor'));
   }
 
-  // localStorage key for Pro setting to skip default modules
-  private static readonly SKIP_DEFAULT_MODULES_KEY = 'ultra-card-pro-skip-default-modules';
-  // Window-level fallback key when localStorage is full
-  private static readonly SKIP_DEFAULT_MODULES_WINDOW_KEY = '__ultraCardSkipDefaultModules';
-
   /**
-   * Check if user wants to skip default modules when creating new cards
-   * Note: This setting is only accessible in the Pro tab, so only Pro users can enable it.
-   * Checks window fallback, sessionStorage, and localStorage.
+   * Pro "Start with Empty Card": skip default modules when creating new cards.
    */
   private static _shouldSkipDefaultModules(): boolean {
-    // First check window fallback (takes priority - most recent in session)
-    if ((window as any)[UltraCard.SKIP_DEFAULT_MODULES_WINDOW_KEY] === true) {
-      return true;
-    }
-    // Check sessionStorage (separate quota, persists during browser session)
-    try {
-      if (sessionStorage.getItem(UltraCard.SKIP_DEFAULT_MODULES_KEY) === 'true') {
-        return true;
-      }
-    } catch {
-      /* ignore */
-    }
-    // Finally check localStorage
-    try {
-      return localStorage.getItem(UltraCard.SKIP_DEFAULT_MODULES_KEY) === 'true';
-    } catch {
-      return false;
-    }
+    return getSkipDefaultModules();
   }
 
   /**
