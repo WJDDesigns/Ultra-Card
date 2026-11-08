@@ -9,7 +9,8 @@ import { localize } from '../localize/localize';
 export function renderHideOnDevicesSection(
   hidden: DeviceBreakpoint[],
   onChange: (next: DeviceBreakpoint[] | undefined) => void,
-  lang: string
+  lang: string,
+  labels?: { title?: string; desc?: string; summary?: string }
 ): TemplateResult {
   const toggle = (device: DeviceBreakpoint): void => {
     const next = hidden.includes(device) ? hidden.filter(d => d !== device) : [...hidden, device];
@@ -24,15 +25,18 @@ export function renderHideOnDevicesSection(
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
         <ha-icon icon="mdi:responsive" style="color: var(--primary-color);"></ha-icon>
         <span style="font-size: 16px; font-weight: 700; color: var(--primary-text-color);">
-          ${localize('editor.logic.hide_on_devices', lang, 'Hide on Devices')}
+          ${labels?.title ?? localize('editor.logic.hide_on_devices', lang, 'Hide on Devices')}
         </span>
       </div>
       <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;">
-        ${localize(
-          'editor.logic.hide_on_devices_desc',
-          lang,
-          'Hide this element on specific screen sizes. Use this to create different layouts for different devices.'
-        )}
+        ${
+          labels?.desc ??
+          localize(
+            'editor.logic.hide_on_devices_desc',
+            lang,
+            'Hide this element on specific screen sizes. Use this to create different layouts for different devices.'
+          )
+        }
       </div>
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
         <label
@@ -110,7 +114,7 @@ export function renderHideOnDevicesSection(
                   icon="mdi:information-outline"
                   style="--mdc-icon-size: 14px; vertical-align: middle; margin-right: 4px;"
                 ></ha-icon>
-                This element will be hidden on:
+                ${labels?.summary ?? 'This element will be hidden on:'}
                 ${hidden.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
               </div>
             `

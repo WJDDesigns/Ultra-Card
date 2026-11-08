@@ -1404,6 +1404,25 @@
         "title": "Stay Live For (seconds)",
         "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
       },
+      "fullscreen_trigger": {
+        "title": "Open Fullscreen When",
+        "desc": "Open this camera in fullscreen by itself when this entity turns on or fires, such as a doorbell ring. It opens on dashboards that are showing this card."
+      },
+      "fullscreen_trigger_close": {
+        "title": "Close After (seconds)",
+        "desc": "Close the fullscreen view by itself after this many seconds. Set 0 to keep it open until closed."
+      },
+      "fullscreen_trigger_users": {
+        "title": "Open Fullscreen For",
+        "desc": "Choose which Home Assistant users get the fullscreen view. Everyone else still sees the camera as normal.",
+        "mode": "Who gets fullscreen",
+        "self_warning": "It will not open fullscreen for you while signed in as this user."
+      },
+      "fullscreen_trigger_devices": {
+        "title": "Don't Open Fullscreen On",
+        "desc": "Skip the fullscreen view on these screen sizes, for example to open it on a wall tablet but not on phones.",
+        "summary": "Fullscreen will not open on:"
+      },
       "action_buttons": {
         "title": "Action Buttons",
         "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",

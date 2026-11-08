@@ -1247,6 +1247,25 @@
         "title": "Stay Live For (seconds)",
         "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
       },
+      "fullscreen_trigger": {
+        "title": "Åbn i fuld skærm når",
+        "desc": "Åbner automatisk dette kamera i fuld skærm, når denne enhed tænder eller udløses, f.eks. når det ringer på døren. Det åbner på dashboards, der viser dette kort."
+      },
+      "fullscreen_trigger_close": {
+        "title": "Luk efter (sekunder)",
+        "desc": "Lukker automatisk fuld skærm efter så mange sekunder. Sæt 0 for at holde den åben, indtil den lukkes."
+      },
+      "fullscreen_trigger_users": {
+        "title": "Åbn i fuld skærm for",
+        "desc": "Vælg hvilke Home Assistant-brugere der får fuld skærm. Alle andre ser kameraet som normalt.",
+        "mode": "Hvem får fuld skærm",
+        "self_warning": "Den åbner ikke i fuld skærm for dig, mens du er logget ind som denne bruger."
+      },
+      "fullscreen_trigger_devices": {
+        "title": "Åbn ikke i fuld skærm på",
+        "desc": "Spring fuld skærm over på disse skærmstørrelser, f.eks. på en vægtablet men ikke på telefoner.",
+        "summary": "Fuld skærm åbner ikke på:"
+      },
       "action_buttons": {
         "title": "Action Buttons",
         "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",

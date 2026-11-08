@@ -3065,6 +3065,13 @@ export interface CameraModule extends BaseModule {
   live_trigger_entity?: string | undefined;
   live_trigger_hold?: number | undefined; // seconds the stream stays live after the trigger ends
 
+  // Open fullscreen by itself when this entity fires (doorbell ring), optionally only for some
+  // users and not on some screen sizes. Closes again after fullscreen_trigger_close seconds (0 = stays open).
+  fullscreen_trigger_entity?: string | undefined;
+  fullscreen_trigger_users?: UserVisibility | undefined;
+  fullscreen_trigger_skip_devices?: DeviceBreakpoint[] | undefined;
+  fullscreen_trigger_close?: number | undefined;
+
   // Buttons over the feed (unlock a door, open a gate) that also show in fullscreen
   action_buttons?: CameraActionButton[] | undefined;
   action_buttons_position?: 'bottom-left' | 'bottom-center' | 'bottom-right' | undefined;

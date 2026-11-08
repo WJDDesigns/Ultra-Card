@@ -1411,6 +1411,25 @@
         "title": "Live bleiben für (Sekunden)",
         "desc": "Wie lange der Stream live bleibt, nachdem die Entität ausgeschaltet wurde oder das Ereignis ausgelöst hat. Bereich: 0-3600 Sekunden."
       },
+      "fullscreen_trigger": {
+        "title": "Vollbild öffnen bei",
+        "desc": "Öffnet diese Kamera automatisch im Vollbild, wenn diese Entität einschaltet oder auslöst, etwa bei einem Klingeln an der Tür. Das Vollbild öffnet sich auf Dashboards, die diese Karte gerade anzeigen."
+      },
+      "fullscreen_trigger_close": {
+        "title": "Schließen nach (Sekunden)",
+        "desc": "Schließt die Vollbildansicht nach so vielen Sekunden automatisch. Mit 0 bleibt sie offen, bis Sie sie schließen."
+      },
+      "fullscreen_trigger_users": {
+        "title": "Vollbild öffnen für",
+        "desc": "Wählen Sie, welche Home-Assistant-Benutzer die Vollbildansicht erhalten. Alle anderen sehen die Kamera wie gewohnt.",
+        "mode": "Wer das Vollbild erhält",
+        "self_warning": "Solange Sie mit diesem Benutzer angemeldet sind, öffnet sich das Vollbild bei Ihnen nicht."
+      },
+      "fullscreen_trigger_devices": {
+        "title": "Vollbild nicht öffnen auf",
+        "desc": "Auf diesen Bildschirmgrößen öffnet sich das Vollbild nicht, zum Beispiel auf dem Wand-Tablet ja, auf Smartphones nein.",
+        "summary": "Vollbild öffnet sich nicht auf:"
+      },
       "action_buttons": {
         "title": "Aktionsschaltflächen",
         "desc": "Schaltflächen über dem Bild, die auch im Vollbild erscheinen, zum Beispiel zum Entriegeln der Haustür. Schlösser werden ent- oder verriegelt, Abdeckungen geöffnet oder geschlossen, Schaltflächen und Skripte ausgeführt, alles andere wird umgeschaltet.",

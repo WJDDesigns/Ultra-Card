@@ -1247,6 +1247,25 @@
         "title": "Stay Live For (seconds)",
         "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
       },
+      "fullscreen_trigger": {
+        "title": "Öppna helskärm när",
+        "desc": "Öppnar automatiskt kameran i helskärm när den här entiteten slås på eller utlöses, till exempel när dörrklockan ringer. Den öppnas på instrumentpaneler som visar kortet."
+      },
+      "fullscreen_trigger_close": {
+        "title": "Stäng efter (sekunder)",
+        "desc": "Stänger helskärmsvyn automatiskt efter så många sekunder. Ange 0 för att hålla den öppen tills den stängs."
+      },
+      "fullscreen_trigger_users": {
+        "title": "Öppna helskärm för",
+        "desc": "Välj vilka Home Assistant-användare som får helskärmsvyn. Alla andra ser kameran som vanligt.",
+        "mode": "Vem får helskärm",
+        "self_warning": "Den öppnas inte i helskärm för dig medan du är inloggad som den här användaren."
+      },
+      "fullscreen_trigger_devices": {
+        "title": "Öppna inte helskärm på",
+        "desc": "Hoppa över helskärm på dessa skärmstorlekar, till exempel på en väggsurfplatta men inte på telefoner.",
+        "summary": "Helskärm öppnas inte på:"
+      },
       "action_buttons": {
         "title": "Action Buttons",
         "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",

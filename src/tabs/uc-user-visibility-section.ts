@@ -33,7 +33,8 @@ function normalizeUpdate(
 export function renderUserVisibilitySection(
   value: UserVisibility | undefined | null,
   hass: HomeAssistant | undefined,
-  onChange: (next: UserVisibility | undefined) => void
+  onChange: (next: UserVisibility | undefined) => void,
+  labels?: { title?: string; desc?: string; mode?: string; selfWarning?: string }
 ): TemplateResult {
   const lang = hass?.locale?.language || 'en';
   const mode = modeFromValue(value);
@@ -81,11 +82,12 @@ export function renderUserVisibilitySection(
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
         <ha-icon icon="mdi:account-eye" style="color: var(--primary-color);"></ha-icon>
         <span style="font-size: 16px; font-weight: 700; color: var(--primary-text-color);">
-          ${localize('editor.logic.user_visibility.title', lang, 'Visible to Users')}
+          ${labels?.title ?? localize('editor.logic.user_visibility.title', lang, 'Visible to Users')}
         </span>
       </div>
       <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;">
-        ${localize(
+        ${labels?.desc ??
+        localize(
           'editor.logic.user_visibility.desc',
           lang,
           'Show or hide this element for specific Home Assistant users. Same idea as Lovelace card Visibility → User.'
@@ -94,7 +96,8 @@ export function renderUserVisibilitySection(
 
       <div class="field-container uc-ultra-field-wrap" style="margin-bottom: 12px;">
         <ultra-segmented
-          .label=${localize('editor.logic.user_visibility.mode', lang, 'Who can see this')}
+          .label=${labels?.mode ??
+          localize('editor.logic.user_visibility.mode', lang, 'Who can see this')}
           .description=${''}
           .value=${mode}
           .options=${[
@@ -239,7 +242,8 @@ export function renderUserVisibilitySection(
                         icon="mdi:alert-outline"
                         style="--mdc-icon-size: 14px; vertical-align: middle; margin-right: 4px;"
                       ></ha-icon>
-                      ${localize(
+                      ${labels?.selfWarning ??
+                      localize(
                         'editor.logic.user_visibility.self_hidden_warning',
                         lang,
                         'You will not see this on the live dashboard while signed in as this user. Card Settings still keep the editor preview visible so you can keep editing.'

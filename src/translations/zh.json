@@ -2085,6 +2085,25 @@
         "title": "Stay Live For (seconds)",
         "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
       },
+      "fullscreen_trigger": {
+        "title": "触发时全屏打开",
+        "desc": "当此实体开启或触发（例如门铃响起）时，自动以全屏打开此摄像头。会在正在显示此卡片的仪表板上打开。"
+      },
+      "fullscreen_trigger_close": {
+        "title": "自动关闭（秒）",
+        "desc": "在设定秒数后自动关闭全屏视图。设为 0 则保持打开直到手动关闭。"
+      },
+      "fullscreen_trigger_users": {
+        "title": "全屏打开对象",
+        "desc": "选择哪些 Home Assistant 用户会看到全屏视图。其他用户仍正常显示摄像头。",
+        "mode": "谁会看到全屏",
+        "self_warning": "以此用户登录时，不会为你打开全屏。"
+      },
+      "fullscreen_trigger_devices": {
+        "title": "不在以下设备全屏打开",
+        "desc": "在这些屏幕尺寸上跳过全屏，例如在墙挂平板上打开，但在手机上不打开。",
+        "summary": "不会在以下设备全屏打开："
+      },
       "action_buttons": {
         "title": "Action Buttons",
         "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",

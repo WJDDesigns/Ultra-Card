@@ -29,8 +29,15 @@ import {
   cameraActionLabel,
   cameraActionNeedsConfirm,
   cameraLiveTriggerState,
+  cameraFullscreenTriggerAllowsUser,
+  cameraFullscreenTriggerFiring,
+  cameraFullscreenTriggerShouldOpen,
+  DEFAULT_FULLSCREEN_TRIGGER_CLOSE,
   runCameraAction,
 } from '../utils/uc-camera-actions';
+import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
+import { renderHideOnDevicesSection } from '../tabs/uc-hide-on-devices-section';
+import { responsiveDesignService } from '../services/uc-responsive-design-service';
 
 /** Unified-template output keys the camera module reads (plain entity_id strings also work). */
 const CAMERA_TEMPLATE_KEYS = ['entity', 'visible', 'overlay_text', 'overlay_color'] as const;
@@ -74,6 +81,10 @@ interface CameraRuntimeState {
   /** Repaint scheduled for when a triggered live stream drops back to its normal mode. */
   triggerTimer?: ReturnType<typeof setTimeout> | undefined;
   triggerUntil?: number | undefined;
+  /** Last "Open Fullscreen When" firing seen, so each ring opens fullscreen once. */
+  fullscreenTriggerKey?: string | undefined;
+  fullscreenTriggerSeen?: boolean | undefined;
+  fullscreenCloseTimer?: ReturnType<typeof setTimeout> | undefined;
   /** Action button waiting for its confirming second tap. */
   confirmButton?: string | undefined;
   confirmTimer?: ReturnType<typeof setTimeout> | undefined;
@@ -364,6 +375,112 @@ export class UltraCameraModule extends BaseUltraModule {
               'When enabled, tapping anywhere on the camera will open it in fullscreen mode.'
             )}
           </div>
+
+          <!-- Open fullscreen by itself when an entity fires (doorbell ring) -->
+          ${this.renderFieldSection(
+            localize('editor.camera.fullscreen_trigger.title', lang, 'Open Fullscreen When'),
+            localize(
+              'editor.camera.fullscreen_trigger.desc',
+              lang,
+              'Open this camera in fullscreen by itself when this entity turns on or fires, such as a doorbell ring. It opens on dashboards that are showing this card.'
+            ),
+            hass,
+            { fullscreen_trigger_entity: cameraModule.fullscreen_trigger_entity || '' },
+            [
+              this.entityField('fullscreen_trigger_entity', [
+                'event',
+                'binary_sensor',
+                'input_boolean',
+                'switch',
+              ]),
+            ],
+            (e: CustomEvent) => {
+              updateModule({
+                fullscreen_trigger_entity: e.detail.value.fullscreen_trigger_entity || '',
+              });
+            }
+          )}
+          ${cameraModule.fullscreen_trigger_entity
+            ? html`
+                <div style="margin: 16px 0;">
+                  ${this.renderFieldSection(
+                    localize(
+                      'editor.camera.fullscreen_trigger_close.title',
+                      lang,
+                      'Close After (seconds)'
+                    ),
+                    localize(
+                      'editor.camera.fullscreen_trigger_close.desc',
+                      lang,
+                      'Close the fullscreen view by itself after this many seconds. Set 0 to keep it open until closed.'
+                    ),
+                    hass,
+                    {
+                      fullscreen_trigger_close:
+                        cameraModule.fullscreen_trigger_close ?? DEFAULT_FULLSCREEN_TRIGGER_CLOSE,
+                    },
+                    [
+                      FormUtils.createSchemaItem('fullscreen_trigger_close', {
+                        number: { min: 0, max: 3600, mode: 'box' },
+                      }),
+                    ],
+                    (e: CustomEvent) =>
+                      updateModule({
+                        fullscreen_trigger_close: e.detail.value.fullscreen_trigger_close,
+                      })
+                  )}
+                </div>
+                ${renderUserVisibilitySection(
+                  cameraModule.fullscreen_trigger_users,
+                  hass,
+                  next => updateModule({ fullscreen_trigger_users: next }),
+                  {
+                    title: localize(
+                      'editor.camera.fullscreen_trigger_users.title',
+                      lang,
+                      'Open Fullscreen For'
+                    ),
+                    desc: localize(
+                      'editor.camera.fullscreen_trigger_users.desc',
+                      lang,
+                      'Choose which Home Assistant users get the fullscreen view. Everyone else still sees the camera as normal.'
+                    ),
+                    mode: localize(
+                      'editor.camera.fullscreen_trigger_users.mode',
+                      lang,
+                      'Who gets fullscreen'
+                    ),
+                    selfWarning: localize(
+                      'editor.camera.fullscreen_trigger_users.self_warning',
+                      lang,
+                      'It will not open fullscreen for you while signed in as this user.'
+                    ),
+                  }
+                )}
+                ${renderHideOnDevicesSection(
+                  cameraModule.fullscreen_trigger_skip_devices || [],
+                  next => updateModule({ fullscreen_trigger_skip_devices: next }),
+                  lang,
+                  {
+                    title: localize(
+                      'editor.camera.fullscreen_trigger_devices.title',
+                      lang,
+                      "Don't Open Fullscreen On"
+                    ),
+                    desc: localize(
+                      'editor.camera.fullscreen_trigger_devices.desc',
+                      lang,
+                      'Skip the fullscreen view on these screen sizes, for example to open it on a wall tablet but not on phones.'
+                    ),
+                    summary: localize(
+                      'editor.camera.fullscreen_trigger_devices.summary',
+                      lang,
+                      'Fullscreen will not open on:'
+                    ),
+                  }
+                )}
+              `
+            : ''}
         </div>
 
         <!-- Action Buttons -->
@@ -1290,6 +1407,7 @@ export class UltraCameraModule extends BaseUltraModule {
     const entity = cameraEntity ? hass.states[cameraEntity] : null;
     const isUnavailable = !entity || entity.state === 'unavailable';
     state.renderedEntity = cameraEntity;
+    this._checkFullscreenTrigger(cameraModule, hass, state);
 
     // The player is only rebuilt when something it genuinely depends on changes. Re-keying it on
     // unrelated state updates tears the stream down and restarts the handshake.
@@ -1772,6 +1890,54 @@ export class UltraCameraModule extends BaseUltraModule {
       },
       Math.max(0, until - Date.now()) + 250
     );
+  }
+
+  /**
+   * "Open Fullscreen When": opens the fullscreen view once per firing of the trigger entity, for
+   * the chosen users and screen sizes. Never fires while the card editor is open.
+   */
+  private _checkFullscreenTrigger(
+    module: CameraModule,
+    hass: HomeAssistant,
+    state: CameraRuntimeState
+  ): void {
+    const entityId = module.fullscreen_trigger_entity;
+    if (!entityId) {
+      state.fullscreenTriggerKey = undefined;
+      state.fullscreenTriggerSeen = false;
+      return;
+    }
+    const firing = cameraFullscreenTriggerFiring(hass, entityId);
+    const firstSight = !state.fullscreenTriggerSeen;
+    const previousKey = state.fullscreenTriggerKey;
+    state.fullscreenTriggerSeen = true;
+    state.fullscreenTriggerKey = firing.key;
+    if (!cameraFullscreenTriggerShouldOpen(firing, previousKey, firstSight)) return;
+    if (this._isEditorOpen()) return;
+    if (
+      !cameraFullscreenTriggerAllowsUser(
+        module.fullscreen_trigger_users,
+        (hass as any)?.user?.id as string | undefined
+      )
+    ) {
+      return;
+    }
+    const skip = module.fullscreen_trigger_skip_devices || [];
+    if (skip.length && skip.includes(responsiveDesignService.getCurrentBreakpoint())) return;
+
+    // Opened after the render pass so the overlay is never built mid-render.
+    setTimeout(() => {
+      const close = this.createFullscreenModal(module);
+      if (state.fullscreenCloseTimer) clearTimeout(state.fullscreenCloseTimer);
+      state.fullscreenCloseTimer = undefined;
+      const seconds = module.fullscreen_trigger_close ?? DEFAULT_FULLSCREEN_TRIGGER_CLOSE;
+      if (close && Number.isFinite(seconds) && seconds > 0) {
+        state.fullscreenCloseTimer = setTimeout(() => {
+          state.fullscreenCloseTimer = undefined;
+          close();
+        }, seconds * 1000);
+      }
+    }, 0);
   }
 
   /** The page's own `hass`, for overlays and handlers that run outside a render pass. */
@@ -2625,7 +2791,10 @@ export class UltraCameraModule extends BaseUltraModule {
   }
 
   // Create a bulletproof fullscreen modal
-  private createFullscreenModal(module: CameraModule, anchor?: HTMLElement): void {
+  private createFullscreenModal(
+    module: CameraModule,
+    anchor?: HTMLElement
+  ): (() => void) | undefined {
     // Remove any existing fullscreen modals first
     document
       .querySelectorAll('[id^="ultra-camera-fullscreen-"]')
@@ -2934,6 +3103,11 @@ export class UltraCameraModule extends BaseUltraModule {
 
     // Store restore function for cleanup
     (modal as any)._restoreViewport = restoreViewport;
+
+    // Closes this overlay only, so a timer cannot close one opened later.
+    return () => {
+      if (modal.isConnected) closeModal();
+    };
   }
 
   // Add pinch-to-zoom and pan functionality to camera
