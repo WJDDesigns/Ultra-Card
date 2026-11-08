@@ -6333,6 +6333,8 @@ export interface ActivityFeedModule extends BaseModule {
   show_entity_icon?: boolean | undefined;
   show_relative_time?: boolean | undefined;
   show_absolute_time?: boolean | undefined;
+  /** Clock format for absolute times: 'auto' follows the HA profile. */
+  time_format?: 'auto' | '12' | '24' | undefined;
   show_state_change?: boolean | undefined;
   group_by_time?: boolean | undefined;
 
