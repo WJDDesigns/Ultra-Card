@@ -7,6 +7,7 @@ import {
   CalendarModule,
   CalendarEntityConfig,
   CalendarViewType,
+  CalendarEventRule,
   ProcessedCalendarEvent,
   UltraCardConfig,
 } from '../types';
@@ -33,6 +34,32 @@ import { getWeatherForecast, forecastDayKey } from '../utils/uc-weather-forecast
 /** Views with a date to navigate (month / week / day). */
 const NAV_VIEWS: CalendarViewType[] = ['month', 'week', 'day'];
 const DEFAULT_SWITCHER_VIEWS: CalendarViewType[] = ['month', 'week', 'day'];
+/** Event Display settings a view can set for itself. */
+const EVENT_DISPLAY_KEYS = [
+  'show_event_time',
+  'show_end_time',
+  'show_event_location',
+  'show_event_description',
+  'show_event_icon',
+] as const;
+type EventDisplayKey = (typeof EVENT_DISPLAY_KEYS)[number];
+/** Which Event Display settings each view uses (so its section only lists those). */
+const VIEW_EVENT_DISPLAY_KEYS: Record<CalendarViewType, EventDisplayKey[]> = {
+  month: ['show_event_time', 'show_end_time', 'show_event_location', 'show_event_description'],
+  week: [],
+  day: ['show_event_time', 'show_end_time', 'show_event_location', 'show_event_description'],
+  compact_list: ['show_event_time', 'show_end_time', 'show_event_location', 'show_event_description', 'show_event_icon'],
+  table: ['show_end_time', 'show_event_description'],
+  grid: ['show_event_time', 'show_end_time', 'show_event_location', 'show_event_description'],
+};
+/** Views mix colours with rgba(); turn rgb() picks into hex so that keeps working. */
+function toHexColor(color: string): string {
+  const c = color.trim();
+  const m = c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
+  if (!m) return c;
+  return '#' + [m[1], m[2], m[3]].map(n => Math.min(255, Number(n)).toString(16).padStart(2, '0')).join('');
+}
+
 /** calendar entity supported_features bit for creating events. */
 const CALENDAR_CREATE_EVENT = 1;
 
@@ -68,13 +95,16 @@ interface CalendarAddForm {
   error: string;
 }
 
-interface CalendarModuleState {
+/** Events fetched for one set of calendars and dates. */
+interface CalendarFetchEntry {
   events: ProcessedCalendarEvent[];
   loading: boolean;
   error: string | null;
   lastFetch: number;
+}
+
+interface CalendarModuleState {
   expanded: boolean;
-  signature: string;
   /** View picked with the view switcher (null = module's view_type). */
   view: CalendarViewType | null;
   /** module.view_type when `view` was picked; a new default resets the pick. */
@@ -120,8 +150,20 @@ export class UltraCalendarModule extends BaseUltraModule {
   // so fetched events and UI state are kept per module id. A single shared slot
   // made each Calendar show whichever calendar was fetched first.
   private _states: Map<string, CalendarModuleState> = new Map();
+  /**
+   * Fetched events keyed by module + calendars + dates. Keyed by what was asked for (not
+   * only the module id) so the dashboard card behind the editor and the editor preview,
+   * which share a module id but can have different calendars, never overwrite each other.
+   */
+  private _fetches: Map<string, CalendarFetchEntry> = new Map();
+  /** Last entry with results per module + surface, shown while the next range loads. */
+  private _shown: Map<string, CalendarFetchEntry> = new Map();
+  private _ruleCache: WeakMap<ProcessedCalendarEvent[], { key: string; result: ProcessedCalendarEvent[] }> =
+    new WeakMap();
   private _hass: HomeAssistant | null = null;
   private _refreshInterval: ReturnType<typeof setInterval> | null = null;
+  private _clockTimer: ReturnType<typeof setInterval> | null = null;
+  private _clockLastUse = 0;
   
   // Scroll navigation state for hidden overflow mode
   private _scrollContainer: HTMLElement | null = null;
@@ -327,8 +369,14 @@ export class UltraCalendarModule extends BaseUltraModule {
       <!-- View Configuration Section -->
       ${this.renderViewConfigSection(calendarModule, hass, updateModule, lang)}
 
-      <!-- Event Display Options Section -->
+      <!-- Event Display Options Section (all views) -->
       ${this.renderEventDisplaySection(calendarModule, hass, updateModule, lang)}
+
+      <!-- One section per view the card offers -->
+      ${this.renderPerViewSections(calendarModule, hass, updateModule, lang)}
+
+      <!-- Event Rules Section -->
+      ${this.renderEventRulesSection(calendarModule, hass, updateModule, lang)}
 
       <!-- Styling Section -->
       ${this.renderStylingSection(calendarModule, hass, updateModule, lang)}
@@ -510,9 +558,9 @@ export class UltraCalendarModule extends BaseUltraModule {
         )}
 
         <!-- Days to Show (month / week / day show the dates you page to) -->
-        ${NAV_VIEWS.includes(module.view_type || 'compact_list') ? '' : this.renderSliderField(
-          'Days to Show',
-          'Number of days to display events for',
+        ${this._offeredViews(module).every(v => NAV_VIEWS.includes(v)) ? '' : this.renderSliderField(
+          localize('editor.calendar.days_to_show', lang, 'Days to Show'),
+          localize('editor.calendar.days_to_show_desc', lang, 'Number of days the List, Table and Grid views show events for.'),
           module.days_to_show || 7,
           7,
           1,
@@ -643,6 +691,25 @@ export class UltraCalendarModule extends BaseUltraModule {
             )
           : ''}
 
+        ${this.renderFieldSection(
+          localize('editor.calendar.header_info', lang, 'Time and weather in header'),
+          localize('editor.calendar.header_info_desc', lang, 'Show the current time and / or the current weather in the top right corner. Weather uses the forecast entity above.'),
+          hass,
+          { header_info: module.header_info || 'none' },
+          [
+            this.selectField('header_info', [
+              { value: 'none', label: localize('editor.calendar.header_info_none', lang, 'Off') },
+              { value: 'time', label: localize('editor.calendar.header_info_time', lang, 'Time') },
+              { value: 'weather', label: localize('editor.calendar.header_info_weather', lang, 'Weather') },
+              { value: 'time_weather', label: localize('editor.calendar.header_info_time_weather', lang, 'Time and weather') },
+            ]),
+          ],
+          (e: CustomEvent) => {
+            updateModule({ header_info: e.detail.value.header_info });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
+        )}
+
         <!-- Title Configuration -->
         ${this.renderFieldSection(
           'Show Title',
@@ -696,20 +763,58 @@ export class UltraCalendarModule extends BaseUltraModule {
             `
           : ''}
 
-        <!-- View-specific options -->
-        ${this.renderViewSpecificOptions(module, hass, updateModule, lang)}
       </div>
     `;
   }
 
-  private renderViewSpecificOptions(
+  /** View type plus the views the switcher offers, in switcher order. */
+  private _offeredViews(module: CalendarModule): CalendarViewType[] {
+    const order: CalendarViewType[] = ['month', 'week', 'day', 'compact_list', 'table', 'grid'];
+    const set = new Set<CalendarViewType>([module.view_type || 'compact_list']);
+    if (module.show_view_switcher) this._switcherViews(module).forEach(v => set.add(v));
+    return order.filter(v => set.has(v));
+  }
+
+  private _viewLabel(view: CalendarViewType, lang: string): string {
+    const labels: Record<CalendarViewType, string> = {
+      month: localize('editor.calendar.section_month', lang, 'Month view'),
+      week: localize('editor.calendar.section_week', lang, 'Week view'),
+      day: localize('editor.calendar.section_day', lang, 'Day view'),
+      compact_list: localize('editor.calendar.section_list', lang, 'List view'),
+      table: localize('editor.calendar.section_table', lang, 'Table view'),
+      grid: localize('editor.calendar.section_grid', lang, 'Grid view'),
+    };
+    return labels[view];
+  }
+
+  /** One settings section per offered view: its own options plus its Event Display settings. */
+  private renderPerViewSections(
     module: CalendarModule,
     hass: HomeAssistant,
     updateModule: (updates: Partial<CalendarModule>) => void,
     lang: string
   ): TemplateResult {
-    const viewType = module.view_type || 'compact_list';
+    return html`${this._offeredViews(module).map(
+      view => html`
+        <div class="settings-section per-view-section">
+          <div class="section-title">${this._viewLabel(view, lang)}</div>
+          <div class="section-description">
+            ${localize('editor.calendar.section_view_desc', lang, 'Settings that only change this view.')}
+          </div>
+          ${this.renderViewSpecificOptions(view, module, hass, updateModule, lang)}
+          ${this.renderViewEventDisplay(view, module, hass, updateModule, lang)}
+        </div>
+      `
+    )}`;
+  }
 
+  private renderViewSpecificOptions(
+    viewType: CalendarViewType,
+    module: CalendarModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CalendarModule>) => void,
+    lang: string
+  ): TemplateResult {
     switch (viewType) {
       case 'compact_list':
         return this.renderCompactListOptions(module, hass, updateModule, lang);
@@ -726,6 +831,92 @@ export class UltraCalendarModule extends BaseUltraModule {
       default:
         return html``;
     }
+  }
+
+  private _eventDisplayLabels(lang: string): Record<EventDisplayKey, { title: string; desc: string }> {
+    return {
+      show_event_time: {
+        title: localize('editor.calendar.show_event_time', lang, 'Show Event Time'),
+        desc: localize('editor.calendar.show_event_time_desc', lang, 'Display the start time of events'),
+      },
+      show_end_time: {
+        title: localize('editor.calendar.show_end_time', lang, 'Show End Time'),
+        desc: localize('editor.calendar.show_end_time_desc', lang, 'Display the end time of events'),
+      },
+      show_event_location: {
+        title: localize('editor.calendar.show_location', lang, 'Show Location'),
+        desc: localize('editor.calendar.show_location_desc', lang, 'Display event location'),
+      },
+      show_event_description: {
+        title: localize('editor.calendar.show_description', lang, 'Show Description'),
+        desc: localize('editor.calendar.show_description_desc', lang, 'Display event description'),
+      },
+      show_event_icon: {
+        title: localize('editor.calendar.show_event_icon', lang, 'Show Event Icon'),
+        desc: localize('editor.calendar.show_event_icon_desc', lang, 'Display a clock icon next to event times'),
+      },
+    };
+  }
+
+  /** Default when a key is unset (matches how the views read it). */
+  private _eventDisplayDefault(key: EventDisplayKey): boolean {
+    return key !== 'show_event_description';
+  }
+
+  /** Event Display settings this view uses: greyed out while they are set for every view. */
+  private renderViewEventDisplay(
+    view: CalendarViewType,
+    module: CalendarModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CalendarModule>) => void,
+    lang: string
+  ): TemplateResult | typeof nothing {
+    const keys = VIEW_EVENT_DISPLAY_KEYS[view];
+    if (!keys.length) return nothing;
+    const perView = !!module.event_display_per_view;
+    const own = module.view_event_display?.[view] || {};
+    const labels = this._eventDisplayLabels(lang);
+    const valueOf = (key: EventDisplayKey): boolean => {
+      const v = perView && own[key] !== undefined ? own[key] : module[key];
+      return v === undefined ? this._eventDisplayDefault(key) : !!v;
+    };
+    return html`
+      <div class="view-options-group per-view-event-display ${perView ? '' : 'locked'}">
+        <div class="view-options-title">
+          ${localize('editor.calendar.event_display', lang, 'Event Display')}
+        </div>
+        ${perView
+          ? nothing
+          : html`<div class="per-view-locked-note">
+              <ha-icon icon="mdi:lock-outline"></ha-icon>
+              <span>
+                ${localize(
+                  'editor.calendar.per_view_locked',
+                  lang,
+                  'Set for all views in Event Display above. Turn on "Different settings per view" there to change them here.'
+                )}
+              </span>
+            </div>`}
+        ${keys.map(key =>
+          this.renderFieldSection(
+            labels[key].title,
+            labels[key].desc,
+            hass,
+            { [key]: valueOf(key) },
+            [this.booleanField(key)],
+            (e: CustomEvent) => {
+              if (!perView) return;
+              const next = {
+                ...(module.view_event_display || {}),
+                [view]: { ...own, [key]: !!e.detail.value[key] },
+              };
+              updateModule({ view_event_display: next });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )
+        )}
+      </div>
+    `;
   }
 
   private renderCompactListOptions(
@@ -918,14 +1109,37 @@ export class UltraCalendarModule extends BaseUltraModule {
           }
         )}
 
+        ${module.month_event_display === 'titles'
+          ? this.renderFieldSection(
+              localize('editor.calendar.month_title_fit', lang, 'Long event names'),
+              localize('editor.calendar.month_title_fit_desc', lang, 'Cut off long names with "…", or wrap them onto more lines so the whole name shows.'),
+              hass,
+              { month_title_fit: module.month_title_fit || 'truncate' },
+              [
+                this.selectField('month_title_fit', [
+                  { value: 'truncate', label: localize('editor.calendar.month_title_fit_truncate', lang, 'Cut off') },
+                  { value: 'wrap', label: localize('editor.calendar.month_title_fit_wrap', lang, 'Wrap') },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                updateModule({ month_title_fit: e.detail.value.month_title_fit });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )
+          : ''}
+
         ${this.renderFieldSection(
-          'Show Event Count',
-          'Display number of events on each day',
+          localize('editor.calendar.month_show_event_count', lang, 'Show Event Count'),
+          module.month_event_display === 'titles'
+            ? localize('editor.calendar.month_show_event_count_titles_desc', lang, 'A small number next to the date shows how many events the day has.')
+            : localize('editor.calendar.month_show_event_count_dots_desc', lang, 'Show up to three coloured dots per day, plus "+N" for more.'),
           hass,
           { month_show_event_count: module.month_show_event_count !== false },
           [this.booleanField('month_show_event_count')],
-          (e: CustomEvent) =>
-            updateModule({ month_show_event_count: e.detail.value.month_show_event_count })
+          (e: CustomEvent) => {
+            updateModule({ month_show_event_count: e.detail.value.month_show_event_count });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
         )}
       </div>
     `;
@@ -1161,8 +1375,38 @@ export class UltraCalendarModule extends BaseUltraModule {
         </div>
 
         ${this.renderFieldSection(
-          'Show Event Time',
-          'Display the start time of events',
+          localize('editor.calendar.event_display_per_view', lang, 'Different settings per view'),
+          module.event_display_per_view
+            ? localize('editor.calendar.event_display_per_view_on', lang, 'Each view section below has its own time, location and description settings. The settings here are the starting values.')
+            : localize('editor.calendar.event_display_per_view_off', lang, 'Off: the settings here apply to every view. On: set them separately in each view section below.'),
+          hass,
+          { event_display_per_view: !!module.event_display_per_view },
+          [this.booleanField('event_display_per_view')],
+          (e: CustomEvent) => {
+            const on = !!e.detail.value.event_display_per_view;
+            const updates: Partial<CalendarModule> = { event_display_per_view: on };
+            if (on) {
+              // Start each view from the current shared values.
+              const seeded: NonNullable<CalendarModule['view_event_display']> = { ...(module.view_event_display || {}) };
+              for (const view of this._offeredViews(module)) {
+                const own = { ...(seeded[view] || {}) };
+                for (const key of VIEW_EVENT_DISPLAY_KEYS[view]) {
+                  if (own[key] === undefined) {
+                    own[key] = module[key] === undefined ? this._eventDisplayDefault(key) : !!module[key];
+                  }
+                }
+                seeded[view] = own;
+              }
+              updates.view_event_display = seeded;
+            }
+            updateModule(updates);
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
+        )}
+
+        ${this.renderFieldSection(
+          localize('editor.calendar.show_event_time', lang, 'Show Event Time'),
+          localize('editor.calendar.show_event_time_desc', lang, 'Display the start time of events'),
           hass,
           { show_event_time: module.show_event_time !== false },
           [this.booleanField('show_event_time')],
@@ -1170,8 +1414,8 @@ export class UltraCalendarModule extends BaseUltraModule {
         )}
 
         ${this.renderFieldSection(
-          'Show End Time',
-          'Display the end time of events',
+          localize('editor.calendar.show_end_time', lang, 'Show End Time'),
+          localize('editor.calendar.show_end_time_desc', lang, 'Display the end time of events'),
           hass,
           { show_end_time: module.show_end_time !== false },
           [this.booleanField('show_end_time')],
@@ -1188,8 +1432,8 @@ export class UltraCalendarModule extends BaseUltraModule {
         )}
 
         ${this.renderFieldSection(
-          'Show Location',
-          'Display event location',
+          localize('editor.calendar.show_location', lang, 'Show Location'),
+          localize('editor.calendar.show_location_desc', lang, 'Display event location'),
           hass,
           { show_event_location: module.show_event_location !== false },
           [this.booleanField('show_event_location')],
@@ -1197,7 +1441,7 @@ export class UltraCalendarModule extends BaseUltraModule {
             updateModule({ show_event_location: e.detail.value.show_event_location })
         )}
 
-        ${module.show_event_location
+        ${module.show_event_location !== false
           ? this.renderFieldSection(
               'Remove Country from Location',
               'Strip country name from displayed locations',
@@ -1233,8 +1477,8 @@ export class UltraCalendarModule extends BaseUltraModule {
           : ''}
 
         ${this.renderFieldSection(
-          'Show Description',
-          'Display event description',
+          localize('editor.calendar.show_description', lang, 'Show Description'),
+          localize('editor.calendar.show_description_desc', lang, 'Display event description'),
           hass,
           { show_event_description: module.show_event_description || false },
           [this.booleanField('show_event_description')],
@@ -1243,8 +1487,8 @@ export class UltraCalendarModule extends BaseUltraModule {
         )}
 
         ${this.renderFieldSection(
-          'Show Event Icon',
-          'Display calendar icon next to events',
+          localize('editor.calendar.show_event_icon', lang, 'Show Event Icon'),
+          localize('editor.calendar.show_event_icon_desc', lang, 'Display a clock icon next to event times'),
           hass,
           { show_event_icon: module.show_event_icon !== false },
           [this.booleanField('show_event_icon')],
@@ -1616,6 +1860,123 @@ export class UltraCalendarModule extends BaseUltraModule {
   }
 
   // Calendar management helpers
+  /** Rules that rename, re-icon or re-colour events by name. */
+  private renderEventRulesSection(
+    module: CalendarModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CalendarModule>) => void,
+    lang: string
+  ): TemplateResult {
+    const rules = module.event_rules || [];
+    const t = (key: string, fallback: string) => localize(`editor.calendar.${key}`, lang, fallback);
+    const setRule = (index: number, patch: Partial<CalendarEventRule>) => {
+      const next = [...rules];
+      next[index] = { ...next[index], ...patch };
+      updateModule({ event_rules: next });
+      setTimeout(() => this.triggerPreviewUpdate(), 50);
+    };
+    return html`
+      <div class="settings-section">
+        <div class="section-title">${t('event_rules', 'Event Rules')}</div>
+        <div class="section-description">
+          ${t(
+            'event_rules_desc',
+            'Give events a new name, an icon or their own colour when their name matches, e.g. waste collection days from a city calendar. The first matching rule wins.'
+          )}
+        </div>
+        <div class="calendar-list">
+          ${rules.map(
+            (rule, index) => html`
+              <div class="calendar-item">
+                <div class="calendar-item-header">
+                  <div class="calendar-color-preview" style="background: ${rule.color || 'transparent'}; border: 1px solid var(--divider-color);"></div>
+                  ${rule.icon ? html`<ha-icon icon=${rule.icon} style="--mdc-icon-size: 18px;"></ha-icon>` : nothing}
+                  <span class="calendar-item-title">
+                    ${rule.match
+                      ? `${rule.match}${rule.rename ? ` → ${rule.rename}` : ''}`
+                      : `${t('event_rule', 'Rule')} ${index + 1}`}
+                  </span>
+                  <div class="calendar-item-actions">
+                    <ha-icon-button
+                      @click=${() => {
+                        const next = [...rules];
+                        next.splice(index, 1);
+                        updateModule({ event_rules: next.length ? next : undefined });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                      title=${t('remove', 'Remove')}
+                    >
+                      <ha-icon icon="mdi:delete"></ha-icon>
+                    </ha-icon-button>
+                  </div>
+                </div>
+                <div class="calendar-item-content">
+                  ${this.renderFieldSection(
+                    t('event_rule_match', 'Event name contains'),
+                    t('event_rule_match_desc', 'Text to look for in the event name. Upper and lower case do not matter.'),
+                    hass,
+                    { match: rule.match || '' },
+                    [this.textField('match')],
+                    (e: CustomEvent) => setRule(index, { match: e.detail.value.match || '' })
+                  )}
+                  ${this.renderFieldSection(
+                    t('event_rule_mode', 'Match'),
+                    '',
+                    hass,
+                    { match_mode: rule.match_mode || 'contains' },
+                    [
+                      this.selectField('match_mode', [
+                        { value: 'contains', label: t('event_rule_mode_contains', 'Name contains the text') },
+                        { value: 'exact', label: t('event_rule_mode_exact', 'Name is exactly the text') },
+                      ]),
+                    ],
+                    (e: CustomEvent) => setRule(index, { match_mode: e.detail.value.match_mode })
+                  )}
+                  ${this.renderFieldSection(
+                    t('event_rule_rename', 'Show as'),
+                    t('event_rule_rename_desc', 'New name for matching events. Leave empty to keep the name.'),
+                    hass,
+                    { rename: rule.rename || '' },
+                    [this.textField('rename')],
+                    (e: CustomEvent) => setRule(index, { rename: e.detail.value.rename || undefined })
+                  )}
+                  ${this.renderFieldSection(
+                    t('event_rule_icon', 'Icon'),
+                    t('event_rule_icon_desc', 'Shown before the event name.'),
+                    hass,
+                    { icon: rule.icon || '' },
+                    [{ name: 'icon', selector: { icon: {} } }],
+                    (e: CustomEvent) => setRule(index, { icon: e.detail.value.icon || undefined })
+                  )}
+                  <div class="field-row">
+                    <div class="field-title">${t('event_rule_color', 'Colour')}</div>
+                    <ultra-color-picker
+                      .value=${rule.color || ''}
+                      .defaultValue=${''}
+                      .hass=${hass}
+                      @value-changed=${(e: CustomEvent) => setRule(index, { color: e.detail.value || undefined })}
+                    ></ultra-color-picker>
+                  </div>
+                </div>
+              </div>
+            `
+          )}
+        </div>
+        <button
+          class="add-calendar-btn"
+          @click=${() => {
+            updateModule({
+              event_rules: [...rules, { id: this.generateId('cal_rule'), match: '' }],
+            });
+          }}
+        >
+          <ha-icon icon="mdi:plus"></ha-icon>
+          ${t('add_event_rule', 'Add rule')}
+        </button>
+      </div>
+    `;
+  }
+
   private addCalendar(
     module: CalendarModule,
     updateModule: (updates: Partial<CalendarModule>) => void
@@ -1813,6 +2174,36 @@ export class UltraCalendarModule extends BaseUltraModule {
         letter-spacing: 0.5px;
       }
 
+      /* The view section header already names the view. */
+      .per-view-section > .view-options-group:not(.per-view-event-display) > .view-options-title {
+        display: none;
+      }
+
+      .per-view-event-display.locked .field-section,
+      .per-view-event-display.locked .field-row {
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      .per-view-locked-note {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 12px;
+      }
+
+      .per-view-locked-note ha-icon {
+        --mdc-icon-size: 18px;
+        flex: 0 0 auto;
+        color: var(--primary-color);
+      }
+
       .styling-subsection {
         margin-top: 24px;
         padding-top: 16px;
@@ -1924,7 +2315,13 @@ export class UltraCalendarModule extends BaseUltraModule {
     const range = this._viewRange(calendarModule, view, anchor);
 
     // Fetch events for the range this view shows
-    this.fetchEventsIfNeeded(calendarModule, hass, validCalendars, range, view);
+    const fetched = this.fetchEventsIfNeeded(calendarModule, hass, validCalendars, range, view);
+    // While a new range loads, keep showing what this surface showed last (no spinner flash).
+    const surfaceKey = `${calendarModule.id}|${previewContext || 'card'}`;
+    const prevShown = this._shown.get(surfaceKey);
+    const entry =
+      fetched.lastFetch === 0 && prevShown && prevShown.lastFetch > 0 ? prevShown : fetched;
+    if (fetched.lastFetch > 0) this._shown.set(surfaceKey, fetched);
 
     // Check if we need scroll navigation (hidden overflow mode with nav buttons enabled)
     const needsScrollNav = calendarModule.compact_auto_fit_height && 
@@ -1938,17 +2335,18 @@ export class UltraCalendarModule extends BaseUltraModule {
 
     // Calendars hidden with the header filter
     const hiddenIds = this._hiddenCalendarIds(calendarModule, validCalendars, st);
+    const ruledEvents = this._applyEventRules(calendarModule, entry.events);
     const visibleEvents = hiddenIds.size
-      ? st.events.filter(e => !hiddenIds.has(e.calendarId))
-      : st.events;
+      ? ruledEvents.filter(e => !hiddenIds.has(e.calendarId))
+      : ruledEvents;
 
     // Create view context
     const context: CalendarViewContext = {
-      module: { ...calendarModule, view_type: view },
+      module: { ...this._effectiveModule(calendarModule, view), view_type: view },
       hass,
       events: visibleEvents,
-      loading: st.loading,
-      error: st.error,
+      loading: entry.loading,
+      error: entry.error,
       expanded: st.expanded,
       onEventClick: (event: ProcessedCalendarEvent) =>
         this.handleEventClick(event, calendarModule, hass, validCalendars),
@@ -2009,7 +2407,7 @@ export class UltraCalendarModule extends BaseUltraModule {
         ${this._renderFilterChips(calendarModule, hass, validCalendars, st, lang)}
         ${st.form
           ? this._renderAddForm(calendarModule, hass, validCalendars, st, lang)
-          : this.renderCalendarView(context, st.lastFetch === 0)}
+          : this.renderCalendarView(context, entry.lastFetch === 0)}
       </div>
     `, module, hass);
   }
@@ -2167,6 +2565,51 @@ export class UltraCalendarModule extends BaseUltraModule {
   // HEADER: NAVIGATION, VIEW SWITCHER, ADD, FILTER
   // ==========================================
 
+  /** Current time and / or weather for the header's right corner. */
+  private _renderHeaderInfo(module: CalendarModule, hass: HomeAssistant): TemplateResult | typeof nothing {
+    const mode = module.header_info || 'none';
+    if (mode === 'none') return nothing;
+    const showTime = mode === 'time' || mode === 'time_weather';
+    const showWeather = mode === 'weather' || mode === 'time_weather';
+    let weather: TemplateResult | typeof nothing = nothing;
+    if (showWeather) {
+      const raw = (module.weather_entity || '').trim();
+      const entityId = raw ? this.resolveEntity(raw) || raw : '';
+      const stateObj = entityId ? hass?.states?.[entityId] : undefined;
+      if (stateObj) {
+        const condition = String(stateObj.state || '');
+        const temp = stateObj.attributes?.temperature;
+        const unit = String(stateObj.attributes?.temperature_unit || '°');
+        const label =
+          (hass.localize && hass.localize(`component.weather.entity_component._.state.${condition}`)) || condition;
+        weather = html`<span class="uc-calendar-header-weather" title=${label}>
+          <ha-icon icon=${WEATHER_ICONS[condition] || 'mdi:weather-cloudy'}></ha-icon>
+          ${typeof temp === 'number' ? html`<span>${Math.round(temp)}${unit.startsWith('°') ? '°' : ` ${unit}`}</span>` : nothing}
+        </span>`;
+      }
+    }
+    if (showTime) this._ensureClockTick();
+    if (!showTime && weather === nothing) return nothing;
+    return html`<div class="uc-calendar-header-info">
+      ${showTime ? html`<span class="uc-calendar-header-time">${this.formatTime(new Date(), module)}</span>` : nothing}
+      ${weather}
+    </div>`;
+  }
+
+  /** Repaint once a minute while a header clock is on screen. */
+  private _ensureClockTick(): void {
+    this._clockLastUse = Date.now();
+    if (this._clockTimer) return;
+    this._clockTimer = setInterval(() => {
+      if (Date.now() - this._clockLastUse > 120000) {
+        if (this._clockTimer) clearInterval(this._clockTimer);
+        this._clockTimer = null;
+        return;
+      }
+      this.triggerPreviewUpdate(false, true);
+    }, 30000);
+  }
+
   private _writableCalendars(hass: HomeAssistant, calendars: CalendarEntityConfig[]): CalendarEntityConfig[] {
     return calendars.filter(cal => {
       const features = Number(hass?.states?.[cal.entity]?.attributes?.supported_features || 0);
@@ -2188,7 +2631,8 @@ export class UltraCalendarModule extends BaseUltraModule {
     const showNav = isNavView && module.show_navigation !== false;
     const switcher = module.show_view_switcher ? this._switcherViews(module) : [];
     const canAdd = !!module.show_add_event && this._writableCalendars(hass, calendars).length > 0;
-    if (!isNavView && switcher.length < 2 && !canAdd) return nothing;
+    const headerInfo = this._renderHeaderInfo(module, hass);
+    if (!isNavView && switcher.length < 2 && !canAdd && headerInfo === nothing) return nothing;
 
     const now = new Date();
     const showsToday = now >= range.start && now < range.end;
@@ -2269,6 +2713,7 @@ export class UltraCalendarModule extends BaseUltraModule {
             `
           : html`<div class="uc-calendar-toolbar-center"></div>`}
         <div class="uc-calendar-toolbar-side uc-calendar-toolbar-end">
+          ${headerInfo}
           ${showNav && !showsToday
             ? html`<button
                 class="uc-calendar-pill-btn"
@@ -2486,8 +2931,7 @@ export class UltraCalendarModule extends BaseUltraModule {
       st.form = null;
       // Refetch so the new event shows.
       this._calendarService?.clearCache();
-      st.lastFetch = 0;
-      st.signature = '';
+      this._fetches.clear();
     } catch (err) {
       f.saving = false;
       f.error = String((err as { message?: string })?.message || err || 'Error');
@@ -2621,12 +3065,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     let st = this._states.get(moduleId);
     if (!st) {
       st = {
-        events: [],
-        loading: false,
-        error: null,
-        lastFetch: 0,
         expanded: false,
-        signature: '',
         view: null,
         baseView: null,
         anchor: null,
@@ -2638,6 +3077,46 @@ export class UltraCalendarModule extends BaseUltraModule {
       this._states.set(moduleId, st);
     }
     return st;
+  }
+
+  /** Module with this view's own Event Display settings applied (when set per view). */
+  private _effectiveModule(module: CalendarModule, view: CalendarViewType): CalendarModule {
+    if (!module.event_display_per_view) return module;
+    const own = module.view_event_display?.[view];
+    if (!own) return module;
+    const merged: CalendarModule = { ...module };
+    for (const key of EVENT_DISPLAY_KEYS) {
+      if (own[key] !== undefined) merged[key] = own[key];
+    }
+    return merged;
+  }
+
+  /** Rename / re-icon / re-colour events that match an event rule (first match wins). */
+  private _applyEventRules(
+    module: CalendarModule,
+    events: ProcessedCalendarEvent[]
+  ): ProcessedCalendarEvent[] {
+    const rules = (module.event_rules || []).filter(r => (r.match || '').trim());
+    if (!rules.length || !events.length) return events;
+    const key = JSON.stringify(rules);
+    const cached = this._ruleCache.get(events);
+    if (cached && cached.key === key) return cached.result;
+    const result = events.map(event => {
+      const name = (event.summary || '').trim().toLowerCase();
+      const rule = rules.find(r => {
+        const needle = r.match.trim().toLowerCase();
+        return r.match_mode === 'exact' ? name === needle : name.includes(needle);
+      });
+      if (!rule) return event;
+      return {
+        ...event,
+        summary: rule.rename?.trim() ? rule.rename.trim() : event.summary,
+        calendarColor: rule.color ? toHexColor(rule.color) : event.calendarColor,
+        icon: rule.icon || event.icon,
+      };
+    });
+    this._ruleCache.set(events, { key, result });
+    return result;
   }
 
   /** Calendars with an entity set and visible, with variables resolved to entity ids. */
@@ -2699,76 +3178,70 @@ export class UltraCalendarModule extends BaseUltraModule {
     `;
   }
 
-  private async fetchEventsIfNeeded(
+  /**
+   * Returns the fetch entry for the calendars and dates this view shows, starting a
+   * fetch when it is missing or older than the refresh interval.
+   */
+  private fetchEventsIfNeeded(
     module: CalendarModule,
     hass: HomeAssistant,
     validCalendars: CalendarEntityConfig[],
     range: { start: Date; end: Date },
     view: CalendarViewType
-  ): Promise<void> {
+  ): CalendarFetchEntry {
     const now = Date.now();
     const refreshMs = (module.refresh_interval || 15) * 60 * 1000;
-    const st = this._stateFor(module.id);
     const isNavView = NAV_VIEWS.includes(view);
-    // Refetch straight away when the calendars or range change, not only on the timer.
     // Month / week / day fetch the dates they show (paging moves the range);
     // list views keep "today + Days to Show".
     const signature = JSON.stringify([
+      module.id,
       validCalendars.map(c => [c.id, c.entity, c.color || '', c.name || '']),
       isNavView ? [CalendarService.getDateKey(range.start), CalendarService.getDateKey(range.end)] : module.days_to_show || 7,
       !!module.show_past_events,
       isNavView,
     ]);
 
-    if (st.signature === signature && st.lastFetch > 0 && now - st.lastFetch < refreshMs) {
-      return;
-    }
-
-    if (st.loading && st.signature === signature) {
-      return;
-    }
-
-    st.loading = true;
-    st.error = null;
-    st.signature = signature;
-
-    try {
-      if (validCalendars.length === 0) {
-        st.events = [];
-        st.loading = false;
-        return;
+    let entry = this._fetches.get(signature);
+    if (!entry) {
+      entry = { events: [], loading: false, error: null, lastFetch: 0 };
+      this._fetches.set(signature, entry);
+      // Keep the cache small: drop the oldest entries.
+      while (this._fetches.size > 40) {
+        const oldest = this._fetches.keys().next().value;
+        if (oldest === undefined) break;
+        this._fetches.delete(oldest);
       }
-
-      // Fetch events from calendar service
-      const events = await this._calendarService!.fetchEvents(
-        hass,
-        validCalendars,
-        range.start,
-        range.end
-      );
-
-      // A newer request (different calendars or dates) started while this one ran: drop this result.
-      if (st.signature !== signature) return;
-
-      // Month / week / day show every event in their dates; list views hide past ones.
-      const filteredEvents = module.show_past_events || isNavView
-        ? events
-        : events.filter(event => event.end > new Date());
-
-      st.events = filteredEvents;
-      st.lastFetch = now;
-      st.loading = false;
-
-      // Trigger preview update
-      this.triggerPreviewUpdate();
-    } catch (error) {
-      if (st.signature !== signature) return;
-      console.error('Calendar module: Failed to fetch events', error);
-      st.error = 'Failed to load calendar events';
-      st.loading = false;
-      st.lastFetch = now;
-      this.triggerPreviewUpdate();
     }
+    if (entry.loading) return entry;
+    if (entry.lastFetch > 0 && now - entry.lastFetch < refreshMs) return entry;
+    if (validCalendars.length === 0) {
+      entry.events = [];
+      entry.lastFetch = now;
+      return entry;
+    }
+
+    entry.loading = true;
+    entry.error = null;
+    const target = entry;
+    this._calendarService!.fetchEvents(hass, validCalendars, range.start, range.end)
+      .then(events => {
+        // Month / week / day show every event in their dates; list views hide past ones.
+        target.events = module.show_past_events || isNavView
+          ? events
+          : events.filter(event => event.end > new Date());
+        target.error = null;
+      })
+      .catch(error => {
+        console.error('Calendar module: Failed to fetch events', error);
+        target.error = 'Failed to load calendar events';
+      })
+      .finally(() => {
+        target.loading = false;
+        target.lastFetch = Date.now();
+        this.triggerPreviewUpdate();
+      });
+    return entry;
   }
 
   private handleEventClick(
@@ -3939,9 +4412,20 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-day-cell-top {
         display: flex;
+        flex-wrap: wrap;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 2px;
+        gap: 0 2px;
+      }
+
+      .uc-calendar-day-cell-top .uc-calendar-weather {
+        margin-left: auto;
+      }
+
+      .uc-calendar-day-cell-numwrap {
+        display: flex;
+        align-items: center;
+        min-width: 0;
       }
 
       .uc-calendar-day-cell-top .uc-calendar-weather ha-icon {
@@ -3991,6 +4475,78 @@ export class UltraCalendarModule extends BaseUltraModule {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      .uc-calendar-day-cell.wrap-titles .uc-calendar-day-cell-title {
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .uc-calendar-day-cell.wrap-titles .uc-calendar-day-cell-name {
+        white-space: normal;
+        overflow: visible;
+        overflow-wrap: break-word;
+        hyphens: auto;
+      }
+
+      .uc-calendar-day-cell-count {
+        flex: 0 0 auto;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        box-sizing: border-box;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 16px;
+        text-align: center;
+        color: var(--text-primary-color, #fff);
+        background: var(--primary-color);
+        margin-left: 3px;
+      }
+
+      .uc-calendar-ev-icon {
+        --mdc-icon-size: 1.1em;
+        flex: 0 0 auto;
+        margin-right: 3px;
+        vertical-align: -0.15em;
+      }
+
+      .uc-calendar-day-event-desc {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-top: 2px;
+      }
+
+      .uc-calendar-header-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+        white-space: nowrap;
+      }
+
+      .uc-calendar-header-time {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .uc-calendar-header-weather {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        color: var(--secondary-text-color);
+      }
+
+      .uc-calendar-header-weather ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .uc-calendar-form-field option,
+      .uc-calendar-form-field optgroup {
+        background-color: var(--card-background-color, var(--ha-card-background, #1c1c1c));
+        color: var(--primary-text-color);
       }
 
       .uc-calendar-week-day-header.clickable {

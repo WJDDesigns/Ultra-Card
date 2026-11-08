@@ -7759,10 +7759,36 @@ export interface ProcessedCalendarEvent {
   end: Date;
   isAllDay: boolean;
   isMultiDay: boolean;
+  /** Icon from a matching event rule. */
+  icon?: string | undefined;
   raw: CalendarEventData;
 }
 
 // Calendar module interface
+/** Event Display settings that a view can set for itself. */
+export interface CalendarEventDisplayOptions {
+  show_event_time?: boolean | undefined;
+  show_end_time?: boolean | undefined;
+  show_event_location?: boolean | undefined;
+  show_event_description?: boolean | undefined;
+  show_event_icon?: boolean | undefined;
+}
+
+/** Matches events by name and changes how they look. */
+export interface CalendarEventRule {
+  id: string;
+  /** Text to look for in the event name (not case sensitive). */
+  match: string;
+  /** contains (default) or exact name. */
+  match_mode?: 'contains' | 'exact' | undefined;
+  /** New name to show. Empty keeps the original. */
+  rename?: string | undefined;
+  /** mdi icon shown before the name. */
+  icon?: string | undefined;
+  /** Colour for the event (replaces the calendar colour). */
+  color?: string | undefined;
+}
+
 export interface CalendarModule extends BaseModule {
   type: 'calendar';
 
@@ -7802,6 +7828,8 @@ export interface CalendarModule extends BaseModule {
   month_event_display?: 'dots' | 'titles' | undefined;
   /** Tapping a day in month view lists that day's events (name, time, location) below the grid. */
   month_show_day_details?: boolean | undefined;
+  /** Long event names in month cells: cut off with "…" (default) or wrap onto more lines. */
+  month_title_fit?: 'truncate' | 'wrap' | undefined;
 
   // Header controls
   /** Previous / next / today buttons for month, week and day views. Default on. */
@@ -7820,6 +7848,14 @@ export interface CalendarModule extends BaseModule {
   // Weather forecast on days
   weather_entity?: string | undefined;
   weather_show_temperature?: boolean | undefined;
+  /** Current time and/or weather in the header's right corner. */
+  header_info?: 'none' | 'time' | 'weather' | 'time_weather' | undefined;
+  /** Rename, re-icon or re-colour events whose name matches (e.g. waste collection feeds). */
+  event_rules?: CalendarEventRule[] | undefined;
+  /** Off (default): Event Display settings apply to every view. On: each view keeps its own. */
+  event_display_per_view?: boolean | undefined;
+  /** Per-view Event Display settings, used when event_display_per_view is on. */
+  view_event_display?: Partial<Record<CalendarViewType, CalendarEventDisplayOptions>> | undefined;
 
   // Week view
   week_start_hour?: number | undefined;
