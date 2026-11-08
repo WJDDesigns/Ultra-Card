@@ -1399,6 +1399,25 @@
         "title": "Stay Live For (seconds)",
         "desc": "How long the stream stays live after the entity turns off or the event fires. Range: 0-3600 seconds."
       },
+      "fullscreen_trigger": {
+        "title": "Apri a schermo intero quando",
+        "desc": "Apre automaticamente questa telecamera a schermo intero quando questa entità si accende o si attiva, ad esempio quando suona il campanello. Si apre nelle dashboard che mostrano questa scheda."
+      },
+      "fullscreen_trigger_close": {
+        "title": "Chiudi dopo (secondi)",
+        "desc": "Chiude automaticamente lo schermo intero dopo questi secondi. Imposta 0 per tenerlo aperto finché non lo chiudi."
+      },
+      "fullscreen_trigger_users": {
+        "title": "Apri a schermo intero per",
+        "desc": "Scegli quali utenti di Home Assistant ricevono lo schermo intero. Gli altri vedono la telecamera come sempre.",
+        "mode": "Chi riceve lo schermo intero",
+        "self_warning": "Non si aprirà a schermo intero per te mentre usi questo utente."
+      },
+      "fullscreen_trigger_devices": {
+        "title": "Non aprire a schermo intero su",
+        "desc": "Salta lo schermo intero su queste dimensioni, ad esempio per aprirlo su un tablet a parete ma non sui telefoni.",
+        "summary": "Lo schermo intero non si aprirà su:"
+      },
       "action_buttons": {
         "title": "Action Buttons",
         "desc": "Buttons over the feed that also show in fullscreen, such as unlocking the front door. Locks unlock or lock, covers open or close, buttons and scripts run, and anything else toggles.",

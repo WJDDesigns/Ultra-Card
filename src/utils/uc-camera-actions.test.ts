@@ -4,6 +4,9 @@ import {
   cameraActionIsActive,
   cameraActionNeedsConfirm,
   cameraActionService,
+  cameraFullscreenTriggerAllowsUser,
+  cameraFullscreenTriggerFiring,
+  cameraFullscreenTriggerShouldOpen,
   cameraLiveTriggerState,
   runCameraAction,
 } from './uc-camera-actions';
@@ -89,5 +92,52 @@ describe('camera live trigger', () => {
     expect(cameraLiveTriggerState(hass, 'event.ding', 60, now)).toEqual({ live: false });
     expect(cameraLiveTriggerState(hass, 'event.missing', 60, now)).toEqual({ live: false });
     expect(cameraLiveTriggerState(hass, undefined, 60, now)).toEqual({ live: false });
+  });
+});
+
+describe('fullscreen trigger', () => {
+  const now = Date.parse('2026-11-08T12:00:00Z');
+
+  it('keys event entities by the time they fired', () => {
+    const hass = hassWith({ 'event.ding': { state: '2026-11-08T11:59:50Z' } });
+    expect(cameraFullscreenTriggerFiring(hass, 'event.ding')).toEqual({
+      key: '2026-11-08T11:59:50Z',
+      firedAt: Date.parse('2026-11-08T11:59:50Z'),
+    });
+  });
+
+  it('keys on/off entities by when they turned on and is idle while off', () => {
+    const hass = hassWith({
+      'binary_sensor.ring': { state: 'on', last_changed: '2026-11-08T11:59:00Z' },
+      'binary_sensor.off': { state: 'off', last_changed: '2026-11-08T11:59:00Z' },
+    });
+    expect(cameraFullscreenTriggerFiring(hass, 'binary_sensor.ring').key).toBe(
+      'on@2026-11-08T11:59:00Z'
+    );
+    expect(cameraFullscreenTriggerFiring(hass, 'binary_sensor.off')).toEqual({});
+    expect(cameraFullscreenTriggerFiring(hass, 'binary_sensor.missing')).toEqual({});
+  });
+
+  it('opens on a new firing but not on the same one twice', () => {
+    expect(cameraFullscreenTriggerShouldOpen({ key: 'b' }, 'a', false, now)).toBe(true);
+    expect(cameraFullscreenTriggerShouldOpen({ key: 'b' }, 'b', false, now)).toBe(false);
+    expect(cameraFullscreenTriggerShouldOpen({}, 'a', false, now)).toBe(false);
+  });
+
+  it('only opens on dashboard load when the firing is recent', () => {
+    expect(
+      cameraFullscreenTriggerShouldOpen({ key: 'x', firedAt: now - 10_000 }, undefined, true, now)
+    ).toBe(true);
+    expect(
+      cameraFullscreenTriggerShouldOpen({ key: 'x', firedAt: now - 600_000 }, undefined, true, now)
+    ).toBe(false);
+  });
+
+  it('limits to chosen users', () => {
+    expect(cameraFullscreenTriggerAllowsUser(undefined, 'u1')).toBe(true);
+    expect(cameraFullscreenTriggerAllowsUser({ mode: 'show', users: ['u1'] }, 'u1')).toBe(true);
+    expect(cameraFullscreenTriggerAllowsUser({ mode: 'show', users: ['u1'] }, 'u2')).toBe(false);
+    expect(cameraFullscreenTriggerAllowsUser({ mode: 'hide', users: ['u1'] }, 'u1')).toBe(false);
+    expect(cameraFullscreenTriggerAllowsUser({ mode: 'hide', users: ['u1'] }, 'u2')).toBe(true);
   });
 });

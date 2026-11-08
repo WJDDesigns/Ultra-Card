@@ -132,3 +132,65 @@ export function cameraLiveTriggerState(
   const until = changed + holdMs;
   return until > now ? { live: true, until } : { live: false };
 }
+
+/** A trigger that fired this long ago (by HA's clock) still opens fullscreen on first sight. */
+export const FULLSCREEN_TRIGGER_FRESH_MS = 60_000;
+
+/** Seconds a triggered fullscreen stays open before closing itself, unless configured. */
+export const DEFAULT_FULLSCREEN_TRIGGER_CLOSE = 60;
+
+/**
+ * Identifies one firing of a fullscreen trigger.
+ *
+ * `key` changes every time the entity fires (an event's timestamp, or the moment an on/off entity
+ * turned on) and is undefined while the trigger is idle. `firedAt` is when that happened, so a
+ * dashboard opened long after the ring does not pop up a stale fullscreen.
+ */
+export function cameraFullscreenTriggerFiring(
+  hass: HomeAssistant | undefined,
+  entityId: string | undefined
+): { key?: string; firedAt?: number } {
+  if (!entityId || !hass?.states) return {};
+  const stateObj = hass.states[entityId] as EntityLike | undefined;
+  if (!stateObj || stateObj.state === 'unavailable' || stateObj.state === 'unknown') return {};
+
+  if (domainOf(entityId) === 'event') {
+    const fired = Date.parse(stateObj.state);
+    return Number.isFinite(fired) ? { key: stateObj.state, firedAt: fired } : {};
+  }
+
+  if (!ON_STATES.has(stateObj.state)) return {};
+  const changed = stateObj.last_changed ? Date.parse(stateObj.last_changed) : NaN;
+  return {
+    key: `on@${stateObj.last_changed || ''}`,
+    ...(Number.isFinite(changed) ? { firedAt: changed } : {}),
+  };
+}
+
+/**
+ * Whether a fullscreen trigger should open now, given the key seen on the previous render.
+ *
+ * A firing seen change live always opens. On the first render after the dashboard loads there is
+ * nothing to compare with, so it only opens when the firing is recent.
+ */
+export function cameraFullscreenTriggerShouldOpen(
+  firing: { key?: string; firedAt?: number },
+  previousKey: string | undefined,
+  firstSight: boolean,
+  now: number = Date.now()
+): boolean {
+  if (!firing.key) return false;
+  if (!firstSight) return firing.key !== previousKey;
+  return firing.firedAt !== undefined && now - firing.firedAt <= FULLSCREEN_TRIGGER_FRESH_MS;
+}
+
+/** Whether this signed-in user may get the triggered fullscreen. Empty list means everyone. */
+export function cameraFullscreenTriggerAllowsUser(
+  filter: { mode?: string | undefined; users?: string[] | undefined } | undefined,
+  userId: string | undefined
+): boolean {
+  if (!filter?.users?.length) return true;
+  if (!userId) return false;
+  const listed = filter.users.includes(userId);
+  return filter.mode === 'hide' ? !listed : listed;
+}
