@@ -1802,7 +1802,7 @@
       },
       "label_position": {
         "title": "Label-Position",
-        "desc": "Wo das Label relativ zum Dropdown zu positioniert wird."
+        "desc": "Wo das Label relativ zum Dropdown positioniert wird."
       },
       "label_positions": {
         "top": "Über Dropdown",
@@ -4903,7 +4903,7 @@
       "schedule_section_desc": "Wird von jeder Pflanze verwendet, die keinen eigenen Intervall festlegt hat.",
       "season_shoulder": "Nebensaison",
       "season_summer": "Sommer",
-      "season_tooltip": "saisonale Anpassung ist aktiviert: {Phase}, Intervalle × {Faktor}",
+      "season_tooltip": "Saisonale Anpassung ist aktiviert: {phase}, Intervalle ×{factor}",
       "season_winter": "Winter",
       "seasonal_adjust": "saisonale Anpassung",
       "seasonal_adjust_desc": "Verlängern Sie die Bewässerungsintervalle im Winter und verkürzen Sie sie im Sommer. Die Umstellung erfolgt allmählich über das Jahr hinweg und nicht schlagartig zur Sonnenwende; die Hemisphäre wird anhand Ihres Home Assistant-Standorts ermittelt.",
