@@ -1,5 +1,38 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta8
+
+The eighth 3.14.4 beta lets a camera jump to fullscreen when the doorbell rings, gives the Calendar per-view settings and event rules, adds a 24h option to the Activity Feed and fixes a handful of bugs. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+A big thank you to larrysansan, who found, tested or asked for almost everything in this beta and translated the German side too. Seriously, take a day off and go touch some grass. The bug reports will still be here when you get back 🌱
+
+### ✨ New Features
+
+- **Camera: open fullscreen when something happens** - New Open Fullscreen When setting under Tap Camera Opens Fullscreen. Pick an event, binary sensor, input boolean or switch (a doorbell ring, for example) and the camera opens fullscreen each time it fires, then closes after Close After seconds (60 by default, 0 keeps it open). Choose which users it opens for and which devices it skips. Rings older than a minute don't pop up when the dashboard loads. Thanks to larrysansan for the idea
+- **Calendar: settings per view** - The editor has a section for each view the card offers, with only that view's settings. Turn on per-view Event Display to give each view its own time, location and description choices
+- **Calendar: event rules** - Match events by name (contains or exact) and rename them, add an icon or give them a colour
+- **Calendar: time and weather in the header** - Show the current time, the weather, or both in the calendar header
+- **Activity Feed: 24h time** - New Time Format setting (Auto, 24h or 12h) for absolute times. Auto follows your Home Assistant profile, so German users get 18:51 instead of 6:51 PM. Thanks to larrysansan for the idea
+
+### 🔧 Improvements
+
+- **Bosch, Siemens and Neff appliances: cleaner settings** - Program and setting dropdowns show Home Assistant's translated names (for example "Trocknen: Zeitprogramm Kalt" instead of a long API key), labels drop the brand and device prefix ("Finish time" instead of "Bosch Trockner - Finish time"), the program picker is simply called Program, and each dropdown shows the entity's icon. Thanks to larrysansan for testing with a real dryer
+- **Calendar: long event names** - New Cut off / Wrap choice for event names inside month days
+- **German translation** - Updated German texts from larrysansan, plus fixed placeholders in the plant care tooltip
+- **Dependency updates** - Routine updates to the libraries the card is built with
+
+### 🐛 Bug Fixes
+
+- **Graphs: Fill Area wouldn't turn off** - Turning Fill Area off left the fill on the chart until another setting changed. It now updates straight away
+- **Graphs: entity options scrolled sideways** - In a narrow editor the Show Points / Fill Area and Line Width / Line Style rows no longer overflow; they stack when there isn't room
+- **Pro: Start with Empty Card ignored** - With Start with Empty Card turned on in the Hub, new Ultra Cards still got the starter modules. New cards now start empty. Thanks to larrysansan for reporting
+- **Calendar: Show Location off was ignored** - The day list under the month showed locations anyway. Show Event Time now applies there too, and the Day view honours time, end time and description
+- **Calendar: unreadable Add event dropdown** - The calendar picker in the Add event form showed light text on white in dark themes
+- **Calendar: editor preview stuck on the old calendar** - Changing a calendar's entity in the editor now updates the preview
+- **Calendar: Show Event Count with event names** - It did nothing when Events in Days was set to names; it now shows a small count next to the date
+
 ## Version 3.14.4-beta7
 
 The seventh 3.14.4 beta gives the Calendar a big update, adds Bosch, Siemens and Neff Home Connect support to the appliance modules, and keeps Navigation icon colours live. This is a pre-release for testing — please report anything odd on GitHub or Discord.
