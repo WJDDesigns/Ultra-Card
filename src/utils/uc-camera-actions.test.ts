@@ -95,6 +95,18 @@ describe('camera live trigger', () => {
   });
 });
 
+describe('live trigger uses the time this device saw the ring', () => {
+  it('stays live for the hold after an event seen now, even if HA stamped it long ago', () => {
+    const now = Date.parse('2026-11-08T12:00:00Z');
+    const hass = hassWith({ 'event.ding': { state: '2026-11-08T11:50:00Z' } });
+    expect(cameraLiveTriggerState(hass, 'event.ding', 60, now).live).toBe(false);
+    expect(cameraLiveTriggerState(hass, 'event.ding', 60, now, now - 5_000)).toEqual({
+      live: true,
+      until: now + 55_000,
+    });
+  });
+});
+
 describe('fullscreen trigger', () => {
   const now = Date.parse('2026-11-08T12:00:00Z');
 

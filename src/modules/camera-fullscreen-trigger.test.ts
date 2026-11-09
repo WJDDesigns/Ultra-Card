@@ -25,7 +25,7 @@ describe('camera Open Fullscreen When', () => {
   afterEach(() => vi.useRealTimers());
 
   const run = (m: any, hass: any) => {
-    mod._checkFullscreenTrigger(m, hass, mod._runtimeFor(m.id));
+    mod._checkFullscreenTrigger(m, hass);
     vi.advanceTimersByTime(1);
   };
 
@@ -65,5 +65,28 @@ describe('camera Open Fullscreen When', () => {
     const close = mod.createFullscreenModal.mock.results[0].value;
     vi.advanceTimersByTime(5000);
     expect(close).toHaveBeenCalled();
+  });
+
+  it('opens again after the tile player is torn down, even when the clocks disagree', () => {
+    // Home Assistant's clock is ten minutes behind this device, so its timestamps look stale.
+    const m = { id: 'c3', type: 'camera', fullscreen_trigger_entity: 'binary_sensor.ring' };
+    run(m, hassAt('off', '2026-11-08T11:40:00Z'));
+    run(m, hassAt('on', '2026-11-08T11:50:00Z'));
+    expect(opened).toBe(1);
+    mod._runtime.delete('c3');
+    run(m, hassAt('off', '2026-11-08T11:50:05Z'));
+    run(m, hassAt('on', '2026-11-08T11:50:30Z'));
+    expect(opened).toBe(2);
+  });
+
+  it('opens on every new event even when the event time looks old', () => {
+    const m = { id: 'c4', type: 'camera', fullscreen_trigger_entity: 'event.ding' };
+    const ev = (t: string) =>
+      ({ states: { 'event.ding': { state: t } }, user: { id: 'u1' } }) as any;
+    run(m, ev('2026-11-08T11:00:00.000+00:00'));
+    expect(opened).toBe(0);
+    run(m, ev('2026-11-08T11:01:00.000+00:00'));
+    run(m, ev('2026-11-08T11:02:00.000+00:00'));
+    expect(opened).toBe(2);
   });
 });
