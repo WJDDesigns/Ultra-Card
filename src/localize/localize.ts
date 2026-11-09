@@ -1,4 +1,5 @@
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
+import { loadWithCacheBust } from '../utils/uc-chunk-retry';
 
 /**
  * Every locale, English included, is its own chunk fetched the first time
@@ -42,7 +43,40 @@ export const UC_LOCALE_LOADED_EVENT = 'uc-locale-loaded';
 
 const languages: Record<string, Dict> = {};
 const pending = new Map<string, Promise<void>>();
-const failed = new Set<string>();
+/** Language -> time of the last failed load, so a later call can try again. */
+const failedAt = new Map<string, number>();
+
+/**
+ * Waits between attempts at one locale chunk. A single dropped request (phone
+ * waking up, HA restarting, flaky Wi-Fi) used to leave the dictionary missing
+ * until a page reload and showed a reload toast for a failure nobody could see.
+ */
+let retryDelaysMs: readonly number[] = [1500, 5000];
+/** After every attempt failed, wait this long before a render may try again. */
+let failureCooldownMs = 60_000;
+
+const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+function isCoolingDown(key: string): boolean {
+  const at = failedAt.get(key);
+  return at !== undefined && Date.now() - at < failureCooldownMs;
+}
+
+async function loadWithRetry(key: string): Promise<LocaleModule> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
+    if (attempt > 0) await sleep(retryDelaysMs[attempt - 1]);
+    try {
+      // A retry must use a new URL: the browser remembers the failed one.
+      return await (attempt === 0
+        ? localeLoaders[key]()
+        : loadWithCacheBust(attempt, localeLoaders[key]));
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
 
 /** Every language that can be served, loaded or not. */
 export const SUPPORTED_LANGUAGES: readonly string[] = Object.freeze(Object.keys(localeLoaders));
@@ -67,28 +101,33 @@ function unwrap(mod: LocaleModule): Dict {
 
 /**
  * Start (or join) the fetch for a language chunk. Resolves once the dictionary
- * is available, or immediately for unknown / already-loaded languages.
+ * is available, or immediately for unknown / already-loaded languages. Never
+ * rejects: on failure the inline fallbacks (English) stay in use.
  */
 export function ensureLocaleLoaded(lang: string): Promise<void> {
   const key = resolveLoaderKey(lang);
-  if (!key || languages[key] || failed.has(key)) return Promise.resolve();
+  if (!key || languages[key] || isCoolingDown(key)) return Promise.resolve();
 
   const inflight = pending.get(key);
   if (inflight) return inflight;
 
-  const p = localeLoaders[key]()
+  const p = loadWithRetry(key)
     .then(mod => {
       languages[key] = unwrap(mod);
       pending.delete(key);
+      failedAt.delete(key);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(UC_LOCALE_LOADED_EVENT, { detail: { lang: key } }));
       }
     })
     .catch(err => {
       pending.delete(key);
-      // Don't hammer the network on every render; English fallback is acceptable.
-      failed.add(key);
-      reportChunkLoadFailure(err, `locale ${key}`);
+      // Don't hammer the network on every render; try again after the cooldown.
+      failedAt.set(key, Date.now());
+      // Every call site carries its English text, so a missing dictionary changes
+      // nothing on screen for English and leaves other languages in English.
+      // Log it, but keep the reload toast for failures the user can see.
+      reportChunkLoadFailure(err, `locale ${key}`, { notify: false });
       if (process.env.NODE_ENV !== 'production') {
         console.warn(`Ultra Card: failed to load locale "${key}"`, err);
       }
@@ -140,7 +179,7 @@ export function localize(key: string, lang: string, fallback?: string): string {
   if (lang && !isLocaleLoaded(lang)) {
     void ensureLocaleLoaded(lang);
   }
-  if (!languages[DEFAULT_LANG] && !pending.has(DEFAULT_LANG) && !failed.has(DEFAULT_LANG)) {
+  if (!languages[DEFAULT_LANG] && !pending.has(DEFAULT_LANG) && !isCoolingDown(DEFAULT_LANG)) {
     void ensureLocaleLoaded(DEFAULT_LANG);
   }
 
@@ -186,7 +225,24 @@ export function __resetLocalesForTests(): void {
   for (const k of [...pending.keys()]) {
     if (k !== DEFAULT_LANG) pending.delete(k);
   }
-  failed.clear();
+  failedAt.clear();
+  retryDelaysMs = [1500, 5000];
+  failureCooldownMs = 60_000;
+}
+
+/** Test-only: swap a locale loader and the retry timings. Returns a restore function. */
+export function __setLocaleLoaderForTests(
+  key: string,
+  loader: () => Promise<LocaleModule>,
+  timings: { retryDelaysMs?: number[]; failureCooldownMs?: number } = {}
+): () => void {
+  const original = localeLoaders[key];
+  localeLoaders[key] = loader;
+  if (timings.retryDelaysMs) retryDelaysMs = timings.retryDelaysMs;
+  if (timings.failureCooldownMs !== undefined) failureCooldownMs = timings.failureCooldownMs;
+  return () => {
+    localeLoaders[key] = original;
+  };
 }
 
 /**

@@ -151,10 +151,30 @@ function showToast(message: string): void {
  * Report a failed lazy import. Returns `true` when the error was a chunk-load
  * failure (so callers can adjust their own UI), `false` for anything else.
  * Only the first failure per page shows a toast; later ones are logged.
+ * `notify: false` logs without a toast, for failures that change nothing visible.
  */
-export function reportChunkLoadFailure(err: unknown, context: string): boolean {
+export function reportChunkLoadFailure(
+  err: unknown,
+  context: string,
+  options: { notify?: boolean } = {}
+): boolean {
   if (!isChunkLoadError(err)) return false;
   if (typeof window === 'undefined' || typeof document === 'undefined') return true;
+
+  // Callers whose failure changes nothing visible (a locale chunk: every string
+  // has its English text inline) log only. They must not use up the one toast
+  // per page, which belongs to a failure the user can actually see.
+  if (options.notify === false) {
+    void classifyFailure(err).then(kind => {
+      console.warn(
+        `[UltraCard] Chunk load failed (${context}): ${kind}. The card keeps working with ` +
+          `its built-in English text. If this persists after a reload, redownload Ultra Card ` +
+          `in HACS / Marketplace so every uc-*.js file is present next to ultra-card.js.`,
+        err
+      );
+    });
+    return true;
+  }
 
   if (notified) {
     console.warn(`[UltraCard] Chunk load failed (${context}); reload pending.`, err);

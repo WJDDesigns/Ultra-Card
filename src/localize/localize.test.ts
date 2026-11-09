@@ -8,6 +8,7 @@ import {
   preloadDefaultLocale,
   UC_LOCALE_LOADED_EVENT,
   __resetLocalesForTests,
+  __setLocaleLoaderForTests,
 } from './localize';
 
 const KEY = 'editor.tabs.settings'; // en: "Settings", de: "Einstellungen"
@@ -75,5 +76,67 @@ describe('localize lazy locales', () => {
     await expect(ensureLocaleLoaded('xx')).resolves.toBeUndefined();
     expect(isLocaleLoaded('xx')).toBe(true);
     expect(localize(KEY, 'xx')).toBe(localize(KEY, 'en'));
+  });
+
+  describe('when a locale chunk fails to load', () => {
+    const chunkError = () =>
+      new TypeError(
+        'Failed to fetch dynamically imported module: http://ha/hacsfiles/Ultra-Card/uc-locale-pl.12345678.js'
+      );
+
+    it('retries and recovers from a dropped request without a reload', async () => {
+      let calls = 0;
+      const restore = __setLocaleLoaderForTests(
+        'pl',
+        async () => {
+          calls++;
+          if (calls === 1) throw chunkError();
+          return { default: { editor: { tabs: { settings: 'Ustawienia' } } } };
+        },
+        { retryDelaysMs: [1, 1] }
+      );
+      try {
+        await ensureLocaleLoaded('pl');
+        expect(calls).toBe(2);
+        expect(isLocaleLoaded('pl')).toBe(true);
+        expect(localize(KEY, 'pl')).toBe('Ustawienia');
+      } finally {
+        restore();
+      }
+    });
+
+    it('keeps the inline text, logs without a toast, and tries again after the cooldown', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.stubGlobal('fetch', vi.fn(async () => ({ status: 200 }) as Response));
+      let calls = 0;
+      const restore = __setLocaleLoaderForTests(
+        'pl',
+        async () => {
+          calls++;
+          throw chunkError();
+        },
+        { retryDelaysMs: [1, 1], failureCooldownMs: 30 }
+      );
+      try {
+        await expect(ensureLocaleLoaded('pl')).resolves.toBeUndefined();
+        expect(calls).toBe(3);
+        expect(isLocaleLoaded('pl')).toBe(false);
+        expect(localize('some.key', 'pl', 'Inline text')).toBe('Inline text');
+        // Within the cooldown nothing is refetched.
+        await ensureLocaleLoaded('pl');
+        expect(calls).toBe(3);
+        await new Promise(r => setTimeout(r, 10));
+        expect(document.getElementById('uc-toast-live-region')).toBeNull();
+        expect(warn.mock.calls.some(c => String(c[0]).includes('locale pl'))).toBe(true);
+
+        await new Promise(r => setTimeout(r, 40));
+        await ensureLocaleLoaded('pl');
+        expect(calls).toBe(6);
+      } finally {
+        restore();
+        vi.unstubAllGlobals();
+        warn.mockRestore();
+      }
+    });
   });
 });
