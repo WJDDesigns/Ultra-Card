@@ -101,7 +101,77 @@ describe('calendar module', () => {
   });
 });
 
+describe('calendar day details', () => {
+  const todayKey = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  async function detailsFor(m: CalendarModule, ctx: 'dashboard' | 'live' = 'live') {
+    const { mod } = setup();
+    mod.renderPreview(m, hass, undefined, ctx);
+    await flush();
+    await flush();
+    (mod as any)._stateFor(m.id).selectedDateKey = todayKey();
+    const el = document.createElement('div');
+    render(mod.renderPreview(m, hass, undefined, ctx) as any, el);
+    return { mod, el };
+  }
+
+  it('hides time, location and calendar name when turned off', async () => {
+    const m = {
+      ...baseModule('calendar.trash'),
+      show_event_time: false,
+      show_event_location: false,
+      show_calendar_name: false,
+    } as CalendarModule;
+    const { el } = await detailsFor(m);
+    const details = el.querySelector('.uc-calendar-details')!;
+    expect(details.textContent).toContain('Restmüll');
+    expect(details.querySelectorAll('.uc-calendar-details-meta').length).toBe(0);
+    expect(details.querySelector('.uc-calendar-details-cal')).toBeNull();
+  });
+
+  it('popup mode shows the day over the card in the editor preview, not under the grid', async () => {
+    const m = { ...baseModule('calendar.trash'), month_day_details_mode: 'popup' } as CalendarModule;
+    const { el } = await detailsFor(m);
+    expect(el.querySelector('.uc-calendar-month-view .uc-calendar-details')).toBeNull();
+    const popup = el.querySelector('.uc-calendar-popup');
+    expect(popup?.textContent).toContain('Restmüll');
+    expect(popup?.querySelector('.uc-calendar-details-close')).not.toBeNull();
+  });
+
+  it('popup mode on the dashboard opens over the page and closes', async () => {
+    const m = { ...baseModule('calendar.trash'), id: 'calpop', month_day_details_mode: 'popup' } as CalendarModule;
+    const { mod } = await detailsFor(m, 'dashboard');
+    await flush();
+    const portal = document.querySelector('.uc-calendar-popup-portal');
+    expect(portal?.textContent).toContain('Restmüll');
+    (portal!.querySelector('.uc-calendar-details-close') as HTMLElement).click();
+    expect(document.querySelector('.uc-calendar-popup-portal')).toBeNull();
+    expect((mod as any)._stateFor('calpop').selectedDateKey).toBeUndefined();
+  });
+});
+
 describe('calendar editor', () => {
+  it('shared Event Display changes reach views still on the shared value', () => {
+    const { mod } = setup();
+    const m = {
+      ...baseModule('calendar.trash'),
+      event_display_per_view: true,
+      view_event_display: {
+        month: { show_event_location: true, show_event_time: true },
+        day: { show_event_location: false },
+      },
+    } as CalendarModule;
+    const updates: Partial<CalendarModule>[] = [];
+    (mod as any)._setSharedEventDisplay(m, 'show_event_location', false, (u: Partial<CalendarModule>) => updates.push(u));
+    expect(updates[0].show_event_location).toBe(false);
+    expect(updates[0].view_event_display?.month?.show_event_location).toBe(false);
+    expect(updates[0].view_event_display?.month?.show_event_time).toBe(true);
+    expect(updates[0].view_event_display?.day?.show_event_location).toBe(false);
+  });
+
   it('shows one section per offered view and locks per-view event settings until turned on', () => {
     const { mod } = setup();
     const m = {
