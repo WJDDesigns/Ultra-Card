@@ -32,6 +32,7 @@ import {
   cameraFullscreenTriggerAllowsUser,
   cameraFullscreenTriggerFiring,
   cameraFullscreenTriggerShouldOpen,
+  cameraTriggerChangeKey,
   DEFAULT_FULLSCREEN_TRIGGER_CLOSE,
   runCameraAction,
 } from '../utils/uc-camera-actions';
@@ -81,10 +82,6 @@ interface CameraRuntimeState {
   /** Repaint scheduled for when a triggered live stream drops back to its normal mode. */
   triggerTimer?: ReturnType<typeof setTimeout> | undefined;
   triggerUntil?: number | undefined;
-  /** Last "Open Fullscreen When" firing seen, so each ring opens fullscreen once. */
-  fullscreenTriggerKey?: string | undefined;
-  fullscreenTriggerSeen?: boolean | undefined;
-  fullscreenCloseTimer?: ReturnType<typeof setTimeout> | undefined;
   /** Action button waiting for its confirming second tap. */
   confirmButton?: string | undefined;
   confirmTimer?: ReturnType<typeof setTimeout> | undefined;
@@ -93,6 +90,45 @@ interface CameraRuntimeState {
 export class UltraCameraModule extends BaseUltraModule {
   private _templateService: TemplateService | undefined;
   private _runtime: Map<string, CameraRuntimeState> = new Map();
+  /**
+   * What each trigger last looked like, per module and purpose. Kept apart from `_runtime`, which
+   * is dropped whenever the tile's player is torn down; losing this made the next ring look like a
+   * first sighting, which depends on the device and server clocks agreeing.
+   */
+  private _triggerMemory: Map<string, { key?: string | undefined; seenAt?: number | undefined }> =
+    new Map();
+  private _fullscreenCloseTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+
+  /**
+   * Records a trigger's current change key and reports whether it changed since the last render.
+   * `seenAt` is when this device saw the latest change, or undefined if it was already in that
+   * state when the dashboard loaded.
+   */
+  private _observeTrigger(
+    slot: string,
+    hass: HomeAssistant,
+    entityId: string
+  ): { firstSight: boolean; changed: boolean; previousKey?: string; seenAt?: number } {
+    const id = `${slot}|${entityId}`;
+    const key = cameraTriggerChangeKey(hass, entityId);
+    const memory = this._triggerMemory.get(id);
+    if (!memory) {
+      this._triggerMemory.set(id, { key });
+      return { firstSight: true, changed: false };
+    }
+    const changed = memory.key !== key;
+    const previousKey = memory.key;
+    if (changed) {
+      memory.key = key;
+      memory.seenAt = Date.now();
+    }
+    return {
+      firstSight: false,
+      changed,
+      ...(previousKey !== undefined ? { previousKey } : {}),
+      ...(memory.seenAt !== undefined ? { seenAt: memory.seenAt } : {}),
+    };
+  }
   private _playerRefs: Map<string, (element: Element | undefined) => void> = new Map();
   private _visibilityListener: (() => void) | undefined;
   private _hiddenAt: number | undefined;
@@ -1385,7 +1421,15 @@ export class UltraCameraModule extends BaseUltraModule {
         : cameraLiveTriggerState(
             hass,
             cameraModule.live_trigger_entity,
-            cameraModule.live_trigger_hold
+            cameraModule.live_trigger_hold,
+            Date.now(),
+            cameraModule.live_trigger_entity
+              ? this._observeTrigger(
+                  `live:${cameraModule.id}`,
+                  hass,
+                  cameraModule.live_trigger_entity
+                ).seenAt
+              : undefined
           );
     this._scheduleTriggerExpiry(state, trigger.until);
     const viewMode: CameraViewMode = trigger.live ? 'live' : configuredMode;
@@ -1407,7 +1451,7 @@ export class UltraCameraModule extends BaseUltraModule {
     const entity = cameraEntity ? hass.states[cameraEntity] : null;
     const isUnavailable = !entity || entity.state === 'unavailable';
     state.renderedEntity = cameraEntity;
-    this._checkFullscreenTrigger(cameraModule, hass, state);
+    this._checkFullscreenTrigger(cameraModule, hass);
 
     // The player is only rebuilt when something it genuinely depends on changes. Re-keying it on
     // unrelated state updates tears the stream down and restarts the handshake.
@@ -1898,21 +1942,19 @@ export class UltraCameraModule extends BaseUltraModule {
    */
   private _checkFullscreenTrigger(
     module: CameraModule,
-    hass: HomeAssistant,
-    state: CameraRuntimeState
+    hass: HomeAssistant
   ): void {
     const entityId = module.fullscreen_trigger_entity;
-    if (!entityId) {
-      state.fullscreenTriggerKey = undefined;
-      state.fullscreenTriggerSeen = false;
-      return;
-    }
+    if (!entityId) return;
+    const seen = this._observeTrigger(`fullscreen:${module.id}`, hass, entityId);
+    if (!seen.firstSight && !seen.changed) return;
     const firing = cameraFullscreenTriggerFiring(hass, entityId);
-    const firstSight = !state.fullscreenTriggerSeen;
-    const previousKey = state.fullscreenTriggerKey;
-    state.fullscreenTriggerSeen = true;
-    state.fullscreenTriggerKey = firing.key;
-    if (!cameraFullscreenTriggerShouldOpen(firing, previousKey, firstSight)) return;
+    // A change seen live always counts; the clock is only consulted on the first render, where
+    // there is nothing to compare with.
+    const shouldOpen = seen.firstSight
+      ? cameraFullscreenTriggerShouldOpen(firing, undefined, true)
+      : !!firing.key;
+    if (!shouldOpen) return;
     if (this._isEditorOpen()) return;
     if (
       !cameraFullscreenTriggerAllowsUser(
@@ -1928,14 +1970,18 @@ export class UltraCameraModule extends BaseUltraModule {
     // Opened after the render pass so the overlay is never built mid-render.
     setTimeout(() => {
       const close = this.createFullscreenModal(module);
-      if (state.fullscreenCloseTimer) clearTimeout(state.fullscreenCloseTimer);
-      state.fullscreenCloseTimer = undefined;
+      const previous = this._fullscreenCloseTimers.get(module.id);
+      if (previous) clearTimeout(previous);
+      this._fullscreenCloseTimers.delete(module.id);
       const seconds = module.fullscreen_trigger_close ?? DEFAULT_FULLSCREEN_TRIGGER_CLOSE;
       if (close && Number.isFinite(seconds) && seconds > 0) {
-        state.fullscreenCloseTimer = setTimeout(() => {
-          state.fullscreenCloseTimer = undefined;
-          close();
-        }, seconds * 1000);
+        this._fullscreenCloseTimers.set(
+          module.id,
+          setTimeout(() => {
+            this._fullscreenCloseTimers.delete(module.id);
+            close();
+          }, seconds * 1000)
+        );
       }
     }, 0);
   }

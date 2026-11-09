@@ -100,12 +100,16 @@ export async function runCameraAction(
  * state, so the stream stays live for `holdSeconds` after that. On/off entities stay live while
  * on and for `holdSeconds` after they turn off. `until` is when a held stream drops back, so the
  * caller can schedule a repaint for it.
+ *
+ * `observedAt` is when this device saw the entity's latest change. When given it is used instead
+ * of Home Assistant's timestamp, so a device whose clock differs from the server's still goes live.
  */
 export function cameraLiveTriggerState(
   hass: HomeAssistant | undefined,
   entityId: string | undefined,
   holdSeconds: number | undefined,
-  now: number = Date.now()
+  now: number = Date.now(),
+  observedAt?: number
 ): { live: boolean; until?: number } {
   if (!entityId || !hass?.states) return { live: false };
   const stateObj = hass.states[entityId] as EntityLike | undefined;
@@ -119,7 +123,7 @@ export function cameraLiveTriggerState(
     ) * 1000;
 
   if (domainOf(entityId) === 'event') {
-    const fired = Date.parse(stateObj.state);
+    const fired = observedAt ?? Date.parse(stateObj.state);
     if (!Number.isFinite(fired)) return { live: false };
     const until = fired + holdMs;
     return until > now ? { live: true, until } : { live: false };
@@ -127,7 +131,7 @@ export function cameraLiveTriggerState(
 
   if (ON_STATES.has(stateObj.state)) return { live: true };
 
-  const changed = stateObj.last_changed ? Date.parse(stateObj.last_changed) : NaN;
+  const changed = observedAt ?? (stateObj.last_changed ? Date.parse(stateObj.last_changed) : NaN);
   if (!Number.isFinite(changed)) return { live: false };
   const until = changed + holdMs;
   return until > now ? { live: true, until } : { live: false };
@@ -193,4 +197,20 @@ export function cameraFullscreenTriggerAllowsUser(
   if (!userId) return false;
   const listed = filter.users.includes(userId);
   return filter.mode === 'hide' ? !listed : listed;
+}
+
+/**
+ * Changes whenever a trigger entity fires or flips: an event's timestamp, or an on/off entity's
+ * state and the moment it changed. Used to notice a new ring by comparison rather than by clock.
+ */
+export function cameraTriggerChangeKey(
+  hass: HomeAssistant | undefined,
+  entityId: string | undefined
+): string | undefined {
+  if (!entityId || !hass?.states) return undefined;
+  const stateObj = hass.states[entityId] as EntityLike | undefined;
+  if (!stateObj) return undefined;
+  return domainOf(entityId) === 'event'
+    ? stateObj.state
+    : `${stateObj.state}@${stateObj.last_changed || ''}`;
 }
