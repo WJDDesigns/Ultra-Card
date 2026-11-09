@@ -143,14 +143,47 @@ export function renderEventDetailsList(
           ${module.show_event_description && event.description
             ? html`<div class="uc-calendar-details-desc">${event.description}</div>`
             : nothing}
-          <div class="uc-calendar-details-cal">
-            <span class="uc-calendar-details-dot" style="background: ${event.calendarColor};"></span>
-            ${event.calendarName}
-          </div>
+          ${module.show_calendar_name !== false
+            ? html`<div class="uc-calendar-details-cal">
+                <span class="uc-calendar-details-dot" style="background: ${event.calendarColor};"></span>
+                ${event.calendarName}
+              </div>`
+            : nothing}
         </div>
       </div>
     `
   )}`;
+}
+
+/** A day's heading (date + weather) and its events: shown under the month or in a popup. */
+export function renderDayDetailsContent(
+  context: CalendarViewContext,
+  date: Date,
+  onClose?: () => void
+): TemplateResult {
+  const lang = ctxLang(context);
+  return html`
+    <div class="uc-calendar-details-header">
+      <span>${date.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+      <span class="uc-calendar-details-header-end">
+        ${renderDayWeather(context, date, 'inline')}
+        ${onClose
+          ? html`<button
+              class="uc-calendar-details-close"
+              type="button"
+              aria-label=${localize('editor.calendar.close', lang, 'Close')}
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                onClose();
+              }}
+            >
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>`
+          : nothing}
+      </span>
+    </div>
+    ${renderEventDetailsList(context, CalendarService.getEventsForDate(context.events, date))}
+  `;
 }
 
 // ==========================================
@@ -403,6 +436,7 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
   const weekdays = getWeekdayHeaders(module.first_day_of_week || 'sunday', module.language || hass?.locale?.language);
   const showTitles = module.month_event_display === 'titles';
   const showDetails = module.month_show_day_details !== false;
+  const detailsInPopup = module.month_day_details_mode === 'popup';
   const selectedKey = showDetails ? context.selectedDateKey : undefined;
   const selectedDay = selectedKey ? days.find(d => CalendarService.getDateKey(d.date) === selectedKey) : undefined;
   const maxTitles = 3;
@@ -509,18 +543,10 @@ export function renderMonthView(context: CalendarViewContext): TemplateResult {
         })}
       </div>
 
-      ${selectedDay
-        ? html`
-            <div class="uc-calendar-details" data-uc-role="pane">
-              <div class="uc-calendar-details-header">
-                <span>
-                  ${selectedDay.date.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' })}
-                </span>
-                ${renderDayWeather(context, selectedDay.date, 'inline')}
-              </div>
-              ${renderEventDetailsList(context, CalendarService.getEventsForDate(events, selectedDay.date))}
-            </div>
-          `
+      ${selectedDay && !detailsInPopup
+        ? html`<div class="uc-calendar-details" data-uc-role="pane">
+            ${renderDayDetailsContent(context, selectedDay.date)}
+          </div>`
         : nothing}
     </div>
   `;
@@ -959,12 +985,14 @@ export function renderGridView(context: CalendarViewContext): TemplateResult {
                   `
                 : ''}
             </div>
-            <div
-              class="uc-calendar-grid-card-calendar"
-              style="color: ${event.calendarColor};"
-            >
-              ${event.calendarName}
-            </div>
+            ${module.show_calendar_name !== false
+              ? html`<div
+                  class="uc-calendar-grid-card-calendar"
+                  style="color: ${event.calendarColor};"
+                >
+                  ${event.calendarName}
+                </div>`
+              : nothing}
           </div>
         `
       )}

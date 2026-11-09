@@ -7781,6 +7781,7 @@ export interface CalendarEventDisplayOptions {
   show_event_location?: boolean | undefined;
   show_event_description?: boolean | undefined;
   show_event_icon?: boolean | undefined;
+  show_calendar_name?: boolean | undefined;
 }
 
 /** Matches events by name and changes how they look. */
@@ -7837,6 +7838,8 @@ export interface CalendarModule extends BaseModule {
   month_event_display?: 'dots' | 'titles' | undefined;
   /** Tapping a day in month view lists that day's events (name, time, location) below the grid. */
   month_show_day_details?: boolean | undefined;
+  /** Where a tapped day's events show: under the month grid (default) or in a popup. */
+  month_day_details_mode?: 'below' | 'popup' | undefined;
   /** Long event names in month cells: cut off with "…" (default) or wrap onto more lines. */
   month_title_fit?: 'truncate' | 'wrap' | undefined;
 
@@ -7893,6 +7896,8 @@ export interface CalendarModule extends BaseModule {
   show_event_location?: boolean | undefined;
   show_event_description?: boolean | undefined;
   show_event_icon?: boolean | undefined;
+  /** Calendar name under each event in the day details and grid cards. Default on. */
+  show_calendar_name?: boolean | undefined;
   time_24h?: boolean | undefined;
   remove_location_country?: boolean | undefined;
   /** Make the event location a link that opens this maps app. */
