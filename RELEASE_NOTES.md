@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta9
+
+The ninth 3.14.4 beta makes doorbell cameras go live and open fullscreen on every ring, adds a popup for a day's events in the Calendar, and stops the "locale en" chunk error. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### ✨ New Features
+
+- **Calendar: day's events in a popup** - Month view has a new Show the Day's Events setting: Under the Month (as before) or Popup. The popup covers the screen and closes with X, a tap outside, Escape or moving to another page. Thanks to larrysansan for the idea
+- **Calendar: Show Calendar Name** - A new toggle hides the calendar name under events in the day details and Grid cards, for all views or per view
+
+### 🐛 Bug Fixes
+
+- **Camera: doorbell didn't go live or reopen fullscreen** - Go Live When and Open Fullscreen When used Home Assistant's timestamp for each ring, so a tablet or phone whose clock differed from the server's stayed on snapshots, and fullscreen didn't open again after closing it and ringing a second time. Every new ring now goes live and opens fullscreen, whatever the device clock says. Thanks to larrysansan for reporting
+- **Calendar: shared Event Display toggles ignored** - With Different Settings per View on, changing the shared Show Event Time, End Time, Location or Description toggles did nothing in the month day details. Views still on the shared value now follow the change, and views set differently keep their own
+- **"Chunk load failure" on the en locale** - If the language file failed to load once (a phone waking up, Home Assistant restarting, flaky Wi-Fi), the card never tried again and showed a reload message. It now retries quietly a couple of times, and the card keeps working in English meanwhile
+
 ## Version 3.14.4-beta8
 
 The eighth 3.14.4 beta lets a camera jump to fullscreen when the doorbell rings, gives the Calendar per-view settings and event rules, adds a 24h option to the Activity Feed and fixes a handful of bugs. This is a pre-release for testing — please report anything odd on GitHub or Discord.
