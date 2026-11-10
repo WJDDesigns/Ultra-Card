@@ -16,6 +16,7 @@ import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { sanitizeRichTextHtml } from '../utils/html-sanitizer';
 import { isLocallyAuthoredConfig } from '../utils/uc-content-trust';
+import { openActionUrl } from '../utils/uc-safe-url';
 
 /** Unified-template output keys the text module reads (`state` is an alias for `state_text`). */
 export const TEXT_TEMPLATE_KEYS = [
@@ -753,11 +754,9 @@ export class UltraTextModule extends BaseUltraModule {
 
     // Handle legacy link first (for backward compatibility)
     if (textModule.link && textModule.link.trim() !== '') {
-      if (textModule.link.startsWith('http') || textModule.link.startsWith('https')) {
-        window.open(textModule.link, '_blank');
-      } else {
-        window.location.href = textModule.link;
-      }
+      // Legacy link: absolute web links open in a new tab, everything else
+      // (dashboard paths, app links) navigates in place.
+      openActionUrl(textModule.link, /^https?:\/\//i.test(textModule.link.trim()) ? '_blank' : '_self');
       return;
     }
 
