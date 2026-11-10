@@ -55,6 +55,20 @@ function isServerSideFailure(error: unknown): boolean {
   return name === 'TimeoutError' || name === 'AbortError';
 }
 
+/**
+ * Text content of an HTML string, entities decoded.
+ *
+ * Parsed with DOMParser on purpose: the resulting document is inert, so markup
+ * in catalog text cannot load resources or run event handlers. Assigning the
+ * same string to `innerHTML` on an element (even a detached one) starts image
+ * loads and fires `onerror`.
+ */
+export function htmlToPlainText(html: string): string {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body?.textContent ?? '';
+}
+
 export class DirectoriesProPresetsAPI {
   private static readonly API_BASE = 'https://ultracard.io/wp-json/wp/v2';
   /** Native Ultra Card catalog (preferred once plugin 1.3+ is deployed). */
@@ -78,12 +92,6 @@ export class DirectoriesProPresetsAPI {
 
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   private localStorageDisabled = false; // Flag to disable localStorage if quota keeps failing
-  private corsProxies = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
-    'https://cors-anywhere.herokuapp.com/',
-  ];
-
   /**
    * Fetch all presets from Directories Pro
    */
@@ -151,7 +159,7 @@ export class DirectoriesProPresetsAPI {
       // Prefer native Ultra Card catalog (works against DP posts pre-cutover and ultra_preset after).
       const nativeUrl = `${DirectoriesProPresetsAPI.UC_API_BASE}/presets?${queryParams.toString()}`;
       try {
-        const nativePayload = await this._fetchWithCorsResilience(nativeUrl);
+        const nativePayload = await this._fetchJson(nativeUrl);
         const nativeMapped = this._mapNativeCatalog(nativePayload, params.page || 1);
         if (nativeMapped && Array.isArray((nativePayload as any)?.presets)) {
           const cacheData = { data: nativeMapped, timestamp: Date.now() };
@@ -178,7 +186,7 @@ export class DirectoriesProPresetsAPI {
       const url = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg?${queryParams.toString()}`;
 
       // Try multiple methods to fetch data
-      const posts = await this._fetchWithCorsResilience(url);
+      const posts = await this._fetchJson(url);
 
       // Convert Directories Pro presets to our preset format
       const data: WordPressPresetsResponse = {
@@ -327,7 +335,7 @@ export class DirectoriesProPresetsAPI {
 
     try {
       const url = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg/${id}?_embed=true`;
-      const post = await this._fetchWithCorsResilience(url);
+      const post = await this._fetchJson(url);
       const meta = post.preset_meta || {};
       const tags = meta.tags ? meta.tags.split(',').map((tag: string) => tag.trim()) : [];
       const integrations = meta.integrations
@@ -449,7 +457,7 @@ export class DirectoriesProPresetsAPI {
   }
 
   /**
-   * Test CORS-resilient connection (for debugging)
+   * Test the connection to ultracard.io (for debugging)
    */
   async testConnection(): Promise<{ method: string; success: boolean; error?: string }[]> {
     const testUrl = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg?per_page=1`;
@@ -469,25 +477,6 @@ export class DirectoriesProPresetsAPI {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-    }
-
-    // Test each CORS proxy
-    for (const proxy of this.corsProxies) {
-      try {
-        const proxyUrl = `${proxy}${encodeURIComponent(testUrl)}`;
-        await fetch(proxyUrl, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          signal: AbortSignal.timeout(8000),
-        });
-        results.push({ method: `Proxy: ${proxy}`, success: true });
-      } catch (error) {
-        results.push({
-          method: `Proxy: ${proxy}`,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
     }
 
     return results;
@@ -664,14 +653,7 @@ export class DirectoriesProPresetsAPI {
   private _stripHtml(html: string): string {
     if (!html) return '';
 
-    // Create a temporary div element to parse HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-
-    // Get text content and clean up whitespace
-    const textContent = tempDiv.textContent || tempDiv.innerText || '';
-
-    return textContent.trim().replace(/\s+/g, ' ');
+    return htmlToPlainText(html).trim().replace(/\s+/g, ' ');
   }
 
   /**
@@ -713,9 +695,7 @@ export class DirectoriesProPresetsAPI {
   private _decodeHtmlEntities(text: string): string {
     if (!text) return '';
 
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = text;
-    return tempDiv.textContent || tempDiv.innerText || text;
+    return htmlToPlainText(text) || text;
   }
 
   /**
@@ -733,104 +713,29 @@ export class DirectoriesProPresetsAPI {
   }
 
   /**
-   * CORS-resilient fetch that tries multiple methods
+   * Fetch JSON straight from ultracard.io.
+   *
+   * There is deliberately no fallback transport. Earlier versions retried a
+   * failed request through public CORS proxies and then a JSONP <script> tag,
+   * which handed the response (and, for JSONP, code execution in the Home
+   * Assistant frontend) to whoever operated those services. When ultracard.io
+   * is unreachable the caller serves its cache instead.
    */
-  private async _fetchWithCorsResilience(url: string): Promise<any> {
-    // Method 1: Direct fetch (fastest if CORS is working)
-    try {
-      // No Content-Type on a GET: it forces a CORS preflight, doubling every request.
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
-        signal: AbortSignal.timeout(8000), // 8 second timeout
-      });
-
-      if (!response.ok) {
-        throw new PresetsHttpError(response.status, response.statusText);
-      }
-
-      return await response.json();
-    } catch (error) {
-      // ultracard.io answered (error status) or timed out: proxies and JSONP
-      // would just send it the same request again, so stop here.
-      if (isServerSideFailure(error)) throw error;
-
-      // Direct fetch failed, trying CORS proxies silently
-
-      // Method 2: Try CORS proxies
-      for (const proxy of this.corsProxies) {
-        try {
-          const proxyUrl = `${proxy}${encodeURIComponent(url)}`;
-          const response = await fetch(proxyUrl, {
-            method: 'GET',
-            headers: {
-              Accept: 'application/json',
-            },
-            signal: AbortSignal.timeout(10000), // 10 second timeout for proxies
-          });
-
-          if (!response.ok) {
-            throw new Error(`Proxy HTTP ${response.status}: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          UC_DEBUG && console.log(`Successfully fetched via proxy: ${proxy}`);
-          return data;
-        } catch (proxyError) {
-          // Proxy failed silently, try next one
-          continue; // Try next proxy
-        }
-      }
-
-      // Method 3: Try JSONP-style approach (if supported by server)
-      try {
-        return await this._fetchViaJsonp(url);
-      } catch (jsonpError) {
-        console.warn('JSONP fetch failed:', jsonpError);
-      }
-
-      // All methods failed
-      throw new Error('All CORS-resilient fetch methods failed');
-    }
-  }
-
-  /**
-   * JSONP-style fetch (experimental)
-   */
-  private async _fetchViaJsonp(url: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const callbackName = `ultracard_jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const script = document.createElement('script');
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error('JSONP timeout'));
-      }, 15000);
-
-      const cleanup = () => {
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-        delete (window as any)[callbackName];
-        clearTimeout(timeoutId);
-      };
-
-      (window as any)[callbackName] = (data: any) => {
-        cleanup();
-        resolve(data);
-      };
-
-      script.onerror = () => {
-        cleanup();
-        reject(new Error('JSONP script error'));
-      };
-
-      // Try to add callback parameter (may not work with all APIs)
-      const separator = url.includes('?') ? '&' : '?';
-      script.src = `${url}${separator}callback=${callbackName}`;
-      document.head.appendChild(script);
+  private async _fetchJson(url: string): Promise<any> {
+    // No Content-Type on a GET: it forces a CORS preflight, doubling every request.
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      signal: AbortSignal.timeout(8000), // 8 second timeout
     });
+
+    if (!response.ok) {
+      throw new PresetsHttpError(response.status, response.statusText);
+    }
+
+    return await response.json();
   }
 
   /**
