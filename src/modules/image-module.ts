@@ -453,22 +453,19 @@ export class UltraImageModule extends BaseUltraModule {
                       const img = e.currentTarget as HTMLImageElement;
                       const container = img.closest('.image-module-preview');
                       if (container) {
-                        // Replace the broken image with a clean error message
+                        // Replace the broken image with a clean error message. The
+                        // markup is static; sizes and text come from config and are
+                        // applied through the style API / textContent below so a
+                        // crafted design value cannot inject markup.
                         container.innerHTML = `
-                          <div style="
-                            width: ${designProperties.width || imageModule.width || '100%'};
-                            height: ${containerHeight};
-                            aspect-ratio: ${containerAspectRatio};
+                          <div class="uc-image-error-box" style="
                             background: var(--secondary-background-color);
                             border: 2px dashed var(--divider-color);
-                            border-radius: ${imageBorderRadius};
                             display: flex;
                             align-items: center;
                             justify-content: center;
                             color: var(--secondary-text-color);
                             font-size: 14px;
-                            margin-left: ${marginLeft};
-                            margin-right: ${marginRight};
                             padding: 16px;
                             box-sizing: border-box;
                             overflow: visible;
@@ -486,22 +483,35 @@ export class UltraImageModule extends BaseUltraModule {
                                 icon="mdi:image-off"
                                 style="font-size: 32px; margin-bottom: 8px; opacity: 0.5; display: block;"
                               ></ha-icon>
-                              <div style="
+                              <div class="uc-image-error-text" style="
                                 font-size: 12px;
                                 font-weight: 500;
                                 max-width: 100%;
                                 word-break: break-word;
                                 hyphens: auto;
-                              ">
-                                ${localize(
-                                  'editor.image.load_error',
-                                  hass?.locale?.language || 'en',
-                                  'Image failed to load'
-                                )}
-                              </div>
+                              "></div>
                             </div>
                           </div>
                         `;
+                        const box = container.querySelector<HTMLElement>('.uc-image-error-box');
+                        if (box) {
+                          box.style.width = String(
+                            designProperties.width || imageModule.width || '100%'
+                          );
+                          box.style.height = String(containerHeight);
+                          box.style.aspectRatio = String(containerAspectRatio);
+                          box.style.borderRadius = String(imageBorderRadius);
+                          box.style.marginLeft = String(marginLeft);
+                          box.style.marginRight = String(marginRight);
+                        }
+                        const label = container.querySelector('.uc-image-error-text');
+                        if (label) {
+                          label.textContent = localize(
+                            'editor.image.load_error',
+                            hass?.locale?.language || 'en',
+                            'Image failed to load'
+                          );
+                        }
                       }
                     }}
                     alt="${localize('editor.image.alt', hass?.locale?.language || 'en', 'Image')}"

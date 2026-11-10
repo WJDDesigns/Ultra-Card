@@ -752,14 +752,15 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       'snowy-rainy': 'sleet',
       sunny: 'clear-day',
       windy: 'wind',
-      'windy-variant': 'extreme-wind',
+      'windy-variant': 'wind',
     };
 
     // Map Home Assistant conditions to Meteocons
     const iconName = iconMap[condition] || 'partly-cloudy-day';
 
-    // Return CDN URL for Meteocons animated SVG from dev branch
-    return `https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/${iconStyle}/svg/${iconName}.svg`;
+    // Meteocons animated SVGs, pinned to a commit of the upstream v2 branch so the
+    // files cannot change (or disappear, as the old `dev` branch did) under us.
+    return `https://cdn.jsdelivr.net/gh/basmilius/weather-icons@0ccc40fcff96ac10e325b53d138fed27c4d18afa/production/${iconStyle}/svg/${iconName}.svg`;
   }
 
   getStyles(): string {
