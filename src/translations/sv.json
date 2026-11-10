@@ -228,7 +228,31 @@
       "toggle_config": "Växla Konfiguration",
       "entity": "Enhet",
       "entity_more_info_desc": "Välj vilken enhet som ska visa mer information för",
-      "entity_toggle_desc": "Välj vilken enhet som ska växlas på/av"
+      "entity_toggle_desc": "Välj vilken enhet som ska växlas på/av",
+      "confirm_dialog": {
+        "title": "Bekräfta åtgärd",
+        "message": "Vill du verkligen utföra den här åtgärden?",
+        "details": "Åtgärdsdetaljer:",
+        "yes": "Ja",
+        "cancel": "Avbryt",
+        "more_info": "Visa mer information",
+        "more_info_for": "Visa mer information för {entity}",
+        "toggle": "Växla",
+        "toggle_entity": "Växla {entity}",
+        "toggle_targets": "Växla målentiteter",
+        "navigate": "Navigera till {path}",
+        "unknown_path": "okänd sökväg",
+        "open_url": "Öppna URL: {url}",
+        "unknown_url": "okänd URL",
+        "service": "Kör tjänst: {service}",
+        "service_on": "Kör tjänst: {service} på {entity}",
+        "unknown_service": "okänd tjänst",
+        "assist": "Öppna röstassistent",
+        "nothing": "Ingen åtgärd",
+        "default": "Standardåtgärd",
+        "default_for": "Standardåtgärd för {entity}",
+        "unknown": "Okänd åtgärd: {action}"
+      }
     },
     "icon": {
       "entity_config": {

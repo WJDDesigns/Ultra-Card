@@ -357,7 +357,31 @@
       "toggle_config": "Attiva Configurazione",
       "entity": "Entità",
       "entity_more_info_desc": "Seleziona quale entità mostrare per ulteriori informazioni",
-      "entity_toggle_desc": "Seleziona quale entità attivare/disattivare"
+      "entity_toggle_desc": "Seleziona quale entità attivare/disattivare",
+      "confirm_dialog": {
+        "title": "Conferma azione",
+        "message": "Vuoi davvero eseguire questa azione?",
+        "details": "Dettagli dell'azione:",
+        "yes": "Sì",
+        "cancel": "Annulla",
+        "more_info": "Mostra più informazioni",
+        "more_info_for": "Mostra più informazioni per {entity}",
+        "toggle": "Commuta",
+        "toggle_entity": "Commuta {entity}",
+        "toggle_targets": "Commuta le entità di destinazione",
+        "navigate": "Vai a {path}",
+        "unknown_path": "percorso sconosciuto",
+        "open_url": "Apri URL: {url}",
+        "unknown_url": "URL sconosciuto",
+        "service": "Esegui servizio: {service}",
+        "service_on": "Esegui servizio: {service} su {entity}",
+        "unknown_service": "servizio sconosciuto",
+        "assist": "Apri assistente vocale",
+        "nothing": "Nessuna azione",
+        "default": "Azione predefinita",
+        "default_for": "Azione predefinita per {entity}",
+        "unknown": "Azione sconosciuta: {action}"
+      }
     },
     "icon": {
       "entity_config": {

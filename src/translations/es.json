@@ -362,7 +362,31 @@
       "toggle_config": "Configuración de Alternar",
       "entity": "Entidad",
       "entity_more_info_desc": "Seleccione qué entidad mostrar para más información",
-      "entity_toggle_desc": "Seleccione qué entidad alternar encendido/apagado"
+      "entity_toggle_desc": "Seleccione qué entidad alternar encendido/apagado",
+      "confirm_dialog": {
+        "title": "Confirmar acción",
+        "message": "¿Seguro que quieres ejecutar esta acción?",
+        "details": "Detalles de la acción:",
+        "yes": "Sí",
+        "cancel": "Cancelar",
+        "more_info": "Mostrar más información",
+        "more_info_for": "Mostrar más información de {entity}",
+        "toggle": "Alternar",
+        "toggle_entity": "Alternar {entity}",
+        "toggle_targets": "Alternar entidades de destino",
+        "navigate": "Navegar a {path}",
+        "unknown_path": "ruta desconocida",
+        "open_url": "Abrir URL: {url}",
+        "unknown_url": "URL desconocida",
+        "service": "Ejecutar servicio: {service}",
+        "service_on": "Ejecutar servicio: {service} en {entity}",
+        "unknown_service": "servicio desconocido",
+        "assist": "Abrir asistente de voz",
+        "nothing": "Sin acción",
+        "default": "Acción predeterminada",
+        "default_for": "Acción predeterminada para {entity}",
+        "unknown": "Acción desconocida: {action}"
+      }
     },
     "icon": {
       "entity_config": {

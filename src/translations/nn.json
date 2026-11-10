@@ -228,7 +228,31 @@
       "toggle_config": "Veksle Konfigurasjon",
       "entity": "Enhet",
       "entity_more_info_desc": "Velg hvilken enhet som skal vise mer informasjon for",
-      "entity_toggle_desc": "Velg hvilken enhet som skal veksles på/av"
+      "entity_toggle_desc": "Velg hvilken enhet som skal veksles på/av",
+      "confirm_dialog": {
+        "title": "Stadfest handling",
+        "message": "Er du sikker på at du vil utføre denne handlinga?",
+        "details": "Handlingsdetaljar:",
+        "yes": "Ja",
+        "cancel": "Avbryt",
+        "more_info": "Vis meir informasjon",
+        "more_info_for": "Vis meir informasjon for {entity}",
+        "toggle": "Veksle",
+        "toggle_entity": "Veksle {entity}",
+        "toggle_targets": "Veksle målentitetar",
+        "navigate": "Naviger til {path}",
+        "unknown_path": "ukjend sti",
+        "open_url": "Opne URL: {url}",
+        "unknown_url": "ukjend URL",
+        "service": "Utfør teneste: {service}",
+        "service_on": "Utfør teneste: {service} på {entity}",
+        "unknown_service": "ukjend teneste",
+        "assist": "Opne taleassistent",
+        "nothing": "Inga handling",
+        "default": "Standardhandling",
+        "default_for": "Standardhandling for {entity}",
+        "unknown": "Ukjend handling: {action}"
+      }
     },
     "icon": {
       "entity_config": {

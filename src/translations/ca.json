@@ -808,7 +808,31 @@
       "toggle_config": "Configuració del commutador",
       "entity": "Entitat",
       "entity_more_info_desc": "Seleccioneu per a quina entitat voleu mostrar més informació",
-      "entity_toggle_desc": "Seleccioneu quina entitat voleu commutar (encendre/apagar)"
+      "entity_toggle_desc": "Seleccioneu quina entitat voleu commutar (encendre/apagar)",
+      "confirm_dialog": {
+        "title": "Confirma l'acció",
+        "message": "Segur que vols executar aquesta acció?",
+        "details": "Detalls de l'acció:",
+        "yes": "Sí",
+        "cancel": "Cancel·la",
+        "more_info": "Mostra més informació",
+        "more_info_for": "Mostra més informació de {entity}",
+        "toggle": "Commuta",
+        "toggle_entity": "Commuta {entity}",
+        "toggle_targets": "Commuta les entitats de destinació",
+        "navigate": "Navega a {path}",
+        "unknown_path": "ruta desconeguda",
+        "open_url": "Obre l'URL: {url}",
+        "unknown_url": "URL desconegut",
+        "service": "Executa el servei: {service}",
+        "service_on": "Executa el servei: {service} a {entity}",
+        "unknown_service": "servei desconegut",
+        "assist": "Obre l'assistent de veu",
+        "nothing": "Cap acció",
+        "default": "Acció predeterminada",
+        "default_for": "Acció predeterminada per a {entity}",
+        "unknown": "Acció desconeguda: {action}"
+      }
     },
     "icon": {
       "entity_config": {

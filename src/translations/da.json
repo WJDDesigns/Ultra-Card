@@ -228,7 +228,31 @@
       "toggle_config": "Skift Konfiguration",
       "entity": "Enhed",
       "entity_more_info_desc": "Vælg hvilken enhed der skal vises mere information for",
-      "entity_toggle_desc": "Vælg hvilken enhed der skal tændes/slukkes"
+      "entity_toggle_desc": "Vælg hvilken enhed der skal tændes/slukkes",
+      "confirm_dialog": {
+        "title": "Bekræft handling",
+        "message": "Er du sikker på, at du vil udføre denne handling?",
+        "details": "Handlingsdetaljer:",
+        "yes": "Ja",
+        "cancel": "Annuller",
+        "more_info": "Vis mere information",
+        "more_info_for": "Vis mere information for {entity}",
+        "toggle": "Skift",
+        "toggle_entity": "Skift {entity}",
+        "toggle_targets": "Skift målentiteter",
+        "navigate": "Naviger til {path}",
+        "unknown_path": "ukendt sti",
+        "open_url": "Åbn URL: {url}",
+        "unknown_url": "ukendt URL",
+        "service": "Udfør tjeneste: {service}",
+        "service_on": "Udfør tjeneste: {service} på {entity}",
+        "unknown_service": "ukendt tjeneste",
+        "assist": "Åbn stemmeassistent",
+        "nothing": "Ingen handling",
+        "default": "Standardhandling",
+        "default_for": "Standardhandling for {entity}",
+        "unknown": "Ukendt handling: {action}"
+      }
     },
     "icon": {
       "entity_config": {

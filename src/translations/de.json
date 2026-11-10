@@ -361,7 +361,31 @@
       "toggle_config": "Einstellungen für Umschalten",
       "entity": "Entität",
       "entity_more_info_desc": "Wählen Sie, für welche Entität weitere Informationen angezeigt werden sollen",
-      "entity_toggle_desc": "Wählen Sie, welche Entität ein-/ausgeschaltet werden soll"
+      "entity_toggle_desc": "Wählen Sie, welche Entität ein-/ausgeschaltet werden soll",
+      "confirm_dialog": {
+        "title": "Aktion bestätigen",
+        "message": "Möchtest du diese Aktion wirklich ausführen?",
+        "details": "Aktionsdetails:",
+        "yes": "Ja",
+        "cancel": "Abbrechen",
+        "more_info": "Weitere Informationen anzeigen",
+        "more_info_for": "Weitere Informationen für {entity} anzeigen",
+        "toggle": "Umschalten",
+        "toggle_entity": "{entity} umschalten",
+        "toggle_targets": "Zielentitäten umschalten",
+        "navigate": "Navigieren zu {path}",
+        "unknown_path": "unbekannter Pfad",
+        "open_url": "URL öffnen: {url}",
+        "unknown_url": "unbekannte URL",
+        "service": "Dienst ausführen: {service}",
+        "service_on": "Dienst ausführen: {service} für {entity}",
+        "unknown_service": "unbekannter Dienst",
+        "assist": "Sprachassistent öffnen",
+        "nothing": "Keine Aktion",
+        "default": "Standardaktion",
+        "default_for": "Standardaktion für {entity}",
+        "unknown": "Unbekannte Aktion: {action}"
+      }
     },
     "icon": {
       "entity_config": {
