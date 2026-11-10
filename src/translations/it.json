@@ -88,7 +88,9 @@
       "edit": "Modifica",
       "reset": "Ripristina",
       "error_configure_entity": "Configura entità",
-      "error_entity_not_found": "Entità non trovata"
+      "error_entity_not_found": "Entità non trovata",
+      "ok": "OK",
+      "replace": "Sostituisci"
     },
     "horizontal": {
       "layout": {
@@ -265,7 +267,18 @@
       "row_deleted": "Riga eliminata",
       "column_deleted": "Colonna eliminata",
       "module_deleted": "Modulo eliminato",
-      "browse_presets_tooltip": "Sfoglia i preset e aggiungine uno a questa scheda"
+      "browse_presets_tooltip": "Sfoglia i preset e aggiungine uno a questa scheda",
+      "delete_favorite_title": "Eliminare il preferito?",
+      "confirm_delete_favorite": "Vuoi davvero eliminare questo preferito?",
+      "favorite_deleted": "Preferito eliminato",
+      "replace_card_title": "Sostituire questa scheda?",
+      "replace_layout_title": "Sostituire questo layout?",
+      "confirm_import_layout": "Questo sostituirà l'intero layout. Sei sicuro?",
+      "no_general_settings": "Il modulo non supporta impostazioni generali",
+      "no_design_settings": "Il modulo non supporta impostazioni di design",
+      "no_action_settings": "Questo modulo non ha impostazioni di azione",
+      "no_other_settings": "Questo modulo non ha altre impostazioni",
+      "column_sizing": "Dimensione colonne"
     },
     "layout_logic": {
       "display_title": "Mostra questo elemento",
@@ -380,7 +393,8 @@
         "nothing": "Nessuna azione",
         "default": "Azione predefinita",
         "default_for": "Azione predefinita per {entity}",
-        "unknown": "Azione sconosciuta: {action}"
+        "unknown": "Azione sconosciuta: {action}",
+        "are_you_sure": "Sei sicuro?"
       }
     },
     "icon": {
@@ -2656,7 +2670,11 @@
       "value_type_attribute_desc": "Valore dell'Attributo (ad es., temperatura, friendly_name)",
       "attribute_name": "Nome dell'Attributo",
       "make_global_conflict": "Esiste già una variabile globale con questo nome. Rinomina prima questa.",
-      "make_global": "Rendi globale (usa su ogni scheda)"
+      "make_global": "Rendi globale (usa su ogni scheda)",
+      "name_in_use_title": "Nome già in uso",
+      "delete_title": "Eliminare la variabile?",
+      "clear_all_title": "Eliminare tutte le variabili globali?",
+      "clear_card_title": "Eliminare le variabili della scheda?"
     },
     "export_import": {
       "include_variables": "Hai variabile(e) personalizzata(e). Includere them nell'esportazione?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Ritirare l'invio?",
+      "delete_title": "Eliminare il preset?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

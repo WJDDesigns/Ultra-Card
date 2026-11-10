@@ -91,7 +91,11 @@
       "empty_title": "No Custom Variables",
       "empty_description": "Add your first variable to get started. Variables can be used in templates with {{ $variable_name }} syntax.",
       "make_global_conflict": "A global variable with this name already exists. Rename this one first.",
-      "make_global": "Make global (use on every card)"
+      "make_global": "Make global (use on every card)",
+      "name_in_use_title": "Name already in use",
+      "delete_title": "Delete variable?",
+      "clear_all_title": "Delete all global variables?",
+      "clear_card_title": "Delete card variables?"
     },
     "export_import": {
       "include_variables": "You have custom variable(s). Include them in the export?",
@@ -207,7 +211,9 @@
       "edit": "Edit",
       "reset": "Reset",
       "error_configure_entity": "Configure Entity",
-      "error_entity_not_found": "Entity Not Found"
+      "error_entity_not_found": "Entity Not Found",
+      "ok": "OK",
+      "replace": "Replace"
     },
     "horizontal": {
       "layout": {
@@ -743,7 +749,18 @@
       "row_deleted": "Row deleted",
       "column_deleted": "Column deleted",
       "module_deleted": "Module deleted",
-      "browse_presets_tooltip": "Browse presets and add one to this card"
+      "browse_presets_tooltip": "Browse presets and add one to this card",
+      "delete_favorite_title": "Delete favorite?",
+      "confirm_delete_favorite": "Are you sure you want to delete this favorite?",
+      "favorite_deleted": "Favorite deleted",
+      "replace_card_title": "Replace this card?",
+      "replace_layout_title": "Replace this layout?",
+      "confirm_import_layout": "This will replace your entire layout. Are you sure?",
+      "no_general_settings": "Module does not support general settings",
+      "no_design_settings": "Module does not support design settings",
+      "no_action_settings": "This module does not have action settings",
+      "no_other_settings": "This module does not have other settings",
+      "column_sizing": "Column Sizing"
     },
     "entity_mapper": {
       "title": "Map Entities",
@@ -896,7 +913,8 @@
         "nothing": "No action (nothing)",
         "default": "Default action",
         "default_for": "Default action for {entity}",
-        "unknown": "Unknown action: {action}"
+        "unknown": "Unknown action: {action}",
+        "are_you_sure": "Are you sure?"
       }
     },
     "icon": {
@@ -6876,7 +6894,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Withdraw submission?",
+      "delete_title": "Delete preset?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

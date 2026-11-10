@@ -1,5 +1,7 @@
 import type { HomeAssistant, ActionConfig } from '../ha/types';
 import { toggleEntities } from '../utils/uc-entity-toggle';
+import { localize } from '../localize/localize';
+import { ucConfirmService } from './uc-confirm-service';
 import { openActionUrl } from '../utils/uc-safe-url';
 
 export interface LinkAction {
@@ -75,7 +77,16 @@ export class LinkService {
     try {
       // Handle confirmation if required
       if (action.confirmation) {
-        const confirmed = confirm(action.confirmation.text || 'Are you sure?');
+        const lang = this.hass.locale?.language || 'en';
+        const confirmed = await ucConfirmService.confirm(
+          localize('editor.actions.confirm_dialog.title', lang, 'Confirm Action'),
+          action.confirmation.text ||
+            localize('editor.actions.confirm_dialog.are_you_sure', lang, 'Are you sure?'),
+          {
+            confirmText: localize('editor.actions.confirm_dialog.yes', lang, 'Yes'),
+            cancelText: localize('editor.actions.confirm_dialog.cancel', lang, 'Cancel'),
+          }
+        );
         if (!confirmed) return;
       }
 

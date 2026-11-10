@@ -193,7 +193,18 @@
       "row_deleted": "Řádek smazán",
       "column_deleted": "Sloupec smazán",
       "module_deleted": "Modul smazán",
-      "browse_presets_tooltip": "Procházet předvolby a přidat jednu do této karty"
+      "browse_presets_tooltip": "Procházet předvolby a přidat jednu do této karty",
+      "delete_favorite_title": "Smazat oblíbenou položku?",
+      "confirm_delete_favorite": "Opravdu chcete tuto oblíbenou položku smazat?",
+      "favorite_deleted": "Oblíbená položka smazána",
+      "replace_card_title": "Nahradit tuto kartu?",
+      "replace_layout_title": "Nahradit toto rozložení?",
+      "confirm_import_layout": "Tím se nahradí celé vaše rozložení. Jste si jisti?",
+      "no_general_settings": "Modul nepodporuje obecná nastavení",
+      "no_design_settings": "Modul nepodporuje nastavení vzhledu",
+      "no_action_settings": "Tento modul nemá nastavení akcí",
+      "no_other_settings": "Tento modul nemá další nastavení",
+      "column_sizing": "Velikost sloupců"
     },
     "about": {
       "developed_by": "Vyvinuto",
@@ -251,7 +262,8 @@
         "nothing": "Žádná akce",
         "default": "Výchozí akce",
         "default_for": "Výchozí akce pro {entity}",
-        "unknown": "Neznámá akce: {action}"
+        "unknown": "Neznámá akce: {action}",
+        "are_you_sure": "Jste si jisti?"
       }
     },
     "icon": {
@@ -1758,7 +1770,9 @@
       "edit": "Upravit",
       "reset": "Resetovat",
       "error_configure_entity": "Konfigurovat entitu",
-      "error_entity_not_found": "Entita nebyla nalezena"
+      "error_entity_not_found": "Entita nebyla nalezena",
+      "ok": "OK",
+      "replace": "Nahradit"
     },
     "horizontal": {
       "alignment": {
@@ -2656,7 +2670,11 @@
       "value_type_attribute_desc": "Hodnota atributu (např. templota, friendly_name)",
       "attribute_name": "Název atributu",
       "make_global_conflict": "Globální proměnná s tímto názvem již existuje. Nejprve tuto přejmenujte.",
-      "make_global": "Nastavit jako globální (použít na každé kartě)"
+      "make_global": "Nastavit jako globální (použít na každé kartě)",
+      "name_in_use_title": "Název se již používá",
+      "delete_title": "Smazat proměnnou?",
+      "clear_all_title": "Smazat všechny globální proměnné?",
+      "clear_card_title": "Smazat proměnné karty?"
     },
     "export_import": {
       "include_variables": "Máš vlastní proměnné. Zahrnout them do exportu?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Stáhnout příspěvek?",
+      "delete_title": "Smazat předvolbu?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

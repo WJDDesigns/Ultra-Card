@@ -79,7 +79,11 @@
       "empty_title": "Sense variables personalitzades",
       "empty_description": "Afegiu la vostra primera variable per a començar. Les variables es poden usar en plantilles amb la sintaxi {{ $variable_name }}.",
       "make_global_conflict": "Ja existeix una variable global amb aquest nom. Canvieu primer el nom d'aquesta.",
-      "make_global": "Fer global (utilitzar a totes les targetes)"
+      "make_global": "Fer global (utilitzar a totes les targetes)",
+      "name_in_use_title": "El nom ja està en ús",
+      "delete_title": "Vols suprimir la variable?",
+      "clear_all_title": "Vols suprimir totes les variables globals?",
+      "clear_card_title": "Vols suprimir les variables de la targeta?"
     },
     "export_import": {
       "include_variables": "Teniu variables personalitzades. Voleu incloure-les en l'exportació?",
@@ -195,7 +199,9 @@
       "edit": "Edita",
       "reset": "Restableix",
       "error_configure_entity": "Configura l'entitat",
-      "error_entity_not_found": "Entitat no trobada"
+      "error_entity_not_found": "Entitat no trobada",
+      "ok": "D'acord",
+      "replace": "Substitueix"
     },
     "horizontal": {
       "layout": {
@@ -701,7 +707,18 @@
       "row_deleted": "Fila eliminada",
       "column_deleted": "Columna eliminada",
       "module_deleted": "Mòdul eliminat",
-      "browse_presets_tooltip": "Explora predefinits i afegeix-ne un a aquesta targeta"
+      "browse_presets_tooltip": "Explora predefinits i afegeix-ne un a aquesta targeta",
+      "delete_favorite_title": "Vols suprimir el favorit?",
+      "confirm_delete_favorite": "Segur que vols suprimir aquest favorit?",
+      "favorite_deleted": "Favorit suprimit",
+      "replace_card_title": "Vols substituir aquesta targeta?",
+      "replace_layout_title": "Vols substituir aquest disseny?",
+      "confirm_import_layout": "Això substituirà tot el teu disseny. N'estàs segur?",
+      "no_general_settings": "El mòdul no admet configuració general",
+      "no_design_settings": "El mòdul no admet configuració de disseny",
+      "no_action_settings": "Aquest mòdul no té configuració d'accions",
+      "no_other_settings": "Aquest mòdul no té altres configuracions",
+      "column_sizing": "Mida de les columnes"
     },
     "entity_mapper": {
       "title": "Assigna les entitats",
@@ -831,7 +848,8 @@
         "nothing": "Cap acció",
         "default": "Acció predeterminada",
         "default_for": "Acció predeterminada per a {entity}",
-        "unknown": "Acció desconeguda: {action}"
+        "unknown": "Acció desconeguda: {action}",
+        "are_you_sure": "N'estàs segur?"
       }
     },
     "icon": {
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Vols retirar l'enviament?",
+      "delete_title": "Vols suprimir el preajust?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

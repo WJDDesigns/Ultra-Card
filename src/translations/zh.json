@@ -91,7 +91,11 @@
       "empty_title": "暂无自定义变量",
       "empty_description": "添加你的第一个变量即可开始。变量可通过 {{ $variable_name }} 语法在模板中使用。",
       "make_global_conflict": "已存在同名的全局变量。请先重命名此变量。",
-      "make_global": "设为全局（在所有卡片上使用）"
+      "make_global": "设为全局（在所有卡片上使用）",
+      "name_in_use_title": "名称已被使用",
+      "delete_title": "删除变量？",
+      "clear_all_title": "删除所有全局变量？",
+      "clear_card_title": "删除卡片变量？"
     },
     "export_import": {
       "include_variables": "你有自定义变量。是否将其包含在导出中？",
@@ -207,7 +211,9 @@
       "edit": "编辑",
       "reset": "重置",
       "error_configure_entity": "配置实体",
-      "error_entity_not_found": "未找到实体"
+      "error_entity_not_found": "未找到实体",
+      "ok": "确定",
+      "replace": "替换"
     },
     "horizontal": {
       "layout": {
@@ -743,7 +749,18 @@
       "row_deleted": "行已删除",
       "column_deleted": "列已删除",
       "module_deleted": "模块已删除",
-      "browse_presets_tooltip": "浏览预设并将其添加到此卡片"
+      "browse_presets_tooltip": "浏览预设并将其添加到此卡片",
+      "delete_favorite_title": "删除收藏？",
+      "confirm_delete_favorite": "确定要删除此收藏吗？",
+      "favorite_deleted": "收藏已删除",
+      "replace_card_title": "替换此卡片？",
+      "replace_layout_title": "替换此布局？",
+      "confirm_import_layout": "这将替换您的整个布局。确定吗？",
+      "no_general_settings": "该模块不支持常规设置",
+      "no_design_settings": "该模块不支持设计设置",
+      "no_action_settings": "此模块没有动作设置",
+      "no_other_settings": "此模块没有其他设置",
+      "column_sizing": "列宽设置"
     },
     "entity_mapper": {
       "title": "映射实体",
@@ -896,7 +913,8 @@
         "nothing": "无操作",
         "default": "默认操作",
         "default_for": "{entity} 的默认操作",
-        "unknown": "未知操作：{action}"
+        "unknown": "未知操作：{action}",
+        "are_you_sure": "确定吗？"
       }
     },
     "icon": {
@@ -6876,7 +6894,9 @@
       "confirm_delete": "删除此预设？此操作无法撤销。",
       "withdrawn": "提交已撤回",
       "deleted": "预设已删除",
-      "updated": "预设更新已保存"
+      "updated": "预设更新已保存",
+      "withdraw_title": "撤回提交？",
+      "delete_title": "删除预设？"
     },
     "submit_preset": {
       "create_title": "分享你的布局",

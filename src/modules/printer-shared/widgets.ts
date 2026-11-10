@@ -5,6 +5,7 @@
 
 import { TemplateResult, html, nothing, svg } from 'lit';
 import type { HomeAssistant } from '../../ha/types';
+import { ucConfirmService } from '../../services/uc-confirm-service';
 import {
   PrinterSnapshot,
   PrinterTray,
@@ -353,9 +354,14 @@ export function renderControlsRow(
   const canStop = printing || paused;
   const speeds = ['silent', 'standard', 'sport', 'ludicrous'];
 
-  const stop = () => {
+  const stop = async () => {
     if (opts.confirmStop !== false) {
-      if (!window.confirm('Stop the current print?')) return;
+      const confirmed = await ucConfirmService.confirm(
+        'Stop print?',
+        'Stop the current print? This cannot be undone.',
+        { destructive: true, confirmText: 'Stop print', cancelText: 'Keep printing' }
+      );
+      if (!confirmed) return;
     }
     handlers.onStop?.();
   };

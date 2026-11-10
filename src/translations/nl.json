@@ -193,7 +193,18 @@
       "row_deleted": "Rij verwijderd",
       "column_deleted": "Kolom verwijderd",
       "module_deleted": "Module verwijderd",
-      "browse_presets_tooltip": "Presets bekijken en er een aan deze kaart toevoegen"
+      "browse_presets_tooltip": "Presets bekijken en er een aan deze kaart toevoegen",
+      "delete_favorite_title": "Favoriet verwijderen?",
+      "confirm_delete_favorite": "Weet je zeker dat je deze favoriet wilt verwijderen?",
+      "favorite_deleted": "Favoriet verwijderd",
+      "replace_card_title": "Deze kaart vervangen?",
+      "replace_layout_title": "Deze lay-out vervangen?",
+      "confirm_import_layout": "Hiermee wordt je hele lay-out vervangen. Weet je het zeker?",
+      "no_general_settings": "Module ondersteunt geen algemene instellingen",
+      "no_design_settings": "Module ondersteunt geen ontwerpinstellingen",
+      "no_action_settings": "Deze module heeft geen actie-instellingen",
+      "no_other_settings": "Deze module heeft geen andere instellingen",
+      "column_sizing": "Kolomgrootte"
     },
     "about": {
       "developed_by": "Ontwikkeld door",
@@ -251,7 +262,8 @@
         "nothing": "Geen actie",
         "default": "Standaardactie",
         "default_for": "Standaardactie voor {entity}",
-        "unknown": "Onbekende actie: {action}"
+        "unknown": "Onbekende actie: {action}",
+        "are_you_sure": "Weet je het zeker?"
       }
     },
     "icon": {
@@ -1758,7 +1770,9 @@
       "edit": "Bewerken",
       "reset": "Resetten",
       "error_configure_entity": "Configureer entiteit",
-      "error_entity_not_found": "Entiteit niet gevonden"
+      "error_entity_not_found": "Entiteit niet gevonden",
+      "ok": "OK",
+      "replace": "Vervangen"
     },
     "horizontal": {
       "alignment": {
@@ -2656,7 +2670,11 @@
       "value_type_attribute_desc": "Attribuutwaarde (bijv., temmperatuur, friendly_name)",
       "attribute_name": "Attribuutnaam",
       "make_global_conflict": "Er bestaat al een globale variabele met deze naam. Hernoem deze eerst.",
-      "make_global": "Globaal maken (op elke kaart gebruiken)"
+      "make_global": "Globaal maken (op elke kaart gebruiken)",
+      "name_in_use_title": "Naam al in gebruik",
+      "delete_title": "Variabele verwijderen?",
+      "clear_all_title": "Alle globale variabelen verwijderen?",
+      "clear_card_title": "Kaartvariabelen verwijderen?"
     },
     "export_import": {
       "include_variables": "Je hebt aangepaste variabele(n). Inclusief them in de export?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Inzending intrekken?",
+      "delete_title": "Preset verwijderen?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

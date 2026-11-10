@@ -193,7 +193,18 @@
       "row_deleted": "Rad borttagen",
       "column_deleted": "Kolumn borttagen",
       "module_deleted": "Modul borttagen",
-      "browse_presets_tooltip": "Bläddra bland förinställningar och lägg till en på det här kortet"
+      "browse_presets_tooltip": "Bläddra bland förinställningar och lägg till en på det här kortet",
+      "delete_favorite_title": "Ta bort favorit?",
+      "confirm_delete_favorite": "Vill du verkligen ta bort den här favoriten?",
+      "favorite_deleted": "Favorit borttagen",
+      "replace_card_title": "Ersätta det här kortet?",
+      "replace_layout_title": "Ersätta den här layouten?",
+      "confirm_import_layout": "Detta ersätter hela din layout. Är du säker?",
+      "no_general_settings": "Modulen stöder inte allmänna inställningar",
+      "no_design_settings": "Modulen stöder inte designinställningar",
+      "no_action_settings": "Den här modulen har inga åtgärdsinställningar",
+      "no_other_settings": "Den här modulen har inga andra inställningar",
+      "column_sizing": "Kolumnstorlek"
     },
     "about": {
       "developed_by": "Utvecklad av",
@@ -251,7 +262,8 @@
         "nothing": "Ingen åtgärd",
         "default": "Standardåtgärd",
         "default_for": "Standardåtgärd för {entity}",
-        "unknown": "Okänd åtgärd: {action}"
+        "unknown": "Okänd åtgärd: {action}",
+        "are_you_sure": "Är du säker?"
       }
     },
     "icon": {
@@ -1758,7 +1770,9 @@
       "edit": "Redigera",
       "reset": "Återställ",
       "error_configure_entity": "Konfigurera Enhet",
-      "error_entity_not_found": "Enhet hittades inte"
+      "error_entity_not_found": "Enhet hittades inte",
+      "ok": "OK",
+      "replace": "Ersätt"
     },
     "horizontal": {
       "alignment": {
@@ -2656,7 +2670,11 @@
       "value_type_attribute_desc": "Attributvärde (t.ex. temmperatur, friendly_name)",
       "attribute_name": "Attributnamn",
       "make_global_conflict": "Det finns redan en global variabel med det här namnet. Byt namn på den här först.",
-      "make_global": "Gör global (använd på alla kort)"
+      "make_global": "Gör global (använd på alla kort)",
+      "name_in_use_title": "Namnet används redan",
+      "delete_title": "Ta bort variabel?",
+      "clear_all_title": "Ta bort alla globala variabler?",
+      "clear_card_title": "Ta bort kortvariabler?"
     },
     "export_import": {
       "include_variables": "Du har anpassad variabel/variabler. Inkludera them i exporten?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Dra tillbaka bidraget?",
+      "delete_title": "Ta bort förinställning?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

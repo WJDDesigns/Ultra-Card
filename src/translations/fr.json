@@ -88,7 +88,9 @@
       "edit": "Modifier",
       "reset": "Réinitialiser",
       "error_configure_entity": "Configurer l'entité",
-      "error_entity_not_found": "Entité non trouvée"
+      "error_entity_not_found": "Entité non trouvée",
+      "ok": "OK",
+      "replace": "Remplacer"
     },
     "horizontal": {
       "layout": {
@@ -265,7 +267,18 @@
       "row_deleted": "Ligne supprimée",
       "column_deleted": "Colonne supprimée",
       "module_deleted": "Module supprimé",
-      "browse_presets_tooltip": "Parcourir les préréglages et en ajouter un à cette carte"
+      "browse_presets_tooltip": "Parcourir les préréglages et en ajouter un à cette carte",
+      "delete_favorite_title": "Supprimer le favori ?",
+      "confirm_delete_favorite": "Voulez-vous vraiment supprimer ce favori ?",
+      "favorite_deleted": "Favori supprimé",
+      "replace_card_title": "Remplacer cette carte ?",
+      "replace_layout_title": "Remplacer cette mise en page ?",
+      "confirm_import_layout": "Cela remplacera toute votre mise en page. Êtes-vous sûr ?",
+      "no_general_settings": "Le module ne propose pas de réglages généraux",
+      "no_design_settings": "Le module ne propose pas de réglages de design",
+      "no_action_settings": "Ce module n'a pas de réglages d'action",
+      "no_other_settings": "Ce module n'a pas d'autres réglages",
+      "column_sizing": "Taille des colonnes"
     },
     "layout_logic": {
       "display_title": "Afficher cet élément",
@@ -380,7 +393,8 @@
         "nothing": "Aucune action",
         "default": "Action par défaut",
         "default_for": "Action par défaut pour {entity}",
-        "unknown": "Action inconnue : {action}"
+        "unknown": "Action inconnue : {action}",
+        "are_you_sure": "Êtes-vous sûr ?"
       }
     },
     "icon": {
@@ -2656,7 +2670,11 @@
       "value_type_attribute_desc": "Valeur d'attribut (par exemple, temmperature, friendly_name)",
       "attribute_name": "Nom d'attribut",
       "make_global_conflict": "Une variable globale porte déjà ce nom. Renommez d'abord celle-ci.",
-      "make_global": "Rendre globale (utiliser sur toutes les cartes)"
+      "make_global": "Rendre globale (utiliser sur toutes les cartes)",
+      "name_in_use_title": "Nom déjà utilisé",
+      "delete_title": "Supprimer la variable ?",
+      "clear_all_title": "Supprimer toutes les variables globales ?",
+      "clear_card_title": "Supprimer les variables de la carte ?"
     },
     "export_import": {
       "include_variables": "Vous avez des variable(s) personnalisée(s). Inclure them dans l'exportation ?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Retirer la soumission ?",
+      "delete_title": "Supprimer le préréglage ?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

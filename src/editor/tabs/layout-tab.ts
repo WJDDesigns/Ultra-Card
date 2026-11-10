@@ -29,6 +29,7 @@ import '../uc-editor-onboarding';
 import type { OnboardingAction } from '../uc-editor-onboarding';
 import '../../utils/image-upload';
 import { localize } from '../../localize/localize';
+import { ucConfirmService } from '../../services/uc-confirm-service';
 import { moduleDocsSlug, openHubDocs } from '../../panels/hub-navigation';
 import { layoutTabStyles, POPUP_CLOSE_ANIMATION_MS } from './layout-tab.styles';
 import {
@@ -9138,11 +9139,50 @@ export class LayoutTab extends LitElement {
       }
     }
   }
-  private _deleteFavorite(favoriteId: string): void {
-    if (confirm('Are you sure you want to delete this favorite?')) {
-      ucFavoritesService.removeFavorite(favoriteId);
-      this._showToast('Favorite deleted', 'info');
-    }
+  private async _deleteFavorite(favoriteId: string): Promise<void> {
+    const lang = this.hass?.locale?.language || 'en';
+    const confirmed = await ucConfirmService.confirm(
+      localize('editor.layout.delete_favorite_title', lang, 'Delete favorite?'),
+      localize(
+        'editor.layout.confirm_delete_favorite',
+        lang,
+        'Are you sure you want to delete this favorite?'
+      ),
+      {
+        destructive: true,
+        confirmText: localize('editor.common.delete', lang, 'Delete'),
+        cancelText: localize('editor.common.cancel', lang, 'Cancel'),
+      }
+    );
+    if (!confirmed) return;
+    ucFavoritesService.removeFavorite(favoriteId);
+    this._showToast(localize('editor.layout.favorite_deleted', lang, 'Favorite deleted'), 'info');
+  }
+
+  /** Ask before an import replaces the whole card or its whole layout. */
+  private _confirmReplace(kind: 'card' | 'layout'): Promise<boolean> {
+    const lang = this.hass?.locale?.language || 'en';
+    return ucConfirmService.confirm(
+      kind === 'card'
+        ? localize('editor.layout.replace_card_title', lang, 'Replace this card?')
+        : localize('editor.layout.replace_layout_title', lang, 'Replace this layout?'),
+      kind === 'card'
+        ? localize(
+            'editor.layout.confirm_import_card',
+            lang,
+            'This will replace your entire card configuration. Are you sure?'
+          )
+        : localize(
+            'editor.layout.confirm_import_layout',
+            lang,
+            'This will replace your entire layout. Are you sure?'
+          ),
+      {
+        destructive: true,
+        confirmText: localize('editor.common.replace', lang, 'Replace'),
+        cancelText: localize('editor.common.cancel', lang, 'Cancel'),
+      }
+    );
   }
 
   private _cloneRowWithNewIds(row: CardRow): CardRow {
@@ -10110,15 +10150,7 @@ export class LayoutTab extends LitElement {
       // Handle full card import
       if (importData.type === 'ultra-card-full') {
         // Confirm before replacing entire card config
-        if (
-          !confirm(
-            localize(
-              'editor.layout.confirm_import_card',
-              lang,
-              'This will replace your entire card configuration. Are you sure?'
-            )
-          )
-        ) {
+        if (!(await this._confirmReplace('card'))) {
           return;
         }
 
@@ -10181,7 +10213,7 @@ export class LayoutTab extends LitElement {
         }
       } else if (importData.type === 'ultra-card-layout') {
         // Handle layout import - replace layout
-        if (!confirm('This will replace your entire layout. Are you sure?')) {
+        if (!(await this._confirmReplace('layout'))) {
           return;
         }
 
@@ -17314,7 +17346,13 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (!moduleHandler || typeof moduleHandler.renderGeneralTab !== 'function') {
-      return html`<div>Module does not support general settings</div>`;
+      return html`<div>
+        ${localize(
+          'editor.layout.no_general_settings',
+          this.hass?.locale?.language || 'en',
+          'Module does not support general settings'
+        )}
+      </div>`;
     }
 
     return this._wrapSections(
@@ -17383,13 +17421,25 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (!moduleHandler || typeof moduleHandler.renderDesignTab !== 'function') {
-      return html`<div>Module does not support design settings</div>`;
+      return html`<div>
+        ${localize(
+          'editor.layout.no_design_settings',
+          this.hass?.locale?.language || 'en',
+          'Module does not support design settings'
+        )}
+      </div>`;
     }
 
     return (
       moduleHandler.renderDesignTab(module, this.hass!, this.config, (updates: any) =>
         this._updateTabsSectionChild(updates)
-      ) ?? html`<div>Module does not support design settings</div>`
+      ) ?? html`<div>
+        ${localize(
+          'editor.layout.no_design_settings',
+          this.hass?.locale?.language || 'en',
+          'Module does not support design settings'
+        )}
+      </div>`
     );
   }
 
@@ -18393,7 +18443,13 @@ export class LayoutTab extends LitElement {
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
-          <span>This module does not have action settings</span>
+          <span
+            >${localize(
+              'editor.layout.no_action_settings',
+              this.hass?.locale?.language || 'en',
+              'This module does not have action settings'
+            )}</span
+          >
         </div>
       </div>
     `;
@@ -18441,7 +18497,13 @@ export class LayoutTab extends LitElement {
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
-          <span>This module does not have other settings</span>
+          <span
+            >${localize(
+              'editor.layout.no_other_settings',
+              this.hass?.locale?.language || 'en',
+              'This module does not have other settings'
+            )}</span
+          >
         </div>
       </div>
     `;
@@ -19240,7 +19302,13 @@ export class LayoutTab extends LitElement {
 
         <!-- Column Sizing Section -->
         <div class="settings-section">
-          <div class="section-title">Column Sizing</div>
+          <div class="section-title">
+            ${localize(
+              'editor.layout.column_sizing',
+              this.hass?.locale?.language || 'en',
+              'Column Sizing'
+            )}
+          </div>
           <div class="field-container">
             <div class="field-description">
               Set custom CSS grid sizing for this row's columns (e.g.,
@@ -19801,7 +19869,13 @@ export class LayoutTab extends LitElement {
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
-          <span>This module does not have action settings</span>
+          <span
+            >${localize(
+              'editor.layout.no_action_settings',
+              this.hass?.locale?.language || 'en',
+              'This module does not have action settings'
+            )}</span
+          >
         </div>
       </div>
     `;
@@ -19825,7 +19899,13 @@ export class LayoutTab extends LitElement {
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
-          <span>This module does not have other settings</span>
+          <span
+            >${localize(
+              'editor.layout.no_other_settings',
+              this.hass?.locale?.language || 'en',
+              'This module does not have other settings'
+            )}</span
+          >
         </div>
       </div>
     `;
@@ -21007,7 +21087,8 @@ export class LayoutTab extends LitElement {
       }
     } else if (importData.type === 'ultra-card-layout') {
       // Replace entire layout (with confirmation)
-      if (confirm('This will replace your entire layout. Are you sure?')) {
+      void this._confirmReplace('layout').then(confirmed => {
+        if (!confirmed) return;
         const newLayout = importData.data as { rows: CardRow[] };
         if (!this._isUndoRedoAction) {
           this._saveStateToUndoStack();
@@ -21015,7 +21096,7 @@ export class LayoutTab extends LitElement {
         }
         this._updateConfig({ layout: newLayout, _contentOrigin: 'imported' });
         this._showToast(`Layout "${importData.metadata.name}" imported successfully!`, 'success');
-      }
+      });
     } else if (importData.type === 'ultra-card-module') {
       // Add module to selected column
       if (this._selectedRowIndex >= 0 && this._selectedColumnIndex >= 0) {
