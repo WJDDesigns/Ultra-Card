@@ -1,5 +1,39 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta10
+
+The tenth 3.14.4 beta is a security and polish release. It closes four ways that content from outside your own dashboard (a downloaded preset, a shared YAML snippet, or a third party sitting between you and ultracard.io) could run script inside Home Assistant, replaces the browser's plain confirm boxes with proper dialogs, and fixes a memory leak in the camera fullscreen viewer.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🔒 Security
+
+- **Preset catalog only talks to ultracard.io** - If ultracard.io could not be reached (an ad blocker, Pi-hole, or a DNS hiccup), the preset catalog was retried through public proxy services and then through a script tag. Both are gone. When the site cannot be reached the catalog now uses its saved copy
+- **Preset names and descriptions are read as plain text** - Catalog text was decoded in a way that let embedded markup load and run. It is now parsed without ever becoming live page content
+- **Confirm Action dialog shows values as text** - With Confirm Action turned on, the URL, path, entity or service in the action was written into the dialog as HTML. A crafted value could run script when the element was tapped. Everything in the dialog is now plain text
+- **URL actions refuse script links** - URL actions and the text module's link no longer open `javascript:`, `data:`, `vbscript:`, `blob:` or `file:` addresses. Web links, dashboard paths, `tel:`, `mailto:` and app links such as `spotify:` or `homeassistant://` work as before
+- **Image module error state** - Size and margin values from the card config are no longer written into the "image failed to load" placeholder as markup
+
+### 🔧 Improvements
+
+- **Proper confirmation dialogs** - Deleting a favorite, replacing a card or layout on import, deleting or clearing custom variables, withdrawing or deleting one of your presets in the Hub, and stopping a 3D print now use Ultra Card's own dialog instead of the browser's. Buttons say what they do (Delete, Replace, Withdraw), destructive ones are highlighted, and Cancel has focus first so Enter cannot delete by accident
+- **Confirm Action dialog is translated** - Its title, message, buttons and action descriptions now follow your Home Assistant language in all shipped languages
+- **More of the editor is translated** - The "this module does not have ... settings" messages and the Column Sizing heading are no longer English-only
+
+### 🐛 Bug Fixes
+
+- **Camera: fullscreen left listeners behind** - Every time a camera was opened fullscreen, two mouse listeners stayed on the page after it closed, each holding on to the closed video. On a wall tablet that opens cameras all day this added up. They are now removed when the viewer closes
+- **Date & Time input: date cut off** - With both date and time shown in a normal-width card the date lost its last digit. The two fields now wrap onto separate lines when they do not fit side by side
+- **Animated Weather and Forecast: missing icon when windy and cloudy** - The "windy-variant" condition pointed at an icon that does not exist and showed a broken image. It now shows the wind icon
+- **Animated Weather and Forecast: icons pinned** - The weather icons were loaded from a branch that has since been removed upstream. They now load from a fixed, permanent address
+- **Lunar Phase: background timer** - The once-a-minute refresh kept running after the last Lunar Phase module left the screen. It now stops and restarts on its own
+
+### 🧰 Under the Hood
+
+- Release and CI workflows pin every GitHub Action to an exact commit, and Dependabot keeps those pins current
+- `js-yaml` updated to 4.3.2
+- Added a SECURITY.md with how to report a vulnerability privately
+
 ## Version 3.14.4-beta9
 
 The ninth 3.14.4 beta makes doorbell cameras go live and open fullscreen on every ring, adds a popup for a day's events in the Calendar, and stops the "locale en" chunk error. This is a pre-release for testing — please report anything odd on GitHub or Discord.
