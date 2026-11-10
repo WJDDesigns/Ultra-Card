@@ -15,6 +15,7 @@ import { panelStyles } from '../panel-styles';
 import { copyTextToClipboard } from '../../utils/uc-clipboard';
 import { sanitizePresetHtml } from '../../utils/html-sanitizer';
 import { localize } from '../../localize/localize';
+import { ucConfirmService } from '../../services/uc-confirm-service';
 import '../components/uc-hub-login-dialog';
 import '../components/uc-hub-rate-dialog';
 import '../components/uc-hub-submit-preset-dialog';
@@ -1021,11 +1022,14 @@ export class HubPresetsTab extends LitElement {
   }
 
   private async _withdraw(preset: AuthorPreset): Promise<void> {
-    const ok = window.confirm(
-      this._t(
-        'hub.my_presets.confirm_withdraw',
-        'Withdraw this pending submission or revision?'
-      )
+    const ok = await ucConfirmService.confirm(
+      this._t('hub.my_presets.withdraw_title', 'Withdraw submission?'),
+      this._t('hub.my_presets.confirm_withdraw', 'Withdraw this pending submission or revision?'),
+      {
+        destructive: true,
+        confirmText: this._t('hub.my_presets.withdraw', 'Withdraw'),
+        cancelText: this._t('editor.common.cancel', 'Cancel'),
+      }
     );
     if (!ok) return;
     this._actionBusyId = preset.id;
@@ -1041,11 +1045,14 @@ export class HubPresetsTab extends LitElement {
   }
 
   private async _delete(preset: AuthorPreset): Promise<void> {
-    const ok = window.confirm(
-      this._t(
-        'hub.my_presets.confirm_delete',
-        'Delete this preset? This cannot be undone.'
-      )
+    const ok = await ucConfirmService.confirm(
+      this._t('hub.my_presets.delete_title', 'Delete preset?'),
+      this._t('hub.my_presets.confirm_delete', 'Delete this preset? This cannot be undone.'),
+      {
+        destructive: true,
+        confirmText: this._t('editor.common.delete', 'Delete'),
+        cancelText: this._t('editor.common.cancel', 'Cancel'),
+      }
     );
     if (!ok) return;
     this._actionBusyId = preset.id;

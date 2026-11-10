@@ -193,7 +193,18 @@
       "row_deleted": "Rad slettet",
       "column_deleted": "Kolonne slettet",
       "module_deleted": "Modul slettet",
-      "browse_presets_tooltip": "Bla gjennom forhåndsinnstillinger og legg en til dette kortet"
+      "browse_presets_tooltip": "Bla gjennom forhåndsinnstillinger og legg en til dette kortet",
+      "delete_favorite_title": "Slette favoritt?",
+      "confirm_delete_favorite": "Er du sikker på at du vil slette denne favoritten?",
+      "favorite_deleted": "Favoritt slettet",
+      "replace_card_title": "Erstatte dette kortet?",
+      "replace_layout_title": "Erstatte dette oppsettet?",
+      "confirm_import_layout": "Dette erstatter hele oppsettet ditt. Er du sikker?",
+      "no_general_settings": "Modulen støtter ikke generelle innstillinger",
+      "no_design_settings": "Modulen støtter ikke designinnstillinger",
+      "no_action_settings": "Denne modulen har ingen handlingsinnstillinger",
+      "no_other_settings": "Denne modulen har ingen andre innstillinger",
+      "column_sizing": "Kolonnestørrelse"
     },
     "about": {
       "developed_by": "Utviklet av",
@@ -251,7 +262,8 @@
         "nothing": "Ingen handling",
         "default": "Standardhandling",
         "default_for": "Standardhandling for {entity}",
-        "unknown": "Ukjent handling: {action}"
+        "unknown": "Ukjent handling: {action}",
+        "are_you_sure": "Er du sikker?"
       }
     },
     "icon": {
@@ -1758,7 +1770,9 @@
       "edit": "Rediger",
       "reset": "Tilbakestill",
       "error_configure_entity": "Konfigurer enhet",
-      "error_entity_not_found": "Enhet ikke funnet"
+      "error_entity_not_found": "Enhet ikke funnet",
+      "ok": "OK",
+      "replace": "Erstatt"
     },
     "horizontal": {
       "alignment": {
@@ -2656,7 +2670,11 @@
       "value_type_attribute_desc": "Attributtverdi (f.eks. temmp, friendly_name)",
       "attribute_name": "Attributtnavn",
       "make_global_conflict": "Det finnes allerede en global variabel med dette navnet. Gi denne et nytt navn først.",
-      "make_global": "Gjør global (bruk på alle kort)"
+      "make_global": "Gjør global (bruk på alle kort)",
+      "name_in_use_title": "Navnet er allerede i bruk",
+      "delete_title": "Slette variabel?",
+      "clear_all_title": "Slette alle globale variabler?",
+      "clear_card_title": "Slette kortvariabler?"
     },
     "export_import": {
       "include_variables": "Du har egendefinerte variabel(e). Inkludere them i eksporten?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "Trekke tilbake innsendingen?",
+      "delete_title": "Slette forhåndsinnstilling?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

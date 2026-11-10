@@ -4,6 +4,7 @@ import type { HomeAssistant } from '../ha/types';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { CustomVariable, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
+import { ucConfirmService } from '../services/uc-confirm-service';
 import { readHaSelectSelectedValue } from '../utils/form-utils';
 import { ucVariableValueTypeHaSelectOptions } from '../utils/uc-variable-value-type-options';
 
@@ -147,12 +148,14 @@ export class UcCustomVariablesManager extends LitElement {
   private _makeGlobal(variable: CustomVariable): void {
     const lang = this.hass?.locale?.language || 'en';
     if (ucCustomVariablesService.hasVariable(variable.name)) {
-      alert(
+      void ucConfirmService.notice(
+        localize('editor.custom_variables.name_in_use_title', lang, 'Name already in use'),
         localize(
           'editor.custom_variables.make_global_conflict',
           lang,
           'A global variable with this name already exists. Rename this one first.'
-        )
+        ),
+        localize('editor.common.ok', lang, 'OK')
       );
       return;
     }
@@ -290,9 +293,18 @@ export class UcCustomVariablesManager extends LitElement {
     }
   }
 
-  private _deleteVariable(variable: CustomVariable): void {
+  private async _deleteVariable(variable: CustomVariable): Promise<void> {
     const lang = this.hass?.locale?.language || 'en';
-    if (confirm(localize('editor.custom_variables.confirm_delete', lang, 'Are you sure you want to delete this variable?'))) {
+    if (
+      await this._confirmDelete(
+        localize('editor.custom_variables.delete_title', lang, 'Delete variable?'),
+        localize(
+          'editor.custom_variables.confirm_delete',
+          lang,
+          'Are you sure you want to delete this variable?'
+        )
+      )
+    ) {
       if (variable.isGlobal !== false) {
         // Delete global variable
         ucCustomVariablesService.deleteVariable(variable.id);
@@ -369,18 +381,45 @@ export class UcCustomVariablesManager extends LitElement {
     }
   }
 
-  private _clearAllVariables(): void {
+  private async _clearAllVariables(): Promise<void> {
     const lang = this.hass?.locale?.language || 'en';
-    if (confirm(localize('editor.custom_variables.confirm_clear_all', lang, 'Are you sure you want to delete ALL global variables? This cannot be undone.'))) {
+    if (
+      await this._confirmDelete(
+        localize('editor.custom_variables.clear_all_title', lang, 'Delete all global variables?'),
+        localize(
+          'editor.custom_variables.confirm_clear_all',
+          lang,
+          'Are you sure you want to delete ALL global variables? This cannot be undone.'
+        )
+      )
+    ) {
       ucCustomVariablesService.clearAll();
     }
   }
 
-  private _clearCardVariables(): void {
+  private async _clearCardVariables(): Promise<void> {
     const lang = this.hass?.locale?.language || 'en';
-    if (confirm(localize('editor.custom_variables.confirm_clear_card', lang, 'Are you sure you want to delete all card-specific variables?'))) {
+    if (
+      await this._confirmDelete(
+        localize('editor.custom_variables.clear_card_title', lang, 'Delete card variables?'),
+        localize(
+          'editor.custom_variables.confirm_clear_card',
+          lang,
+          'Are you sure you want to delete all card-specific variables?'
+        )
+      )
+    ) {
       this._updateCardVariables([]);
     }
+  }
+
+  private _confirmDelete(title: string, message: string): Promise<boolean> {
+    const lang = this.hass?.locale?.language || 'en';
+    return ucConfirmService.confirm(title, message, {
+      destructive: true,
+      confirmText: localize('editor.common.delete', lang, 'Delete'),
+      cancelText: localize('editor.common.cancel', lang, 'Cancel'),
+    });
   }
 
   private _updateCardVariables(variables: CustomVariable[]): void {

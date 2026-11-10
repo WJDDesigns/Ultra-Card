@@ -5,6 +5,8 @@ interface ConfirmOptions {
   destructive?: boolean | undefined;
   confirmText?: string | undefined;
   cancelText?: string | undefined;
+  /** Show only the confirm button (a notice the user just acknowledges). */
+  hideCancel?: boolean | undefined;
 }
 
 class UcConfirmService {
@@ -14,7 +16,12 @@ class UcConfirmService {
    */
   confirm(title: string, message: string, options: ConfirmOptions = {}): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
-      const { destructive = false, confirmText = 'Confirm', cancelText = 'Cancel' } = options;
+      const {
+        destructive = false,
+        confirmText = 'Confirm',
+        cancelText = 'Cancel',
+        hideCancel = false,
+      } = options;
 
       const { overlay, style } = this._buildOverlay();
 
@@ -35,7 +42,7 @@ class UcConfirmService {
       const cancelBtn = this._makeButton(cancelText, false, destructive);
       const confirmBtn = this._makeButton(confirmText, true, destructive);
 
-      actions.appendChild(cancelBtn);
+      if (!hideCancel) actions.appendChild(cancelBtn);
       actions.appendChild(confirmBtn);
 
       let resolved = false;
@@ -79,8 +86,13 @@ class UcConfirmService {
 
       document.body.appendChild(overlay);
       document.addEventListener('keydown', handleKey);
-      requestAnimationFrame(() => (destructive ? cancelBtn : confirmBtn).focus());
+      requestAnimationFrame(() => (destructive && !hideCancel ? cancelBtn : confirmBtn).focus());
     });
+  }
+
+  /** A styled notice with a single button, in place of the browser's `alert()`. */
+  async notice(title: string, message: string, okText = 'OK'): Promise<void> {
+    await this.confirm(title, message, { confirmText: okText, hideCancel: true });
   }
 
   /**

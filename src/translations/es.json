@@ -193,7 +193,18 @@
       "row_deleted": "Fila eliminada",
       "column_deleted": "Columna eliminada",
       "module_deleted": "Módulo eliminado",
-      "browse_presets_tooltip": "Explorar preajustes y añadir uno a esta tarjeta"
+      "browse_presets_tooltip": "Explorar preajustes y añadir uno a esta tarjeta",
+      "delete_favorite_title": "¿Eliminar favorito?",
+      "confirm_delete_favorite": "¿Seguro que quieres eliminar este favorito?",
+      "favorite_deleted": "Favorito eliminado",
+      "replace_card_title": "¿Reemplazar esta tarjeta?",
+      "replace_layout_title": "¿Reemplazar este diseño?",
+      "confirm_import_layout": "Esto reemplazará todo tu diseño. ¿Estás seguro?",
+      "no_general_settings": "El módulo no admite ajustes generales",
+      "no_design_settings": "El módulo no admite ajustes de diseño",
+      "no_action_settings": "Este módulo no tiene ajustes de acción",
+      "no_other_settings": "Este módulo no tiene otros ajustes",
+      "column_sizing": "Tamaño de columnas"
     },
     "common": {
       "left": "Izquierda",
@@ -221,7 +232,9 @@
       "edit": "Editar",
       "reset": "Restablecer",
       "error_configure_entity": "Configurar Entidad",
-      "error_entity_not_found": "Entidad No Encontrada"
+      "error_entity_not_found": "Entidad No Encontrada",
+      "ok": "Aceptar",
+      "replace": "Reemplazar"
     },
     "horizontal": {
       "layout": {
@@ -385,7 +398,8 @@
         "nothing": "Sin acción",
         "default": "Acción predeterminada",
         "default_for": "Acción predeterminada para {entity}",
-        "unknown": "Acción desconocida: {action}"
+        "unknown": "Acción desconocida: {action}",
+        "are_you_sure": "¿Estás seguro?"
       }
     },
     "icon": {
@@ -2656,7 +2670,11 @@
       "value_type_attribute_desc": "Valor de Atributo (por ejemplo, temmperatura, friendly_name)",
       "attribute_name": "Nombre de Atributo",
       "make_global_conflict": "Ya existe una variable global con este nombre. Cambie primero el nombre de esta.",
-      "make_global": "Hacer global (usar en todas las tarjetas)"
+      "make_global": "Hacer global (usar en todas las tarjetas)",
+      "name_in_use_title": "El nombre ya está en uso",
+      "delete_title": "¿Eliminar variable?",
+      "clear_all_title": "¿Eliminar todas las variables globales?",
+      "clear_card_title": "¿Eliminar las variables de la tarjeta?"
     },
     "export_import": {
       "include_variables": "Tiene variable(s) personalizada(s). ¿Incluir them en la exportación?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Delete this preset? This cannot be undone.",
       "withdrawn": "Submission withdrawn",
       "deleted": "Preset deleted",
-      "updated": "Preset update saved"
+      "updated": "Preset update saved",
+      "withdraw_title": "¿Retirar el envío?",
+      "delete_title": "¿Eliminar preajuste?"
     },
     "submit_preset": {
       "create_title": "Share your layout",

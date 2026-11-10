@@ -88,7 +88,9 @@
       "edit": "Bearbeiten",
       "reset": "Zurücksetzen",
       "error_configure_entity": "Entität konfigurieren",
-      "error_entity_not_found": "Entität Nicht Gefunden"
+      "error_entity_not_found": "Entität Nicht Gefunden",
+      "ok": "OK",
+      "replace": "Ersetzen"
     },
     "horizontal": {
       "layout": {
@@ -265,7 +267,18 @@
       "row_deleted": "Zeile gelöscht",
       "column_deleted": "Spalte gelöscht",
       "module_deleted": "Modul gelöscht",
-      "browse_presets_tooltip": "Vorlagen durchsuchen und eine zu dieser Karte hinzufügen"
+      "browse_presets_tooltip": "Vorlagen durchsuchen und eine zu dieser Karte hinzufügen",
+      "delete_favorite_title": "Favorit löschen?",
+      "confirm_delete_favorite": "Möchtest du diesen Favoriten wirklich löschen?",
+      "favorite_deleted": "Favorit gelöscht",
+      "replace_card_title": "Diese Karte ersetzen?",
+      "replace_layout_title": "Dieses Layout ersetzen?",
+      "confirm_import_layout": "Dadurch wird dein gesamtes Layout ersetzt. Bist du sicher?",
+      "no_general_settings": "Das Modul unterstützt keine allgemeinen Einstellungen",
+      "no_design_settings": "Das Modul unterstützt keine Design-Einstellungen",
+      "no_action_settings": "Dieses Modul hat keine Aktionseinstellungen",
+      "no_other_settings": "Dieses Modul hat keine weiteren Einstellungen",
+      "column_sizing": "Spaltengröße"
     },
     "layout_logic": {
       "display_title": "Dieses Element anzeigen",
@@ -384,7 +397,8 @@
         "nothing": "Keine Aktion",
         "default": "Standardaktion",
         "default_for": "Standardaktion für {entity}",
-        "unknown": "Unbekannte Aktion: {action}"
+        "unknown": "Unbekannte Aktion: {action}",
+        "are_you_sure": "Bist du sicher?"
       }
     },
     "icon": {
@@ -2660,7 +2674,11 @@
       "value_type_attribute_desc": "Attributwert (z.B. temperature, friendly_name)",
       "attribute_name": "Attributname",
       "make_global_conflict": "Es gibt bereits eine globale Variable mit diesem Namen. Bitte benennen Sie diese zuerst um.",
-      "make_global": "Global machen (auf jeder Karte verwenden)"
+      "make_global": "Global machen (auf jeder Karte verwenden)",
+      "name_in_use_title": "Name bereits vergeben",
+      "delete_title": "Variable löschen?",
+      "clear_all_title": "Alle globalen Variablen löschen?",
+      "clear_card_title": "Kartenvariablen löschen?"
     },
     "export_import": {
       "include_variables": "Sie haben benutzerdefinierte Variable(n). Soll them in den Export einbezogen werden?",
@@ -6674,7 +6692,9 @@
       "confirm_delete": "Diese Voreinstellung löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.",
       "withdrawn": "Beitrag zurückgezogen",
       "deleted": "Voreinstellung gelöscht",
-      "updated": "Voreinstellungs-Update gespeichert"
+      "updated": "Voreinstellungs-Update gespeichert",
+      "withdraw_title": "Einreichung zurückziehen?",
+      "delete_title": "Preset löschen?"
     },
     "submit_preset": {
       "create_title": "Teilen Sie Ihr Layout",
