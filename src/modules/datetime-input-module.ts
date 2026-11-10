@@ -383,7 +383,10 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
           display: flex;
           align-items: center;
           gap: 8px;
-          flex: 1;
+          /* Wide enough for a full date ("11/09/2026") beside its icon and
+             label. When two fields no longer fit side by side the wrapper
+             wraps them onto separate lines instead of clipping the value. */
+          flex: 1 1 210px;
           min-width: 0;
         }
         .datetime-picker-field-${moduleId} {
