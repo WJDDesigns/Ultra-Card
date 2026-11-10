@@ -873,7 +873,31 @@
       "toggle_config": "Toggle Configuration",
       "entity": "Entity",
       "entity_more_info_desc": "Select which entity to show more information for",
-      "entity_toggle_desc": "Select which entity to toggle on/off"
+      "entity_toggle_desc": "Select which entity to toggle on/off",
+      "confirm_dialog": {
+        "title": "Confirm Action",
+        "message": "Are you sure you want to execute this action?",
+        "details": "Action Details:",
+        "yes": "Yes",
+        "cancel": "Cancel",
+        "more_info": "Show more information",
+        "more_info_for": "Show more information for {entity}",
+        "toggle": "Toggle",
+        "toggle_entity": "Toggle {entity}",
+        "toggle_targets": "Toggle target entities",
+        "navigate": "Navigate to {path}",
+        "unknown_path": "unknown path",
+        "open_url": "Open URL: {url}",
+        "unknown_url": "unknown URL",
+        "service": "Execute service: {service}",
+        "service_on": "Execute service: {service} on {entity}",
+        "unknown_service": "unknown service",
+        "assist": "Open voice assistant",
+        "nothing": "No action (nothing)",
+        "default": "Default action",
+        "default_for": "Default action for {entity}",
+        "unknown": "Unknown action: {action}"
+      }
     },
     "icon": {
       "entity_config": {

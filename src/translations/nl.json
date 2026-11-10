@@ -228,7 +228,31 @@
       "toggle_config": "Configuratie Wisselen",
       "entity": "Entiteit",
       "entity_more_info_desc": "Selecteer welke entiteit je meer informatie wilt tonen",
-      "entity_toggle_desc": "Selecteer welke entiteit je wilt in-/uitschakelen"
+      "entity_toggle_desc": "Selecteer welke entiteit je wilt in-/uitschakelen",
+      "confirm_dialog": {
+        "title": "Actie bevestigen",
+        "message": "Weet je zeker dat je deze actie wilt uitvoeren?",
+        "details": "Actiedetails:",
+        "yes": "Ja",
+        "cancel": "Annuleren",
+        "more_info": "Meer informatie tonen",
+        "more_info_for": "Meer informatie tonen voor {entity}",
+        "toggle": "Schakelen",
+        "toggle_entity": "{entity} schakelen",
+        "toggle_targets": "Doelentiteiten schakelen",
+        "navigate": "Navigeren naar {path}",
+        "unknown_path": "onbekend pad",
+        "open_url": "URL openen: {url}",
+        "unknown_url": "onbekende URL",
+        "service": "Service uitvoeren: {service}",
+        "service_on": "Service uitvoeren: {service} op {entity}",
+        "unknown_service": "onbekende service",
+        "assist": "Spraakassistent openen",
+        "nothing": "Geen actie",
+        "default": "Standaardactie",
+        "default_for": "Standaardactie voor {entity}",
+        "unknown": "Onbekende actie: {action}"
+      }
     },
     "icon": {
       "entity_config": {

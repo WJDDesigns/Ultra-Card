@@ -357,7 +357,31 @@
       "toggle_config": "Configuration de Basculer",
       "entity": "Entité",
       "entity_more_info_desc": "Sélectionnez l'entité pour laquelle afficher plus d'informations",
-      "entity_toggle_desc": "Sélectionnez l'entité à activer/désactiver"
+      "entity_toggle_desc": "Sélectionnez l'entité à activer/désactiver",
+      "confirm_dialog": {
+        "title": "Confirmer l'action",
+        "message": "Voulez-vous vraiment exécuter cette action ?",
+        "details": "Détails de l'action :",
+        "yes": "Oui",
+        "cancel": "Annuler",
+        "more_info": "Afficher plus d'informations",
+        "more_info_for": "Afficher plus d'informations pour {entity}",
+        "toggle": "Basculer",
+        "toggle_entity": "Basculer {entity}",
+        "toggle_targets": "Basculer les entités cibles",
+        "navigate": "Naviguer vers {path}",
+        "unknown_path": "chemin inconnu",
+        "open_url": "Ouvrir l'URL : {url}",
+        "unknown_url": "URL inconnue",
+        "service": "Exécuter le service : {service}",
+        "service_on": "Exécuter le service : {service} sur {entity}",
+        "unknown_service": "service inconnu",
+        "assist": "Ouvrir l'assistant vocal",
+        "nothing": "Aucune action",
+        "default": "Action par défaut",
+        "default_for": "Action par défaut pour {entity}",
+        "unknown": "Action inconnue : {action}"
+      }
     },
     "icon": {
       "entity_config": {

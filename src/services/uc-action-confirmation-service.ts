@@ -1,5 +1,6 @@
 import type { HomeAssistant } from '../ha/types';
 import { TapActionConfig } from '../components/ultra-link';
+import { localize } from '../localize/localize';
 
 export interface ConfirmationDialogOptions {
   showConfirmButton?: boolean | undefined;
@@ -52,37 +53,42 @@ export class UcActionConfirmationService {
     overlay.className = 'uc-confirmation-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'Confirm Action');
+    const title = this._t('title', 'Confirm Action');
+    overlay.setAttribute('aria-label', title);
 
     const showConfirmButton = options?.showConfirmButton !== false;
     const showCancelButton = options?.showCancelButton !== false;
     const effectiveShowCancelButton = showCancelButton || !showConfirmButton;
-    const confirmText = options?.confirmText?.trim() || 'Yes';
-    const cancelText = options?.cancelText?.trim() || 'Cancel';
+    const confirmText = options?.confirmText?.trim() || this._t('yes', 'Yes');
+    const cancelText = options?.cancelText?.trim() || this._t('cancel', 'Cancel');
 
-    // If the renderer passed rich HTML, preserve it; otherwise show plain text description.
-    const actionDetailsHtml = actionDescription.includes('<')
-      ? actionDescription
-      : `
-          <div style="background: var(--secondary-background-color); padding: 12px; border-radius: 8px; margin-top: 12px;">
-            <div style="font-size: 14px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px;">
-              Action Details:
-            </div>
-            <div style="font-size: 13px; color: var(--secondary-text-color); line-height: 1.6;">
-              ${actionDescription}
-            </div>
-          </div>
-        `;
-
+    // Static skeleton only. Everything derived from the action (paths, entity
+    // ids, service names) can come from a downloaded preset or a template
+    // result, so it is written with textContent below and never parsed as HTML.
     overlay.innerHTML = `
       <div class="uc-confirmation-backdrop"></div>
       <div class="uc-confirmation-panel">
-        <h2 class="uc-confirmation-title">Confirm Action</h2>
-        <p class="uc-confirmation-message">Are you sure you want to execute this action?</p>
-        <div class="uc-confirmation-details">${actionDetailsHtml}</div>
+        <h2 class="uc-confirmation-title"></h2>
+        <p class="uc-confirmation-message"></p>
+        <div class="uc-confirmation-details">
+          <div class="uc-confirmation-details-label"></div>
+          <div class="uc-confirmation-details-text"></div>
+        </div>
         <div class="uc-confirmation-actions"></div>
       </div>
     `;
+
+    const setText = (selector: string, text: string): void => {
+      const el = overlay.querySelector(selector);
+      if (el) el.textContent = text;
+    };
+    setText('.uc-confirmation-title', title);
+    setText(
+      '.uc-confirmation-message',
+      this._t('message', 'Are you sure you want to execute this action?')
+    );
+    setText('.uc-confirmation-details-label', this._t('details', 'Action Details:'));
+    setText('.uc-confirmation-details-text', actionDescription);
 
     const actionsRow = overlay.querySelector('.uc-confirmation-actions') as HTMLDivElement;
 
@@ -197,7 +203,22 @@ export class UcActionConfirmationService {
         line-height: 1.45;
       }
       .uc-confirmation-details {
-        margin-bottom: 14px;
+        margin: 12px 0 14px;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+      }
+      .uc-confirmation-details-label {
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .uc-confirmation-details-text {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--secondary-text-color);
+        overflow-wrap: anywhere;
       }
       .uc-confirmation-actions {
         display: flex;
@@ -223,30 +244,58 @@ export class UcActionConfirmationService {
     document.head.appendChild(style);
   }
 
+  /** Dialog string in the user's language, English until the locale chunk loads. */
+  private _t(key: string, fallback: string, vars?: Record<string, string>): string {
+    const lang = this.hass?.locale?.language || 'en';
+    let text = localize(`editor.actions.confirm_dialog.${key}`, lang, fallback);
+    for (const [name, value] of Object.entries(vars ?? {})) {
+      text = text.split(`{${name}}`).join(value);
+    }
+    return text;
+  }
+
   /**
-   * Gets a human-readable description of the action
+   * A human-readable, plain-text description of the action. The result is
+   * always rendered with textContent; it is never markup.
    */
   private getActionDescription(action: TapActionConfig): string {
+    const entity = action.entity ? String(action.entity) : '';
     switch (action.action) {
       case 'more-info':
-        return `Show more information${action.entity ? ` for ${action.entity}` : ''}`;
+        return entity
+          ? this._t('more_info_for', 'Show more information for {entity}', { entity })
+          : this._t('more_info', 'Show more information');
       case 'toggle':
-        return `Toggle${action.entity ? ` ${action.entity}` : action.target ? ' target entities' : ''}`;
+        if (entity) return this._t('toggle_entity', 'Toggle {entity}', { entity });
+        return action.target
+          ? this._t('toggle_targets', 'Toggle target entities')
+          : this._t('toggle', 'Toggle');
       case 'navigate':
-        return `Navigate to ${action.navigation_path || 'unknown path'}`;
+        return this._t('navigate', 'Navigate to {path}', {
+          path: String(action.navigation_path || this._t('unknown_path', 'unknown path')),
+        });
       case 'url':
-        return `Open URL: ${action.url_path || 'unknown URL'}`;
-      case 'perform-action':
-        const service = action.service || action.perform_action || 'unknown service';
-        return `Execute service: ${service}${action.entity ? ` on ${action.entity}` : ''}`;
+        return this._t('open_url', 'Open URL: {url}', {
+          url: String(action.url_path || this._t('unknown_url', 'unknown URL')),
+        });
+      case 'perform-action': {
+        const service = String(
+          action.service || action.perform_action || this._t('unknown_service', 'unknown service')
+        );
+        return entity
+          ? this._t('service_on', 'Execute service: {service} on {entity}', { service, entity })
+          : this._t('service', 'Execute service: {service}', { service });
+      }
       case 'assist':
-        return 'Open voice assistant';
+        return this._t('assist', 'Open voice assistant');
       case 'nothing':
-        return 'No action (nothing)';
+        return this._t('nothing', 'No action (nothing)');
       case 'default':
-        return `Default action${action.entity ? ` for ${action.entity}` : ''}`;
+        return entity
+          ? this._t('default_for', 'Default action for {entity}', { entity })
+          : this._t('default', 'Default action');
       default:
-        return `Unknown action: ${action.action}`;
+        return this._t('unknown', 'Unknown action: {action}', { action: String(action.action) });
     }
   }
 }

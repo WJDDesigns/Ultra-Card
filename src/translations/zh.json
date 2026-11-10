@@ -873,7 +873,31 @@
       "toggle_config": "切换配置",
       "entity": "实体",
       "entity_more_info_desc": "选择要显示更多信息的实体",
-      "entity_toggle_desc": "选择要开关的实体"
+      "entity_toggle_desc": "选择要开关的实体",
+      "confirm_dialog": {
+        "title": "确认操作",
+        "message": "确定要执行此操作吗？",
+        "details": "操作详情：",
+        "yes": "是",
+        "cancel": "取消",
+        "more_info": "显示更多信息",
+        "more_info_for": "显示 {entity} 的更多信息",
+        "toggle": "切换",
+        "toggle_entity": "切换 {entity}",
+        "toggle_targets": "切换目标实体",
+        "navigate": "导航到 {path}",
+        "unknown_path": "未知路径",
+        "open_url": "打开网址：{url}",
+        "unknown_url": "未知网址",
+        "service": "执行服务：{service}",
+        "service_on": "对 {entity} 执行服务：{service}",
+        "unknown_service": "未知服务",
+        "assist": "打开语音助手",
+        "nothing": "无操作",
+        "default": "默认操作",
+        "default_for": "{entity} 的默认操作",
+        "unknown": "未知操作：{action}"
+      }
     },
     "icon": {
       "entity_config": {

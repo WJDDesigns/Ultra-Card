@@ -228,7 +228,31 @@
       "toggle_config": "Přepnout konfiguraci",
       "entity": "Entita",
       "entity_more_info_desc": "Vyber, kterou entitu chceš zobrazit s více informacemi",
-      "entity_toggle_desc": "Vyber, kterou entitu chceš přepnout zapnout/vypnout"
+      "entity_toggle_desc": "Vyber, kterou entitu chceš přepnout zapnout/vypnout",
+      "confirm_dialog": {
+        "title": "Potvrdit akci",
+        "message": "Opravdu chcete tuto akci provést?",
+        "details": "Podrobnosti akce:",
+        "yes": "Ano",
+        "cancel": "Zrušit",
+        "more_info": "Zobrazit více informací",
+        "more_info_for": "Zobrazit více informací o {entity}",
+        "toggle": "Přepnout",
+        "toggle_entity": "Přepnout {entity}",
+        "toggle_targets": "Přepnout cílové entity",
+        "navigate": "Přejít na {path}",
+        "unknown_path": "neznámá cesta",
+        "open_url": "Otevřít URL: {url}",
+        "unknown_url": "neznámá URL",
+        "service": "Spustit službu: {service}",
+        "service_on": "Spustit službu: {service} pro {entity}",
+        "unknown_service": "neznámá služba",
+        "assist": "Otevřít hlasového asistenta",
+        "nothing": "Žádná akce",
+        "default": "Výchozí akce",
+        "default_for": "Výchozí akce pro {entity}",
+        "unknown": "Neznámá akce: {action}"
+      }
     },
     "icon": {
       "entity_config": {

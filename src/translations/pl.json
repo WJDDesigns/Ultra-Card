@@ -228,7 +228,31 @@
       "toggle_config": "Przełącz Konfigurację",
       "entity": "Jednostka",
       "entity_more_info_desc": "Wybierz jednostkę, dla której chcesz wyświetlić więcej informacji",
-      "entity_toggle_desc": "Wybierz jednostkę do włączenia/wyłączenia"
+      "entity_toggle_desc": "Wybierz jednostkę do włączenia/wyłączenia",
+      "confirm_dialog": {
+        "title": "Potwierdź akcję",
+        "message": "Czy na pewno chcesz wykonać tę akcję?",
+        "details": "Szczegóły akcji:",
+        "yes": "Tak",
+        "cancel": "Anuluj",
+        "more_info": "Pokaż więcej informacji",
+        "more_info_for": "Pokaż więcej informacji o {entity}",
+        "toggle": "Przełącz",
+        "toggle_entity": "Przełącz {entity}",
+        "toggle_targets": "Przełącz encje docelowe",
+        "navigate": "Przejdź do {path}",
+        "unknown_path": "nieznana ścieżka",
+        "open_url": "Otwórz adres URL: {url}",
+        "unknown_url": "nieznany adres URL",
+        "service": "Wykonaj usługę: {service}",
+        "service_on": "Wykonaj usługę: {service} dla {entity}",
+        "unknown_service": "nieznana usługa",
+        "assist": "Otwórz asystenta głosowego",
+        "nothing": "Brak akcji",
+        "default": "Akcja domyślna",
+        "default_for": "Akcja domyślna dla {entity}",
+        "unknown": "Nieznana akcja: {action}"
+      }
     },
     "icon": {
       "entity_config": {
