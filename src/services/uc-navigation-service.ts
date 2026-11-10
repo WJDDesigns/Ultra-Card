@@ -1,4 +1,5 @@
 import type { HomeAssistant } from '../ha/types';
+import { openActionUrl } from '../utils/uc-safe-url';
 import { applyNavItemOrder, NAV_MEDIA_PLAYER_ID } from '../utils/uc-nav-item-order';
 import { forwardHaptic } from '../ha/helpers';
 import { html, render, TemplateResult } from 'lit';
@@ -1712,7 +1713,7 @@ class UcNavigationService {
       const action = resolvedChild.tap_action;
       if (action && action.action && action.action !== 'default' && action.action !== 'nothing') {
         if (action.action === 'url' && action.url_path) {
-          window.open(action.url_path, '_blank', 'noopener');
+          openActionUrl(action.url_path);
           return;
         }
         if (action.action === 'open-popup' && action.popup_id) {
@@ -2636,11 +2637,7 @@ class UcNavigationService {
     }
 
     if (action.action === 'url' && action.url_path) {
-      if (action.url_target === '_self') {
-        window.location.assign(action.url_path);
-      } else {
-        window.open(action.url_path, '_blank', 'noopener');
-      }
+      openActionUrl(action.url_path, action.url_target === '_self' ? '_self' : '_blank');
       this.triggerHaptic(actionType, registered);
       return;
     }

@@ -1,5 +1,6 @@
 import type { HomeAssistant, ActionConfig } from '../ha/types';
 import { toggleEntities } from '../utils/uc-entity-toggle';
+import { openActionUrl } from '../utils/uc-safe-url';
 
 export interface LinkAction {
   action_type?:
@@ -111,11 +112,7 @@ export class LinkService {
         case 'url':
           if (action.url || action.url_path) {
             const url = action.url || action.url_path || '';
-            if (action.url_target === '_self') {
-              window.location.assign(url);
-            } else {
-              window.open(url, '_blank', 'noopener');
-            }
+            openActionUrl(url, action.url_target === '_self' ? '_self' : '_blank');
           }
           break;
 

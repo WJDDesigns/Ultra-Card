@@ -1,4 +1,5 @@
 import { html, TemplateResult } from 'lit';
+import { openActionUrl } from '../utils/uc-safe-url';
 import type { HomeAssistant } from '../ha/types';
 import { forwardHaptic } from '../ha/helpers';
 import { toggleEntities } from '../utils/uc-entity-toggle';
@@ -542,11 +543,10 @@ export class UltraLinkComponent {
 
       case 'url':
         if (resolvedAction.url_path) {
-          if (resolvedAction.url_target === '_self') {
-            window.location.assign(resolvedAction.url_path);
-          } else {
-            window.open(resolvedAction.url_path, '_blank', 'noopener');
-          }
+          openActionUrl(
+            resolvedAction.url_path,
+            resolvedAction.url_target === '_self' ? '_self' : '_blank'
+          );
         }
         break;
 
