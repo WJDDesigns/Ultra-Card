@@ -39,6 +39,7 @@ import {
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
 import { renderHideOnDevicesSection } from '../tabs/uc-hide-on-devices-section';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
+import { addPinchZoomToCamera } from '../utils/uc-camera-fullscreen';
 
 /** Unified-template output keys the camera module reads (plain entity_id strings also work). */
 const CAMERA_TEMPLATE_KEYS = ['entity', 'visible', 'overlay_text', 'overlay_color'] as const;
@@ -2965,8 +2966,12 @@ export class UltraCameraModule extends BaseUltraModule {
     modal.appendChild(cameraWrapper);
     overlayHost.appendChild(modal);
 
+    // Aborted on close: removes the document-level drag listeners.
+    const interactions = new AbortController();
+
     // Add event handlers and prevent inert attribute
     const closeModal = () => {
+      interactions.abort();
       // Restore viewport settings
       const restoreViewport = (modal as any)._restoreViewport;
       if (restoreViewport) {
@@ -3062,7 +3067,7 @@ export class UltraCameraModule extends BaseUltraModule {
       `;
 
       cameraContainer.replaceChildren(streamEl);
-      this.addPinchZoomToCamera(streamEl, cameraContainer);
+      addPinchZoomToCamera(streamEl, cameraContainer, interactions.signal);
 
       const audioButton = document.createElement('button');
       audioButton.type = 'button';
@@ -3117,7 +3122,7 @@ export class UltraCameraModule extends BaseUltraModule {
       `;
 
       cameraContainer.replaceChildren(fallbackImg);
-      this.addPinchZoomToCamera(fallbackImg, cameraContainer);
+      addPinchZoomToCamera(fallbackImg, cameraContainer, interactions.signal);
     }
 
     // Add ESC key handler
@@ -3154,309 +3159,6 @@ export class UltraCameraModule extends BaseUltraModule {
     return () => {
       if (modal.isConnected) closeModal();
     };
-  }
-
-  // Add pinch-to-zoom and pan functionality to camera
-  private addPinchZoomToCamera(cameraElement: HTMLElement, container: HTMLElement): void {
-    let scale = 1;
-    let translateX = 0;
-    let translateY = 0;
-    let lastDistance = 0;
-    let isPinching = false;
-    let isDragging = false;
-    let lastMouseX = 0;
-    let lastMouseY = 0;
-    let lastTouchX = 0;
-    let lastTouchY = 0;
-
-    // Apply transform with translate and scale
-    const applyTransform = () => {
-      cameraElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-      cameraElement.style.transformOrigin = 'center center';
-      cameraElement.style.transition = isPinching || isDragging ? 'none' : 'transform 0.2s ease';
-    };
-
-    // Reset transform
-    const resetTransform = () => {
-      scale = 1;
-      translateX = 0;
-      translateY = 0;
-      applyTransform();
-      cameraElement.style.cursor = 'default';
-    };
-
-    // Get distance between two touches
-    const getDistance = (touch1: Touch, touch2: Touch): number => {
-      const dx = touch1.clientX - touch2.clientX;
-      const dy = touch1.clientY - touch2.clientY;
-      return Math.sqrt(dx * dx + dy * dy);
-    };
-
-    // Prevent default touch behaviors that interfere with pinch
-    container.addEventListener(
-      'touchstart',
-      (e: TouchEvent) => {
-        if (e.touches.length > 1) {
-          e.preventDefault();
-        }
-      },
-      { passive: false }
-    );
-
-    container.addEventListener(
-      'touchmove',
-      (e: TouchEvent) => {
-        if (e.touches.length > 1) {
-          e.preventDefault();
-        }
-      },
-      { passive: false }
-    );
-
-    // Calculate pan boundaries to keep image in view
-    const getPanLimits = () => {
-      const rect = cameraElement.getBoundingClientRect();
-      const scaledWidth = rect.width * scale;
-      const scaledHeight = rect.height * scale;
-      const maxX = Math.max(0, (scaledWidth - window.innerWidth) / 2);
-      const maxY = Math.max(0, (scaledHeight - window.innerHeight) / 2);
-      return { maxX, maxY };
-    };
-
-    // Constrain pan within reasonable bounds
-    const constrainPan = () => {
-      if (scale > 1) {
-        const { maxX, maxY } = getPanLimits();
-        translateX = Math.max(-maxX, Math.min(maxX, translateX));
-        translateY = Math.max(-maxY, Math.min(maxY, translateY));
-      }
-    };
-
-    // Touch start handler - detect pinch or pan start
-    cameraElement.addEventListener(
-      'touchstart',
-      (e: TouchEvent) => {
-        if (e.touches.length === 2) {
-          // Start pinch
-          e.preventDefault();
-          e.stopPropagation();
-          isPinching = true;
-          lastDistance = getDistance(e.touches[0], e.touches[1]);
-        } else if (e.touches.length === 1 && scale > 1) {
-          // Start pan (only when zoomed)
-          lastTouchX = e.touches[0].clientX;
-          lastTouchY = e.touches[0].clientY;
-        }
-      },
-      { passive: false }
-    );
-
-    // Touch move handler - handle both pinch zoom and pan
-    cameraElement.addEventListener(
-      'touchmove',
-      (e: TouchEvent) => {
-        if (isPinching && e.touches.length === 2) {
-          // Handle pinch zoom - smooth and responsive
-          e.preventDefault();
-          e.stopPropagation();
-
-          const currentDistance = getDistance(e.touches[0], e.touches[1]);
-
-          if (lastDistance > 0) {
-            // Direct proportional scaling - smooth continuous zoom
-            const scaleChange = currentDistance / lastDistance;
-            scale *= scaleChange;
-
-            // Constrain scale between 1 and 6 (no snapping during pinch!)
-            scale = Math.max(1, Math.min(6, scale));
-
-            // Constrain pan if zoomed in
-            if (scale > 1) {
-              constrainPan();
-            }
-
-            applyTransform();
-          }
-
-          lastDistance = currentDistance;
-        } else if (e.touches.length === 1 && scale > 1) {
-          // Handle pan when zoomed in (any zoom level > 1)
-          e.preventDefault();
-          const deltaX = e.touches[0].clientX - lastTouchX;
-          const deltaY = e.touches[0].clientY - lastTouchY;
-
-          translateX += deltaX;
-          translateY += deltaY;
-
-          constrainPan();
-          applyTransform();
-
-          lastTouchX = e.touches[0].clientX;
-          lastTouchY = e.touches[0].clientY;
-        }
-      },
-      { passive: false }
-    );
-
-    // Touch end handler
-    cameraElement.addEventListener('touchend', (e: TouchEvent) => {
-      if (e.touches.length === 0) {
-        isPinching = false;
-
-        // Snap to 1.0 and reset pan if very close to prevent black screen
-        if (scale < 1.02) {
-          scale = 1;
-          translateX = 0;
-          translateY = 0;
-        }
-
-        applyTransform();
-        cameraElement.style.cursor = scale > 1 ? 'grab' : 'default';
-      } else if (e.touches.length === 1 && isPinching) {
-        isPinching = false;
-
-        // Snap to 1.0 and reset pan if very close
-        if (scale < 1.02) {
-          scale = 1;
-          translateX = 0;
-          translateY = 0;
-        }
-
-        applyTransform();
-      }
-    });
-
-    // Handle touch cancel (important for mobile browsers)
-    cameraElement.addEventListener('touchcancel', () => {
-      isPinching = false;
-
-      // Snap to 1.0 and reset pan if very close to prevent black screen
-      if (scale < 1.02) {
-        scale = 1;
-        translateX = 0;
-        translateY = 0;
-      }
-
-      applyTransform();
-      cameraElement.style.cursor = scale > 1 ? 'grab' : 'default';
-    });
-
-    // Mouse drag handlers for desktop panning
-    cameraElement.addEventListener('mousedown', (e: MouseEvent) => {
-      if (scale > 1) {
-        e.preventDefault();
-        isDragging = true;
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
-        cameraElement.style.cursor = 'grabbing';
-      }
-    });
-
-    document.addEventListener('mousemove', (e: MouseEvent) => {
-      if (isDragging && scale > 1) {
-        e.preventDefault();
-        const deltaX = e.clientX - lastMouseX;
-        const deltaY = e.clientY - lastMouseY;
-
-        translateX += deltaX;
-        translateY += deltaY;
-
-        constrainPan();
-        applyTransform();
-
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
-      }
-    });
-
-    document.addEventListener('mouseup', () => {
-      if (isDragging) {
-        isDragging = false;
-
-        // Snap to 1.0 if very close when mouse released
-        if (scale < 1.02) {
-          scale = 1;
-          translateX = 0;
-          translateY = 0;
-          applyTransform();
-        }
-
-        cameraElement.style.cursor = scale > 1 ? 'grab' : 'default';
-      }
-    });
-
-    // Mouse wheel zoom for desktop - improved responsiveness
-    cameraElement.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-
-        const zoomSpeed = 0.15; // Increased from 0.1 for faster zoom
-        const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
-
-        scale = Math.max(1, Math.min(6, scale + delta));
-
-        // Snap to 1.0 if very close (within 2%) and reset pan
-        if (scale < 1.02) {
-          scale = 1;
-          translateX = 0;
-          translateY = 0;
-        } else if (scale > 1) {
-          // Only constrain pan if we're actually zoomed in
-          constrainPan();
-        }
-
-        applyTransform();
-        cameraElement.style.cursor = scale > 1 ? 'grab' : 'default';
-      },
-      { passive: false }
-    );
-
-    // Double tap to zoom in/out toggle
-    let lastTap = 0;
-    let lastTapX = 0;
-    let lastTapY = 0;
-
-    cameraElement.addEventListener('touchend', (e: TouchEvent) => {
-      const currentTime = Date.now();
-      const tapLength = currentTime - lastTap;
-
-      if (tapLength < 300 && tapLength > 0 && e.touches.length === 0) {
-        // Double tap detected
-        if (scale > 1) {
-          // Already zoomed - reset to normal
-          resetTransform();
-        } else {
-          // Not zoomed - zoom in to 2.5x at tap location
-          const touch = e.changedTouches[0];
-          const rect = cameraElement.getBoundingClientRect();
-
-          // Calculate tap position relative to image center
-          const tapX = touch.clientX - rect.left - rect.width / 2;
-          const tapY = touch.clientY - rect.top - rect.height / 2;
-
-          // Zoom to 2.5x
-          scale = 2.5;
-
-          // Center the zoom on the tap location
-          // The tap point should remain in the same screen position after zoom
-          translateX = -tapX * (scale - 1);
-          translateY = -tapY * (scale - 1);
-
-          constrainPan();
-          applyTransform();
-          cameraElement.style.cursor = 'grab';
-        }
-      }
-
-      // Store tap location for next time
-      if (e.changedTouches.length > 0) {
-        lastTapX = e.changedTouches[0].clientX;
-        lastTapY = e.changedTouches[0].clientY;
-      }
-
-      lastTap = currentTime;
-    });
   }
 
   // Dimension handling with aspect ratio linking (fallback dimensions only)

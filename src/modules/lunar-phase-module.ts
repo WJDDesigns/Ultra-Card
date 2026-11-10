@@ -189,6 +189,9 @@ function miniMoonSvg(phase: number, sizePx: number, southern: boolean): string {
 
 // ─── Module ───────────────────────────────────────────────────────────────────
 
+/** How often a visible lunar module refreshes its live position. */
+const LUNAR_TICK_MS = 60_000;
+
 export class UltraLunarPhaseModule extends BaseUltraModule {
   override handlesOwnDesignStyles = true;
 
@@ -208,6 +211,7 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
   private _snapshotCache = new Map<string, MoonSnapshot>();
   private _swipeStartX: number | null = null;
   private _tickTimer: ReturnType<typeof setInterval> | null = null;
+  private _lastRenderAt = 0;
 
   // ── createDefault ───────────────────────────────────────────────────────────
 
@@ -1764,10 +1768,25 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
     return this._getSnapshot(date, lat, lng).times;
   }
 
-  /** Re-render once a minute so the live position, markers, and relative times stay fresh */
+  /**
+   * Re-render once a minute so the live position, markers, and relative times stay fresh.
+   *
+   * Module handlers are shared singletons with no disconnect hook, so the timer
+   * stops itself: every render stamps `_lastRenderAt`, and a tick that finds no
+   * render since the previous tick means no lunar module is on screen any more.
+   * The next render starts it again.
+   */
   private _ensureTick(): void {
+    this._lastRenderAt = Date.now();
     if (this._tickTimer) return;
-    this._tickTimer = setInterval(() => this.triggerPreviewUpdate(false, true), 60000);
+    this._tickTimer = setInterval(() => {
+      if (Date.now() - this._lastRenderAt > LUNAR_TICK_MS * 1.5) {
+        if (this._tickTimer) clearInterval(this._tickTimer);
+        this._tickTimer = null;
+        return;
+      }
+      this.triggerPreviewUpdate(false, true);
+    }, LUNAR_TICK_MS);
   }
 
   private _fontSize(value: string | undefined, autoPx: string): string {
