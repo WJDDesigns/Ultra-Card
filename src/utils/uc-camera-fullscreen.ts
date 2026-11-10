@@ -53,7 +53,20 @@ export function findCameraVideoElement(root: Element): HTMLVideoElement | null {
   return null;
 }
 
-export function addPinchZoomToCamera(cameraElement: HTMLElement, container: HTMLElement): void {
+/**
+ * Pinch, wheel and drag zoom for a fullscreen camera.
+ *
+ * Dragging listens on `document` so a drag that leaves the picture still
+ * tracks. Pass the viewer's AbortSignal so those two listeners are removed when
+ * it closes; without it every viewer ever opened stays subscribed to mouse
+ * moves and keeps its (detached) video element alive.
+ */
+export function addPinchZoomToCamera(
+  cameraElement: HTMLElement,
+  container: HTMLElement,
+  signal?: AbortSignal
+): void {
+  const dragListenerOptions: AddEventListenerOptions = signal ? { signal } : {};
   let scale = 1;
   let translateX = 0;
   let translateY = 0;
@@ -241,7 +254,7 @@ export function addPinchZoomToCamera(cameraElement: HTMLElement, container: HTML
       lastMouseX = e.clientX;
       lastMouseY = e.clientY;
     }
-  });
+  }, dragListenerOptions);
 
   document.addEventListener('mouseup', () => {
     if (isDragging) {
@@ -256,7 +269,7 @@ export function addPinchZoomToCamera(cameraElement: HTMLElement, container: HTML
 
       cameraElement.style.cursor = scale > 1 ? 'grab' : 'default';
     }
-  });
+  }, dragListenerOptions);
 
   cameraElement.addEventListener(
     'wheel',
@@ -435,7 +448,11 @@ export function openCameraFullscreen(
   modal.appendChild(cameraWrapper);
   overlayHost.appendChild(modal);
 
+  // Aborted on close: removes the document-level drag listeners.
+  const interactions = new AbortController();
+
   const closeModal = () => {
+    interactions.abort();
     const restoreViewport = (modal as any)._restoreViewport;
     if (restoreViewport) {
       restoreViewport();
@@ -519,7 +536,7 @@ export function openCameraFullscreen(
     `;
 
     cameraContainer.replaceChildren(streamEl);
-    addPinchZoomToCamera(streamEl, cameraContainer);
+    addPinchZoomToCamera(streamEl, cameraContainer, interactions.signal);
 
     const audioButton = document.createElement('button');
     audioButton.type = 'button';
@@ -573,7 +590,7 @@ export function openCameraFullscreen(
     `;
 
     cameraContainer.replaceChildren(fallbackImg);
-    addPinchZoomToCamera(fallbackImg, cameraContainer);
+    addPinchZoomToCamera(fallbackImg, cameraContainer, interactions.signal);
   }
 
   const handleEscape = (e: KeyboardEvent) => {
