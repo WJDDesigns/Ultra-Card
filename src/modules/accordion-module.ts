@@ -9,6 +9,8 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
+import { ref } from 'lit/directives/ref.js';
+import { liftStackingContexts } from '../utils/uc-stacking-lift';
 
 export class UltraAccordionModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -1554,6 +1556,79 @@ export class UltraAccordionModule extends BaseUltraModule {
   private outsideClickCleanups = new Map<string, () => void>();
 
   /**
+   * Overlay panels float over the cards below them, but the card's own
+   * stacking context (container-type on the host) traps their z-index, so
+   * the next card painted over the open panel. While an overlay is open we
+   * lift the stacking contexts around it; these track that per accordion ID.
+   */
+  private overlayContentEls = new Map<string, HTMLElement | undefined>();
+  private overlayLiftWanted = new Map<string, boolean>();
+  private overlayLifts = new Map<string, { el: HTMLElement; release: () => void }>();
+  private overlayReleaseTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private overlayRefCallbacks = new Map<string, (el?: Element) => void>();
+
+  private _overlayRef(moduleId: string): (el?: Element) => void {
+    let cb = this.overlayRefCallbacks.get(moduleId);
+    if (!cb) {
+      cb = (el?: Element) => {
+        this.overlayContentEls.set(moduleId, el instanceof HTMLElement ? el : undefined);
+        this._applyOverlayLift(moduleId);
+      };
+      this.overlayRefCallbacks.set(moduleId, cb);
+    }
+    return cb;
+  }
+
+  private _syncOverlayLift(moduleId: string, wanted: boolean): void {
+    this.overlayLiftWanted.set(moduleId, wanted);
+    this._applyOverlayLift(moduleId);
+  }
+
+  private _applyOverlayLift(moduleId: string): void {
+    const el = this.overlayContentEls.get(moduleId);
+    const wanted = !!this.overlayLiftWanted.get(moduleId) && !!el;
+    const current = this.overlayLifts.get(moduleId);
+    const pendingRelease = this.overlayReleaseTimers.get(moduleId);
+
+    if (wanted && el) {
+      if (pendingRelease) {
+        clearTimeout(pendingRelease);
+        this.overlayReleaseTimers.delete(moduleId);
+      }
+      if (current && current.el === el && el.isConnected) return;
+      if (current) {
+        current.release();
+        this.overlayLifts.delete(moduleId);
+      }
+      const doLift = () => {
+        if (!el.isConnected || !this.overlayLiftWanted.get(moduleId)) return;
+        if (this.overlayContentEls.get(moduleId) !== el) return;
+        if (this.overlayLifts.get(moduleId)?.el === el) return;
+        this.overlayLifts.set(moduleId, { el, release: liftStackingContexts(el) });
+      };
+      if (el.isConnected) doLift();
+      else if (typeof requestAnimationFrame === 'function') requestAnimationFrame(doLift);
+      return;
+    }
+
+    if (!current || pendingRelease) return;
+    // Let the close animation finish above the neighbouring cards first.
+    const timer = setTimeout(() => {
+      this.overlayReleaseTimers.delete(moduleId);
+      const lift = this.overlayLifts.get(moduleId);
+      if (lift && !this.overlayLiftWanted.get(moduleId)) {
+        lift.release();
+        this.overlayLifts.delete(moduleId);
+      } else if (lift && this.overlayContentEls.get(moduleId) !== lift.el) {
+        lift.release();
+        this.overlayLifts.delete(moduleId);
+        this._applyOverlayLift(moduleId);
+      }
+    }, 320);
+    this.overlayReleaseTimers.set(moduleId, timer);
+  }
+
+  /**
    * Keep a document-level pointerdown listener in sync with the accordion's
    * open state when close_on_outside_click is enabled. The listener closes
    * the accordion (and removes itself) on the first press outside of it.
@@ -1798,6 +1873,12 @@ export class UltraAccordionModule extends BaseUltraModule {
     const contentBorderWidth = d.content_border_width ?? 0;
     const contentBorderColor = d.content_border_color || 'transparent';
     const contentBackground = d.content_background_color || 'transparent';
+    // Floating (overlay) panel colour: the content background if one is set,
+    // otherwise the accordion's background.
+    const overlayPanelBackground =
+      contentBackground !== 'transparent' ? contentBackground : containerBackground;
+    const overlayBaseBackground =
+      'var(--card-background-color, var(--ha-card-background, var(--primary-background-color, #fff)))';
     const contentStyles: Record<string, string> = {
       // Large cap keeps the max-height open/close transition working while
       // overflow:visible when open ensures even taller content is never
@@ -1820,7 +1901,11 @@ export class UltraAccordionModule extends BaseUltraModule {
         [expandUp ? 'bottom' : 'top']: '100%',
         [expandUp ? 'marginBottom' : 'marginTop']: '4px',
         zIndex: '1000',
-        background: contentBackground !== 'transparent' ? contentBackground : containerBackground,
+        // Opaque base so the page never shows through the floating panel,
+        // even when the pane colour is see-through (outline/minimal themes,
+        // rgba or 'transparent' backgrounds). The chosen panel colour is
+        // painted on top of it by the ::before rule in the render's <style>.
+        background: overlayBaseBackground,
         borderRadius: `${containerBorderRadius}px`,
         border: isOpen ? `${containerBorderWidth}px solid ${containerBorderColor}` : 'none',
         boxShadow: isOpen ? d.container_shadow || '0 4px 16px rgba(0, 0, 0, 0.25)' : 'none',
@@ -1950,6 +2035,7 @@ export class UltraAccordionModule extends BaseUltraModule {
       accordionId,
       isOpen && !!accordionModule.close_on_outside_click
     );
+    this._syncOverlayLift(accordionModule.id, isOpen && isOverlay);
 
     const renderBody = () =>
       isOpen && hasChildren
@@ -1975,6 +2061,17 @@ export class UltraAccordionModule extends BaseUltraModule {
         .${accordionId} .ultra-accordion-header:hover {
           background: ${headerHoverColor} !important;
         }
+        ${isOverlay
+          ? `.${accordionId} > .ultra-accordion-content::before {
+              content: '';
+              position: absolute;
+              inset: 0;
+              z-index: -1;
+              border-radius: inherit;
+              pointer-events: none;
+              background: ${overlayPanelBackground};
+            }`
+          : ''}
       </style>
       <div
         class="ultra-accordion-container ${hoverClass} ${accordionId}"
@@ -2036,7 +2133,11 @@ export class UltraAccordionModule extends BaseUltraModule {
         </div>
 
         <!-- Accordion Content -->
-        <div class="ultra-accordion-content" style="${this.buildStyleString(contentStyles)}">
+        <div
+          class="ultra-accordion-content"
+          style="${this.buildStyleString(contentStyles)}"
+          ${ref(this._overlayRef(accordionModule.id))}
+        >
           ${isSide
             ? html`<div
                 class="ultra-accordion-side-panel"
