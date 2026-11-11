@@ -8,6 +8,7 @@ import {
   UltraCardConfig,
 } from '../types';
 import { localize } from '../localize/localize';
+import { findHomeConnectLinks } from '../utils/uc-door-state';
 import { hasProAccess, renderProLockUI } from '../utils/uc-pro-access';
 import {
   ucLaundryTrackerService,
@@ -411,9 +412,14 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
                   { power_entity: appliance.power_entity || '' },
                   [{ name: 'power_entity', selector: { entity: { domain: 'sensor' } } }],
                   (e: CustomEvent) =>
-                    this._patchAppliance(m, updateModule, appliance.id, {
-                      power_entity: e.detail.value?.power_entity ?? '',
-                    })
+                    this._patchAppliance(
+                      m,
+                      updateModule,
+                      appliance.id,
+                      this._withHomeConnectLinks(hass, appliance, {
+                        power_entity: e.detail.value?.power_entity ?? '',
+                      })
+                    )
                 )}
                 ${this._renderThresholdHelper(m, appliance, updateModule, lang, state, analysis)}
                 ${this.renderFieldSection(
@@ -421,15 +427,25 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
                   localize(
                     'editor.laundry_tracker.door_entity_desc',
                     lang,
-                    'Optional but the most reliable unload signal there is: opening the door after a cycle clears the alert.'
+                    'Optional but the most reliable unload signal there is: opening the door after a cycle clears the alert. A contact sensor, or the door sensor of a smart appliance (Home Connect: open, closed, locked).'
                   ),
                   hass,
                   { door_entity: appliance.door_entity || '' },
-                  [{ name: 'door_entity', selector: { entity: { domain: 'binary_sensor' } } }],
+                  [
+                    {
+                      name: 'door_entity',
+                      selector: { entity: { domain: ['binary_sensor', 'sensor'] } },
+                    },
+                  ],
                   (e: CustomEvent) =>
-                    this._patchAppliance(m, updateModule, appliance.id, {
-                      door_entity: e.detail.value?.door_entity ?? '',
-                    })
+                    this._patchAppliance(
+                      m,
+                      updateModule,
+                      appliance.id,
+                      this._withHomeConnectLinks(hass, appliance, {
+                        door_entity: e.detail.value?.door_entity ?? '',
+                      })
+                    )
                 )}
                 ${this.renderConditionalFieldsGroup(
                   localize('editor.laundry_tracker.advanced_detection', lang, 'Advanced detection'),
@@ -464,9 +480,14 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
         { state_entity: appliance.state_entity || '' },
         [{ name: 'state_entity', selector: { entity: {} } }],
         (e: CustomEvent) =>
-          this._patchAppliance(m, updateModule, appliance.id, {
-            state_entity: e.detail.value?.state_entity ?? '',
-          })
+          this._patchAppliance(
+            m,
+            updateModule,
+            appliance.id,
+            this._withHomeConnectLinks(hass, appliance, {
+              state_entity: e.detail.value?.state_entity ?? '',
+            })
+          )
       )}
       ${this.renderChipListField(
         localize('editor.laundry_tracker.running_states', lang, 'Running states'),
@@ -1168,6 +1189,28 @@ export class UltraLaundryTrackerModule extends BaseUltraModule {
     updateModule({ appliances: [...(m.appliances || []), appliance] } as Partial<CardModule>);
     state.expanded.add(appliance.id);
     this.triggerPreviewUpdate(true);
+  }
+
+  /**
+   * Picking any entity of a Bosch/Siemens/Neff Home Connect machine fills the
+   * blanks from the same device: its door sensor, and its operation state when
+   * there is no power sensor to read cycles from. Filled fields stay editable.
+   */
+  private _withHomeConnectLinks(
+    hass: HomeAssistant,
+    appliance: LaundryApplianceConfig,
+    patch: Partial<LaundryApplianceConfig>
+  ): Partial<LaundryApplianceConfig> {
+    const picked = patch.power_entity || patch.state_entity || patch.door_entity;
+    if (!picked) return patch;
+    const links = findHomeConnectLinks(hass, picked);
+    const next = { ...appliance, ...patch };
+    const out = { ...patch };
+    if (links.door && !next.door_entity) out.door_entity = links.door;
+    if (links.operationState && !next.state_entity && !next.power_entity) {
+      out.state_entity = links.operationState;
+    }
+    return out;
   }
 
   private _patchAppliance(

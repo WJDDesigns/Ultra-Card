@@ -1,5 +1,6 @@
 import { TemplateResult, html, nothing, svg } from 'lit';
 import { localize } from '../localize/localize';
+import { isDoorOpenState } from '../utils/uc-door-state';
 import type { HomeAssistant } from '../ha/types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
@@ -494,7 +495,10 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
             ['binary_sensor'],
             [/(^|_)door(_state)?(_\d+)?$/, /bsh_common_status_doorstate(_\d+)?$/],
             ['door']
-          ) ?? (m.door_entity?.trim() ? null : L(undefined, ['sensor'], [], ['door']))
+          ) ??
+          (m.door_entity?.trim()
+            ? null
+            : L(undefined, ['sensor'], [/bsh_common_status_doorstate(_\d+)?$/], ['door']))
         : null;
     // Home Connect has no run/pause/stop select; it uses program buttons
     // (core `pause_program` / `resume_program` / `stop_program`, Alt
@@ -871,7 +875,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
                 ${entityPicker('second_cavity_mode_entity', m.second_cavity_mode_entity, ['sensor'], localize('editor.appliance.cavity_mode', lang, 'Second oven mode'))}
                 ${entityPicker('light_entity', m.light_entity, ['light'], localize('editor.appliance.oven_light_entity', lang, 'Oven light'))}
                 ${entityPicker('stop_button_entity', m.stop_button_entity, ['button'], localize('editor.appliance.stop_button', lang, 'Stop button'))}
-                ${entityPicker('door_entity', m.door_entity, ['binary_sensor'], localize('editor.appliance.door', lang, 'Door sensor'))}
+                ${entityPicker('door_entity', m.door_entity, ['binary_sensor', 'sensor'], localize('editor.appliance.door', lang, 'Door sensor'))}
                 ${entityPicker('child_lock_entity', m.child_lock_entity, ['binary_sensor'], localize('editor.appliance.child_lock', lang, 'Child lock'))}
                 ${entityPicker('remote_control_entity', m.remote_control_entity, ['binary_sensor'], localize('editor.appliance.remote_control', lang, 'Remote control'))}
                 ${entityPicker('power_entity', m.power_entity, ['sensor'], localize('editor.appliance.power_sensor', lang, 'Power (W)'))}
@@ -884,9 +888,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
                 ${entityPicker('completion_time_entity', m.completion_time_entity, ['sensor'], localize('editor.appliance.completion_time', lang, 'Completion time sensor'))}
                 ${entityPicker('child_lock_entity', m.child_lock_entity, ['binary_sensor'], localize('editor.appliance.child_lock', lang, 'Child lock'))}
                 ${entityPicker('remote_control_entity', m.remote_control_entity, ['binary_sensor'], localize('editor.appliance.remote_control', lang, 'Remote control'))}
-                ${type === 'dishwasher'
-                  ? entityPicker('door_entity', m.door_entity, ['binary_sensor'], localize('editor.appliance.door', lang, 'Door sensor'))
-                  : nothing}
+                ${entityPicker('door_entity', m.door_entity, ['binary_sensor', 'sensor'], localize('editor.appliance.door', lang, 'Door sensor'))}
                 ${entityPicker('power_entity', m.power_entity, ['sensor'], localize('editor.appliance.power_sensor', lang, 'Power (W)'))}
                 ${entityPicker('energy_entity', m.energy_entity, ['sensor'], localize('editor.appliance.energy_sensor', lang, 'Energy (kWh)'))}
               `
@@ -1749,7 +1751,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
     const fridgeDoorOpen = links.fridgeDoor?.state === 'on';
     const freezerDoorOpen = links.freezerDoor?.state === 'on';
     const filterProblem = links.filterStatus?.state === 'on';
-    const doorOpen = links.door?.state === 'on' || links.door?.state === 'open';
+    const doorOpen = isDoorOpenState(links.door?.state);
 
     // Range: cooktop burners + oven light
     const burnersOn = m.show_cooktop === false ? [] : links.cooktop.map(burnerOn);

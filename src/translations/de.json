@@ -5113,7 +5113,7 @@
       "display_section_desc": "Wählen Sie aus, welche Teile der Karte angezeigt werden sollen.",
       "done_ago": "Vor {time} erledigt.",
       "door_entity": "Tür-/Deckelsensor",
-      "door_entity_desc": "Optional, aber das zuverlässigste Entladesignal überhaupt: Durch das Öffnen der Tür nach einem Zyklus wird die Warnmeldung zurückgesetzt.",
+      "door_entity_desc": "Optional, aber das zuverlässigste Entladesignal überhaupt: Durch das Öffnen der Tür nach einem Zyklus wird die Warnmeldung zurückgesetzt. Ein Kontaktsensor oder der Türsensor eines smarten Geräts (Home Connect: offen, geschlossen, verriegelt).",
       "door_open": "Tür offen",
       "drawing_now": "Verbraucht gerade {watts}",
       "edit_appliance": "Maschine bearbeiten",

@@ -1,5 +1,6 @@
 import type { HomeAssistant } from '../ha/types';
 import { LaundryApplianceConfig } from '../types';
+import { isDoorOpenState, normalizeEnumState } from '../utils/uc-door-state';
 import {
   ucHistoryService,
   toNumericSeries,
@@ -169,7 +170,6 @@ const FORGOTTEN_MAX_MS = 24 * 3600 * 1000;
 const NOTIFY_STORAGE_KEY = 'uc_laundry_notified_v1';
 const NOTIFY_RETENTION_MS = 7 * DAY_MS;
 
-const OPEN_DOOR_STATES = new Set(['on', 'open', 'opened', 'true']);
 const UNAVAILABLE = new Set(['unavailable', 'unknown', 'none', '', 'null']);
 
 function clamp(value: number, min: number, max: number): number {
@@ -283,9 +283,9 @@ function runToCycle(run: RunSegment, energyRate: number): LaundryCycle {
   };
 }
 
+/** Binary sensors (on) and Home Connect enum sensors (open; closed/locked = shut). */
 function isOpenState(state: string | undefined | null): boolean {
-  if (!state) return false;
-  return OPEN_DOOR_STATES.has(String(state).trim().toLowerCase());
+  return isDoorOpenState(state);
 }
 
 function parseTimestamp(value: unknown): number | null {
@@ -656,7 +656,8 @@ class UltraCardLaundryTrackerService {
     const isRunningState = (state: string): boolean => {
       const s = String(state).trim().toLowerCase();
       if (UNAVAILABLE.has(s)) return false;
-      return runningStates.has(s);
+      // Home Connect Alt reports `BSH.Common.EnumType.OperationState.Run`
+      return runningStates.has(s) || runningStates.has(normalizeEnumState(s));
     };
 
     const liveState = hass.states?.[entityId]?.state;

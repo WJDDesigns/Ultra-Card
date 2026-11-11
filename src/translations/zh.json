@@ -5106,7 +5106,7 @@
       "display_section_desc": "选择卡片显示哪些部分。",
       "done_ago": "{time}前完成",
       "door_entity": "机门 / 机盖传感器",
-      "door_entity_desc": "可选，但这是最可靠的取出信号：程序结束后打开机门即可清除提醒。",
+      "door_entity_desc": "可选，但这是最可靠的取出信号：程序结束后打开机门即可清除提醒。可使用门磁传感器，或智能家电的门传感器（Home Connect：打开、关闭、锁定）。",
       "door_open": "机门已打开",
       "drawing_now": "当前功率 {watts}",
       "edit_appliance": "编辑设备",

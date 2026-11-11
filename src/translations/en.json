@@ -5106,7 +5106,7 @@
       "display_section_desc": "Choose which parts of the card are shown.",
       "done_ago": "Done {time} ago",
       "door_entity": "Door / lid sensor",
-      "door_entity_desc": "Optional but the most reliable unload signal there is: opening the door after a cycle clears the alert.",
+      "door_entity_desc": "Optional but the most reliable unload signal there is: opening the door after a cycle clears the alert. A contact sensor, or the door sensor of a smart appliance (Home Connect: open, closed, locked).",
       "door_open": "Door open",
       "drawing_now": "Drawing {watts} right now",
       "edit_appliance": "Edit machine",
