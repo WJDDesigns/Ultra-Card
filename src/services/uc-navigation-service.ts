@@ -152,6 +152,11 @@ class UcNavigationService {
 
   private static readonly COLLAPSE_STORAGE_PREFIX = 'uc-nav-collapsed:';
 
+  /** Dashboard element we padded so the last card can scroll clear of a bottom dock. */
+  private contentSpacerEl: HTMLElement | null = null;
+  private contentSpacerPx = 0;
+  private contentSpacerFrame: number | null = null;
+
   // Use the getter to access the shared map
   private get previewOverrides() {
     return getPreviewOverrides();
@@ -679,6 +684,84 @@ class UcNavigationService {
         this.clearNavigationForContainer(container);
       }
     }
+
+    this.scheduleContentSpacerUpdate();
+  }
+
+  // ── Content spacer: keep the last card reachable above a bottom dock ──
+
+  private scheduleContentSpacerUpdate(): void {
+    if (typeof window === 'undefined' || this.contentSpacerFrame !== null) return;
+    this.contentSpacerFrame = window.requestAnimationFrame(() => {
+      this.contentSpacerFrame = null;
+      this.updateContentSpacer();
+    });
+  }
+
+  /**
+   * Space a bottom dock covers at the bottom of the screen, measured without the
+   * auto-hide / collapse transforms so the page doesn't jump while it slides.
+   * Includes floating margins and the phone's safe-area padding.
+   */
+  private measureBottomDockReservation(): number {
+    let reserve = 0;
+    for (const layer of this.viewLayers.values()) {
+      if (!layer.activeModule || !layer.navLayer.isConnected) continue;
+      if (layer.navLayer.style.display === 'none') continue;
+      const navbar = layer.navLayer.querySelector('.navbar.bottom') as HTMLElement | null;
+      const card = navbar?.querySelector(':scope > .navbar-card') as HTMLElement | null;
+      if (!navbar || !card) continue;
+      const height = navbar.clientHeight;
+      if (!height || !card.offsetHeight) continue;
+      reserve = Math.max(reserve, height - card.offsetTop);
+    }
+    // Never reserve more than half the screen (guards odd layouts).
+    const max = Math.round((window.innerHeight || 0) / 2);
+    return Math.max(0, Math.min(Math.ceil(reserve), max));
+  }
+
+  /** The element that holds the dashboard view inside hui-root (#view). */
+  private findDashboardViewElement(): HTMLElement | null {
+    const ha = document.querySelector('home-assistant') as HTMLElement | null;
+    const main = ha?.shadowRoot?.querySelector('home-assistant-main') as HTMLElement | null;
+    const panel = main?.shadowRoot?.querySelector('ha-panel-lovelace') as HTMLElement | null;
+    const root = panel?.shadowRoot?.querySelector('hui-root') as HTMLElement | null;
+    const view = root?.shadowRoot?.querySelector('#view') as HTMLElement | null;
+    if (view) return view;
+    // Fallback for frontends that render hui-view somewhere else.
+    const huiView = document.querySelector('hui-view') as HTMLElement | null;
+    return (huiView?.parentElement as HTMLElement | null) ?? null;
+  }
+
+  private updateContentSpacer(): void {
+    const reserve = this.registeredModules.size > 0 ? this.measureBottomDockReservation() : 0;
+    const target = reserve > 0 ? this.findDashboardViewElement() : null;
+
+    if (this.contentSpacerEl && this.contentSpacerEl !== target) {
+      this.contentSpacerEl.style.removeProperty('padding-bottom');
+      this.contentSpacerEl = null;
+      this.contentSpacerPx = 0;
+    }
+    if (!target || reserve <= 0) return;
+    if (this.contentSpacerEl === target && this.contentSpacerPx === reserve) return;
+
+    // Extra room under the last card equal to the dock, so a page that fits the
+    // screen exactly can still scroll the last card out from behind the bar.
+    target.style.setProperty('padding-bottom', `${reserve + 8}px`);
+    this.contentSpacerEl = target;
+    this.contentSpacerPx = reserve;
+  }
+
+  private clearContentSpacer(): void {
+    if (this.contentSpacerFrame !== null) {
+      window.cancelAnimationFrame(this.contentSpacerFrame);
+      this.contentSpacerFrame = null;
+    }
+    if (this.contentSpacerEl) {
+      this.contentSpacerEl.style.removeProperty('padding-bottom');
+    }
+    this.contentSpacerEl = null;
+    this.contentSpacerPx = 0;
   }
 
   private evaluateActiveModuleForContainer(modules: RegisteredModule[]): RegisteredModule | null {
@@ -905,6 +988,7 @@ class UcNavigationService {
 
   private cleanup(): void {
     this.stopObservers();
+    this.clearContentSpacer();
     // Stop media player watcher
     this.stopMediaPlayerWatcher();
 
@@ -3128,6 +3212,7 @@ class UcNavigationService {
     );
     const template = this.renderNavigationTemplate(navConfig, viewLayer.activeModule, viewLayer);
     render(template, viewLayer.navLayer);
+    this.scheduleContentSpacerUpdate();
   }
 
   private resolveRoute(
