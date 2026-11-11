@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta11
+
+The eleventh 3.14.4 beta lets the Laundry Tracker use Bosch, Siemens and Neff door sensors from Home Connect, keeps the open Accordion panel solid in Overlay mode, stops a bottom Navigation bar from hiding the last card, and finishes the German Laundry Tracker translation. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🔧 Improvements
+
+- **Laundry Tracker: Home Connect door sensors** - The Door / Lid sensor only offered binary sensors, but Bosch, Siemens and Neff machines on Home Connect report the door as a sensor (open, closed, locked). Sensors can now be picked, and only "open" counts as open, so a door locked during a wash is treated as shut. Picking any entity of a Home Connect washer or dryer also fills in its door sensor, and its operation state when there is no power sensor. Thanks to larrysansan for reporting
+- **Washer and Dryer: door sensor** - The Door sensor picker now shows for washers and dryers too (it was dishwasher only), accepts Home Connect door sensors, and Home Connect Alt doors are found automatically
+- **German: Laundry Tracker fully translated** - Thanks to larrysansan. Also fixes the "Move to dryer" hint, which showed a raw placeholder
+- **"HACS" hints now say "Marketplace"** - Home Assistant 2026.11 has HACS built in as Marketplace
+
+### 🐛 Bug Fixes
+
+- **Accordion: open panel see-through in Overlay mode** - With Expand Style set to Overlay, cards further down the dashboard could show through the open panel, making its items hard to read. The panel now always floats above the cards below it and has a solid background (the Content background or Accordion background colour on top of your card colour), also on themes with see-through panes
+- **Navigation: last card hidden behind the bottom bar** - On a phone, when a dashboard filled the screen exactly, the last card sat behind a bottom Navigation bar with no way to scroll to it. The dashboard now gets extra room at the bottom equal to the bar's height (including floating margin and the phone's system bar), so every card can scroll clear of it
+
+### 🧰 Under the Hood
+
+- Updated build tooling and GitHub Actions (checkout, setup-node, upload-artifact, github-script, action-gh-release, globals, webpack-cli)
+
 ## Version 3.14.4-beta10
 
 The tenth 3.14.4 beta is a security and polish release. It closes four ways that content from outside your own dashboard (a downloaded preset, a shared YAML snippet, or a third party sitting between you and ultracard.io) could run script inside Home Assistant, replaces the browser's plain confirm boxes with proper dialogs, and fixes a memory leak in the camera fullscreen viewer.
