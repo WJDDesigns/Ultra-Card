@@ -120,7 +120,7 @@
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.70.0",
     "vitest": "5.0.3",
-    "webpack": "^5.110.3",
+    "webpack": "^5.112.2",
     "webpack-bundle-analyzer": "5.3.1",
     "webpack-cli": "^7.3.1",
     "webpack-dev-server": "^5.2.3"
