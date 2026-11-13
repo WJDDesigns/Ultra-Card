@@ -129,6 +129,10 @@ function burnerOn(ref: EntityRef): boolean {
 const HERO_SIZE = 150;
 const STANDARD_SIZE = 104;
 const COMPACT_SIZE = 40;
+const COMPACT_MIN_SIZE = 24;
+const COMPACT_MAX_SIZE = 120;
+const MIN_SIZE = 64;
+const MAX_SIZE = 220;
 
 /** Home Connect API key namespaces as they appear in Home Connect Alt entity ids. */
 const HOME_CONNECT_KEY_RE =
@@ -1192,20 +1196,35 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
           ]
         )}
 
-        ${this.renderSliderField(
-          localize('editor.appliance.size', lang, 'Graphic size'),
-          localize('editor.appliance.size_desc', lang, 'Size of the appliance illustration'),
-          m.appliance_size ?? STANDARD_SIZE,
-          STANDARD_SIZE,
-          64,
-          220,
-          4,
-          (value: number) => {
-            updateModule({ appliance_size: value });
-            this.triggerPreviewUpdate();
-          },
-          'px'
-        )}
+        ${(m.layout || 'standard') === 'compact'
+          ? this.renderSliderField(
+              localize('editor.appliance.size', lang, 'Graphic size'),
+              localize('editor.appliance.size_desc', lang, 'Size of the appliance illustration'),
+              m.appliance_compact_size ?? COMPACT_SIZE,
+              COMPACT_SIZE,
+              COMPACT_MIN_SIZE,
+              COMPACT_MAX_SIZE,
+              2,
+              (value: number) => {
+                updateModule({ appliance_compact_size: value });
+                this.triggerPreviewUpdate();
+              },
+              'px'
+            )
+          : this.renderSliderField(
+              localize('editor.appliance.size', lang, 'Graphic size'),
+              localize('editor.appliance.size_desc', lang, 'Size of the appliance illustration'),
+              m.appliance_size ?? ((m.layout || 'standard') === 'hero' ? HERO_SIZE : STANDARD_SIZE),
+              (m.layout || 'standard') === 'hero' ? HERO_SIZE : STANDARD_SIZE,
+              MIN_SIZE,
+              MAX_SIZE,
+              4,
+              (value: number) => {
+                updateModule({ appliance_size: value });
+                this.triggerPreviewUpdate();
+              },
+              'px'
+            )}
 
         ${this.renderColorField(
           localize('editor.appliance.active_color', lang, 'Running color'),
@@ -2218,12 +2237,16 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       burners: burnersOn,
       lightOn: ovenLightOn,
     };
+    const clampSize = (v: unknown, fallback: number, min: number, max: number): number => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? Math.min(max, Math.max(min, n)) : fallback;
+    };
     const size =
       layout === 'hero'
-        ? Math.max(m.appliance_size ?? HERO_SIZE, 110)
+        ? clampSize(m.appliance_size, HERO_SIZE, MIN_SIZE, MAX_SIZE)
         : layout === 'compact'
-          ? COMPACT_SIZE
-          : m.appliance_size ?? STANDARD_SIZE;
+          ? clampSize(m.appliance_compact_size, COMPACT_SIZE, COMPACT_MIN_SIZE, COMPACT_MAX_SIZE)
+          : clampSize(m.appliance_size, STANDARD_SIZE, MIN_SIZE, MAX_SIZE);
 
     const graphic = (px: number, wellClass = '') =>
       m.show_graphic !== false
@@ -2241,7 +2264,7 @@ export abstract class UltraApplianceBaseModule extends BaseUltraModule {
       content = html`
         <div class="uc-appl uc-appl--compact" style="--uc-appl-accent: ${accent};">
           <div class="uc-appl-compact__row">
-            ${graphic(COMPACT_SIZE, 'uc-appl-visual--compact')}
+            ${graphic(size, 'uc-appl-visual--compact')}
             <div class="uc-appl-compact__meta">
               ${m.show_title !== false
                 ? html`<div class="uc-appl-title uc-appl-title--compact" style="color: ${text};">${name}</div>`
