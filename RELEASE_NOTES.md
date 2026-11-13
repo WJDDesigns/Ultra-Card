@@ -1,5 +1,28 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta12
+
+The twelfth 3.14.4 beta lets the 3rd Party Card module run tap, hold and double-tap actions, lets you edit and delete calendar events right from the Calendar module, makes the appliance Graphic size slider work in Compact and smaller Hero layouts, and brings a big German translation update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🚀 New Features
+
+- **3rd Party Card: Tap, Hold and Double-tap actions** - The module has a new Actions tab. Embedded cards like WebRTC cameras swallow taps, so a popup set to Trigger via Module never opened from them. Once an action is set, or a popup uses the module as its trigger, Ultra Card takes the taps on that card (the embedded card's own buttons won't get them while that's on). Leave the actions on Nothing to keep the card's own controls. Thanks to Steve Markus for the request
+- **Calendar: edit and delete events** - Turn on Edit events and tap an event to change its title, date, time, location and description, or delete it. For repeating events you can change only that event or that event and all the following ones. Works with calendars that allow editing in Home Assistant, such as Local Calendar; events from read-only calendars keep your normal tap action. Thanks to larrysansan for the request
+
+### 🔧 Improvements
+
+- **German translation update** - Thanks to larrysansan for a large German update, merged with the newer calendar strings and fixed placeholders so values show up properly
+
+### 🐛 Bug Fixes
+
+- **Appliance: Graphic size in Compact and small Hero sizes** - In Compact the graphic was fixed at 40px, so the slider did nothing. Compact now has its own Graphic size slider (24–120px); existing cards stay at 40px until you move it. Hero had a hidden 110px minimum, so the graphic now shrinks down to 64px. Applies to every appliance type. Thanks to larrysansan for reporting
+
+### 🧰 Under the Hood
+
+- webpack updated to 5.112.2 and all tiptap editor packages to 3.33.0
+
 ## Version 3.14.4-beta11
 
 The eleventh 3.14.4 beta lets the Laundry Tracker use Bosch, Siemens and Neff door sensors from Home Connect, keeps the open Accordion panel solid in Overlay mode, stops a bottom Navigation bar from hiding the last card, and finishes the German Laundry Tracker translation. This is a pre-release for testing — please report anything odd on GitHub or Discord.
