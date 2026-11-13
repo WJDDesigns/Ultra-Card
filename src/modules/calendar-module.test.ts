@@ -188,3 +188,129 @@ describe('calendar editor', () => {
     expect(el.querySelectorAll('.per-view-event-display.locked').length).toBe(0);
   });
 });
+
+describe('Calendar edit events', () => {
+  const editHass = (features: number) =>
+    ({
+      ...hass,
+      states: { 'calendar.home': { state: 'off', attributes: { supported_features: features } } },
+      callWS: vi.fn(async () => null),
+      callService: vi.fn(async () => null),
+    }) as any;
+
+  const evt = (raw: Record<string, unknown>, allDay = false): ProcessedCalendarEvent => {
+    const start = allDay ? new Date(2026, 10, 20) : new Date(2026, 10, 20, 9, 30);
+    const end = allDay ? new Date(2026, 10, 22) : new Date(2026, 10, 20, 10, 45);
+    return {
+      id: 'e1',
+      calendarId: 'c1',
+      calendarColor: '#ff0000',
+      calendarName: 'Home',
+      summary: 'Renamed by rule',
+      start,
+      end,
+      isAllDay: allDay,
+      isMultiDay: allDay,
+      raw: { summary: 'Dentist', location: 'Main St', description: '', start: '', end: '', ...raw } as any,
+    };
+  };
+
+  const editModule = () => ({ ...baseModule('calendar.home'), allow_edit_events: true }) as CalendarModule;
+  const cals = [{ id: 'c1', entity: 'calendar.home', color: '#ff0000', visible: true }] as any;
+
+  it('tap opens the form with the event’s own values and saves via calendar/event/update', async () => {
+    const { mod } = setup();
+    const h = editHass(7);
+    const m = editModule();
+    (mod as any).handleEventClick(evt({ uid: 'u1' }), m, h, cals);
+    const st = (mod as any)._stateFor(m.id);
+    expect(st.form.edit.uid).toBe('u1');
+    expect(st.form.summary).toBe('Dentist');
+    expect(st.form.startTime).toBe('09:30');
+    expect(st.form.endTime).toBe('10:45');
+    st.form.summary = 'Dentist (moved)';
+    await (mod as any)._saveEvent(m, h, st, 'en');
+    expect(h.callService).not.toHaveBeenCalled();
+    const msg = h.callWS.mock.calls[0][0];
+    expect(msg.type).toBe('calendar/event/update');
+    expect(msg.entity_id).toBe('calendar.home');
+    expect(msg.uid).toBe('u1');
+    expect(msg.recurrence_id).toBeUndefined();
+    expect(msg.event.summary).toBe('Dentist (moved)');
+    expect(msg.event.dtstart).toBe(new Date(2026, 10, 20, 9, 30).toISOString().replace('.000Z', 'Z'));
+    expect(msg.event.location).toBe('Main St');
+    expect(st.form).toBeNull();
+  });
+
+  it('all-day events show the last day and send an exclusive end date', async () => {
+    const { mod } = setup();
+    const h = editHass(7);
+    const m = editModule();
+    (mod as any).handleEventClick(evt({ uid: 'u2' }, true), m, h, cals);
+    const st = (mod as any)._stateFor(m.id);
+    expect(st.form.startDate).toBe('2026-11-20');
+    expect(st.form.endDate).toBe('2026-11-21');
+    await (mod as any)._saveEvent(m, h, st, 'en');
+    const msg = h.callWS.mock.calls[0][0];
+    expect(msg.event.dtstart).toBe('2026-11-20');
+    expect(msg.event.dtend).toBe('2026-11-22');
+  });
+
+  it('repeating events send recurrence id and range; rrule only for this-and-following', async () => {
+    const { mod } = setup();
+    const h = editHass(7);
+    const m = editModule();
+    const raw = { uid: 'u3', recurrence_id: '20261120T093000', rrule: 'FREQ=WEEKLY' };
+    (mod as any).handleEventClick(evt(raw), m, h, cals);
+    let st = (mod as any)._stateFor(m.id);
+    await (mod as any)._saveEvent(m, h, st, 'en');
+    let msg = h.callWS.mock.calls[0][0];
+    expect(msg.recurrence_id).toBe('20261120T093000');
+    expect(msg.recurrence_range).toBe('');
+    expect(msg.event.rrule).toBeUndefined();
+
+    (mod as any).handleEventClick(evt(raw), m, h, cals);
+    st = (mod as any)._stateFor(m.id);
+    st.form.edit.range = 'THISANDFUTURE';
+    await (mod as any)._saveEvent(m, h, st, 'en');
+    msg = h.callWS.mock.calls[1][0];
+    expect(msg.recurrence_range).toBe('THISANDFUTURE');
+    expect(msg.event.rrule).toBe('FREQ=WEEKLY');
+  });
+
+  it('delete sends calendar/event/delete', async () => {
+    const { mod } = setup();
+    const h = editHass(3);
+    const m = editModule();
+    (mod as any).handleEventClick(evt({ uid: 'u4' }), m, h, cals);
+    const st = (mod as any)._stateFor(m.id);
+    expect(st.form.edit.canUpdate).toBe(false);
+    expect(st.form.edit.canDelete).toBe(true);
+    await (mod as any)._deleteEvent(st, h);
+    expect(h.callWS.mock.calls[0][0]).toEqual({ type: 'calendar/event/delete', entity_id: 'calendar.home', uid: 'u4' });
+    expect(st.form).toBeNull();
+  });
+
+  it('calendars that cannot change events, events without uid, or the option off keep the tap action', () => {
+    const { mod } = setup();
+    const m = editModule();
+    (mod as any).handleEventClick(evt({ uid: 'u5' }), m, editHass(1), cals);
+    expect((mod as any)._stateFor(m.id).form).toBeNull();
+    (mod as any).handleEventClick(evt({}), m, editHass(7), cals);
+    expect((mod as any)._stateFor(m.id).form).toBeNull();
+    (mod as any).handleEventClick(evt({ uid: 'u6' }), { ...m, allow_edit_events: false }, editHass(7), cals);
+    expect((mod as any)._stateFor(m.id).form).toBeNull();
+  });
+
+  it('edit form renders title, scope picker and delete button', () => {
+    const { mod } = setup();
+    const h = editHass(7);
+    const m = editModule();
+    (mod as any).handleEventClick(evt({ uid: 'u7', recurrence_id: 'r1' }), m, h, cals);
+    const st = (mod as any)._stateFor(m.id);
+    const text = textOf((mod as any)._renderAddForm(m, h, cals, st, 'en'));
+    expect(text).toContain('Edit event');
+    expect(text).toContain('This and following events');
+    expect(text).toContain('Delete');
+  });
+});

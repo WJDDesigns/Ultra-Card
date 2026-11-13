@@ -3569,7 +3569,18 @@
       "show_event_time": "Vis tid",
       "show_event_time_desc": "Vis begivenhedernes starttid",
       "show_location": "Vis sted",
-      "show_location_desc": "Vis begivenhedens sted"
+      "show_location_desc": "Vis begivenhedens sted",
+      "allow_edit_events": "Rediger begivenheder",
+      "allow_edit_events_desc": "Tryk på en begivenhed for at ændre eller slette den. Virker med kalendere, der tillader det (f.eks. Lokal kalender); begivenheder fra andre kalendere beholder tryk-handlingen.",
+      "edit_event": "Rediger begivenhed",
+      "edit_repeat_scope": "Gentagen begivenhed: anvend på",
+      "edit_scope_this": "Kun denne begivenhed",
+      "edit_scope_future": "Denne og følgende begivenheder",
+      "edit_delete_only": "Denne kalender kan slette begivenheder, men ikke ændre dem.",
+      "delete": "Slet",
+      "deleting": "Sletter…",
+      "delete_confirm": "Slet denne begivenhed?",
+      "delete_confirm_future": "Slet denne og følgende begivenheder?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Venter på Home Assistant",

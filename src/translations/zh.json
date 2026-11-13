@@ -3895,7 +3895,18 @@
       "show_event_time": "显示事件时间",
       "show_event_time_desc": "显示事件的开始时间",
       "show_location": "显示地点",
-      "show_location_desc": "显示事件地点"
+      "show_location_desc": "显示事件地点",
+      "allow_edit_events": "编辑事件",
+      "allow_edit_events_desc": "点按事件即可修改或删除。适用于允许此操作的日历（如本地日历）；其他日历的事件仍执行点按动作。",
+      "edit_event": "编辑事件",
+      "edit_repeat_scope": "重复事件：应用于",
+      "edit_scope_this": "仅此事件",
+      "edit_scope_future": "此事件及后续事件",
+      "edit_delete_only": "此日历可以删除事件，但不能修改。",
+      "delete": "删除",
+      "deleting": "正在删除…",
+      "delete_confirm": "删除此事件？",
+      "delete_confirm_future": "删除此事件及后续事件？"
     },
     "dynamic_list": {
       "error_waiting_ha": "正在等待 Home Assistant",

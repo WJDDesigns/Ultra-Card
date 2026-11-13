@@ -3569,7 +3569,18 @@
       "show_event_time": "Tijd tonen",
       "show_event_time_desc": "Begintijd van afspraken tonen",
       "show_location": "Locatie tonen",
-      "show_location_desc": "Locatie van de afspraak tonen"
+      "show_location_desc": "Locatie van de afspraak tonen",
+      "allow_edit_events": "Afspraken bewerken",
+      "allow_edit_events_desc": "Tik op een afspraak om deze te wijzigen of te verwijderen. Werkt met agenda's die dat toestaan (bijv. Lokale agenda); afspraken uit andere agenda's houden de tikactie.",
+      "edit_event": "Afspraak bewerken",
+      "edit_repeat_scope": "Terugkerende afspraak: toepassen op",
+      "edit_scope_this": "Alleen deze afspraak",
+      "edit_scope_future": "Deze en volgende afspraken",
+      "edit_delete_only": "Deze agenda kan afspraken verwijderen, maar niet wijzigen.",
+      "delete": "Verwijderen",
+      "deleting": "Verwijderen…",
+      "delete_confirm": "Deze afspraak verwijderen?",
+      "delete_confirm_future": "Deze en volgende afspraken verwijderen?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Wachten op Home Assistant",
