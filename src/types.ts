@@ -6131,6 +6131,8 @@ export interface ApplianceModule extends BaseModule {
 
   /** Appliance graphic size in px (hero/standard) */
   appliance_size?: number | undefined;
+  /** Appliance graphic size in px for the compact layout */
+  appliance_compact_size?: number | undefined;
 
   active_color?: string | undefined;
   done_color?: string | undefined;
