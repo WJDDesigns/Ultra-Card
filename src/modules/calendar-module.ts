@@ -64,8 +64,10 @@ function toHexColor(color: string): string {
   return '#' + [m[1], m[2], m[3]].map(n => Math.min(255, Number(n)).toString(16).padStart(2, '0')).join('');
 }
 
-/** calendar entity supported_features bit for creating events. */
+/** calendar entity supported_features bits (CalendarEntityFeature). */
 const CALENDAR_CREATE_EVENT = 1;
+const CALENDAR_DELETE_EVENT = 2;
+const CALENDAR_UPDATE_EVENT = 4;
 
 const WEATHER_ICONS: Record<string, string> = {
   'clear-night': 'mdi:weather-night',
@@ -97,6 +99,22 @@ interface CalendarAddForm {
   description: string;
   saving: boolean;
   error: string;
+  /** Set when the form edits an existing event. */
+  edit?: CalendarEditTarget | undefined;
+}
+
+/** The event an edit form changes (HA calendar/event/update and /delete). */
+interface CalendarEditTarget {
+  uid: string;
+  /** Set on one occurrence of a repeating event. */
+  recurrenceId?: string | undefined;
+  rrule?: string | undefined;
+  canUpdate: boolean;
+  canDelete: boolean;
+  /** '' = only this occurrence, THISANDFUTURE = this and the ones after it. */
+  range: '' | 'THISANDFUTURE';
+  /** Delete pressed once: asking to confirm. */
+  confirmDelete: boolean;
 }
 
 /** Events fetched for one set of calendars and dates. */
@@ -125,6 +143,9 @@ interface CalendarModuleState {
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const toDateInput = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const toTimeInput = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+/** "YYYY-MM-DD HH:MM:SS" in the browser's time zone → "YYYY-MM-DDTHH:MM:SSZ". */
+const toUtcIso = (local: string) =>
+  new Date(local.replace(' ', 'T')).toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 /**
  * Calendar Module - Pro Feature
@@ -632,6 +653,18 @@ export class UltraCalendarModule extends BaseUltraModule {
           [this.booleanField('show_add_event')],
           (e: CustomEvent) => {
             updateModule({ show_add_event: e.detail.value.show_add_event });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
+        )}
+
+        ${this.renderFieldSection(
+          localize('editor.calendar.allow_edit_events', lang, 'Edit events'),
+          localize('editor.calendar.allow_edit_events_desc', lang, 'Tap an event to change or delete it. Works with calendars that allow it (e.g. Local Calendar); events from other calendars keep the event tap action.'),
+          hass,
+          { allow_edit_events: !!module.allow_edit_events },
+          [this.booleanField('allow_edit_events')],
+          (e: CustomEvent) => {
+            updateModule({ allow_edit_events: e.detail.value.allow_edit_events });
             setTimeout(() => this.triggerPreviewUpdate(), 50);
           }
         )}
@@ -2421,6 +2454,9 @@ export class UltraCalendarModule extends BaseUltraModule {
       expanded: st.expanded,
       onEventClick: (event: ProcessedCalendarEvent) =>
         this.handleEventClick(event, calendarModule, hass, validCalendars),
+      isEventEditable: calendarModule.allow_edit_events
+        ? (event: ProcessedCalendarEvent) => this._editFeatures(event, hass, validCalendars) !== null
+        : undefined,
       onExpandToggle: () => this.handleExpandToggle(calendarModule.id),
       formatTime: (date: Date) => this.formatTime(date, calendarModule),
       formatDate: (date: Date) => this.formatDate(date, calendarModule, hass),
@@ -2806,6 +2842,98 @@ export class UltraCalendarModule extends BaseUltraModule {
     });
   }
 
+  /** What can be done to this event: null when its calendar can't change or delete events. */
+  private _editFeatures(
+    event: ProcessedCalendarEvent,
+    hass: HomeAssistant,
+    calendars: CalendarEntityConfig[]
+  ): { entity: string; canUpdate: boolean; canDelete: boolean } | null {
+    if (!event?.raw?.uid) return null;
+    const cal = calendars.find(c => c.id === event.calendarId);
+    if (!cal?.entity) return null;
+    const features = Number(hass?.states?.[cal.entity]?.attributes?.supported_features || 0);
+    const canUpdate = (features & CALENDAR_UPDATE_EVENT) !== 0;
+    const canDelete = (features & CALENDAR_DELETE_EVENT) !== 0;
+    if (!canUpdate && !canDelete) return null;
+    return { entity: cal.entity, canUpdate, canDelete };
+  }
+
+  /** Open the form on an existing event. False when the event can't be edited. */
+  private _openEditForm(
+    event: ProcessedCalendarEvent,
+    module: CalendarModule,
+    hass: HomeAssistant,
+    calendars: CalendarEntityConfig[]
+  ): boolean {
+    const feats = this._editFeatures(event, hass, calendars);
+    if (!feats) return false;
+    const st = this._stateFor(module.id);
+    const raw = event.raw;
+    // All-day ends are exclusive in HA; the form shows the last day.
+    let end = new Date(event.end);
+    if (event.isAllDay) {
+      end.setDate(end.getDate() - 1);
+      if (end < event.start) end = new Date(event.start);
+    }
+    st.form = {
+      calendar: feats.entity,
+      // The event's own text, not a name changed by an event rule.
+      summary: raw.summary || '',
+      allDay: event.isAllDay,
+      startDate: toDateInput(event.start),
+      startTime: toTimeInput(event.start),
+      endDate: toDateInput(end),
+      endTime: toTimeInput(end),
+      location: raw.location || '',
+      description: raw.description || '',
+      saving: false,
+      error: '',
+      edit: {
+        uid: raw.uid as string,
+        recurrenceId: raw.recurrence_id || undefined,
+        rrule: raw.rrule || undefined,
+        canUpdate: feats.canUpdate,
+        canDelete: feats.canDelete,
+        range: '',
+        confirmDelete: false,
+      },
+    };
+    // Close the day popup so the form is in view.
+    st.selectedDateKey = undefined;
+    this._syncDayPopupPortal(module.id, null);
+    this.triggerPreviewUpdate(true);
+    return true;
+  }
+
+  private async _deleteEvent(st: CalendarModuleState, hass: HomeAssistant): Promise<void> {
+    const f = st.form;
+    const edit = f?.edit;
+    if (!f || !edit || f.saving) return;
+    f.saving = true;
+    f.error = '';
+    this.triggerPreviewUpdate(true);
+    try {
+      const msg: Record<string, unknown> = {
+        type: 'calendar/event/delete',
+        entity_id: f.calendar,
+        uid: edit.uid,
+      };
+      if (edit.recurrenceId) {
+        msg.recurrence_id = edit.recurrenceId;
+        msg.recurrence_range = edit.range;
+      }
+      await hass.callWS(msg as { type: string });
+      st.form = null;
+      this._calendarService?.clearCache();
+      this._fetches.clear();
+    } catch (err) {
+      f.saving = false;
+      edit.confirmDelete = false;
+      f.error = String((err as { message?: string })?.message || err || 'Error');
+    }
+    this.triggerPreviewUpdate(true);
+  }
+
   private _renderToolbar(
     module: CalendarModule,
     hass: HomeAssistant,
@@ -3116,7 +3244,11 @@ export class UltraCalendarModule extends BaseUltraModule {
     f.saving = true;
     this.triggerPreviewUpdate(true);
     try {
-      await hass.callService('calendar', 'create_event', data, { entity_id: f.calendar });
+      if (f.edit) {
+        await hass.callWS(this._updateMessage(f, f.edit, data) as { type: string });
+      } else {
+        await hass.callService('calendar', 'create_event', data, { entity_id: f.calendar });
+      }
       st.form = null;
       // Refetch so the new event shows.
       this._calendarService?.clearCache();
@@ -3126,6 +3258,37 @@ export class UltraCalendarModule extends BaseUltraModule {
       f.error = String((err as { message?: string })?.message || err || 'Error');
     }
     this.triggerPreviewUpdate(true);
+  }
+
+  /** calendar/event/update message from the form's values (create_event field names in `data`). */
+  private _updateMessage(
+    f: CalendarAddForm,
+    edit: CalendarEditTarget,
+    data: Record<string, unknown>
+  ): Record<string, unknown> {
+    const event: Record<string, unknown> = {
+      summary: data.summary,
+      // Timed: sent in UTC so the time is exact whatever Home Assistant's time zone,
+      // and start / end share one zone even across a daylight-saving change.
+      dtstart: f.allDay ? data.start_date : toUtcIso(String(data.start_date_time)),
+      dtend: f.allDay ? data.end_date : toUtcIso(String(data.end_date_time)),
+      // Sent even when empty so a cleared field is cleared on the event.
+      location: f.location.trim(),
+      description: f.description.trim(),
+    };
+    // Keep the repeat rule unless only one occurrence changes.
+    if (edit.rrule && !(edit.recurrenceId && edit.range === '')) event.rrule = edit.rrule;
+    const msg: Record<string, unknown> = {
+      type: 'calendar/event/update',
+      entity_id: f.calendar,
+      uid: edit.uid,
+      event,
+    };
+    if (edit.recurrenceId) {
+      msg.recurrence_id = edit.recurrenceId;
+      msg.recurrence_range = edit.range;
+    }
+    return msg;
   }
 
   private _renderAddForm(
@@ -3145,6 +3308,10 @@ export class UltraCalendarModule extends BaseUltraModule {
     };
     const calName = (cal: CalendarEntityConfig) =>
       cal.name || String(hass?.states?.[cal.entity]?.attributes?.friendly_name || cal.entity);
+    const edit = f.edit;
+    // Calendars that can delete but not change events: fields are read-only.
+    const readOnly = !!edit && !edit.canUpdate;
+    const editCal = edit ? calendars.find(c => c.entity === f.calendar) : undefined;
 
     return html`
       <form
@@ -3158,8 +3325,33 @@ export class UltraCalendarModule extends BaseUltraModule {
           this._saveEvent(module, hass, st, lang);
         }}
       >
-        <div class="uc-calendar-form-title">${t('add_event', 'Add event')}</div>
-        ${writable.length > 1
+        <div class="uc-calendar-form-title">
+          ${edit ? t('edit_event', 'Edit event') : t('add_event', 'Add event')}
+        </div>
+        ${edit && editCal
+          ? html`<div class="uc-calendar-form-calname">
+              <span class="uc-calendar-details-dot" style="background: ${editCal.color || '#03a9f4'};"></span>
+              ${calName(editCal)}
+            </div>`
+          : nothing}
+        ${edit?.recurrenceId
+          ? html`<label class="uc-calendar-form-field">
+              <span>${t('edit_repeat_scope', 'Repeating event: apply to')}</span>
+              <select
+                .value=${edit.range}
+                @change=${(e: Event) => {
+                  edit.range = (e.target as HTMLSelectElement).value === 'THISANDFUTURE' ? 'THISANDFUTURE' : '';
+                }}
+              >
+                <option value="" ?selected=${edit.range === ''}>${t('edit_scope_this', 'Only this event')}</option>
+                <option value="THISANDFUTURE" ?selected=${edit.range === 'THISANDFUTURE'}>
+                  ${t('edit_scope_future', 'This and following events')}
+                </option>
+              </select>
+            </label>`
+          : nothing}
+        <fieldset class="uc-calendar-form-fields" ?disabled=${readOnly}>
+        ${!edit && writable.length > 1
           ? html`<label class="uc-calendar-form-field">
               <span>${t('form_calendar', 'Calendar')}</span>
               <select
@@ -3229,23 +3421,75 @@ export class UltraCalendarModule extends BaseUltraModule {
           <span>${t('form_description', 'Description')}</span>
           <textarea rows="2" .value=${f.description} @input=${set('description')}></textarea>
         </label>
+        </fieldset>
+        ${readOnly
+          ? html`<div class="uc-calendar-form-note">
+              ${t('edit_delete_only', 'This calendar can delete events but not change them.')}
+            </div>`
+          : nothing}
         ${f.error ? html`<div class="uc-calendar-form-error">${f.error}</div>` : nothing}
-        <div class="uc-calendar-form-actions">
-          <button
-            type="button"
-            class="uc-calendar-pill-btn"
-            @click=${(e: Event) => {
-              e.stopPropagation();
-              st.form = null;
-              this.triggerPreviewUpdate(true);
-            }}
-          >
-            ${t('cancel', 'Cancel')}
-          </button>
-          <button type="submit" class="uc-calendar-pill-btn primary" ?disabled=${f.saving}>
-            ${f.saving ? t('saving', 'Saving…') : t('save', 'Save')}
-          </button>
-        </div>
+        ${edit?.confirmDelete
+          ? html`<div class="uc-calendar-form-actions confirm">
+              <span class="uc-calendar-form-confirm-text">
+                ${edit.recurrenceId && edit.range === 'THISANDFUTURE'
+                  ? t('delete_confirm_future', 'Delete this and the following events?')
+                  : t('delete_confirm', 'Delete this event?')}
+              </span>
+              <button
+                type="button"
+                class="uc-calendar-pill-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  edit.confirmDelete = false;
+                  this.triggerPreviewUpdate(true);
+                }}
+              >
+                ${t('cancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                class="uc-calendar-pill-btn danger"
+                ?disabled=${f.saving}
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteEvent(st, hass);
+                }}
+              >
+                ${f.saving ? t('deleting', 'Deleting…') : t('delete', 'Delete')}
+              </button>
+            </div>`
+          : html`<div class="uc-calendar-form-actions">
+              ${edit?.canDelete
+                ? html`<button
+                    type="button"
+                    class="uc-calendar-pill-btn danger start"
+                    ?disabled=${f.saving}
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      edit.confirmDelete = true;
+                      this.triggerPreviewUpdate(true);
+                    }}
+                  >
+                    ${t('delete', 'Delete')}
+                  </button>`
+                : nothing}
+              <button
+                type="button"
+                class="uc-calendar-pill-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  st.form = null;
+                  this.triggerPreviewUpdate(true);
+                }}
+              >
+                ${t('cancel', 'Cancel')}
+              </button>
+              ${readOnly
+                ? nothing
+                : html`<button type="submit" class="uc-calendar-pill-btn primary" ?disabled=${f.saving}>
+                    ${f.saving ? t('saving', 'Saving…') : t('save', 'Save')}
+                  </button>`}
+            </div>`}
       </form>
     `;
   }
@@ -3440,6 +3684,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     validCalendars: CalendarEntityConfig[] = []
   ): void {
     if (!event) return;
+    if (module.allow_edit_events && this._openEditForm(event, module, hass, validCalendars)) return;
     if (module.tap_action_expand) {
       // Toggle expand state
       const st = this._stateFor(module.id);
@@ -4779,6 +5024,13 @@ export class UltraCalendarModule extends BaseUltraModule {
         border-top: 1px solid var(--divider-color);
       }
 
+      .uc-calendar-details-edit {
+        --mdc-icon-size: 18px;
+        flex: 0 0 auto;
+        align-self: center;
+        color: var(--secondary-text-color);
+      }
+
       .uc-calendar-details-accent {
         width: 4px;
         border-radius: 2px;
@@ -4993,7 +5245,56 @@ export class UltraCalendarModule extends BaseUltraModule {
       .uc-calendar-form-actions {
         display: flex;
         justify-content: flex-end;
+        align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
+      }
+
+      .uc-calendar-form-actions .start {
+        margin-right: auto;
+      }
+
+      .uc-calendar-form-confirm-text {
+        margin-right: auto;
+        font-size: 14px;
+        color: var(--primary-text-color);
+      }
+
+      .uc-calendar-pill-btn.danger {
+        color: var(--error-color, #db4437);
+        border-color: var(--error-color, #db4437);
+      }
+
+      .uc-calendar-form-actions.confirm .uc-calendar-pill-btn.danger {
+        background: var(--error-color, #db4437);
+        color: #fff;
+      }
+
+      .uc-calendar-form-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+      }
+
+      .uc-calendar-form-fields[disabled] {
+        opacity: 0.7;
+      }
+
+      .uc-calendar-form-calname {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+      }
+
+      .uc-calendar-form-note {
+        font-size: 13px;
+        color: var(--secondary-text-color);
       }
 
       /* Narrow cards: switcher drops below the title row */

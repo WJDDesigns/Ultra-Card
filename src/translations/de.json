@@ -3573,7 +3573,18 @@
       "show_event_time": "Terminzeit anzeigen",
       "show_event_time_desc": "Startzeit der Termine anzeigen",
       "show_location": "Ort anzeigen",
-      "show_location_desc": "Terminort anzeigen"
+      "show_location_desc": "Terminort anzeigen",
+      "allow_edit_events": "Termine bearbeiten",
+      "allow_edit_events_desc": "Tippen Sie auf einen Termin, um ihn zu ändern oder zu löschen. Funktioniert mit Kalendern, die das erlauben (z. B. Lokaler Kalender); Termine aus anderen Kalendern behalten die Tipp-Aktion.",
+      "edit_event": "Termin bearbeiten",
+      "edit_repeat_scope": "Wiederkehrender Termin: anwenden auf",
+      "edit_scope_this": "Nur diesen Termin",
+      "edit_scope_future": "Diesen und alle folgenden Termine",
+      "edit_delete_only": "Dieser Kalender kann Termine löschen, aber nicht ändern.",
+      "delete": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "delete_confirm": "Diesen Termin löschen?",
+      "delete_confirm_future": "Diesen und alle folgenden Termine löschen?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Warten auf Home Assistant",

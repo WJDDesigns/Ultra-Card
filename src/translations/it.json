@@ -3569,7 +3569,18 @@
       "show_event_time": "Mostra orario",
       "show_event_time_desc": "Mostra l'ora di inizio degli eventi",
       "show_location": "Mostra luogo",
-      "show_location_desc": "Mostra il luogo dell'evento"
+      "show_location_desc": "Mostra il luogo dell'evento",
+      "allow_edit_events": "Modifica eventi",
+      "allow_edit_events_desc": "Tocca un evento per modificarlo o eliminarlo. Funziona con i calendari che lo consentono (ad es. Calendario locale); gli eventi di altri calendari mantengono l'azione al tocco.",
+      "edit_event": "Modifica evento",
+      "edit_repeat_scope": "Evento ricorrente: applica a",
+      "edit_scope_this": "Solo questo evento",
+      "edit_scope_future": "Questo e gli eventi successivi",
+      "edit_delete_only": "Questo calendario può eliminare gli eventi ma non modificarli.",
+      "delete": "Elimina",
+      "deleting": "Eliminazione…",
+      "delete_confirm": "Eliminare questo evento?",
+      "delete_confirm_future": "Eliminare questo evento e i successivi?"
     },
     "dynamic_list": {
       "error_waiting_ha": "In attesa di Home Assistant",

@@ -3569,7 +3569,18 @@
       "show_event_time": "Visa tid",
       "show_event_time_desc": "Visa händelsernas starttid",
       "show_location": "Visa plats",
-      "show_location_desc": "Visa händelsens plats"
+      "show_location_desc": "Visa händelsens plats",
+      "allow_edit_events": "Redigera händelser",
+      "allow_edit_events_desc": "Tryck på en händelse för att ändra eller ta bort den. Fungerar med kalendrar som tillåter det (t.ex. Lokal kalender); händelser från andra kalendrar behåller tryckåtgärden.",
+      "edit_event": "Redigera händelse",
+      "edit_repeat_scope": "Återkommande händelse: tillämpa på",
+      "edit_scope_this": "Endast den här händelsen",
+      "edit_scope_future": "Den här och följande händelser",
+      "edit_delete_only": "Den här kalendern kan ta bort händelser men inte ändra dem.",
+      "delete": "Ta bort",
+      "deleting": "Tar bort…",
+      "delete_confirm": "Ta bort den här händelsen?",
+      "delete_confirm_future": "Ta bort den här och följande händelser?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Väntar på Home Assistant",

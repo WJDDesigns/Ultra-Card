@@ -3569,7 +3569,18 @@
       "show_event_time": "Zobrazit čas",
       "show_event_time_desc": "Zobrazit čas začátku událostí",
       "show_location": "Zobrazit místo",
-      "show_location_desc": "Zobrazit místo události"
+      "show_location_desc": "Zobrazit místo události",
+      "allow_edit_events": "Upravovat události",
+      "allow_edit_events_desc": "Klepnutím na událost ji změníte nebo smažete. Funguje s kalendáři, které to umožňují (např. Místní kalendář); události z jiných kalendářů si ponechají akci klepnutí.",
+      "edit_event": "Upravit událost",
+      "edit_repeat_scope": "Opakovaná událost: použít na",
+      "edit_scope_this": "Pouze tuto událost",
+      "edit_scope_future": "Tuto a následující události",
+      "edit_delete_only": "Tento kalendář může události mazat, ale ne měnit.",
+      "delete": "Smazat",
+      "deleting": "Mazání…",
+      "delete_confirm": "Smazat tuto událost?",
+      "delete_confirm_future": "Smazat tuto a následující události?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Čekám na Home Assistant",

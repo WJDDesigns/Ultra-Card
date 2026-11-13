@@ -3569,7 +3569,18 @@
       "show_event_time": "Vis tid",
       "show_event_time_desc": "Vis starttida for hendingar",
       "show_location": "Vis stad",
-      "show_location_desc": "Vis staden for hendinga"
+      "show_location_desc": "Vis staden for hendinga",
+      "allow_edit_events": "Rediger hendingar",
+      "allow_edit_events_desc": "Trykk på ei hending for å endre eller slette ho. Verkar med kalendrar som tillèt det (t.d. Lokal kalender); hendingar frå andre kalendrar held på trykkhandlinga.",
+      "edit_event": "Rediger hending",
+      "edit_repeat_scope": "Gjentakande hending: bruk på",
+      "edit_scope_this": "Berre denne hendinga",
+      "edit_scope_future": "Denne og følgjande hendingar",
+      "edit_delete_only": "Denne kalenderen kan slette hendingar, men ikkje endre dei.",
+      "delete": "Slett",
+      "deleting": "Slettar…",
+      "delete_confirm": "Slette denne hendinga?",
+      "delete_confirm_future": "Slette denne og følgjande hendingar?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Vent på Home Assistant",

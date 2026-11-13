@@ -3895,7 +3895,18 @@
       "show_event_time": "Show Event Time",
       "show_event_time_desc": "Display the start time of events",
       "show_location": "Show Location",
-      "show_location_desc": "Display event location"
+      "show_location_desc": "Display event location",
+      "allow_edit_events": "Edit events",
+      "allow_edit_events_desc": "Tap an event to change or delete it. Works with calendars that allow it (e.g. Local Calendar); events from other calendars keep the event tap action.",
+      "edit_event": "Edit event",
+      "edit_repeat_scope": "Repeating event: apply to",
+      "edit_scope_this": "Only this event",
+      "edit_scope_future": "This and following events",
+      "edit_delete_only": "This calendar can delete events but not change them.",
+      "delete": "Delete",
+      "deleting": "Deleting…",
+      "delete_confirm": "Delete this event?",
+      "delete_confirm_future": "Delete this and the following events?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Waiting for Home Assistant",

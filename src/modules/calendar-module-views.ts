@@ -32,6 +32,8 @@ export interface CalendarViewContext {
   error: string | null;
   expanded: boolean;
   onEventClick: (event: ProcessedCalendarEvent) => void;
+  /** Set when Edit events is on: true for events whose calendar can change or delete them. */
+  isEventEditable?: ((event: ProcessedCalendarEvent) => boolean) | undefined;
   onExpandToggle: () => void;
   formatTime: (date: Date) => string;
   formatDate: (date: Date) => string;
@@ -150,6 +152,13 @@ export function renderEventDetailsList(
               </div>`
             : nothing}
         </div>
+        ${context.isEventEditable?.(event)
+          ? html`<ha-icon
+              class="uc-calendar-details-edit"
+              icon="mdi:pencil-outline"
+              title=${localize('editor.calendar.edit_event', lang, 'Edit event')}
+            ></ha-icon>`
+          : nothing}
       </div>
     `
   )}`;

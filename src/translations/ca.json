@@ -3569,7 +3569,18 @@
       "show_event_time": "Mostra l'hora",
       "show_event_time_desc": "Mostra l'hora d'inici dels esdeveniments",
       "show_location": "Mostra la ubicació",
-      "show_location_desc": "Mostra la ubicació de l'esdeveniment"
+      "show_location_desc": "Mostra la ubicació de l'esdeveniment",
+      "allow_edit_events": "Edita els esdeveniments",
+      "allow_edit_events_desc": "Toca un esdeveniment per canviar-lo o suprimir-lo. Funciona amb calendaris que ho permeten (p. ex. Calendari local); els esdeveniments d'altres calendaris mantenen l'acció en tocar.",
+      "edit_event": "Edita l'esdeveniment",
+      "edit_repeat_scope": "Esdeveniment periòdic: aplica a",
+      "edit_scope_this": "Només aquest esdeveniment",
+      "edit_scope_future": "Aquest i els següents",
+      "edit_delete_only": "Aquest calendari pot suprimir esdeveniments però no canviar-los.",
+      "delete": "Suprimeix",
+      "deleting": "S'està suprimint…",
+      "delete_confirm": "Vols suprimir aquest esdeveniment?",
+      "delete_confirm_future": "Vols suprimir aquest esdeveniment i els següents?"
     },
     "dynamic_list": {
       "error_waiting_ha": "Esperant per Home Assistant",

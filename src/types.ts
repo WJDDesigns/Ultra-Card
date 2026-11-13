@@ -7857,6 +7857,8 @@ export interface CalendarModule extends BaseModule {
   available_views?: CalendarViewType[] | undefined;
   /** "+" button that creates an event (calendar.create_event). */
   show_add_event?: boolean | undefined;
+  /** Tapping an event opens a form to change or delete it (calendars that allow it). */
+  allow_edit_events?: boolean | undefined;
   /** Chips in the header that show or hide calendars. */
   show_calendar_filter?: boolean | undefined;
   /** Filter chips per calendar, or per person (calendars grouped by their person). */
