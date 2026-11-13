@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Facoltativo. Scegli una luce o un'altra entità di cui seguire il colore (ad esempio il colore RGB della lampadina). Lascia vuoto per saltare.",
       "otherwise_missing": "Se l'entità non è disponibile, usa",
       "entity_color_short": "colore entità"
+    },
+    "external_card": {
+      "actions_note": "Lascia queste azioni vuote per mantenere funzionanti i pulsanti e i controlli della scheda. Quando imposti un'azione, o un popup usa questa scheda come attivatore, Ultra Card gestisce i tocchi su questa scheda al suo posto."
     }
   },
   "hub": {

@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Volitelné. Vyberte světlo nebo jinou entitu, jejíž barvu chcete převzít (například RGB barvu žárovky). Ponechte prázdné pro přeskočení.",
       "otherwise_missing": "Pokud entita není dostupná, použít",
       "entity_color_short": "barva entity"
+    },
+    "external_card": {
+      "actions_note": "Ponechte tyto akce prázdné, aby vlastní tlačítka a ovládací prvky karty fungovaly dál. Jakmile nastavíte akci nebo vyskakovací okno použije tuto kartu jako spouštěč, klepnutí na kartu zpracuje Ultra Card."
     }
   },
   "hub": {

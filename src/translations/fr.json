@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Facultatif. Choisissez une lumière ou une autre entité dont la couleur sera suivie (par exemple la couleur RVB de l'ampoule). Laissez vide pour ignorer.",
       "otherwise_missing": "Si cette entité est indisponible, utiliser",
       "entity_color_short": "couleur de l'entité"
+    },
+    "external_card": {
+      "actions_note": "Laissez ces actions vides pour conserver les boutons et commandes propres à la carte. Dès que vous définissez une action, ou qu'un popup utilise cette carte comme déclencheur, Ultra Card gère les appuis sur cette carte à sa place."
     }
   },
   "hub": {

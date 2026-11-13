@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Opcional. Tria un llum o una altra entitat per seguir-ne el color (per exemple, el color RGB de la bombeta). Deixa-ho buit per ometre-ho.",
       "otherwise_missing": "Si aquesta entitat no està disponible, fes servir",
       "entity_color_short": "color de l'entitat"
+    },
+    "external_card": {
+      "actions_note": "Deixa aquestes accions buides per mantenir els botons i controls propis de la targeta. Quan defineixis una acció, o una finestra emergent utilitzi aquesta targeta com a activador, Ultra Card gestionarà els tocs en aquesta targeta."
     }
   },
   "hub": {

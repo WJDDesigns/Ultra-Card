@@ -6604,6 +6604,9 @@
       "entity_color_desc": "可选。选择一个灯光或其他实体以跟随其颜色（例如灯泡的 RGB 颜色）。留空则跳过。",
       "otherwise_missing": "如果该实体不可用，则使用",
       "entity_color_short": "实体颜色"
+    },
+    "external_card": {
+      "actions_note": "保持这些操作为空，卡片自带的按钮和控件将继续可用。一旦设置了操作，或有弹窗将此卡片用作触发器，Ultra Card 将改为处理对此卡片的点按。"
     }
   },
   "hub": {

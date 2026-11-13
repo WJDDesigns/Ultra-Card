@@ -13,6 +13,10 @@ import { externalCardContainerService } from '../services/external-card-containe
 import yaml from 'js-yaml';
 
 import { UC_DEBUG } from '../utils/uc-debug';
+import { getPopupForModule } from '../services/popup-trigger-registry';
+import { forEachLayoutModule } from '../utils/uc-layout-module-types';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { localize } from '../localize/localize';
 // Debounce timers for editor config updates to prevent rapid re-render loops
 const updateDebounceTimers = new Map<string, number>();
 
@@ -76,6 +80,47 @@ export function cleanupExternalCardCache(moduleId: string): void {
   // preventing flicker when Lit re-renders cause disconnect/reconnect cycles.
 }
 
+/** Whether an action would do something on a module with no entity of its own. */
+function isActiveAction(action: { action?: string } | undefined | null): boolean {
+  const type = action?.action;
+  return !!type && type !== 'nothing' && type !== 'none' && type !== 'default';
+}
+
+/** Whether a popup uses the module as its "Trigger via Module" source. */
+function isPopupTriggerTarget(moduleId: string, config?: UltraCardConfig): boolean {
+  if (!moduleId) return false;
+  if (getPopupForModule(moduleId)) return true;
+  let found = false;
+  forEachLayoutModule(config?.layout, mod => {
+    const popup = mod as any;
+    if (
+      popup.type === 'popup' &&
+      popup.trigger_type === 'module' &&
+      popup.trigger_module_id === moduleId
+    ) {
+      found = true;
+    }
+  });
+  return found;
+}
+
+/**
+ * Whether Ultra Card takes taps on this 3rd party card. Off by default so the
+ * embedded card keeps its own controls; on once an action is set or a popup is
+ * triggered by this module.
+ */
+export function externalCardHandlesTaps(
+  module: ExternalCardModule,
+  config?: UltraCardConfig
+): boolean {
+  return (
+    isActiveAction(module.tap_action) ||
+    isActiveAction(module.hold_action) ||
+    isActiveAction(module.double_tap_action) ||
+    isPopupTriggerTarget(module.id, config)
+  );
+}
+
 export class UltraExternalCardModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'external_card',
@@ -97,6 +142,28 @@ export class UltraExternalCardModule extends BaseUltraModule {
       name: '',
       display_conditions: [],
     };
+  }
+
+  override renderActionsTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const lang = hass?.locale?.language || 'en';
+    return html`
+      <div
+        class="uc-external-card-actions-note"
+        style="font-size: 13px; line-height: 1.4; color: var(--secondary-text-color); background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 12px 16px; margin-bottom: 16px;"
+      >
+        ${localize(
+          'editor.external_card.actions_note',
+          lang,
+          "Leave these on Nothing to keep the card's own buttons and controls. Once you set an action (or a popup uses this card as its trigger), Ultra Card handles taps on this card instead."
+        )}
+      </div>
+      ${GlobalActionsTab.render(module, hass, updates => updateModule(updates))}
+    `;
   }
 
   hasNativeEditor(cardType: string): boolean {
@@ -1067,14 +1134,58 @@ export class UltraExternalCardModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    // Opt-in Ultra Card actions: a transparent layer over the card takes the
+    // taps, so cards that swallow clicks (WebRTC video, etc.) can still open a
+    // popup or run an action. Without actions the card keeps its own controls.
+    const handlesTaps = externalCardHandlesTaps(module, config);
+    const actionKey = handlesTaps
+      ? JSON.stringify([
+          module.tap_action,
+          module.hold_action,
+          module.double_tap_action,
+          (module as any).confirm_action,
+          (module as any).close_popup_after_action,
+        ])
+      : '';
+    const renderTapLayer = () => {
+      if (!handlesTaps) return '';
+      const handlers = this.createGestureHandlers(
+        `external-card-${module.id}`,
+        {
+          tap_action: module.tap_action || { action: 'nothing' },
+          hold_action: module.hold_action || { action: 'nothing' },
+          double_tap_action: module.double_tap_action || { action: 'nothing' },
+          module,
+        } as any,
+        hass,
+        config
+      );
+      return html`
+        <div
+          class="uc-external-card-tap-layer"
+          style="position: absolute; inset: 0; z-index: 2; cursor: pointer; background: transparent; border-radius: inherit; touch-action: pan-x pan-y; -webkit-tap-highlight-color: transparent; outline-offset: -2px;"
+          role="button"
+          tabindex="0"
+          aria-label=${module.name || module.card_type}
+          @pointerdown=${handlers.onPointerDown}
+          @pointermove=${handlers.onPointerMove}
+          @pointerup=${handlers.onPointerUp}
+          @pointerleave=${handlers.onPointerLeave}
+          @pointercancel=${handlers.onPointerCancel}
+          @keydown=${handlers.onKeyDown}
+          @click=${(e: Event) => e.stopPropagation()}
+        ></div>
+      `;
+    };
+
     // Return the wrapper container with mount callback (unlocked card)
     // Wrap the card content container inside the design container
     // Use guard() to only re-render when module ID or card type changes
     // This prevents the 60+ re-renders triggered by the editor from destroying the container
     return this.wrapWithAnimation(html`${guard(
-      [module.id, module.card_type],
+      [module.id, module.card_type, actionKey],
       () => html`
-        <div class="external-card-module-container ${hoverClass}" style="display: flex; flex-direction: column; ${designStyles}">
+        <div class="external-card-module-container ${hoverClass}" style="display: flex; flex-direction: column; ${handlesTaps ? 'position: relative; ' : ''}${designStyles}">
           ${cache(html`
             <div
               ${ref(mountContainer)}
@@ -1092,6 +1203,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
               <!-- Isolated container will be mounted here -->
             </div>
           `)}
+          ${renderTapLayer()}
         </div>
       `
     )}`, module, hass);

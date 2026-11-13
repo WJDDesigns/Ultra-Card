@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Opcional. Elige una luz u otra entidad para seguir su color (por ejemplo, el color RGB de la bombilla). Déjalo vacío para omitirlo.",
       "otherwise_missing": "Si esa entidad no está disponible, usar",
       "entity_color_short": "color de la entidad"
+    },
+    "external_card": {
+      "actions_note": "Deja estas acciones vacías para que los botones y controles propios de la tarjeta sigan funcionando. En cuanto definas una acción, o un popup use esta tarjeta como disparador, Ultra Card gestionará los toques en esta tarjeta."
     }
   },
   "hub": {
