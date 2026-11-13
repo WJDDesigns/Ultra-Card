@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Optional. Wählen Sie ein Licht oder eine andere Entität, deren Farbe übernommen werden soll (zum Beispiel die RGB-Farbe der Lampe). Leer lassen, um dies zu überspringen.",
       "otherwise_missing": "Wenn diese Entität nicht verfügbar ist, verwenden",
       "entity_color_short": "Entitätsfarbe"
+    },
+    "external_card": {
+      "actions_note": "Lassen Sie diese Aktionen leer, damit die eigenen Schaltflächen und Bedienelemente der Karte weiter funktionieren. Sobald Sie eine Aktion festlegen oder ein Popup diese Karte als Auslöser verwendet, verarbeitet Ultra Card stattdessen Tipps auf diese Karte."
     }
   },
   "hub": {

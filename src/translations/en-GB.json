@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Optional. Pick a light or other entity to follow its colour (for example the bulb's RGB colour). Leave empty to skip.",
       "otherwise_missing": "If that entity is unavailable, use",
       "entity_color_short": "entity colour"
+    },
+    "external_card": {
+      "actions_note": "Leave these actions off to keep the card's own buttons and controls working. Once you set an action, or a popup uses this card as its trigger, Ultra Card handles taps on this card instead."
     }
   },
   "hub": {

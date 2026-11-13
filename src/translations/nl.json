@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Optioneel. Kies een lamp of andere entiteit waarvan de kleur gevolgd wordt (bijvoorbeeld de RGB-kleur van de lamp). Laat leeg om over te slaan.",
       "otherwise_missing": "Als die entiteit niet beschikbaar is, gebruik",
       "entity_color_short": "entiteitskleur"
+    },
+    "external_card": {
+      "actions_note": "Laat deze acties leeg om de eigen knoppen en bediening van de kaart te behouden. Zodra je een actie instelt, of een pop-up deze kaart als trigger gebruikt, verwerkt Ultra Card tikken op deze kaart."
     }
   },
   "hub": {

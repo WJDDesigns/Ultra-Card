@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Valgfritt. Velg et lys eller en annen entitet som fargen skal følge (for eksempel pærens RGB-farge). La stå tomt for å hoppe over.",
       "otherwise_missing": "Hvis entiteten ikke er tilgjengelig, bruk",
       "entity_color_short": "entitetsfarge"
+    },
+    "external_card": {
+      "actions_note": "La disse handlingene stå tomme for å beholde kortets egne knapper og kontroller. Når du angir en handling, eller en popup bruker dette kortet som utløser, håndterer Ultra Card trykk på kortet i stedet."
     }
   },
   "hub": {

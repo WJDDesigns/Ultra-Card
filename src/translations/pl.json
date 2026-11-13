@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Opcjonalne. Wybierz światło lub inną encję, której kolor ma być użyty (na przykład kolor RGB żarówki). Pozostaw puste, aby pominąć.",
       "otherwise_missing": "Jeśli encja jest niedostępna, użyj",
       "entity_color_short": "kolor encji"
+    },
+    "external_card": {
+      "actions_note": "Pozostaw te akcje puste, aby własne przyciski i elementy sterujące karty nadal działały. Gdy ustawisz akcję lub wyskakujące okno użyje tej karty jako wyzwalacza, dotknięcia karty obsłuży Ultra Card."
     }
   },
   "hub": {

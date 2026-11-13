@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Valgfrit. Vælg et lys eller en anden enhed, hvis farve skal følges (for eksempel pærens RGB-farve). Lad stå tomt for at springe over.",
       "otherwise_missing": "Hvis enheden ikke er tilgængelig, brug",
       "entity_color_short": "enhedsfarve"
+    },
+    "external_card": {
+      "actions_note": "Lad disse handlinger være tomme for at bevare kortets egne knapper og kontroller. Når du angiver en handling, eller en popup bruger dette kort som udløser, håndterer Ultra Card i stedet tryk på kortet."
     }
   },
   "hub": {

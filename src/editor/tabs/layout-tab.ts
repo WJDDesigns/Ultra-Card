@@ -17053,7 +17053,6 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
     const hasActionsTab =
-      module.type !== 'external_card' &&
       moduleHandler &&
       typeof (moduleHandler as any).renderActionsTab === 'function';
 
@@ -17152,16 +17151,17 @@ export class LayoutTab extends LitElement {
                     YAML
                   </button>
                 `
-              : hasActionsTab
-                ? html`
-                    <button
-                      class="module-tab ${this._activeTabsChildTab === 'actions' ? 'active' : ''}"
-                      @click=${() => (this._activeTabsChildTab = 'actions')}
-                    >
-                      ${localize('editor.layout.actions_tab', lang, 'Actions')}
-                    </button>
-                  `
-                : ''}
+              : ''}
+            ${hasActionsTab
+              ? html`
+                  <button
+                    class="module-tab ${this._activeTabsChildTab === 'actions' ? 'active' : ''}"
+                    @click=${() => (this._activeTabsChildTab = 'actions')}
+                  >
+                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                  </button>
+                `
+              : ''}
             <button
               class="module-tab ${this._activeTabsChildTab === 'logic' ? 'active' : ''}"
               @click=${() => (this._activeTabsChildTab = 'logic')}
@@ -17702,7 +17702,6 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
     const hasActionsTab =
-      module.type !== 'external_card' &&
       moduleHandler &&
       typeof (moduleHandler as any).renderActionsTab === 'function';
     const hasOtherTab = false;
@@ -17722,9 +17721,6 @@ export class LayoutTab extends LitElement {
         isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
       if (!hasEditor && this._activeModuleTab === 'general') {
         this._activeModuleTab = 'yaml';
-      }
-      if (this._activeModuleTab === 'actions') {
-        this._activeModuleTab = hasEditor ? 'general' : 'yaml';
       }
     }
 
@@ -17823,16 +17819,17 @@ export class LayoutTab extends LitElement {
                   YAML
                 </button>
               `
-            : hasActionsTab
-              ? html`
-                  <button
-                    class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
-                    @click=${() => (this._activeModuleTab = 'actions')}
-                  >
-                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
-                  </button>
-                `
-              : ''}
+            : ''}
+          ${hasActionsTab
+            ? html`
+                <button
+                  class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
+                  @click=${() => (this._activeModuleTab = 'actions')}
+                >
+                  ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                </button>
+              `
+            : ''}
           ${hasOtherTab
             ? html`
                 <button
@@ -18080,9 +18077,7 @@ export class LayoutTab extends LitElement {
     // Determine which extra tabs are supported by this module
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(childModule.type);
-    // External cards don't have Actions tab (they handle their own actions)
     const hasActionsTab =
-      childModule.type !== 'external_card' &&
       moduleHandler &&
       typeof (moduleHandler as any).renderActionsTab === 'function';
     // Globally disable the legacy "Other" tab across modules (child module editor)
@@ -18104,11 +18099,6 @@ export class LayoutTab extends LitElement {
       // If no editor, default to YAML (only if on an invalid tab)
       if (!hasEditor && this._activeModuleTab === 'general') {
         this._activeModuleTab = 'yaml';
-      }
-
-      // Ensure we don't show actions tab for external cards
-      if (this._activeModuleTab === 'actions') {
-        this._activeModuleTab = hasEditor ? 'general' : 'yaml';
       }
     }
 
@@ -18249,16 +18239,17 @@ export class LayoutTab extends LitElement {
                     YAML
                   </button>
                 `
-              : hasActionsTab
-                ? html`
-                    <button
-                      class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
-                      @click=${() => (this._activeModuleTab = 'actions')}
-                    >
-                      ${localize('editor.layout.actions_tab', lang, 'Actions')}
-                    </button>
-                  `
-                : ''}
+              : ''}
+            ${hasActionsTab
+              ? html`
+                  <button
+                    class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
+                    @click=${() => (this._activeModuleTab = 'actions')}
+                  >
+                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                  </button>
+                `
+              : ''}
             ${hasOtherTab
               ? html`
                   <button

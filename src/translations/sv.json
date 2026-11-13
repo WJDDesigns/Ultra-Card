@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Valfritt. Välj en lampa eller annan entitet vars färg ska följas (till exempel lampans RGB-färg). Lämna tomt för att hoppa över.",
       "otherwise_missing": "Om entiteten inte är tillgänglig, använd",
       "entity_color_short": "entitetsfärg"
+    },
+    "external_card": {
+      "actions_note": "Lämna dessa åtgärder tomma för att behålla kortets egna knappar och kontroller. När du anger en åtgärd, eller en popup använder kortet som utlösare, hanterar Ultra Card tryck på kortet i stället."
     }
   },
   "hub": {

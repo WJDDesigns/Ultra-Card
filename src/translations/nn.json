@@ -6637,6 +6637,9 @@
       "entity_color_desc": "Valfritt. Vel eit lys eller ein annan entitet som fargen skal følgje (til dømes RGB-fargen til pæra). La stå tomt for å hoppe over.",
       "otherwise_missing": "Om entiteten ikkje er tilgjengeleg, bruk",
       "entity_color_short": "entitetsfarge"
+    },
+    "external_card": {
+      "actions_note": "La desse handlingane stå tomme for å halde på kortet sine eigne knappar og kontrollar. Når du set ei handling, eller ein popup brukar dette kortet som utløysar, handterer Ultra Card trykk på kortet i staden."
     }
   },
   "hub": {

@@ -4183,7 +4183,12 @@ export interface ExternalCardModule extends BaseModule {
   type: 'external_card';
   card_type: string; // e.g., 'weather-card', 'mini-graph-card', 'mushroom-entity-card'
   card_config: Record<string, any>; // The card's native configuration
-  // Note: No tap_action/hold_action - external cards handle their own actions
+  // Optional Ultra Card actions. Left unset (or "nothing"), the embedded card
+  // handles its own taps. Once any is set, or a popup uses this module as its
+  // "Trigger via Module" source, a transparent layer above the card takes taps.
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
 }
 
 export interface NativeCardModule extends BaseModule {
