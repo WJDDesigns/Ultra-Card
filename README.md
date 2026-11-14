@@ -157,7 +157,10 @@ Browse and install community presets from inside the editor (**Presets** tab →
 Supported languages: Catalan, Czech, Danish, German, English, British English, Spanish, French, Italian, Dutch, Norwegian, Norwegian Bokmål, Norwegian Nynorsk, Polish, Swedish, Chinese Simplified.
 
 The card follows your Home Assistant language (Simplified Chinese maps to `zh-Hans`).
-To contribute translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md). You can edit files in `src/translations/` on GitHub and open a pull request.
+
+**See what still needs translating:** [TRANSLATIONS.md](TRANSLATIONS.md) shows every language's progress and a to-do list of the text that is still in English. It updates itself automatically.
+
+To contribute, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md). You can edit files in `src/translations/` right on GitHub and open a pull request.
 
 ---
 

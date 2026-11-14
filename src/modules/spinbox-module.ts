@@ -226,11 +226,11 @@ export class UltraSpinboxModule extends BaseUltraModule {
         <!-- Value Configuration -->
         <div class="settings-section">
           <div class="section-title">
-            ${localize('editor.spinbox.value.title', lang, 'Value Configuration')}
+            ${localize('editor.spinbox.value_section.title', lang, 'Value Configuration')}
           </div>
           <div class="section-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
             ${localize(
-              'editor.spinbox.value.desc',
+              'editor.spinbox.value_section.desc',
               lang,
               'Configure the numeric range, step size, and default value.'
             )}

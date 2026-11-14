@@ -31,6 +31,8 @@
     "translations:prune": "node scripts/prune-stale-translations.js",
     "translations:fill": "node scripts/translate-locale.js",
     "translations:stats": "node scripts/translation-stats.js",
+    "translations:status": "node scripts/translation-status.js",
+    "translations:extract": "node scripts/extract-translation-keys.js",
     "sync:translations": "node prepare-build.js",
     "sync:panel": "node scripts/sync-panel-to-integration.js",
     "plugin:zip": "node scripts/package-plugin.js",

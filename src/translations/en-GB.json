@@ -5,7 +5,22 @@
       "settings": "Settings",
       "about": "About",
       "pro": "Pro",
-      "card_settings": "Card Settings"
+      "card_settings": "Card Settings",
+      "behavior": {
+        "switch_on_hover_desc": "Switch tabs when hovering over them instead of clicking."
+      },
+      "design": {
+        "active_desc": "Customize the appearance of the currently selected tab.",
+        "content_desc": "Customize the appearance of the content area below/beside the tabs.",
+        "hover_desc": "Customize the appearance when hovering over inactive tabs.",
+        "inactive_desc": "Customize the appearance of tabs that are not selected."
+      },
+      "preview": {
+        "no_modules": "No modules added. Add modules to this section in the Layout tab."
+      },
+      "sections": {
+        "desc": "Manage your tab sections. Drag to reorder, click to edit titles."
+      }
     },
     "settings": {
       "title": "Card Settings",
@@ -14,7 +29,34 @@
     "template": {
       "unknown_keys_title": "Unrecognised template keys (they will be ignored):",
       "did_you_mean": "did you mean",
-      "supported_keys": "Supported keys for this module:"
+      "supported_keys": "Supported keys for this module:",
+      "config_needed": "Select an entity",
+      "config_needed_desc": "Choose an entity in the General tab",
+      "display_section": "Display",
+      "display_section_desc": "Choose what to show.",
+      "entity": "Entity",
+      "entity_desc": "The entity to display.",
+      "entity_section": "Entity",
+      "entity_section_desc": "Choose the entity this module displays.",
+      "extra_option": "Extra option",
+      "extra_option_desc": "An extra option that only appears when enabled.",
+      "extra_section": "Extra options",
+      "icon": "Icon override",
+      "icon_desc": "Leave blank to use the entity icon.",
+      "layout": "Layout",
+      "layout_compact": "Compact",
+      "layout_desc": "Choose a layout style.",
+      "layout_section": "Layout",
+      "layout_section_desc": "How the module is arranged.",
+      "layout_standard": "Standard",
+      "name": "Name override",
+      "name_desc": "Leave blank to use the entity friendly name.",
+      "show_name": "Show name",
+      "show_name_desc": "Display the entity name.",
+      "show_state": "Show state",
+      "show_state_desc": "Display the entity state.",
+      "size": "Size",
+      "size_desc": "Set the display size."
     },
     "appearance": {
       "title": "Appearance",
@@ -27,7 +69,13 @@
       "uc_theme": "Ultra Card Theme",
       "uc_theme_desc": "Sets the surface look (glass, soft, flat...), corner radius and the default style of every module on this card. Modules set to \"Inherit from theme\" follow it.",
       "uc_theme_active": "Active:",
-      "uc_theme_manage": "Manage themes and the global default in the Hub"
+      "uc_theme_manage": "Manage themes and the global default in the Hub",
+      "template_cheatsheet": "Template Cheatsheet",
+      "template_mode_enable": "Enable template mode",
+      "unified_template_section": {
+        "desc": "Use Jinja2 templates to control card background, border, shadow, and padding dynamically. Return a simple color string for background-only, or a JSON object for multiple card appearance properties.",
+        "title": "Appearance Template Mode"
+      }
     },
     "spacing": {
       "title": "Spacing",
@@ -60,7 +108,14 @@
       "card_shadow_blur": "Blur Radius",
       "card_shadow_blur_desc": "How blurred the shadow appears",
       "card_shadow_spread": "Spread Radius",
-      "card_shadow_spread_desc": "How much the shadow expands or contracts"
+      "card_shadow_spread_desc": "How much the shadow expands or contracts",
+      "card_background_image_type": "Background Image Type",
+      "card_overflow": "Content Overflow",
+      "card_overflow_desc": "How to handle content that extends beyond the card boundaries",
+      "overflow_auto": "Auto",
+      "overflow_hidden": "Hidden (clip content)",
+      "overflow_scroll": "Scroll",
+      "overflow_visible": "Visible (default)"
     },
     "tooltips": {
       "enter_fullscreen": "Enter Full Screen",
@@ -95,7 +150,8 @@
       "error_configure_entity": "Configure Entity",
       "error_entity_not_found": "Entity Not Found",
       "ok": "OK",
-      "replace": "Replace"
+      "replace": "Replace",
+      "default": "Default"
     },
     "horizontal": {
       "layout": {
@@ -119,7 +175,9 @@
       },
       "empty": {
         "no_modules": "No modules added yet",
-        "add_modules": "Add modules in the layout builder to see them here"
+        "add_modules": "Add modules in the layout builder to see them here",
+        "all_hidden": "All modules hidden by logic",
+        "all_hidden_desc": "Every module in this layout is hidden by its display conditions"
       }
     },
     "vertical": {
@@ -129,7 +187,9 @@
       },
       "alignment": {
         "vertical": "Vertical Alignment",
-        "vertical_desc": "Choose how elements are aligned vertically within the container."
+        "vertical_desc": "Choose how elements are aligned vertically within the container.",
+        "horizontal": "Horizontal Alignment",
+        "horizontal_desc": "Choose how items are aligned horizontally within the column."
       },
       "gap": {
         "title": "Gap Configuration",
@@ -138,7 +198,9 @@
       },
       "empty": {
         "no_modules": "No modules added yet",
-        "add_modules": "Add modules in the layout builder to see them here"
+        "add_modules": "Add modules in the layout builder to see them here",
+        "all_hidden": "All modules hidden by logic",
+        "all_hidden_desc": "Every module in this layout is hidden by its display conditions"
       }
     },
     "layout": {
@@ -283,7 +345,46 @@
       "no_design_settings": "Module does not support design settings",
       "no_action_settings": "This module does not have action settings",
       "no_other_settings": "This module does not have other settings",
-      "column_sizing": "Column Sizing"
+      "column_sizing": "Column Sizing",
+      "accordion_layout": "Accordion",
+      "add_column": "Add Column",
+      "add_module_to_section": "Add Module to Section",
+      "back_to_builder": "Back to builder",
+      "column": "Column",
+      "column_gap_desc": "Set the spacing between columns in pixels.",
+      "column_layout": "Column Layout",
+      "column_vertical_alignment": "Column Vertical Alignment",
+      "column_vertical_alignment_desc": "Set the vertical alignment for all columns in this row. This controls how content is aligned vertically within each column.",
+      "config_validation_details": "Details",
+      "config_validation_failed": "Some changes could not be applied because the card configuration is invalid.",
+      "copy": "Copy",
+      "delete": "Delete",
+      "drag_to_move": "Drag to move",
+      "duplicate": "Duplicate",
+      "edit": "Edit",
+      "edit_section": "Edit Section",
+      "export": "Export",
+      "full_width": "Full Width",
+      "full_width_desc": "When enabled, the row spans the full width of the card. When disabled, you can set a custom width percentage.",
+      "module_preview": "Module Preview",
+      "no_modules": "No modules",
+      "paste": "Paste",
+      "paste_clipboard": "Paste from Clipboard",
+      "popup_layout": "Popup",
+      "remap_entities_tooltip": "Remap all entities in this card",
+      "row_name": "Row Name",
+      "row_name_desc": "Give this row a custom name to make it easier to identify in the editor.",
+      "row_width": "Row Width",
+      "save_favorite": "Save as Favorite",
+      "select_column_first": "Please select a column first by clicking \"Add Module\" on the column where you want to add this card.",
+      "settings": "Settings",
+      "slider_layout": "Slider Layout",
+      "slider_module": "Slider Module",
+      "tabs_layout": "Tabs Layout",
+      "tabs_no_sections": "No sections. Open settings to add sections.",
+      "tabs_open_settings": "Open settings to manage tabs sections",
+      "width_percent": "Width Percentage",
+      "width_percent_desc": "Set the row width as a percentage of the card width (0-100%)."
     },
     "layout_logic": {
       "display_title": "Display this Element",
@@ -352,7 +453,8 @@
       "support_title": "Support Ultra Card",
       "support_desc": "Your generous tips fuel the development of amazing features for this card! Without support from users like you, continued innovation wouldn't be possible.",
       "leave_tip": "LEAVE A TIP (PAYPAL)",
-      "version": "Version"
+      "version": "Version",
+      "hub_docs": "Documentation in Ultra Card Hub"
     },
     "actions": {
       "title": "Link Configuration",
@@ -400,7 +502,21 @@
         "default_for": "Default action for {entity}",
         "unknown": "Unknown action: {action}",
         "are_you_sure": "Are you sure?"
-      }
+      },
+      "close_popup_after_action": "Close Popup After Action",
+      "close_popup_after_action_desc": "When this module is inside a Popup, running its action (tap, hold, or double tap) also closes that popup. Has no effect outside a popup.",
+      "confirm_action": "Confirm Action",
+      "confirm_action_cancel_text": "Cancel Button Text",
+      "confirm_action_cancel_text_desc": "Text shown on the opt-out button.",
+      "confirm_action_confirm_text": "Confirm Button Text",
+      "confirm_action_confirm_text_desc": "Text shown on the opt-in button.",
+      "confirm_action_desc": "When enabled, a confirmation dialog will appear before executing any action (tap, hold, or double tap).",
+      "confirm_action_show_cancel_button": "Show Cancel (opt-out) Button",
+      "confirm_action_show_cancel_button_desc": "Show or hide the button users use to back out of the action.",
+      "confirm_action_show_confirm_button": "Show Confirm (opt-in) Button",
+      "confirm_action_show_confirm_button_desc": "Show or hide the button users use to continue with the action.",
+      "url_same_tab": "Open In Same Tab",
+      "url_same_tab_desc": "Replace the current page instead of opening a new browser tab."
     },
     "icon": {
       "entity_config": {
@@ -415,7 +531,9 @@
       "active_state_desc": "State value considered \"active\" (leave blank to use actual entity state)",
       "icon_section": {
         "title": "Icon Configuration",
-        "show_icon": "Show Icon"
+        "show_icon": "Show Icon",
+        "show_entity_picture": "Show Entity Picture",
+        "show_entity_picture_desc": "When enabled, entity_picture replaces the configured icon when available."
       },
       "inactive_icon": "Inactive Icon",
       "inactive_icon_desc": "Icon to show when inactive",
@@ -513,7 +631,103 @@
       "ignore_entity_state_desc": "When enabled, entity state settings above will be ignored and template will control active/inactive state for animations",
       "error_no_icons": "Add Icons",
       "error_no_icons_desc": "Configure icons in the General tab",
-      "error_icons_need_entities": "Icons Need Entities"
+      "error_icons_need_entities": "Icons Need Entities",
+      "active_attribute": "Active Attribute",
+      "active_attribute_desc": "Entity attribute to check for active state (e.g., \"condition\" for weather)",
+      "active_icon_background_padding": "Active Background Padding",
+      "active_icon_size": "Active Icon Size",
+      "active_name_size": "Active Name Size",
+      "active_state_size": "Active State Size",
+      "add_icon": "Add Icon",
+      "animation": "Animation",
+      "animation_desc": "Continuous animation for the icon",
+      "attributes_section": {
+        "desc": "Select entity attributes to use instead of the main entity state for determining active/inactive conditions",
+        "title": "ATTRIBUTES"
+      },
+      "background_color": "Background Color",
+      "background_color_desc": "Color of the background shape",
+      "background_padding": "Background Padding",
+      "background_padding_active": "Padding between icon and background when active",
+      "background_padding_desc": "Distance from the icon to the background edge",
+      "background_padding_inactive": "Padding between icon and background when inactive",
+      "background_shape": "Background Shape",
+      "background_shape_desc": "Shape behind the icon",
+      "display_attribute": "Display Attribute",
+      "display_attribute_desc": "Select an attribute to display instead of the entity state. For separate active/inactive attributes, use the options below.",
+      "icon": "Icon",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Color of the icon",
+      "icon_desc": "Select an MDI icon",
+      "icon_mode": {
+        "desc": "Choose between an entity-connected icon or a static standalone icon",
+        "entity": "Entity-Based",
+        "static": "Static",
+        "title": "ICON MODE"
+      },
+      "icon_row_title": "Icon {number}",
+      "icon_size": "Icon Size",
+      "icon_size_desc": "Size of the icon in pixels",
+      "inactive_attribute": "Inactive Attribute",
+      "inactive_attribute_desc": "Entity attribute to check for inactive state (e.g., \"condition\" for weather)",
+      "inactive_icon_background_padding": "Inactive Background Padding",
+      "inactive_icon_size": "Inactive Icon Size",
+      "inactive_name_size": "Inactive Name Size",
+      "inactive_state_size": "Inactive State Size",
+      "internal_name": "Name",
+      "internal_name_desc": "Editor-only label to keep icons organized. Never shown on the card.",
+      "layout": {
+        "align_center": "Center",
+        "align_left": "Left",
+        "align_right": "Right",
+        "align_space_around": "Space Around",
+        "align_space_between": "Space Between",
+        "alignment": "Alignment",
+        "alignment_desc": "Horizontal alignment of the icon grid",
+        "allow_wrap": "Allow Wrapping",
+        "allow_wrap_desc": "Allow icons to wrap onto new rows when they exceed the column count",
+        "columns": "Columns",
+        "columns_desc": "Number of icons per row",
+        "content_distribution": "Content Distribution",
+        "content_distribution_desc": "Control how the icon and text are distributed inside each item",
+        "desc": "Control how icons are arranged in the grid.",
+        "dist_normal": "Normal",
+        "dist_space_around": "Space Around",
+        "dist_space_between": "Space Between",
+        "dist_space_evenly": "Space Evenly",
+        "gap": "Gap",
+        "gap_desc": "Spacing between icons",
+        "icon_position": "Icon Position",
+        "icon_position_desc": "Position the icon relative to the name and state (left, top, right, or bottom)",
+        "name_alignment": "Text Alignment",
+        "name_alignment_desc": "Align the name and state text within the item",
+        "overall_alignment": "Overall Alignment",
+        "overall_alignment_desc": "Align each item within its grid cell",
+        "pos_bottom": "Bottom",
+        "pos_left": "Left",
+        "pos_right": "Right",
+        "pos_top": "Top",
+        "text_center": "Center",
+        "text_end": "End",
+        "text_start": "Start",
+        "title": "LAYOUT"
+      },
+      "remove_icon": "Remove Icon",
+      "shape_circle": "Circle",
+      "shape_none": "None",
+      "shape_rounded": "Rounded Square",
+      "shape_square": "Square",
+      "static_icon_settings": {
+        "desc": "Configure the appearance of this static icon",
+        "title": "ICON SETTINGS"
+      },
+      "template_cheatsheet": "Template Cheatsheet",
+      "unified_template_section": {
+        "desc": "Use Jinja2 templates to control icon and color dynamically. Return simple string for icon-only, or JSON object for multiple properties. Uses entity context variables (entity, state, name, attributes) for seamless entity remapping.",
+        "title": "Template Mode"
+      },
+      "use_state_color_active": "Use State Color",
+      "use_state_color_active_desc": "Use the entity state color (RGB attributes) for active icon color"
     },
     "text": {
       "content_section": {
@@ -557,7 +771,15 @@
       "error_no_template": "Configure Template",
       "error_no_template_desc": "Enter template code in the General tab",
       "link_underline": "Underline links",
-      "link_underline_desc": "Show an underline under links. The underline takes the colour you give the link text."
+      "link_underline_desc": "Show an underline under links. The underline takes the colour you give the link text.",
+      "icon_size": "Icon Size",
+      "template_cheatsheet": "Template Cheatsheet",
+      "text_size": "Text Size",
+      "unified_replaces_content": "Rich text is hidden while Unified Template Mode is on. Turn it off to edit static content, or use the unified template JSON for dynamic text.",
+      "unified_template_section": {
+        "desc": "Return JSON with content, color, and optional container_background_color. Plain Jinja strings are treated as dynamic text. HTML tags in the output are shown as text, so style it with color rather than markup.",
+        "toggle": "Template Mode"
+      }
     },
     "markdown": {
       "content": {
@@ -575,7 +797,16 @@
       "code_highlighting": "Code Highlighting",
       "code_highlighting_desc": "Syntax highlighting for code blocks",
       "error_no_content": "Add Markdown Content",
-      "error_no_content_desc": "Enter markdown content in the General tab"
+      "error_no_content_desc": "Enter markdown content in the General tab",
+      "html": {
+        "title": "HTML Support"
+      },
+      "template_cheatsheet": "Template Cheatsheet",
+      "unified_replaces_editor": "Static markdown editor is hidden while Unified Template Mode is on. Turn it off to edit markdown here, or supply markdown in the unified template `content` field.",
+      "unified_template_section": {
+        "desc": "Return JSON with a `content` string (markdown). Optional `color` and `container_background_color`.",
+        "toggle": "Template Mode"
+      }
     },
     "bar": {
       "bar_settings": {
@@ -638,7 +869,9 @@
         "title": "Bar Percentage Entity",
         "desc_present": "The entity that provides the percentage value for the bar.",
         "desc_empty": "Select an entity that provides a percentage value (0-100). Battery sensors are ideal for bars.",
-        "no_entity_warning": "No entity selected - Please choose a sensor with values between 0-100"
+        "no_entity_warning": "No entity selected - Please choose a sensor with values between 0-100",
+        "fallback_desc": "Optional fallback entity for text/labels. Difference mode uses Current and Total entities for bar calculation.",
+        "fallback_title": "Fallback Entity (optional)"
       },
       "limit_entity": {
         "title": "Limit Value Entity (Optional)",
@@ -671,7 +904,10 @@
         "width": "Bar Width",
         "width_desc": "Set the bar width as percentage of container.",
         "alignment": "Bar Alignment",
-        "alignment_desc": "Choose how to align the bar when it's less than 100% width."
+        "alignment_desc": "Choose how to align the bar when it's less than 100% width.",
+        "glass_blur": "Glass Blur",
+        "glass_blur_desc": "Adjust the blur intensity of the glass effect.",
+        "style_minimal": "Minimal"
       },
       "labels": {
         "alignment": "Label Alignment",
@@ -789,7 +1025,32 @@
           "match_value": "Override Match Value",
           "match_value_desc": "Text comparison against state or attribute",
           "type": "Override Animation Type"
-        }
+        },
+        "direction": "Animation Direction",
+        "direction_attribute": "Direction Attribute (Optional)",
+        "direction_attribute_desc": "Read this attribute instead of entity state when deriving direction.",
+        "direction_desc": "Choose a fixed direction, or derive direction from a sensor value.",
+        "direction_entity": "Direction Sensor",
+        "direction_entity_desc": "Negative values reverse the animation. Positive values keep normal direction.",
+        "direction_modes": {
+          "normal": "Normal",
+          "reverse": "Reverse",
+          "sensor": "From Sensor"
+        },
+        "speed": "Base Speed",
+        "speed_attribute": "Speed Attribute (Optional)",
+        "speed_attribute_desc": "Read this attribute instead of entity state when deriving speed.",
+        "speed_desc": "1 = default speed. Higher values animate faster.",
+        "speed_entity": "Speed Sensor",
+        "speed_entity_desc": "Entity whose numeric value controls animation speed.",
+        "speed_mode": "Animation Speed Source",
+        "speed_mode_desc": "Use a fixed speed value, or derive speed from a sensor.",
+        "speed_modes": {
+          "fixed": "Fixed",
+          "sensor": "From Sensor"
+        },
+        "speed_multiplier": "Sensor Multiplier",
+        "speed_multiplier_desc": "Scales sensor values before converting to animation speed."
       },
       "text_display": {
         "title": "Text Display",
@@ -798,14 +1059,18 @@
         "show_value_desc": "When enabled, shows the actual entity value instead of percentage. Useful for displaying raw sensor values like \"45 kWh\" instead of \"75%\".",
         "text_size": "Text Size",
         "text_size_desc": "Adjust the size of the text displayed on the bar.",
-        "text_alignment": "Text Alignment"
+        "text_alignment": "Text Alignment",
+        "follow_fill": "Follow Fill",
+        "text_formatting": "Text Formatting",
+        "text_formatting_desc": "Apply formatting styles to the percentage text."
       },
       "error_no_entity": "Select Entity",
       "error_no_entity_desc": "Choose an entity in the General tab",
       "error_no_range": "Configure Range",
       "error_no_range_desc": "Set range start and end entities in the General tab",
       "percentage_type": {
-        "title": "Percentage Type"
+        "title": "Percentage Type",
+        "desc": "Choose how the bar percentage is calculated"
       },
       "time_progress_config": {
         "title": "Time Progress Configuration",
@@ -831,20 +1096,60 @@
         "end_attribute": "End Attribute (Optional)",
         "end_attribute_desc": "If the value is in an attribute, enter the attribute name here.",
         "current_entity": "Current Value Entity",
-        "current_color": "Marker Color"
+        "current_color": "Marker Color",
+        "current_attribute": "Current Attribute (Optional)",
+        "current_attribute_desc": "If the value is in an attribute, enter the attribute name here.",
+        "current_marker_desc": "Optionally show a marker indicating the current/average value within the range.",
+        "current_marker_title": "Current Value Marker (Optional)"
       },
       "range": {
         "title": "Value Range (Min/Max)",
         "min": "Minimum",
         "max": "Maximum",
         "auto": "Auto (0)",
-        "auto_total": "Auto (total entity)"
+        "auto_total": "Auto (total entity)",
+        "desc": "Override auto-detected range with numbers. For dynamic min/max or labels, enable the unified template (value_min, value_max, left_label, right_label).",
+        "desc_difference": "Override the visible range. Enter values in the same unit as your entities (e.g. km). Leave blank to auto-detect from the Total Entity."
       },
       "unified_template": {
         "title": "Unified Template",
         "desc": "One Jinja template returning JSON: value, label, color, left_label, right_label, value_min, value_max, ticks.",
         "toggle": "Template mode",
         "cheatsheet": "Template cheatsheet"
+      },
+      "error_difference_not_found": "Difference entities not found",
+      "error_no_difference": "Configure Difference",
+      "error_no_difference_desc": "Set current and total entities in the Difference configuration.",
+      "scale": {
+        "clamp_edge_labels": "Clamp Edge Labels Inward",
+        "clamp_edge_labels_desc": "Slightly nudge the first and last labels inward to reduce clipping on tight layouts.",
+        "custom_labels": "Custom Tick Labels",
+        "custom_labels_desc": "Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave a slot empty to show that tick’s numeric value, or enter \"-\" (a single dash) to hide that tick’s label while keeping its tick mark.",
+        "custom_labels_hint": "Tip: use \"-\" in any slot to hide that tick’s label. Accepted hide tokens: -, _, none, {none}, hide.",
+        "custom_ticks": "Custom Tick Positions",
+        "custom_ticks_desc": "Comma-separated values in your entity's unit. Overrides the number of divisions (e.g. 10,20,30,40). Leave blank to use evenly spaced divisions.",
+        "desc": "Add tick marks and labels along the bar to show the scale. Useful for visualizing ranges like temperature or time.",
+        "divisions": "Number of Divisions",
+        "divisions_desc": "How many segments to divide the scale into (e.g., 4 = marks at 0%, 25%, 50%, 75%, 100%).",
+        "enable_toggle": "Enable the toggle above to configure scale settings",
+        "label_color": "Label Color",
+        "label_size": "Label Size",
+        "mobile_abbreviate_labels": "Abbreviate Labels on Mobile",
+        "mobile_abbreviate_labels_desc": "Shorten numeric labels on mobile (e.g. 1200 -> 1.2k, 700 km -> 700).",
+        "mobile_breakpoint": "Mobile Breakpoint",
+        "mobile_breakpoint_desc": "Apply mobile label options when viewport width is at or below this value.",
+        "mobile_options_enabled": "Enable Mobile Label Options",
+        "mobile_options_enabled_desc": "Apply mobile-specific label behavior below the configured viewport width.",
+        "mobile_reduce_density": "Reduce Label Density on Mobile",
+        "mobile_reduce_density_desc": "Hide every second label on mobile to prevent overlap while keeping all ticks.",
+        "position": "Scale Position",
+        "position_above": "Above",
+        "position_below": "Below",
+        "position_desc": "Position the scale above or below the bar.",
+        "show_labels": "Show Labels",
+        "show_labels_desc": "Display numeric values at each tick mark.",
+        "tick_color": "Tick Color",
+        "title": "Scale / Tick Marks"
       }
     },
     "image": {
@@ -947,7 +1252,23 @@
       "error_attribute_desc": "Select an entity and attribute in the General tab",
       "upload_choose": "Choose file",
       "upload_clear": "Remove file",
-      "attribute_entity_desc": "Select an entity that contains an image URL in one of its attributes."
+      "attribute_entity_desc": "Select an entity that contains an image URL in one of its attributes.",
+      "aspect_ratio": "Aspect Ratio",
+      "aspect_ratio_desc": "Set the aspect ratio of the image container.",
+      "aspect": {
+        "auto": "Auto (use height setting)",
+        "mobile": "Mobile (9:16)",
+        "photo": "Photo (3:2)",
+        "portrait": "Portrait (2:3)",
+        "square": "Square (1:1)",
+        "standard": "Standard (4:3)",
+        "ultrawide": "Ultrawide (21:9)",
+        "widescreen": "Widescreen (16:9)"
+      },
+      "load_error": "Image failed to load",
+      "rotation": "Rotation (°)",
+      "rotation_desc": "Rotate the image clockwise (0-360 degrees).",
+      "size_title": "Size & Display"
     },
     "graphs": {
       "chart_type": {
@@ -1022,7 +1343,11 @@
         "bar_display_limit": "Max Bars to Display",
         "bar_display_limit_desc": "0 = Unlimited",
         "show_time_intervals": "Show Time Intervals",
-        "chart_layout": "Chart Layout"
+        "chart_layout": "Chart Layout",
+        "use_fixed_y_axis": "Use Fixed Y-Axis Scale",
+        "use_fixed_y_axis_desc": "Set fixed min/max values instead of auto-scaling. Useful for consistent scales across multiple graphs or time periods.",
+        "y_axis_max": "Maximum Value",
+        "y_axis_min": "Minimum Value"
       },
       "agg": {
         "mean": "Average",
@@ -1121,7 +1446,9 @@
         "wind": "Wind Speed",
         "humidity": "Humidity",
         "pressure": "Pressure",
-        "clouds": "Cloud Coverage"
+        "clouds": "Cloud Coverage",
+        "precip_probability": "Chance of Rain",
+        "uv_index": "UV Index"
       },
       "forecast_attributes": {
         "title": "Forecast Attributes",
@@ -1139,6 +1466,12 @@
         "desc": "Optional JSON: colors (array), global_color, fill_area, pie_fill.",
         "toggle": "Template mode",
         "cheatsheet": "Template cheatsheet"
+      },
+      "forecast_limit": {
+        "days": "Limit Days",
+        "days_desc": "Days override hours",
+        "hours": "Limit Hours",
+        "hours_desc": "0 = show all"
       }
     },
     "info": {
@@ -1148,7 +1481,9 @@
       "entity": "Entity",
       "entity_desc": "Select the entity to display",
       "icon_section": {
-        "title": "Icon Settings"
+        "title": "Icon Settings",
+        "show_entity_picture": "Show Entity Picture",
+        "show_entity_picture_desc": "When enabled, entity_picture replaces the configured icon when available."
       },
       "show_icon": "Show Icon",
       "show_icon_desc": "Display an icon next to the entity value",
@@ -1180,7 +1515,8 @@
         "value_desc": "Template to format the entity value using Jinja2 syntax"
       },
       "size_section": {
-        "title": "Size Settings"
+        "title": "Size Settings",
+        "desc": "These controls affect the selected entity only."
       },
       "icon_size": "Icon Size",
       "icon_size_desc": "Size of the icon in pixels",
@@ -1203,7 +1539,39 @@
       "example_round": "Round to 1 decimal",
       "error_no_entities": "Configure Entities",
       "error_no_entities_desc": "Add info entities in the General tab",
-      "error_entities_need_config": "Entities Need Configuration"
+      "error_entities_need_config": "Entities Need Configuration",
+      "allow_wrap": "Allow Wrapping",
+      "allow_wrap_desc": "Allow grid items to wrap to new rows when they exceed the container width",
+      "content_distribution": "Content Distribution",
+      "content_distribution_desc": "Control how icon and content are distributed along the main axis",
+      "display_attribute": "Display Attribute",
+      "display_attribute_desc": "Show an entity attribute instead of the main state",
+      "icon_alignment_desc": "Align the icon along the cross axis",
+      "icon_position_desc": "Position the icon relative to the content (left, top, right, or bottom)",
+      "name_alignment": "Name Alignment",
+      "name_alignment_desc": "Align the name text within its container",
+      "name_first": "Name First",
+      "name_value_gap": "Name & Value Gap",
+      "name_value_gap_desc": "Space between the name and value in pixels",
+      "name_value_layout": {
+        "orientation": "Layout Direction",
+        "orientation_desc": "Choose how to display the name and value",
+        "orientation_desc_vertical_icon": "Arrange name and value (horizontal places them on one line)",
+        "orientation_desc_with_icon": "Choose how to arrange the name and value beside the icon",
+        "title": "Name & Value Layout"
+      },
+      "name_value_order": "Name & Value Order",
+      "name_value_order_desc_horizontal": "Which one comes first on the line",
+      "name_value_order_desc_vertical": "Which one sits on top of the other",
+      "overall_alignment_desc": "Align the entire info item within its container",
+      "state_alignment": "State Alignment",
+      "state_alignment_desc": "Align the state/value text within its container",
+      "template_cheatsheet": "Template Cheatsheet",
+      "unified_template_section": {
+        "desc": "Use Jinja2 templates to control icon and color dynamically. Uses entity context variables for seamless entity remapping.",
+        "title": "Template Mode"
+      },
+      "value_first": "Value First"
     },
     "button": {
       "basic": {
@@ -1231,7 +1599,8 @@
         "neon_glow": "Neon Glow",
         "outline": "Outline",
         "glass": "Glass",
-        "metallic": "Metallic"
+        "metallic": "Metallic",
+        "neumorphic": "Neumorphic"
       },
       "align": {
         "left": "Left",
@@ -1280,7 +1649,10 @@
         "service": "Service",
         "service_desc": "Service to call (e.g., light.turn_on)",
         "service_data": "Service Data (JSON)",
-        "service_data_desc": "Optional data to pass to the service (JSON format)"
+        "service_data_desc": "Optional data to pass to the service (JSON format)",
+        "desc": "Configure what happens when users tap, hold, or double-tap this button.",
+        "setup": "Set up button actions",
+        "title": "Button Actions"
       },
       "tap": {
         "title": "Tap Action",
@@ -1293,12 +1665,15 @@
       "double": {
         "title": "Double Tap Action",
         "desc": "Action to perform when button is double-tapped"
-      }
+      },
+      "icon_size": "Icon Size",
+      "icon_size_desc": "Size of the icon in pixels"
     },
     "layout_extra": {
       "module_name": "Module Name:",
       "module_name_placeholder": "e.g. Kitchen lights",
-      "module_name_help": "Give this module a custom name to make it easier to identify in the editor."
+      "module_name_help": "Give this module a custom name to make it easier to identify in the editor.",
+      "module_docs": "Open module documentation in Hub"
     },
     "camera": {
       "config": {
@@ -1323,7 +1698,9 @@
           "top_right": "Top Right",
           "center": "Center",
           "bottom_left": "Bottom Left",
-          "bottom_right": "Bottom Right"
+          "bottom_right": "Bottom Right",
+          "bottom_middle": "Bottom Middle",
+          "top_middle": "Top Middle"
         }
       },
       "display": {
@@ -1343,7 +1720,8 @@
         "desc": "How often to refresh the camera image automatically."
       },
       "dimensions": {
-        "title": "Dimensions"
+        "title": "Dimensions",
+        "responsive_note": "Camera now uses responsive sizing by default (100% width). Use the Design tab for full control over dimensions, or adjust these fallback pixel dimensions for specific use cases."
       },
       "width": "Width (px)",
       "width_desc": "Set the width of the camera display. Range: 100-1000px",
@@ -1484,7 +1862,11 @@
       "mode_badge": {
         "live": "Live",
         "snapshot": "Snapshot"
-      }
+      },
+      "rotation": "Rotation",
+      "rotation_desc": "Rotate the camera image clockwise (0–360 degrees).",
+      "tap_opens_fullscreen": "Tap Camera Opens Fullscreen",
+      "tap_opens_fullscreen_desc": "When enabled, tapping anywhere on the camera will open it in fullscreen mode."
     },
     "separator": {
       "config": {
@@ -1838,7 +2220,19 @@
         "bg_image": "Image",
         "bg_gradient": "Gradient",
         "bg_color": "Colour",
-        "bg_entity": "Entity"
+        "bg_entity": "Entity",
+        "banner_border_radius": "Banner Border Radius",
+        "border_radius": "Border Radius",
+        "custom_name_desc": "Leave empty to use friendly name",
+        "data_area_height": "Data Area Height",
+        "data_items_gap": "Data Items Gap",
+        "music_display": "Display Options",
+        "music_settings": "Music Settings",
+        "music_settings_desc": "Configure music/media display options",
+        "show_avatar": "Show Avatar",
+        "show_battery_badge": "Show Battery Badge",
+        "show_location_badge": "Show Location Badge",
+        "visibility": "Visibility"
       }
     },
     "dropdown": {
@@ -1915,6 +2309,64 @@
         "title": "Template Mode",
         "enable": "Enable Template Mode",
         "desc": "Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options."
+      },
+      "available_options": "Available Options",
+      "closed_title_custom_config": "Custom Text Configuration",
+      "closed_title_custom": {
+        "desc": "Custom text to display when dropdown is closed.",
+        "title": "Custom Text"
+      },
+      "closed_title_entity_config": "Entity State Configuration",
+      "closed_title_entity": {
+        "title": "Entity"
+      },
+      "closed_title_mode": {
+        "custom": "Custom",
+        "desc": "Choose what the dropdown displays when closed.",
+        "entity_state": "Entity State",
+        "first_option": "First Option",
+        "last_chosen": "Last Chosen",
+        "title": "Closed Dropdown Title"
+      },
+      "control_alignment": {
+        "icon_side": "Icon Side",
+        "mode": "Alignment Mode"
+      },
+      "control_icon": {
+        "label": "Control Icon",
+        "label_desc": "Select the icon that indicates the dropdown toggle state.",
+        "section_desc": "Customize the dropdown chevron icon and how it aligns with the selected value.",
+        "section_title": "Dropdown Control Icon"
+      },
+      "entity_mode_active": "Entity Source Mode Active",
+      "entity_mode_desc": "Options are automatically managed by the selected entity. The dropdown will display the current state and update the entity when an option is selected.",
+      "entity_source_config": "Entity Source Configuration",
+      "entity_source_info": "Options will be automatically populated from the entity. The dropdown will display the current state and update the entity when an option is selected.",
+      "menu_direction": {
+        "auto": "Auto",
+        "desc": "Choose how the dropdown opens: auto picks best fit, or force up/down.",
+        "down": "Down",
+        "title": "Menu Direction",
+        "up": "Up"
+      },
+      "no_options_found": "No options found for this entity",
+      "source_entity": {
+        "desc": "Select or Input Select entity to use as the source for dropdown options.",
+        "title": "Source Entity"
+      },
+      "source_mode": {
+        "desc": "Manual: Define custom options with actions. Entity: Use options from a Select or Input Select entity.",
+        "entity": "Entity Source",
+        "manual": "Manual Options",
+        "title": "Source Mode"
+      },
+      "source": {
+        "desc": "Choose whether to manually define options or use a Select or Input Select entity.",
+        "title": "Dropdown Source"
+      },
+      "visible_items": {
+        "desc": "Number of items visible in the dropdown before scrolling (1-20).",
+        "title": "Visible Items"
       }
     },
     "favorite_colors": {
@@ -1989,7 +2441,8 @@
         "neon_glow": "Neon Glow",
         "outline": "Outline",
         "glass": "Glass",
-        "metallic": "Metallic"
+        "metallic": "Metallic",
+        "neumorphic": "Neumorphic"
       },
       "layout_title": "Layout",
       "layout_options": {
@@ -2023,7 +2476,13 @@
         "toggle": "Template mode",
         "cheatsheet": "Template cheatsheet"
       },
-      "no_entity_hint": "No entity selected: the value only changes on this screen and is not saved."
+      "no_entity_hint": "No entity selected: the value only changes on this screen and is not saved.",
+      "decrease": "Decrease",
+      "increase": "Increase",
+      "value_section": {
+        "desc": "Configure the numeric range, step size, and default value.",
+        "title": "Value Configuration"
+      }
     },
     "ultra_card_pro": {
       "title": "Ultra Card Pro",
@@ -2230,7 +2689,15 @@
       "google_api_key_desc": "Enter your Google Maps API key for full JavaScript API features. Without a key, basic tile layers are used (limited features).",
       "how_to_get_api_key": "How to get a Google Maps API Key →",
       "fullscreen": "Full screen",
-      "exit_fullscreen": "Exit full screen"
+      "exit_fullscreen": "Exit full screen",
+      "center": {
+        "desc": "Manually set the map center coordinates. Leave empty to use first marker or auto-zoom.",
+        "latitude": "Center Latitude",
+        "latitude_desc": "Latitude coordinate for map center (-90 to 90)",
+        "longitude": "Center Longitude",
+        "longitude_desc": "Longitude coordinate for map center (-180 to 180)",
+        "title": "Map Center"
+      }
     },
     "entity_mapper": {
       "title": "Map Entities",
@@ -2279,7 +2746,29 @@
         "alignment_help": "Align the trigger element to the left, center, or right",
         "image_type": "Image Type",
         "image_type_desc": "Choose how to provide the image for the trigger",
-        "no_image": "No image configured"
+        "no_image": "No image configured",
+        "icon_background": "Icon Background",
+        "icon_background_circle": "Circle",
+        "icon_background_color": "Icon Background Color",
+        "icon_background_desc": "Shape drawn behind the icon, like the Icon module.",
+        "icon_background_none": "None",
+        "icon_background_padding": "Icon Background Padding",
+        "icon_background_padding_desc": "Space between the icon and the edge of its background.",
+        "icon_background_rounded": "Rounded",
+        "icon_color": "Trigger Icon Color",
+        "icon_size": "Trigger Icon Size",
+        "icon_size_desc": "Size of the trigger icon in pixels.",
+        "module": "Module",
+        "module_config": "Module Trigger",
+        "module_linked": "Module Linked",
+        "module_linked_desc": "Tapping on \"${module}\" will now open this popup.",
+        "module_trigger_desc": "Select a module in this card that will open the popup when tapped. The selected module will have its tap action overridden to open this popup instead.",
+        "module_trigger_title": "Module Trigger",
+        "no_module": "-- Select a Module --",
+        "no_modules_available": "No Modules Available",
+        "no_modules_available_desc": "Add other modules to this card first, then you can select one to trigger this popup.",
+        "select_module": "Select Module",
+        "select_module_desc": "Choose which module should trigger this popup when clicked."
       },
       "title": {
         "section_title": "Title Configuration",
@@ -2317,7 +2806,18 @@
         "slide_top": "Slide from Top",
         "slide_left": "Slide from Left",
         "slide_right": "Slide from Right",
-        "slide_bottom": "Slide from Bottom"
+        "slide_bottom": "Slide from Bottom",
+        "duration": "Animation Speed",
+        "duration_desc": "How long the open animation runs, in milliseconds.",
+        "easing": "Animation Easing",
+        "easing_desc": "How the motion accelerates. Spring adds a little overshoot.",
+        "easing_ease": "Ease",
+        "easing_ease_in_out": "Ease In Out",
+        "easing_ease_out": "Ease Out",
+        "easing_linear": "Linear",
+        "easing_spring": "Spring",
+        "from_edge": "Slide From Screen Edge",
+        "from_edge_desc": "Start the slide off-screen so the popup glides in like a panel instead of nudging into place."
       },
       "popup_width": "Popup Width",
       "popup_width_desc": "Width of the popup (e.g., 600px, 100%, 14rem, 10vw)",
@@ -2331,7 +2831,8 @@
         "position": "Close Button Position",
         "position_desc": "Choose where the close button appears",
         "inside": "Inside the Popup",
-        "none": "None"
+        "none": "None",
+        "label": "Close"
       },
       "state": {
         "section_title": "Default State",
@@ -2421,6 +2922,11 @@
       },
       "edit_overlay": {
         "message": "Edit this module to see preview"
+      },
+      "overlay": {
+        "section_title": "Background Overlay",
+        "show": "Show Background Overlay",
+        "show_desc": "Display a dimmed overlay behind the popup when open."
       }
     },
     "tabs_module": {
@@ -2443,7 +2949,8 @@
       "alignment": {
         "title": "Tab Alignment",
         "desc": "Choose how tabs are aligned within their container.",
-        "position": "Position"
+        "position": "Position",
+        "alignment": "Alignment"
       },
       "behavior": {
         "switch_on_hover": "Switch on Hover",
@@ -2509,6 +3016,32 @@
         "no_sections": "No Sections",
         "no_sections_desc": "Add sections in the General tab to get started.",
         "no_modules": "No modules added. Add modules to this section in the Layout tab."
+      },
+      "colors": {
+        "active": "Active Tab",
+        "background": "Background",
+        "desc": "Customize the colors for your tabs.",
+        "icon": "Icon",
+        "inactive": "Inactive Tab",
+        "other": "Track & Icons",
+        "text": "Text",
+        "title": "Colors",
+        "track": "Track"
+      },
+      "position": {
+        "desc": "Choose where the tabs appear relative to the content.",
+        "position": "Position",
+        "title": "Tab Position"
+      },
+      "responsive": {
+        "desc": "Control how tabs behave on smaller screens or when space is limited.",
+        "mobile_breakpoint": "Mobile Breakpoint",
+        "mobile_breakpoint_desc": "Screen width in pixels below which tabs collapse to icons only.",
+        "mobile_icons_only": "Icons Only on Mobile",
+        "mobile_icons_only_desc": "Only show icons (hide text) on screens narrower than the breakpoint. Requires icons on tabs.",
+        "title": "Responsive",
+        "wrap_tabs": "Wrap Tabs",
+        "wrap_tabs_desc": "Allow tabs to wrap to multiple lines instead of overflowing."
       }
     },
     "sports": {
@@ -2561,7 +3094,22 @@
       "font_sizes": "Font Sizes",
       "score_font_size": "Score Font Size",
       "team_name_font_size": "Team Name Font Size",
-      "logo_size": "Logo Size"
+      "logo_size": "Logo Size",
+      "detail_font_size": "Detail Font Size",
+      "detail_font_size_desc": "Size of detail text (records, venue, etc.) in pixels",
+      "logo_background_opacity": "Background Logo Opacity",
+      "logo_background_opacity_desc": "Transparency of the watermark logos (1-20%)",
+      "logo_background_size": "Background Logo Size",
+      "logo_background_size_desc": "Size of the watermark logos in the background",
+      "logo_bg_options": "BACKGROUND LOGO OPTIONS",
+      "logo_size_desc": "Size of team logos in pixels",
+      "score_font_size_desc": "Size of score text in pixels",
+      "show_logo_background": "Show Background Logos",
+      "show_logo_background_desc": "Display subtle watermark logos in the background",
+      "size_controls": "SIZE CONTROLS",
+      "team_name_font_size_desc": "Size of team name text in pixels",
+      "text_color": "Text Color",
+      "text_color_desc": "Override the default text color for better readability"
     },
     "pro": {
       "feature_locked": "Pro Feature",
@@ -2571,7 +3119,8 @@
       "status_unreachable": "Ultra Card Connect can't reach ultracard.io right now. If you have Pro, it unlocks again when the connection is back.",
       "status_reauth": "Ultra Card Connect needs you to sign in again (Settings → Devices & services → Ultra Card Connect).",
       "status_signed_out": "Already have Pro? Sign in to Ultra Card Connect from the Ultra Card Hub in the sidebar.",
-      "status_inactive": "Your Pro subscription is {status}. Renew it on ultracard.io to unlock this."
+      "status_inactive": "Your Pro subscription is {status}. Renew it on ultracard.io to unlock this.",
+      "badge_description": "Badge of Honor is an exclusive Pro feature that displays a beautiful animated badge celebrating your Ultra Card Pro membership."
     },
     "toggle": {
       "display_settings": "DISPLAY SETTINGS",
@@ -2636,7 +3185,13 @@
       "match_mode_entity": "Entity State",
       "match_mode_template": "Template (Advanced)",
       "unified_match_desc": "Return JSON with \"match\": true when this point should be active, or a plain true/false string.",
-      "template_cheatsheet": "Template cheatsheet"
+      "template_cheatsheet": "Template cheatsheet",
+      "create_toggle_points": "Create Toggle Points",
+      "quick_setup": "QUICK SETUP",
+      "quick_setup_desc": "Automatically create toggle points based on an entity type (replaces existing points)",
+      "quick_setup_entity": "Select Entity",
+      "quick_setup_entity_desc": "Choose an entity, then click \"Create Toggle Points\" below to auto-generate points based on the entity type",
+      "quick_setup_warning": "This will replace all existing toggle points with auto-generated ones based on the entity type."
     },
     "custom_variables": {
       "title": "Custom Variables",
@@ -2679,7 +3234,12 @@
       "name_in_use_title": "Name already in use",
       "delete_title": "Delete variable?",
       "clear_all_title": "Delete all global variables?",
-      "clear_card_title": "Delete card variables?"
+      "clear_card_title": "Delete card variables?",
+      "add_card_variable": "Add card variable",
+      "card_only_description": "Variables that apply only to this card. Use them in templates with {{ $variable_name }}.",
+      "card_section_description": "Variables that apply only to this card. For shared variables used across cards, use the Ultra Card Hub → Variables tab in the sidebar.",
+      "empty_card_description": "Add a variable that applies only to this card, or use the Ultra Card Hub for shared variables.",
+      "empty_card_title": "No Card Variables"
     },
     "export_import": {
       "include_variables": "You have custom variable(s). Include them in the export?",
@@ -2743,7 +3303,10 @@
       "pause": "Pause",
       "resume": "Resume",
       "cancel": "Cancel",
-      "paused": "Paused"
+      "paused": "Paused",
+      "preset_durations": "Preset durations (minutes)",
+      "preset_durations_desc": "Quick-start buttons shown when the timer is idle.",
+      "preset_placeholder": "Minutes (e.g. 10)"
     },
     "cover": {
       "entity_section": "Entity",
@@ -2793,11 +3356,61 @@
       "config_needed": "Select a cover",
       "config_needed_desc": "Choose a cover entity in the General tab",
       "select_entity": "Select cover entity",
-      "unavailable": "Unavailable"
+      "unavailable": "Unavailable",
+      "icon": "Icon",
+      "icon_desc": "Leave empty to use the entity icon",
+      "name": "Name",
+      "name_desc": "Leave empty to use the entity name",
+      "overrides_desc": "Optional overrides for the entity name and icon.",
+      "overrides_section": "Name & Icon"
     },
     "energy_display": {
       "error_no_nodes": "Configure energy nodes",
-      "error_no_nodes_desc": "Add entities for Solar, Grid, Battery and Home in the General tab."
+      "error_no_nodes_desc": "Add entities for Solar, Grid, Battery and Home in the General tab.",
+      "add_device": "Add Device",
+      "animation_speed": "Animation speed",
+      "box_border_width": "Box border width",
+      "box_corner_radius": "Box corner radius",
+      "circle_size": "Circle size",
+      "circle_size_desc": "Node circle diameter (px)",
+      "column_spacing": "Column spacing",
+      "core_nodes_desc": "Configure Solar, Grid, Battery, and Home. Use power sensor entities (W).",
+      "core_nodes_title": "Core Energy Nodes",
+      "curve_factor": "Curve factor",
+      "curve_factor_desc": "Path curvature",
+      "devices_desc": "Add devices to show individual power consumption. Drag to reorder.",
+      "devices_title": "Custom Device Nodes",
+      "flow_line_width": "Flow line width",
+      "flow_line_width_desc": "Line thickness (px)",
+      "flow_title": "Flow and Animation",
+      "gauge_size": "Gauge size",
+      "gauge_size_desc": "Central gauge diameter (px)",
+      "node_color": "Color",
+      "node_enabled": "Enabled",
+      "node_icon": "Icon",
+      "node_label": "Label",
+      "node_spacing": "Node spacing",
+      "node_spacing_desc": "Spacing between nodes (px)",
+      "pro_description": "Energy Display is a Pro feature. Visualize energy flow between grid, solar, battery, home and devices with Circle Flow, Box Flow, or Sankey styles.",
+      "sankey_width": "Sankey width",
+      "sankey_width_desc": "Diagram width (px)",
+      "show_arrow": "Show directional arrow",
+      "show_icons": "Show icons",
+      "show_labels": "Show labels",
+      "show_self_sufficiency": "Show self-sufficiency gauge",
+      "show_values": "Show values",
+      "speed_fast": "Fast",
+      "speed_none": "None",
+      "speed_normal": "Normal",
+      "speed_slow": "Slow",
+      "style": "Layout Style",
+      "style_box": "Box Flow",
+      "style_circle": "Circle Flow",
+      "style_desc": "Choose the visual layout for the energy flow display.",
+      "style_options_title": "Style Options",
+      "style_sankey": "Sankey",
+      "style_title": "Display Style",
+      "unit_display": "Unit display"
     },
     "living_canvas": {
       "title": "Living Canvas",
@@ -2908,7 +3521,9 @@
       "icon_override": "Icon override",
       "icon_override_desc": "Optional mdi: icon; leave empty for the animated fan graphic",
       "presets_label": "Airflow Mode",
-      "direction": "Direction"
+      "direction": "Direction",
+      "decrease_speed": "Decrease speed",
+      "increase_speed": "Increase speed"
     },
     "lock": {
       "error_entity": "Select a lock entity",
@@ -3229,7 +3844,11 @@
       "on_color": "On Color",
       "off_color": "Off Color",
       "text_color": "Text Color",
-      "error_configure_entity_desc": "Select an input_boolean entity in the General tab"
+      "error_configure_entity_desc": "Select an input_boolean entity in the General tab",
+      "content_alignment": "Alignment",
+      "content_alignment_desc": "Align the control row inside the module",
+      "show_entity_name": "Show Entity Name",
+      "show_entity_name_desc": "Display the entity name beside the control (switch/checkbox)"
     },
     "button_input": {
       "entity": {
@@ -3345,7 +3964,13 @@
       "section_display": "DISPLAY CONFIGURATION",
       "section_ticks": "TICK MARKS",
       "section_animation": "ANIMATION",
-      "entity": "Entity"
+      "entity": "Entity",
+      "entity_desc": "Select a sensor or input number entity whose value will be displayed on the gauge.",
+      "unified_template": {
+        "cheatsheet": "Template cheatsheet",
+        "desc": "Use Jinja2 templates to dynamically set gauge value and gauge_color.",
+        "toggle": "Template Mode"
+      }
     },
     "activity_feed": {
       "error_waiting_ha": "Waiting for Home Assistant",
@@ -3440,7 +4065,78 @@
       },
       "scope_current_dashboard": "Current dashboard only",
       "scope_dashboard_label": "Current dashboard:",
-      "scope_dashboard_info": "Navbar appears on every view of this dashboard, but not on your other dashboards."
+      "scope_dashboard_info": "Navbar appears on every view of this dashboard, but not on your other dashboards.",
+      "add_path": "Add Path",
+      "add_stack": "Add Stack",
+      "align_center": "Center",
+      "align_end": "End",
+      "align_space_around": "Space Around",
+      "align_space_between": "Space Between",
+      "align_start": "Start",
+      "desktop_mode_desc": "Choose floating (centered with margins) or docked (edge-to-edge).",
+      "desktop_offset": "Desktop Offset",
+      "desktop_position_desc": "Where the navbar appears on desktop.",
+      "desktop_show_labels_desc": "Control label visibility on desktop.",
+      "dock_color": "Dock Color",
+      "dock_color_desc": "Custom accent color for the dock background. For glass styles this tints the glass.",
+      "edit_mode_banner": "Changes preview live in the navbar below. Close this editor to interact with the navbar.",
+      "global_navbar_warning": "Only one global navbar can be active at a time. If you have multiple navbars set to \"All views\", only the first registered one will be displayed. Use \"Current view only\" for navbars on specific pages.",
+      "haptics_double_tap": "Double Tap",
+      "haptics_double_tap_desc": "Trigger haptic on double tap.",
+      "haptics_enable": "Enable Haptics",
+      "haptics_enable_desc": "Master toggle for all navbar haptic feedback.",
+      "haptics_hold": "Hold Action",
+      "haptics_hold_desc": "Trigger haptic on hold.",
+      "haptics_tap": "Tap Action",
+      "haptics_tap_desc": "Trigger haptic on tap.",
+      "haptics_url": "URL Navigation",
+      "haptics_url_desc": "Trigger haptic when navigating to a URL.",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Custom color for navbar icons. Overrides the default icon color from the style preset.",
+      "icon_spacing": "Icon Spacing",
+      "icon_spacing_desc": "Gap between icons in the dock (px).",
+      "item_alignment": "Item Alignment",
+      "item_alignment_desc": "How items are distributed within the dock.",
+      "labels_hidden": "Hidden",
+      "labels_icons": "Icons & Labels",
+      "labels_text_only": "Text only (no icons)",
+      "media_player": "Media Player",
+      "media_player_entity_required": "Click to select entity (required)",
+      "media_player_icon": "Media Player Icon",
+      "media_player_icon_desc": "Show a media player icon in the navbar",
+      "min_width": "Min Width",
+      "min_width_desc": "Viewport width (px) that switches to desktop mode.",
+      "mobile_mode_desc": "Choose docked (default) or floating (desktop-like).",
+      "mobile_offset": "Mobile Offset",
+      "mobile_position_desc": "Where the navbar appears on mobile.",
+      "mobile_show_labels_desc": "Control label visibility on mobile.",
+      "mode": "Mode",
+      "mode_docked": "Docked",
+      "mode_floating": "Floating",
+      "nav_scope": "Show Navigation On",
+      "nav_scope_desc": "Control where this navbar appears.",
+      "note_label": "Note:",
+      "offset_desc": "Distance from screen edge (px). Pushes the dock away from the edge.",
+      "position": "Position",
+      "position_bottom": "Bottom",
+      "position_left": "Left",
+      "position_right": "Right",
+      "position_top": "Top",
+      "scope_all_info": "Navbar appears on every view in your dashboard.",
+      "scope_all_label": "All views:",
+      "scope_all_views": "All views (global)",
+      "scope_current_info": "Navbar only appears on the view where this card is placed.",
+      "scope_current_label": "Current view:",
+      "scope_current_view": "Current view only",
+      "section_items": "NAVIGATION ITEMS",
+      "section_items_desc": "Configure and reorder items that appear in your navbar. Drag to reorder. Drag paths onto a stack to add them as children.",
+      "section_special": "SPECIAL ITEMS",
+      "section_special_desc": "Enable special navbar items. When enabled, they appear in the items list above for reordering.",
+      "section_style": "NAVBAR STYLE",
+      "section_visibility": "VISIBILITY",
+      "show_labels": "Show Labels",
+      "visual_preset": "Visual Preset",
+      "visual_preset_desc": "Choose a visual style preset for your navbar."
     },
     "climate": {
       "error_no_entity": "No Climate Entity",
@@ -3448,7 +4144,9 @@
       "error_not_found": "Entity Not Found",
       "entity_config_title": "Entity Configuration",
       "entity_config_desc": "Select the climate entity to control",
-      "entity": "Climate Entity"
+      "entity": "Climate Entity",
+      "decrease_temp": "Decrease target temperature",
+      "increase_temp": "Increase target temperature"
     },
     "people": {
       "error_no_entity": "Select Person Entity",
@@ -3585,7 +4283,17 @@
       "delete": "Delete",
       "deleting": "Deleting…",
       "delete_confirm": "Delete this event?",
-      "delete_confirm_future": "Delete this and the following events?"
+      "delete_confirm_future": "Delete this and the following events?",
+      "add_calendar": "Add Calendar",
+      "advanced": "Advanced Options",
+      "advanced_desc": "Configure refresh interval and event filtering.",
+      "calendars_desc": "Add calendar entities to display. Each calendar can have a custom color.",
+      "calendars_section": "Calendar Entities",
+      "event_display_desc": "Configure what information is shown for each event.",
+      "styling": "Styling",
+      "styling_desc": "Customize colors, fonts, and spacing for the calendar display.",
+      "view_config": "View Configuration",
+      "view_config_desc": "Configure the calendar view layout and date range."
     },
     "dynamic_list": {
       "error_waiting_ha": "Waiting for Home Assistant",
@@ -3603,7 +4311,11 @@
       "error_invalid_template_action_desc": "Template must output a JSON array via {{ ns.mods | tojson }}.",
       "error_add_jinja_template": "Add a Jinja2 Template",
       "error_add_jinja_template_desc": "Enter a template in the General tab to generate modules dynamically",
-      "error_invalid_template_jinja_desc": "Template must output a JSON array. End your template with {{ ns.mods | tojson }}."
+      "error_invalid_template_jinja_desc": "Template must output a JSON array. End your template with {{ ns.mods | tojson }}.",
+      "direction": "Direction",
+      "gap": "Gap (px)",
+      "gap_desc": "Space between generated modules in pixels",
+      "template_label": "Template"
     },
     "light": {
       "section_presets": "Light Presets",
@@ -3619,7 +4331,8 @@
     },
     "accordion": {
       "preview": {
-        "title_fallback": "Accordion Title"
+        "title_fallback": "Accordion Title",
+        "no_modules": "No modules added. Add modules to this accordion in the Layout tab."
       },
       "title_icon": {
         "section_title": "Title Icon",
@@ -3654,11 +4367,107 @@
         "side_title_down": "Reads Down",
         "panel_width": "Panel Width",
         "panel_width_desc": "How wide the content panel is when it opens sideways, in pixels. It never grows wider than the screen."
+      },
+      "alignment": {
+        "icon_side": "Icon Side",
+        "mode": "Alignment Mode",
+        "section_desc": "Choose how the title and icon are positioned in the header.",
+        "section_title": "Header Alignment"
+      },
+      "design": {
+        "container_bg_color": "Background Color",
+        "container_border_color": "Border Color",
+        "container_border_radius": "Border Radius",
+        "container_border_width": "Border Width",
+        "container_desc": "Customize the outer wrapper styling of the accordion.",
+        "container_shadow": "Box Shadow",
+        "container_shadow_desc": "CSS box-shadow value (e.g., 0 2px 8px rgba(0,0,0,0.1))",
+        "container_title": "Container Customization",
+        "content_bg_color": "Background Color",
+        "content_border_color": "Border Color",
+        "content_border_width": "Border Width",
+        "content_desc": "Customize the expanded content area appearance.",
+        "content_padding": "Content Padding",
+        "content_padding_desc": "Padding around the content area (in pixels).",
+        "content_title": "Content Customization",
+        "general_title": "General Module Design",
+        "header_bg_color": "Background Color",
+        "header_border_color": "Border Bottom Color",
+        "header_border_width": "Border Width",
+        "header_desc": "Customize the clickable header bar appearance.",
+        "header_font_size": "Font Size",
+        "header_font_weight": "Font Weight",
+        "header_hover_color": "Hover Background Color",
+        "header_padding": "Header Padding",
+        "header_padding_desc": "Padding inside the header (in pixels).",
+        "header_text_color": "Text Color",
+        "header_title": "Header Customization",
+        "icon_color": "Icon Color",
+        "icon_size": "Icon Size"
+      },
+      "icon": {
+        "custom": "Icon",
+        "custom_desc": "Select the icon to display as the control indicator.",
+        "section_desc": "Configure the control icon displayed in the accordion header (defaults to chevron-down).",
+        "section_title": "Control Icon"
+      },
+      "open_logic": {
+        "add_condition": "Add Condition",
+        "always_note": "Accordion will always remain open. Users can still manually close it, but it will reopen automatically.",
+        "attribute": "Attribute",
+        "condition_type": "Condition Type",
+        "conditions": "Conditions",
+        "custom_name": "Custom Name",
+        "custom_name_desc": "Optional: Give this condition a custom name",
+        "entity": "Entity",
+        "manual_note": "Accordion state is controlled manually by user clicks. Set Default State above to choose initial state.",
+        "mode_always": "Always Open",
+        "mode_any": "Open if ANY condition is met",
+        "mode_desc": "Choose how the accordion state is controlled.",
+        "mode_every": "Open if EVERY condition is met",
+        "mode_manual": "Manual",
+        "mode_title": "Accordion State Control",
+        "no_conditions": "No conditions added yet. Click \"Add Condition\" to get started.",
+        "operator": "Operator",
+        "section_desc": "Control when this accordion automatically opens or closes based on conditions.",
+        "section_title": "Open/Close Logic",
+        "template": "Template",
+        "template_desc": "Jinja2 template that should evaluate to true/false to open the accordion.",
+        "time_from": "From",
+        "time_to": "To",
+        "type_entity_attribute": "Entity Attribute",
+        "type_entity_state": "Entity State",
+        "type_template": "Template",
+        "type_time": "Time Range",
+        "value": "Value"
+      },
+      "state": {
+        "default_open": "Open by Default",
+        "default_open_desc": "When enabled, the accordion will be expanded when the card initially loads.",
+        "section_desc": "Configure whether this accordion starts open or closed when the card loads.",
+        "section_title": "Default State"
+      },
+      "title": {
+        "custom_config": "Custom Title Configuration",
+        "custom_text": "Title Text",
+        "custom_text_desc": "Enter the custom text to display in the accordion header.",
+        "entity": "Title Entity",
+        "entity_config": "Entity Title Configuration",
+        "entity_desc": "Select an entity whose state will be used as the accordion header title.",
+        "mode": "Title Mode",
+        "mode_desc": "Choose whether to use custom text or entity state as title.",
+        "section_desc": "Configure the accordion header title source and content.",
+        "section_title": "Title Configuration",
+        "show_entity_name": "Show Entity Name",
+        "show_entity_name_desc": "Display the entity friendly name before the state value.",
+        "show_name": "Display Options",
+        "show_name_desc": "Choose whether to show the entity name along with the state."
       }
     },
     "animated_forecast": {
       "preview": {
-        "no_data": "No forecast data available"
+        "no_data": "No forecast data available",
+        "no_hourly": "No hourly forecast for this day"
       },
       "icon_style_fill": "Filled",
       "icon_style_line": "Outlined",
@@ -3672,7 +4481,60 @@
       "hour_number_only_desc": "Shows just the hour, for example 14 instead of 14 Uhr. AM and PM stay for 12-hour languages.",
       "chart_values_desc": "Tick the values to show, pick Bars or Line for each, and use the arrows to change their order. Values your weather integration doesn't provide are skipped.",
       "move_up": "Move up",
-      "move_down": "Move down"
+      "move_down": "Move down",
+      "back": "Back",
+      "background": {
+        "title": "🎨 Background"
+      },
+      "chart_color": "Chart Color",
+      "chart_height": "Row Height",
+      "chart_metrics": "Values",
+      "chart_style_bar": "Bars",
+      "chart_style_line": "Line",
+      "chart": {
+        "title": "📊 Chart"
+      },
+      "colors": {
+        "title": "🎨 Colors"
+      },
+      "config": {
+        "title": "⚙️ Forecast Configuration"
+      },
+      "daily": "Daily",
+      "day_tap_hourly": "Tap a Day to See Its Hours",
+      "day_tap_hourly_desc": "Tapping a day switches to that day's hourly forecast. Tap Back to return. Day taps no longer run the module tap action.",
+      "entities": {
+        "title": "⚙️ Forecast Entities"
+      },
+      "forecast_background": "Forecast Background",
+      "forecast_background_desc": "Background for the forecast section (theme-aware by default)",
+      "forecast_day_color": "Forecast Day Names",
+      "forecast_day_size": "Forecast Day Name Size",
+      "forecast_days": "Forecast Days",
+      "forecast_days_desc": "Number of forecast days (3-7)",
+      "forecast_entity": "Forecast Entity (Optional)",
+      "forecast_entity_desc": "Separate forecast entity if available",
+      "forecast_hours": "Forecast Hours",
+      "forecast_hours_desc": "Hours shown in the hourly view (3-12)",
+      "forecast_icon_size": "Forecast Icon Size",
+      "forecast_icon_size_desc": "Size of forecast weather icons (32-80px)",
+      "forecast_temp_color": "Forecast Temps",
+      "forecast_temp_size": "Forecast Temp Size",
+      "forecast_type": "Show First",
+      "forecast_type_desc": "Hourly needs a weather integration that provides an hourly forecast.",
+      "hourly": "Hourly",
+      "icon_settings": {
+        "title": "🎨 Icon Settings"
+      },
+      "icon_style": "Icon Style",
+      "icon_style_desc": "Choose between filled or outlined animated icons",
+      "show_chart": "Show Chart Under Forecast",
+      "show_chart_desc": "Adds a small bar or line row per value, lined up with each day or hour.",
+      "text_sizes": {
+        "title": "📏 Text Sizes"
+      },
+      "weather_entity": "Weather Entity",
+      "weather_entity_desc": "Primary weather.* entity with forecast data"
     },
     "animated_weather": {
       "entity_section": "Weather Entity",
@@ -3695,7 +4557,10 @@
       "left_column": "Left Column",
       "right_column": "Right Column",
       "item_size": "Size",
-      "item_color": "Color"
+      "item_color": "Color",
+      "entity_desc": "Select a weather entity to drive the animated background and forecast display.",
+      "station_section": "Weather Station Sensors",
+      "station_section_desc": "Optional. Use your own weather station for the current values. The animated icon and high/low still come from the weather entity. New items like Feels Like and UV Index appear in the Left Column once their sensor is set."
     },
     "status_summary": {
       "title_display": "TITLE & DISPLAY",
@@ -4216,7 +5081,15 @@
       "row_gap": "Row spacing",
       "row_gap_desc": "Vertical gap between rows. Applies to every style.",
       "columns": "Columns",
-      "columns_desc": "Arrange rows in a grid. 1 = single column (default)."
+      "columns_desc": "Arrange rows in a grid. 1 = single column (default).",
+      "empty_state_link": "Empty list link (optional)",
+      "empty_state_link_desc": "Tapping the empty-list message navigates to this dashboard view or URL.",
+      "empty_state_text": "Empty list text",
+      "empty_state_text_desc": "Custom message shown when no entities match the filters. Leave blank for the default hint.",
+      "include_areas": "Areas",
+      "include_areas_desc": "Only entities assigned to these areas (directly or via their device). Empty = all areas.",
+      "include_labels": "Labels",
+      "include_labels_desc": "Only entities carrying these Home Assistant labels (on the entity, its device, or its area). Empty = all labels."
     },
     "builder": {
       "lock": "Lock layer",
@@ -6532,7 +7405,49 @@
     "stack": {
       "layer": {
         "apply_all": "Use this anchor for all layers",
-        "apply_all_desc": "Each layer has its own anchor. This copies the anchor and offsets above to every layer."
+        "apply_all_desc": "Each layer has its own anchor. This copies the anchor and offsets above to every layer.",
+        "anchor": "Anchor point",
+        "delete": "Remove layer",
+        "down": "Move down",
+        "drag_hint": "Drag to move this layer",
+        "height": "Height",
+        "offset": "Offset from anchor",
+        "offset_x": "Offset X",
+        "offset_y": "Offset Y",
+        "opacity": "Opacity",
+        "position": {
+          "desc": "Editing layer",
+          "title": "Layer position"
+        },
+        "select_hint": "Click to select this layer",
+        "size": "Size",
+        "up": "Move up",
+        "visibility": "Toggle visibility",
+        "width": "Width",
+        "z_desc": "Leave empty to use layer list order (bottom to top).",
+        "z_index": "Z-index override"
+      },
+      "aspect_ratio": "Aspect ratio",
+      "clip": "Clip overflow",
+      "clip_desc": "Hide content outside rounded bounds.",
+      "container": {
+        "desc": "Aspect ratio or fixed height defines the overlay area.",
+        "title": "Container"
+      },
+      "empty": "No layers yet",
+      "empty_hint": "Drag modules into this stack from the layout tree, or pick a Quick start preset",
+      "height": "Height (optional)",
+      "height_desc": "When set (e.g. 280px, 40vh), overrides aspect ratio height.",
+      "layer_z": "layer",
+      "layers": {
+        "desc": "Layers are stacked bottom (first) to top (last). Click a row to edit its position.",
+        "empty_desc": "Drag modules into this stack from the layout tree, or pick a Quick start preset above. New layers default to the center of the card so you can offset them in any direction.",
+        "empty_title": "No layers yet",
+        "title": "Layers"
+      },
+      "presets": {
+        "desc": "Pick a starting point — you can edit, reorder, and remove layers afterwards.",
+        "title": "Quick start"
       }
     },
     "rss_feed": {
@@ -6609,7 +7524,46 @@
     "alarm_panel": {
       "mode_desc_auto": "Follows what the alarm supports",
       "mode_desc_supported": "Your alarm supports this mode",
-      "mode_desc_unsupported": "Your alarm does not report this mode; turn on to show it anyway"
+      "mode_desc_unsupported": "Your alarm does not report this mode; turn on to show it anyway",
+      "action_arm": "Arm",
+      "action_disarm": "Disarm",
+      "arm_modes_desc": "Choose which arm mode buttons to show. Leave unset to auto-detect from the entity.",
+      "arm_modes_label": "Arm modes",
+      "arm_modes_section": "Arm Modes",
+      "cancel": "Cancel",
+      "clear": "Clear",
+      "code_for": "Code for",
+      "code_placeholder": "Enter code",
+      "config_needed": "Select an alarm panel",
+      "config_needed_desc": "Choose an alarm_control_panel entity in the General tab",
+      "confirm": "Confirm",
+      "display_desc": "Choose what to show.",
+      "display_section": "Display",
+      "entity": "Alarm entity",
+      "entity_section": "Alarm Entity",
+      "entity_section_desc": "Select the alarm_control_panel entity to control.",
+      "error_entity": "Select an alarm_control_panel entity",
+      "keypad_label": "PIN keypad",
+      "layout": "Layout",
+      "layout_compact": "Compact",
+      "layout_desc": "Visual style of the alarm panel.",
+      "layout_hero": "Hero",
+      "layout_section": "Layout",
+      "layout_standard": "Standard",
+      "layout_style_desc": "Hero shows full PIN pad, standard is a single row, compact is a chip",
+      "show_arm_away": "Show Arm Away",
+      "show_arm_custom": "Show Arm Custom Bypass",
+      "show_arm_home": "Show Arm Home",
+      "show_arm_night": "Show Arm Night",
+      "show_arm_vacation": "Show Arm Vacation",
+      "show_icon": "Show icon",
+      "show_icon_desc": "Show shield icon in the status ring",
+      "show_keypad": "Show keypad",
+      "show_keypad_desc": "Always show the PIN keypad",
+      "show_state": "Show state text",
+      "show_state_desc": "Display the alarm state badge",
+      "show_title": "Show title",
+      "show_title_desc": "Display the alarm name"
     },
     "entity_variable": {
       "linked": "Using variable",
@@ -6653,6 +7607,1064 @@
     },
     "external_card": {
       "actions_note": "Leave these actions off to keep the card's own buttons and controls working. Once you set an action, or a popup uses this card as its trigger, Ultra Card handles taps on this card instead."
+    },
+    "animated_clock": {
+      "analog_show_center_dot": "Center Dot",
+      "analog_show_hour_hand": "Hour Hand",
+      "analog_show_minute_hand": "Minute Hand",
+      "analog_show_seconds": "Second Hand",
+      "analog_smooth_seconds": "Smooth Sweeping Motion",
+      "clock_size": "Clock Size",
+      "clock_size_desc": "Scale factor for clock size (0–200)",
+      "clock_style": "Clock Style",
+      "clock_style_desc": "Choose from 10 different clock display styles",
+      "config": {
+        "title": "Clock Configuration"
+      },
+      "customization": {
+        "title": "Clock Customization"
+      },
+      "flip_tile_color": "Tile Background Color",
+      "show_ampm": "AM/PM",
+      "show_command": "Terminal Command",
+      "show_cursor": "Blinking Cursor",
+      "show_hours": "Hours",
+      "show_minutes": "Minutes",
+      "show_prompt": "Terminal Prompt",
+      "show_seconds": "Seconds",
+      "show_separators": "Separators (:)",
+      "time_format": "Time Format",
+      "time_format_desc": "12-hour or 24-hour time display"
+    },
+    "appliance": {
+      "active_color": "Running color",
+      "active_color_desc": "Accent while a cycle is running",
+      "card_bg": "Card background",
+      "cavity_mode": "Second oven mode",
+      "cavity_setpoint": "Second oven set point",
+      "cavity_state": "Second oven state",
+      "cavity_temp": "Second oven temperature",
+      "child_lock": "Child lock",
+      "chip_burner_on": "1 burner on",
+      "chip_burners_on": "burners on",
+      "chip_child_lock": "Child lock",
+      "chip_door_open": "Door open",
+      "chip_filter": "Replace filter",
+      "chip_remote_off": "Remote off",
+      "chip_wrinkle": "Wrinkle prevent",
+      "completion_time": "Completion time sensor",
+      "config_needed": "Select an appliance",
+      "config_needed_desc": "Choose the main entity in the General tab",
+      "cooktop": "Cooktop burners",
+      "cooktop_desc": "Entities that report each burner’s state (on/off, heating, or a power number). They light the burners on the graphic and show a “burners on” chip. Auto-detected entities appear below.",
+      "cooktop_on": "Cooktop on",
+      "cooktop_placeholder": "Add a burner entity…",
+      "cooling": "Cooling",
+      "decrease": "Decrease",
+      "display_section": "Display",
+      "display_section_desc": "Choose what to show on the card.",
+      "done_color": "Done color",
+      "door": "Door sensor",
+      "doors_open": "Doors open",
+      "enable_animations": "Enable animations",
+      "enable_animations_desc": "Drum spin, bubbles, steam, and glow effects while running",
+      "ends_at": "Ends",
+      "energy_sensor": "Energy (kWh)",
+      "entity": "Main entity",
+      "entity_section": "Main entity",
+      "entity_section_desc": "Pick the machine-state select or sensor (e.g. select.washer or a run-state sensor). Related sensors and switches are found automatically — works with SmartThings, LG ThinQ, Home Connect (Bosch, Siemens, Neff), and similar integrations.",
+      "entity_section_desc_fridge": "Pick any entity of the refrigerator device (e.g. a temperature or door sensor). Related sensors and switches are found automatically — works with SmartThings, LG ThinQ, and similar integrations.",
+      "entity_section_desc_range": "Pick the oven machine-state sensor (e.g. sensor.range_oven_machine_state) or any entity of the range. Oven temperature, modes, burners, and the light are found automatically.",
+      "features": "Feature switches",
+      "features_desc": "Toggle chips shown on the card (sanitize, storm wash, power cool, ice maker, wrinkle prevent…). Auto-detected switches appear below — remove any you don’t want, or add your own.",
+      "features_placeholder": "Add a switch…",
+      "filter_alert": "Replace water filter",
+      "filter_status": "Water filter status",
+      "freezer": "Freezer",
+      "freezer_door": "Freezer door",
+      "freezer_door_open": "Freezer door open",
+      "freezer_setpoint": "Freezer setpoint",
+      "freezer_temp": "Freezer temperature",
+      "fridge": "Fridge",
+      "fridge_door": "Fridge door",
+      "fridge_door_open": "Fridge door open",
+      "fridge_setpoint": "Fridge setpoint",
+      "fridge_temp": "Fridge temperature",
+      "increase": "Increase",
+      "job_state": "Job state sensor",
+      "layout": "Layout",
+      "layout_compact": "Compact",
+      "layout_desc": "Hero, standard, or compact",
+      "layout_hero": "Hero",
+      "layout_section": "Layout",
+      "layout_section_desc": "How the card is arranged.",
+      "layout_standard": "Standard",
+      "links_group": "Optional overrides",
+      "links_section": "Linked entities",
+      "links_section_desc": "Everything below is auto-detected from the main entity. Only set a field when detection picks the wrong entity.",
+      "lower_oven": "Lower oven",
+      "machine_state": "Machine state sensor",
+      "metric_energy": "Energy",
+      "metric_power": "Power",
+      "name": "Name",
+      "name_desc": "Leave empty to use the entity name",
+      "open": "Open",
+      "oven": "Oven",
+      "oven_job": "Oven job state",
+      "oven_light": "Light",
+      "oven_light_entity": "Oven light",
+      "oven_mode": "Oven mode (bake, roast…)",
+      "oven_setpoint": "Oven set point",
+      "oven_state": "Oven machine state",
+      "oven_temp": "Oven temperature",
+      "pause": "Pause",
+      "power": "Power",
+      "power_sensor": "Power (W)",
+      "power_switch": "Power switch",
+      "program": "Program",
+      "remote_control": "Remote control",
+      "remote_disabled": "Enable remote control on the appliance to allow remote start",
+      "reset_filter": "Reset filter",
+      "resume": "Resume",
+      "set_to": "Set",
+      "settings": "Cycle setting dropdowns",
+      "settings_desc": "Select entities shown as dropdowns (water temperature, spin level, soil level, wash zone…). Auto-detected selects appear below — remove any you don’t want, or add your own.",
+      "settings_placeholder": "Add a select…",
+      "show_chips": "Show status chips",
+      "show_chips_desc": "Child lock, remote control, door open, filter alerts",
+      "show_completion": "Show time remaining",
+      "show_completion_desc": "Countdown and finish time while a cycle runs",
+      "show_completion_desc_range": "Countdown and finish time while the oven runs",
+      "show_controls": "Show controls",
+      "show_controls_desc": "Start / Pause / Stop buttons",
+      "show_controls_desc_range": "Oven light and Stop buttons",
+      "show_cooktop": "Show cooktop burners",
+      "show_cooktop_desc": "Burner indicators on the graphic and a “burners on” chip",
+      "show_features": "Show feature switches",
+      "show_graphic": "Show appliance graphic",
+      "show_metrics": "Show power & energy",
+      "show_metrics_desc": "Live wattage and energy usage tiles",
+      "show_power_button": "Show power button",
+      "show_setpoints": "Show setpoint controls",
+      "show_setpoints_desc": "− / + buttons to adjust target temperatures",
+      "show_settings": "Show cycle settings",
+      "show_settings_desc": "Dropdowns for water temperature, spin level, and similar options",
+      "show_status": "Show status",
+      "show_status_desc": "Cycle phase and job state",
+      "show_temps": "Show temperatures",
+      "show_temps_desc": "Fridge and freezer temperature tiles",
+      "show_temps_range": "Show oven temperature",
+      "show_temps_range_desc": "Current temperature and set point tiles",
+      "show_title": "Show title",
+      "size": "Graphic size",
+      "size_desc": "Size of the appliance illustration",
+      "start": "Start",
+      "state_done": "Done",
+      "state_error": "Error",
+      "state_idle": "Idle",
+      "state_off": "Off",
+      "state_paused": "Paused",
+      "state_running": "Running",
+      "state_unavailable": "Unavailable",
+      "stop": "Stop",
+      "stop_button": "Stop button",
+      "text_color": "Text color"
+    },
+    "background": {
+      "entity": "Entity",
+      "entity_desc": "Select an entity that provides a picture URL or image (e.g. person, camera, or media player).",
+      "image_url": "Image URL",
+      "image_url_desc": "Enter the direct URL to the background image.",
+      "info_desc": "Apply custom background images to your dashboard view. Only the topmost enabled module with passing logic conditions will be applied.",
+      "info_title": "View Background",
+      "opacity": "Opacity",
+      "opacity_desc": "Control the opacity of the background image (0–100%).",
+      "position": "Background Position",
+      "position_desc": "Set the position (e.g., center, top left, bottom right).",
+      "repeat": "Background Repeat",
+      "repeat_both": "Repeat",
+      "repeat_desc": "Control how the background image repeats.",
+      "repeat_none": "No Repeat",
+      "repeat_x": "Repeat Horizontally",
+      "repeat_y": "Repeat Vertically",
+      "settings_desc": "Control how the background image is displayed.",
+      "settings_title": "Background Settings",
+      "size": "Background Size",
+      "size_auto": "Auto (Original size)",
+      "size_contain": "Contain (Fit within area)",
+      "size_cover": "Cover (Fill entire area)",
+      "size_desc": "Control how the background image is sized within the view.",
+      "size_fill": "Fill (Stretch to fit)",
+      "source_title": "Background Source",
+      "type": "Background Type",
+      "type_desc": "Select the source type for your background image.",
+      "type_entity": "Entity Image",
+      "type_none": "None",
+      "type_upload": "Upload Image",
+      "type_url": "Image URL",
+      "upload": "Upload Image",
+      "upload_desc": "Click to upload a background image file from your device."
+    },
+    "badge": {
+      "animation_title": "ANIMATION",
+      "badge_size": "Badge Size",
+      "badge_size_desc": "Overall size of the badge in pixels",
+      "bg_gradient": "Gradient",
+      "bg_solid": "Solid Color",
+      "bg_transparent": "Transparent",
+      "clockwise": "Clockwise",
+      "color_1": "Color 1 (Teal)",
+      "color_2": "Color 2 (Blue-Teal)",
+      "color_3": "Color 3 (Purple)",
+      "color_4": "Color 4 (Indigo)",
+      "color_shift": "Color Shift Animation",
+      "color_shift_desc": "Animate gradient colors shifting around the ring",
+      "color_shift_speed": "Color Shift Speed",
+      "color_shift_speed_desc": "Time in seconds for full color cycle",
+      "colors_desc": "Set the gradient colors that shift around the badge ring. The colors will smoothly transition creating a beautiful animated effect.",
+      "colors_title": "GRADIENT COLORS",
+      "counter_clockwise": "Counter-Clockwise",
+      "glow": "Glow Effect",
+      "glow_desc": "Add a soft glow around the badge",
+      "glow_intensity": "Glow Intensity",
+      "icon_color": "Icon Color",
+      "inner_bg": "Inner Background Type",
+      "inner_bg_desc": "Background style for the inner circle",
+      "inner_color": "Inner Background Color",
+      "inner_content_desc": "Choose what to display in the center of the badge.",
+      "inner_content_title": "INNER CONTENT",
+      "inner_icon": "Icon",
+      "inner_image": "Image URL",
+      "inner_image_desc": "Enter a URL or local path to an image",
+      "inner_ratio": "Inner Badge Ratio",
+      "inner_ratio_desc": "Size of inner circle relative to outer (0.4 - 0.8)",
+      "inner_text": "Text",
+      "inner_type": "Content Type",
+      "pulse": "Pulse Effect",
+      "pulse_desc": "Add a subtle pulsing animation",
+      "pulse_speed": "Pulse Speed",
+      "rotation_direction": "Rotation Direction",
+      "rotation_speed": "Rotation Speed",
+      "rotation_speed_desc": "Time in seconds for one full rotation (lower = faster)",
+      "size_title": "SIZE & LAYOUT",
+      "text_color": "Text Color",
+      "type_icon": "Icon",
+      "type_image": "Image",
+      "type_text": "Text"
+    },
+    "boiler": {
+      "animations": "Enable animations",
+      "animations_desc": "Flame flicker, fan spin, and pipe flow",
+      "card_bg": "Card background",
+      "cold_color": "Cold color",
+      "cold_temp": "Cold below",
+      "cold_temp_desc": "At or below this temperature the cold color is used",
+      "config_needed": "Select a boiler",
+      "config_needed_desc": "Choose an entity in the General tab",
+      "decrease": "Decrease target",
+      "dhw": "Hot water (DHW) active",
+      "dhw_desc": "Binary sensor that is on while heating tap water",
+      "display_section": "Display",
+      "display_section_desc": "Choose which readouts and controls to show.",
+      "entity": "Entity",
+      "entity_desc": "water_heater, climate, or temperature sensor",
+      "entity_section": "Boiler",
+      "entity_section_desc": "Pick the main boiler entity. A water_heater or climate entity provides temperature, target, and modes automatically; a plain temperature sensor works too.",
+      "flame": "Flame / burner active",
+      "flame_desc": "Binary sensor that is on while the burner fires",
+      "heating": "Central heating active",
+      "heating_desc": "Binary sensor that is on while heating circulates",
+      "hot_color": "Hot color",
+      "hot_temp": "Hot above",
+      "hot_temp_desc": "At or above this temperature the hot color is used",
+      "icon": "Icon override",
+      "icon_desc": "Shown in the header. Leave blank for the boiler icon.",
+      "increase": "Increase target",
+      "layout": "Layout",
+      "layout_compact": "Compact",
+      "layout_desc": "Standard shows the animated boiler graphic; compact is a single row.",
+      "layout_standard": "Standard",
+      "max_pressure": "Maximum healthy pressure",
+      "min_pressure": "Minimum healthy pressure",
+      "modulation": "Burner modulation (%)",
+      "modulation_desc": "Drives the flame size in the graphic",
+      "modulation_label": "Modulation",
+      "name": "Name override",
+      "name_desc": "Leave blank to use the entity friendly name.",
+      "power_switch": "Power switch",
+      "power_switch_desc": "Switch for the power button. Falls back to turning the main entity on/off.",
+      "pressure": "Water pressure",
+      "pressure_desc": "System pressure in bar or psi",
+      "pressure_label": "Pressure",
+      "pressure_section": "Pressure Range",
+      "pressure_section_desc": "Outside this healthy range the pressure readout turns to the warning color.",
+      "pro_description": "The Boiler module shows your boiler with temperature-driven colors, live flame, fan and pipe animations, pressure and modulation readouts, and target temperature control.",
+      "return_label": "Return",
+      "return_temp": "Return temperature",
+      "return_temp_desc": "Water temperature returning to the boiler",
+      "sensors_section": "Boiler Sensors",
+      "sensors_section_desc": "All optional. Link the individual boiler sensors your integration exposes (EMS-ESP, OpenTherm Gateway, SmartThings, ...).",
+      "show_graphic": "Show boiler graphic",
+      "show_graphic_desc": "Animated boiler drawing (standard layout)",
+      "show_modes": "Show modes",
+      "show_modes_desc": "Operation mode chips when the entity supports them",
+      "show_modulation": "Show modulation",
+      "show_name": "Show name",
+      "show_power": "Show power button",
+      "show_pressure": "Show pressure",
+      "show_return_temp": "Show return temperature",
+      "show_status": "Show status label",
+      "show_target": "Show target control",
+      "show_target_desc": "Plus/minus stepper for the setpoint",
+      "show_water_temp": "Show water temperature",
+      "state_dhw": "Hot water",
+      "state_heating": "Heating",
+      "state_idle": "Standby",
+      "state_off": "Off",
+      "state_unavailable": "Unavailable",
+      "target": "Target temperature",
+      "target_desc": "Number helper for the setpoint. Falls back to the main entity target.",
+      "target_label": "Target",
+      "temp_colors_section": "Temperature Colors",
+      "temp_colors_section_desc": "The water temperature reading and boiler glow blend from cold to hot between these thresholds.",
+      "text_color": "Text color",
+      "toggle_power": "Toggle power",
+      "warm_color": "Warm color",
+      "water_temp": "Water / flow temperature",
+      "water_temp_desc": "Supply water temperature. Falls back to the main entity current temperature."
+    },
+    "camera_grid": {
+      "behaviour": {
+        "cycle": "Auto-cycle spotlight",
+        "cycle_desc": "Rotate the featured camera on an interval. Pauses while motion is holding the spotlight.",
+        "cycle_interval": "Cycle interval",
+        "cycle_interval_desc": "Seconds each camera stays in the spotlight.",
+        "desc": "What happens when you tap or hold a camera tile, plus auto-cycle and motion spotlight.",
+        "fullscreen": "Fullscreen",
+        "hold": "Hold action",
+        "hold_desc": "Action used when a camera tile is pressed and held.",
+        "more_info": "More info",
+        "motion": "Motion spotlight",
+        "motion_color": "Motion highlight",
+        "motion_color_desc": "Outline color for tiles that currently have motion.",
+        "motion_desc": "When a tile motion sensor turns on, that camera jumps to the spotlight and stays there for the hold time.",
+        "motion_hold": "Motion hold",
+        "motion_hold_desc": "Seconds to keep a motion camera in the spotlight after it triggers.",
+        "nothing": "Nothing",
+        "spotlight": "Spotlight",
+        "tap": "Tap action",
+        "tap_desc": "Spotlight swaps the featured camera. Fullscreen opens the live feed. More info opens the entity dialog.",
+        "title": "Behaviour"
+      },
+      "empty": "Add cameras",
+      "empty_desc": "Choose camera entities in the General tab to build the grid",
+      "layout": {
+        "aspect": "Tile aspect ratio",
+        "aspect_custom": "Custom",
+        "aspect_desc": "Default shape for camera tiles. Masonry can override this per tile.",
+        "aspect_value": "Custom ratio",
+        "aspect_value_desc": "Width divided by height. 1.78 is 16:9.",
+        "auto_fit": "Auto-fit",
+        "columns": "Columns",
+        "columns_desc": "Number of columns in the grid.",
+        "custom": "Custom",
+        "desc": "Choose how tiles are arranged and sized.",
+        "gap": "Gap",
+        "gap_desc": "Space between tiles.",
+        "masonry": "Masonry",
+        "min_tile_width": "Minimum tile width",
+        "min_tile_width_desc": "Tiles wrap onto new rows when the card is narrower than this width.",
+        "mode": "Grid style",
+        "mode_desc": "Regular keeps even cells. Auto-fit wraps by width. Masonry stacks mixed ratios. Spotlight enlarges one tile. Custom uses per-tile spans.",
+        "radius": "Tile corner radius",
+        "radius_desc": "Round the corners of each tile.",
+        "regular": "Regular",
+        "spotlight": "Spotlight",
+        "title": "Layout"
+      },
+      "overlays": {
+        "badges": "Status badges",
+        "badges_desc": "Show motion, recording, and offline indicators on tiles.",
+        "bottom_middle": "Bottom middle",
+        "desc": "Name labels, motion and recording badges, and fallback imagery.",
+        "fallback": "Fallback image",
+        "fallback_desc": "Shown when a camera is unavailable or a snapshot fails.",
+        "name_position": "Name position",
+        "name_position_desc": "Where the name overlay sits on each tile.",
+        "show_names": "Show names",
+        "show_names_desc": "Overlay the camera or tile name on each feed.",
+        "snapshot_time": "Snapshot time",
+        "snapshot_time_desc": "Show when the last snapshot was taken on snapshot tiles.",
+        "title": "Overlays and badges",
+        "top_middle": "Top middle"
+      },
+      "pagination": {
+        "arrows": "Arrows",
+        "auto": "Auto-page",
+        "auto_desc": "Advance pages automatically on an interval.",
+        "auto_interval": "Page interval",
+        "auto_interval_desc": "Seconds between automatic page changes.",
+        "both": "Arrows and dots",
+        "desc": "Split large camera lists across pages.",
+        "dots": "Dots",
+        "next": "Next page",
+        "none": "Hidden",
+        "page": "Page {n}",
+        "per_page": "Tiles per page",
+        "per_page_desc": "0 shows every tile. Set a number to page through larger sets.",
+        "prev": "Previous page",
+        "style": "Pager style",
+        "style_desc": "How page navigation is shown under the grid.",
+        "title": "Pagination"
+      },
+      "spotlight": {
+        "center": "Center",
+        "left": "Left",
+        "position": "Spotlight position",
+        "position_desc": "Where the featured tile sits in the grid.",
+        "right": "Right",
+        "span": "Spotlight size",
+        "span_desc": "How many columns and rows the featured tile occupies.",
+        "tap_to_spotlight": "Tap to spotlight",
+        "tap_to_spotlight_desc": "Tap a smaller camera to swap it into the featured slot.",
+        "title": "Spotlight",
+        "top_left": "Top left",
+        "top_right": "Top right"
+      },
+      "stream": {
+        "adaptive": "Adaptive streaming",
+        "adaptive_desc": "Live stream only the spotlight or large tiles. Small tiles use snapshots to save bandwidth.",
+        "desc": "How camera tiles fetch video. Adaptive keeps live video on the featured tile only.",
+        "fit": "Image fit",
+        "fit_desc": "How the feed fills each tile. Cover crops, contain letterboxes, fill stretches.",
+        "refresh": "Snapshot refresh",
+        "refresh_desc": "Seconds between still-image refreshes in snapshot mode.",
+        "title": "Stream",
+        "view_mode": "Stream mode",
+        "view_mode_desc": "Auto uses Home Assistant snapshot polling. Live opens a continuous stream. Snapshot refreshes on your interval."
+      },
+      "tile": {
+        "aspect": "Tile ratio",
+        "aspect_desc": "Used by masonry to estimate tile height.",
+        "clock_format": "Clock format",
+        "clock_format_desc": "12-hour or 24-hour time.",
+        "col_span": "Column span",
+        "col_span_desc": "How many columns this tile occupies.",
+        "entity": "Camera entity",
+        "entity_pic": "Entity",
+        "image": "Image",
+        "image_desc": "Logo or still image shown in this tile.",
+        "image_entity": "Image entity",
+        "image_fit": "Image fit",
+        "image_fit_desc": "Cover crops the image. Contain shows the whole logo.",
+        "image_source": "Image source",
+        "image_source_desc": "Upload a logo, paste a URL, or use an entity picture.",
+        "inherit": "Inherit",
+        "motion": "Motion sensor",
+        "name": "Name",
+        "name_desc": "Optional label. Leave blank to use the entity name.",
+        "recording": "Recording entity",
+        "row_span": "Row span",
+        "row_span_desc": "How many rows this tile occupies.",
+        "show_date": "Show date",
+        "show_date_desc": "Show the current date under the time.",
+        "text": "Text",
+        "text_desc": "Shown in the centre of this tile.",
+        "upload": "Upload",
+        "url": "URL",
+        "view_mode": "Tile stream mode",
+        "view_mode_desc": "Inherit uses the grid default. Override for this tile only."
+      },
+      "tiles": {
+        "add_cameras": "Add cameras",
+        "add_cameras_desc": "Pick camera entities to add as tiles. Drag the list below to change order.",
+        "camera_placeholder": "Choose a camera",
+        "desc": "Add cameras and extra tiles, then drag to rearrange the grid.",
+        "title": "Tiles",
+        "type_camera": "Camera"
+      }
+    },
+    "clock": {
+      "align_center": "Center",
+      "align_left": "Left",
+      "align_right": "Right",
+      "alignment": "Alignment",
+      "date_color": "Date color",
+      "date_long": "Friday, June 12",
+      "date_numeric": "6/12/2026",
+      "date_short": "Fri, Jun 12",
+      "date_size": "Date size",
+      "date_style": "Date style",
+      "date_style_desc": "How the date is written.",
+      "entity": "Time from entity",
+      "entity_desc": "Optional. Show the date and time an entity holds, such as when the dishwasher finishes, instead of the current time. Works with timestamp sensors, date/time helpers and date/time entities.",
+      "format_12": "12-hour",
+      "format_24": "24-hour",
+      "section_display": "Display",
+      "section_display_desc": "What the clock shows.",
+      "show_ampm": "Show AM/PM",
+      "show_ampm_desc": "Only applies to the 12-hour format.",
+      "show_date": "Show date",
+      "show_date_desc": "Date line under the time.",
+      "show_seconds": "Show seconds",
+      "show_seconds_desc": "Tick every second.",
+      "time_color": "Time color",
+      "time_format": "Time format",
+      "time_size": "Time size",
+      "time_weight": "Time weight",
+      "timezone": "Timezone",
+      "timezone_desc": "Optional IANA timezone (e.g. Europe/London). Leave blank for local time.",
+      "weight_bold": "Bold",
+      "weight_medium": "Medium",
+      "weight_normal": "Normal"
+    },
+    "drawer": {
+      "panel": {
+        "background": "Panel Background",
+        "close_button": "Show Close Button",
+        "desc": "Where the drawer slides in from and how it looks. Modules added to this container appear inside the drawer.",
+        "overlay_close": "Close On Overlay Click",
+        "position": "Position",
+        "size": "Panel Size",
+        "size_desc": "Width for left/right drawers, height for top/bottom (e.g. 340px, 50vh, 80%). Leave empty for the default.",
+        "title": "Drawer Panel",
+        "title_field": "Drawer Title"
+      },
+      "preview": {
+        "no_modules": "No modules added. Add modules to this drawer in the layout builder."
+      },
+      "trigger": {
+        "bg": "Trigger Background",
+        "button": "Button",
+        "color": "Trigger Text/Icon Color",
+        "desc": "The button rendered in the card that opens the drawer.",
+        "icon": "Icon Only",
+        "icon_background": "Icon Background",
+        "icon_background_circle": "Circle",
+        "icon_background_desc": "Shape drawn behind the icon, like the Icon module.",
+        "icon_background_none": "None",
+        "icon_background_padding": "Icon Background Padding (1px)",
+        "icon_background_padding_desc": "Space between the icon and the edge of its background.",
+        "icon_background_rounded": "Rounded",
+        "icon_field": "Trigger Icon",
+        "icon_size": "Icon Size",
+        "icon_size_desc": "Size of the trigger icon.",
+        "label": "Trigger Label",
+        "style": "Trigger Style",
+        "title": "Trigger"
+      }
+    },
+    "flip_card": {
+      "animation": {
+        "desc": "Style and speed of the flip.",
+        "direction": "Flip Direction",
+        "duration": "Flip Duration",
+        "horizontal": "Horizontal",
+        "title": "Animation",
+        "vertical": "Vertical"
+      },
+      "behavior": {
+        "attribute": "Attribute (optional)",
+        "attribute_desc": "Leave empty to match against the entity state.",
+        "desc": "Choose what causes the card to flip to its back face.",
+        "entity": "Entity",
+        "entity_field": "Entity",
+        "entity_field_desc": "The card shows the back face while this entity matches the value below.",
+        "hover": "Hover",
+        "tap": "Tap",
+        "title": "Flip Behavior",
+        "trigger": "Flip Trigger",
+        "value": "Show Back When Value Is"
+      },
+      "empty": {
+        "back": "Add a second module for the back face",
+        "front": "Add a module for the front face"
+      },
+      "faces": {
+        "desc": "The first module added to this container is the front face; the second is the back face. Use a Vertical Layout as a face to show multiple modules on one side.",
+        "title": "Card Faces"
+      }
+    },
+    "grid_layout": {
+      "config": {
+        "auto_fit": "Auto Fit",
+        "column_mode": "Column Mode",
+        "column_mode_desc": "Fixed uses an exact column count. Auto Fit fills the width with as many columns as fit.",
+        "columns": "Columns",
+        "columns_desc": "Number of equal-width columns in the grid.",
+        "dense": "Dense Packing",
+        "dense_desc": "Backfill gaps left by spanning items (masonry-like packing).",
+        "desc": "Configure the grid tracks. Children placed in this container flow into the grid cells.",
+        "fixed": "Fixed Columns",
+        "item_alignment": "Item Alignment",
+        "item_alignment_desc": "Vertical alignment of items within their grid cell.",
+        "min_width": "Minimum Column Width",
+        "min_width_desc": "Smallest allowed column width (e.g. 140px). Columns are added or removed to fit.",
+        "title": "Grid Configuration"
+      },
+      "empty": {
+        "add_modules": "Add modules in the layout builder to see them in the grid",
+        "all_hidden": "All modules hidden by logic",
+        "no_modules": "No modules added yet"
+      },
+      "responsive": {
+        "breakpoint": "Mobile Breakpoint (px)",
+        "breakpoint_desc": "Viewport width below which the mobile column count applies.",
+        "desc": "Collapse the grid on small screens.",
+        "mobile_columns": "Mobile Columns",
+        "mobile_columns_desc": "Column count used below the breakpoint. Item spans are reset on mobile.",
+        "off": "Off",
+        "title": "Responsive"
+      },
+      "spacing": {
+        "desc": "Gaps between grid cells.",
+        "gap": "Column Gap",
+        "row_gap": "Row Gap",
+        "row_gap_desc": "Follows the column gap until changed.",
+        "title": "Spacing"
+      },
+      "spans": {
+        "desc": "Let individual children span multiple columns or rows.",
+        "empty": "Add modules to this grid in the layout builder first, then configure their spans here.",
+        "hint": "The first select is column span, the second is row span.",
+        "title": "Item Spans"
+      }
+    },
+    "humidifier": {
+      "active_color": "Active color",
+      "active_color_desc": "Accent used when the device is on.",
+      "card_bg": "Card background",
+      "config_needed": "Select a humidifier",
+      "config_needed_desc": "Choose an entity in the General tab",
+      "display_section": "Display",
+      "display_section_desc": "Choose which controls to show.",
+      "drying": "Drying",
+      "entity": "Entity",
+      "entity_desc": "A humidifier or dehumidifier entity.",
+      "entity_section": "Entity",
+      "entity_section_desc": "Choose the humidifier to control.",
+      "humidifying": "Humidifying",
+      "icon": "Icon override",
+      "icon_desc": "Leave blank to use the entity icon.",
+      "name": "Name override",
+      "name_desc": "Leave blank to use the entity friendly name.",
+      "off": "Off",
+      "on": "On",
+      "show_current": "Show current humidity",
+      "show_current_desc": "Large reading when the device reports it.",
+      "show_modes": "Show modes",
+      "show_modes_desc": "Mode buttons when the device supports them.",
+      "show_name": "Show name",
+      "show_power": "Show power button",
+      "show_slider": "Show target slider",
+      "target": "Target humidity",
+      "text_color": "Text color",
+      "toggle_power": "Toggle power",
+      "unavailable": "Unavailable"
+    },
+    "pagebreak": {
+      "info_text": "Page breaks appear as a slim divider in the editor and are invisible on the dashboard. When used inside a Slider Layout, they separate content into different slides. All modules before a page break belong to one page, and modules after it belong to the next page.",
+      "info_title": "How Page Breaks Work:",
+      "preview_label": "Page Break"
+    },
+    "pro_feature": "Pro Feature",
+    "screensaver": {
+      "activation_entity": "Activation entity (optional)",
+      "active_label": "Screensaver active",
+      "clock_24h": "24-hour format",
+      "clock_24h_desc": "Use 24h time instead of AM/PM",
+      "clock_section": "Clock & Date",
+      "dismiss": "Dismiss",
+      "entity_desc": "A binary_sensor that forces the screensaver on when its state is \"on\".",
+      "entity_section": "Activation Entity (optional)",
+      "idle_timeout": "Idle timeout",
+      "idle_timeout_desc": "Seconds of inactivity before activating",
+      "image_interval": "Image interval",
+      "image_urls": "Image URLs",
+      "image_urls_desc": "https:// or /local/ paths, one per line",
+      "images_desc": "One URL per line to cycle as the screensaver background.",
+      "images_section": "Image Slideshow (optional)",
+      "overlay_color": "Overlay color",
+      "overlay_desc": "Background colour and opacity.",
+      "overlay_label": "Screensaver — tap to dismiss",
+      "overlay_opacity": "Overlay opacity",
+      "overlay_section": "Overlay",
+      "overlay_style": "Style",
+      "show_clock": "Show clock",
+      "show_date": "Show date",
+      "show_weather": "Show weather",
+      "style_desc": "Visual theme for the screensaver overlay.",
+      "style_section": "Style",
+      "tap_to_dismiss": "Tap anywhere to dismiss",
+      "timing_desc": "When the screensaver should appear.",
+      "timing_section": "Activation",
+      "trigger_buffer": "Trigger buffer",
+      "trigger_buffer_desc": "Seconds to wait after a manual dismiss before the entity can re-trigger",
+      "weather_entity": "Weather entity",
+      "weather_section": "Weather"
+    },
+    "scroll_row": {
+      "appearance": {
+        "arrows": "Show Scroll Arrows",
+        "arrows_desc": "Overlay arrows for scrolling with a mouse.",
+        "fade": "Fade Edges",
+        "fade_desc": "Fade out content at the row edges to hint at more items.",
+        "scrollbar": "Show Scrollbar",
+        "title": "Appearance"
+      },
+      "empty": {
+        "add_modules": "Add modules in the layout builder to see them in this row",
+        "all_hidden": "All modules hidden by logic",
+        "no_modules": "No modules added yet"
+      },
+      "items": {
+        "desc": "Sizing and spacing of the items in the row. Widths under 100% let the next item peek in from the edge.",
+        "gap": "Gap Between Items",
+        "no_snap": "No Snap",
+        "snap": "Snap Alignment",
+        "snap_desc": "Where items settle when scrolling stops.",
+        "title": "Items",
+        "width": "Item Width",
+        "width_desc": "Percentage of the row (e.g. 42%) or a fixed width (e.g. 140px)."
+      }
+    },
+    "slider": {
+      "auto_height": "Auto Height",
+      "auto_height_vertical_note": "Not available for vertical sliders. Vertical sliders scroll within the fixed Slider Height set below.",
+      "gap": "Gap",
+      "gap_desc": "Fallback spacing between slides in pixels, used when Space Between is 0",
+      "modules_label": "Modules",
+      "pages_label": "Pages",
+      "section_arrows": "NAVIGATION ARROWS",
+      "section_autoplay": "AUTO-PLAY",
+      "section_interaction": "INTERACTION",
+      "section_layout": "SLIDER LAYOUT",
+      "section_link_config": "LINK CONFIGURATION",
+      "section_pagination": "PAGINATION",
+      "section_transition": "TRANSITION & ANIMATION"
+    },
+    "solar_analytics": {
+      "battery": "Battery",
+      "battery_entity": "Battery SoC (%)",
+      "battery_entity_desc": "State of charge percentage",
+      "config_needed": "Select a solar sensor",
+      "config_needed_desc": "Choose a solar power sensor in the General tab",
+      "display_desc": "Choose what to show.",
+      "display_section": "Display",
+      "energy_desc": "Sensors accumulating today's totals in kWh (optional).",
+      "energy_section": "Today's Energy Sensors",
+      "exported": "Exported",
+      "exporting": "Exporting",
+      "grid_entity": "Grid power (W/kW)",
+      "grid_entity_desc": "Positive = importing, negative = exporting",
+      "grid_export_entity": "Grid export today (kWh)",
+      "grid_export_entity_desc": "Energy sent to grid today",
+      "grid_import_entity": "Grid import today (kWh)",
+      "grid_import_entity_desc": "Energy pulled from grid today",
+      "header": "Solar Overview",
+      "home_entity": "Home consumption (W/kW)",
+      "home_entity_desc": "Total home load",
+      "imported": "Imported",
+      "importing": "Importing",
+      "layout": "Layout",
+      "layout_compact": "Compact",
+      "layout_desc": "Full includes all gauges; compact shows a single row",
+      "layout_full": "Full",
+      "layout_section": "Layout",
+      "live_desc": "Sensors reporting current power in W or kW.",
+      "live_section": "Live Power Sensors",
+      "produced": "Produced",
+      "self": "Self",
+      "self_sufficiency": "Self-Sufficiency",
+      "show_battery": "Show battery",
+      "show_battery_desc": "Battery SoC ring and value",
+      "show_grid": "Show grid",
+      "show_grid_desc": "Grid import/export power",
+      "show_self_sufficiency": "Show self-sufficiency",
+      "show_self_sufficiency_desc": "Percentage of home load met by solar",
+      "show_today_totals": "Show today's totals",
+      "show_today_totals_desc": "Daily kWh summary row",
+      "solar": "Solar",
+      "solar_energy_entity": "Solar today (kWh)",
+      "solar_energy_entity_desc": "Daily solar production",
+      "solar_entity": "Solar power (W/kW)",
+      "solar_entity_desc": "Current solar panel output",
+      "today": "Today"
+    },
+    "state_switcher": {
+      "empty": {
+        "add_modules": "Add modules in the layout builder, then set each one’s display conditions in its Logic tab",
+        "no_match": "No child conditions match right now",
+        "no_match_hint": "Set Fallback Mode to show a default, or add a child without conditions as the last item",
+        "no_modules": "No modules added yet"
+      },
+      "fallback": {
+        "desc": "What to show when no child conditions match.",
+        "first": "Show first child",
+        "last": "Show last child",
+        "mode": "Fallback Mode",
+        "none": "Show nothing",
+        "title": "Fallback"
+      },
+      "how": {
+        "desc": "Add modules to this container, then give each one display conditions in its Logic tab. The switcher shows only the FIRST child whose conditions match — top to bottom. A child without conditions always matches, so put a default last.",
+        "title": "How It Works"
+      },
+      "order": {
+        "always": "Always matches",
+        "has_conditions": "Has conditions",
+        "title": "Match Order"
+      },
+      "transition": {
+        "desc": "Animation when the visible child changes.",
+        "duration": "Transition Duration",
+        "fade": "Fade",
+        "scale": "Scale",
+        "slide_down": "Slide Down",
+        "slide_left": "Slide Left",
+        "slide_right": "Slide Right",
+        "slide_up": "Slide Up",
+        "title": "Transition",
+        "type": "Transition"
+      }
+    },
+    "time_machine": {
+      "ago": "{time} ago",
+      "auto_return": "Auto-return to live",
+      "auto_return_desc": "Seconds of inactivity before snapping back to live. 0 disables auto-return.",
+      "default_span": "Default time range",
+      "default_span_desc": "How far back the timeline reaches when the card loads.",
+      "display_section": "Scrubber controls",
+      "display_section_desc": "Choose which controls appear on the timeline.",
+      "entities": "Entities",
+      "entities_card_desc": "Pick the entities to graph and track on the timeline. Numeric sensors are drawn as graphs; everything else shows its state at the scrub position.",
+      "entities_dashboard_desc": "The dashboard timeline automatically rewinds every entity used by the Ultra Cards in the view — no selection needed. Add extra entities here to also draw their event markers on the track.",
+      "entities_desc": "Their history powers the graphs, details, and event markers.",
+      "entities_section": "Entities",
+      "extra_entities": "Extra entities",
+      "extra_entities_desc": "Tracked in addition to the auto-discovered view entities.",
+      "live": "Live",
+      "live_desc": "Showing current state",
+      "mode_card": "Card Timeline",
+      "mode_card_desc": "An independent history scrubber. Pick the entities you care about and explore their state history with built-in graphs, highs and lows, and details that follow the playhead. Nothing else on the page is affected.",
+      "mode_dashboard": "Dashboard Timeline",
+      "mode_dashboard_desc": "Scrub the timeline and watch your dashboard rewind in real time — every Ultra Card in the current view follows, showing its history as you drag.",
+      "no_entities_card_hint": "Pick entities in the Time Machine settings to build a timeline with graphs and event markers.",
+      "no_entities_hint": "Nothing to rewind yet — no entities found in this view. Add Ultra Cards with entity modules, or pick extra entities in the Time Machine settings.",
+      "now": "Now",
+      "replay": "Replay history",
+      "return_to_live": "Return to live",
+      "show_chart": "Line graph",
+      "show_chart_desc": "Card Timeline: plot numeric entities as lines across the window.",
+      "show_details": "Entity details",
+      "show_details_desc": "Card Timeline: show the per-entity value list under the graph.",
+      "show_event_markers": "Event markers",
+      "show_event_markers_desc": "Draw a tick on the track for every entity state change.",
+      "show_lanes": "State ribbons",
+      "show_lanes_desc": "Card Timeline: show on/off ribbons for non-numeric entities.",
+      "show_playback": "Replay controls",
+      "show_playback_desc": "Show play/pause and step buttons to replay history.",
+      "show_span_presets": "Time range presets",
+      "show_span_presets_desc": "Show the 1h / 6h / 24h / 7d range pills.",
+      "step_back": "Step back",
+      "step_forward": "Step forward",
+      "today": "Today",
+      "top_level_hint": "Place Time Machine directly in a card column (not nested inside a layout module) to enable card-wide rewind.",
+      "tracking": "Tracking {count} entities",
+      "yesterday": "Yesterday"
+    },
+    "todo_list": {
+      "accent_color": "Accent color",
+      "accent_color_desc": "Checkboxes and the add button.",
+      "add": "Add",
+      "add_ph": "Add item…",
+      "card_bg": "Card background",
+      "config_needed": "Select a to-do list",
+      "config_needed_desc": "Choose a todo entity in the General tab",
+      "display_section": "Display",
+      "display_section_desc": "Choose what to show.",
+      "empty": "Nothing to do — list is empty",
+      "enable_add": "Enable adding items",
+      "enable_add_desc": "Input field at the bottom when the list supports it.",
+      "entity": "To-do entity",
+      "entity_desc": "Any todo entity — shopping lists, tasks, etc.",
+      "entity_section": "List",
+      "entity_section_desc": "Choose the to-do list to display.",
+      "items_left": "left",
+      "max_items": "Max items",
+      "max_items_desc": "Maximum items to show.",
+      "show_completed": "Show completed items",
+      "show_completed_desc": "Completed items appear crossed out below active ones.",
+      "show_due": "Show due dates",
+      "show_title": "Show title",
+      "text_color": "Text color",
+      "title": "Title override",
+      "title_desc": "Leave blank to use the list name."
+    },
+    "train": {
+      "animations": "Enable animations",
+      "animations_desc": "Headlights, rolling track, and the imminent-departure pulse",
+      "appearance_section": "Route",
+      "appearance_section_desc": "How the board is titled and laid out.",
+      "behaviour_section": "Thresholds",
+      "behaviour_section_desc": "When a train counts as delayed and when the next one lights up.",
+      "board_style": "Style",
+      "board_style_desc": "Modern follows your theme. LED board is a dark dot-matrix departure display.",
+      "cancelled_color": "Cancelled",
+      "cancelled_entity": "Cancelled",
+      "cancelled_entity_desc": "On when the next train is cancelled",
+      "card_bg": "Card background",
+      "colors_section": "Colors",
+      "colors_section_desc": "Each train takes the color of its status.",
+      "config_needed": "Add a departure sensor",
+      "config_needed_desc": "Pick your train sensors or a template in the General tab",
+      "default_name": "Next departures",
+      "delay_entity": "Delay",
+      "delay_entity_desc": "Minutes or seconds late; the unit is read from the sensor",
+      "delay_threshold": "Delayed from (minutes)",
+      "delay_threshold_desc": "Shorter delays are still shown as on time",
+      "delayed_color": "Delayed",
+      "departed": "Departed",
+      "departing_now": "Departing now",
+      "departs_in": "Departs in {n} min",
+      "departs_in_hours": "Departs in {h}h {m}m",
+      "departure_entities": "Departure sensors",
+      "departure_entities_desc": "One sensor per train, next train first. A sensor whose attributes carry a list of departures is expanded automatically.",
+      "departure_entities_placeholder": "Add a departure sensor",
+      "display_section": "Display",
+      "display_section_desc": "Choose what the board shows.",
+      "icon": "Icon override",
+      "icon_desc": "Shown next to the countdown. Leave blank for the timer icon.",
+      "imminent_minutes": "Leaving soon (minutes)",
+      "imminent_minutes_desc": "Within this window the next train pulses and its headlights come on",
+      "info_entity": "Deviations / info",
+      "info_entity_desc": "Free-text sensor shown as a ticker under the board",
+      "layout": "Layout",
+      "layout_compact": "Compact",
+      "layout_desc": "Standard puts the route on the left and the trains on the right; compact is a single row.",
+      "layout_standard": "Standard",
+      "led_color": "LED text color",
+      "loading": "Reading timetable",
+      "loading_desc": "Waiting for the template result",
+      "max_departures": "Trains to show",
+      "max_departures_desc": "The next train is always the largest",
+      "name": "Route name",
+      "name_desc": "For example \"Triangeln – Trelleborg C\". Leave blank to use the first sensor name.",
+      "no_departures": "No departures right now",
+      "on_time_color": "On time",
+      "platform": "Platform {p}",
+      "pro_description": "The Train module turns your departure sensors into an animated departure board: the next trains as status-colored icons, a live countdown, delays and cancellations, and an LED dot-matrix style.",
+      "realtime_section": "Next Train Realtime",
+      "realtime_section_desc": "All optional. Some integrations publish the next train's realtime state as separate sensors (Trafikverket, for example). Link them here and they color the first train.",
+      "secondary_text_color": "Secondary text color",
+      "show_countdown": "Show countdown",
+      "show_countdown_desc": "\"Departs in 23 min\" for the next train that is running",
+      "show_details": "Show details",
+      "show_details_desc": "Line, destination, and platform when the sensor provides them",
+      "show_info": "Show deviations ticker",
+      "show_name": "Show route name",
+      "show_status": "Show status",
+      "show_status_desc": "On time, delayed by, or cancelled",
+      "show_times": "Show departure times",
+      "show_track": "Show track",
+      "show_track_desc": "Railway track under the trains",
+      "source": "Source",
+      "source_desc": "Entities reads departure sensors directly. Template lets you shape the departures yourself.",
+      "source_entities": "Entities",
+      "source_section": "Departures",
+      "source_section_desc": "Pick the sensors that hold your departures, or write a template that returns them as JSON.",
+      "source_template": "Template",
+      "state_cancelled": "Cancelled",
+      "state_delayed": "Delayed",
+      "state_delayed_by": "Delayed {n} min",
+      "state_on_time": "On time",
+      "state_scheduled": "Scheduled",
+      "status_entity": "Departure state",
+      "status_entity_desc": "Sensor reporting on time, delayed, or cancelled",
+      "style_led": "LED board",
+      "style_modern": "Modern",
+      "template": "Departures template",
+      "template_cheatsheet": "Template cheatsheet",
+      "template_desc": "Return a JSON array, next train first. Each item may have time, expected, delay (minutes), status (on_time / delayed / cancelled), destination, line, platform, note, and color.",
+      "template_error": "Template must return JSON",
+      "template_error_desc": "Return an array of departures, for example [{\"time\": \"11:11\", \"status\": \"on_time\"}]",
+      "text_color": "Text color",
+      "time_12": "12h",
+      "time_24": "24h",
+      "time_auto": "Auto",
+      "time_format": "Time format"
+    },
+    "update_monitor": {
+      "all_ok": "All up to date",
+      "default_title": "Updates",
+      "err_empty": "No update entities found",
+      "err_empty_desc": "Enable \"Show up-to-date entities\" or adjust exclude filters in the General tab.",
+      "err_ha": "Waiting for Home Assistant",
+      "err_ha_desc": "Connecting to entity states…",
+      "exclude_patterns": "Exclude patterns",
+      "exclude_patterns_desc": "Entity ids containing these substrings are ignored.",
+      "hidden_entities": "Hidden entities",
+      "hidden_entities_desc": "Specific update entities to hide from the list.",
+      "hidden_ph": "Pick an update entity",
+      "hide_when_empty": "Hide when up to date",
+      "hide_when_empty_desc": "On the dashboard, hide this module when no updates are pending. A column, row or card left empty hides too.",
+      "install": "Install",
+      "max_items": "Max items",
+      "max_items_desc": "Maximum entities to show.",
+      "pattern_ph": "e.g. beta, test",
+      "pending": "pending",
+      "section_colors": "Colors",
+      "section_display": "Display",
+      "section_display_desc": "What the module shows.",
+      "show_install": "Show install button",
+      "show_install_desc": "One-tap install when the integration supports it.",
+      "show_picture": "Show entity picture",
+      "show_picture_desc": "Use the integration logo when available.",
+      "show_title": "Show title",
+      "show_title_desc": "Display the header.",
+      "show_up_to_date": "Show up-to-date entities",
+      "show_up_to_date_desc": "Also list entities without a pending update.",
+      "show_version": "Show version info",
+      "show_version_desc": "Installed and latest version under each name.",
+      "sort": "Sort",
+      "sort_desc": "Order of entities.",
+      "sort_name": "Name A–Z",
+      "sort_raw": "Unchanged",
+      "sort_updates": "Updates first",
+      "title": "Title",
+      "title_desc": "Header above the list."
+    },
+    "weather": {
+      "card_bg": "Card background",
+      "config_needed": "Select a weather entity",
+      "config_needed_desc": "Choose an entity in the General tab",
+      "current_section": "Current conditions",
+      "current_section_desc": "The large current weather block.",
+      "daily": "Daily",
+      "details_section": "Extra details",
+      "details_section_desc": "Small values under the condition. Each turns on by itself when you pick its station sensor.",
+      "entity": "Weather entity",
+      "entity_section": "Entity",
+      "entity_section_desc": "Choose the weather source.",
+      "forecast_count": "Forecast items",
+      "forecast_count_desc": "Days or hours to show.",
+      "forecast_section": "Forecast",
+      "forecast_section_desc": "The forecast strip below.",
+      "forecast_type": "Forecast type",
+      "hourly": "Hourly",
+      "icon_color": "Icon color",
+      "name": "Location name",
+      "name_desc": "Leave blank to use the entity name.",
+      "show_current": "Show current conditions",
+      "show_forecast": "Show forecast",
+      "show_humidity": "Show humidity",
+      "show_label": "Show condition label",
+      "show_wind": "Show wind",
+      "show_wind_direction": "Show wind direction",
+      "show_wind_direction_desc": "An arrow showing which way the wind blows.",
+      "station_section": "Weather station sensors",
+      "station_section_desc": "Optional. Use your own weather station for the current values. The icon and forecast still come from the weather entity.",
+      "temp_color": "Temperature color"
     }
   },
   "hub": {
