@@ -5860,7 +5860,9 @@
         "pro": "PRO",
         "standard": "Estàndard",
         "module_type": "Tipus de mòdul",
-        "layout_containers": "Contenidors de disseny"
+        "layout_containers": "Contenidors de disseny",
+        "collapse_category": "Redueix",
+        "expand_category": "Expandeix"
       },
       "presets_selector_tab": {
         "reload": "Torna a carregar",

@@ -5860,7 +5860,9 @@
         "pro": "PRO",
         "standard": "Standard",
         "module_type": "Modultyp",
-        "layout_containers": "Layout-Container"
+        "layout_containers": "Layout-Container",
+        "collapse_category": "Einklappen",
+        "expand_category": "Ausklappen"
       },
       "presets_selector_tab": {
         "reload": "Neu laden",

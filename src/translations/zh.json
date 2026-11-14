@@ -5827,7 +5827,9 @@
         "pro": "PRO",
         "standard": "标准",
         "module_type": "模块类型",
-        "layout_containers": "布局容器"
+        "layout_containers": "布局容器",
+        "collapse_category": "折叠",
+        "expand_category": "展开"
       },
       "presets_selector_tab": {
         "reload": "重新加载",
