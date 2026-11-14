@@ -3,7 +3,7 @@
 > This page is generated automatically from the translation files. Don't edit it by hand;
 > it refreshes itself after every change to the `main` branch.
 
-**42.9% translated** — 3,494 of 8,137 entries. **4,643 still in English.**
+**42.9% translated** — 3,494 of 8,138 entries. **4,644 still in English.**
 
 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜
 
@@ -19,7 +19,7 @@ More help: [translation guide](../../CONTRIBUTING_TRANSLATIONS.md) · [all langu
 
 If the English word really is right in your language (a brand name, or a word you also use), just leave it. It will stay on this list, and that's fine.
 
-## Still in English (4,643)
+## Still in English (4,644)
 
 Biggest sections first. Click a section to open it.
 
@@ -4633,6 +4633,40 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>State switcher (editor)</strong> — 26 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Add modules in the layout builder, then set each one’s display conditions in its Logic tab | `editor.state_switcher.empty.add_modules` |
+| No child conditions match right now | `editor.state_switcher.empty.no_match` |
+| Set Fallback Mode to show a default, or add a child without conditions as the last item | `editor.state_switcher.empty.no_match_hint` |
+| No modules added yet | `editor.state_switcher.empty.no_modules` |
+| What to show when no child conditions match. | `editor.state_switcher.fallback.desc` |
+| Show first child | `editor.state_switcher.fallback.first` |
+| Show last child | `editor.state_switcher.fallback.last` |
+| Fallback Mode | `editor.state_switcher.fallback.mode` |
+| Show nothing | `editor.state_switcher.fallback.none` |
+| Fallback | `editor.state_switcher.fallback.title` |
+| Add modules to this container, then give each one display conditions in its Logic tab. The switcher shows only the FIRST child whose conditions match — top to bottom. A child without conditions always matches, so put … | `editor.state_switcher.how.desc` |
+| How It Works | `editor.state_switcher.how.title` |
+| Always matches | `editor.state_switcher.order.always` |
+| Has conditions | `editor.state_switcher.order.has_conditions` |
+| Match Order | `editor.state_switcher.order.title` |
+| No modules added yet. Add them in the layout builder and they will be listed here in match order. | `editor.state_switcher.order.empty` |
+| Animation when the visible child changes. | `editor.state_switcher.transition.desc` |
+| Transition Duration | `editor.state_switcher.transition.duration` |
+| Fade | `editor.state_switcher.transition.fade` |
+| Scale | `editor.state_switcher.transition.scale` |
+| Slide Down | `editor.state_switcher.transition.slide_down` |
+| Slide Left | `editor.state_switcher.transition.slide_left` |
+| Slide Right | `editor.state_switcher.transition.slide_right` |
+| Slide Up | `editor.state_switcher.transition.slide_up` |
+| Transition | `editor.state_switcher.transition.title` |
+| Transition | `editor.state_switcher.transition.type` |
+
+</details>
+
+<details>
 <summary><strong>Todo list (editor)</strong> — 26 left</summary>
 
 | English text | Key |
@@ -4663,39 +4697,6 @@ Biggest sections first. Click a section to open it.
 | Text color | `editor.todo_list.text_color` |
 | Title override | `editor.todo_list.title` |
 | Leave blank to use the list name. | `editor.todo_list.title_desc` |
-
-</details>
-
-<details>
-<summary><strong>State switcher (editor)</strong> — 25 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Add modules in the layout builder, then set each one’s display conditions in its Logic tab | `editor.state_switcher.empty.add_modules` |
-| No child conditions match right now | `editor.state_switcher.empty.no_match` |
-| Set Fallback Mode to show a default, or add a child without conditions as the last item | `editor.state_switcher.empty.no_match_hint` |
-| No modules added yet | `editor.state_switcher.empty.no_modules` |
-| What to show when no child conditions match. | `editor.state_switcher.fallback.desc` |
-| Show first child | `editor.state_switcher.fallback.first` |
-| Show last child | `editor.state_switcher.fallback.last` |
-| Fallback Mode | `editor.state_switcher.fallback.mode` |
-| Show nothing | `editor.state_switcher.fallback.none` |
-| Fallback | `editor.state_switcher.fallback.title` |
-| Add modules to this container, then give each one display conditions in its Logic tab. The switcher shows only the FIRST child whose conditions match — top to bottom. A child without conditions always matches, so put … | `editor.state_switcher.how.desc` |
-| How It Works | `editor.state_switcher.how.title` |
-| Always matches | `editor.state_switcher.order.always` |
-| Has conditions | `editor.state_switcher.order.has_conditions` |
-| Match Order | `editor.state_switcher.order.title` |
-| Animation when the visible child changes. | `editor.state_switcher.transition.desc` |
-| Transition Duration | `editor.state_switcher.transition.duration` |
-| Fade | `editor.state_switcher.transition.fade` |
-| Scale | `editor.state_switcher.transition.scale` |
-| Slide Down | `editor.state_switcher.transition.slide_down` |
-| Slide Left | `editor.state_switcher.transition.slide_left` |
-| Slide Right | `editor.state_switcher.transition.slide_right` |
-| Slide Up | `editor.state_switcher.transition.slide_up` |
-| Transition | `editor.state_switcher.transition.title` |
-| Transition | `editor.state_switcher.transition.type` |
 
 </details>
 

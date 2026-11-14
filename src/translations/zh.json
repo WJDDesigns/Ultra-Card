@@ -8381,7 +8381,8 @@
       "order": {
         "always": "Always matches",
         "has_conditions": "Has conditions",
-        "title": "Match Order"
+        "title": "Match Order",
+        "empty": "No modules added yet. Add them in the layout builder and they will be listed here in match order."
       },
       "transition": {
         "desc": "Animation when the visible child changes.",

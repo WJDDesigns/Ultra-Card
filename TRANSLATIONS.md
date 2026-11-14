@@ -5,24 +5,24 @@ Ultra Card is translated by people who use it. Thank you to everyone who helps! 
 This page shows how far along each language is and links to a to-do list for each one.
 It updates itself automatically every time something changes, so it is always current.
 
-There are **8,137** pieces of text to translate.
+There are **8,138** pieces of text to translate.
 
 | Language | Progress | Translated | Still in English | To-do list |
 | --- | --- | ---: | ---: | --- |
-| 🇩🇪 German (`de`) | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 73.6% | 5,993 | 2,144 | [de.md](docs/translations/de.md) |
-| 🇨🇳 Chinese (Simplified) (`zh`) | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 70.6% | 5,750 | 2,387 | [zh.md](docs/translations/zh.md) |
-| 🇪🇸 Spanish (`es`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.8% | 3,566 | 4,571 | [es.md](docs/translations/es.md) |
-| 🇨🇿 Czech (`cs`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.6% | 3,548 | 4,589 | [cs.md](docs/translations/cs.md) |
-| 🇵🇱 Polish (`pl`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.6% | 3,551 | 4,586 | [pl.md](docs/translations/pl.md) |
-| 🇮🇹 Italian (`it`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.5% | 3,544 | 4,593 | [it.md](docs/translations/it.md) |
-| 🌐 Catalan (`ca`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.4% | 3,532 | 4,605 | [ca.md](docs/translations/ca.md) |
-| 🇳🇴 Norwegian Nynorsk (`nn`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.2% | 3,519 | 4,618 | [nn.md](docs/translations/nn.md) |
-| 🇳🇴 Norwegian (`no`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.1% | 3,509 | 4,628 | [no.md](docs/translations/no.md) |
-| 🇳🇱 Dutch (`nl`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43% | 3,507 | 4,630 | [nl.md](docs/translations/nl.md) |
-| 🇳🇴 Norwegian Bokmål (`nb`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43% | 3,507 | 4,630 | [nb.md](docs/translations/nb.md) |
-| 🇫🇷 French (`fr`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 42.9% | 3,494 | 4,643 | [fr.md](docs/translations/fr.md) |
-| 🇸🇪 Swedish (`sv`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 42.9% | 3,495 | 4,642 | [sv.md](docs/translations/sv.md) |
-| 🇩🇰 Danish (`da`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 42.3% | 3,450 | 4,687 | [da.md](docs/translations/da.md) |
+| 🇩🇪 German (`de`) | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 73.6% | 5,993 | 2,145 | [de.md](docs/translations/de.md) |
+| 🇨🇳 Chinese (Simplified) (`zh`) | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 70.6% | 5,750 | 2,388 | [zh.md](docs/translations/zh.md) |
+| 🇪🇸 Spanish (`es`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.8% | 3,566 | 4,572 | [es.md](docs/translations/es.md) |
+| 🇵🇱 Polish (`pl`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.6% | 3,551 | 4,587 | [pl.md](docs/translations/pl.md) |
+| 🇨🇿 Czech (`cs`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.5% | 3,548 | 4,590 | [cs.md](docs/translations/cs.md) |
+| 🇮🇹 Italian (`it`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.5% | 3,544 | 4,594 | [it.md](docs/translations/it.md) |
+| 🌐 Catalan (`ca`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.4% | 3,532 | 4,606 | [ca.md](docs/translations/ca.md) |
+| 🇳🇴 Norwegian Nynorsk (`nn`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.2% | 3,519 | 4,619 | [nn.md](docs/translations/nn.md) |
+| 🇳🇴 Norwegian (`no`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.1% | 3,509 | 4,629 | [no.md](docs/translations/no.md) |
+| 🇳🇱 Dutch (`nl`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43% | 3,507 | 4,631 | [nl.md](docs/translations/nl.md) |
+| 🇳🇴 Norwegian Bokmål (`nb`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43% | 3,507 | 4,631 | [nb.md](docs/translations/nb.md) |
+| 🇫🇷 French (`fr`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 42.9% | 3,494 | 4,644 | [fr.md](docs/translations/fr.md) |
+| 🇸🇪 Swedish (`sv`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 42.9% | 3,495 | 4,643 | [sv.md](docs/translations/sv.md) |
+| 🇩🇰 Danish (`da`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 42.3% | 3,450 | 4,688 | [da.md](docs/translations/da.md) |
 | 🇬🇧 British English (`en-GB`) | _Matches US English except for spelling_ | 202 | — | — |
 
 ## How to help
