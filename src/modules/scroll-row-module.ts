@@ -56,9 +56,8 @@ export class UltraScrollRowModule extends BaseUltraModule {
             lang,
             'Sizing and spacing of the items in the row. Widths under 100% let the next item peek in from the edge.'
           ),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
+          [],
+          html`
           ${this.renderUnitAwareSliderField(
             localize('editor.scroll_row.items.width', lang, 'Item Width'),
             localize(
@@ -115,7 +114,8 @@ export class UltraScrollRowModule extends BaseUltraModule {
             ],
             next => updateModule({ snap_align: next as 'start' | 'center' | 'none' })
           )}
-        </div>
+          `
+        )}
 
         <!-- Appearance -->
         ${this.renderSettingsSection(

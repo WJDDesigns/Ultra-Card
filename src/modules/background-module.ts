@@ -54,21 +54,17 @@ export class UltraBackgroundModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
 
-        <!-- Module Info Banner -->
-        ${this.renderSettingsSection(
-          localize('editor.background.info_title', lang, 'View Background'),
-          localize(
-            'editor.background.info_desc',
-            lang,
-            'Apply custom background images to your dashboard view. Only the topmost enabled module with passing logic conditions will be applied.'
-          ),
-          []
-        )}
-
         <!-- Background Source (type selector + source-specific fields, one card) -->
         <div class="settings-section">
           <div class="section-title">
             ${localize('editor.background.source_title', lang, 'Background Source')}
+          </div>
+          <div class="field-description" style="margin-bottom: 16px !important;">
+            ${localize(
+              'editor.background.info_desc',
+              lang,
+              'Apply custom background images to your dashboard view. Only the topmost enabled module with passing logic conditions will be applied.'
+            )}
           </div>
           ${this.renderSegmentedField(
             localize('editor.background.type', lang, 'Background Type'),
