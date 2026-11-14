@@ -122,9 +122,8 @@ export class UltraDrawerModule extends BaseUltraModule {
             lang,
             'Where the drawer slides in from and how it looks. Modules added to this container appear inside the drawer.'
           ),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
+          [],
+          html`
           ${this.renderSegmentedField(
             localize('editor.drawer.panel.position', lang, 'Position'),
             '',
@@ -210,7 +209,8 @@ export class UltraDrawerModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }
           )}
-        </div>
+          `
+        )}
 
         <!-- Trigger -->
         ${this.renderSettingsSection(
@@ -220,9 +220,8 @@ export class UltraDrawerModule extends BaseUltraModule {
             lang,
             'The button rendered in the card that opens the drawer.'
           ),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
+          [],
+          html`
           ${this.renderSegmentedField(
             localize('editor.drawer.trigger.style', lang, 'Trigger Style'),
             '',
@@ -384,7 +383,8 @@ export class UltraDrawerModule extends BaseUltraModule {
             'var(--text-primary-color, #fff)',
             next => updateModule({ trigger_color: next })
           )}
-        </div>
+          `
+        )}
       </div>
     `;
   }

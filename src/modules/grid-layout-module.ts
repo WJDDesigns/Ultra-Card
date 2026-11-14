@@ -69,9 +69,8 @@ export class UltraGridLayoutModule extends BaseUltraModule {
             lang,
             'Configure the grid tracks. Children placed in this container flow into the grid cells.'
           ),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
+          [],
+          html`
           ${this.renderSegmentedField(
             localize('editor.grid_layout.config.column_mode', lang, 'Column Mode'),
             localize(
@@ -162,105 +161,21 @@ export class UltraGridLayoutModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }
           )}
-        </div>
-
-        <!-- Spacing -->
-        ${this.renderSettingsSection(
-          localize('editor.grid_layout.spacing.title', lang, 'Spacing'),
-          localize('editor.grid_layout.spacing.desc', lang, 'Gaps between grid cells.'),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
-          ${this.renderSliderField(
-            localize('editor.grid_layout.spacing.gap', lang, 'Column Gap'),
-            '',
-            gridModule.gap ?? 12,
-            12,
-            0,
-            48,
-            1,
-            next => updateModule({ gap: next })
-          )}
-          ${this.renderSliderField(
-            localize('editor.grid_layout.spacing.row_gap', lang, 'Row Gap'),
-            localize(
-              'editor.grid_layout.spacing.row_gap_desc',
-              lang,
-              'Follows the column gap until changed.'
-            ),
-            gridModule.row_gap ?? gridModule.gap ?? 12,
-            gridModule.gap ?? 12,
-            0,
-            48,
-            1,
-            next => updateModule({ row_gap: next })
-          )}
-        </div>
-
-        <!-- Responsive -->
-        ${this.renderSettingsSection(
-          localize('editor.grid_layout.responsive.title', lang, 'Responsive'),
-          localize(
-            'editor.grid_layout.responsive.desc',
-            lang,
-            'Collapse the grid on small screens.'
-          ),
-          [
-            {
-              title: localize('editor.grid_layout.responsive.mobile_columns', lang, 'Mobile Columns'),
-              description: localize(
-                'editor.grid_layout.responsive.mobile_columns_desc',
+          <div class="field-section" style="margin-top: 8px;">
+            <div class="field-title">
+              ${localize('editor.grid_layout.spans.title', lang, 'Item Spans')}
+            </div>
+            <div class="field-description">
+              ${localize(
+                'editor.grid_layout.spans.desc',
                 lang,
-                'Column count used below the breakpoint. Item spans are reset on mobile.'
-              ),
-              hass,
-              data: { mobile_columns: String(gridModule.mobile_columns ?? 1) },
-              schema: [
-                this.selectField('mobile_columns', [
-                  { value: '0', label: localize('editor.grid_layout.responsive.off', lang, 'Off') },
-                  { value: '1', label: '1' },
-                  { value: '2', label: '2' },
-                  { value: '3', label: '3' },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => {
-                updateModule({ mobile_columns: Number(e.detail.value.mobile_columns) });
-                this.triggerPreviewUpdate();
-              },
-            },
-            {
-              title: localize('editor.grid_layout.responsive.breakpoint', lang, 'Mobile Breakpoint (px)'),
-              description: localize(
-                'editor.grid_layout.responsive.breakpoint_desc',
-                lang,
-                'Viewport width below which the mobile column count applies.'
-              ),
-              hass,
-              data: { mobile_breakpoint: gridModule.mobile_breakpoint ?? 600 },
-              schema: [this.numberField('mobile_breakpoint', 320, 1280, 10)],
-              onChange: (e: CustomEvent) => {
-                updateModule({ mobile_breakpoint: e.detail.value.mobile_breakpoint });
-                this.triggerPreviewUpdate();
-              },
-            },
-          ]
-        )}
-
-        <!-- Item Spans -->
-        ${this.renderSettingsSection(
-          localize('editor.grid_layout.spans.title', lang, 'Item Spans'),
-          localize(
-            'editor.grid_layout.spans.desc',
-            lang,
-            'Let individual children span multiple columns or rows.'
-          ),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
+                'Let individual children span multiple columns or rows.'
+              )}
+            </div>
           ${(gridModule.modules || []).length === 0
             ? html`
                 <div
-                  style="font-size: 13px; color: var(--secondary-text-color); font-style: italic; padding: 8px 4px;"
+                  style="font-size: 13px; color: var(--secondary-text-color); font-style: italic;"
                 >
                   ${localize(
                     'editor.grid_layout.spans.empty',
@@ -316,7 +231,91 @@ export class UltraGridLayoutModule extends BaseUltraModule {
                 </div>
               `
             : ''}
-        </div>
+          </div>
+          `
+        )}
+
+        <!-- Spacing -->
+        ${this.renderSettingsSection(
+          localize('editor.grid_layout.spacing.title', lang, 'Spacing'),
+          localize('editor.grid_layout.spacing.desc', lang, 'Gaps between grid cells.'),
+          [],
+          html`
+          ${this.renderSliderField(
+            localize('editor.grid_layout.spacing.gap', lang, 'Column Gap'),
+            '',
+            gridModule.gap ?? 12,
+            12,
+            0,
+            48,
+            1,
+            next => updateModule({ gap: next })
+          )}
+          ${this.renderSliderField(
+            localize('editor.grid_layout.spacing.row_gap', lang, 'Row Gap'),
+            localize(
+              'editor.grid_layout.spacing.row_gap_desc',
+              lang,
+              'Follows the column gap until changed.'
+            ),
+            gridModule.row_gap ?? gridModule.gap ?? 12,
+            gridModule.gap ?? 12,
+            0,
+            48,
+            1,
+            next => updateModule({ row_gap: next })
+          )}
+          `
+        )}
+
+        <!-- Responsive -->
+        ${this.renderSettingsSection(
+          localize('editor.grid_layout.responsive.title', lang, 'Responsive'),
+          localize(
+            'editor.grid_layout.responsive.desc',
+            lang,
+            'Collapse the grid on small screens.'
+          ),
+          [
+            {
+              title: localize('editor.grid_layout.responsive.mobile_columns', lang, 'Mobile Columns'),
+              description: localize(
+                'editor.grid_layout.responsive.mobile_columns_desc',
+                lang,
+                'Column count used below the breakpoint. Item spans are reset on mobile.'
+              ),
+              hass,
+              data: { mobile_columns: String(gridModule.mobile_columns ?? 1) },
+              schema: [
+                this.selectField('mobile_columns', [
+                  { value: '0', label: localize('editor.grid_layout.responsive.off', lang, 'Off') },
+                  { value: '1', label: '1' },
+                  { value: '2', label: '2' },
+                  { value: '3', label: '3' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({ mobile_columns: Number(e.detail.value.mobile_columns) });
+                this.triggerPreviewUpdate();
+              },
+            },
+            {
+              title: localize('editor.grid_layout.responsive.breakpoint', lang, 'Mobile Breakpoint (px)'),
+              description: localize(
+                'editor.grid_layout.responsive.breakpoint_desc',
+                lang,
+                'Viewport width below which the mobile column count applies.'
+              ),
+              hass,
+              data: { mobile_breakpoint: gridModule.mobile_breakpoint ?? 600 },
+              schema: [this.numberField('mobile_breakpoint', 320, 1280, 10)],
+              onChange: (e: CustomEvent) => {
+                updateModule({ mobile_breakpoint: e.detail.value.mobile_breakpoint });
+                this.triggerPreviewUpdate();
+              },
+            },
+          ]
+        )}
       </div>
     `;
   }

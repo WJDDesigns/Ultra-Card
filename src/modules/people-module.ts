@@ -1064,7 +1064,7 @@ export class UltraPeopleModule extends BaseUltraModule {
           style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)); margin-bottom: 8px; letter-spacing: 0.5px;"
         >
           ${localize('editor.modules.people.data_items', lang, 'Data Items')}
-          <span class="layout-badge">${module.layout_style}</span>
+          <span class="people-layout-badge">${module.layout_style}</span>
         </div>
         <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
           ${localize(
@@ -2837,7 +2837,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         margin-bottom: 8px;
       }
 
-      .layout-badge {
+      .people-layout-badge {
         display: inline-block;
         padding: 2px 8px;
         background: rgba(var(--rgb-primary-color), 0.15);

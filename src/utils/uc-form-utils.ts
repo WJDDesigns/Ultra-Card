@@ -66,40 +66,38 @@ export class UcFormUtils {
     const isBooleanField = schema.length === 1 && schema[0].selector?.boolean !== undefined;
 
     if (isBooleanField) {
-      // For boolean fields, put title and toggle on the same line
+      // For boolean fields, put the title and toggle on the same row and the
+      // description underneath, so the toggle always lines up with its title
+      // whether or not the field has a description.
       return html`
         <div class="field-section boolean-field" style="margin-bottom: 16px;">
           <div
-            style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px;"
+            class="boolean-field-row"
+            style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 28px;"
           >
-            <div style="flex: 1;">
-              ${
-                title
-                  ? html`<div
-                      class="field-title"
-                      style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: ${
-                        description ? '4px' : '0'
-                      };"
-                    >
-                      ${title}
-                    </div>`
-                  : ''
-              }
-              ${
-                description
-                  ? html`<div
-                      class="field-description"
-                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 0; opacity: 0.8; line-height: 1.4;"
-                    >
-                      ${description}
-                    </div>`
-                  : ''
-              }
+            <div
+              class="field-title"
+              style="flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 0;"
+            >
+              ${title}
             </div>
-            <div style="flex-shrink: 0;">
+            <div
+              class="boolean-field-toggle"
+              style="flex-shrink: 0; height: 24px; display: flex; align-items: center; justify-content: flex-end;"
+            >
               ${UcFormUtils.renderForm(hass, data, schema, onChange, false)}
             </div>
           </div>
+          ${
+            description
+              ? html`<div
+                  class="field-description"
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-top: 2px; margin-bottom: 0; opacity: 0.8; line-height: 1.4;"
+                >
+                  ${description}
+                </div>`
+              : ''
+          }
         </div>
       `;
     }
@@ -834,7 +832,19 @@ export class UcFormUtils {
       /* Boolean fields - inline layout with title and toggle on same line */
       .boolean-field ha-form {
         width: auto;
-        display: inline-block;
+        display: block;
+        line-height: 0;
+      }
+
+      /* The shared .field-title / .field-description rules use !important
+         margins; on a boolean row the title shares a line with the toggle and
+         the description sits right under it. */
+      .boolean-field .boolean-field-row > .field-title {
+        margin-bottom: 0 !important;
+      }
+      .boolean-field > .field-description {
+        margin-top: 2px !important;
+        margin-bottom: 0 !important;
       }
 
       .boolean-field ha-formfield {

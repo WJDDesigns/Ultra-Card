@@ -48,31 +48,23 @@ export class UltraFlipCardModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
 
       <div class="module-general-settings">
-        <!-- How it works -->
+        <!-- Flip Behavior -->
         ${this.renderSettingsSection(
-          localize('editor.flip_card.faces.title', lang, 'Card Faces'),
+          localize('editor.flip_card.behavior.title', lang, 'Flip Behavior'),
           localize(
             'editor.flip_card.faces.desc',
             lang,
             'The first module added to this container is the front face; the second is the back face. Use a Vertical Layout as a face to show multiple modules on one side.'
           ),
-          []
-        )}
-
-        <!-- Flip Behavior -->
-        ${this.renderSettingsSection(
-          localize('editor.flip_card.behavior.title', lang, 'Flip Behavior'),
-          localize(
-            'editor.flip_card.behavior.desc',
-            lang,
-            'Choose what causes the card to flip to its back face.'
-          ),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
+          [],
+          html`
           ${this.renderSegmentedField(
             localize('editor.flip_card.behavior.trigger', lang, 'Flip Trigger'),
-            '',
+            localize(
+              'editor.flip_card.behavior.desc',
+              lang,
+              'Choose what causes the card to flip to its back face.'
+            ),
             trigger,
             [
               {
@@ -138,15 +130,15 @@ export class UltraFlipCardModule extends BaseUltraModule {
                 )}
               `
             : ''}
-        </div>
+          `
+        )}
 
         <!-- Animation -->
         ${this.renderSettingsSection(
           localize('editor.flip_card.animation.title', lang, 'Animation'),
           localize('editor.flip_card.animation.desc', lang, 'Style and speed of the flip.'),
-          []
-        )}
-        <div style="margin-top: -24px; margin-bottom: 32px;">
+          [],
+          html`
           ${this.renderSegmentedField(
             localize('editor.flip_card.animation.direction', lang, 'Flip Direction'),
             '',
@@ -176,7 +168,8 @@ export class UltraFlipCardModule extends BaseUltraModule {
             next => updateModule({ flip_duration: next }),
             'ms'
           )}
-        </div>
+          `
+        )}
       </div>
     `;
   }
