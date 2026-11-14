@@ -5860,7 +5860,9 @@
         "pro": "PRO",
         "standard": "Standardowe",
         "module_type": "Typ modułu",
-        "layout_containers": "Kontenery układu"
+        "layout_containers": "Kontenery układu",
+        "collapse_category": "Zwiń",
+        "expand_category": "Rozwiń"
       },
       "presets_selector_tab": {
         "reload": "Przeładuj",

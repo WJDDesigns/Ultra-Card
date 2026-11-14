@@ -10,6 +10,7 @@ import { VERSION } from '../version';
 import { localize } from '../localize/localize';
 
 const UC_DENSITY_KEY = 'ultra-card-module-picker-density';
+const UC_COLLAPSED_KEY = 'ultra-card-module-picker-collapsed';
 
 const UC_PREVIEW_REPO = 'https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card';
 
@@ -57,6 +58,16 @@ function readStoredDensity(): 'gallery' | 'list' {
   }
 }
 
+/** Category ids the user folded away in the Add Module picker. */
+function readStoredCollapsed(): Set<string> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(UC_COLLAPSED_KEY) || '[]');
+    return new Set(Array.isArray(raw) ? raw.filter(v => typeof v === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
 @customElement('uc-modules-selector-tab')
 export class UcModulesSelectorTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -70,6 +81,8 @@ export class UcModulesSelectorTab extends LitElement {
   @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
   /** Gallery shows a picture of each module; list is the original compact rows. */
   @state() private _density: 'gallery' | 'list' = readStoredDensity();
+  /** Categories folded to their heading. Everything starts open. */
+  @state() private _collapsed: Set<string> = readStoredCollapsed();
 
   private readonly _reducedMotion =
     typeof window !== 'undefined' &&
@@ -178,44 +191,41 @@ export class UcModulesSelectorTab extends LitElement {
                 : html`
                     ${allowedLayoutModules.length > 0
                       ? html`
-                          <div class="module-category layout-containers">
-                            <h4 class="category-title">${localize('editor.ui.modules_selector_tab.layout_containers', this.hass?.locale?.language || 'en', 'Layout Containers')}</h4>
-                            <p class="category-description">
-                              ${this.isAddingToLayoutModule
-                                ? 'Add layout or content modules at any nesting level'
-                                : 'Create containers to organize your modules'}
-                            </p>
-                            <div
-                              class="module-types layout-modules ${this._density === 'gallery'
-                                ? 'gallery'
-                                : ''}"
-                            >
-                              ${allowedLayoutModules.map(meta =>
-                                this._renderModuleTile(meta, 'layout')
-                              )}
-                            </div>
-                          </div>
+                          ${this._renderCategory(
+                            'layout',
+                            html`${localize('editor.ui.modules_selector_tab.layout_containers', this.hass?.locale?.language || 'en', 'Layout Containers')}`,
+                            this.isAddingToLayoutModule
+                              ? 'Add layout or content modules at any nesting level'
+                              : 'Create containers to organize your modules',
+                            allowedLayoutModules,
+                            'layout',
+                            'layout-containers'
+                          )}
                         `
                       : ''}
                     ${this._renderModuleGroup(
+                      'data',
                       'Data & Lists',
                       'Entities, sensors, lists, and smart auto-discovered widgets',
                       'mdi:format-list-bulleted-square',
                       dataModules
                     )}
                     ${this._renderModuleGroup(
+                      'content',
                       'Content & Media',
                       'Text, images, backgrounds, and visual elements',
                       'mdi:image-multiple-outline',
                       contentMediaModules
                     )}
                     ${this._renderModuleGroup(
+                      'controls',
                       'Controls',
                       'Buttons, switches, lights, climate, and interactive controls',
                       'mdi:gesture-tap-button',
                       controlModules
                     )}
                     ${this._renderModuleGroup(
+                      'input',
                       'Input Helpers',
                       'Link to Home Assistant input helpers for interactive control',
                       'mdi:form-textbox',
@@ -234,6 +244,7 @@ export class UcModulesSelectorTab extends LitElement {
    * consistent and the layout is easy to evolve.
    */
   private _renderModuleGroup(
+    id: string,
     title: string,
     description: string,
     headerIcon: string,
@@ -241,21 +252,89 @@ export class UcModulesSelectorTab extends LitElement {
     extraClass: string = ''
   ): TemplateResult {
     if (!modules || modules.length === 0) return html``;
+    return this._renderCategory(
+      id,
+      html`<ha-icon
+          icon="${headerIcon}"
+          style="--mdc-icon-size: 18px; margin-right: 6px; vertical-align: middle; opacity: 0.7;"
+        ></ha-icon
+        >${title}`,
+      description,
+      modules,
+      'content',
+      extraClass
+    );
+  }
+
+  /**
+   * One category of the picker with a fold toggle at the right of its
+   * heading. Folded categories are remembered across sessions, in both the
+   * gallery and list views, and the whole heading is a click target.
+   */
+  private _renderCategory(
+    id: string,
+    title: TemplateResult,
+    description: string,
+    modules: ModuleManifest[],
+    variant: 'layout' | 'content',
+    extraClass: string = ''
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const collapsed = this._collapsed.has(id);
+    const toggleLabel = collapsed
+      ? localize('editor.ui.modules_selector_tab.expand_category', lang, 'Expand')
+      : localize('editor.ui.modules_selector_tab.collapse_category', lang, 'Collapse');
+    const bodyId = `uc-module-category-${id}`;
     return html`
-      <div class="module-category ${extraClass}">
-        <h4 class="category-title">
-          <ha-icon
-            icon="${headerIcon}"
-            style="--mdc-icon-size: 18px; margin-right: 6px; vertical-align: middle; opacity: 0.7;"
-          ></ha-icon>
-          ${title}
-        </h4>
-        <p class="category-description">${description}</p>
-        <div class="module-types content-modules ${this._density === 'gallery' ? 'gallery' : ''}">
-          ${modules.map(meta => this._renderModuleTile(meta, 'content'))}
+      <div class="module-category ${extraClass} ${collapsed ? 'collapsed' : ''}">
+        <div class="category-header" @click=${() => this._toggleCategory(id)}>
+          <div class="category-heading">
+            <h4 class="category-title">${title}</h4>
+            <p class="category-description">${description}</p>
+          </div>
+          <span class="category-count" aria-hidden="true">${modules.length}</span>
+          <button
+            class="category-toggle"
+            type="button"
+            aria-expanded="${collapsed ? 'false' : 'true'}"
+            aria-controls="${bodyId}"
+            aria-label="${toggleLabel}"
+            title="${toggleLabel}"
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              this._toggleCategory(id);
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"></path>
+            </svg>
+          </button>
         </div>
+        ${collapsed
+          ? ''
+          : html`<div
+              id="${bodyId}"
+              class="module-types ${variant === 'layout' ? 'layout-modules' : 'content-modules'} ${this
+                ._density === 'gallery'
+                ? 'gallery'
+                : ''}"
+            >
+              ${modules.map(meta => this._renderModuleTile(meta, variant))}
+            </div>`}
       </div>
     `;
+  }
+
+  private _toggleCategory(id: string): void {
+    const next = new Set(this._collapsed);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this._collapsed = next;
+    try {
+      localStorage.setItem(UC_COLLAPSED_KEY, JSON.stringify([...next]));
+    } catch {
+      /* private browsing — the choice just won't persist */
+    }
   }
 
   /**
@@ -675,6 +754,26 @@ export class UcModulesSelectorTab extends LitElement {
     .module-category {
       margin-bottom: 24px;
     }
+    .module-category.collapsed {
+      margin-bottom: 12px;
+    }
+    .category-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .module-category.collapsed .category-header {
+      margin-bottom: 0;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--divider-color);
+    }
+    .category-heading {
+      flex: 1;
+      min-width: 0;
+    }
     .category-title {
       font-size: 16px;
       font-weight: 600;
@@ -684,8 +783,59 @@ export class UcModulesSelectorTab extends LitElement {
     .category-description {
       font-size: 14px;
       color: var(--secondary-text-color);
-      margin: 0 0 16px 0;
+      margin: 0;
       line-height: 1.4;
+    }
+    .category-count {
+      display: none;
+      align-self: center;
+      min-width: 22px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--secondary-background-color, rgba(127, 127, 127, 0.15));
+      color: var(--secondary-text-color);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .module-category.collapsed .category-count {
+      display: inline-block;
+    }
+    .category-toggle {
+      flex: 0 0 auto;
+      align-self: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid var(--divider-color);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .category-toggle:hover,
+    .category-toggle:focus-visible {
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+      color: var(--primary-color);
+      outline: none;
+    }
+    .category-toggle svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+      transition: transform 0.2s ease;
+    }
+    .module-category.collapsed .category-toggle svg {
+      transform: rotate(-90deg);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .category-toggle svg {
+        transition: none;
+      }
     }
     .module-types {
       display: grid;

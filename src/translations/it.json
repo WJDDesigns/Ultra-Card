@@ -5860,7 +5860,9 @@
         "pro": "PRO",
         "standard": "Standard",
         "module_type": "Tipo di modulo",
-        "layout_containers": "Contenitori di layout"
+        "layout_containers": "Contenitori di layout",
+        "collapse_category": "Comprimi",
+        "expand_category": "Espandi"
       },
       "presets_selector_tab": {
         "reload": "Ricarica",

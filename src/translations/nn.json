@@ -5860,7 +5860,9 @@
         "pro": "PRO",
         "standard": "Standard",
         "module_type": "Modultype",
-        "layout_containers": "Layoutbehaldarar"
+        "layout_containers": "Layoutbehaldarar",
+        "collapse_category": "Fald saman",
+        "expand_category": "Fald ut"
       },
       "presets_selector_tab": {
         "reload": "Last inn på nytt",
