@@ -48,20 +48,7 @@ export class UltraStateSwitcherModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
 
       <div class="module-general-settings">
-        <!-- How it works -->
-        ${this.renderSettingsSection(
-          localize('editor.state_switcher.how.title', lang, 'How It Works'),
-          localize(
-            'editor.state_switcher.how.desc',
-            lang,
-            'Add modules to this container, then give each one display conditions in its Logic tab. The switcher shows only the FIRST child whose conditions match — top to bottom. A child without conditions always matches, so put a default last.'
-          ),
-          []
-        )}
-
         <!-- Children overview -->
-        ${children.length > 0
-          ? html`
               <div
                 class="settings-section"
                 style="background: var(--secondary-background-color); border-radius: var(--uc-r-8, 8px); padding: 16px; margin-bottom: 32px;"
@@ -72,6 +59,26 @@ export class UltraStateSwitcherModule extends BaseUltraModule {
                 >
                   ${localize('editor.state_switcher.order.title', lang, 'Match Order')}
                 </div>
+                <div
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                >
+                  ${localize(
+                    'editor.state_switcher.how.desc',
+                    lang,
+                    'Add modules to this container, then give each one display conditions in its Logic tab. The switcher shows only the FIRST child whose conditions match — top to bottom. A child without conditions always matches, so put a default last.'
+                  )}
+                </div>
+                ${children.length === 0
+                  ? html`<div
+                      style="font-size: 13px; color: var(--secondary-text-color); font-style: italic;"
+                    >
+                      ${localize(
+                        'editor.state_switcher.order.empty',
+                        lang,
+                        'No modules added yet. Add them in the layout builder and they will be listed here in match order.'
+                      )}
+                    </div>`
+                  : ''}
                 ${children.map((child, index) => {
                   const meta = registry.getModuleMetadata(child.type);
                   const name = (child as any).name || meta?.title || child.type;
@@ -114,8 +121,6 @@ export class UltraStateSwitcherModule extends BaseUltraModule {
                   `;
                 })}
               </div>
-            `
-          : ''}
 
         <!-- Fallback -->
         ${this.renderSettingsSection(
