@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta13
+
+The thirteenth 3.14.4 beta lets you fold the categories in the Add Module picker, tidies the spacing and toggle alignment in module settings, adds a translation status page so translators can see exactly what is left, makes about 1,800 more pieces of editor text translatable, and brings another German update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🚀 New Features
+
+- **Add Module: collapsible categories** - Every category heading in the Add Module picker (Layout Containers, Data & Lists, Content & Media, Controls, Input Helpers) now has a collapse toggle. A folded category shows how many modules it holds. Works in Gallery and List view, and your choice is remembered. Everything starts open
+- **Translation status page** - Translators can now see their progress in [TRANSLATIONS.md](https://github.com/WJDDesigns/Ultra-Card/blob/main/TRANSLATIONS.md): a percentage for every language and a to-do list of the text still in English, grouped by module, with step-by-step instructions for editing on GitHub. It updates itself whenever new text is added
+
+### 🔧 Improvements
+
+- **Much more of the editor can be translated** - About 1,800 pieces of editor text (module settings like "Drawer Panel" or "Card Faces") only lived in the code, so translators couldn't reach them. They are now in every language file. Percentages on the status page drop for now because these strings are counted for the first time; the text itself shows in English until translated, same as before
+- **German translation update** - Thanks to larrysansan for another German update
+- **Module settings: cleaner sections** - Toggles now sit on the same row as their title with the description underneath, so they line up whether or not a setting has a description. Sections that only held a description were folded into the section next to them (Flip Card, Grid Layout, Background, State Switcher)
+
+### 🐛 Bug Fixes
+
+- **Section descriptions touching the first field** - In Drawer, Grid, Scroll Row and Flip Card settings the first field sat right against the section description. It now has its normal spacing
+- **People: COMPACT badge covering the arrow** - The layout badge on People data items sat on top of the expand arrow
+
 ## Version 3.14.4-beta12
 
 The twelfth 3.14.4 beta lets the 3rd Party Card module run tap, hold and double-tap actions, lets you edit and delete calendar events right from the Calendar module, makes the appliance Graphic size slider work in Compact and smaller Hero layouts, and brings a big German translation update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
