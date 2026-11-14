@@ -1,173 +1,109 @@
-# Contributing Translations to Ultra Card
+# Helping translate Ultra Card
 
-Help make Ultra Card accessible to users worldwide! We welcome translation contributions from the community.
+Thank you for helping make Ultra Card work in your language! You don't need to install anything or know how to code. A free GitHub account is all it takes.
 
-## 🌍 Currently Supported Languages
+## Start here: what still needs translating
 
-- 🇪🇺 Catalan (`ca.json`)
-- 🇨🇳 Chinese Simplified (`zh.json`)
-- 🇨🇿 Czech (`cs.json`)
-- 🇩🇰 Danish (`da.json`)
-- 🇩🇪 German (`de.json`)
-- 🇬🇧 British English (`en-GB.json`)
-- 🇺🇸 English (`en.json`) - Base language
-- 🇪🇸 Spanish (`es.json`)
-- 🇫🇷 French (`fr.json`)
-- 🇮🇹 Italian (`it.json`)
-- 🇳🇴 Norwegian Bokmål (`nb.json`)
-- 🇳🇱 Dutch (`nl.json`)
-- 🇳🇴 Norwegian Nynorsk (`nn.json`)
-- 🇳🇴 Norwegian (`no.json`)
-- 🇵🇱 Polish (`pl.json`)
-- 🇸🇪 Swedish (`sv.json`)
+**[TRANSLATIONS.md](TRANSLATIONS.md)** shows every language, how far along it is, and a to-do list for each one. Each to-do list shows the text that is still in English, grouped by module (for example _Drawer_, _Flip card_, _Calendar_), biggest sections first.
 
-## 🚀 How to Contribute
+These pages update themselves automatically every time something changes, so they are always current. New text added to the card shows up on your language's list on its own.
 
-### Option 1: GitHub Web Interface (Easiest)
+## Supported languages
 
-1. **Navigate to translations**: Go to [`src/translations/`](https://github.com/WJDDesigns/Ultra-Card/tree/main/src/translations) on GitHub
-2. **Choose your language**: Click on your language file (e.g., `de.json` for German)
-3. **Edit directly**: Click the pencil icon (✏️) to edit
-4. **Make changes**: Update the translation values (right side of colons only)
-5. **Commit changes**: Scroll down, add a commit message like "Update German translations"
-6. **Create Pull Request**: GitHub will automatically prompt you to create a PR
+| Language                | File         |
+| ----------------------- | ------------ |
+| Catalan                 | `ca.json`    |
+| Chinese (Simplified)    | `zh.json`    |
+| Czech                   | `cs.json`    |
+| Danish                  | `da.json`    |
+| Dutch                   | `nl.json`    |
+| English (base language) | `en.json`    |
+| British English         | `en-GB.json` |
+| French                  | `fr.json`    |
+| German                  | `de.json`    |
+| Italian                 | `it.json`    |
+| Norwegian               | `no.json`    |
+| Norwegian Bokmål        | `nb.json`    |
+| Norwegian Nynorsk       | `nn.json`    |
+| Polish                  | `pl.json`    |
+| Spanish                 | `es.json`    |
+| Swedish                 | `sv.json`    |
 
-### Option 2: Fork & Clone (Advanced)
+All files live in [`src/translations/`](https://github.com/WJDDesigns/Ultra-Card/tree/main/src/translations).
 
-1. **Fork this repository** to your GitHub account
-2. **Clone your fork**: `git clone https://github.com/YOUR-USERNAME/Ultra-Card.git`
-3. **Edit translation files** in `src/translations/`
-4. **Test locally** (optional): Run `npm run validate:translations`
-5. **Commit and push**:
-   ```bash
-   git add src/translations/
-   git commit -m "Translation: Update [Language] translations"
-   git push origin main
-   ```
-6. **Create Pull Request** from your fork to the main repository
+## How to translate (in your browser)
 
-## 📝 Translation Guidelines
+1. Open your language's to-do list from [TRANSLATIONS.md](TRANSLATIONS.md) and pick a section.
+2. Click the link at the top of that page to edit your language file on GitHub. The first time, GitHub asks you to fork the project. That's automatic, just accept.
+3. Press <kbd>Ctrl</kbd>+<kbd>F</kbd> (<kbd>⌘</kbd>+<kbd>F</kbd> on a Mac) and search for the **English text** from the list. Untranslated entries contain exactly the English text, so the search finds them.
+4. Replace the English text between the quotes with your translation.
+5. Click **Commit changes…**, then **Propose changes** and **Create pull request**.
 
-### ✅ DO:
+That's it. When your change is merged, the status page updates by itself and your translations ship in the next release.
 
-- **Translate values only**: Only change text on the right side of colons
-- **Keep JSON structure**: Maintain exact same hierarchy and keys
-- **Use appropriate tone**: Match Home Assistant's UI language style
-- **Preserve placeholders**: Keep `{count}`, `{value}`, `{ratio}` unchanged
-- **Test your JSON**: Ensure valid JSON syntax (use online validator if needed)
-- **Use proper terminology**: Use established Home Assistant terms in your language
+Small contributions are very welcome. Translating one module is a great start.
 
-### ❌ DON'T:
+### Example
 
-- **Change JSON keys**: Never modify the left side of colons
-- **Translate technical terms**: Keep "Home Assistant", "Jinja2", "YAML" as-is
-- **Remove placeholders**: Keep `{count}`, `{value}`, etc. in place
-- **Modify HTML tags**: Keep `<br/>`, `<strong>`, etc. unchanged
-- **Change file structure**: Don't add/remove sections
+The to-do list shows:
 
-## 🔍 Example
+| English text | Key                         |
+| ------------ | --------------------------- |
+| Drawer Panel | `editor.drawer.panel.title` |
 
-**English (en.json):**
+In `de.json` you search for `Drawer Panel` and change
 
 ```json
-{
-  "editor": {
-    "modules": {
-      "icons_configured": "{count} icons configured"
-    }
-  }
-}
+"title": "Drawer Panel"
 ```
 
-**German translation (de.json):**
+to
 
 ```json
-{
-  "editor": {
-    "modules": {
-      "icons_configured": "{count} Symbole konfiguriert"
-    }
-  }
-}
+"title": "Schubladen-Panel"
 ```
 
-## 🆕 Adding a New Language
+## Rules of thumb
 
-1. **Copy base file**: Copy `src/translations/en.json` to `src/translations/[language-code].json`
-2. **Use ISO 639-1 codes**: `de` (German), `fr` (French), `pt` (Portuguese), etc. Use the
-   region-stripped code where one exists: Home Assistant reports Simplified Chinese as
-   `zh-Hans`, and `localize.ts` resolves it down to `zh.json`.
-3. **Translate all values**: Go through each section systematically
-4. **Submit PR**: Create pull request with title "Translation: Add [Language] support"
+**Do**
 
-## 🧪 Testing Your Translation
+- Change only the text on the **right** side of the colon.
+- Keep anything in `{curly braces}` exactly as it is, for example `{count}` or `{value}`. The card fills those in.
+- Keep HTML tags like `<br/>` or `<strong>` as they are.
+- Use the words Home Assistant uses in your language, so Ultra Card feels like part of it.
+- Keep product and technical names in English: _Ultra Card_, _FreeSpace_, _Home Assistant_, _YAML_, _Jinja2_ and so on.
 
-### Online JSON Validator
+**Don't**
 
-Use [JSONLint](https://jsonlint.com/) to validate your JSON syntax.
+- Change the key on the left of the colon.
+- Add or remove entries. If something is missing from your file, the maintainer adds it automatically.
+- Worry about quotes and commas. If something breaks, an automatic check points to the line, and we'll help fix it.
 
-### Local Testing (Optional)
+If the English word really is correct in your language (a brand name, or a word you also use), leave it as it is. It will stay on the to-do list, and that's fine.
 
-If you have Node.js installed:
+Some older entries were translated by machine. If you spot one that reads oddly, please improve it. Those are just as valuable as new translations.
+
+## Adding a new language
+
+1. Copy `src/translations/en.json` to `src/translations/<code>.json`, using the two-letter ISO 639-1 code (`pt` for Portuguese, `ja` for Japanese and so on). Home Assistant reports Simplified Chinese as `zh-Hans`, and Ultra Card maps it to `zh.json`, so use the short code where one exists.
+2. Translate as much as you like. Untranslated entries simply show in English.
+3. Open a pull request titled `Translation: Add <Language> support`.
+
+The maintainer registers the new language in the card and on the status page.
+
+## For people working locally
 
 ```bash
 npm install
-npm run validate:translations
+npm run validate:translations   # every language has every key
+npm run translations:status     # regenerate TRANSLATIONS.md and docs/translations/
+npm run translations:extract    # list editor text used in code but missing from en.json
 ```
 
-## 📋 Translation Checklist
+Developers adding editor text: always write it as `localize('editor.module.key', lang, 'English text')`. On every push to `main`, a GitHub Action adds any such key that's missing from `en.json`, copies it into every language file, and refreshes the status pages.
 
-Before submitting your PR:
+## Questions
 
-- [ ] JSON syntax is valid (no trailing commas, proper quotes)
-- [ ] All placeholders preserved (`{count}`, `{value}`, `{ratio}`)
-- [ ] No keys were modified (left side of colons)
-- [ ] Appropriate tone and terminology used
-- [ ] Tested in a JSON validator
+Ask in the [Ultra Card Discord](https://discord.gg/6xVgHxzzBV) or [open an issue](https://github.com/WJDDesigns/Ultra-Card/issues) with the `translation` label.
 
-## 🏷️ PR Guidelines
-
-### Title Format:
-
-- **New language**: `Translation: Add [Language] support`
-- **Updates**: `Translation: Update [Language] translations`
-- **Fixes**: `Translation: Fix [Language] translation errors`
-
-### Description Template:
-
-```markdown
-## Translation Contribution
-
-**Language**: [Language Name] (`[code].json`)
-**Type**: [New language / Update / Fix]
-
-### Changes Made:
-
-- [Describe your changes]
-
-### Testing:
-
-- [ ] JSON syntax validated
-- [ ] Placeholders preserved
-- [ ] Appropriate terminology used
-
-### Notes:
-
-[Any additional context or questions]
-```
-
-## 🤝 Community & Support
-
-- **Questions?** Open an issue with the `translation` label
-- **Join Discord**: [Link to Discord server]
-- **Discussions**: Use GitHub Discussions for translation coordination
-
-## 🙏 Recognition
-
-All contributors will be credited in our release notes and README. Thank you for helping make Ultra Card accessible worldwide! 🌍
-
----
-
-**Need help?** Don't hesitate to ask questions in the issues or discussions section. We're here to help!
-
-⚠️ **Important**: Only edit files in `src/translations/`, not `dist/`. The maintainer will handle the build process.
+Only edit files in `src/translations/`. The maintainer takes care of building the card.

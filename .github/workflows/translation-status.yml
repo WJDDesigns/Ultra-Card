@@ -1,0 +1,70 @@
+name: Translation status
+
+# Keeps TRANSLATIONS.md and docs/translations/<lang>.md current, so translators
+# always see what's still in English for their language.
+#
+# On every push to main it also adds any new editor text the code uses
+# (localize('key', lang, 'English')) to en.json and copies it into every
+# language file, so new text is translatable without anyone remembering to.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/translation-status.js'
+      - 'scripts/extract-translation-keys.js'
+      - 'scripts/lib/**'
+      - '.github/workflows/translation-status.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: translation-status
+  cancel-in-progress: false
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add new editor text to the translation files
+        run: |
+          node scripts/extract-translation-keys.js --write
+          npm run sync:translations
+
+      - name: Check translation files
+        run: npm run validate:translations
+
+      - name: Regenerate status pages
+        run: npm run translations:status
+
+      - name: Commit changes
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add TRANSLATIONS.md docs/translations src/translations
+          if git diff --cached --quiet; then
+            echo "Translation status already up to date."
+            exit 0
+          fi
+          git commit -m "chore(translations): refresh translation status [skip ci]"
+          for i in 1 2 3; do
+            if git push; then exit 0; fi
+            git pull --rebase
+          done
+          exit 1
