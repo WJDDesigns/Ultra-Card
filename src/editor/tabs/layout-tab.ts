@@ -18735,7 +18735,7 @@ export class LayoutTab extends LitElement {
               lang,
               'Open module documentation in Hub'
             )}
-            @click=${() => openHubDocs(moduleDocsSlug(module.type))}
+            @click=${() => void openHubDocs(moduleDocsSlug(module.type), this.hass)}
           >
             <ha-icon icon="mdi:help-circle-outline"></ha-icon>
           </ha-icon-button>
@@ -20281,7 +20281,7 @@ export class LayoutTab extends LitElement {
                     lang,
                     'Open module documentation in Hub'
                   )}
-                  @click=${() => openHubDocs(moduleDocsSlug(module.type))}
+                  @click=${() => void openHubDocs(moduleDocsSlug(module.type), this.hass)}
                 >
                   <ha-icon icon="mdi:help-circle-outline"></ha-icon>
                 </ha-icon-button>
