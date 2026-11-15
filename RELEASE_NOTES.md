@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta14
+
+The fourteenth 3.14.4 beta lets cameras fill a Horizontal layout instead of stopping at 500px each, keeps the Full Width label in row settings on one line, and brings another German update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+🏆 **Honorable mention: Steve Markus.** Steve lined two cameras up side by side and noticed they were huddled in the corner, leaving half the row empty like the last two people at a party. Thanks to Steve, the cameras now take up the whole dance floor 📹🕺
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🔧 Improvements
+
+- **German translation update** - Thanks to larrysansan for another German update
+
+### 🐛 Bug Fixes
+
+- **Cameras not filling a Horizontal layout** - New Camera modules start with a 500px max width, so two or more cameras side by side in a Horizontal layout stopped at 500px each and left the rest of the row empty on wide screens. Cameras inside a Horizontal layout now share the full width of the row. A max width you set yourself is still respected. Thanks to Steve Markus for reporting
+- **Row settings: Full Width label wrapping** - The Full Width toggle took up half the row and squeezed its label onto two lines. The label now stays on one line
+
 ## Version 3.14.4-beta13
 
 The thirteenth 3.14.4 beta lets you fold the categories in the Add Module picker, tidies the spacing and toggle alignment in module settings, adds a translation status page so translators can see exactly what is left, makes about 1,800 more pieces of editor text translatable, and brings another German update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
