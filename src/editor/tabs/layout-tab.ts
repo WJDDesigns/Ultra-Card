@@ -4,7 +4,18 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { keyed } from 'lit/directives/keyed.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from '../../ha/types';
-import { UltraCardConfig, CardRow, CardColumn, CardModule, TextModule, SeparatorModule, ImageModule, BarModule, LayoutConfig, DeviceBreakpoint } from '../../types';
+import {
+  UltraCardConfig,
+  CardRow,
+  CardColumn,
+  CardModule,
+  TextModule,
+  SeparatorModule,
+  ImageModule,
+  BarModule,
+  LayoutConfig,
+  DeviceBreakpoint,
+} from '../../types';
 import '../../components/uc-breakpoint-preview';
 import { PREVIEW_WIDTHS } from '../../components/uc-breakpoint-preview';
 import '../../services/uc-responsive-design-service';
@@ -43,7 +54,11 @@ import {
 import { isChunkLoadError } from '../../utils/uc-chunk-load-error';
 import { promoteToTopLayer } from '../../utils/uc-top-layer';
 import { ucToastService } from '../../services/uc-toast-service';
-import { isLayoutModuleType, isValidLayoutDrop, resolveModuleList as resolveModuleListPure } from '../layout/layout-tree-helpers';
+import {
+  isLayoutModuleType,
+  isValidLayoutDrop,
+  resolveModuleList as resolveModuleListPure,
+} from '../layout/layout-tree-helpers';
 import { performLayoutMove, type LayoutMoveTarget } from '../layout/layout-tree-move-engine';
 import {
   attachLayoutTreeMonitor,
@@ -243,8 +258,8 @@ export class LayoutTab extends LitElement {
   @state() private _globalExternalCardCount = 0;
 
   // New state properties for presets, favorites, and export/import
-  @state() private _activeModuleSelectorTab: 'modules' | 'cards' | 'presets' | 'smart' | 'favorites' =
-    'modules';
+  @state() private _activeModuleSelectorTab:
+    'modules' | 'cards' | 'presets' | 'smart' | 'favorites' = 'modules';
   @state() private _showFavoriteDialog = false;
   @state() private _favoriteRowToSave: CardRow | null = null;
   @state() private _showImportDialog = false;
@@ -847,7 +862,6 @@ export class LayoutTab extends LitElement {
 
   // Render breadcrumbs for timeline tree view
   private _renderBreadcrumbs(): TemplateResult {
-
     if (this._breadcrumbPath.length === 0) {
       return html``;
     }
@@ -1094,32 +1108,34 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      @click=${() => {
-                        item.action();
-                        this._openOverflowMenuKey = null;
-                      }}
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        @click=${() => {
+                          item.action();
+                          this._openOverflowMenuKey = null;
+                        }}
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -1193,7 +1209,8 @@ export class LayoutTab extends LitElement {
           parentModuleIndex
         ] as any
       )?.modules?.[childIndex] as any;
-      const canPasteIntoNestedLayout = this._hasModuleClipboard && nestedLayoutModule?.type !== 'tabs';
+      const canPasteIntoNestedLayout =
+        this._hasModuleClipboard && nestedLayoutModule?.type !== 'tabs';
 
       // Nested layout (layout inside another layout)
       menuItems = [
@@ -1367,32 +1384,34 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      @click=${() => {
-                        item.action();
-                        this._openOverflowMenuKey = null;
-                      }}
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        @click=${() => {
+                          item.action();
+                          this._openOverflowMenuKey = null;
+                        }}
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -1495,32 +1514,34 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      @click=${() => {
-                        item.action();
-                        this._openOverflowMenuKey = null;
-                      }}
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        @click=${() => {
+                          item.action();
+                          this._openOverflowMenuKey = null;
+                        }}
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -1631,32 +1652,34 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      @click=${() => {
-                        item.action();
-                        this._openOverflowMenuKey = null;
-                      }}
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        @click=${() => {
+                          item.action();
+                          this._openOverflowMenuKey = null;
+                        }}
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -1713,36 +1736,38 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      ?disabled=${item.disabled}
-                      @click=${() => {
-                        if (!item.disabled) {
-                          item.action();
-                          this._openOverflowMenuKey = null;
-                        }
-                      }}
-                      style="${item.disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        ?disabled=${item.disabled}
+                        @click=${() => {
+                          if (!item.disabled) {
+                            item.action();
+                            this._openOverflowMenuKey = null;
+                          }
+                        }}
+                        style="${item.disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -1815,36 +1840,38 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      ?disabled=${item.disabled}
-                      @click=${() => {
-                        if (!item.disabled) {
-                          item.action();
-                          this._openOverflowMenuKey = null;
-                        }
-                      }}
-                      style="${item.disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        ?disabled=${item.disabled}
+                        @click=${() => {
+                          if (!item.disabled) {
+                            item.action();
+                            this._openOverflowMenuKey = null;
+                          }
+                        }}
+                        style="${item.disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -2149,32 +2176,34 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      @click=${() => {
-                        item.action();
-                        this._openOverflowMenuKey = null;
-                      }}
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        @click=${() => {
+                          item.action();
+                          this._openOverflowMenuKey = null;
+                        }}
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -2191,18 +2220,18 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-row ${isLastRow ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''} ${this._dropTarget?.type === 'row' &&
-        this._dropTarget?.rowIndex === rowIndex &&
-        this._dropTarget?.insertEdge === 'inside'
-          ? 'drop-target'
-          : ''}"
+        class="tree-node tree-row ${isLastRow ? 'last-node' : ''} ${
+          isCollapsed ? 'collapsed' : ''
+        } ${
+          this._dropTarget?.type === 'row' &&
+          this._dropTarget?.rowIndex === rowIndex &&
+          this._dropTarget?.insertEdge === 'inside'
+            ? 'drop-target'
+            : ''
+        }"
         data-drop-type="row"
         data-row-index="${rowIndex}"
-        ${isPragmaticTreeDndEnabled()
-          ? treeDndNode(rowTreeNodeData(rowIndex))
-          : nothing}
+        ${isPragmaticTreeDndEnabled() ? treeDndNode(rowTreeNodeData(rowIndex)) : nothing}
         ?draggable=${!isPragmaticTreeDndEnabled()}
         @dragstart=${(e: DragEvent) => {
           if (isPragmaticTreeDndEnabled()) return;
@@ -2306,7 +2335,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children ${this.isFullScreen ? 'columns-horizontal' : ''}">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleRowCollapsed(rowIndex, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -2317,12 +2349,14 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${(row as any).columns_template
-                  ? html`
-                      <div
-                        style="
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    (row as any).columns_template
+                      ? html`
+                          <div
+                            style="
                         display: flex;
                         align-items: center;
                         gap: 6px;
@@ -2334,54 +2368,62 @@ export class LayoutTab extends LitElement {
                         font-size: 12px;
                         color: var(--primary-color);
                       "
-                      >
-                        <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 16px;"></ha-icon>
-                        <span
-                          ><strong>Dynamic Columns</strong> — managed via
-                          <code>columns_template</code>. Edit in YAML mode.</span
-                        >
-                      </div>
-                    `
-                  : row.columns && row.columns.length > 0
-                    ? repeat(row.columns, treeItemKey, (column, columnIndex) =>
-                        this._renderTreeColumn(column, rowIndex, columnIndex, row.columns!.length)
-                      )
-                    : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._addColumn(rowIndex);
-                    }}
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_column', lang, 'Add Column')}</span>
-                  </button>
-                  <button
-                    class="tree-paste-column-btn ${this._canPasteColumn()
-                      ? 'active'
-                      : ''}"
-                    ?disabled=${!this._canPasteColumn()}
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      if (
+                          >
+                            <ha-icon
+                              icon="mdi:code-braces"
+                              style="--mdc-icon-size: 16px;"
+                            ></ha-icon>
+                            <span
+                              ><strong>Dynamic Columns</strong> — managed via
+                              <code>columns_template</code>. Edit in YAML mode.</span
+                            >
+                          </div>
+                        `
+                      : row.columns && row.columns.length > 0
+                        ? repeat(row.columns, treeItemKey, (column, columnIndex) =>
+                            this._renderTreeColumn(
+                              column,
+                              rowIndex,
+                              columnIndex,
+                              row.columns!.length
+                            )
+                          )
+                        : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._addColumn(rowIndex);
+                      }}
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_column', lang, 'Add Column')}</span>
+                    </button>
+                    <button
+                      class="tree-paste-column-btn ${this._canPasteColumn() ? 'active' : ''}"
+                      ?disabled=${!this._canPasteColumn()}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        if (this._canPasteColumn()) {
+                          this._hasColumnClipboard = true;
+                          this._pasteColumn(rowIndex);
+                        }
+                      }}
+                      title="${
                         this._canPasteColumn()
-                      ) {
-                        this._hasColumnClipboard = true;
-                        this._pasteColumn(rowIndex);
-                      }
-                    }}
-                    title="${this._canPasteColumn()
-                      ? localize('editor.layout.paste_column', lang, 'Paste Column')
-                      : localize('editor.layout.copy_column_first', lang, 'Copy a column first')}"
-                  >
-                    <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
-                    <span>${localize('editor.layout.paste_column', lang, 'Paste Column')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+                          ? localize('editor.layout.paste_column', lang, 'Paste Column')
+                          : localize('editor.layout.copy_column_first', lang, 'Copy a column first')
+                      }"
+                    >
+                      <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                      <span>${localize('editor.layout.paste_column', lang, 'Paste Column')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -2401,14 +2443,16 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-column ${isLastColumn ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''} ${this._dropTarget?.type === 'column' &&
-        this._dropTarget?.rowIndex === rowIndex &&
-        this._dropTarget?.columnIndex === columnIndex &&
-        this._dropTarget?.insertEdge === 'inside'
-          ? 'drop-target'
-          : ''}"
+        class="tree-node tree-column ${isLastColumn ? 'last-node' : ''} ${
+          isCollapsed ? 'collapsed' : ''
+        } ${
+          this._dropTarget?.type === 'column' &&
+          this._dropTarget?.rowIndex === rowIndex &&
+          this._dropTarget?.columnIndex === columnIndex &&
+          this._dropTarget?.insertEdge === 'inside'
+            ? 'drop-target'
+            : ''
+        }"
         data-drop-type="column"
         data-row-index="${rowIndex}"
         data-column-index="${columnIndex}"
@@ -2444,21 +2488,23 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:plus"></ha-icon>
               </button>
-              ${this._hasModuleClipboard
-                ? html`
-                    <button
-                      class="tree-action-btn paste-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._pasteModule(rowIndex, columnIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.paste', lang, 'Paste')}"
-                    >
-                      <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
-                    </button>
-                  `
-                : ''}
+              ${
+                this._hasModuleClipboard
+                  ? html`
+                      <button
+                        class="tree-action-btn paste-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._pasteModule(rowIndex, columnIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.paste', lang, 'Paste')}"
+                      >
+                        <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                      </button>
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -2497,7 +2543,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children tree-column-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleColumnCollapsed(rowIndex, columnIndex, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -2508,12 +2557,14 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${(column as any).modules_template
-                  ? html`
-                      <div
-                        style="
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    (column as any).modules_template
+                      ? html`
+                          <div
+                            style="
                         display: flex;
                         align-items: center;
                         gap: 6px;
@@ -2525,39 +2576,44 @@ export class LayoutTab extends LitElement {
                         font-size: 12px;
                         color: var(--primary-color);
                       "
-                      >
-                        <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 16px;"></ha-icon>
-                        <span
-                          ><strong>Dynamic Modules</strong> — managed via
-                          <code>modules_template</code>. Edit in YAML mode.</span
-                        >
-                      </div>
-                    `
-                  : column.modules && column.modules.length > 0
-                    ? repeat(column.modules, treeItemKey, (module, moduleIndex) =>
-                        this._renderTreeModule(
-                          module,
-                          rowIndex,
-                          columnIndex,
-                          moduleIndex,
-                          column.modules!.length
-                        )
-                      )
-                    : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._openModuleSelector(rowIndex, columnIndex);
-                    }}
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+                          >
+                            <ha-icon
+                              icon="mdi:code-braces"
+                              style="--mdc-icon-size: 16px;"
+                            ></ha-icon>
+                            <span
+                              ><strong>Dynamic Modules</strong> — managed via
+                              <code>modules_template</code>. Edit in YAML mode.</span
+                            >
+                          </div>
+                        `
+                      : column.modules && column.modules.length > 0
+                        ? repeat(column.modules, treeItemKey, (module, moduleIndex) =>
+                            this._renderTreeModule(
+                              module,
+                              rowIndex,
+                              columnIndex,
+                              moduleIndex,
+                              column.modules!.length
+                            )
+                          )
+                        : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openModuleSelector(rowIndex, columnIndex);
+                      }}
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -2599,15 +2655,17 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-module ${isLastModule ? 'last-node' : ''} ${isPagebreak
-          ? 'tree-pagebreak'
-          : ''} ${this._dropTarget?.type === 'module' &&
-        this._dropTarget?.rowIndex === rowIndex &&
-        this._dropTarget?.columnIndex === columnIndex &&
-        this._dropTarget?.moduleIndex === moduleIndex &&
-        this._dropTarget?.insertEdge === 'inside'
-          ? 'drop-target'
-          : ''}"
+        class="tree-node tree-module ${isLastModule ? 'last-node' : ''} ${
+          isPagebreak ? 'tree-pagebreak' : ''
+        } ${
+          this._dropTarget?.type === 'module' &&
+          this._dropTarget?.rowIndex === rowIndex &&
+          this._dropTarget?.columnIndex === columnIndex &&
+          this._dropTarget?.moduleIndex === moduleIndex &&
+          this._dropTarget?.insertEdge === 'inside'
+            ? 'drop-target'
+            : ''
+        }"
         data-drop-type="module"
         data-row-index="${rowIndex}"
         data-column-index="${columnIndex}"
@@ -2727,9 +2785,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-layout-module ${isTabs ? 'tabs-layout' : ''} ${isLastModule
-          ? 'last-node'
-          : ''} ${isCollapsed ? 'collapsed' : ''}"
+        class="tree-node tree-layout-module ${isTabs ? 'tabs-layout' : ''} ${
+          isLastModule ? 'last-node' : ''
+        } ${isCollapsed ? 'collapsed' : ''}"
         data-drop-type="layout"
         data-row-index="${rowIndex}"
         data-column-index="${columnIndex}"
@@ -2758,36 +2816,44 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              ${!isTabs
-                ? html`
-                    <button
-                      class="tree-action-btn add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                    ${this._hasModuleClipboard
-                      ? html`
-                          <button
-                            class="tree-action-btn paste-btn"
-                            @click=${(e: Event) => {
-                              e.stopPropagation();
-                              this._pasteModuleToLayoutModule(rowIndex, columnIndex, moduleIndex);
-                            }}
-                            @mousedown=${(e: Event) => e.stopPropagation()}
-                            title="${localize('editor.layout.paste', lang, 'Paste')}"
-                          >
-                            <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
-                          </button>
-                        `
-                      : ''}
-                  `
-                : ''}
+              ${
+                !isTabs
+                  ? html`
+                      <button
+                        class="tree-action-btn add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                      ${
+                        this._hasModuleClipboard
+                          ? html`
+                              <button
+                                class="tree-action-btn paste-btn"
+                                @click=${(e: Event) => {
+                                  e.stopPropagation();
+                                  this._pasteModuleToLayoutModule(
+                                    rowIndex,
+                                    columnIndex,
+                                    moduleIndex
+                                  );
+                                }}
+                                @mousedown=${(e: Event) => e.stopPropagation()}
+                                title="${localize('editor.layout.paste', lang, 'Paste')}"
+                              >
+                                <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                              </button>
+                            `
+                          : ''
+                      }
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -2837,7 +2903,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -2848,67 +2917,79 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${isTabs
-                  ? html`
-                      ${hasChildren
-                        ? html`
-                            ${(layoutModule.sections || []).map(
-                              (section: any, sectionIndex: number) =>
-                                this._renderTreeTabsSection(
-                                  section,
-                                  sectionIndex,
-                                  rowIndex,
-                                  columnIndex,
-                                  moduleIndex,
-                                  layoutModule.sections.length
-                                )
-                            )}
-                          `
-                        : html`
-                            <div
-                              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    isTabs
+                      ? html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${(layoutModule.sections || []).map(
+                                    (section: any, sectionIndex: number) =>
+                                      this._renderTreeTabsSection(
+                                        section,
+                                        sectionIndex,
+                                        rowIndex,
+                                        columnIndex,
+                                        moduleIndex,
+                                        layoutModule.sections.length
+                                      )
+                                  )}
+                                `
+                              : html`
+                                  <div
+                                    style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                                  >
+                                    ${localize(
+                                      'editor.layout.tabs_no_sections',
+                                      lang,
+                                      'No sections. Open settings to add sections.'
+                                    )}
+                                  </div>
+                                `
+                          }
+                        `
+                      : html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${repeat(
+                                    layoutModule.modules,
+                                    treeItemKey,
+                                    (childModule: CardModule, childIndex: number) =>
+                                      this._renderTreeLayoutChild(
+                                        childModule,
+                                        rowIndex,
+                                        columnIndex,
+                                        moduleIndex,
+                                        childIndex,
+                                        layoutModule.modules.length
+                                      )
+                                  )}
+                                `
+                              : ''
+                          }
+                          <div class="tree-add-button-container">
+                            <button
+                              class="tree-add-btn"
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
+                              }}
                             >
-                              ${localize(
-                                'editor.layout.tabs_no_sections',
-                                lang,
-                                'No sections. Open settings to add sections.'
-                              )}
-                            </div>
-                          `}
-                    `
-                  : html`
-                      ${hasChildren
-                        ? html`
-                            ${repeat(layoutModule.modules, treeItemKey, 
-                              (childModule: CardModule, childIndex: number) =>
-                                this._renderTreeLayoutChild(
-                                  childModule,
-                                  rowIndex,
-                                  columnIndex,
-                                  moduleIndex,
-                                  childIndex,
-                                  layoutModule.modules.length
-                                )
-                            )}
-                          `
-                        : ''}
-                      <div class="tree-add-button-container">
-                        <button
-                          class="tree-add-btn"
-                          @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
-                          }}
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                          <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                        </button>
-                      </div>
-                    `}
-              `
-            : ''}
+                              <ha-icon icon="mdi:plus"></ha-icon>
+                              <span
+                                >${localize('editor.layout.add_module', lang, 'Add Module')}</span
+                              >
+                            </button>
+                          </div>
+                        `
+                  }
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -2933,9 +3014,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''}"
+        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${
+          isCollapsed ? 'collapsed' : ''
+        }"
         draggable="true"
         @dragstart=${(e: DragEvent) => {
           e.stopPropagation();
@@ -2969,9 +3050,11 @@ export class LayoutTab extends LitElement {
             >
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
-            ${section.icon
-              ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
-              : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`}
+            ${
+              section.icon
+                ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
+                : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`
+            }
             <span class="tree-node-title">${sectionTitle}</span>
             <div class="tree-action-buttons">
               <button
@@ -3042,7 +3125,10 @@ export class LayoutTab extends LitElement {
             this._onTabsSectionContentDrop(e, rowIndex, columnIndex, moduleIndex, sectionIndex);
           }}
         >
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -3053,45 +3139,49 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${hasModules
-                  ? html`
-                      ${sectionModules.map((childModule: any, childIndex: number) =>
-                        this._renderTreeTabsSectionChild(
-                          childModule,
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    hasModules
+                      ? html`
+                          ${sectionModules.map((childModule: any, childIndex: number) =>
+                            this._renderTreeTabsSectionChild(
+                              childModule,
+                              rowIndex,
+                              columnIndex,
+                              moduleIndex,
+                              sectionIndex,
+                              childIndex,
+                              sectionModules.length
+                            )
+                          )}
+                        `
+                      : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openTabsSectionModuleSelector(
                           rowIndex,
                           columnIndex,
                           moduleIndex,
                           sectionIndex,
-                          childIndex,
-                          sectionModules.length
-                        )
-                      )}
-                    `
-                  : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._openTabsSectionModuleSelector(
-                        rowIndex,
-                        columnIndex,
-                        moduleIndex,
-                        sectionIndex,
-                        undefined,
-                        false
-                      );
-                    }}
-                    style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+                          undefined,
+                          false
+                        );
+                      }}
+                      style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -3141,9 +3231,9 @@ export class LayoutTab extends LitElement {
 
       return html`
         <div
-          class="tree-node tree-layout-module ${isLastChild ? 'last-node' : ''} ${isCollapsed
-            ? 'collapsed'
-            : ''}"
+          class="tree-node tree-layout-module ${isLastChild ? 'last-node' : ''} ${
+            isCollapsed ? 'collapsed' : ''
+          }"
           draggable="true"
           @dragstart=${(e: DragEvent) => {
             e.stopPropagation();
@@ -3223,29 +3313,31 @@ export class LayoutTab extends LitElement {
                 <span class="tree-node-subtitle">${moduleInfo}</span>
               </div>
               <div class="tree-action-buttons">
-                ${childModule.type !== 'tabs'
-                  ? html`
-                      <button
-                        class="tree-action-btn add-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._openTabsSectionNestedLayoutModuleSelector(
-                            rowIndex,
-                            columnIndex,
-                            moduleIndex,
-                            sectionIndex,
-                            childIndex,
-                            undefined,
-                            false
-                          );
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                      >
-                        <ha-icon icon="mdi:plus"></ha-icon>
-                      </button>
-                    `
-                  : ''}
+                ${
+                  childModule.type !== 'tabs'
+                    ? html`
+                        <button
+                          class="tree-action-btn add-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._openTabsSectionNestedLayoutModuleSelector(
+                              rowIndex,
+                              columnIndex,
+                              moduleIndex,
+                              sectionIndex,
+                              childIndex,
+                              undefined,
+                              false
+                            );
+                          }}
+                          @mousedown=${(e: Event) => e.stopPropagation()}
+                          title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                        >
+                          <ha-icon icon="mdi:plus"></ha-icon>
+                        </button>
+                      `
+                    : ''
+                }
                 <button
                   class="tree-action-btn edit-btn"
                   @click=${(e: Event) => {
@@ -3315,61 +3407,68 @@ export class LayoutTab extends LitElement {
               )}
             </div>
           </div>
-          ${childModule.type !== 'tabs'
-            ? html`
-                <div class="tree-node-children">
-                  <div role="button" tabindex="0" data-uc-activate
-                    class="tree-track-collapse"
-                    @click=${(e: Event) => this._toggleLayoutModuleCollapsed(layoutKey, e)}
-                    title="${isCollapsed ? 'Expand' : 'Collapse'}"
-                  >
-                    <ha-icon
-                      icon="mdi:chevron-down"
-                      class="track-chevron"
-                      style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
-                    ></ha-icon>
-                  </div>
-                  ${!isCollapsed
-                    ? html`
-                        ${nestedModules.map((nestedChild: any, nestedChildIndex: number) =>
-                          this._renderTreeTabsSectionNestedChild(
-                            nestedChild,
-                            rowIndex,
-                            columnIndex,
-                            moduleIndex,
-                            sectionIndex,
-                            childIndex,
-                            nestedChildIndex,
-                            nestedModules.length
-                          )
-                        )}
-                        <div class="tree-add-button-container">
-                          <button
-                            class="tree-add-btn"
-                            @click=${(e: Event) => {
-                              e.stopPropagation();
-                              this._openTabsSectionNestedLayoutModuleSelector(
+          ${
+            childModule.type !== 'tabs'
+              ? html`
+                  <div class="tree-node-children">
+                    <div
+                      role="button"
+                      tabindex="0"
+                      data-uc-activate
+                      class="tree-track-collapse"
+                      @click=${(e: Event) => this._toggleLayoutModuleCollapsed(layoutKey, e)}
+                      title="${isCollapsed ? 'Expand' : 'Collapse'}"
+                    >
+                      <ha-icon
+                        icon="mdi:chevron-down"
+                        class="track-chevron"
+                        style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
+                      ></ha-icon>
+                    </div>
+                    ${
+                      !isCollapsed
+                        ? html`
+                            ${nestedModules.map((nestedChild: any, nestedChildIndex: number) =>
+                              this._renderTreeTabsSectionNestedChild(
+                                nestedChild,
                                 rowIndex,
                                 columnIndex,
                                 moduleIndex,
                                 sectionIndex,
                                 childIndex,
-                                undefined,
-                                false
-                              );
-                            }}
-                          >
-                            <ha-icon icon="mdi:plus"></ha-icon>
-                            <span
-                              >${localize('editor.layout.add_module', lang, 'Add Module')}</span
-                            >
-                          </button>
-                        </div>
-                      `
-                    : ''}
-                </div>
-              `
-            : ''}
+                                nestedChildIndex,
+                                nestedModules.length
+                              )
+                            )}
+                            <div class="tree-add-button-container">
+                              <button
+                                class="tree-add-btn"
+                                @click=${(e: Event) => {
+                                  e.stopPropagation();
+                                  this._openTabsSectionNestedLayoutModuleSelector(
+                                    rowIndex,
+                                    columnIndex,
+                                    moduleIndex,
+                                    sectionIndex,
+                                    childIndex,
+                                    undefined,
+                                    false
+                                  );
+                                }}
+                              >
+                                <ha-icon icon="mdi:plus"></ha-icon>
+                                <span
+                                  >${localize('editor.layout.add_module', lang, 'Add Module')}</span
+                                >
+                              </button>
+                            </div>
+                          `
+                        : ''
+                    }
+                  </div>
+                `
+              : ''
+          }
         </div>
       `;
     }
@@ -3538,9 +3637,9 @@ export class LayoutTab extends LitElement {
 
       return html`
         <div
-          class="tree-node tree-layout-module ${isLastChild ? 'last-node' : ''} ${isCollapsed
-            ? 'collapsed'
-            : ''}"
+          class="tree-node tree-layout-module ${isLastChild ? 'last-node' : ''} ${
+            isCollapsed ? 'collapsed' : ''
+          }"
         >
           <div class="tree-node-content">
             <div class="tree-node-header layout-header">
@@ -3634,7 +3733,10 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
           <div class="tree-node-children">
-            <div role="button" tabindex="0" data-uc-activate
+            <div
+              role="button"
+              tabindex="0"
+              data-uc-activate
               class="tree-track-collapse"
               @click=${(e: Event) => this._toggleLayoutModuleCollapsed(layoutKey, e)}
               title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -3645,44 +3747,46 @@ export class LayoutTab extends LitElement {
                 style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
               ></ha-icon>
             </div>
-            ${!isCollapsed
-              ? html`
-                  ${deepModules.map((deepChild: any, deepNestedChildIndex: number) =>
-                    this._renderTreeTabsSectionDeepNestedChild(
-                      deepChild,
-                      rowIndex,
-                      columnIndex,
-                      moduleIndex,
-                      sectionIndex,
-                      layoutChildIndex,
-                      nestedChildIndex,
-                      deepNestedChildIndex,
-                      deepModules.length
-                    )
-                  )}
-                  <div class="tree-add-button-container">
-                    <button
-                      class="tree-add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openTabsSectionDeeplyNestedLayoutModuleSelector(
-                          rowIndex,
-                          columnIndex,
-                          moduleIndex,
-                          sectionIndex,
-                          layoutChildIndex,
-                          nestedChildIndex,
-                          undefined,
-                          false
-                        );
-                      }}
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                    </button>
-                  </div>
-                `
-              : ''}
+            ${
+              !isCollapsed
+                ? html`
+                    ${deepModules.map((deepChild: any, deepNestedChildIndex: number) =>
+                      this._renderTreeTabsSectionDeepNestedChild(
+                        deepChild,
+                        rowIndex,
+                        columnIndex,
+                        moduleIndex,
+                        sectionIndex,
+                        layoutChildIndex,
+                        nestedChildIndex,
+                        deepNestedChildIndex,
+                        deepModules.length
+                      )
+                    )}
+                    <div class="tree-add-button-container">
+                      <button
+                        class="tree-add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openTabsSectionDeeplyNestedLayoutModuleSelector(
+                            rowIndex,
+                            columnIndex,
+                            moduleIndex,
+                            sectionIndex,
+                            layoutChildIndex,
+                            nestedChildIndex,
+                            undefined,
+                            false
+                          );
+                        }}
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                        <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                      </button>
+                    </div>
+                  `
+                : ''
+            }
           </div>
         </div>
       `;
@@ -3904,9 +4008,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-layout-child ${isLastChild ? 'last-node' : ''} ${isPagebreak
-          ? 'tree-pagebreak'
-          : ''}"
+        class="tree-node tree-layout-child ${isLastChild ? 'last-node' : ''} ${
+          isPagebreak ? 'tree-pagebreak' : ''
+        }"
         data-drop-type="layout-child"
         data-row-index="${rowIndex}"
         data-column-index="${columnIndex}"
@@ -4057,9 +4161,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
-          ? 'last-node'
-          : ''} ${isCollapsed ? 'collapsed' : ''}"
+        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${
+          isLastChild ? 'last-node' : ''
+        } ${isCollapsed ? 'collapsed' : ''}"
         data-drop-type="nested-layout"
         data-row-index="${rowIndex}"
         data-column-index="${columnIndex}"
@@ -4097,46 +4201,50 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              ${!isTabs
-                ? html`
-                    <button
-                      class="tree-action-btn add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openNestedLayoutModuleSelector(
-                          rowIndex,
-                          columnIndex,
-                          parentModuleIndex,
-                          childIndex
-                        );
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                    ${this._hasModuleClipboard
-                      ? html`
-                          <button
-                            class="tree-action-btn paste-btn"
-                            @click=${(e: Event) => {
-                              e.stopPropagation();
-                              this._pasteModuleToNestedLayoutModule(
-                                rowIndex,
-                                columnIndex,
-                                parentModuleIndex,
-                                childIndex
-                              );
-                            }}
-                            @mousedown=${(e: Event) => e.stopPropagation()}
-                            title="${localize('editor.layout.paste', lang, 'Paste')}"
-                          >
-                            <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
-                          </button>
-                        `
-                      : ''}
-                  `
-                : ''}
+              ${
+                !isTabs
+                  ? html`
+                      <button
+                        class="tree-action-btn add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openNestedLayoutModuleSelector(
+                            rowIndex,
+                            columnIndex,
+                            parentModuleIndex,
+                            childIndex
+                          );
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                      ${
+                        this._hasModuleClipboard
+                          ? html`
+                              <button
+                                class="tree-action-btn paste-btn"
+                                @click=${(e: Event) => {
+                                  e.stopPropagation();
+                                  this._pasteModuleToNestedLayoutModule(
+                                    rowIndex,
+                                    columnIndex,
+                                    parentModuleIndex,
+                                    childIndex
+                                  );
+                                }}
+                                @mousedown=${(e: Event) => e.stopPropagation()}
+                                title="${localize('editor.layout.paste', lang, 'Paste')}"
+                              >
+                                <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                              </button>
+                            `
+                          : ''
+                      }
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -4207,7 +4315,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -4218,74 +4329,86 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${isTabs
-                  ? html`
-                      ${hasChildren
-                        ? html`
-                            ${(layoutModule.sections || []).map(
-                              (section: any, sectionIndex: number) =>
-                                this._renderTreeNestedTabsSection(
-                                  section,
-                                  sectionIndex,
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    isTabs
+                      ? html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${(layoutModule.sections || []).map(
+                                    (section: any, sectionIndex: number) =>
+                                      this._renderTreeNestedTabsSection(
+                                        section,
+                                        sectionIndex,
+                                        rowIndex,
+                                        columnIndex,
+                                        parentModuleIndex,
+                                        childIndex,
+                                        layoutModule.sections.length
+                                      )
+                                  )}
+                                `
+                              : html`
+                                  <div
+                                    style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                                  >
+                                    ${localize(
+                                      'editor.layout.tabs_no_sections',
+                                      lang,
+                                      'No sections. Open settings to add sections.'
+                                    )}
+                                  </div>
+                                `
+                          }
+                        `
+                      : html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${repeat(
+                                    layoutModule.modules,
+                                    treeItemKey,
+                                    (nestedChild: CardModule, nestedIndex: number) =>
+                                      this._renderTreeDeepNestedChild(
+                                        nestedChild,
+                                        rowIndex,
+                                        columnIndex,
+                                        parentModuleIndex,
+                                        childIndex,
+                                        nestedIndex,
+                                        layoutModule.modules.length
+                                      )
+                                  )}
+                                `
+                              : ''
+                          }
+                          <div class="tree-add-button-container">
+                            <button
+                              class="tree-add-btn"
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                this._openNestedLayoutModuleSelector(
                                   rowIndex,
                                   columnIndex,
                                   parentModuleIndex,
-                                  childIndex,
-                                  layoutModule.sections.length
-                                )
-                            )}
-                          `
-                        : html`
-                            <div
-                              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                                  childIndex
+                                );
+                              }}
                             >
-                              ${localize(
-                                'editor.layout.tabs_no_sections',
-                                lang,
-                                'No sections. Open settings to add sections.'
-                              )}
-                            </div>
-                          `}
-                    `
-                  : html`
-                      ${hasChildren
-                        ? html`
-                            ${repeat(layoutModule.modules, treeItemKey, 
-                              (nestedChild: CardModule, nestedIndex: number) =>
-                                this._renderTreeDeepNestedChild(
-                                  nestedChild,
-                                  rowIndex,
-                                  columnIndex,
-                                  parentModuleIndex,
-                                  childIndex,
-                                  nestedIndex,
-                                  layoutModule.modules.length
-                                )
-                            )}
-                          `
-                        : ''}
-                      <div class="tree-add-button-container">
-                        <button
-                          class="tree-add-btn"
-                          @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._openNestedLayoutModuleSelector(
-                              rowIndex,
-                              columnIndex,
-                              parentModuleIndex,
-                              childIndex
-                            );
-                          }}
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                          <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                        </button>
-                      </div>
-                    `}
-              `
-            : ''}
+                              <ha-icon icon="mdi:plus"></ha-icon>
+                              <span
+                                >${localize('editor.layout.add_module', lang, 'Add Module')}</span
+                              >
+                            </button>
+                          </div>
+                        `
+                  }
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -4311,9 +4434,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''}"
+        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${
+          isCollapsed ? 'collapsed' : ''
+        }"
         draggable="true"
         @dragstart=${(e: DragEvent) => {
           e.stopPropagation();
@@ -4360,9 +4483,11 @@ export class LayoutTab extends LitElement {
             >
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
-            ${section.icon
-              ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
-              : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`}
+            ${
+              section.icon
+                ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
+                : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`
+            }
             <span class="tree-node-title">${sectionTitle}</span>
             <div class="tree-action-buttons">
               <button
@@ -4441,7 +4566,10 @@ export class LayoutTab extends LitElement {
             );
           }}
         >
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -4452,45 +4580,49 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${hasModules
-                  ? html`
-                      ${sectionModules.map((childModule: any, childIndex: number) =>
-                        this._renderTreeNestedTabsSectionChild(
-                          childModule,
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    hasModules
+                      ? html`
+                          ${sectionModules.map((childModule: any, childIndex: number) =>
+                            this._renderTreeNestedTabsSectionChild(
+                              childModule,
+                              rowIndex,
+                              columnIndex,
+                              parentModuleIndex,
+                              nestedTabsIndex,
+                              sectionIndex,
+                              childIndex,
+                              sectionModules.length
+                            )
+                          )}
+                        `
+                      : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openNestedTabsSectionModuleSelector(
                           rowIndex,
                           columnIndex,
                           parentModuleIndex,
                           nestedTabsIndex,
-                          sectionIndex,
-                          childIndex,
-                          sectionModules.length
-                        )
-                      )}
-                    `
-                  : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._openNestedTabsSectionModuleSelector(
-                        rowIndex,
-                        columnIndex,
-                        parentModuleIndex,
-                        nestedTabsIndex,
-                        sectionIndex
-                      );
-                    }}
-                    style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+                          sectionIndex
+                        );
+                      }}
+                      style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -4704,9 +4836,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
-          ? 'last-node'
-          : ''} ${isCollapsed ? 'collapsed' : ''}"
+        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${
+          isLastChild ? 'last-node' : ''
+        } ${isCollapsed ? 'collapsed' : ''}"
         draggable="true"
         @dragstart=${(e: DragEvent) => {
           e.stopPropagation();
@@ -4761,28 +4893,30 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              ${!isTabs
-                ? html`
-                    <button
-                      class="tree-action-btn add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openNestedTabsSectionLayoutChildModuleSelector(
-                          rowIndex,
-                          columnIndex,
-                          parentModuleIndex,
-                          nestedTabsIndex,
-                          sectionIndex,
-                          childIndex
-                        );
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                  `
-                : ''}
+              ${
+                !isTabs
+                  ? html`
+                      <button
+                        class="tree-action-btn add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openNestedTabsSectionLayoutChildModuleSelector(
+                            rowIndex,
+                            columnIndex,
+                            parentModuleIndex,
+                            nestedTabsIndex,
+                            sectionIndex,
+                            childIndex
+                          );
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -4849,7 +4983,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -4860,80 +4997,92 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${isTabs
-                  ? html`
-                      ${hasChildren
-                        ? html`
-                            ${(layoutModule.sections || []).map(
-                              (section: any, nestedSectionIndex: number) =>
-                                this._renderTreeDeeplyNestedTabsSection(
-                                  section,
-                                  nestedSectionIndex,
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    isTabs
+                      ? html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${(layoutModule.sections || []).map(
+                                    (section: any, nestedSectionIndex: number) =>
+                                      this._renderTreeDeeplyNestedTabsSection(
+                                        section,
+                                        nestedSectionIndex,
+                                        rowIndex,
+                                        columnIndex,
+                                        parentModuleIndex,
+                                        nestedTabsIndex,
+                                        sectionIndex,
+                                        childIndex,
+                                        layoutModule.sections.length
+                                      )
+                                  )}
+                                `
+                              : html`
+                                  <div
+                                    style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                                  >
+                                    ${localize(
+                                      'editor.layout.tabs_no_sections',
+                                      lang,
+                                      'No sections. Open settings to add sections.'
+                                    )}
+                                  </div>
+                                `
+                          }
+                        `
+                      : html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${repeat(
+                                    layoutModule.modules,
+                                    treeItemKey,
+                                    (nestedChild: CardModule, nestedIndex: number) =>
+                                      this._renderTreeNestedTabsSectionLayoutChildChild(
+                                        nestedChild,
+                                        rowIndex,
+                                        columnIndex,
+                                        parentModuleIndex,
+                                        nestedTabsIndex,
+                                        sectionIndex,
+                                        childIndex,
+                                        nestedIndex,
+                                        layoutModule.modules.length
+                                      )
+                                  )}
+                                `
+                              : ''
+                          }
+                          <div class="tree-add-button-container">
+                            <button
+                              class="tree-add-btn"
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                this._openNestedTabsSectionLayoutChildModuleSelector(
                                   rowIndex,
                                   columnIndex,
                                   parentModuleIndex,
                                   nestedTabsIndex,
                                   sectionIndex,
-                                  childIndex,
-                                  layoutModule.sections.length
-                                )
-                            )}
-                          `
-                        : html`
-                            <div
-                              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                                  childIndex
+                                );
+                              }}
                             >
-                              ${localize(
-                                'editor.layout.tabs_no_sections',
-                                lang,
-                                'No sections. Open settings to add sections.'
-                              )}
-                            </div>
-                          `}
-                    `
-                  : html`
-                      ${hasChildren
-                        ? html`
-                            ${repeat(layoutModule.modules, treeItemKey, 
-                              (nestedChild: CardModule, nestedIndex: number) =>
-                                this._renderTreeNestedTabsSectionLayoutChildChild(
-                                  nestedChild,
-                                  rowIndex,
-                                  columnIndex,
-                                  parentModuleIndex,
-                                  nestedTabsIndex,
-                                  sectionIndex,
-                                  childIndex,
-                                  nestedIndex,
-                                  layoutModule.modules.length
-                                )
-                            )}
-                          `
-                        : ''}
-                      <div class="tree-add-button-container">
-                        <button
-                          class="tree-add-btn"
-                          @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._openNestedTabsSectionLayoutChildModuleSelector(
-                              rowIndex,
-                              columnIndex,
-                              parentModuleIndex,
-                              nestedTabsIndex,
-                              sectionIndex,
-                              childIndex
-                            );
-                          }}
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                          <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                        </button>
-                      </div>
-                    `}
-              `
-            : ''}
+                              <ha-icon icon="mdi:plus"></ha-icon>
+                              <span
+                                >${localize('editor.layout.add_module', lang, 'Add Module')}</span
+                              >
+                            </button>
+                          </div>
+                        `
+                  }
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -5107,9 +5256,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
-          ? 'last-node'
-          : ''} ${isCollapsed ? 'collapsed' : ''}"
+        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${
+          isLastChild ? 'last-node' : ''
+        } ${isCollapsed ? 'collapsed' : ''}"
         @dragover=${this._onDragOver}
         @dragleave=${this._onDragLeave}
       >
@@ -5121,30 +5270,32 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              ${!isTabs
-                ? html`
-                    <button
-                      class="tree-action-btn add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openTabsSectionDeeplyNestedLayoutModuleSelector(
-                          rowIndex,
-                          columnIndex,
-                          parentModuleIndex,
-                          sectionIndex,
-                          layoutChildIndex,
-                          childIndex,
-                          nestedTabsIndex,
-                          true
-                        );
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                  `
-                : ''}
+              ${
+                !isTabs
+                  ? html`
+                      <button
+                        class="tree-action-btn add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openTabsSectionDeeplyNestedLayoutModuleSelector(
+                            rowIndex,
+                            columnIndex,
+                            parentModuleIndex,
+                            sectionIndex,
+                            layoutChildIndex,
+                            childIndex,
+                            nestedTabsIndex,
+                            true
+                          );
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -5209,7 +5360,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -5220,88 +5374,93 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${hasChildren
-                  ? html`
-                      ${repeat(layoutModule.modules, treeItemKey, 
-                        (deepChild: CardModule, deepIndex: number) => html`
-                          <div
-                            class="tree-node tree-deep-child ${deepIndex ===
-                            layoutModule.modules.length - 1
-                              ? 'last-node'
-                              : ''}"
-                          >
-                            <div class="tree-node-line"></div>
-                            <div class="tree-node-dot child-dot"></div>
-                            <div class="tree-node-content">
-                              <div class="tree-node-header child-header">
-                                <ha-icon
-                                  icon="${getModuleRegistry().getModuleMetadata(deepChild.type)?.icon || 'mdi:help-circle'}"
-                                  class="tree-node-icon"
-                                ></ha-icon>
-                                <div class="tree-node-info">
-                                  <span class="tree-node-title"
-                                    >${this._getModuleDisplayName(deepChild)}</span
-                                  >
-                                  <span class="tree-node-subtitle"
-                                    >${this._generateModuleInfo(deepChild)}</span
-                                  >
-                                </div>
-                                <div class="tree-action-buttons">
-                                  <button
-                                    class="tree-action-btn edit-btn"
-                                    @click=${(e: Event) => {
-                                      e.stopPropagation();
-                                      // Open settings for this deeply nested child
-                                    }}
-                                    @mousedown=${(e: Event) => e.stopPropagation()}
-                                    title="${localize('editor.layout.edit', lang, 'Edit')}"
-                                  >
-                                    <ha-icon icon="mdi:pencil"></ha-icon>
-                                  </button>
-                                  <button
-                                    class="tree-action-btn delete-btn"
-                                    @click=${(e: Event) => {
-                                      e.stopPropagation();
-                                      // Delete this deeply nested child
-                                    }}
-                                    @mousedown=${(e: Event) => e.stopPropagation()}
-                                    title="${localize('editor.layout.delete', lang, 'Delete')}"
-                                  >
-                                    <ha-icon icon="mdi:delete"></ha-icon>
-                                  </button>
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    hasChildren
+                      ? html`
+                          ${repeat(
+                            layoutModule.modules,
+                            treeItemKey,
+                            (deepChild: CardModule, deepIndex: number) => html`
+                              <div
+                                class="tree-node tree-deep-child ${
+                                  deepIndex === layoutModule.modules.length - 1 ? 'last-node' : ''
+                                }"
+                              >
+                                <div class="tree-node-line"></div>
+                                <div class="tree-node-dot child-dot"></div>
+                                <div class="tree-node-content">
+                                  <div class="tree-node-header child-header">
+                                    <ha-icon
+                                      icon="${getModuleRegistry().getModuleMetadata(deepChild.type)?.icon || 'mdi:help-circle'}"
+                                      class="tree-node-icon"
+                                    ></ha-icon>
+                                    <div class="tree-node-info">
+                                      <span class="tree-node-title"
+                                        >${this._getModuleDisplayName(deepChild)}</span
+                                      >
+                                      <span class="tree-node-subtitle"
+                                        >${this._generateModuleInfo(deepChild)}</span
+                                      >
+                                    </div>
+                                    <div class="tree-action-buttons">
+                                      <button
+                                        class="tree-action-btn edit-btn"
+                                        @click=${(e: Event) => {
+                                          e.stopPropagation();
+                                          // Open settings for this deeply nested child
+                                        }}
+                                        @mousedown=${(e: Event) => e.stopPropagation()}
+                                        title="${localize('editor.layout.edit', lang, 'Edit')}"
+                                      >
+                                        <ha-icon icon="mdi:pencil"></ha-icon>
+                                      </button>
+                                      <button
+                                        class="tree-action-btn delete-btn"
+                                        @click=${(e: Event) => {
+                                          e.stopPropagation();
+                                          // Delete this deeply nested child
+                                        }}
+                                        @mousedown=${(e: Event) => e.stopPropagation()}
+                                        title="${localize('editor.layout.delete', lang, 'Delete')}"
+                                      >
+                                        <ha-icon icon="mdi:delete"></ha-icon>
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
+                            `
+                          )}
                         `
-                      )}
-                    `
-                  : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._openTabsSectionDeeplyNestedLayoutModuleSelector(
-                        rowIndex,
-                        columnIndex,
-                        parentModuleIndex,
-                        sectionIndex,
-                        layoutChildIndex,
-                        childIndex,
-                        nestedTabsIndex,
-                        true
-                      );
-                    }}
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+                      : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openTabsSectionDeeplyNestedLayoutModuleSelector(
+                          rowIndex,
+                          columnIndex,
+                          parentModuleIndex,
+                          sectionIndex,
+                          layoutChildIndex,
+                          childIndex,
+                          nestedTabsIndex,
+                          true
+                        );
+                      }}
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -5329,18 +5488,20 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''}"
+        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${
+          isCollapsed ? 'collapsed' : ''
+        }"
       >
         <div class="tree-node-content">
           <div
             class="tree-node-header section-header"
             style="background: rgba(var(--rgb-primary-color), 0.15); border-left: 3px solid var(--primary-color);"
           >
-            ${section.icon
-              ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
-              : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`}
+            ${
+              section.icon
+                ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
+                : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`
+            }
             <span class="tree-node-title">${sectionTitle}</span>
             <div class="tree-action-buttons">
               <button
@@ -5362,7 +5523,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children tree-tabs-section-children" style="margin-left: 16px;">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -5373,44 +5537,48 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${hasModules
-                  ? html`
-                      ${sectionModules.map(
-                        (childModule: any, childIdx: number) => html`
-                          <div
-                            class="tree-node tree-module ${childIdx === sectionModules.length - 1
-                              ? 'last-node'
-                              : ''}"
-                          >
-                            <div class="tree-node-content">
-                              <div class="tree-node-header module-header">
-                                <ha-icon
-                                  icon="${getModuleRegistry().getModuleMetadata(childModule.type)?.icon || 'mdi:help-circle'}"
-                                  class="tree-node-icon"
-                                ></ha-icon>
-                                <span class="tree-node-title"
-                                  >${this._getModuleDisplayName(childModule)}</span
-                                >
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    hasModules
+                      ? html`
+                          ${sectionModules.map(
+                            (childModule: any, childIdx: number) => html`
+                              <div
+                                class="tree-node tree-module ${
+                                  childIdx === sectionModules.length - 1 ? 'last-node' : ''
+                                }"
+                              >
+                                <div class="tree-node-content">
+                                  <div class="tree-node-header module-header">
+                                    <ha-icon
+                                      icon="${getModuleRegistry().getModuleMetadata(childModule.type)?.icon || 'mdi:help-circle'}"
+                                      class="tree-node-icon"
+                                    ></ha-icon>
+                                    <span class="tree-node-title"
+                                      >${this._getModuleDisplayName(childModule)}</span
+                                    >
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
+                            `
+                          )}
                         `
-                      )}
-                    `
-                  : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+                      : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -5473,7 +5641,14 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onDragEnter(
+            e,
+            'layout-child',
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            childIndex
+          )}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
           this._onTreeDeepNestedChildDrop(
@@ -5610,9 +5785,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
-          ? 'last-node'
-          : ''} ${isCollapsed ? 'collapsed' : ''}"
+        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${
+          isLastChild ? 'last-node' : ''
+        } ${isCollapsed ? 'collapsed' : ''}"
         data-drop-type="layout-child"
         data-row-index="${rowIndex}"
         data-column-index="${columnIndex}"
@@ -5631,7 +5806,14 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onDragEnter(
+            e,
+            'layout-child',
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            childIndex
+          )}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
           this._onTreeDeepNestedChildDrop(
@@ -5657,27 +5839,29 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              ${!isTabs
-                ? html`
-                    <button
-                      class="tree-action-btn add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openDeeplyNestedLayoutModuleSelector(
-                          rowIndex,
-                          columnIndex,
-                          parentModuleIndex,
-                          nestedLayoutIndex,
-                          childIndex
-                        );
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                  `
-                : ''}
+              ${
+                !isTabs
+                  ? html`
+                      <button
+                        class="tree-action-btn add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openDeeplyNestedLayoutModuleSelector(
+                            rowIndex,
+                            columnIndex,
+                            parentModuleIndex,
+                            nestedLayoutIndex,
+                            childIndex
+                          );
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -5741,7 +5925,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -5752,76 +5939,89 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${isTabs
-                  ? html`
-                      ${hasChildren
-                        ? html`
-                            ${(layoutModule.sections || []).map(
-                              (section: any, sectionIndex: number) =>
-                                this._renderTreeLevel4TabsSection(
-                                  section,
-                                  sectionIndex,
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    isTabs
+                      ? html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${(layoutModule.sections || []).map(
+                                    (section: any, sectionIndex: number) =>
+                                      this._renderTreeLevel4TabsSection(
+                                        section,
+                                        sectionIndex,
+                                        rowIndex,
+                                        columnIndex,
+                                        parentModuleIndex,
+                                        nestedLayoutIndex,
+                                        childIndex,
+                                        layoutModule.sections.length
+                                      )
+                                  )}
+                                `
+                              : html`
+                                  <div
+                                    style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                                  >
+                                    ${localize(
+                                      'editor.layout.tabs_no_sections',
+                                      lang,
+                                      'No sections. Open settings to add sections.'
+                                    )}
+                                  </div>
+                                `
+                          }
+                        `
+                      : html`
+                          ${
+                            hasChildren
+                              ? html`
+                                  ${repeat(
+                                    layoutModule.modules,
+                                    treeItemKey,
+                                    (deepChild: CardModule, deepIndex: number) =>
+                                      this._renderTreeLevel4Child(
+                                        deepChild,
+                                        rowIndex,
+                                        columnIndex,
+                                        parentModuleIndex,
+                                        nestedLayoutIndex,
+                                        childIndex,
+                                        deepIndex,
+                                        layoutModule.modules.length
+                                      )
+                                  )}
+                                `
+                              : ''
+                          }
+                          <div class="tree-add-button-container">
+                            <button
+                              class="tree-add-btn"
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                this._openDeeplyNestedLayoutModuleSelector(
                                   rowIndex,
                                   columnIndex,
                                   parentModuleIndex,
                                   nestedLayoutIndex,
-                                  childIndex,
-                                  layoutModule.sections.length
-                                )
-                            )}
-                          `
-                        : html`
-                            <div
-                              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                                  childIndex
+                                );
+                              }}
                             >
-                              ${localize(
-                                'editor.layout.tabs_no_sections',
-                                lang,
-                                'No sections. Open settings to add sections.'
-                              )}
-                            </div>
-                          `}
-                    `
-                  : html`
-                      ${hasChildren
-                        ? html`
-                            ${repeat(layoutModule.modules, treeItemKey, (deepChild: CardModule, deepIndex: number) =>
-                              this._renderTreeLevel4Child(
-                                deepChild,
-                                rowIndex,
-                                columnIndex,
-                                parentModuleIndex,
-                                nestedLayoutIndex,
-                                childIndex,
-                                deepIndex,
-                                layoutModule.modules.length
-                              )
-                            )}
-                          `
-                        : ''}
-                      <div class="tree-add-button-container">
-                        <button
-                          class="tree-add-btn"
-                          @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._openDeeplyNestedLayoutModuleSelector(
-                              rowIndex,
-                              columnIndex,
-                              parentModuleIndex,
-                              nestedLayoutIndex,
-                              childIndex
-                            );
-                          }}
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                          <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                        </button>
-                      </div>
-                    `}
-              `
-            : ''}
+                              <ha-icon icon="mdi:plus"></ha-icon>
+                              <span
+                                >${localize('editor.layout.add_module', lang, 'Add Module')}</span
+                              >
+                            </button>
+                          </div>
+                        `
+                  }
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -5887,7 +6087,14 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onDragEnter(
+            e,
+            'layout-child',
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            childIndex
+          )}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
           this._onTreeLevel4ChildDrop(
@@ -6029,9 +6236,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
-          ? 'last-node'
-          : ''} ${isCollapsed ? 'collapsed' : ''}"
+        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${
+          isLastChild ? 'last-node' : ''
+        } ${isCollapsed ? 'collapsed' : ''}"
         data-drop-type="layout-child"
         data-row-index="${rowIndex}"
         data-column-index="${columnIndex}"
@@ -6051,7 +6258,14 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onDragEnter(
+            e,
+            'layout-child',
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            childIndex
+          )}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
           this._onTreeLevel4ChildDrop(
@@ -6078,28 +6292,30 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              ${!isTabs
-                ? html`
-                    <button
-                      class="tree-action-btn add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openLevel4NestedLayoutModuleSelector(
-                          rowIndex,
-                          columnIndex,
-                          parentModuleIndex,
-                          nestedLayoutIndex,
-                          deepLayoutIndex,
-                          childIndex
-                        );
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                  `
-                : ''}
+              ${
+                !isTabs
+                  ? html`
+                      <button
+                        class="tree-action-btn add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openLevel4NestedLayoutModuleSelector(
+                            rowIndex,
+                            columnIndex,
+                            parentModuleIndex,
+                            nestedLayoutIndex,
+                            deepLayoutIndex,
+                            childIndex
+                          );
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -6158,7 +6374,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -6169,48 +6388,55 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${hasChildren
-                  ? html`
-                      ${repeat(layoutModule.modules, treeItemKey, (deepChild: CardModule, deepIndex: number) =>
-                        this._renderTreeDeepChild(
-                          deepChild,
-                          deepIndex,
-                          layoutModule.modules.length,
-                          [
-                            rowIndex,
-                            columnIndex,
-                            parentModuleIndex,
-                            nestedLayoutIndex,
-                            deepLayoutIndex,
-                            childIndex,
-                          ]
-                        )
-                      )}
-                    `
-                  : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._openLevel4NestedLayoutModuleSelector(
-                        rowIndex,
-                        columnIndex,
-                        parentModuleIndex,
-                        nestedLayoutIndex,
-                        deepLayoutIndex,
-                        childIndex
-                      );
-                    }}
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    hasChildren
+                      ? html`
+                          ${repeat(
+                            layoutModule.modules,
+                            treeItemKey,
+                            (deepChild: CardModule, deepIndex: number) =>
+                              this._renderTreeDeepChild(
+                                deepChild,
+                                deepIndex,
+                                layoutModule.modules.length,
+                                [
+                                  rowIndex,
+                                  columnIndex,
+                                  parentModuleIndex,
+                                  nestedLayoutIndex,
+                                  deepLayoutIndex,
+                                  childIndex,
+                                ]
+                              )
+                          )}
+                        `
+                      : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openLevel4NestedLayoutModuleSelector(
+                          rowIndex,
+                          columnIndex,
+                          parentModuleIndex,
+                          nestedLayoutIndex,
+                          deepLayoutIndex,
+                          childIndex
+                        );
+                      }}
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -6361,9 +6587,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-nested-layout tree-deep-nested ${isTabs
-          ? 'tabs-layout'
-          : ''} ${isLastChild ? 'last-node' : ''} ${isCollapsed ? 'collapsed' : ''}"
+        class="tree-node tree-nested-layout tree-deep-nested ${
+          isTabs ? 'tabs-layout' : ''
+        } ${isLastChild ? 'last-node' : ''} ${isCollapsed ? 'collapsed' : ''}"
         data-nesting-depth="${nestingDepth}"
         data-drop-type="layout-child"
         data-row-index="${parentPath[0]}"
@@ -6400,21 +6626,23 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons deep-nested-actions">
-              ${!isTabs
-                ? html`
-                    <button
-                      class="tree-action-btn add-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openDeepNestedModuleSelector(newParentPath);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                  `
-                : ''}
+              ${
+                !isTabs
+                  ? html`
+                      <button
+                        class="tree-action-btn add-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openDeepNestedModuleSelector(newParentPath);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                    `
+                  : ''
+              }
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -6453,7 +6681,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -6464,48 +6695,59 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${hasChildren && !isTabs
-                  ? html`
-                      ${repeat(layoutModule.modules, treeItemKey, (nestedChild: CardModule, nestedIndex: number) =>
-                        this._renderTreeDeepChild(
-                          nestedChild,
-                          nestedIndex,
-                          layoutModule.modules.length,
-                          newParentPath
-                        )
-                      )}
-                    `
-                  : ''}
-                ${!isTabs
-                  ? html`
-                      <div class="tree-add-button-container">
-                        <button
-                          class="tree-add-btn"
-                          @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._openDeepNestedModuleSelector(newParentPath);
-                          }}
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                          <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                        </button>
-                      </div>
-                    `
-                  : html`
-                      <div
-                        style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
-                      >
-                        ${localize(
-                          'editor.layout.tabs_open_settings',
-                          lang,
-                          'Open settings to manage tabs sections'
-                        )}
-                      </div>
-                    `}
-              `
-            : ''}
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    hasChildren && !isTabs
+                      ? html`
+                          ${repeat(
+                            layoutModule.modules,
+                            treeItemKey,
+                            (nestedChild: CardModule, nestedIndex: number) =>
+                              this._renderTreeDeepChild(
+                                nestedChild,
+                                nestedIndex,
+                                layoutModule.modules.length,
+                                newParentPath
+                              )
+                          )}
+                        `
+                      : ''
+                  }
+                  ${
+                    !isTabs
+                      ? html`
+                          <div class="tree-add-button-container">
+                            <button
+                              class="tree-add-btn"
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                this._openDeepNestedModuleSelector(newParentPath);
+                              }}
+                            >
+                              <ha-icon icon="mdi:plus"></ha-icon>
+                              <span
+                                >${localize('editor.layout.add_module', lang, 'Add Module')}</span
+                              >
+                            </button>
+                          </div>
+                        `
+                      : html`
+                          <div
+                            style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                          >
+                            ${localize(
+                              'editor.layout.tabs_open_settings',
+                              lang,
+                              'Open settings to manage tabs sections'
+                            )}
+                          </div>
+                        `
+                  }
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -6565,32 +6807,34 @@ export class LayoutTab extends LitElement {
         >
           <ha-icon icon="mdi:dots-horizontal"></ha-icon>
         </button>
-        ${isOpen
-          ? html`
-              <div
-                class="tree-overflow-menu"
-                role="menu"
-                @click=${(e: Event) => e.stopPropagation()}
-              >
-                ${menuItems.map(
-                  (item, index) => html`
-                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
-                    <button
-                      role="menuitem"
-                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
-                      @click=${() => {
-                        item.action();
-                        this._openOverflowMenuKey = null;
-                      }}
-                    >
-                      <ha-icon icon="${item.icon}"></ha-icon>
-                      <span>${item.label}</span>
-                    </button>
-                  `
-                )}
-              </div>
-            `
-          : ''}
+        ${
+          isOpen
+            ? html`
+                <div
+                  class="tree-overflow-menu"
+                  role="menu"
+                  @click=${(e: Event) => e.stopPropagation()}
+                >
+                  ${menuItems.map(
+                    (item, index) => html`
+                      ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                      <button
+                        role="menuitem"
+                        class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                        @click=${() => {
+                          item.action();
+                          this._openOverflowMenuKey = null;
+                        }}
+                      >
+                        <ha-icon icon="${item.icon}"></ha-icon>
+                        <span>${item.label}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -6626,15 +6870,17 @@ export class LayoutTab extends LitElement {
     if (!current) return;
     if (!current.modules) current.modules = [];
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      if (!moduleHandler) return;
-      const newModule = this._createModuleForAdd(moduleHandler);
-      current.modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._deepNestedPath = null;
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        if (!moduleHandler) return;
+        const newModule = this._createModuleForAdd(moduleHandler);
+        current.modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._deepNestedPath = null;
+      });
   }
 
   private _openDeepNestedSettings(parentPath: number[], childIndex: number): void {
@@ -6720,18 +6966,20 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''}"
+        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${
+          isCollapsed ? 'collapsed' : ''
+        }"
       >
         <div class="tree-node-content">
           <div
             class="tree-node-header section-header"
             style="background: rgba(var(--rgb-primary-color), 0.15); border-left: 3px solid var(--primary-color);"
           >
-            ${section.icon
-              ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
-              : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`}
+            ${
+              section.icon
+                ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
+                : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`
+            }
             <span class="tree-node-title">${sectionTitle}</span>
             <div class="tree-action-buttons">
               <button
@@ -6753,7 +7001,10 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div class="tree-node-children tree-tabs-section-children" style="margin-left: 16px;">
-          <div role="button" tabindex="0" data-uc-activate
+          <div
+            role="button"
+            tabindex="0"
+            data-uc-activate
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
             title="${isCollapsed ? 'Expand' : 'Collapse'}"
@@ -6764,44 +7015,48 @@ export class LayoutTab extends LitElement {
               style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
             ></ha-icon>
           </div>
-          ${!isCollapsed
-            ? html`
-                ${hasModules
-                  ? html`
-                      ${sectionModules.map(
-                        (childModule: any, childIdx: number) => html`
-                          <div
-                            class="tree-node tree-module ${childIdx === sectionModules.length - 1
-                              ? 'last-node'
-                              : ''}"
-                          >
-                            <div class="tree-node-content">
-                              <div class="tree-node-header module-header">
-                                <ha-icon
-                                  icon="${getModuleRegistry().getModuleMetadata(childModule.type)?.icon || 'mdi:help-circle'}"
-                                  class="tree-node-icon"
-                                ></ha-icon>
-                                <span class="tree-node-title"
-                                  >${this._getModuleDisplayName(childModule)}</span
-                                >
+          ${
+            !isCollapsed
+              ? html`
+                  ${
+                    hasModules
+                      ? html`
+                          ${sectionModules.map(
+                            (childModule: any, childIdx: number) => html`
+                              <div
+                                class="tree-node tree-module ${
+                                  childIdx === sectionModules.length - 1 ? 'last-node' : ''
+                                }"
+                              >
+                                <div class="tree-node-content">
+                                  <div class="tree-node-header module-header">
+                                    <ha-icon
+                                      icon="${getModuleRegistry().getModuleMetadata(childModule.type)?.icon || 'mdi:help-circle'}"
+                                      class="tree-node-icon"
+                                    ></ha-icon>
+                                    <span class="tree-node-title"
+                                      >${this._getModuleDisplayName(childModule)}</span
+                                    >
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
+                            `
+                          )}
                         `
-                      )}
-                    `
-                  : ''}
-                <div class="tree-add-button-container">
-                  <button
-                    class="tree-add-btn"
-                    style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
-                  </button>
-                </div>
-              `
-            : ''}
+                      : ''
+                  }
+                  <div class="tree-add-button-container">
+                    <button
+                      class="tree-add-btn"
+                      style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                      <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                    </button>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -6927,7 +7182,7 @@ export class LayoutTab extends LitElement {
   private _resizeTimeout: ReturnType<typeof setTimeout> | null = null;
   private _visibilityChangeListener: (() => void) | null = null;
   private _windowFocusListener: (() => void) | null = null;
-  private _authChangeListener: (((user: any) => void) ) | undefined = undefined;
+  private _authChangeListener: ((user: any) => void) | undefined = undefined;
 
   /**
    * Temporarily patch the HA dialog's CSS to allow popups to escape containment.
@@ -7581,7 +7836,11 @@ export class LayoutTab extends LitElement {
     const to = toId.trim();
     if (!from || !to || from === to) {
       this._showToast(
-        localize('editor.layout.entity_replace_pick_two', this.hass?.locale?.language || 'en', 'Pick two different entities.'),
+        localize(
+          'editor.layout.entity_replace_pick_two',
+          this.hass?.locale?.language || 'en',
+          'Pick two different entities.'
+        ),
         'error'
       );
       return;
@@ -7770,7 +8029,11 @@ export class LayoutTab extends LitElement {
   }
 
   private _deleteColumn(rowIndex: number, columnIndex: number): void {
-    this._runDeleteWithUndo(() => this._deleteColumnNow(rowIndex, columnIndex), 'column_deleted', 'Column deleted');
+    this._runDeleteWithUndo(
+      () => this._deleteColumnNow(rowIndex, columnIndex),
+      'column_deleted',
+      'Column deleted'
+    );
   }
 
   private _deleteColumnNow(rowIndex: number, columnIndex: number): void {
@@ -8372,11 +8635,7 @@ export class LayoutTab extends LitElement {
         // Nested layout - no auto-open for now
       } else {
         const moduleIndex = column.modules.length;
-        this._openModuleSettings(
-          this._selectedRowIndex,
-          this._selectedColumnIndex,
-          moduleIndex
-        );
+        this._openModuleSettings(this._selectedRowIndex, this._selectedColumnIndex, moduleIndex);
       }
     }
 
@@ -8462,10 +8721,9 @@ export class LayoutTab extends LitElement {
       }
 
       // Every preset with entity references opens the setup wizard (authored or auto-generated).
-      const effectiveWizard =
-        preset.wizard?.steps?.length
-          ? preset.wizard
-          : buildAutoPresetWizard(this.hass, entityReferences);
+      const effectiveWizard = preset.wizard?.steps?.length
+        ? preset.wizard
+        : buildAutoPresetWizard(this.hass, entityReferences);
       if (!effectiveWizard?.steps?.length) {
         this._showEntityMappingDialog(preset, entityReferences, options);
         return;
@@ -8550,15 +8808,22 @@ export class LayoutTab extends LitElement {
           return true;
         }
         if (key === 'entities' && Array.isArray(val)) {
-          if (val.some((e: any) =>
-            typeof e === 'string' ? idSet.has(e) : e?.entity && idSet.has(e.entity)
-          )) return true;
+          if (
+            val.some((e: any) =>
+              typeof e === 'string' ? idSet.has(e) : e?.entity && idSet.has(e.entity)
+            )
+          )
+            return true;
         }
         if (Array.isArray(val)) {
           for (const item of val) {
             if (item && typeof item === 'object') {
               for (const ik of Object.keys(item)) {
-                if (typeof item[ik] === 'string' && idSet.has(item[ik]) && ik.toLowerCase().includes('entity')) {
+                if (
+                  typeof item[ik] === 'string' &&
+                  idSet.has(item[ik]) &&
+                  ik.toLowerCase().includes('entity')
+                ) {
                   return true;
                 }
               }
@@ -8848,8 +9113,9 @@ export class LayoutTab extends LitElement {
       const entityReferences = entityDetector.scanLayout(currentLayout);
 
       // Also include custom variables (card-level) so the remap dialog can update them
-      const cardVars: Array<{ id: string; name: string; entity: string }> =
-        (this.config._customVariables || []).filter((v: any) => !v.isGlobal && v.entity);
+      const cardVars: Array<{ id: string; name: string; entity: string }> = (
+        this.config._customVariables || []
+      ).filter((v: any) => !v.isGlobal && v.entity);
       for (const v of cardVars) {
         const alreadyIncluded = entityReferences.some(r => r.entityId === v.entity);
         if (!alreadyIncluded) {
@@ -9690,7 +9956,10 @@ export class LayoutTab extends LitElement {
       ] as any;
 
       if (!parentModule?.modules?.[childIndex]) {
-        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
         return;
       }
 
@@ -9706,7 +9975,10 @@ export class LayoutTab extends LitElement {
         'success'
       );
     } catch (error) {
-      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+      this._showToast(
+        localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+        'error'
+      );
     }
   }
 
@@ -9736,7 +10008,10 @@ export class LayoutTab extends LitElement {
       ]?.modules?.[nestedLayoutIndex] as any;
 
       if (!nestedLayout?.modules?.[childIndex]) {
-        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
         return;
       }
 
@@ -9752,7 +10027,10 @@ export class LayoutTab extends LitElement {
         'success'
       );
     } catch (error) {
-      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+      this._showToast(
+        localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+        'error'
+      );
     }
   }
 
@@ -9783,7 +10061,10 @@ export class LayoutTab extends LitElement {
       ]?.modules?.[nestedLayoutIndex]?.modules?.[deepLayoutIndex] as any;
 
       if (!deepLayout?.modules?.[childIndex]) {
-        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
         return;
       }
 
@@ -9799,7 +10080,10 @@ export class LayoutTab extends LitElement {
         'success'
       );
     } catch (error) {
-      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+      this._showToast(
+        localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+        'error'
+      );
     }
   }
 
@@ -9821,7 +10105,10 @@ export class LayoutTab extends LitElement {
       sectionIndex === undefined ||
       childIndex === undefined
     ) {
-      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+      this._showToast(
+        localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+        'error'
+      );
       return;
     }
 
@@ -9849,7 +10136,10 @@ export class LayoutTab extends LitElement {
       }
 
       if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) {
-        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
         return;
       }
 
@@ -9865,7 +10155,10 @@ export class LayoutTab extends LitElement {
         'success'
       );
     } catch (error) {
-      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+      this._showToast(
+        localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+        'error'
+      );
     }
   }
 
@@ -10399,10 +10692,7 @@ export class LayoutTab extends LitElement {
       // than adding a module that can only ever render "Card not found".
       const available = await ucNativeCardsService.ensureCardElementLoaded(cardType);
       if (!available) {
-        this._showToast(
-          `"${cardName}" is not available in this Home Assistant version.`,
-          'error'
-        );
+        this._showToast(`"${cardName}" is not available in this Home Assistant version.`, 'error');
         return;
       }
 
@@ -10518,7 +10808,11 @@ export class LayoutTab extends LitElement {
   }
 
   private _deleteModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
-    this._runDeleteWithUndo(() => this._deleteModuleNow(rowIndex, columnIndex, moduleIndex), 'module_deleted', 'Module deleted');
+    this._runDeleteWithUndo(
+      () => this._deleteModuleNow(rowIndex, columnIndex, moduleIndex),
+      'module_deleted',
+      'Module deleted'
+    );
   }
 
   private _deleteModuleNow(rowIndex: number, columnIndex: number, moduleIndex: number): void {
@@ -10574,7 +10868,9 @@ export class LayoutTab extends LitElement {
     const applyState = (): void => {
       this._selectedModule = { rowIndex, columnIndex, moduleIndex };
       this._showModuleSettings = true;
-      this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('module-settings-open', { bubbles: true, composed: true })
+      );
       if (module?.type === 'external_card') {
         const externalModule = module as any;
         if (externalModule.card_type) {
@@ -10592,10 +10888,12 @@ export class LayoutTab extends LitElement {
     };
 
     if (module?.type) {
-      getModuleRegistry().ensureModuleLoaded(module.type).then(() => {
-        applyState();
-        this.requestUpdate();
-      });
+      getModuleRegistry()
+        .ensureModuleLoaded(module.type)
+        .then(() => {
+          applyState();
+          this.requestUpdate();
+        });
     } else {
       applyState();
     }
@@ -10609,7 +10907,9 @@ export class LayoutTab extends LitElement {
     // Capture scroll position before update (for mobile scroll preservation)
     const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
     const selectorBody = this.shadowRoot?.querySelector('.selector-body') as HTMLElement;
-    const panelBody = this.shadowRoot?.querySelector('.module-settings-panel .module-tab-content') as HTMLElement;
+    const panelBody = this.shadowRoot?.querySelector(
+      '.module-settings-panel .module-tab-content'
+    ) as HTMLElement;
     const scrollContainer = popupBody || selectorBody || panelBody;
     if (scrollContainer) {
       this._savedScrollPosition = scrollContainer.scrollTop;
@@ -11675,7 +11975,9 @@ export class LayoutTab extends LitElement {
       this._showModuleSettings = false;
       this._selectedModule = null;
       this._isClosingModuleSettings = false;
-      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('module-settings-close', { bubbles: true, composed: true })
+      );
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
@@ -11690,7 +11992,9 @@ export class LayoutTab extends LitElement {
       this._selectedNestedChildIndex = -1; // Reset nested child index
       this._selectedNestedNestedChildIndex = -1; // Reset deep nested child index
       this._isClosingLayoutChildSettings = false;
-      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('module-settings-close', { bubbles: true, composed: true })
+      );
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
@@ -11703,7 +12007,9 @@ export class LayoutTab extends LitElement {
       this._showTabsSectionChildSettings = false;
       this._selectedTabsSectionChild = null;
       this._isClosingTabsSectionChildSettings = false;
-      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('module-settings-close', { bubbles: true, composed: true })
+      );
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
@@ -12158,23 +12464,19 @@ export class LayoutTab extends LitElement {
 
   /** The node's own header element (not one belonging to a nested node). */
   private _ownHeader(node: HTMLElement): HTMLElement | null {
-    const content = Array.from(node.children).find(c =>
-      c.classList.contains('tree-node-content')
-    );
+    const content = Array.from(node.children).find(c => c.classList.contains('tree-node-content'));
     if (!content) return null;
     return (
-      (Array.from(content.children).find(c =>
-        c.classList.contains('tree-node-header')
-      ) as HTMLElement | undefined) ?? null
+      (Array.from(content.children).find(c => c.classList.contains('tree-node-header')) as
+        HTMLElement | undefined) ?? null
     );
   }
 
   /** The node's own children container, if it has one. */
   private _ownBody(node: HTMLElement): HTMLElement | null {
     return (
-      (Array.from(node.children).find(c =>
-        c.classList.contains('tree-node-children')
-      ) as HTMLElement | undefined) ?? null
+      (Array.from(node.children).find(c => c.classList.contains('tree-node-children')) as
+        HTMLElement | undefined) ?? null
     );
   }
 
@@ -12475,8 +12777,7 @@ export class LayoutTab extends LitElement {
     const scrollTop = container.scrollTop ?? 0;
     const scrollLeft = container.scrollLeft ?? 0;
     // Centre the 2px line inside whichever gap is open (the gap is the node's own padding)
-    const y =
-      edge === 'before' ? elRect.top + padTop / 2 : elRect.bottom - padBottom / 2;
+    const y = edge === 'before' ? elRect.top + padTop / 2 : elRect.bottom - padBottom / 2;
     const top = y - containerRect.top + scrollTop - 1;
     const left = elRect.left - containerRect.left + scrollLeft;
     indicator.style.top = `${top}px`;
@@ -12556,7 +12857,9 @@ export class LayoutTab extends LitElement {
       base.closest<HTMLElement>('.tree-view-container') ??
       base.parentElement;
     if (!container) return { element: base, edge: 'before' };
-    return this._resolveBoundaryInContainer(container, clientY) ?? { element: base, edge: 'before' };
+    return (
+      this._resolveBoundaryInContainer(container, clientY) ?? { element: base, edge: 'before' }
+    );
   }
 
   /**
@@ -13027,7 +13330,13 @@ export class LayoutTab extends LitElement {
     moduleIndex: number,
     direction: 'up' | 'down'
   ): void {
-    const next = moveModuleSibling(this._ensureLayout(), rowIndex, columnIndex, moduleIndex, direction);
+    const next = moveModuleSibling(
+      this._ensureLayout(),
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      direction
+    );
     if (!next) return;
     this._updateLayout(next);
     const lang = this.hass?.locale?.language || 'en';
@@ -13083,7 +13392,11 @@ export class LayoutTab extends LitElement {
     );
   }
 
-  private _moveColumnSibling(rowIndex: number, columnIndex: number, direction: 'up' | 'down'): void {
+  private _moveColumnSibling(
+    rowIndex: number,
+    columnIndex: number,
+    direction: 'up' | 'down'
+  ): void {
     const next = moveColumnSibling(this._ensureLayout(), rowIndex, columnIndex, direction);
     if (!next) return;
     this._updateLayout(next);
@@ -13155,7 +13468,9 @@ export class LayoutTab extends LitElement {
       this._customSizingValid = false;
       this._customSizingError = '';
       this._isClosingColumnSettings = false;
-      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('module-settings-close', { bubbles: true, composed: true })
+      );
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
   }
@@ -13166,7 +13481,9 @@ export class LayoutTab extends LitElement {
     window.setTimeout(() => {
       this._showRowSettings = false;
       this._isClosingRowSettings = false;
-      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('module-settings-close', { bubbles: true, composed: true })
+      );
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
   }
@@ -13224,7 +13541,10 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-        <div role="button" tabindex="0" data-uc-activate
+        <div
+          role="button"
+          tabindex="0"
+          data-uc-activate
           class="preview-header"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -13239,7 +13559,10 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-icon role="button" tabindex="0" data-uc-activate
+            <ha-icon
+              role="button"
+              tabindex="0"
+              data-uc-activate
               class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
               icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
               @click=${(e: Event) => {
@@ -13251,13 +13574,15 @@ export class LayoutTab extends LitElement {
                 e.stopPropagation();
                 this._togglePreviewPin();
               }}
-              title="${this._isPreviewPinned
-                ? localize(
-                    'editor.layout.unpin_preview',
-                    lang,
-                    'Unpin preview (scroll with content)'
-                  )
-                : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
+              title="${
+                this._isPreviewPinned
+                  ? localize(
+                      'editor.layout.unpin_preview',
+                      lang,
+                      'Unpin preview (scroll with content)'
+                    )
+                  : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')
+              }"
             ></ha-icon>
             <span style="flex: 1;">
               ${localize('editor.layout.module_preview', lang, 'Module Preview')}
@@ -13275,9 +13600,9 @@ export class LayoutTab extends LitElement {
             ></uc-breakpoint-preview>
             <ha-icon
               class="preview-caret"
-              icon="${this._isCurrentModulePreviewCollapsed()
-                ? 'mdi:chevron-down'
-                : 'mdi:chevron-up'}"
+              icon="${
+                this._isCurrentModulePreviewCollapsed() ? 'mdi:chevron-down' : 'mdi:chevron-up'
+              }"
             ></ha-icon>
           </div>
         </div>
@@ -13447,45 +13772,51 @@ export class LayoutTab extends LitElement {
             border-radius: 4px;
           "
         >
-          ${hasChildren
-            ? veryDeepLayout.modules.map((child: any, childIdx: number) => {
-                const isChildLayout = this._isLayoutModule(child.type);
-                return html`
-                  <div style="margin-bottom: 4px;">
-                    ${isChildLayout
-                      ? this._renderVeryDeepNestedLayoutModule(
-                          child,
-                          parentRowIndex,
-                          parentColumnIndex,
-                          parentModuleIndex,
-                          nestedLayoutIndex,
-                          deepNestedIndex,
-                          childIdx
-                        )
-                      : html`
-                          <div class="layout-child-simplified-module" style="padding: 8px;">
-                            <ha-icon
-                              icon="${registry.getModuleMetadata(child.type)?.icon ||
-                              'mdi:help-circle'}"
-                            ></ha-icon>
-                            <span>${this._getModuleDisplayName(child)}</span>
-                          </div>
-                        `}
-                  </div>
-                `;
-              })
-            : html`
-                <div
-                  style="
+          ${
+            hasChildren
+              ? veryDeepLayout.modules.map((child: any, childIdx: number) => {
+                  const isChildLayout = this._isLayoutModule(child.type);
+                  return html`
+                    <div style="margin-bottom: 4px;">
+                      ${
+                        isChildLayout
+                          ? this._renderVeryDeepNestedLayoutModule(
+                              child,
+                              parentRowIndex,
+                              parentColumnIndex,
+                              parentModuleIndex,
+                              nestedLayoutIndex,
+                              deepNestedIndex,
+                              childIdx
+                            )
+                          : html`
+                              <div class="layout-child-simplified-module" style="padding: 8px;">
+                                <ha-icon
+                                  icon="${
+                                    registry.getModuleMetadata(child.type)?.icon ||
+                                    'mdi:help-circle'
+                                  }"
+                                ></ha-icon>
+                                <span>${this._getModuleDisplayName(child)}</span>
+                              </div>
+                            `
+                      }
+                    </div>
+                  `;
+                })
+              : html`
+                  <div
+                    style="
                     padding: 12px;
                     text-align: center;
                     color: var(--secondary-text-color);
                     font-size: 12px;
                   "
-                >
-                  ${localize('editor.layout.no_modules', lang, 'No modules')}
-                </div>
-              `}
+                  >
+                    ${localize('editor.layout.no_modules', lang, 'No modules')}
+                  </div>
+                `
+          }
         </div>
       </div>
     `;
@@ -13791,29 +14122,31 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      if (!moduleHandler) return;
-      const newModule = this._createModuleForAdd(moduleHandler);
-      if (!tabsModule.sections[sectionIndex].modules) {
-        tabsModule.sections[sectionIndex].modules = [];
-      }
-      tabsModule.sections[sectionIndex].modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._tabsSectionContext = null;
-      setTimeout(() => {
-        this._openTabsSectionChildSettings(
-          rowIndex,
-          columnIndex,
-          moduleIndex,
-          sectionIndex,
-          tabsModule.sections[sectionIndex].modules.length - 1,
-          parentLayoutChildIndex,
-          isNested
-        );
-      }, 100);
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        if (!moduleHandler) return;
+        const newModule = this._createModuleForAdd(moduleHandler);
+        if (!tabsModule.sections[sectionIndex].modules) {
+          tabsModule.sections[sectionIndex].modules = [];
+        }
+        tabsModule.sections[sectionIndex].modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._tabsSectionContext = null;
+        setTimeout(() => {
+          this._openTabsSectionChildSettings(
+            rowIndex,
+            columnIndex,
+            moduleIndex,
+            sectionIndex,
+            tabsModule.sections[sectionIndex].modules.length - 1,
+            parentLayoutChildIndex,
+            isNested
+          );
+        }, 100);
+      });
   }
 
   /**
@@ -13851,29 +14184,31 @@ export class LayoutTab extends LitElement {
       tabsModule.sections[sectionIndex].modules = [];
     }
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      let newModule: any;
-      if (moduleHandler?.createDefault) {
-        newModule = this._createModuleForAdd(moduleHandler);
-      } else {
-        newModule = { id: `${moduleType}-${Date.now()}`, type: moduleType };
-      }
-      tabsModule.sections[sectionIndex].modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._nestedTabsSectionContext = null;
-      setTimeout(() => {
-        this._openNestedTabsSectionChildSettings(
-          rowIndex,
-          columnIndex,
-          parentModuleIndex,
-          nestedTabsIndex,
-          sectionIndex,
-          tabsModule.sections[sectionIndex].modules.length - 1
-        );
-      }, 100);
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        let newModule: any;
+        if (moduleHandler?.createDefault) {
+          newModule = this._createModuleForAdd(moduleHandler);
+        } else {
+          newModule = { id: `${moduleType}-${Date.now()}`, type: moduleType };
+        }
+        tabsModule.sections[sectionIndex].modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._nestedTabsSectionContext = null;
+        setTimeout(() => {
+          this._openNestedTabsSectionChildSettings(
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedTabsIndex,
+            sectionIndex,
+            tabsModule.sections[sectionIndex].modules.length - 1
+          );
+        }, 100);
+      });
   }
 
   /**
@@ -13928,27 +14263,29 @@ export class LayoutTab extends LitElement {
     if (!layoutModule) return;
     if (!layoutModule.modules) layoutModule.modules = [];
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      if (!moduleHandler) return;
-      const newModule = this._createModuleForAdd(moduleHandler);
-      layoutModule.modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._tabsSectionNestedLayoutContext = null;
-      setTimeout(() => {
-        this._openTabsSectionNestedLayoutChildSettings(
-          rowIndex,
-          columnIndex,
-          moduleIndex,
-          sectionIndex,
-          layoutChildIndex,
-          layoutModule.modules.length - 1,
-          parentLayoutChildIndex,
-          isNested
-        );
-      }, 100);
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        if (!moduleHandler) return;
+        const newModule = this._createModuleForAdd(moduleHandler);
+        layoutModule.modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._tabsSectionNestedLayoutContext = null;
+        setTimeout(() => {
+          this._openTabsSectionNestedLayoutChildSettings(
+            rowIndex,
+            columnIndex,
+            moduleIndex,
+            sectionIndex,
+            layoutChildIndex,
+            layoutModule.modules.length - 1,
+            parentLayoutChildIndex,
+            isNested
+          );
+        }, 100);
+      });
   }
 
   /**
@@ -14032,27 +14369,29 @@ export class LayoutTab extends LitElement {
       layoutModule.modules = [];
     }
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      if (!moduleHandler) return;
-      const newModule = this._createModuleForAdd(moduleHandler);
-      layoutModule.modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._nestedTabsSectionLayoutChildContext = null;
-      setTimeout(() => {
-        this._openTabsSectionNestedLayoutChildSettings(
-          rowIndex,
-          columnIndex,
-          parentModuleIndex,
-          sectionIndex,
-          layoutChildIndex,
-          layoutModule.modules.length - 1,
-          nestedTabsIndex,
-          true
-        );
-      }, 100);
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        if (!moduleHandler) return;
+        const newModule = this._createModuleForAdd(moduleHandler);
+        layoutModule.modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._nestedTabsSectionLayoutChildContext = null;
+        setTimeout(() => {
+          this._openTabsSectionNestedLayoutChildSettings(
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            sectionIndex,
+            layoutChildIndex,
+            layoutModule.modules.length - 1,
+            nestedTabsIndex,
+            true
+          );
+        }, 100);
+      });
   }
 
   /**
@@ -14146,15 +14485,17 @@ export class LayoutTab extends LitElement {
     if (!deepLayout) return;
     if (!deepLayout.modules) deepLayout.modules = [];
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      if (!moduleHandler) return;
-      const newModule = this._createModuleForAdd(moduleHandler);
-      deepLayout.modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._deeplyNestedLayoutContext = null;
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        if (!moduleHandler) return;
+        const newModule = this._createModuleForAdd(moduleHandler);
+        deepLayout.modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._deeplyNestedLayoutContext = null;
+      });
   }
 
   // Context for level 4 nested layout module selectors
@@ -14231,15 +14572,17 @@ export class LayoutTab extends LitElement {
     if (!level4Layout) return;
     if (!level4Layout.modules) level4Layout.modules = [];
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      if (!moduleHandler) return;
-      const newModule = this._createModuleForAdd(moduleHandler);
-      level4Layout.modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._level4NestedLayoutContext = null;
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        if (!moduleHandler) return;
+        const newModule = this._createModuleForAdd(moduleHandler);
+        level4Layout.modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._level4NestedLayoutContext = null;
+      });
   }
 
   /**
@@ -14437,28 +14780,30 @@ export class LayoutTab extends LitElement {
     if (!deeplyNestedLayout) return;
     if (!deeplyNestedLayout.modules) deeplyNestedLayout.modules = [];
 
-    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
-      const registry = getModuleRegistry();
-      const moduleHandler = registry.getModule(moduleType);
-      if (!moduleHandler) return;
-      const newModule = this._createModuleForAdd(moduleHandler);
-      deeplyNestedLayout.modules.push(newModule);
-      this._updateLayout(newLayout);
-      this._tabsSectionDeeplyNestedLayoutContext = null;
-      setTimeout(() => {
-        this._openTabsSectionDeeplyNestedLayoutChildSettings(
-          rowIndex,
-          columnIndex,
-          moduleIndex,
-          sectionIndex,
-          layoutChildIndex,
-          nestedChildIndex,
-          deeplyNestedLayout.modules.length - 1,
-          parentLayoutChildIndex,
-          isNested
-        );
-      }, 100);
-    });
+    getModuleRegistry()
+      .ensureModuleLoaded(moduleType)
+      .then(() => {
+        const registry = getModuleRegistry();
+        const moduleHandler = registry.getModule(moduleType);
+        if (!moduleHandler) return;
+        const newModule = this._createModuleForAdd(moduleHandler);
+        deeplyNestedLayout.modules.push(newModule);
+        this._updateLayout(newLayout);
+        this._tabsSectionDeeplyNestedLayoutContext = null;
+        setTimeout(() => {
+          this._openTabsSectionDeeplyNestedLayoutChildSettings(
+            rowIndex,
+            columnIndex,
+            moduleIndex,
+            sectionIndex,
+            layoutChildIndex,
+            nestedChildIndex,
+            deeplyNestedLayout.modules.length - 1,
+            parentLayoutChildIndex,
+            isNested
+          );
+        }, 100);
+      });
   }
 
   /**
@@ -15171,7 +15516,9 @@ export class LayoutTab extends LitElement {
     if (this._isTabsSectionNestedLayoutInsideDrop(e, layoutModule)) {
       if (!node.classList.contains('drag-over')) {
         this._clearTabsDropLines();
-        this.shadowRoot?.querySelectorAll('.drag-over').forEach(n => n.classList.remove('drag-over'));
+        this.shadowRoot
+          ?.querySelectorAll('.drag-over')
+          .forEach(n => n.classList.remove('drag-over'));
         node.classList.add('drag-over');
         this._dropTargetOwner = node;
       }
@@ -16956,7 +17303,8 @@ export class LayoutTab extends LitElement {
       return ha;
     }
     try {
-      const root = (document.querySelector('home-assistant') as any)?.hass as HomeAssistant | undefined;
+      const root = (document.querySelector('home-assistant') as any)?.hass as
+        HomeAssistant | undefined;
       const inHa = !!ha?.states?.[eid];
       const inRoot = !!root?.states?.[eid];
       if (inRoot && !inHa) {
@@ -17053,8 +17401,7 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
     const hasActionsTab =
-      moduleHandler &&
-      typeof (moduleHandler as any).renderActionsTab === 'function';
+      moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function';
 
     // Ensure active tab is valid for this module
     if (
@@ -17066,12 +17413,16 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-panel ${this._isClosingTabsSectionChildSettings ? 'is-closing' : ''}"
+      <div
+        class="module-settings-panel ${this._isClosingTabsSectionChildSettings ? 'is-closing' : ''}"
         @uc-open-template-cheatsheet=${(e: CustomEvent) => {
           e.stopPropagation();
           const panel = e.currentTarget as HTMLElement;
           const cs = panel.querySelector('uc-template-cheatsheet') as any;
-          if (cs) { cs.module = e.detail?.module || 'info'; cs.open = true; }
+          if (cs) {
+            cs.module = e.detail?.module || 'info';
+            cs.open = true;
+          }
         }}
       >
         <div class="panel-header">
@@ -17110,20 +17461,20 @@ export class LayoutTab extends LitElement {
         ${!this.isFullScreen && this._isPreviewPinned ? this._renderTabsSectionChildPreview() : ''}
 
         <div class="module-tabs">
-            ${module.type === 'external_card'
+          ${
+            module.type === 'external_card'
               ? (() => {
                   const externalModule = module as any;
                   const isNativeCard =
                     externalModule.card_type && externalModule.card_type.startsWith('hui-');
                   const hasEditor =
-                    isNativeCard ||
-                    ucExternalCardsService.hasCardEditor(externalModule.card_type);
+                    isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
                   return hasEditor
                     ? html`
                         <button
-                          class="module-tab ${this._activeTabsChildTab === 'general'
-                            ? 'active'
-                            : ''}"
+                          class="module-tab ${
+                            this._activeTabsChildTab === 'general' ? 'active' : ''
+                          }"
                           @click=${() => (this._activeTabsChildTab = 'general')}
                         >
                           ${localize('editor.layout.general_tab', lang, 'General')}
@@ -17138,8 +17489,10 @@ export class LayoutTab extends LitElement {
                   >
                     ${localize('editor.layout.general_tab', lang, 'General')}
                   </button>
-                `}
-            ${module.type === 'external_card'
+                `
+          }
+          ${
+            module.type === 'external_card'
               ? html`
                   <button
                     class="module-tab ${this._activeTabsChildTab === 'yaml' ? 'active' : ''}"
@@ -17151,8 +17504,10 @@ export class LayoutTab extends LitElement {
                     YAML
                   </button>
                 `
-              : ''}
-            ${hasActionsTab
+              : ''
+          }
+          ${
+            hasActionsTab
               ? html`
                   <button
                     class="module-tab ${this._activeTabsChildTab === 'actions' ? 'active' : ''}"
@@ -17161,42 +17516,51 @@ export class LayoutTab extends LitElement {
                     ${localize('editor.layout.actions_tab', lang, 'Actions')}
                   </button>
                 `
-              : ''}
-            <button
-              class="module-tab ${this._activeTabsChildTab === 'logic' ? 'active' : ''}"
-              @click=${() => (this._activeTabsChildTab = 'logic')}
-            >
-              ${localize('editor.layout.logic_tab', lang, 'Logic')}
-            </button>
-            <button
-              class="module-tab ${this._activeTabsChildTab === 'design' ? 'active' : ''}"
-              @click=${() => (this._activeTabsChildTab = 'design')}
-            >
-              ${localize('editor.layout.design_tab', lang, 'Design')}
-            </button>
-          </div>
+              : ''
+          }
+          <button
+            class="module-tab ${this._activeTabsChildTab === 'logic' ? 'active' : ''}"
+            @click=${() => (this._activeTabsChildTab = 'logic')}
+          >
+            ${localize('editor.layout.logic_tab', lang, 'Logic')}
+          </button>
+          <button
+            class="module-tab ${this._activeTabsChildTab === 'design' ? 'active' : ''}"
+            @click=${() => (this._activeTabsChildTab = 'design')}
+          >
+            ${localize('editor.layout.design_tab', lang, 'Design')}
+          </button>
+        </div>
 
-          <div class="module-tab-content">
-            ${!this.isFullScreen && !this._isPreviewPinned ? this._renderTabsSectionChildPreview() : ''}
-            ${this._activeTabsChildTab === 'general'
+        <div class="module-tab-content">
+          ${!this.isFullScreen && !this._isPreviewPinned ? this._renderTabsSectionChildPreview() : ''}
+          ${
+            this._activeTabsChildTab === 'general'
               ? module.type === 'external_card' &&
                 !ucExternalCardsService.hasCardEditor((module as any).card_type)
                 ? ''
                 : this._renderTabsSectionChildGeneralTab(module)
-              : ''}
-            ${this._activeTabsChildTab === 'yaml' && module.type === 'external_card'
+              : ''
+          }
+          ${
+            this._activeTabsChildTab === 'yaml' && module.type === 'external_card'
               ? this._renderTabsSectionChildYamlTab(module)
-              : ''}
-            ${this._activeTabsChildTab === 'actions' && hasActionsTab
+              : ''
+          }
+          ${
+            this._activeTabsChildTab === 'actions' && hasActionsTab
               ? this._renderTabsSectionChildActionsTab(module)
-              : ''}
-            ${this._activeTabsChildTab === 'logic'
-              ? this._renderTabsSectionChildLogicTab(module)
-              : ''}
-            ${this._activeTabsChildTab === 'design'
+              : ''
+          }
+          ${
+            this._activeTabsChildTab === 'logic' ? this._renderTabsSectionChildLogicTab(module) : ''
+          }
+          ${
+            this._activeTabsChildTab === 'design'
               ? this._renderTabsSectionChildDesignTab(module)
-              : ''}
-          </div>
+              : ''
+          }
+        </div>
         <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
@@ -17228,7 +17592,9 @@ export class LayoutTab extends LitElement {
     } else {
       let tabsModule: any;
       if (isNested && parentLayoutChildIndex !== undefined) {
-        const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+        const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[
+          moduleIndex
+        ] as any;
         tabsModule = parentLayout?.modules?.[parentLayoutChildIndex];
       } else {
         tabsModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
@@ -17269,7 +17635,10 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-        <div role="button" tabindex="0" data-uc-activate
+        <div
+          role="button"
+          tabindex="0"
+          data-uc-activate
           class="preview-header"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -17284,7 +17653,10 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-icon role="button" tabindex="0" data-uc-activate
+            <ha-icon
+              role="button"
+              tabindex="0"
+              data-uc-activate
               class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
               icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
               @click=${(e: Event) => {
@@ -17296,13 +17668,15 @@ export class LayoutTab extends LitElement {
                 e.stopPropagation();
                 this._togglePreviewPin();
               }}
-              title="${this._isPreviewPinned
-                ? localize(
-                    'editor.layout.unpin_preview',
-                    lang,
-                    'Unpin preview (scroll with content)'
-                  )
-                : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
+              title="${
+                this._isPreviewPinned
+                  ? localize(
+                      'editor.layout.unpin_preview',
+                      lang,
+                      'Unpin preview (scroll with content)'
+                    )
+                  : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')
+              }"
             ></ha-icon>
             <span style="flex: 1;">
               ${localize('editor.layout.module_preview', lang, 'Module Preview')}
@@ -17320,9 +17694,9 @@ export class LayoutTab extends LitElement {
             ></uc-breakpoint-preview>
             <ha-icon
               class="preview-caret"
-              icon="${this._isCurrentModulePreviewCollapsed()
-                ? 'mdi:chevron-down'
-                : 'mdi:chevron-up'}"
+              icon="${
+                this._isCurrentModulePreviewCollapsed() ? 'mdi:chevron-down' : 'mdi:chevron-up'
+              }"
             ></ha-icon>
           </div>
         </div>
@@ -17400,11 +17774,8 @@ export class LayoutTab extends LitElement {
     }
 
     return (
-      (moduleHandler as any).renderActionsTab(
-        module,
-        this.hass!,
-        this.config,
-        (updates: any) => this._updateTabsSectionChild(updates)
+      (moduleHandler as any).renderActionsTab(module, this.hass!, this.config, (updates: any) =>
+        this._updateTabsSectionChild(updates)
       ) ?? html``
     );
   }
@@ -17433,7 +17804,8 @@ export class LayoutTab extends LitElement {
     return (
       moduleHandler.renderDesignTab(module, this.hass!, this.config, (updates: any) =>
         this._updateTabsSectionChild(updates)
-      ) ?? html`<div>
+      ) ??
+      html`<div>
         ${localize(
           'editor.layout.no_design_settings',
           this.hass?.locale?.language || 'en',
@@ -17702,8 +18074,7 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
     const hasActionsTab =
-      moduleHandler &&
-      typeof (moduleHandler as any).renderActionsTab === 'function';
+      moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function';
     const hasOtherTab = false;
 
     if (
@@ -17726,12 +18097,16 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-panel ${this._isClosingModuleSettings ? 'is-closing' : ''}"
+      <div
+        class="module-settings-panel ${this._isClosingModuleSettings ? 'is-closing' : ''}"
         @uc-open-template-cheatsheet=${(e: CustomEvent) => {
           e.stopPropagation();
           const panel = e.currentTarget as HTMLElement;
           const cs = panel.querySelector('uc-template-cheatsheet') as any;
-          if (cs) { cs.module = e.detail?.module || 'info'; cs.open = true; }
+          if (cs) {
+            cs.module = e.detail?.module || 'info';
+            cs.open = true;
+          }
         }}
       >
         <div class="panel-header">
@@ -17780,66 +18155,73 @@ export class LayoutTab extends LitElement {
         </div>
 
         <div class="module-tabs">
-          ${module.type === 'external_card'
-            ? (() => {
-                const externalModule = module as any;
-                const isNativeCard =
-                  externalModule.card_type && externalModule.card_type.startsWith('hui-');
-                const hasEditor =
-                  isNativeCard ||
-                  ucExternalCardsService.hasCardEditor(externalModule.card_type);
-                return hasEditor
-                  ? html`
-                      <button
-                        class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
-                        @click=${() => (this._activeModuleTab = 'general')}
-                      >
-                        ${localize('editor.layout.general_tab', lang, 'General')}
-                      </button>
-                    `
-                  : '';
-              })()
-            : html`
-                <button
-                  class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
-                  @click=${() => (this._activeModuleTab = 'general')}
-                >
-                  ${localize('editor.layout.general_tab', lang, 'General')}
-                </button>
-              `}
-          ${module.type === 'external_card'
-            ? html`
-                <button
-                  class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
-                  @click=${() => {
-                    this._activeModuleTab = 'yaml';
-                    this.requestUpdate();
-                  }}
-                >
-                  YAML
-                </button>
-              `
-            : ''}
-          ${hasActionsTab
-            ? html`
-                <button
-                  class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
-                  @click=${() => (this._activeModuleTab = 'actions')}
-                >
-                  ${localize('editor.layout.actions_tab', lang, 'Actions')}
-                </button>
-              `
-            : ''}
-          ${hasOtherTab
-            ? html`
-                <button
-                  class="module-tab ${this._activeModuleTab === 'other' ? 'active' : ''}"
-                  @click=${() => (this._activeModuleTab = 'other')}
-                >
-                  ${localize('editor.layout.other_tab', lang, 'Other')}
-                </button>
-              `
-            : ''}
+          ${
+            module.type === 'external_card'
+              ? (() => {
+                  const externalModule = module as any;
+                  const isNativeCard =
+                    externalModule.card_type && externalModule.card_type.startsWith('hui-');
+                  const hasEditor =
+                    isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
+                  return hasEditor
+                    ? html`
+                        <button
+                          class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+                          @click=${() => (this._activeModuleTab = 'general')}
+                        >
+                          ${localize('editor.layout.general_tab', lang, 'General')}
+                        </button>
+                      `
+                    : '';
+                })()
+              : html`
+                  <button
+                    class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+                    @click=${() => (this._activeModuleTab = 'general')}
+                  >
+                    ${localize('editor.layout.general_tab', lang, 'General')}
+                  </button>
+                `
+          }
+          ${
+            module.type === 'external_card'
+              ? html`
+                  <button
+                    class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
+                    @click=${() => {
+                      this._activeModuleTab = 'yaml';
+                      this.requestUpdate();
+                    }}
+                  >
+                    YAML
+                  </button>
+                `
+              : ''
+          }
+          ${
+            hasActionsTab
+              ? html`
+                  <button
+                    class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
+                    @click=${() => (this._activeModuleTab = 'actions')}
+                  >
+                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                  </button>
+                `
+              : ''
+          }
+          ${
+            hasOtherTab
+              ? html`
+                  <button
+                    class="module-tab ${this._activeModuleTab === 'other' ? 'active' : ''}"
+                    @click=${() => (this._activeModuleTab = 'other')}
+                  >
+                    ${localize('editor.layout.other_tab', lang, 'Other')}
+                  </button>
+                `
+              : ''
+          }
           <button
             class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
             @click=${() => (this._activeModuleTab = 'logic')}
@@ -17855,21 +18237,29 @@ export class LayoutTab extends LitElement {
         </div>
 
         <div class="module-tab-content">
-          ${this._activeModuleTab === 'general'
-            ? module.type === 'external_card' &&
-              !ucExternalCardsService.hasCardEditor((module as any).card_type)
-              ? ''
-              : this._wrapSections(module, 'general', this._renderGeneralTab(module))
-            : ''}
-          ${this._activeModuleTab === 'yaml' && module.type === 'external_card'
-            ? this._renderYamlTab(module)
-            : ''}
-          ${this._activeModuleTab === 'actions' && hasActionsTab
-            ? this._wrapSections(module, 'actions', this._renderActionsTab(module))
-            : ''}
-          ${this._activeModuleTab === 'other' && hasOtherTab
-            ? this._wrapSections(module, 'other', this._renderOtherTab(module))
-            : ''}
+          ${
+            this._activeModuleTab === 'general'
+              ? module.type === 'external_card' &&
+                !ucExternalCardsService.hasCardEditor((module as any).card_type)
+                ? ''
+                : this._wrapSections(module, 'general', this._renderGeneralTab(module))
+              : ''
+          }
+          ${
+            this._activeModuleTab === 'yaml' && module.type === 'external_card'
+              ? this._renderYamlTab(module)
+              : ''
+          }
+          ${
+            this._activeModuleTab === 'actions' && hasActionsTab
+              ? this._wrapSections(module, 'actions', this._renderActionsTab(module))
+              : ''
+          }
+          ${
+            this._activeModuleTab === 'other' && hasOtherTab
+              ? this._wrapSections(module, 'other', this._renderOtherTab(module))
+              : ''
+          }
           ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
           ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
         </div>
@@ -17895,16 +18285,25 @@ export class LayoutTab extends LitElement {
     if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
       if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
       const nestedLayoutModule = layoutModule.modules[childIndex] as any;
-      if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[this._selectedNestedChildIndex])
+      if (
+        !nestedLayoutModule.modules ||
+        !nestedLayoutModule.modules[this._selectedNestedChildIndex]
+      )
         return html``;
       const deepLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
-      if (!deepLayoutModule.modules || !deepLayoutModule.modules[this._selectedNestedNestedChildIndex])
+      if (
+        !deepLayoutModule.modules ||
+        !deepLayoutModule.modules[this._selectedNestedNestedChildIndex]
+      )
         return html``;
       childModule = deepLayoutModule.modules[this._selectedNestedNestedChildIndex];
     } else if (this._selectedNestedChildIndex >= 0) {
       if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
       const nestedLayoutModule = layoutModule.modules[childIndex] as any;
-      if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[this._selectedNestedChildIndex])
+      if (
+        !nestedLayoutModule.modules ||
+        !nestedLayoutModule.modules[this._selectedNestedChildIndex]
+      )
         return html``;
       childModule = nestedLayoutModule.modules[this._selectedNestedChildIndex];
     } else {
@@ -17924,7 +18323,10 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-        <div role="button" tabindex="0" data-uc-activate
+        <div
+          role="button"
+          tabindex="0"
+          data-uc-activate
           class="preview-header"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -17939,7 +18341,10 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-icon role="button" tabindex="0" data-uc-activate
+            <ha-icon
+              role="button"
+              tabindex="0"
+              data-uc-activate
               class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
               icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
               @click=${(e: Event) => {
@@ -17951,13 +18356,15 @@ export class LayoutTab extends LitElement {
                 e.stopPropagation();
                 this._togglePreviewPin();
               }}
-              title="${this._isPreviewPinned
-                ? localize(
-                    'editor.layout.unpin_preview',
-                    lang,
-                    'Unpin preview (scroll with content)'
-                  )
-                : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
+              title="${
+                this._isPreviewPinned
+                  ? localize(
+                      'editor.layout.unpin_preview',
+                      lang,
+                      'Unpin preview (scroll with content)'
+                    )
+                  : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')
+              }"
             ></ha-icon>
             <span style="flex: 1;">
               ${localize('editor.layout.module_preview', lang, 'Module Preview')}
@@ -17975,9 +18382,9 @@ export class LayoutTab extends LitElement {
             ></uc-breakpoint-preview>
             <ha-icon
               class="preview-caret"
-              icon="${this._isCurrentModulePreviewCollapsed()
-                ? 'mdi:chevron-down'
-                : 'mdi:chevron-up'}"
+              icon="${
+                this._isCurrentModulePreviewCollapsed() ? 'mdi:chevron-down' : 'mdi:chevron-up'
+              }"
             ></ha-icon>
           </div>
         </div>
@@ -18078,8 +18485,7 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(childModule.type);
     const hasActionsTab =
-      moduleHandler &&
-      typeof (moduleHandler as any).renderActionsTab === 'function';
+      moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function';
     // Globally disable the legacy "Other" tab across modules (child module editor)
     const hasOtherTab = false;
 
@@ -18104,12 +18510,16 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-panel ${this._isClosingLayoutChildSettings ? 'is-closing' : ''}"
+      <div
+        class="module-settings-panel ${this._isClosingLayoutChildSettings ? 'is-closing' : ''}"
         @uc-open-template-cheatsheet=${(e: CustomEvent) => {
           e.stopPropagation();
           const panel = e.currentTarget as HTMLElement;
           const cs = panel.querySelector('uc-template-cheatsheet') as any;
-          if (cs) { cs.module = e.detail?.module || 'info'; cs.open = true; }
+          if (cs) {
+            cs.module = e.detail?.module || 'info';
+            cs.open = true;
+          }
         }}
       >
         <div class="panel-header">
@@ -18117,11 +18527,7 @@ export class LayoutTab extends LitElement {
             <ha-icon icon="mdi:chevron-left"></ha-icon>
           </button>
           <h3 class="panel-title">
-            ${localize(
-              'editor.layout.child_module_settings_title',
-              lang,
-              'Child Module Settings'
-            )}
+            ${localize('editor.layout.child_module_settings_title', lang, 'Child Module Settings')}
             -
             ${this._getModuleSettingsTitle(childModule, lang).replace(
               /^(Module Settings - |Child Module Settings - )/,
@@ -18129,105 +18535,106 @@ export class LayoutTab extends LitElement {
             )}
           </h3>
           <div class="header-actions">
-              <button
-                class="action-button duplicate-button"
-                @click=${() => {
-                  if (this._selectedLayoutChild) {
-                    // Check nesting level and call appropriate duplicate method
-                    if (
-                      this._selectedNestedNestedChildIndex >= 0 &&
-                      this._selectedNestedChildIndex >= 0
-                    ) {
-                      // 4th level: deeply nested child (e.g., icon inside horizontal inside slider inside another container)
-                      this._duplicateDeepNestedChildModule(
-                        this._selectedLayoutChild.parentRowIndex,
-                        this._selectedLayoutChild.parentColumnIndex,
-                        this._selectedLayoutChild.parentModuleIndex,
-                        this._selectedLayoutChild.childIndex,
-                        this._selectedNestedChildIndex,
-                        this._selectedNestedNestedChildIndex
-                      );
-                    } else if (this._selectedNestedChildIndex >= 0) {
-                      // 3rd level: nested child (e.g., icon inside horizontal inside slider)
-                      this._duplicateNestedChildModule(
-                        this._selectedLayoutChild.parentRowIndex,
-                        this._selectedLayoutChild.parentColumnIndex,
-                        this._selectedLayoutChild.parentModuleIndex,
-                        this._selectedLayoutChild.childIndex,
-                        this._selectedNestedChildIndex
-                      );
-                    } else {
-                      // 2nd level: direct child of layout module
-                      this._duplicateLayoutChildModule(
-                        this._selectedLayoutChild.parentRowIndex,
-                        this._selectedLayoutChild.parentColumnIndex,
-                        this._selectedLayoutChild.parentModuleIndex,
-                        this._selectedLayoutChild.childIndex
-                      );
-                    }
-                    this._closeLayoutChildSettings();
-                  }
-                }}
-                title="Duplicate Child Module"
-              >
-                <ha-icon icon="mdi:content-duplicate"></ha-icon>
-              </button>
-              <button
-                class="action-button delete-button"
-                @click=${() => {
-                  if (this._selectedLayoutChild) {
-                    // Check nesting level and call appropriate delete method
-                    if (
-                      this._selectedNestedNestedChildIndex >= 0 &&
-                      this._selectedNestedChildIndex >= 0
-                    ) {
-                      // 4th level: deeply nested child (e.g., icon inside horizontal inside slider inside another container)
-                      this._deleteDeepNestedChildModule(
-                        this._selectedLayoutChild.parentRowIndex,
-                        this._selectedLayoutChild.parentColumnIndex,
-                        this._selectedLayoutChild.parentModuleIndex,
-                        this._selectedLayoutChild.childIndex,
-                        this._selectedNestedChildIndex,
-                        this._selectedNestedNestedChildIndex
-                      );
-                    } else if (this._selectedNestedChildIndex >= 0) {
-                      // 3rd level: nested child (e.g., icon inside horizontal inside slider)
-                      this._deleteNestedChildModule(
-                        this._selectedLayoutChild.parentRowIndex,
-                        this._selectedLayoutChild.parentColumnIndex,
-                        this._selectedLayoutChild.parentModuleIndex,
-                        this._selectedLayoutChild.childIndex,
-                        this._selectedNestedChildIndex
-                      );
-                    } else {
-                      // 2nd level: direct child of layout module
-                      this._deleteLayoutChildModule(
-                        this._selectedLayoutChild.parentRowIndex,
-                        this._selectedLayoutChild.parentColumnIndex,
-                        this._selectedLayoutChild.parentModuleIndex,
-                        this._selectedLayoutChild.childIndex
-                      );
-                    }
-                    this._closeLayoutChildSettings();
-                  }
-                }}
-                title="Delete Child Module"
-              >
-                <ha-icon icon="mdi:delete"></ha-icon>
-              </button>
-            </div>
-          </div>
-
-          ${!this.isFullScreen && this._isPreviewPinned ? this._renderLayoutChildPreview() : ''}
-
-          <div class="module-tabs">
             <button
-              class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
-              @click=${() => (this._activeModuleTab = 'general')}
+              class="action-button duplicate-button"
+              @click=${() => {
+                if (this._selectedLayoutChild) {
+                  // Check nesting level and call appropriate duplicate method
+                  if (
+                    this._selectedNestedNestedChildIndex >= 0 &&
+                    this._selectedNestedChildIndex >= 0
+                  ) {
+                    // 4th level: deeply nested child (e.g., icon inside horizontal inside slider inside another container)
+                    this._duplicateDeepNestedChildModule(
+                      this._selectedLayoutChild.parentRowIndex,
+                      this._selectedLayoutChild.parentColumnIndex,
+                      this._selectedLayoutChild.parentModuleIndex,
+                      this._selectedLayoutChild.childIndex,
+                      this._selectedNestedChildIndex,
+                      this._selectedNestedNestedChildIndex
+                    );
+                  } else if (this._selectedNestedChildIndex >= 0) {
+                    // 3rd level: nested child (e.g., icon inside horizontal inside slider)
+                    this._duplicateNestedChildModule(
+                      this._selectedLayoutChild.parentRowIndex,
+                      this._selectedLayoutChild.parentColumnIndex,
+                      this._selectedLayoutChild.parentModuleIndex,
+                      this._selectedLayoutChild.childIndex,
+                      this._selectedNestedChildIndex
+                    );
+                  } else {
+                    // 2nd level: direct child of layout module
+                    this._duplicateLayoutChildModule(
+                      this._selectedLayoutChild.parentRowIndex,
+                      this._selectedLayoutChild.parentColumnIndex,
+                      this._selectedLayoutChild.parentModuleIndex,
+                      this._selectedLayoutChild.childIndex
+                    );
+                  }
+                  this._closeLayoutChildSettings();
+                }
+              }}
+              title="Duplicate Child Module"
             >
-              ${localize('editor.layout.general_tab', lang, 'General')}
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
             </button>
-            ${childModule.type === 'external_card'
+            <button
+              class="action-button delete-button"
+              @click=${() => {
+                if (this._selectedLayoutChild) {
+                  // Check nesting level and call appropriate delete method
+                  if (
+                    this._selectedNestedNestedChildIndex >= 0 &&
+                    this._selectedNestedChildIndex >= 0
+                  ) {
+                    // 4th level: deeply nested child (e.g., icon inside horizontal inside slider inside another container)
+                    this._deleteDeepNestedChildModule(
+                      this._selectedLayoutChild.parentRowIndex,
+                      this._selectedLayoutChild.parentColumnIndex,
+                      this._selectedLayoutChild.parentModuleIndex,
+                      this._selectedLayoutChild.childIndex,
+                      this._selectedNestedChildIndex,
+                      this._selectedNestedNestedChildIndex
+                    );
+                  } else if (this._selectedNestedChildIndex >= 0) {
+                    // 3rd level: nested child (e.g., icon inside horizontal inside slider)
+                    this._deleteNestedChildModule(
+                      this._selectedLayoutChild.parentRowIndex,
+                      this._selectedLayoutChild.parentColumnIndex,
+                      this._selectedLayoutChild.parentModuleIndex,
+                      this._selectedLayoutChild.childIndex,
+                      this._selectedNestedChildIndex
+                    );
+                  } else {
+                    // 2nd level: direct child of layout module
+                    this._deleteLayoutChildModule(
+                      this._selectedLayoutChild.parentRowIndex,
+                      this._selectedLayoutChild.parentColumnIndex,
+                      this._selectedLayoutChild.parentModuleIndex,
+                      this._selectedLayoutChild.childIndex
+                    );
+                  }
+                  this._closeLayoutChildSettings();
+                }
+              }}
+              title="Delete Child Module"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+          </div>
+        </div>
+
+        ${!this.isFullScreen && this._isPreviewPinned ? this._renderLayoutChildPreview() : ''}
+
+        <div class="module-tabs">
+          <button
+            class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+            @click=${() => (this._activeModuleTab = 'general')}
+          >
+            ${localize('editor.layout.general_tab', lang, 'General')}
+          </button>
+          ${
+            childModule.type === 'external_card'
               ? html`
                   <button
                     class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
@@ -18239,8 +18646,10 @@ export class LayoutTab extends LitElement {
                     YAML
                   </button>
                 `
-              : ''}
-            ${hasActionsTab
+              : ''
+          }
+          ${
+            hasActionsTab
               ? html`
                   <button
                     class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
@@ -18249,8 +18658,10 @@ export class LayoutTab extends LitElement {
                     ${localize('editor.layout.actions_tab', lang, 'Actions')}
                   </button>
                 `
-              : ''}
-            ${hasOtherTab
+              : ''
+          }
+          ${
+            hasOtherTab
               ? html`
                   <button
                     class="module-tab ${this._activeModuleTab === 'other' ? 'active' : ''}"
@@ -18259,44 +18670,49 @@ export class LayoutTab extends LitElement {
                     Other
                   </button>
                 `
-              : ''}
-            <button
-              class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
-              @click=${() => (this._activeModuleTab = 'logic')}
-            >
-              ${localize('editor.layout.logic_tab', lang, 'Logic')}
-            </button>
-            <button
-              class="module-tab ${this._activeModuleTab === 'design' ? 'active' : ''}"
-              @click=${() => (this._activeModuleTab = 'design')}
-            >
-              ${localize('editor.layout.design_tab', lang, 'Design')}
-            </button>
-          </div>
+              : ''
+          }
+          <button
+            class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
+            @click=${() => (this._activeModuleTab = 'logic')}
+          >
+            ${localize('editor.layout.logic_tab', lang, 'Logic')}
+          </button>
+          <button
+            class="module-tab ${this._activeModuleTab === 'design' ? 'active' : ''}"
+            @click=${() => (this._activeModuleTab = 'design')}
+          >
+            ${localize('editor.layout.design_tab', lang, 'Design')}
+          </button>
+        </div>
 
-          <div class="module-tab-content">
-            ${!this.isFullScreen && !this._isPreviewPinned ? this._renderLayoutChildPreview() : ''}
-            ${this._activeModuleTab === 'general'
+        <div class="module-tab-content">
+          ${!this.isFullScreen && !this._isPreviewPinned ? this._renderLayoutChildPreview() : ''}
+          ${
+            this._activeModuleTab === 'general'
               ? this._renderLayoutChildGeneralTab(childModule)
-              : ''}
-            ${this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
+              : ''
+          }
+          ${
+            this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
               ? (() => {
                   return this._renderLayoutChildYamlTab(childModule);
                 })()
-              : ''}
-            ${this._activeModuleTab === 'actions' && hasActionsTab
+              : ''
+          }
+          ${
+            this._activeModuleTab === 'actions' && hasActionsTab
               ? this._renderLayoutChildActionsTab(childModule)
-              : ''}
-            ${this._activeModuleTab === 'other' && hasOtherTab
+              : ''
+          }
+          ${
+            this._activeModuleTab === 'other' && hasOtherTab
               ? this._renderLayoutChildOtherTab(childModule)
-              : ''}
-            ${this._activeModuleTab === 'logic'
-              ? this._renderLayoutChildLogicTab(childModule)
-              : ''}
-            ${this._activeModuleTab === 'design'
-              ? this._renderLayoutChildDesignTab(childModule)
-              : ''}
-          </div>
+              : ''
+          }
+          ${this._activeModuleTab === 'logic' ? this._renderLayoutChildLogicTab(childModule) : ''}
+          ${this._activeModuleTab === 'design' ? this._renderLayoutChildDesignTab(childModule) : ''}
+        </div>
         <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
@@ -18389,27 +18805,31 @@ export class LayoutTab extends LitElement {
         <div class="error-message">
           <ha-icon icon="mdi:alert-circle"></ha-icon>
           <span>
-            ${staleBundle
-              ? 'Ultra Card was updated. Reload the page to finish.'
-              : loadError
-                ? `Module failed to load: ${module.type}`
-                : `No settings available for module type: ${module.type}`}
+            ${
+              staleBundle
+                ? 'Ultra Card was updated. Reload the page to finish.'
+                : loadError
+                  ? `Module failed to load: ${module.type}`
+                  : `No settings available for module type: ${module.type}`
+            }
           </span>
-          ${loadError
-            ? html`<button
-                class="uc-module-settings-retry"
-                @click=${() => {
-                  if (staleBundle) {
-                    window.location.reload();
-                    return;
-                  }
-                  registry.clearModuleLoadError(module.type);
-                  this.requestUpdate();
-                }}
-              >
-                ${staleBundle ? 'Reload' : localize('editor.area_summary.retry', lang, 'Retry')}
-              </button>`
-            : nothing}
+          ${
+            loadError
+              ? html`<button
+                  class="uc-module-settings-retry"
+                  @click=${() => {
+                    if (staleBundle) {
+                      window.location.reload();
+                      return;
+                    }
+                    registry.clearModuleLoadError(module.type);
+                    this.requestUpdate();
+                  }}
+                >
+                  ${staleBundle ? 'Reload' : localize('editor.area_summary.retry', lang, 'Retry')}
+                </button>`
+              : nothing
+          }
         </div>
       </div>
     `;
@@ -18720,12 +19140,16 @@ export class LayoutTab extends LitElement {
     if (!row) return html``;
 
     return html`
-      <div class="module-settings-panel ${this._isClosingRowSettings ? 'is-closing' : ''}"
+      <div
+        class="module-settings-panel ${this._isClosingRowSettings ? 'is-closing' : ''}"
         @uc-open-template-cheatsheet=${(e: CustomEvent) => {
           e.stopPropagation();
           const panel = e.currentTarget as HTMLElement;
           const cs = panel.querySelector('uc-template-cheatsheet') as any;
-          if (cs) { cs.module = e.detail?.module || 'layout'; cs.open = true; }
+          if (cs) {
+            cs.module = e.detail?.module || 'layout';
+            cs.open = true;
+          }
         }}
       >
         <div class="panel-header">
@@ -18768,21 +19192,13 @@ export class LayoutTab extends LitElement {
             class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
             @click=${() => (this._activeRowTab = 'general')}
           >
-            ${localize(
-              'editor.layout.general_tab',
-              this.hass?.locale?.language || 'en',
-              'General'
-            )}
+            ${localize('editor.layout.general_tab', this.hass?.locale?.language || 'en', 'General')}
           </button>
           <button
             class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
             @click=${() => (this._activeRowTab = 'actions')}
           >
-            ${localize(
-              'editor.layout.actions_tab',
-              this.hass?.locale?.language || 'en',
-              'Actions'
-            )}
+            ${localize('editor.layout.actions_tab', this.hass?.locale?.language || 'en', 'Actions')}
           </button>
           <button
             class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
@@ -18794,11 +19210,7 @@ export class LayoutTab extends LitElement {
             class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
             @click=${() => (this._activeRowTab = 'design')}
           >
-            ${localize(
-              'editor.layout.design_tab',
-              this.hass?.locale?.language || 'en',
-              'Design'
-            )}
+            ${localize('editor.layout.design_tab', this.hass?.locale?.language || 'en', 'Design')}
           </button>
         </div>
 
@@ -18823,12 +19235,16 @@ export class LayoutTab extends LitElement {
     if (!column) return html``;
 
     return html`
-      <div class="module-settings-panel ${this._isClosingColumnSettings ? 'is-closing' : ''}"
+      <div
+        class="module-settings-panel ${this._isClosingColumnSettings ? 'is-closing' : ''}"
         @uc-open-template-cheatsheet=${(e: CustomEvent) => {
           e.stopPropagation();
           const panel = e.currentTarget as HTMLElement;
           const cs = panel.querySelector('uc-template-cheatsheet') as any;
-          if (cs) { cs.module = e.detail?.module || 'layout'; cs.open = true; }
+          if (cs) {
+            cs.module = e.detail?.module || 'layout';
+            cs.open = true;
+          }
         }}
       >
         <div class="panel-header">
@@ -18881,21 +19297,13 @@ export class LayoutTab extends LitElement {
             class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
             @click=${() => (this._activeColumnTab = 'general')}
           >
-            ${localize(
-              'editor.layout.general_tab',
-              this.hass?.locale?.language || 'en',
-              'General'
-            )}
+            ${localize('editor.layout.general_tab', this.hass?.locale?.language || 'en', 'General')}
           </button>
           <button
             class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
             @click=${() => (this._activeColumnTab = 'actions')}
           >
-            ${localize(
-              'editor.layout.actions_tab',
-              this.hass?.locale?.language || 'en',
-              'Actions'
-            )}
+            ${localize('editor.layout.actions_tab', this.hass?.locale?.language || 'en', 'Actions')}
           </button>
           <button
             class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
@@ -18907,11 +19315,7 @@ export class LayoutTab extends LitElement {
             class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
             @click=${() => (this._activeColumnTab = 'design')}
           >
-            ${localize(
-              'editor.layout.design_tab',
-              this.hass?.locale?.language || 'en',
-              'Design'
-            )}
+            ${localize('editor.layout.design_tab', this.hass?.locale?.language || 'en', 'Design')}
           </button>
         </div>
 
@@ -19005,8 +19409,13 @@ export class LayoutTab extends LitElement {
           color: var(--primary-text-color);
           line-height: 1.4;
         }
-        .toggle-row ha-switch {
+        .toggle-row ha-switch,
+        .toggle-row > ha-form {
           flex: 0 0 auto;
+          width: auto;
+        }
+        .toggle-row .field-title {
+          min-width: 0;
         }
         .gap-control-container {
           display: flex;
@@ -19232,62 +19641,64 @@ export class LayoutTab extends LitElement {
                 'When enabled, the row spans the full width of the card. When disabled, you can set a custom width percentage.'
               )}
             </div>
-            ${row.full_width === false
-              ? html`
-                  <div class="field-container" style="margin-top: 16px;">
-                    <div class="field-title">
-                      ${localize(
-                        'editor.layout.width_percent',
-                        this.hass?.locale?.language || 'en',
-                        'Width Percentage'
-                      )}
-                    </div>
-                    <div class="field-description">
-                      ${localize(
-                        'editor.layout.width_percent_desc',
-                        this.hass?.locale?.language || 'en',
-                        'Set the row width as a percentage of the card width (0-100%).'
-                      )}
-                    </div>
-                    <div class="gap-control-container">
-                      <ha-slider
-                        class="gap-slider uc-ha-slider"
-                        labeled
-                        min="0"
-                        max="100"
-                        step="1"
-                        .value="${row.width_percent !== undefined ? row.width_percent : 100}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          this._updateRow({ width_percent: value });
-                        }}
-                      ></ha-slider>
-                      <input
-                        type="number"
-                        class="gap-input"
-                        min="0"
-                        max="100"
-                        step="1"
-                        .value="${row.width_percent !== undefined ? row.width_percent : 100}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          if (!isNaN(value) && value >= 0 && value <= 100) {
+            ${
+              row.full_width === false
+                ? html`
+                    <div class="field-container" style="margin-top: 16px;">
+                      <div class="field-title">
+                        ${localize(
+                          'editor.layout.width_percent',
+                          this.hass?.locale?.language || 'en',
+                          'Width Percentage'
+                        )}
+                      </div>
+                      <div class="field-description">
+                        ${localize(
+                          'editor.layout.width_percent_desc',
+                          this.hass?.locale?.language || 'en',
+                          'Set the row width as a percentage of the card width (0-100%).'
+                        )}
+                      </div>
+                      <div class="gap-control-container">
+                        <ha-slider
+                          class="gap-slider uc-ha-slider"
+                          labeled
+                          min="0"
+                          max="100"
+                          step="1"
+                          .value="${row.width_percent !== undefined ? row.width_percent : 100}"
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const value = Number(target.value);
                             this._updateRow({ width_percent: value });
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'Enter') {
-                            (e.target as HTMLInputElement).blur();
-                          }
-                        }}
-                      />
-                      <span style="font-size: 13px; color: var(--secondary-text-color);">%</span>
+                          }}
+                        ></ha-slider>
+                        <input
+                          type="number"
+                          class="gap-input"
+                          min="0"
+                          max="100"
+                          step="1"
+                          .value="${row.width_percent !== undefined ? row.width_percent : 100}"
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const value = Number(target.value);
+                            if (!isNaN(value) && value >= 0 && value <= 100) {
+                              this._updateRow({ width_percent: value });
+                            }
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            if (e.key === 'Enter') {
+                              (e.target as HTMLInputElement).blur();
+                            }
+                          }}
+                        />
+                        <span style="font-size: 13px; color: var(--secondary-text-color);">%</span>
+                      </div>
                     </div>
-                  </div>
-                `
-              : ''}
+                  `
+                : ''
+            }
           </div>
         </div>
 
@@ -19303,16 +19714,18 @@ export class LayoutTab extends LitElement {
           <div class="field-container">
             <div class="field-description">
               Set custom CSS grid sizing for this row's columns (e.g.,
-              "${this._getCustomSizingPlaceholder(row.columns?.length || 1)}"). Must have
-              exactly ${row.columns?.length || 1} value${(row.columns?.length || 1) !== 1 ? 's' : ''}.
+              "${this._getCustomSizingPlaceholder(row.columns?.length || 1)}"). Must have exactly
+              ${row.columns?.length || 1} value${(row.columns?.length || 1) !== 1 ? 's' : ''}.
               Changes apply instantly when valid.
             </div>
             <input
               type="text"
               class="${this._inlineSizingError ? 'has-error' : ''}"
               placeholder="${this._getCustomSizingPlaceholder(row.columns?.length || 1)}"
-              .value="${this._inlineSizingInput ||
-                (row.column_layout === 'custom' ? row.custom_column_sizing || '' : '')}"
+              .value="${
+                this._inlineSizingInput ||
+                (row.column_layout === 'custom' ? row.custom_column_sizing || '' : '')
+              }"
               @focus=${(e: Event) => {
                 const input = e.target as HTMLInputElement;
                 if (!this._inlineSizingInput) {
@@ -19326,7 +19739,7 @@ export class LayoutTab extends LitElement {
                 this._inlineSizingInput = input.value;
                 const columnCount = row.columns?.length || 1;
                 const validation = this._validateCustomColumnSizingExact(input.value, columnCount);
-                this._inlineSizingError = validation.valid ? '' : (validation.error || '');
+                this._inlineSizingError = validation.valid ? '' : validation.error || '';
                 if (validation.valid && input.value.trim()) {
                   const layout = this._ensureLayout();
                   const newLayout = JSON.parse(JSON.stringify(layout));
@@ -19343,14 +19756,26 @@ export class LayoutTab extends LitElement {
                 }
               }}
             />
-            ${this._inlineSizingError
-              ? html`<div class="validation-error" style="margin-top:4px;">${this._inlineSizingError}</div>`
-              : ''}
-            ${row.column_layout === 'custom' && row.custom_column_sizing
-              ? html`<div style="margin-top:6px;font-size:12px;color:var(--secondary-text-color);">
-                  Current: <code style="background:var(--card-background-color);padding:1px 4px;border-radius:3px;">${row.custom_column_sizing}</code>
-                </div>`
-              : ''}
+            ${
+              this._inlineSizingError
+                ? html`<div class="validation-error" style="margin-top:4px;">
+                    ${this._inlineSizingError}
+                  </div>`
+                : ''
+            }
+            ${
+              row.column_layout === 'custom' && row.custom_column_sizing
+                ? html`<div
+                    style="margin-top:6px;font-size:12px;color:var(--secondary-text-color);"
+                  >
+                    Current:
+                    <code
+                      style="background:var(--card-background-color);padding:1px 4px;border-radius:3px;"
+                      >${row.custom_column_sizing}</code
+                    >
+                  </div>`
+                : ''
+            }
             <button
               style="margin-top:10px;padding:6px 12px;background:var(--primary-color);color:var(--text-primary-color, #fff);border:none;border-radius:4px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;line-height:1;"
               @click=${(e: Event) => {
@@ -19358,7 +19783,10 @@ export class LayoutTab extends LitElement {
                 this._openColumnLayoutSelector(this._selectedRowForSettings);
               }}
             >
-              <ha-icon icon="mdi:table-column" style="--mdc-icon-size:16px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></ha-icon>
+              <ha-icon
+                icon="mdi:table-column"
+                style="--mdc-icon-size:16px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+              ></ha-icon>
               Open Full Layout Selector
             </button>
           </div>
@@ -19386,34 +19814,42 @@ export class LayoutTab extends LitElement {
               { v: this._getColumnVerticalAlignment(row) || 'center' },
               [
                 UcFormUtils.select('v', [
-                { value: 'top', label: localize(
-                  'editor.layout.alignment_top',
-                  this.hass?.locale?.language || 'en',
-                  'Top'
-                ) },
-                { value: 'center', label: localize(
-                  'editor.layout.alignment_center',
-                  this.hass?.locale?.language || 'en',
-                  'Center'
-                ) },
-                { value: 'bottom', label: localize(
-                  'editor.layout.alignment_bottom',
-                  this.hass?.locale?.language || 'en',
-                  'Bottom'
-                ) },
-                { value: 'stretch', label: localize(
-                  'editor.layout.alignment_stretch',
-                  this.hass?.locale?.language || 'en',
-                  'Stretch'
-                ) },
+                  {
+                    value: 'top',
+                    label: localize(
+                      'editor.layout.alignment_top',
+                      this.hass?.locale?.language || 'en',
+                      'Top'
+                    ),
+                  },
+                  {
+                    value: 'center',
+                    label: localize(
+                      'editor.layout.alignment_center',
+                      this.hass?.locale?.language || 'en',
+                      'Center'
+                    ),
+                  },
+                  {
+                    value: 'bottom',
+                    label: localize(
+                      'editor.layout.alignment_bottom',
+                      this.hass?.locale?.language || 'en',
+                      'Bottom'
+                    ),
+                  },
+                  {
+                    value: 'stretch',
+                    label: localize(
+                      'editor.layout.alignment_stretch',
+                      this.hass?.locale?.language || 'en',
+                      'Stretch'
+                    ),
+                  },
                 ]),
               ],
               (e: CustomEvent) => {
-                const value = e.detail.value.v as
-                  | 'top'
-                  | 'center'
-                  | 'bottom'
-                  | 'stretch';
+                const value = e.detail.value.v as 'top' | 'center' | 'bottom' | 'stretch';
                 this._updateAllColumnsVerticalAlignment(row, value);
               }
             )}
@@ -19479,9 +19915,14 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderRowLogicTab(row: CardRow): TemplateResult {
-    return GlobalLogicTab.render(row as any, this.hass, (updates: Partial<CardRow>) => {
-      this._updateRow(updates);
-    }, 'row');
+    return GlobalLogicTab.render(
+      row as any,
+      this.hass,
+      (updates: Partial<CardRow>) => {
+        this._updateRow(updates);
+      },
+      'row'
+    );
   }
 
   private _renderRowDesignTab(row: CardRow): TemplateResult {
@@ -19586,22 +20027,38 @@ export class LayoutTab extends LitElement {
           { v: column.vertical_alignment || 'center' },
           [
             UcFormUtils.select('v', [
-            { value: 'top', label: localize('editor.layout.alignment_top', this.hass?.locale?.language || 'en', 'Top') },
-            { value: 'center', label: localize(
-              'editor.layout.alignment_center',
-              this.hass?.locale?.language || 'en',
-              'Center'
-            ) },
-            { value: 'bottom', label: localize(
-              'editor.layout.alignment_bottom',
-              this.hass?.locale?.language || 'en',
-              'Bottom'
-            ) },
-            { value: 'stretch', label: localize(
-              'editor.layout.alignment_stretch',
-              this.hass?.locale?.language || 'en',
-              'Stretch'
-            ) },
+              {
+                value: 'top',
+                label: localize(
+                  'editor.layout.alignment_top',
+                  this.hass?.locale?.language || 'en',
+                  'Top'
+                ),
+              },
+              {
+                value: 'center',
+                label: localize(
+                  'editor.layout.alignment_center',
+                  this.hass?.locale?.language || 'en',
+                  'Center'
+                ),
+              },
+              {
+                value: 'bottom',
+                label: localize(
+                  'editor.layout.alignment_bottom',
+                  this.hass?.locale?.language || 'en',
+                  'Bottom'
+                ),
+              },
+              {
+                value: 'stretch',
+                label: localize(
+                  'editor.layout.alignment_stretch',
+                  this.hass?.locale?.language || 'en',
+                  'Stretch'
+                ),
+              },
             ]),
           ],
           (e: CustomEvent) =>
@@ -19623,33 +20080,62 @@ export class LayoutTab extends LitElement {
           { v: column.horizontal_alignment || 'center' },
           [
             UcFormUtils.select('v', [
-            { value: 'left', label: localize('editor.layout.alignment_left', this.hass?.locale?.language || 'en', 'Left') },
-            { value: 'center', label: localize(
-              'editor.layout.alignment_center',
-              this.hass?.locale?.language || 'en',
-              'Center'
-            ) },
-            { value: 'right', label: localize(
-              'editor.layout.alignment_right',
-              this.hass?.locale?.language || 'en',
-              'Right'
-            ) },
-            { value: 'space-between', label: localize(
-              'editor.common.space_between',
-              this.hass?.locale?.language || 'en',
-              'Space Between'
-            ) },
-            { value: 'space-around', label: localize(
-              'editor.common.space_around',
-              this.hass?.locale?.language || 'en',
-              'Space Around'
-            ) },
-            { value: 'justify', label: localize('editor.common.justify', this.hass?.locale?.language || 'en', 'Justify') },
-            { value: 'stretch', label: localize(
-              'editor.layout.alignment_stretch',
-              this.hass?.locale?.language || 'en',
-              'Stretch'
-            ) },
+              {
+                value: 'left',
+                label: localize(
+                  'editor.layout.alignment_left',
+                  this.hass?.locale?.language || 'en',
+                  'Left'
+                ),
+              },
+              {
+                value: 'center',
+                label: localize(
+                  'editor.layout.alignment_center',
+                  this.hass?.locale?.language || 'en',
+                  'Center'
+                ),
+              },
+              {
+                value: 'right',
+                label: localize(
+                  'editor.layout.alignment_right',
+                  this.hass?.locale?.language || 'en',
+                  'Right'
+                ),
+              },
+              {
+                value: 'space-between',
+                label: localize(
+                  'editor.common.space_between',
+                  this.hass?.locale?.language || 'en',
+                  'Space Between'
+                ),
+              },
+              {
+                value: 'space-around',
+                label: localize(
+                  'editor.common.space_around',
+                  this.hass?.locale?.language || 'en',
+                  'Space Around'
+                ),
+              },
+              {
+                value: 'justify',
+                label: localize(
+                  'editor.common.justify',
+                  this.hass?.locale?.language || 'en',
+                  'Justify'
+                ),
+              },
+              {
+                value: 'stretch',
+                label: localize(
+                  'editor.layout.alignment_stretch',
+                  this.hass?.locale?.language || 'en',
+                  'Stretch'
+                ),
+              },
             ]),
           ],
           (e: CustomEvent) =>
@@ -19680,9 +20166,14 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderColumnLogicTab(column: CardColumn): TemplateResult {
-    return GlobalLogicTab.render(column as any, this.hass, (updates: Partial<CardColumn>) => {
-      this._updateColumn(updates);
-    }, 'column');
+    return GlobalLogicTab.render(
+      column as any,
+      this.hass,
+      (updates: Partial<CardColumn>) => {
+        this._updateColumn(updates);
+      },
+      'column'
+    );
   }
 
   private _renderColumnDesignTab(column: CardColumn): TemplateResult {
@@ -20133,7 +20624,9 @@ export class LayoutTab extends LitElement {
       const restoreScroll = () => {
         const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
         const selectorBody = this.shadowRoot?.querySelector('.selector-body') as HTMLElement;
-        const panelBody = this.shadowRoot?.querySelector('.module-settings-panel .module-tab-content') as HTMLElement;
+        const panelBody = this.shadowRoot?.querySelector(
+          '.module-settings-panel .module-tab-content'
+        ) as HTMLElement;
         const scrollContainer = popupBody || selectorBody || panelBody;
 
         if (scrollContainer && scrollPos !== null) {
@@ -20173,30 +20666,61 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
 
     return html`
-      <div class="layout-builder ${this.isFullScreen ? 'fullscreen' : ''} ${this._showModuleSettings || this._isClosingModuleSettings || this._showLayoutChildSettings || this._isClosingLayoutChildSettings || this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings || this._showRowSettings || this._isClosingRowSettings || this._showColumnSettings || this._isClosingColumnSettings ? 'module-settings-open' : ''}">
+      <div
+        class="layout-builder ${this.isFullScreen ? 'fullscreen' : ''} ${this._showModuleSettings || this._isClosingModuleSettings || this._showLayoutChildSettings || this._isClosingLayoutChildSettings || this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings || this._showRowSettings || this._isClosingRowSettings || this._showColumnSettings || this._isClosingColumnSettings ? 'module-settings-open' : ''}"
+      >
         <div class="sr-only" role="status" aria-live="polite">${this._reorderAnnouncement}</div>
-        ${this.isFullScreen && this.hass
-          ? (this._showModuleSettings ||
-            this._isClosingModuleSettings ||
-            this._showLayoutChildSettings ||
-            this._isClosingLayoutChildSettings ||
-            this._showTabsSectionChildSettings ||
-            this._isClosingTabsSectionChildSettings)
-            ? html`
-                <div class="fullscreen-top-row">
-                  <div class="fullscreen-module-col">
-                    <div class="fullscreen-section-label">
-                      ${localize('editor.layout.module_preview', lang, 'Module Preview')}
+        ${
+          this.isFullScreen && this.hass
+            ? this._showModuleSettings ||
+              this._isClosingModuleSettings ||
+              this._showLayoutChildSettings ||
+              this._isClosingLayoutChildSettings ||
+              this._showTabsSectionChildSettings ||
+              this._isClosingTabsSectionChildSettings
+              ? html`
+                  <div class="fullscreen-top-row">
+                    <div class="fullscreen-module-col">
+                      <div class="fullscreen-section-label">
+                        ${localize('editor.layout.module_preview', lang, 'Module Preview')}
+                      </div>
+                      <div class="fullscreen-module-col-content">
+                        ${this._renderActiveModulePreviewForFullscreen()}
+                      </div>
                     </div>
-                    <div class="fullscreen-module-col-content">
-                      ${this._renderActiveModulePreviewForFullscreen()}
+                    <div class="fullscreen-card-col">
+                      <div class="fullscreen-section-label">
+                        ${localize('editor.layout.card_preview', lang, 'Card Preview')}
+                      </div>
+                      <div
+                        class="fullscreen-preview-card"
+                        style="height: ${this._previewHeightPx}px;"
+                      >
+                        <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
+                      </div>
+                      <div
+                        class="fullscreen-preview-resize-handle"
+                        title="${localize(
+                          'editor.layout.resize_preview',
+                          lang,
+                          'Drag to resize preview'
+                        )}"
+                        @pointerdown=${this._onPreviewResizeStart}
+                      >
+                        <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
+                      </div>
                     </div>
                   </div>
-                  <div class="fullscreen-card-col">
-                    <div class="fullscreen-section-label">
+                `
+              : html`
+                  <div class="fullscreen-preview">
+                    <div class="fullscreen-preview-label">
                       ${localize('editor.layout.card_preview', lang, 'Card Preview')}
                     </div>
-                    <div class="fullscreen-preview-card" style="height: ${this._previewHeightPx}px;">
+                    <div
+                      class="fullscreen-preview-card"
+                      style="height: ${this._previewHeightPx}px;"
+                    >
                       <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
                     </div>
                     <div
@@ -20211,30 +20735,9 @@ export class LayoutTab extends LitElement {
                       <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
                     </div>
                   </div>
-                </div>
-              `
-            : html`
-                <div class="fullscreen-preview">
-                  <div class="fullscreen-preview-label">
-                    ${localize('editor.layout.card_preview', lang, 'Card Preview')}
-                  </div>
-                  <div class="fullscreen-preview-card" style="height: ${this._previewHeightPx}px;">
-                    <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
-                  </div>
-                  <div
-                    class="fullscreen-preview-resize-handle"
-                    title="${localize(
-                      'editor.layout.resize_preview',
-                      lang,
-                      'Drag to resize preview'
-                    )}"
-                    @pointerdown=${this._onPreviewResizeStart}
-                  >
-                    <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
-                  </div>
-                </div>
-              `
-          : ''}
+                `
+            : ''
+        }
         <div class="builder-toolbar">
           <div class="toolbar-row">
             <!-- History group -->
@@ -20350,21 +20853,23 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:import"></ha-icon>
               </button>
-              ${this._isCloudAuthenticated || this.cloudUser
-                ? html`
-                    <button
-                      class="tb-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openSharePresetDialog();
-                      }}
-                      title="Share your current layout on ultracard.io"
-                      aria-label="Share your current layout on ultracard.io"
-                    >
-                      <ha-icon icon="mdi:share-variant"></ha-icon>
-                    </button>
-                  `
-                : ''}
+              ${
+                this._isCloudAuthenticated || this.cloudUser
+                  ? html`
+                      <button
+                        class="tb-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openSharePresetDialog();
+                        }}
+                        title="Share your current layout on ultracard.io"
+                        aria-label="Share your current layout on ultracard.io"
+                      >
+                        <ha-icon icon="mdi:share-variant"></ha-icon>
+                      </button>
+                    `
+                  : ''
+              }
             </div>
             <!-- Help & Fullscreen -->
             <div class="toolbar-group toolbar-group-end">
@@ -20387,12 +20892,16 @@ export class LayoutTab extends LitElement {
                     new CustomEvent('toggle-fullscreen', { bubbles: true, composed: true })
                   );
                 }}
-                title="${this.isFullScreen
-                  ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
-                  : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
-                aria-label="${this.isFullScreen
-                  ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
-                  : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
+                title="${
+                  this.isFullScreen
+                    ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
+                    : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')
+                }"
+                aria-label="${
+                  this.isFullScreen
+                    ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
+                    : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')
+                }"
               >
                 <ha-icon
                   icon="${this.isFullScreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"
@@ -20403,16 +20912,17 @@ export class LayoutTab extends LitElement {
         </div>
 
         ${this._renderBreadcrumbs()}
-
-        ${this._showOnboarding
-          ? html`
-              <uc-editor-onboarding
-                .hass=${this.hass}
-                .state=${this._onboardingState}
-                @onboarding-action=${this._handleOnboardingAction}
-              ></uc-editor-onboarding>
-            `
-          : ''}
+        ${
+          this._showOnboarding
+            ? html`
+                <uc-editor-onboarding
+                  .hass=${this.hass}
+                  .state=${this._onboardingState}
+                  @onboarding-action=${this._handleOnboardingAction}
+                ></uc-editor-onboarding>
+              `
+            : ''
+        }
 
         <div class="tree-view-container">
           <div id="tree-drop-indicator" class="tree-drop-indicator" aria-hidden="true"></div>
@@ -20434,87 +20944,103 @@ export class LayoutTab extends LitElement {
         </div>
 
         ${this._showModuleSelector ? this._renderModuleSelector() : ''}
-        ${this._showModuleSettings || this._isClosingModuleSettings
-          ? this._renderModuleSettingsPanel()
-          : ''}
-        ${this._showLayoutChildSettings || this._isClosingLayoutChildSettings
-          ? this._renderLayoutChildSettings()
-          : ''}
-        ${this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings
-          ? this._renderTabsSectionChildSettings()
-          : ''}
+        ${
+          this._showModuleSettings || this._isClosingModuleSettings
+            ? this._renderModuleSettingsPanel()
+            : ''
+        }
+        ${
+          this._showLayoutChildSettings || this._isClosingLayoutChildSettings
+            ? this._renderLayoutChildSettings()
+            : ''
+        }
+        ${
+          this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings
+            ? this._renderTabsSectionChildSettings()
+            : ''
+        }
         ${this._showRowSettings || this._isClosingRowSettings ? this._renderRowSettings() : ''}
-        ${this._showColumnSettings || this._isClosingColumnSettings
-          ? this._renderColumnSettings()
-          : ''}
+        ${
+          this._showColumnSettings || this._isClosingColumnSettings
+            ? this._renderColumnSettings()
+            : ''
+        }
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
         ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
-        ${this._renderEntityReplaceDialog()}
-        ${this._renderVariableMappingDialog()} ${this._renderShortcodeDialog()}
+        ${this._renderEntityReplaceDialog()} ${this._renderVariableMappingDialog()}
+        ${this._renderShortcodeDialog()}
         ${this._showKeyboardShortcuts ? this._renderKeyboardShortcutsDialog() : ''}
         <!-- Share Preset dialogs — always in DOM so they work regardless of active tab or popup state -->
-        ${this._showLoginDialogForSubmit
-          ? html`
-              <uc-hub-login-dialog
-                @close=${(e: Event) => {
-                  e.stopPropagation();
-                  this._showLoginDialogForSubmit = false;
-                  this._openOverflowMenuKey = null;
-                }}
-              ></uc-hub-login-dialog>
-            `
-          : ''}
+        ${
+          this._showLoginDialogForSubmit
+            ? html`
+                <uc-hub-login-dialog
+                  @close=${(e: Event) => {
+                    e.stopPropagation();
+                    this._showLoginDialogForSubmit = false;
+                    this._openOverflowMenuKey = null;
+                  }}
+                ></uc-hub-login-dialog>
+              `
+            : ''
+        }
         <!-- Builder preset inline rating dialogs -->
-        ${this._builderShowLoginForRating
-          ? html`
-              <uc-hub-login-dialog
-                @close=${(e: Event) => {
-                  e.stopPropagation();
-                  this._builderShowLoginForRating = false;
-                }}
-              ></uc-hub-login-dialog>
-            `
-          : ''}
-        ${this._builderRatingPreset
-          ? html`
-              <uc-hub-rate-dialog
-                .presetId=${this._builderRatingPreset.id}
-                .presetName=${this._builderRatingPreset.name}
-                .existingRating=${this._builderRatingPreset.existingRating}
-                @rating-submitted=${(e: CustomEvent<{ presetId: string; rating: number }>) => {
-                  const { presetId, rating } = e.detail;
-                  this._builderUserReviews = new Map(this._builderUserReviews).set(
-                    presetId,
-                    rating
-                  );
-                  this._builderRatingPreset = null;
-                }}
-                @close=${(): void => {
-                  this._builderRatingPreset = null;
-                }}
-              ></uc-hub-rate-dialog>
-            `
-          : ''}
-        ${this._showSubmitPresetDialog && this._submitPresetDialogPayload
-          ? html`
-              <uc-hub-submit-preset-dialog
-                .payload=${this._submitPresetDialogPayload}
-                @preset-submitted=${(e: Event) => {
-                  e.stopPropagation();
-                  this._showToast(
-                    'Your preset has been submitted! It will appear in the gallery once reviewed and approved.'
-                  );
-                  this._showSubmitPresetDialog = false;
-                  this._submitPresetDialogPayload = null;
-                }}
-                @close=${(e: Event) => {
-                  e.stopPropagation();
-                  this._showSubmitPresetDialog = false;
-                  this._submitPresetDialogPayload = null;
-                }}
-              ></uc-hub-submit-preset-dialog>
-            `
-          : ''}
+        ${
+          this._builderShowLoginForRating
+            ? html`
+                <uc-hub-login-dialog
+                  @close=${(e: Event) => {
+                    e.stopPropagation();
+                    this._builderShowLoginForRating = false;
+                  }}
+                ></uc-hub-login-dialog>
+              `
+            : ''
+        }
+        ${
+          this._builderRatingPreset
+            ? html`
+                <uc-hub-rate-dialog
+                  .presetId=${this._builderRatingPreset.id}
+                  .presetName=${this._builderRatingPreset.name}
+                  .existingRating=${this._builderRatingPreset.existingRating}
+                  @rating-submitted=${(e: CustomEvent<{ presetId: string; rating: number }>) => {
+                    const { presetId, rating } = e.detail;
+                    this._builderUserReviews = new Map(this._builderUserReviews).set(
+                      presetId,
+                      rating
+                    );
+                    this._builderRatingPreset = null;
+                  }}
+                  @close=${(): void => {
+                    this._builderRatingPreset = null;
+                  }}
+                ></uc-hub-rate-dialog>
+              `
+            : ''
+        }
+        ${
+          this._showSubmitPresetDialog && this._submitPresetDialogPayload
+            ? html`
+                <uc-hub-submit-preset-dialog
+                  .payload=${this._submitPresetDialogPayload}
+                  @preset-submitted=${(e: Event) => {
+                    e.stopPropagation();
+                    this._showToast(
+                      'Your preset has been submitted! It will appear in the gallery once reviewed and approved.'
+                    );
+                    this._showSubmitPresetDialog = false;
+                    this._submitPresetDialogPayload = null;
+                  }}
+                  @close=${(e: Event) => {
+                    e.stopPropagation();
+                    this._showSubmitPresetDialog = false;
+                    this._submitPresetDialogPayload = null;
+                  }}
+                ></uc-hub-submit-preset-dialog>
+              `
+            : ''
+        }
       </div>
     `;
   }
@@ -20581,7 +21107,10 @@ export class LayoutTab extends LitElement {
   }
 
   /** Body content for the module selector (tabs content). */
-  private _renderModuleSelectorBody(allModules: ModuleManifest[], isAddingToLayoutModule: boolean): TemplateResult {
+  private _renderModuleSelectorBody(
+    allModules: ModuleManifest[],
+    isAddingToLayoutModule: boolean
+  ): TemplateResult {
     if (this._activeModuleSelectorTab === 'cards') {
       const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
       const isPro =
@@ -20754,7 +21283,6 @@ export class LayoutTab extends LitElement {
       })
     );
   }
-
 
   private async _addCardFromTab(cardType: string): Promise<void> {
     // Check if a column is selected
@@ -20953,8 +21481,7 @@ export class LayoutTab extends LitElement {
         }
         break;
       case 'preview_breakpoints':
-        this._previewBreakpoint =
-          this._previewBreakpoint === 'desktop' ? 'mobile' : 'desktop';
+        this._previewBreakpoint = this._previewBreakpoint === 'desktop' ? 'mobile' : 'desktop';
         ucModulePreviewService.setPreviewBreakpoint(this._previewBreakpoint);
         this._completeOnboardingStep('preview_breakpoints');
         this.requestUpdate();
@@ -20969,28 +21496,50 @@ export class LayoutTab extends LitElement {
       { keys: `${mod}+Z`, action: localize('editor.layout.undo', lang, 'Undo') },
       { keys: `${mod}+Shift+Z`, action: localize('editor.layout.redo', lang, 'Redo') },
       { keys: `${mod}+Y`, action: localize('editor.layout.redo', lang, 'Redo') },
-      { keys: 'Esc', action: localize('editor.layout.keyboard_exit_fullscreen', lang, 'Exit Full Screen') },
+      {
+        keys: 'Esc',
+        action: localize('editor.layout.keyboard_exit_fullscreen', lang, 'Exit Full Screen'),
+      },
     ];
     return html`
       <div
         class="shortcode-dialog-overlay"
-        @click=${(e: Event) => { if (e.target === e.currentTarget) this._showKeyboardShortcuts = false; }}
+        @click=${(e: Event) => {
+          if (e.target === e.currentTarget) this._showKeyboardShortcuts = false;
+        }}
       >
-        <div class="shortcode-dialog" @click=${(e: Event) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}">
+        <div
+          class="shortcode-dialog"
+          @click=${(e: Event) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-label="${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}"
+        >
           <div class="shortcode-dialog-header">
-            <span class="shortcode-dialog-title">${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}</span>
+            <span class="shortcode-dialog-title"
+              >${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}</span
+            >
             <button
               class="shortcode-dialog-close"
               @click=${() => (this._showKeyboardShortcuts = false)}
               aria-label="Close"
-            >×</button>
+            >
+              ×
+            </button>
           </div>
           <div style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
             ${shortcuts.map(
               s => html`
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
-                  <span style="font-size: 13px; color: var(--primary-text-color);">${s.action}</span>
-                  <kbd style="font-family: ui-monospace, monospace; font-size: 12px; padding: 3px 8px; background: var(--secondary-background-color); border: 1px solid var(--divider-color); border-radius: 4px; color: var(--primary-text-color); white-space: nowrap;">${s.keys}</kbd>
+                <div
+                  style="display: flex; justify-content: space-between; align-items: center; gap: 16px;"
+                >
+                  <span style="font-size: 13px; color: var(--primary-text-color);"
+                    >${s.action}</span
+                  >
+                  <kbd
+                    style="font-family: ui-monospace, monospace; font-size: 12px; padding: 3px 8px; background: var(--secondary-background-color); border: 1px solid var(--divider-color); border-radius: 4px; color: var(--primary-text-color); white-space: nowrap;"
+                    >${s.keys}</kbd
+                  >
                 </div>
               `
             )}
@@ -21665,10 +22214,9 @@ export class LayoutTab extends LitElement {
               const bpHasOverride = this._hasBreakpointOverride(currentRow, bp);
               return html`
                 <button
-                  class="breakpoint-tab ${breakpoint === bp ? 'active' : ''} ${bpHasOverride &&
-                  bp !== 'desktop'
-                    ? 'has-override'
-                    : ''}"
+                  class="breakpoint-tab ${breakpoint === bp ? 'active' : ''} ${
+                    bpHasOverride && bp !== 'desktop' ? 'has-override' : ''
+                  }"
                   @click=${() => {
                     this._columnLayoutBreakpoint = bp;
                     // Reset custom sizing input when switching breakpoints
@@ -21687,9 +22235,11 @@ export class LayoutTab extends LitElement {
                 >
                   <ha-icon icon="${info.icon}"></ha-icon>
                   <span class="tab-label">${info.label}</span>
-                  ${bpHasOverride && bp !== 'desktop'
-                    ? html`<span class="override-dot"></span>`
-                    : ''}
+                  ${
+                    bpHasOverride && bp !== 'desktop'
+                      ? html`<span class="override-dot"></span>`
+                      : ''
+                  }
                 </button>
               `;
             })}
@@ -21705,54 +22255,60 @@ export class LayoutTab extends LitElement {
                   ${breakpointLabels[breakpoint].description}
                 </div>
               </div>
-              ${breakpoint !== 'desktop' && hasOverride
-                ? html`
-                    <button
-                      class="clear-override-btn"
-                      @click=${() => this._clearBreakpointLayout(breakpoint)}
-                      title="Clear override and inherit from desktop"
-                    >
-                      <ha-icon icon="mdi:close"></ha-icon>
-                      Clear
-                    </button>
-                  `
-                : ''}
+              ${
+                breakpoint !== 'desktop' && hasOverride
+                  ? html`
+                      <button
+                        class="clear-override-btn"
+                        @click=${() => this._clearBreakpointLayout(breakpoint)}
+                        title="Clear override and inherit from desktop"
+                      >
+                        <ha-icon icon="mdi:close"></ha-icon>
+                        Clear
+                      </button>
+                    `
+                  : ''
+              }
             </div>
 
-            ${breakpoint === 'desktop'
-              ? html`
-                  <div class="desktop-note">
-                    <ha-icon icon="mdi:information-outline"></ha-icon>
-                    <span
-                      >Desktop defines the number of columns. Other breakpoints can rearrange them
-                      differently.</span
-                    >
-                  </div>
-                `
-              : html`
-                  <div class="inherit-note ${!hasOverride ? 'active' : ''}">
-                    <ha-icon icon="${hasOverride ? 'mdi:pencil' : 'mdi:link-variant'}"></ha-icon>
-                    <span
-                      >${hasOverride
-                        ? 'Custom layout set for this breakpoint'
-                        : `Inheriting from desktop (${desktopColumnCount} column${desktopColumnCount !== 1 ? 's' : ''})`}</span
-                    >
-                  </div>
-                `}
+            ${
+              breakpoint === 'desktop'
+                ? html`
+                    <div class="desktop-note">
+                      <ha-icon icon="mdi:information-outline"></ha-icon>
+                      <span
+                        >Desktop defines the number of columns. Other breakpoints can rearrange them
+                        differently.</span
+                      >
+                    </div>
+                  `
+                : html`
+                    <div class="inherit-note ${!hasOverride ? 'active' : ''}">
+                      <ha-icon icon="${hasOverride ? 'mdi:pencil' : 'mdi:link-variant'}"></ha-icon>
+                      <span
+                        >${
+                          hasOverride
+                            ? 'Custom layout set for this breakpoint'
+                            : `Inheriting from desktop (${desktopColumnCount} column${desktopColumnCount !== 1 ? 's' : ''})`
+                        }</span
+                      >
+                    </div>
+                  `
+            }
 
             <div class="layout-options">
               ${availableLayouts.map(
                 layoutOpt => html`
                   <button
-                    class="layout-option-btn ${layoutOpt.id === currentLayoutId ||
-                    layoutOpt.id === migratedLayoutId
-                      ? 'current'
-                      : ''}"
+                    class="layout-option-btn ${
+                      layoutOpt.id === currentLayoutId || layoutOpt.id === migratedLayoutId
+                        ? 'current'
+                        : ''
+                    }"
                     @click=${() => this._setBreakpointLayout(breakpoint, layoutOpt.id)}
-                    title="${layoutOpt.name} (${layoutOpt.columnCount} column${layoutOpt.columnCount !==
-                    1
-                      ? 's'
-                      : ''})"
+                    title="${layoutOpt.name} (${layoutOpt.columnCount} column${
+                      layoutOpt.columnCount !== 1 ? 's' : ''
+                    })"
                   >
                     <div class="layout-visual">
                       <div class="layout-icon-large">
@@ -21763,9 +22319,11 @@ export class LayoutTab extends LitElement {
                     <div class="layout-columns">
                       ${layoutOpt.columnCount} col${layoutOpt.columnCount !== 1 ? 's' : ''}
                     </div>
-                    ${layoutOpt.id === currentLayoutId || layoutOpt.id === migratedLayoutId
-                      ? html`<div class="current-badge">Current</div>`
-                      : ''}
+                    ${
+                      layoutOpt.id === currentLayoutId || layoutOpt.id === migratedLayoutId
+                        ? html`<div class="current-badge">Current</div>`
+                        : ''
+                    }
                   </button>
                 `
               )}
@@ -21777,9 +22335,11 @@ export class LayoutTab extends LitElement {
               <div class="custom-sizing-description">
                 Enter custom CSS grid sizing (e.g.,
                 "${this._getCustomSizingPlaceholder(desktopColumnCount)}").
-                ${breakpoint === 'desktop'
-                  ? `Must have exactly ${desktopColumnCount} value${desktopColumnCount !== 1 ? 's' : ''}.`
-                  : `Valid column counts: ${this._getValidColumnCountsForBreakpoint(desktopColumnCount).join(', ')} (must divide evenly into ${desktopColumnCount}).`}
+                ${
+                  breakpoint === 'desktop'
+                    ? `Must have exactly ${desktopColumnCount} value${desktopColumnCount !== 1 ? 's' : ''}.`
+                    : `Valid column counts: ${this._getValidColumnCountsForBreakpoint(desktopColumnCount).join(', ')} (must divide evenly into ${desktopColumnCount}).`
+                }
               </div>
 
               <input
@@ -21796,13 +22356,16 @@ export class LayoutTab extends LitElement {
                 }}
               />
 
-              ${this._customSizingError
-                ? html` <div class="validation-error">${this._customSizingError}</div> `
-                : ''}
-
-              ${isCustomLayout
-                ? html`<div class="current-custom-badge">Currently using custom sizing</div>`
-                : ''}
+              ${
+                this._customSizingError
+                  ? html` <div class="validation-error">${this._customSizingError}</div> `
+                  : ''
+              }
+              ${
+                isCustomLayout
+                  ? html`<div class="current-custom-badge">Currently using custom sizing</div>`
+                  : ''
+              }
             </div>
           </div>
 

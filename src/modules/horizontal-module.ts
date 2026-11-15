@@ -413,15 +413,15 @@ export class UltraHorizontalModule extends BaseUltraModule {
         </style>
         <div
           class="horizontal-module-preview"
-          style="${designStyles}; ${containerStyles.width
-            ? `width: ${containerStyles.width};`
-            : ''}"
+          style="${designStyles}; ${
+            containerStyles.width ? `width: ${containerStyles.width};` : ''
+          }"
         >
           <div
             class="horizontal-preview-content ${hoverEffectClass}"
-            style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
-              ? 'pointer'
-              : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
+            style="${this.styleObjectToCss(containerStyles)}; cursor: ${
+              hasActions ? 'pointer' : 'default'
+            }; ${hasActions ? 'pointer-events: auto;' : ''}"
             data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
             @pointerdown=${hasActions ? handlers.onPointerDown : null}
             @pointermove=${hasActions ? handlers.onPointerMove : null}
@@ -429,114 +429,119 @@ export class UltraHorizontalModule extends BaseUltraModule {
             @pointercancel=${hasActions ? handlers.onPointerCancel : null}
             @pointerleave=${hasActions ? handlers.onPointerLeave : null}
           >
-            ${visibleChildren.length > 0
-              ? (() => {
-                  return repeat(
-                    visibleChildren,
-                    cm => cm.id || cm.type,
-                    (childModule, index) => {
-                      const childMargin =
-                        layoutGap < 0 && index > 0 ? `0 0 0 ${layoutGap}${gapUnit}` : '0';
-                      const isNegativeGap = layoutGap < 0;
+            ${
+              visibleChildren.length > 0
+                ? (() => {
+                    return repeat(
+                      visibleChildren,
+                      cm => cm.id || cm.type,
+                      (rawChildModule, index) => {
+                        const childModule = this.releaseStockCameraMaxWidth(rawChildModule);
+                        const childMargin =
+                          layoutGap < 0 && index > 0 ? `0 0 0 ${layoutGap}${gapUnit}` : '0';
+                        const isNegativeGap = layoutGap < 0;
 
-                      const layoutShouldGrow =
-                        !clusterOverlappingChildren && horizontalModule.alignment === 'justify';
-                      const childShouldGrow =
-                        !clusterOverlappingChildren &&
-                        this.childShouldFillAvailableSpace(childModule);
+                        const layoutShouldGrow =
+                          !clusterOverlappingChildren && horizontalModule.alignment === 'justify';
+                        const childShouldGrow =
+                          !clusterOverlappingChildren &&
+                          this.childShouldFillAvailableSpace(childModule);
 
-                      const childPreferredWidth =
-                        !layoutShouldGrow && !childShouldGrow && !clusterOverlappingChildren
-                          ? this.getChildPreferredWidth(childModule)
-                          : null;
+                        const childPreferredWidth =
+                          !layoutShouldGrow && !childShouldGrow && !clusterOverlappingChildren
+                            ? this.getChildPreferredWidth(childModule)
+                            : null;
 
-                      const fluidMediaFlex =
-                        !layoutShouldGrow &&
-                        !childShouldGrow &&
-                        !clusterOverlappingChildren &&
-                        !childPreferredWidth
-                          ? this.getFluidMediaFlex(childModule)
-                          : null;
+                        const fluidMediaFlex =
+                          !layoutShouldGrow &&
+                          !childShouldGrow &&
+                          !clusterOverlappingChildren &&
+                          !childPreferredWidth
+                            ? this.getFluidMediaFlex(childModule)
+                            : null;
 
-                      const flexSegments = [
-                        layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
-                        childShouldGrow
-                          ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
-                          : '',
-                        clusterOverlappingChildren
-                          ? 'flex: 0 0 auto; width: max-content; max-width: 100%;'
-                          : '',
-                        !layoutShouldGrow && !childShouldGrow && childPreferredWidth
-                          ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
-                          : '',
-                        fluidMediaFlex || '',
-                      ].filter(Boolean);
+                        const flexSegments = [
+                          layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
+                          childShouldGrow
+                            ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                            : '',
+                          clusterOverlappingChildren
+                            ? 'flex: 0 0 auto; width: max-content; max-width: 100%;'
+                            : '',
+                          !layoutShouldGrow && !childShouldGrow && childPreferredWidth
+                            ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
+                            : '',
+                          fluidMediaFlex || '',
+                        ].filter(Boolean);
 
-                      const baseStyles = `
+                        const baseStyles = `
                       overflow: visible;
                       ${flexSegments.join(' ')}
                       box-sizing: border-box;
                       margin: ${childMargin};
                     `;
-                      const negativeGapStyles = isNegativeGap
-                        ? 'padding: 0; border: none; background: transparent;'
-                        : '';
+                        const negativeGapStyles = isNegativeGap
+                          ? 'padding: 0; border: none; background: transparent;'
+                          : '';
 
-                      return html`
-                        <div
-                          class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''} ${clusterOverlappingChildren ? 'uc-overlap-child' : ''}"
-                          data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
-                          style="${baseStyles} ${negativeGapStyles}"
-                        >
-                          ${this._renderChildModulePreview(
-                            childModule,
-                            hass,
-                            moduleWithDesign,
-                            (this as any)._currentConfig,
-                            (this as any)._currentPreviewContext
-                          )}
-                        </div>
-                      `;
-                    }
-                  );
-                })()
-              : html`
-                  <div class="empty-layout-message">
-                    ${allChildrenHiddenByLogic
-                      ? html`
-                          <span
-                            >${localize(
-                              'editor.horizontal.empty.all_hidden',
-                              lang,
-                              'All modules hidden by logic'
-                            )}</span
+                        return html`
+                          <div
+                            class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''} ${clusterOverlappingChildren ? 'uc-overlap-child' : ''}"
+                            data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
+                            style="${baseStyles} ${negativeGapStyles}"
                           >
-                          <small
-                            >${localize(
-                              'editor.horizontal.empty.all_hidden_desc',
-                              lang,
-                              'Every module in this layout is hidden by its display conditions'
-                            )}</small
-                          >
-                        `
-                      : html`
-                          <span
-                            >${localize(
-                              'editor.horizontal.empty.no_modules',
-                              lang,
-                              'No modules added yet'
-                            )}</span
-                          >
-                          <small
-                            >${localize(
-                              'editor.horizontal.empty.add_modules',
-                              lang,
-                              'Add modules in the layout builder to see them here'
-                            )}</small
-                          >
-                        `}
-                  </div>
-                `}
+                            ${this._renderChildModulePreview(
+                              childModule,
+                              hass,
+                              moduleWithDesign,
+                              (this as any)._currentConfig,
+                              (this as any)._currentPreviewContext
+                            )}
+                          </div>
+                        `;
+                      }
+                    );
+                  })()
+                : html`
+                    <div class="empty-layout-message">
+                      ${
+                        allChildrenHiddenByLogic
+                          ? html`
+                              <span
+                                >${localize(
+                                  'editor.horizontal.empty.all_hidden',
+                                  lang,
+                                  'All modules hidden by logic'
+                                )}</span
+                              >
+                              <small
+                                >${localize(
+                                  'editor.horizontal.empty.all_hidden_desc',
+                                  lang,
+                                  'Every module in this layout is hidden by its display conditions'
+                                )}</small
+                              >
+                            `
+                          : html`
+                              <span
+                                >${localize(
+                                  'editor.horizontal.empty.no_modules',
+                                  lang,
+                                  'No modules added yet'
+                                )}</span
+                              >
+                              <small
+                                >${localize(
+                                  'editor.horizontal.empty.add_modules',
+                                  lang,
+                                  'Add modules in the layout builder to see them here'
+                                )}</small
+                              >
+                            `
+                      }
+                    </div>
+                  `
+            }
           </div>
         </div>
       `,
@@ -992,6 +997,34 @@ export class UltraHorizontalModule extends BaseUltraModule {
         : 'max-width: 100%;';
 
     return `flex: 1 1 240px; min-width: 0; ${maxWidthCss}`;
+  }
+
+  /**
+   * New Camera modules start with a 500px max width so a lone camera doesn't blow up on a wide
+   * dashboard. Side by side in a row that cap is what stops two cameras from filling the row:
+   * on anything wider than about 1,000px they stop at 500px each and leave empty space. Inside
+   * a Horizontal layout the row already sizes them, so drop that stock cap. Any other max width
+   * the user typed is kept.
+   */
+  private releaseStockCameraMaxWidth(childModule: CardModule): CardModule {
+    if (childModule.type !== 'camera') {
+      return childModule;
+    }
+    const child = childModule as any;
+    const isStock = (v: unknown) => typeof v === 'string' && v.trim().toLowerCase() === '500px';
+    const designCap = isStock(child?.design?.max_width);
+    const rootCap = isStock(child?.max_width);
+    if (!designCap && !rootCap) {
+      return childModule;
+    }
+    const released: any = { ...child };
+    if (designCap) {
+      released.design = { ...child.design, max_width: '' };
+    }
+    if (rootCap) {
+      released.max_width = '';
+    }
+    return released as CardModule;
   }
 
   private getChildPreferredWidth(childModule: CardModule): string | null {
