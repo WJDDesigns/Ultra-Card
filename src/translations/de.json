@@ -745,12 +745,12 @@
       "link_underline": "Links unterstreichen",
       "link_underline_desc": "Zeigt eine Linie unter Links. Die Linie übernimmt die Farbe, die Sie dem Linktext geben.",
       "icon_size": "Icon Size",
-      "template_cheatsheet": "Template Cheatsheet",
-      "text_size": "Text Size",
-      "unified_replaces_content": "Rich text is hidden while Unified Template Mode is on. Turn it off to edit static content, or use the unified template JSON for dynamic text.",
+      "template_cheatsheet": "Vorlagen-Spickezettel",
+      "text_size": "Textgröße",
+      "unified_replaces_content": "Rich-Text wird ausgeblendet, während der Modus „Vereinheitlichte Vorlage“ aktiviert ist. Deaktivieren Sie ihn, um statische Inhalte zu bearbeiten, oder verwenden Sie das JSON der einheitlichen Vorlage für dynamischen Text.",
       "unified_template_section": {
-        "desc": "Return JSON with content, color, and optional container_background_color. Plain Jinja strings are treated as dynamic text. HTML tags in the output are shown as text, so style it with color rather than markup.",
-        "toggle": "Template Mode"
+        "desc": "Gibt JSON mit Inhalt, Farbe und optionaler container_background_color zurück. Einfache Jinja-Strings werden als dynamischer Text behandelt. HTML-Tags in der Ausgabe werden als Text angezeigt. Gestalten Sie sie daher mit Farbe statt mit Markup.",
+        "toggle": "Vorlagenmodus"
       }
     },
     "markdown": {
@@ -773,11 +773,11 @@
       "html": {
         "title": "HTML Support"
       },
-      "template_cheatsheet": "Template Cheatsheet",
-      "unified_replaces_editor": "Static markdown editor is hidden while Unified Template Mode is on. Turn it off to edit markdown here, or supply markdown in the unified template `content` field.",
+      "template_cheatsheet": "Vorlagen-Spickezettel",
+      "unified_replaces_editor": "Der statische Markdown-Editor ist ausgeblendet, während der einheitliche Vorlagenmodus aktiviert ist. Schalten Sie ihn aus, um hier Markdown zu bearbeiten, oder geben Sie Markdown im `content`-Feld der einheitlichen Vorlage ein.",
       "unified_template_section": {
-        "desc": "Return JSON with a `content` string (markdown). Optional `color` and `container_background_color`.",
-        "toggle": "Template Mode"
+        "desc": "Geben Sie JSON mit einer `content`-Zeichenkette (Markdown) zurück. Optional `color` und `container_background_color`.",
+        "toggle": "Vorlagenmodus"
       }
     },
     "bar": {
@@ -842,8 +842,8 @@
         "desc_present": "Die Entität, die den Prozentwert für den Balken liefert.",
         "desc_empty": "Wählen Sie eine Entität, die einen Prozentwert (0–100) liefert. Batteriesensoren eignen sich ideal für Balken.",
         "no_entity_warning": "Keine Entität ausgewählt – Bitte wählen Sie einen Sensor mit Werten zwischen 0–100",
-        "fallback_desc": "Optional fallback entity for text/labels. Difference mode uses Current and Total entities for bar calculation.",
-        "fallback_title": "Fallback Entity (optional)"
+        "fallback_desc": "Optionale Fallback-Entität für Text/Labels. Im Differenzmodus werden aktuelle und Gesamtentitäten für die Balkenberechnung verwendet.",
+        "fallback_title": "Fallback-Entität (optional)"
       },
       "limit_entity": {
         "title": "Grenzwert-Entität (optional)",
@@ -878,7 +878,7 @@
         "alignment": "Balkenausrichtung",
         "alignment_desc": "Wählen Sie, wie der Balken ausgerichtet wird, wenn er weniger als 100 % Breite hat.",
         "glass_blur": "Glass Blur",
-        "glass_blur_desc": "Adjust the blur intensity of the glass effect.",
+        "glass_blur_desc": "Passen Sie die Unschärfeintensität des Glaseffekts an.",
         "style_minimal": "Minimal"
       },
       "labels": {
@@ -900,9 +900,9 @@
         "text_size": "Textgröße",
         "text_size_desc": "Passen Sie die Größe des auf dem Balken angezeigten Textes an.",
         "text_alignment": "Textausrichtung",
-        "follow_fill": "Follow Fill",
-        "text_formatting": "Text Formatting",
-        "text_formatting_desc": "Apply formatting styles to the percentage text."
+        "follow_fill": "Folgt der Füllung",
+        "text_formatting": "Text Formatierung",
+        "text_formatting_desc": "Wenden Sie Formatierungsstile auf den Prozenttext an."
       },
       "left": {
         "title": "Linke Seite",
@@ -1010,31 +1010,31 @@
           "match_value_desc": "Textvergleich mit Zustand oder Attribut",
           "type": "Override-Animationstyp"
         },
-        "direction": "Animation Direction",
-        "direction_attribute": "Direction Attribute (Optional)",
-        "direction_attribute_desc": "Read this attribute instead of entity state when deriving direction.",
-        "direction_desc": "Choose a fixed direction, or derive direction from a sensor value.",
-        "direction_entity": "Direction Sensor",
-        "direction_entity_desc": "Negative values reverse the animation. Positive values keep normal direction.",
+        "direction": "Animationsrichtung",
+        "direction_attribute": "Richtungsattribut (optional)",
+        "direction_attribute_desc": "Lesen Sie dieses Attribut anstelle des Entitätsstatus, wenn Sie die Richtung ableiten.",
+        "direction_desc": "Wählen Sie eine feste Richtung oder leiten Sie die Richtung aus einem Sensorwert ab.",
+        "direction_entity": "Richtungs Sensor",
+        "direction_entity_desc": "Negative Werte kehren die Animation um. Positive Werte behalten die Normalrichtung bei.",
         "direction_modes": {
           "normal": "Normal",
-          "reverse": "Reverse",
-          "sensor": "From Sensor"
+          "reverse": "Umkehren",
+          "sensor": "Vom Sensor"
         },
-        "speed": "Base Speed",
-        "speed_attribute": "Speed Attribute (Optional)",
-        "speed_attribute_desc": "Read this attribute instead of entity state when deriving speed.",
-        "speed_desc": "1 = default speed. Higher values animate faster.",
-        "speed_entity": "Speed Sensor",
-        "speed_entity_desc": "Entity whose numeric value controls animation speed.",
-        "speed_mode": "Animation Speed Source",
-        "speed_mode_desc": "Use a fixed speed value, or derive speed from a sensor.",
+        "speed": "Basisgeschwindigkeit",
+        "speed_attribute": "Geschwindigkeitsattribut (optional)",
+        "speed_attribute_desc": "Lesen Sie dieses Attribut anstelle des Entitätsstatus, wenn Sie die Geschwindigkeit ableiten.",
+        "speed_desc": "1 = Standardgeschwindigkeit. Höhere Werte animieren schneller.",
+        "speed_entity": "Geschwindigkeitssensor",
+        "speed_entity_desc": "Entität, deren numerischer Wert die Animationsgeschwindigkeit steuert.",
+        "speed_mode": "Quelle der Animationsgeschwindigkeit",
+        "speed_mode_desc": "Verwenden Sie einen festen Geschwindigkeitswert oder leiten Sie die Geschwindigkeit von einem Sensor ab.",
         "speed_modes": {
-          "fixed": "Fixed",
-          "sensor": "From Sensor"
+          "fixed": "Fixiert",
+          "sensor": "Vom Sensor"
         },
-        "speed_multiplier": "Sensor Multiplier",
-        "speed_multiplier_desc": "Scales sensor values before converting to animation speed."
+        "speed_multiplier": "Sensormultiplikator",
+        "speed_multiplier_desc": "Skaliert Sensorwerte, bevor sie in Animationsgeschwindigkeit umgewandelt werden."
       },
       "error_no_entity": "Entität auswählen",
       "error_no_entity_desc": "Wählen Sie eine Entität im Tab Allgemein",
@@ -1042,7 +1042,7 @@
       "error_no_range_desc": "Setzen Sie Start- und Endentitäten im Tab Allgemein",
       "percentage_type": {
         "title": "Prozentualer Typ",
-        "desc": "Choose how the bar percentage is calculated"
+        "desc": "Wählen Sie, wie der Barprozentsatz berechnet wird"
       },
       "time_progress_config": {
         "title": "Zeit Progress-Konfiguration",
@@ -1080,48 +1080,48 @@
         "max": "Maximum",
         "auto": "Automatisch (0)",
         "auto_total": "Automatisch (gesamt Entität)",
-        "desc": "Override auto-detected range with numbers. For dynamic min/max or labels, enable the unified template (value_min, value_max, left_label, right_label).",
-        "desc_difference": "Override the visible range. Enter values in the same unit as your entities (e.g. km). Leave blank to auto-detect from the Total Entity."
+        "desc": "Überschreiben Sie den automatisch erkannten Bereich mit Zahlen. Aktivieren Sie für dynamisches Min/Max oder Labels die einheitliche Vorlage (value_min, value_max, left_label, right_label).",
+        "desc_difference": "Überschreiben Sie den sichtbaren Bereich. Geben Sie Werte in derselben Einheit wie Ihre Entitäten ein (z. B. km). Leer lassen, um die automatische Erkennung anhand der Gesamtentität durchzuführen."
       },
       "unified_template": {
-        "title": "Vereinigte Template",
+        "title": "Vereinigte Vorlage",
         "desc": "Eine Jinja template, die JSON: Wert, Label, Farbe, linkes_Label, rechtes_Label, wert_min, wert_max, container_hintergrundfarbe zurückgibt.",
-        "toggle": "Template-Modus",
-        "cheatsheet": "Template-Spickzettel"
+        "toggle": "Vorlagen-Modus",
+        "cheatsheet": "Vorlagen-Spickzettel"
       },
-      "error_difference_not_found": "Difference entities not found",
-      "error_no_difference": "Configure Difference",
-      "error_no_difference_desc": "Set current and total entities in the Difference configuration.",
+      "error_difference_not_found": "Differenzentität nicht gefunden",
+      "error_no_difference": "Unterschied konfigurieren",
+      "error_no_difference_desc": "Legen Sie aktuelle und Gesamtentitäten in der Differenzkonfiguration fest.",
       "scale": {
-        "clamp_edge_labels": "Clamp Edge Labels Inward",
-        "clamp_edge_labels_desc": "Slightly nudge the first and last labels inward to reduce clipping on tight layouts.",
-        "custom_labels": "Custom Tick Labels",
-        "custom_labels_desc": "Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave a slot empty to show that tick’s numeric value, or enter \"-\" (a single dash) to hide that tick’s label while keeping its tick mark.",
-        "custom_labels_hint": "Tip: use \"-\" in any slot to hide that tick’s label. Accepted hide tokens: -, _, none, {none}, hide.",
-        "custom_ticks": "Custom Tick Positions",
-        "custom_ticks_desc": "Comma-separated values in your entity's unit. Overrides the number of divisions (e.g. 10,20,30,40). Leave blank to use evenly spaced divisions.",
-        "desc": "Add tick marks and labels along the bar to show the scale. Useful for visualizing ranges like temperature or time.",
-        "divisions": "Number of Divisions",
-        "divisions_desc": "How many segments to divide the scale into (e.g., 4 = marks at 0%, 25%, 50%, 75%, 100%).",
-        "enable_toggle": "Enable the toggle above to configure scale settings",
-        "label_color": "Label Color",
-        "label_size": "Label Size",
-        "mobile_abbreviate_labels": "Abbreviate Labels on Mobile",
-        "mobile_abbreviate_labels_desc": "Shorten numeric labels on mobile (e.g. 1200 -> 1.2k, 700 km -> 700).",
-        "mobile_breakpoint": "Mobile Breakpoint",
-        "mobile_breakpoint_desc": "Apply mobile label options when viewport width is at or below this value.",
-        "mobile_options_enabled": "Enable Mobile Label Options",
-        "mobile_options_enabled_desc": "Apply mobile-specific label behavior below the configured viewport width.",
-        "mobile_reduce_density": "Reduce Label Density on Mobile",
-        "mobile_reduce_density_desc": "Hide every second label on mobile to prevent overlap while keeping all ticks.",
-        "position": "Scale Position",
-        "position_above": "Above",
-        "position_below": "Below",
-        "position_desc": "Position the scale above or below the bar.",
-        "show_labels": "Show Labels",
-        "show_labels_desc": "Display numeric values at each tick mark.",
-        "tick_color": "Tick Color",
-        "title": "Scale / Tick Marks"
+        "clamp_edge_labels": "Klemmerkantenetiketten nach innen",
+        "clamp_edge_labels_desc": "Schieben Sie die erste und letzte Beschriftung leicht nach innen, um das Ausschneiden bei engen Layouts zu reduzieren.",
+        "custom_labels": "Benutzerdefinierte Tick-Etiketten",
+        "custom_labels_desc": "Optionale durch Kommas getrennte Beschriftungen, die zu jedem benutzerdefinierten Häkchen passen (z. B. Reservieren, 1/4, 1/2, 3/4, Voll). Lassen Sie einen Steckplatz leer, um den numerischen Wert dieses Häkchens anzuzeigen, oder geben Sie \"-\" (einen einzelnen Bindestrich) ein, um die Beschriftung dieses Häkchens auszublenden und gleichzeitig sein Häkchenzeichen beizubehalten.",
+        "custom_labels_hint": "Tipp: Verwenden Sie \"-\" in einem beliebigen Slot, um die Beschriftung dieses Häkchens auszublenden. Akzeptierte Ausblendetoken: -, _, keine, {none}, ausblenden.",
+        "custom_ticks": "Benutzerdefinierte Tick-Positionen",
+        "custom_ticks_desc": "Durch Kommas getrennte Werte in der Einheit Ihrer Entität. Überschreibt die Anzahl der Divisionen (z. B. 10,20,30,40). Lassen Sie das Feld leer, um gleichmäßig verteilte Unterteilungen zu verwenden.",
+        "desc": "Fügen Sie entlang der Leiste Häkchen und Beschriftungen hinzu, um die Skala anzuzeigen. Nützlich zur Visualisierung von Bereichen wie Temperatur oder Zeit.",
+        "divisions": "Anzahl der Abteilungen",
+        "divisions_desc": "In wie viele Segmente soll die Skala unterteilt werden (z. B. 4 = Punkte bei 0 %, 25 %, 50 %, 75 %, 100 %).",
+        "enable_toggle": "Aktivieren Sie den Schalter oben, um die Skaleneinstellungen zu konfigurieren",
+        "label_color": "Label Farbe",
+        "label_size": "Label Größe",
+        "mobile_abbreviate_labels": "Abkürzen Sie Etikette auf Mobilgeräten",
+        "mobile_abbreviate_labels_desc": "Kürzen Sie numerische Beschriftungen auf Mobilgeräten (z. B. 1200 -> 1,2k, 700 km -> 700).",
+        "mobile_breakpoint": "Mobiler Haltepunkt",
+        "mobile_breakpoint_desc": "Wenden Sie mobile Beschriftungsoptionen an, wenn die Ansichtsfensterbreite bei oder unter diesem Wert liegt.",
+        "mobile_options_enabled": "Aktivieren Sie Mobile Label-Optionen",
+        "mobile_options_enabled_desc": "Wenden Sie ein mobilspezifisches Labelverhalten unterhalb der konfigurierten Ansichtsfensterbreite an.",
+        "mobile_reduce_density": "Reduzieren Sie die Labeldichte auf Mobilgeräten",
+        "mobile_reduce_density_desc": "Verstecken Sie jedes zweite Label auf dem Mobiltelefon, um Überlappungen zu verhindern und gleichzeitig alle Häkchen beizubehalten.",
+        "position": "Position skalieren",
+        "position_above": "Über",
+        "position_below": "Unter",
+        "position_desc": "Positionieren Sie die Skala über oder unter der Leiste.",
+        "show_labels": "Zeige Labels",
+        "show_labels_desc": "Zeigen Sie an jedem Häkchen numerische Werte an.",
+        "tick_color": "Tick Farbe",
+        "title": "Skala / Häkchen"
       }
     },
     "image": {
@@ -1225,22 +1225,22 @@
       "upload_choose": "Datei auswählen",
       "upload_clear": "Datei löschen",
       "attribute_entity_desc": "Wählen Sie ein Objekt aus, das in einem seiner Attribute eine Bild-URL enthält.",
-      "aspect_ratio": "Aspect Ratio",
-      "aspect_ratio_desc": "Set the aspect ratio of the image container.",
+      "aspect_ratio": "Seitenverhältnis",
+      "aspect_ratio_desc": "Stellen Sie das Seitenverhältnis des Bildcontainers ein.",
       "aspect": {
-        "auto": "Auto (use height setting)",
+        "auto": "Auto (Höheneinstellung verwenden)",
         "mobile": "Mobile (9:16)",
-        "photo": "Photo (3:2)",
-        "portrait": "Portrait (2:3)",
-        "square": "Square (1:1)",
+        "photo": "Foto (3:2)",
+        "portrait": "Porträt (2:3)",
+        "square": "Quadrat (1:1)",
         "standard": "Standard (4:3)",
-        "ultrawide": "Ultrawide (21:9)",
-        "widescreen": "Widescreen (16:9)"
+        "ultrawide": "Ultraweitwinkel (21:9)",
+        "widescreen": "Weitwinkel (16:9)"
       },
-      "load_error": "Image failed to load",
-      "rotation": "Rotation (°)",
-      "rotation_desc": "Rotate the image clockwise (0-360 degrees).",
-      "size_title": "Size & Display"
+      "load_error": "Bild konnte nicht geladen werden",
+      "rotation": "Drehung (°)",
+      "rotation_desc": "Drehen Sie das Bild im Uhrzeigersinn (0–360 Grad).",
+      "size_title": "Größe & Display"
     },
     "graphs": {
       "chart_type": {
@@ -1316,10 +1316,10 @@
         "bar_display_limit_desc": "0 = Unbegrenzt",
         "show_time_intervals": "Zeitintervalle anzeigen",
         "chart_layout": "Diagramm-Layout",
-        "use_fixed_y_axis": "Use Fixed Y-Axis Scale",
-        "use_fixed_y_axis_desc": "Set fixed min/max values instead of auto-scaling. Useful for consistent scales across multiple graphs or time periods.",
-        "y_axis_max": "Maximum Value",
-        "y_axis_min": "Minimum Value"
+        "use_fixed_y_axis": "Verwenden Sie eine feste Y-Achsenskala",
+        "use_fixed_y_axis_desc": "Legen Sie feste Min/Max-Werte fest, anstatt die Skalierung automatisch vorzunehmen. Nützlich für konsistente Skalen über mehrere Diagramme oder Zeiträume hinweg.",
+        "y_axis_max": "Maximalwert",
+        "y_axis_min": "Mindestwert"
       },
       "agg": {
         "mean": "Durchschnitt",
@@ -1434,16 +1434,16 @@
       "error_no_chart_type_desc": "Wählen Sie einen Diagrammtyp im Reiter Allgemein",
       "error_no_entities": "Entitäten konfigurieren",
       "unified_template": {
-        "title": "Vereinigte Template",
+        "title": "Vereinigte Vorlagen",
         "desc": "Optionale JSON: Farben (Array), global_color, fill_area, pie_fill.",
-        "toggle": "Template-Modus",
-        "cheatsheet": "Template-Spickzettel"
+        "toggle": "Vorlagen-Modus",
+        "cheatsheet": "Vorlagen-Spickzettel"
       },
       "forecast_limit": {
-        "days": "Limit Days",
-        "days_desc": "Days override hours",
-        "hours": "Limit Hours",
-        "hours_desc": "0 = show all"
+        "days": "Tage begrenzen",
+        "days_desc": "Tage überschreiben Stunden",
+        "hours": "Stunden begrenzen",
+        "hours_desc": "0 = zeige alle"
       }
     },
     "info": {
@@ -1454,8 +1454,8 @@
       "entity_desc": "Wählen Sie die anzuzeigende Entität aus",
       "icon_section": {
         "title": "Symbol-Einstellungen",
-        "show_entity_picture": "Show Entity Picture",
-        "show_entity_picture_desc": "When enabled, entity_picture replaces the configured icon when available."
+        "show_entity_picture": "Entitätsbild anzeigen",
+        "show_entity_picture_desc": "Wenn aktiviert, ersetzt entity_picture das konfigurierte Symbol, sofern verfügbar."
       },
       "show_icon": "Symbol anzeigen",
       "show_icon_desc": "Ein Symbol neben dem Entitätswert anzeigen",
@@ -1512,38 +1512,38 @@
       "error_no_entities": "Entitäten konfigurieren",
       "error_no_entities_desc": "Fügen Sie Informationsentitäten im Reiter Allgemein hinzu",
       "error_entities_need_config": "Entitäten benötigen Konfiguration",
-      "allow_wrap": "Allow Wrapping",
-      "allow_wrap_desc": "Allow grid items to wrap to new rows when they exceed the container width",
-      "content_distribution": "Content Distribution",
-      "content_distribution_desc": "Control how icon and content are distributed along the main axis",
-      "display_attribute": "Display Attribute",
-      "display_attribute_desc": "Show an entity attribute instead of the main state",
-      "icon_alignment_desc": "Align the icon along the cross axis",
-      "icon_position_desc": "Position the icon relative to the content (left, top, right, or bottom)",
-      "name_alignment": "Name Alignment",
-      "name_alignment_desc": "Align the name text within its container",
-      "name_first": "Name First",
-      "name_value_gap": "Name & Value Gap",
-      "name_value_gap_desc": "Space between the name and value in pixels",
+      "allow_wrap": "Zeilenumbruch zulassen",
+      "allow_wrap_desc": "Ermöglichen, dass Rasterelemente in neue Zeilen eingefügt werden, wenn sie die Behälterbreite überschreiten",
+      "content_distribution": "Inhaltsverteilung",
+      "content_distribution_desc": "Steuern Sie, wie Symbol und Inhalt entlang der Hauptachse verteilt sind",
+      "display_attribute": "Anzeigeattribut",
+      "display_attribute_desc": "Zeigen Sie ein Entitätsattribut anstelle des Hauptstatus an",
+      "icon_alignment_desc": "Richten Sie das Symbol entlang der Querachse aus",
+      "icon_position_desc": "Positionieren Sie das Symbol relativ zum Inhalt (links, oben, rechts oder unten)",
+      "name_alignment": "Namensausrichtung",
+      "name_alignment_desc": "Richten Sie den Namenstext in seinem Container aus",
+      "name_first": "Name zuerst",
+      "name_value_gap": "Name & Wertlücke",
+      "name_value_gap_desc": "Abstand zwischen Name und Wert in Pixeln",
       "name_value_layout": {
-        "orientation": "Layout Direction",
-        "orientation_desc": "Choose how to display the name and value",
-        "orientation_desc_vertical_icon": "Arrange name and value (horizontal places them on one line)",
-        "orientation_desc_with_icon": "Choose how to arrange the name and value beside the icon",
-        "title": "Name & Value Layout"
+        "orientation": "Layoutrichtung",
+        "orientation_desc": "Wählen Sie, wie Name und Wert angezeigt werden sollen",
+        "orientation_desc_vertical_icon": "Name und Wert anordnen (horizontal platziert sie auf einer Linie)",
+        "orientation_desc_with_icon": "Wählen Sie, wie Sie den Namen und den Wert neben dem Symbol anordnen",
+        "title": "Namens- und Wertlayout"
       },
-      "name_value_order": "Name & Value Order",
-      "name_value_order_desc_horizontal": "Which one comes first on the line",
-      "name_value_order_desc_vertical": "Which one sits on top of the other",
-      "overall_alignment_desc": "Align the entire info item within its container",
-      "state_alignment": "State Alignment",
-      "state_alignment_desc": "Align the state/value text within its container",
-      "template_cheatsheet": "Template Cheatsheet",
+      "name_value_order": "Name & Wertreihenfolge",
+      "name_value_order_desc_horizontal": "Welcher kommt zuerst auf die Linie",
+      "name_value_order_desc_vertical": "Welches sitzt über dem anderen",
+      "overall_alignment_desc": "Richten Sie das gesamte Infoelement in seinem Container aus",
+      "state_alignment": "Statusausrichtung",
+      "state_alignment_desc": "Richten Sie den Status-/Werttext in seinem Container aus",
+      "template_cheatsheet": "Vorlagen-Spickzettel",
       "unified_template_section": {
-        "desc": "Use Jinja2 templates to control icon and color dynamically. Uses entity context variables for seamless entity remapping.",
-        "title": "Template Mode"
+        "desc": "Verwenden Sie Jinja2-Vorlagen, um Symbole und Farben dynamisch zu steuern. Verwendet Entitätskontextvariablen für eine nahtlose Neuzuordnung von Entitäten.",
+        "title": "Vorlagen Modus"
       },
-      "value_first": "Value First"
+      "value_first": "Wert zuerst"
     },
     "button": {
       "basic": {
@@ -1622,9 +1622,9 @@
         "service_desc": "Aufzurufender Dienst (z. B. light.turn_on)",
         "service_data": "Servicedaten (JSON)",
         "service_data_desc": "Optionale Daten, die an den Dienst übergeben werden (JSON-Format)",
-        "desc": "Configure what happens when users tap, hold, or double-tap this button.",
-        "setup": "Set up button actions",
-        "title": "Button Actions"
+        "desc": "Konfigurieren Sie, was passiert, wenn Benutzer auf diese Schaltfläche tippen, sie gedrückt halten oder doppelt tippen.",
+        "setup": "Schaltflächenaktionen einrichten",
+        "title": "Schaltflächenaktionen"
       },
       "tap": {
         "title": "Tipp-Aktion",
@@ -1638,14 +1638,14 @@
         "title": "Doppeltipp-Aktion",
         "desc": "Aktion, die beim Doppeltippen ausgeführt wird"
       },
-      "icon_size": "Icon Size",
-      "icon_size_desc": "Size of the icon in pixels"
+      "icon_size": "Symbolgröße",
+      "icon_size_desc": "Größe des Symbols in Pixeln"
     },
     "layout_extra": {
       "module_name": "Modulname:",
       "module_name_placeholder": "z. B. Küchenlicht",
       "module_name_help": "Geben Sie diesem Modul einen benutzerdefinierten Namen, um es im Editor leichter zu identifizieren.",
-      "module_docs": "Open module documentation in Hub"
+      "module_docs": "Öffnen Sie die Moduldokumentation im Hub"
     },
     "camera": {
       "config": {
@@ -1671,8 +1671,8 @@
           "center": "Mitte",
           "bottom_left": "Unten links",
           "bottom_right": "Unten rechts",
-          "bottom_middle": "Bottom Middle",
-          "top_middle": "Top Middle"
+          "bottom_middle": "Unten Mitte",
+          "top_middle": "Oben Mitte"
         }
       },
       "display": {
@@ -1693,7 +1693,7 @@
       },
       "dimensions": {
         "title": "Abmessungen",
-        "responsive_note": "Camera now uses responsive sizing by default (100% width). Use the Design tab for full control over dimensions, or adjust these fallback pixel dimensions for specific use cases."
+        "responsive_note": "Die Kamera verwendet jetzt standardmäßig eine responsive Größenanpassung (100 % Breite). Verwenden Sie die Registerkarte „Design“, um die volle Kontrolle über die Abmessungen zu haben, oder passen Sie diese Fallback-Pixelabmessungen für bestimmte Anwendungsfälle an."
       },
       "width": "Breite (px)",
       "width_desc": "Legen Sie die Breite der Kameraanzeige fest. Bereich: 100–1000 px",
@@ -1737,14 +1737,14 @@
       },
       "error_no_entity": "Kamera-Entität auswählen",
       "error_no_entity_desc": "Wählen Sie eine Kamera-Entität im Reiter Allgemein",
-      "error_no_template": "Templatte konfigurieren",
-      "error_no_template_desc": "Geben Sie den Templatte-Code im Reiter Allgemein ein",
+      "error_no_template": "Vorlage konfigurieren",
+      "error_no_template_desc": "Geben Sie den Vorlagen-Code im Reiter Allgemein ein",
       "unified_template": {
-        "title": "Vereinigte Templatte",
+        "title": "Vereinigte Vorlage",
         "desc": "Geben Sie JSON zurück: entity, sichtbar, overlay_text, overlay_color — oder einen einfachen entity_id-String.",
-        "toggle": "Tem-Plattenmodus",
-        "toggle_desc": "Wählen Sie dynamisch Kamera und Overlay über eine Jinja tem-Platte aus",
-        "cheatsheet": "Tem-Plattenübersicht"
+        "toggle": "Vorlagen Modus",
+        "toggle_desc": "Wählen Sie dynamisch Kamera und Overlay über eine Jinja Vorlage aus",
+        "cheatsheet": "Vorlagen-Spickzettel"
       },
       "view_mode": {
         "title": "Stream Mode",
@@ -1779,9 +1779,9 @@
         "title": "Bildanpassung",
         "desc": "Wie das Bildmaterial den Bildausschnitt ausfüllt. „Cover crops to fill“ (Bildmaterial ausfüllen), „Contain“ (Bildausschnitt mit Balken anzeigen) und „Fill“ (Bildmaterial auf den Bildausschnitt strecken).",
         "options": {
-          "cover": "Cover",
-          "contain": "Contain",
-          "fill": "Fill"
+          "cover": "Abdeckung",
+          "contain": "Enthalten",
+          "fill": "Voll"
         }
       },
       "audio": {
@@ -1836,9 +1836,9 @@
         "tap_again": "Zum Bestätigen erneut tippen"
       },
       "rotation": "Rotation",
-      "rotation_desc": "Rotate the camera image clockwise (0–360 degrees).",
-      "tap_opens_fullscreen": "Tap Camera Opens Fullscreen",
-      "tap_opens_fullscreen_desc": "When enabled, tapping anywhere on the camera will open it in fullscreen mode."
+      "rotation_desc": "Drehen Sie das Kamerabild im Uhrzeigersinn (0–360 Grad).",
+      "tap_opens_fullscreen": "Tippen auf Kamera öffnet Vollbild",
+      "tap_opens_fullscreen_desc": "Wenn diese Option aktiviert ist, wird die Kamera durch Tippen auf eine beliebige Stelle im Vollbildmodus geöffnet."
     },
     "separator": {
       "config": {
@@ -2029,7 +2029,7 @@
       "position_fixed": "Fixiert",
       "position_sticky": "Sticky",
       "background_filter": "Hintergrundfilter",
-      "white_space": "White Raum",
+      "white_space": "Weißer Raum",
       "white_space_normal": "Normal",
       "white_space_nowrap": "Kein Umbruch",
       "white_space_pre": "Vor",
@@ -2193,18 +2193,18 @@
         "bg_gradient": "Verlauf",
         "bg_color": "Farbe",
         "bg_entity": "Entität",
-        "banner_border_radius": "Banner Border Radius",
-        "border_radius": "Border Radius",
-        "custom_name_desc": "Leave empty to use friendly name",
-        "data_area_height": "Data Area Height",
-        "data_items_gap": "Data Items Gap",
-        "music_display": "Display Options",
-        "music_settings": "Music Settings",
-        "music_settings_desc": "Configure music/media display options",
-        "show_avatar": "Show Avatar",
-        "show_battery_badge": "Show Battery Badge",
-        "show_location_badge": "Show Location Badge",
-        "visibility": "Visibility"
+        "banner_border_radius": "Bannerrandradius",
+        "border_radius": "Grenzradius",
+        "custom_name_desc": "Leer lassen, um einen freundlichen Namen zu verwenden",
+        "data_area_height": "Höhe des Datenbereichs",
+        "data_items_gap": "Lücke bei Datenelementen",
+        "music_display": "Anzeigeoptionen",
+        "music_settings": "Musikeinstellungen",
+        "music_settings_desc": "Konfigurieren Sie Musik-/Medienanzeigeoptionen",
+        "show_avatar": "Avatar anzeigen",
+        "show_battery_badge": "Batterieabzeichen anzeigen",
+        "show_location_badge": "Standortabzeichen anzeigen",
+        "visibility": "Sichtbarkeit"
       }
     },
     "dropdown": {
@@ -2271,7 +2271,7 @@
       },
       "keep_selection_state": {
         "title": "Auswahlstatus beibehalten",
-        "desc": "Remember und zeigen Sie die zuletzt ausgewählte Option an (empfohlen für Szenenauswähler)"
+        "desc": "Erinnern und zeigen Sie die zuletzt ausgewählte Option an (empfohlen für Szenenauswähler)"
       },
       "error_no_entity": "Quellentität konfigurieren",
       "error_no_entity_desc": "Wählen Sie eine Quellentität im Tab Allgemein aus",
@@ -2282,63 +2282,63 @@
         "enable": "Vorlagenmodus aktivieren",
         "desc": "Verwenden Sie eine einzige Jinja2-Vorlage, um alle Dropdown-Optionen mit Symbolen, Bezeichnungen und Farben zu generieren. Geben Sie ein JSON-Array mit Optionsobjekten zurück. Wenn diese Option aktiviert ist, werden manuell eingegebene Optionen durch die aus der Vorlage generierten Optionen ersetzt."
       },
-      "available_options": "Available Options",
-      "closed_title_custom_config": "Custom Text Configuration",
+      "available_options": "Verfügbare Optionen",
+      "closed_title_custom_config": "Benutzerdefinierte Textkonfiguration",
       "closed_title_custom": {
-        "desc": "Custom text to display when dropdown is closed.",
-        "title": "Custom Text"
+        "desc": "Benutzerdefinierter Text, der angezeigt wird, wenn das Dropdown-Menü geschlossen wird.",
+        "title": "Benutzerdefinierter Text"
       },
-      "closed_title_entity_config": "Entity State Configuration",
+      "closed_title_entity_config": "Konfiguration des Entitätsstatus",
       "closed_title_entity": {
-        "title": "Entity"
+        "title": "Entität"
       },
       "closed_title_mode": {
-        "custom": "Custom",
-        "desc": "Choose what the dropdown displays when closed.",
-        "entity_state": "Entity State",
-        "first_option": "First Option",
-        "last_chosen": "Last Chosen",
-        "title": "Closed Dropdown Title"
+        "custom": "Benutzerdefiniert",
+        "desc": "Wählen Sie aus, was das Dropdown-Menü beim Schließen anzeigt.",
+        "entity_state": "Entitätsstatus",
+        "first_option": "Erste Option",
+        "last_chosen": "Zuletzt Ausgewählt",
+        "title": "Geschlossener Dropdown-Titel"
       },
       "control_alignment": {
-        "icon_side": "Icon Side",
-        "mode": "Alignment Mode"
+        "icon_side": "Symbolseite",
+        "mode": "Ausrichtungsmodus"
       },
       "control_icon": {
-        "label": "Control Icon",
-        "label_desc": "Select the icon that indicates the dropdown toggle state.",
-        "section_desc": "Customize the dropdown chevron icon and how it aligns with the selected value.",
-        "section_title": "Dropdown Control Icon"
+        "label": "Steuersymbol",
+        "label_desc": "Wählen Sie das Symbol aus, das den Dropdown-Umschaltstatus anzeigt.",
+        "section_desc": "Passen Sie das Dropdown-Chevron-Symbol an und wie es mit dem ausgewählten Wert übereinstimmt.",
+        "section_title": "Dropdown-Steuerungssymbol"
       },
-      "entity_mode_active": "Entity Source Mode Active",
-      "entity_mode_desc": "Options are automatically managed by the selected entity. The dropdown will display the current state and update the entity when an option is selected.",
-      "entity_source_config": "Entity Source Configuration",
-      "entity_source_info": "Options will be automatically populated from the entity. The dropdown will display the current state and update the entity when an option is selected.",
+      "entity_mode_active": "Entitäts-Quellmodus aktiv",
+      "entity_mode_desc": "Optionen werden automatisch von der ausgewählten Entität verwaltet. Das Dropdown-Menü zeigt den aktuellen Status an und aktualisiert die Entität, wenn eine Option ausgewählt wird.",
+      "entity_source_config": "Entitätsquellenkonfiguration",
+      "entity_source_info": "Optionen werden automatisch von der Entität ausgefüllt. Das Dropdown-Menü zeigt den aktuellen Status an und aktualisiert die Entität, wenn eine Option ausgewählt wird.",
       "menu_direction": {
         "auto": "Auto",
-        "desc": "Choose how the dropdown opens: auto picks best fit, or force up/down.",
-        "down": "Down",
-        "title": "Menu Direction",
-        "up": "Up"
+        "desc": "Wählen Sie, wie sich das Dropdown-Menü öffnet: Automatische Auswahl der besten Passform oder Auf-/Ab",
+        "down": "Runter",
+        "title": "Menü Richtung",
+        "up": "Hoch"
       },
-      "no_options_found": "No options found for this entity",
+      "no_options_found": "Für diese Entität wurden keine Optionen gefunden",
       "source_entity": {
-        "desc": "Select or Input Select entity to use as the source for dropdown options.",
-        "title": "Source Entity"
+        "desc": "Wählen Sie eine Entität aus oder geben Sie sie ein, die als Quelle für Dropdown-Optionen verwendet werden soll.",
+        "title": "Quellenentität"
       },
       "source_mode": {
-        "desc": "Manual: Define custom options with actions. Entity: Use options from a Select or Input Select entity.",
-        "entity": "Entity Source",
-        "manual": "Manual Options",
-        "title": "Source Mode"
+        "desc": "Manuell: Definieren Sie benutzerdefinierte Optionen mit Aktionen. Entität: Verwenden Sie Optionen aus einer Select- oder Input-Select-Entität.",
+        "entity": "Entitätsquelle",
+        "manual": "Manuelle Option",
+        "title": "Quellmodus"
       },
       "source": {
-        "desc": "Choose whether to manually define options or use a Select or Input Select entity.",
-        "title": "Dropdown Source"
+        "desc": "Wählen Sie, ob Optionen manuell definiert oder eine Select- oder Input Select-Entität verwendet werden sollen.",
+        "title": "Dropdown-Quelle"
       },
       "visible_items": {
-        "desc": "Number of items visible in the dropdown before scrolling (1-20).",
-        "title": "Visible Items"
+        "desc": "Anzahl der Elemente, die vor dem Scrollen im Dropdown sichtbar sind (1-20).",
+        "title": "Sichtbare Elemente"
       }
     },
     "favorite_colors": {
@@ -2399,11 +2399,11 @@
       "value_font_size": "Schriftgröße des Wertes",
       "value_font_size_desc": "Schriftgröße für die Wertanzeige (in Pixeln)",
       "template": "Werttemplate",
-      "template_mode": "Template-Modus aktivieren",
+      "template_mode": "TVorlagen-Modus aktivieren",
       "template_mode_desc": "Verwenden Sie Jinja2 templates, um den angezeigten Wert dynamisch zu berechnen",
-      "template_desc": "Jinja2 template für Wert (z. B. {{ states(\"input_number.temperature\") }})",
+      "template_desc": "Jinja2 Vorlage für Wert (z. B. {{ states(\"input_number.temperature\") }})",
       "template_examples": "Häufige Beispiele:",
-      "template_disabled": "Aktivieren Sie den template-Modus, um dynamische Werte zu verwenden",
+      "template_disabled": "Aktivieren Sie den Vorlage-Modus, um dynamische Werte zu verwenden",
       "styles": {
         "flat": "Flach (Standard)",
         "glossy": "Glänzend",
@@ -2443,17 +2443,17 @@
       "button_gap": "Schaltflächenabstand",
       "button_gap_desc": "Abstand zwischen Erhöhungsrem- und Verringerungsrem-Schaltflächen in Pixeln",
       "unified_template": {
-        "title": "Vereinigte Templatte",
+        "title": "Vereinigte Vorlage",
         "desc": "JSON mit Wert, button_background_color, button_text_color, value_color — oder ein einfacher numerischer Jinja-Ergebnis.",
-        "toggle": "Templatte-Modus",
-        "cheatsheet": "Templatte-Spickzettel"
+        "toggle": "Vorlagen-Modus",
+        "cheatsheet": "Vorlagen-Spickzettel"
       },
       "no_entity_hint": "Keine Entität ausgewählt: Der Wert ändert sich nur auf diesem Bildschirm und wird nicht gespeichert.",
-      "decrease": "Decrease",
-      "increase": "Increase",
+      "decrease": "Verringern",
+      "increase": "Erhöhen",
       "value_section": {
-        "desc": "Configure the numeric range, step size, and default value.",
-        "title": "Value Configuration"
+        "desc": "Konfigurieren Sie den numerischen Bereich, die Schrittgröße und den Standardwert.",
+        "title": "Wertkonfiguration"
       }
     },
     "ultra_card_pro": {
@@ -2663,12 +2663,12 @@
       "fullscreen": "Vollbild",
       "exit_fullscreen": "Vollbild beenden",
       "center": {
-        "desc": "Manually set the map center coordinates. Leave empty to use first marker or auto-zoom.",
-        "latitude": "Center Latitude",
-        "latitude_desc": "Latitude coordinate for map center (-90 to 90)",
-        "longitude": "Center Longitude",
-        "longitude_desc": "Longitude coordinate for map center (-180 to 180)",
-        "title": "Map Center"
+        "desc": "Stellen Sie die Kartenmittelpunktkoordinaten manuell ein. Leer lassen, um die erste Markierung oder den Auto-Zoom zu verwenden.",
+        "latitude": "Breitengrad Mitte",
+        "latitude_desc": "Breitenkoordinate für Kartenmitte (-90 bis 90)",
+        "longitude": "Längengrad Mitte",
+        "longitude_desc": "Längenkoordinate für Kartenmitte (-180 bis 180)",
+        "title": "Kartenmitte"
       }
     },
     "entity_mapper": {
@@ -2719,28 +2719,28 @@
         "image_type": "Bildtyp",
         "image_type_desc": "Wählen Sie aus, wie das Bild für den Auslöser bereitgestellt werden soll",
         "no_image": "Kein Bild konfiguriert",
-        "icon_background": "Icon Background",
-        "icon_background_circle": "Circle",
-        "icon_background_color": "Icon Background Color",
-        "icon_background_desc": "Shape drawn behind the icon, like the Icon module.",
-        "icon_background_none": "None",
-        "icon_background_padding": "Icon Background Padding",
-        "icon_background_padding_desc": "Space between the icon and the edge of its background.",
-        "icon_background_rounded": "Rounded",
-        "icon_color": "Trigger Icon Color",
-        "icon_size": "Trigger Icon Size",
-        "icon_size_desc": "Size of the trigger icon in pixels.",
+        "icon_background": "Symbolhintergrund",
+        "icon_background_circle": "Kreis",
+        "icon_background_color": "Symbol Hintergrundfarbe",
+        "icon_background_desc": "Hinter dem Symbol gezeichnete Form, wie das Symbolmodul.",
+        "icon_background_none": "Keiner",
+        "icon_background_padding": "Icon Hintergrund Innenabstand",
+        "icon_background_padding_desc": "Abstand zwischen dem Symbol und dem Rand seines Hintergrunds.",
+        "icon_background_rounded": "Abgerundet",
+        "icon_color": "Farbe des Auslösesymbols",
+        "icon_size": "Größe des Auslösesymbols",
+        "icon_size_desc": "Größe des Triggersymbols in Pixeln.",
         "module": "Module",
-        "module_config": "Module Trigger",
-        "module_linked": "Module Linked",
-        "module_linked_desc": "Tapping on \"${module}\" will now open this popup.",
-        "module_trigger_desc": "Select a module in this card that will open the popup when tapped. The selected module will have its tap action overridden to open this popup instead.",
-        "module_trigger_title": "Module Trigger",
-        "no_module": "-- Select a Module --",
-        "no_modules_available": "No Modules Available",
-        "no_modules_available_desc": "Add other modules to this card first, then you can select one to trigger this popup.",
-        "select_module": "Select Module",
-        "select_module_desc": "Choose which module should trigger this popup when clicked."
+        "module_config": "Modulauslöser",
+        "module_linked": "Modul verknüpft",
+        "module_linked_desc": "Durch Tippen auf \"${module}\" wird nun dieses Popup geöffnet.",
+        "module_trigger_desc": "Wählen Sie auf dieser Karte ein Modul aus, das beim Antippen das Popup öffnet. Die Tippaktion des ausgewählten Moduls wird überschrieben, um stattdessen dieses Popup zu öffnen.",
+        "module_trigger_title": "Modulauslöser",
+        "no_module": "-- Wählen Sie ein Modul aus --",
+        "no_modules_available": "Keine Module verfügbar",
+        "no_modules_available_desc": "Fügen Sie dieser Karte zuerst andere Module hinzu, dann können Sie eines auswählen, um dieses Popup auszulösen.",
+        "select_module": "Modul auswählen",
+        "select_module_desc": "Wählen Sie aus, welches Modul dieses Popup auslösen soll, wenn Sie darauf klicken."
       },
       "title": {
         "section_title": "Titelkonfiguration",
@@ -2780,16 +2780,16 @@
         "slide_right": "Von rechts einblenden",
         "slide_bottom": "Von unten einblenden",
         "duration": "Animation Speed",
-        "duration_desc": "How long the open animation runs, in milliseconds.",
-        "easing": "Animation Easing",
-        "easing_desc": "How the motion accelerates. Spring adds a little overshoot.",
-        "easing_ease": "Ease",
-        "easing_ease_in_out": "Ease In Out",
-        "easing_ease_out": "Ease Out",
+        "duration_desc": "Wie lange die Öffnen Animation läuft, in Millisekunden.",
+        "easing": "Animationsbeschleunigung",
+        "easing_desc": "Wie sich die Bewegung beschleunigt. Springen sorgt für ein wenig Überschwingen.",
+        "easing_ease": "Leichtigkeit",
+        "easing_ease_in_out": "Einfach rein und raus",
+        "easing_ease_out": "Entspannen",
         "easing_linear": "Linear",
-        "easing_spring": "Spring",
-        "from_edge": "Slide From Screen Edge",
-        "from_edge_desc": "Start the slide off-screen so the popup glides in like a panel instead of nudging into place."
+        "easing_spring": "Springen",
+        "from_edge": "Vom Bildschirmrand aus gleiten",
+        "from_edge_desc": "Starten Sie die Folie außerhalb des Bildschirms, sodass das Popup wie ein Panel hineingleitet, anstatt an seinen Platz zu stoßen."
       },
       "popup_width": "Popup-Breite",
       "popup_width_desc": "Breite des Popups (z. B. 600px, 100%, 14rem, 10vw)",
@@ -2804,16 +2804,16 @@
         "position_desc": "Wählen Sie, wo die Schaltfläche zum Schließen erscheint",
         "inside": "Innerhalb des Popups",
         "none": "Keine",
-        "label": "Close"
+        "label": "Schließen"
       },
       "state": {
         "section_title": "Standardzustand",
         "section_desc": "Konfigurieren Sie, ob dieses Popup beim Laden der Karte geöffnet oder geschlossen startet",
         "default_open": "Standardmäßig geöffnet",
-        "default_open_desc": "When aktiviert, wird das Popup beim ersten Laden der Karte geöffnet sein"
+        "default_open_desc": "Wenn aktiviert, wird das Popup beim ersten Laden der Karte geöffnet sein"
       },
       "trigger_logic": {
-        "section_title": "Trigger-Logik",
+        "section_title": "Auslöse-Logik",
         "section_desc": "Steuern Sie, wann dieses Popup automatisch basierend auf Bedingungen geöffnet wird",
         "mode_title": "Popup-Zustandskontrolle",
         "mode_desc": "Wählen Sie, wie der Popup-Zustand gesteuert wird",
@@ -2896,9 +2896,9 @@
         "message": "Bearbeiten Sie dieses Modul, um die Vorschau zu sehen"
       },
       "overlay": {
-        "section_title": "Background Overlay",
-        "show": "Show Background Overlay",
-        "show_desc": "Display a dimmed overlay behind the popup when open."
+        "section_title": "Hintergrundüberlagerung",
+        "show": "Hintergrundüberlagerung anzeigen",
+        "show_desc": "Zeigen Sie beim Öffnen eine gedimmte Überlagerung hinter dem Popup an."
       }
     },
     "tabs_module": {
@@ -2922,7 +2922,7 @@
         "title": "Tab-Ausrichtung",
         "desc": "Wählen Sie, wie die Tabs innerhalb ihres Containers ausgerichtet sind.",
         "position": "Position",
-        "alignment": "Alignment"
+        "alignment": "Ausrichtung"
       },
       "behavior": {
         "switch_on_hover": "Schalter bei Hover",
@@ -2990,30 +2990,30 @@
         "no_modules": "Keine Module hinzugefügt. Fügen Sie in diesem Abschnitt im Tab Layout Module hinzu."
       },
       "colors": {
-        "active": "Active Tab",
-        "background": "Background",
-        "desc": "Customize the colors for your tabs.",
-        "icon": "Icon",
-        "inactive": "Inactive Tab",
-        "other": "Track & Icons",
+        "active": "Aktive Tabs",
+        "background": "Hintergrund",
+        "desc": "Passen Sie die Farben für Ihre Tabs an.",
+        "icon": "Symbol",
+        "inactive": "Inaktive Tabs",
+        "other": "Track & Symbole",
         "text": "Text",
-        "title": "Colors",
+        "title": "Farbe",
         "track": "Track"
       },
       "position": {
-        "desc": "Choose where the tabs appear relative to the content.",
+        "desc": "Wählen Sie, wo die Tabs relativ zum Inhalt angezeigt werden.",
         "position": "Position",
         "title": "Tab Position"
       },
       "responsive": {
-        "desc": "Control how tabs behave on smaller screens or when space is limited.",
-        "mobile_breakpoint": "Mobile Breakpoint",
-        "mobile_breakpoint_desc": "Screen width in pixels below which tabs collapse to icons only.",
-        "mobile_icons_only": "Icons Only on Mobile",
-        "mobile_icons_only_desc": "Only show icons (hide text) on screens narrower than the breakpoint. Requires icons on tabs.",
+        "desc": "Steuern Sie, wie sich Tabs auf kleineren Bildschirmen verhalten oder wann der Platz begrenzt ist.",
+        "mobile_breakpoint": "Mobiler Haltepunkt",
+        "mobile_breakpoint_desc": "Bildschirmbreite in Pixeln, unterhalb derer Registerkarten nur auf Symbole reduziert werden.",
+        "mobile_icons_only": "Symbole nur auf Mobilgeräten",
+        "mobile_icons_only_desc": "Symbole (Text ausblenden) nur auf Bildschirmen anzeigen, die schmaler als der Haltepunkt sind. Erfordert Symbole auf Tabs.",
         "title": "Responsive",
-        "wrap_tabs": "Wrap Tabs",
-        "wrap_tabs_desc": "Allow tabs to wrap to multiple lines instead of overflowing."
+        "wrap_tabs": "Tabs umbrechen",
+        "wrap_tabs_desc": "Lassen Sie zu, dass Tabs in mehrere Zeilen eingefügt werden, anstatt zu überlaufen."
       }
     },
     "sports": {
@@ -3067,21 +3067,21 @@
       "score_font_size": "Punktzahl Schriftgröße",
       "team_name_font_size": "Teamname Schriftgröße",
       "logo_size": "Logo Größe",
-      "detail_font_size": "Detail Font Size",
-      "detail_font_size_desc": "Size of detail text (records, venue, etc.) in pixels",
-      "logo_background_opacity": "Background Logo Opacity",
-      "logo_background_opacity_desc": "Transparency of the watermark logos (1-20%)",
-      "logo_background_size": "Background Logo Size",
-      "logo_background_size_desc": "Size of the watermark logos in the background",
-      "logo_bg_options": "BACKGROUND LOGO OPTIONS",
-      "logo_size_desc": "Size of team logos in pixels",
-      "score_font_size_desc": "Size of score text in pixels",
-      "show_logo_background": "Show Background Logos",
-      "show_logo_background_desc": "Display subtle watermark logos in the background",
-      "size_controls": "SIZE CONTROLS",
-      "team_name_font_size_desc": "Size of team name text in pixels",
-      "text_color": "Text Color",
-      "text_color_desc": "Override the default text color for better readability"
+      "detail_font_size": "Detailschriftgröße",
+      "detail_font_size_desc": "Größe des Detailtextes (Aufzeichnungen, Veranstaltungsort usw.) in Pixeln",
+      "logo_background_opacity": "Opazität des Hintergrundlogos",
+      "logo_background_opacity_desc": "Transparenz der Wasserzeichen-Logos (1-20%)",
+      "logo_background_size": "Größe des Hintergrundlogos",
+      "logo_background_size_desc": "Größe der Wasserzeichen-Logos im Hintergrund",
+      "logo_bg_options": "HINTERGRUNDLOGO-OPTIONEN",
+      "logo_size_desc": "Größe der Teamlogos in Pixeln",
+      "score_font_size_desc": "Größe des Partiturtextes in Pixeln",
+      "show_logo_background": "Hintergrundlogos anzeigen",
+      "show_logo_background_desc": "Zeigen Sie subtile Wasserzeichen-Logos im Hintergrund an",
+      "size_controls": "GRÖSSENKONTROLLEN",
+      "team_name_font_size_desc": "Größe des Teamnamentextes in Pixeln",
+      "text_color": "Text Farbe",
+      "text_color_desc": "Überschreiben Sie die Standardtextfarbe für eine bessere Lesbarkeit"
     },
     "pro": {
       "feature_locked": "Pro Funktion",
@@ -3157,13 +3157,13 @@
       "match_mode_entity": "Entitätsstatus",
       "match_mode_template": "Templattierung (Erweitert)",
       "unified_match_desc": "Geben Sie JSON mit \"match\": true zurück, wenn dieser Punkt aktiv sein soll, oder einen einfachen true/false-String.",
-      "template_cheatsheet": "TemPlatte Cheatsheet",
-      "create_toggle_points": "Create Toggle Points",
-      "quick_setup": "QUICK SETUP",
-      "quick_setup_desc": "Automatically create toggle points based on an entity type (replaces existing points)",
-      "quick_setup_entity": "Select Entity",
-      "quick_setup_entity_desc": "Choose an entity, then click \"Create Toggle Points\" below to auto-generate points based on the entity type",
-      "quick_setup_warning": "This will replace all existing toggle points with auto-generated ones based on the entity type."
+      "template_cheatsheet": "Vorlagen-Spickzettel",
+      "create_toggle_points": "Umschaltpunkte erstellen",
+      "quick_setup": "SCHNELLE EINRICHTUNG",
+      "quick_setup_desc": "Automatisches Erstellen von Umschaltpunkten basierend auf einem Entitätstyp (ersetzt vorhandene Punkte)",
+      "quick_setup_entity": "Entität auswählen",
+      "quick_setup_entity_desc": "Wählen Sie eine Entität aus und klicken Sie dann unten auf \"Create Toggle Points\", um automatisch Punkte basierend auf dem Entitätstyp zu generieren",
+      "quick_setup_warning": "Dadurch werden alle vorhandenen Umschaltpunkte durch automatisch generierte Punkte basierend auf dem Entitätstyp ersetzt."
     },
     "custom_variables": {
       "title": "Benutzerdefinierte Variablen",
@@ -3207,11 +3207,11 @@
       "delete_title": "Variable löschen?",
       "clear_all_title": "Alle globalen Variablen löschen?",
       "clear_card_title": "Kartenvariablen löschen?",
-      "add_card_variable": "Add card variable",
-      "card_only_description": "Variables that apply only to this card. Use them in templates with {{ $variable_name }}.",
-      "card_section_description": "Variables that apply only to this card. For shared variables used across cards, use the Ultra Card Hub → Variables tab in the sidebar.",
-      "empty_card_description": "Add a variable that applies only to this card, or use the Ultra Card Hub for shared variables.",
-      "empty_card_title": "No Card Variables"
+      "add_card_variable": "Kartenvariable hinzufügen",
+      "card_only_description": "Variablen, die nur für diese Karte gelten. Verwenden Sie sie in Vorlagen mit {{ $variable_name }}.",
+      "card_section_description": "Variablen, die nur für diese Karte gelten. Verwenden Sie für gemeinsam genutzte Variablen, die kartenübergreifend verwendet werden, die Registerkarte Ultra Card Hub → Variablen in der Seitenleiste.",
+      "empty_card_description": "Fügen Sie eine Variable hinzu, die nur für diese Karte gilt, oder verwenden Sie den Ultra Card Hub für gemeinsam genutzte Variablen.",
+      "empty_card_title": "Keine Kartenvariablen"
     },
     "export_import": {
       "include_variables": "Sie haben benutzerdefinierte Variable(n). Soll them in den Export einbezogen werden?",
@@ -3329,60 +3329,60 @@
       "config_needed_desc": "Wählen Sie eine Abdeckungsentität im allgemeinen Tab",
       "select_entity": "Wählen Sie die Abdeckungsentität",
       "unavailable": "Nicht verfügbar",
-      "icon": "Icon",
-      "icon_desc": "Leave empty to use the entity icon",
+      "icon": "Symbol",
+      "icon_desc": "Leer lassen, um das Entitätssymbol zu verwenden",
       "name": "Name",
-      "name_desc": "Leave empty to use the entity name",
-      "overrides_desc": "Optional overrides for the entity name and icon.",
-      "overrides_section": "Name & Icon"
+      "name_desc": "Leer lassen, um den Entitätsnamen zu verwenden",
+      "overrides_desc": "Optionale Überschreibungen für den Entitätsnamen und das Symbol.",
+      "overrides_section": "Name & Symbol"
     },
     "energy_display": {
       "error_no_nodes": "Energie-Knoten konfigurieren",
       "error_no_nodes_desc": "Fügen Sie Entitäten für Solar, Netz, Batterie und Zuhause im Tab Allgemein hinzu.",
-      "add_device": "Add Device",
-      "animation_speed": "Animation speed",
-      "box_border_width": "Box border width",
-      "box_corner_radius": "Box corner radius",
-      "circle_size": "Circle size",
-      "circle_size_desc": "Node circle diameter (px)",
-      "column_spacing": "Column spacing",
-      "core_nodes_desc": "Configure Solar, Grid, Battery, and Home. Use power sensor entities (W).",
-      "core_nodes_title": "Core Energy Nodes",
-      "curve_factor": "Curve factor",
-      "curve_factor_desc": "Path curvature",
-      "devices_desc": "Add devices to show individual power consumption. Drag to reorder.",
-      "devices_title": "Custom Device Nodes",
-      "flow_line_width": "Flow line width",
-      "flow_line_width_desc": "Line thickness (px)",
-      "flow_title": "Flow and Animation",
-      "gauge_size": "Gauge size",
-      "gauge_size_desc": "Central gauge diameter (px)",
-      "node_color": "Color",
-      "node_enabled": "Enabled",
-      "node_icon": "Icon",
+      "add_device": "Gerät hinzufügen",
+      "animation_speed": "Animationsgeschwindigkeit",
+      "box_border_width": "Kastenrandbreite",
+      "box_corner_radius": "Eckradius der Box",
+      "circle_size": "Kreisgröße",
+      "circle_size_desc": "Knotenkreisdurchmesser (px)",
+      "column_spacing": "Spaltenabstand",
+      "core_nodes_desc": "Konfigurieren Sie Solar, Netz, Batterie und Zuhause. Verwenden Sie Leistungssensorentitäten (W).",
+      "core_nodes_title": "Kernenergieknoten",
+      "curve_factor": "Kurvenfaktor",
+      "curve_factor_desc": "Pfadkrümmung",
+      "devices_desc": "Fügen Sie Geräte hinzu, um den individuellen Stromverbrauch anzuzeigen. Zum Neuanordnen ziehen.",
+      "devices_title": "Benutzerdefinierte Geräteknoten",
+      "flow_line_width": "Breite der Strömungslinie",
+      "flow_line_width_desc": "Linienstärke (px)",
+      "flow_title": "Ablauf und Animation",
+      "gauge_size": "Messgröße",
+      "gauge_size_desc": "Zentraler Messdurchmesser (px)",
+      "node_color": "Farbe",
+      "node_enabled": "Aktiviert",
+      "node_icon": "Symbol",
       "node_label": "Label",
-      "node_spacing": "Node spacing",
-      "node_spacing_desc": "Spacing between nodes (px)",
-      "pro_description": "Energy Display is a Pro feature. Visualize energy flow between grid, solar, battery, home and devices with Circle Flow, Box Flow, or Sankey styles.",
-      "sankey_width": "Sankey width",
-      "sankey_width_desc": "Diagram width (px)",
-      "show_arrow": "Show directional arrow",
-      "show_icons": "Show icons",
-      "show_labels": "Show labels",
-      "show_self_sufficiency": "Show self-sufficiency gauge",
-      "show_values": "Show values",
-      "speed_fast": "Fast",
-      "speed_none": "None",
+      "node_spacing": "Knotenabstand",
+      "node_spacing_desc": "Abstand zwischen Knoten (px)",
+      "pro_description": "Energie Display ist eine Pro-Funktion. Visualisieren Sie den Energiefluss zwischen Netz, Solar, Batterie, Zuhause und Geräten mit den Stilen Circle Flow, Box Flow oder Sankey.",
+      "sankey_width": "Sankey-Breite",
+      "sankey_width_desc": "Diagrammbreite (px)",
+      "show_arrow": "Richtungspfeil anzeigen",
+      "show_icons": "Symbole anzeigen",
+      "show_labels": "Labels anzeigen",
+      "show_self_sufficiency": "Selbstversorgungsmessgerät anzeigen",
+      "show_values": "Werte anzeigen",
+      "speed_fast": "Schnell",
+      "speed_none": "Nichts",
       "speed_normal": "Normal",
-      "speed_slow": "Slow",
+      "speed_slow": "Langsam",
       "style": "Layout Style",
-      "style_box": "Box Flow",
-      "style_circle": "Circle Flow",
-      "style_desc": "Choose the visual layout for the energy flow display.",
-      "style_options_title": "Style Options",
+      "style_box": "Box Fluss",
+      "style_circle": "Kreis Fluss",
+      "style_desc": "Wählen Sie das visuelle Layout für die Energieflussanzeige.",
+      "style_options_title": "Stiloptionen",
       "style_sankey": "Sankey",
-      "style_title": "Display Style",
-      "unit_display": "Unit display"
+      "style_title": "Anzeigestil",
+      "unit_display": "Geräteanzeige"
     },
     "living_canvas": {
       "title": "Lebende Leinwand",
@@ -3448,7 +3448,7 @@
       "show_title": "Titel anzeigen",
       "show_title_desc": "Den Ventilatornamen anzeigen",
       "show_icon": "Symbol anzeigen",
-      "show_icon_desc": "Header-Symbol anzeigen (Layout Standard/Komfort)",
+      "show_icon_desc": "Kopfzeilen-Symbol anzeigen (Layout Standard/Komfort)",
       "show_state": "Status anzeigen",
       "show_state_desc": "Ein/Aus- und Modustext anzeigen",
       "show_percentage": "Prozentsatz anzeigen",
@@ -3494,8 +3494,8 @@
       "icon_override_desc": "Optional mdi: Symbol; lassen Sie em leer für die animierte Ventilatorgrafik",
       "presets_label": "Luftstrommodus",
       "direction": "Richtung",
-      "decrease_speed": "Decrease speed",
-      "increase_speed": "Increase speed"
+      "decrease_speed": "Geschwindigkeit verringern",
+      "increase_speed": "Geschwindigkeit erhöhen"
     },
     "lock": {
       "error_entity": "Wählen Sie eine Schlossentität aus",
@@ -3654,7 +3654,7 @@
         "desc": "Konfigurieren Sie, welche Picker angezeigt werden und wie sie erscheinen."
       },
       "display_mode_datetime": "Anzeigemodus",
-      "display_mode_datetime_desc": "Whiche Picker angezeigt werden. Automatische Erkennung von der Entität.",
+      "display_mode_datetime_desc": "Welche Picker angezeigt werden. Automatische Erkennung von der Entität.",
       "display_mode_options": {
         "auto": "Automatisch (von der Entität)",
         "date": "Nur Datum",
@@ -3817,10 +3817,10 @@
       "off_color": "Farbe Aus",
       "text_color": "Textfarbe",
       "error_configure_entity_desc": "Wählen Sie eine input_boolean-Entität im Allgemeinen Tab",
-      "content_alignment": "Alignment",
-      "content_alignment_desc": "Align the control row inside the module",
-      "show_entity_name": "Show Entity Name",
-      "show_entity_name_desc": "Display the entity name beside the control (switch/checkbox)"
+      "content_alignment": "Ausrichtung",
+      "content_alignment_desc": "Richten Sie die Steuerzeile innerhalb des Moduls aus",
+      "show_entity_name": "Entitätsnamen anzeigen",
+      "show_entity_name_desc": "Zeigen Sie den Entitätsnamen neben dem Steuerelement an (Schalter/Kontrollkästchen)"
     },
     "button_input": {
       "entity": {
@@ -3937,11 +3937,11 @@
       "section_ticks": "MARKIERUNGEN",
       "section_animation": "ANIMATION",
       "entity": "Entität",
-      "entity_desc": "Select a sensor or input number entity whose value will be displayed on the gauge.",
+      "entity_desc": "Wählen Sie eine Sensor- oder Eingabenummerneinheit aus, deren Wert auf dem Messgerät angezeigt wird.",
       "unified_template": {
-        "cheatsheet": "Template cheatsheet",
-        "desc": "Use Jinja2 templates to dynamically set gauge value and gauge_color.",
-        "toggle": "Template Mode"
+        "cheatsheet": "Vorlagen-Spickzettel",
+        "desc": "Verwenden Sie Jinja2-Vorlagen, um den Messwert und die eich_farbe dynamisch festzulegen.",
+        "toggle": "Vrolagen Modus"
       }
     },
     "activity_feed": {
@@ -4038,77 +4038,77 @@
       "scope_current_dashboard": "Nur aktuelles Dashboard",
       "scope_dashboard_label": "Aktuelles Dashboard:",
       "scope_dashboard_info": "Die Navigationsleiste erscheint in jeder Ansicht dieses Dashboards, aber nicht in Ihren anderen Dashboards.",
-      "add_path": "Add Path",
-      "add_stack": "Add Stack",
-      "align_center": "Center",
-      "align_end": "End",
-      "align_space_around": "Space Around",
-      "align_space_between": "Space Between",
+      "add_path": "Pfad hinzufügen",
+      "add_stack": "Stapel hinzufügen",
+      "align_center": "Zentrum",
+      "align_end": "Ende",
+      "align_space_around": "Abstand drumherum",
+      "align_space_between": "Abstand zwischen",
       "align_start": "Start",
-      "desktop_mode_desc": "Choose floating (centered with margins) or docked (edge-to-edge).",
+      "desktop_mode_desc": "Wählen Sie schwebend (mit Rändern zentriert) oder angedockt (von Kante zu Kante).",
       "desktop_offset": "Desktop Offset",
-      "desktop_position_desc": "Where the navbar appears on desktop.",
-      "desktop_show_labels_desc": "Control label visibility on desktop.",
-      "dock_color": "Dock Color",
-      "dock_color_desc": "Custom accent color for the dock background. For glass styles this tints the glass.",
-      "edit_mode_banner": "Changes preview live in the navbar below. Close this editor to interact with the navbar.",
-      "global_navbar_warning": "Only one global navbar can be active at a time. If you have multiple navbars set to \"All views\", only the first registered one will be displayed. Use \"Current view only\" for navbars on specific pages.",
-      "haptics_double_tap": "Double Tap",
-      "haptics_double_tap_desc": "Trigger haptic on double tap.",
-      "haptics_enable": "Enable Haptics",
-      "haptics_enable_desc": "Master toggle for all navbar haptic feedback.",
-      "haptics_hold": "Hold Action",
-      "haptics_hold_desc": "Trigger haptic on hold.",
-      "haptics_tap": "Tap Action",
-      "haptics_tap_desc": "Trigger haptic on tap.",
+      "desktop_position_desc": "Wo die Navigationsleiste auf dem Desktop angezeigt wird.",
+      "desktop_show_labels_desc": "Steuern Sie die Sichtbarkeit des Labels auf dem Desktop.",
+      "dock_color": "Dock Farbe",
+      "dock_color_desc": "Benutzerdefinierte Akzentfarbe für den Dock-Hintergrund. Bei Glasstilen färbt dies das Glas.",
+      "edit_mode_banner": "Die Vorschau der Änderungen erfolgt live in der Navigationsleiste unten. Schließen Sie diesen Editor, um mit der Navigationsleiste zu interagieren.",
+      "global_navbar_warning": "Es kann immer nur eine globale Navigationsleiste aktiv sein. Wenn Sie mehrere Navigationsleisten auf \"All views\" eingestellt haben, wird nur die erste registrierte angezeigt. Verwenden Sie \"Current view only\" für Navigationsleisten auf bestimmten Seiten.",
+      "haptics_double_tap": "Doppeltippen",
+      "haptics_double_tap_desc": "Bei Doppeltippen haptisch auslösen.",
+      "haptics_enable": "Haptik aktivieren",
+      "haptics_enable_desc": "Master-Umschalter für alle haptischen Rückmeldungen zur Navigationsleiste.",
+      "haptics_hold": "Aktion halten",
+      "haptics_hold_desc": "Triggern Sie die Haptik beim halten",
+      "haptics_tap": "Tipp Aktion",
+      "haptics_tap_desc": "Haptik mit tippen auslösen",
       "haptics_url": "URL Navigation",
-      "haptics_url_desc": "Trigger haptic when navigating to a URL.",
-      "icon_color": "Icon Color",
-      "icon_color_desc": "Custom color for navbar icons. Overrides the default icon color from the style preset.",
-      "icon_spacing": "Icon Spacing",
-      "icon_spacing_desc": "Gap between icons in the dock (px).",
-      "item_alignment": "Item Alignment",
-      "item_alignment_desc": "How items are distributed within the dock.",
-      "labels_hidden": "Hidden",
-      "labels_icons": "Icons & Labels",
-      "labels_text_only": "Text only (no icons)",
+      "haptics_url_desc": "Lösen Sie haptisch aus, wenn Sie zu einer URL navigieren.",
+      "icon_color": "Symbol Farbe",
+      "icon_color_desc": "Benutzerdefinierte Farbe für Navigationsleistensymbole. Überschreibt die Standardsymbolfarbe aus der Stilvorgabe.",
+      "icon_spacing": "Symbolabstand",
+      "icon_spacing_desc": "Lücke zwischen den Symbolen im Dock (px).",
+      "item_alignment": "Elementausrichtung",
+      "item_alignment_desc": "Wie Gegenstände innerhalb des Docks verteilt werden.",
+      "labels_hidden": "Versteckt",
+      "labels_icons": "Symbole & Labels",
+      "labels_text_only": "Nur Text (keine Symbole)",
       "media_player": "Media Player",
-      "media_player_entity_required": "Click to select entity (required)",
-      "media_player_icon": "Media Player Icon",
-      "media_player_icon_desc": "Show a media player icon in the navbar",
-      "min_width": "Min Width",
-      "min_width_desc": "Viewport width (px) that switches to desktop mode.",
-      "mobile_mode_desc": "Choose docked (default) or floating (desktop-like).",
+      "media_player_entity_required": "Klicken Sie hier, um die Entität auszuwählen (erforderlich)",
+      "media_player_icon": "Media Player Symbol",
+      "media_player_icon_desc": "Zeigen Sie ein Mediaplayer-Symbol in der Navigationsleiste an",
+      "min_width": "Min Breite",
+      "min_width_desc": "Ansichtsfensterbreite (px), die in den Desktopmodus wechselt.",
+      "mobile_mode_desc": "Wählen Sie angedockt (Standard) oder schwebend (desktopähnlich).",
       "mobile_offset": "Mobile Offset",
-      "mobile_position_desc": "Where the navbar appears on mobile.",
-      "mobile_show_labels_desc": "Control label visibility on mobile.",
-      "mode": "Mode",
+      "mobile_position_desc": "Wo die Navigationsleiste auf dem Handy angezeigt wird.",
+      "mobile_show_labels_desc": "Steuern Sie die Sichtbarkeit des Etiketts auf Mobilgeräten.",
+      "mode": "Modus",
       "mode_docked": "Docked",
-      "mode_floating": "Floating",
-      "nav_scope": "Show Navigation On",
-      "nav_scope_desc": "Control where this navbar appears.",
-      "note_label": "Note:",
-      "offset_desc": "Distance from screen edge (px). Pushes the dock away from the edge.",
+      "mode_floating": "Schwimmend",
+      "nav_scope": "Navigation anzeigen Ein",
+      "nav_scope_desc": "Steuern Sie, wo diese Navigationsleiste angezeigt wird.",
+      "note_label": "Notiz:",
+      "offset_desc": "Abstand vom Bildschirmrand (px). Schiebt das Dock vom Rand weg.",
       "position": "Position",
-      "position_bottom": "Bottom",
-      "position_left": "Left",
-      "position_right": "Right",
-      "position_top": "Top",
-      "scope_all_info": "Navbar appears on every view in your dashboard.",
-      "scope_all_label": "All views:",
-      "scope_all_views": "All views (global)",
-      "scope_current_info": "Navbar only appears on the view where this card is placed.",
-      "scope_current_label": "Current view:",
-      "scope_current_view": "Current view only",
-      "section_items": "NAVIGATION ITEMS",
-      "section_items_desc": "Configure and reorder items that appear in your navbar. Drag to reorder. Drag paths onto a stack to add them as children.",
-      "section_special": "SPECIAL ITEMS",
-      "section_special_desc": "Enable special navbar items. When enabled, they appear in the items list above for reordering.",
+      "position_bottom": "Unten",
+      "position_left": "Links",
+      "position_right": "Rechts",
+      "position_top": "Oben",
+      "scope_all_info": "Die Navigationsleiste wird in jeder Ansicht Ihres Dashboards angezeigt.",
+      "scope_all_label": "Alle Ansichten:",
+      "scope_all_views": "Alle Ansichten (global)",
+      "scope_current_info": "Navigationsleiste erscheint nur in der Ansicht, in der diese Karte platziert ist.",
+      "scope_current_label": "Aktuelle Ansicht:",
+      "scope_current_view": "Nur aktuelle Ansicht",
+      "section_items": "NAVIGATIONSELEMENTE",
+      "section_items_desc": "Konfigurieren und ordnen Sie Elemente neu, die in Ihrer Navigationsleiste angezeigt werden. Zum Neuanordnen ziehen. Ziehen Sie Pfade auf einen Stapel, um sie als Kinder hinzuzufügen.",
+      "section_special": "BESONDERE ARTIKEL",
+      "section_special_desc": "Aktivieren Sie spezielle Navigationsleistenelemente. Wenn diese Option aktiviert ist, werden sie zur Neubestellung in der obigen Artikelliste angezeigt.",
       "section_style": "NAVBAR STYLE",
-      "section_visibility": "VISIBILITY",
-      "show_labels": "Show Labels",
-      "visual_preset": "Visual Preset",
-      "visual_preset_desc": "Choose a visual style preset for your navbar."
+      "section_visibility": "SICHTBARKEIT",
+      "show_labels": "Labels anzeigen",
+      "visual_preset": "Visuelle Voreinstellung",
+      "visual_preset_desc": "Wählen Sie eine visuelle Stilvorgabe für Ihre Navigationsleiste."
     },
     "climate": {
       "error_no_entity": "Keine Klimaanlage",
