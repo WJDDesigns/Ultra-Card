@@ -4005,7 +4005,7 @@ export function findStreamVideo(
   if (!root || depth > 4) return undefined;
   if (typeof HTMLVideoElement !== 'undefined' && root instanceof HTMLVideoElement) return root;
   const scopes: Array<Element | ShadowRoot> = [];
-  if ((root as any).shadowRoot) scopes.push((root as any).shadowRoot);
+  if (root.shadowRoot) scopes.push(root.shadowRoot);
   scopes.push(root);
   for (const scope of scopes) {
     const direct = scope.querySelector?.('video') as HTMLVideoElement | null;
