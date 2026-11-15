@@ -3,7 +3,7 @@
 > This page is generated automatically from the translation files. Don't edit it by hand;
 > it refreshes itself after every change to the `main` branch.
 
-**75.5% translated** — 6,145 of 8,138 entries. **1,993 still in English.**
+**80.2% translated** — 6,533 of 8,138 entries. **1,605 still in English.**
 
 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜
 
@@ -19,7 +19,7 @@ More help: [translation guide](../../CONTRIBUTING_TRANSLATIONS.md) · [all langu
 
 If the English word really is right in your language (a brand name, or a word you also use), just leave it. It will stay on this list, and that's fine.
 
-## Still in English (1,993)
+## Still in English (1,605)
 
 Biggest sections first. Click a section to open it.
 
@@ -579,165 +579,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Navigation (editor)</strong> — 73 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Begin collapsed when no saved preference exists. | `editor.navigation.start_collapsed_desc` |
-| Desktop | `editor.navigation.visibility.desktop` |
-| Add Path | `editor.navigation.add_path` |
-| Add Stack | `editor.navigation.add_stack` |
-| Center | `editor.navigation.align_center` |
-| End | `editor.navigation.align_end` |
-| Space Around | `editor.navigation.align_space_around` |
-| Space Between | `editor.navigation.align_space_between` |
-| Start | `editor.navigation.align_start` |
-| Choose floating (centered with margins) or docked (edge-to-edge). | `editor.navigation.desktop_mode_desc` |
-| Desktop Offset | `editor.navigation.desktop_offset` |
-| Where the navbar appears on desktop. | `editor.navigation.desktop_position_desc` |
-| Control label visibility on desktop. | `editor.navigation.desktop_show_labels_desc` |
-| Dock Color | `editor.navigation.dock_color` |
-| Custom accent color for the dock background. For glass styles this tints the glass. | `editor.navigation.dock_color_desc` |
-| Changes preview live in the navbar below. Close this editor to interact with the navbar. | `editor.navigation.edit_mode_banner` |
-| Only one global navbar can be active at a time. If you have multiple navbars set to "All views", only the first registered one will be displayed. Use "Current view only" for navbars on specific pages. | `editor.navigation.global_navbar_warning` |
-| Double Tap | `editor.navigation.haptics_double_tap` |
-| Trigger haptic on double tap. | `editor.navigation.haptics_double_tap_desc` |
-| Enable Haptics | `editor.navigation.haptics_enable` |
-| Master toggle for all navbar haptic feedback. | `editor.navigation.haptics_enable_desc` |
-| Hold Action | `editor.navigation.haptics_hold` |
-| Trigger haptic on hold. | `editor.navigation.haptics_hold_desc` |
-| Tap Action | `editor.navigation.haptics_tap` |
-| Trigger haptic on tap. | `editor.navigation.haptics_tap_desc` |
-| URL Navigation | `editor.navigation.haptics_url` |
-| Trigger haptic when navigating to a URL. | `editor.navigation.haptics_url_desc` |
-| Icon Color | `editor.navigation.icon_color` |
-| Custom color for navbar icons. Overrides the default icon color from the style preset. | `editor.navigation.icon_color_desc` |
-| Icon Spacing | `editor.navigation.icon_spacing` |
-| Gap between icons in the dock (px). | `editor.navigation.icon_spacing_desc` |
-| Item Alignment | `editor.navigation.item_alignment` |
-| How items are distributed within the dock. | `editor.navigation.item_alignment_desc` |
-| Hidden | `editor.navigation.labels_hidden` |
-| Icons & Labels | `editor.navigation.labels_icons` |
-| Text only (no icons) | `editor.navigation.labels_text_only` |
-| Media Player | `editor.navigation.media_player` |
-| Click to select entity (required) | `editor.navigation.media_player_entity_required` |
-| Media Player Icon | `editor.navigation.media_player_icon` |
-| Show a media player icon in the navbar | `editor.navigation.media_player_icon_desc` |
-| Min Width | `editor.navigation.min_width` |
-| Viewport width (px) that switches to desktop mode. | `editor.navigation.min_width_desc` |
-| Choose docked (default) or floating (desktop-like). | `editor.navigation.mobile_mode_desc` |
-| Mobile Offset | `editor.navigation.mobile_offset` |
-| Where the navbar appears on mobile. | `editor.navigation.mobile_position_desc` |
-| Control label visibility on mobile. | `editor.navigation.mobile_show_labels_desc` |
-| Mode | `editor.navigation.mode` |
-| Docked | `editor.navigation.mode_docked` |
-| Floating | `editor.navigation.mode_floating` |
-| Show Navigation On | `editor.navigation.nav_scope` |
-| Control where this navbar appears. | `editor.navigation.nav_scope_desc` |
-| Note: | `editor.navigation.note_label` |
-| Distance from screen edge (px). Pushes the dock away from the edge. | `editor.navigation.offset_desc` |
-| Position | `editor.navigation.position` |
-| Bottom | `editor.navigation.position_bottom` |
-| Left | `editor.navigation.position_left` |
-| Right | `editor.navigation.position_right` |
-| Top | `editor.navigation.position_top` |
-| Navbar appears on every view in your dashboard. | `editor.navigation.scope_all_info` |
-| All views: | `editor.navigation.scope_all_label` |
-| All views (global) | `editor.navigation.scope_all_views` |
-| Navbar only appears on the view where this card is placed. | `editor.navigation.scope_current_info` |
-| Current view: | `editor.navigation.scope_current_label` |
-| Current view only | `editor.navigation.scope_current_view` |
-| NAVIGATION ITEMS | `editor.navigation.section_items` |
-| Configure and reorder items that appear in your navbar. Drag to reorder. Drag paths onto a stack to add them as children. | `editor.navigation.section_items_desc` |
-| SPECIAL ITEMS | `editor.navigation.section_special` |
-| Enable special navbar items. When enabled, they appear in the items list above for reordering. | `editor.navigation.section_special_desc` |
-| NAVBAR STYLE | `editor.navigation.section_style` |
-| VISIBILITY | `editor.navigation.section_visibility` |
-| Show Labels | `editor.navigation.show_labels` |
-| Visual Preset | `editor.navigation.visual_preset` |
-| Choose a visual style preset for your navbar. | `editor.navigation.visual_preset_desc` |
-
-</details>
-
-<details>
-<summary><strong>Bar (editor)</strong> — 70 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Choose how the bar percentage is calculated | `editor.bar.percentage_type.desc` |
-| Current Attribute (Optional) | `editor.bar.range_config.current_attribute` |
-| If the value is in an attribute, enter the attribute name here. | `editor.bar.range_config.current_attribute_desc` |
-| Optionally show a marker indicating the current/average value within the range. | `editor.bar.range_config.current_marker_desc` |
-| Current Value Marker (Optional) | `editor.bar.range_config.current_marker_title` |
-| Minimum | `editor.bar.range.min` |
-| Maximum | `editor.bar.range.max` |
-| Override auto-detected range with numbers. For dynamic min/max or labels, enable the unified template (value_min, value_max, left_label, right_label). | `editor.bar.range.desc` |
-| Override the visible range. Enter values in the same unit as your entities (e.g. km). Leave blank to auto-detect from the Total Entity. | `editor.bar.range.desc_difference` |
-| Optional fallback entity for text/labels. Difference mode uses Current and Total entities for bar calculation. | `editor.bar.entity.fallback_desc` |
-| Fallback Entity (optional) | `editor.bar.entity.fallback_title` |
-| Glass Blur | `editor.bar.appearance.glass_blur` |
-| Adjust the blur intensity of the glass effect. | `editor.bar.appearance.glass_blur_desc` |
-| Minimal | `editor.bar.appearance.style_minimal` |
-| Follow Fill | `editor.bar.text_display.follow_fill` |
-| Text Formatting | `editor.bar.text_display.text_formatting` |
-| Apply formatting styles to the percentage text. | `editor.bar.text_display.text_formatting_desc` |
-| Animation Direction | `editor.bar.animation.direction` |
-| Direction Attribute (Optional) | `editor.bar.animation.direction_attribute` |
-| Read this attribute instead of entity state when deriving direction. | `editor.bar.animation.direction_attribute_desc` |
-| Choose a fixed direction, or derive direction from a sensor value. | `editor.bar.animation.direction_desc` |
-| Direction Sensor | `editor.bar.animation.direction_entity` |
-| Negative values reverse the animation. Positive values keep normal direction. | `editor.bar.animation.direction_entity_desc` |
-| Normal | `editor.bar.animation.direction_modes.normal` |
-| Reverse | `editor.bar.animation.direction_modes.reverse` |
-| From Sensor | `editor.bar.animation.direction_modes.sensor` |
-| Base Speed | `editor.bar.animation.speed` |
-| Speed Attribute (Optional) | `editor.bar.animation.speed_attribute` |
-| Read this attribute instead of entity state when deriving speed. | `editor.bar.animation.speed_attribute_desc` |
-| 1 = default speed. Higher values animate faster. | `editor.bar.animation.speed_desc` |
-| Speed Sensor | `editor.bar.animation.speed_entity` |
-| Entity whose numeric value controls animation speed. | `editor.bar.animation.speed_entity_desc` |
-| Animation Speed Source | `editor.bar.animation.speed_mode` |
-| Use a fixed speed value, or derive speed from a sensor. | `editor.bar.animation.speed_mode_desc` |
-| Fixed | `editor.bar.animation.speed_modes.fixed` |
-| From Sensor | `editor.bar.animation.speed_modes.sensor` |
-| Sensor Multiplier | `editor.bar.animation.speed_multiplier` |
-| Scales sensor values before converting to animation speed. | `editor.bar.animation.speed_multiplier_desc` |
-| Difference entities not found | `editor.bar.error_difference_not_found` |
-| Configure Difference | `editor.bar.error_no_difference` |
-| Set current and total entities in the Difference configuration. | `editor.bar.error_no_difference_desc` |
-| Clamp Edge Labels Inward | `editor.bar.scale.clamp_edge_labels` |
-| Slightly nudge the first and last labels inward to reduce clipping on tight layouts. | `editor.bar.scale.clamp_edge_labels_desc` |
-| Custom Tick Labels | `editor.bar.scale.custom_labels` |
-| Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave a slot empty to show that tick’s numeric value, or enter "-" (a single dash) to hide that tick’s label while keeping its… | `editor.bar.scale.custom_labels_desc` |
-| Tip: use "-" in any slot to hide that tick’s label. Accepted hide tokens: -, _, none, {none}, hide. | `editor.bar.scale.custom_labels_hint` |
-| Custom Tick Positions | `editor.bar.scale.custom_ticks` |
-| Comma-separated values in your entity's unit. Overrides the number of divisions (e.g. 10,20,30,40). Leave blank to use evenly spaced divisions. | `editor.bar.scale.custom_ticks_desc` |
-| Add tick marks and labels along the bar to show the scale. Useful for visualizing ranges like temperature or time. | `editor.bar.scale.desc` |
-| Number of Divisions | `editor.bar.scale.divisions` |
-| How many segments to divide the scale into (e.g., 4 = marks at 0%, 25%, 50%, 75%, 100%). | `editor.bar.scale.divisions_desc` |
-| Enable the toggle above to configure scale settings | `editor.bar.scale.enable_toggle` |
-| Label Color | `editor.bar.scale.label_color` |
-| Label Size | `editor.bar.scale.label_size` |
-| Abbreviate Labels on Mobile | `editor.bar.scale.mobile_abbreviate_labels` |
-| Shorten numeric labels on mobile (e.g. 1200 -> 1.2k, 700 km -> 700). | `editor.bar.scale.mobile_abbreviate_labels_desc` |
-| Mobile Breakpoint | `editor.bar.scale.mobile_breakpoint` |
-| Apply mobile label options when viewport width is at or below this value. | `editor.bar.scale.mobile_breakpoint_desc` |
-| Enable Mobile Label Options | `editor.bar.scale.mobile_options_enabled` |
-| Apply mobile-specific label behavior below the configured viewport width. | `editor.bar.scale.mobile_options_enabled_desc` |
-| Reduce Label Density on Mobile | `editor.bar.scale.mobile_reduce_density` |
-| Hide every second label on mobile to prevent overlap while keeping all ticks. | `editor.bar.scale.mobile_reduce_density_desc` |
-| Scale Position | `editor.bar.scale.position` |
-| Above | `editor.bar.scale.position_above` |
-| Below | `editor.bar.scale.position_below` |
-| Position the scale above or below the bar. | `editor.bar.scale.position_desc` |
-| Show Labels | `editor.bar.scale.show_labels` |
-| Display numeric values at each tick mark. | `editor.bar.scale.show_labels_desc` |
-| Tick Color | `editor.bar.scale.tick_color` |
-| Scale / Tick Marks | `editor.bar.scale.title` |
-
-</details>
-
-<details>
 <summary><strong>Solar analytics (editor)</strong> — 46 left</summary>
 
 | English text | Key |
@@ -845,58 +686,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Energy display (editor)</strong> — 44 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Add Device | `editor.energy_display.add_device` |
-| Animation speed | `editor.energy_display.animation_speed` |
-| Box border width | `editor.energy_display.box_border_width` |
-| Box corner radius | `editor.energy_display.box_corner_radius` |
-| Circle size | `editor.energy_display.circle_size` |
-| Node circle diameter (px) | `editor.energy_display.circle_size_desc` |
-| Column spacing | `editor.energy_display.column_spacing` |
-| Configure Solar, Grid, Battery, and Home. Use power sensor entities (W). | `editor.energy_display.core_nodes_desc` |
-| Core Energy Nodes | `editor.energy_display.core_nodes_title` |
-| Curve factor | `editor.energy_display.curve_factor` |
-| Path curvature | `editor.energy_display.curve_factor_desc` |
-| Add devices to show individual power consumption. Drag to reorder. | `editor.energy_display.devices_desc` |
-| Custom Device Nodes | `editor.energy_display.devices_title` |
-| Flow line width | `editor.energy_display.flow_line_width` |
-| Line thickness (px) | `editor.energy_display.flow_line_width_desc` |
-| Flow and Animation | `editor.energy_display.flow_title` |
-| Gauge size | `editor.energy_display.gauge_size` |
-| Central gauge diameter (px) | `editor.energy_display.gauge_size_desc` |
-| Color | `editor.energy_display.node_color` |
-| Enabled | `editor.energy_display.node_enabled` |
-| Icon | `editor.energy_display.node_icon` |
-| Label | `editor.energy_display.node_label` |
-| Node spacing | `editor.energy_display.node_spacing` |
-| Spacing between nodes (px) | `editor.energy_display.node_spacing_desc` |
-| Energy Display is a Pro feature. Visualize energy flow between grid, solar, battery, home and devices with Circle Flow, Box Flow, or Sankey styles. | `editor.energy_display.pro_description` |
-| Sankey width | `editor.energy_display.sankey_width` |
-| Diagram width (px) | `editor.energy_display.sankey_width_desc` |
-| Show directional arrow | `editor.energy_display.show_arrow` |
-| Show icons | `editor.energy_display.show_icons` |
-| Show labels | `editor.energy_display.show_labels` |
-| Show self-sufficiency gauge | `editor.energy_display.show_self_sufficiency` |
-| Show values | `editor.energy_display.show_values` |
-| Fast | `editor.energy_display.speed_fast` |
-| None | `editor.energy_display.speed_none` |
-| Normal | `editor.energy_display.speed_normal` |
-| Slow | `editor.energy_display.speed_slow` |
-| Layout Style | `editor.energy_display.style` |
-| Box Flow | `editor.energy_display.style_box` |
-| Circle Flow | `editor.energy_display.style_circle` |
-| Choose the visual layout for the energy flow display. | `editor.energy_display.style_desc` |
-| Style Options | `editor.energy_display.style_options_title` |
-| Sankey | `editor.energy_display.style_sankey` |
-| Display Style | `editor.energy_display.style_title` |
-| Unit display | `editor.energy_display.unit_display` |
-
-</details>
-
-<details>
 <summary><strong>Time machine (editor)</strong> — 43 left</summary>
 
 | English text | Key |
@@ -996,54 +785,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Popup (editor)</strong> — 40 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Icon Background | `editor.popup.trigger.icon_background` |
-| Circle | `editor.popup.trigger.icon_background_circle` |
-| Icon Background Color | `editor.popup.trigger.icon_background_color` |
-| Shape drawn behind the icon, like the Icon module. | `editor.popup.trigger.icon_background_desc` |
-| None | `editor.popup.trigger.icon_background_none` |
-| Icon Background Padding | `editor.popup.trigger.icon_background_padding` |
-| Space between the icon and the edge of its background. | `editor.popup.trigger.icon_background_padding_desc` |
-| Rounded | `editor.popup.trigger.icon_background_rounded` |
-| Trigger Icon Color | `editor.popup.trigger.icon_color` |
-| Trigger Icon Size | `editor.popup.trigger.icon_size` |
-| Size of the trigger icon in pixels. | `editor.popup.trigger.icon_size_desc` |
-| Module | `editor.popup.trigger.module` |
-| Module Trigger | `editor.popup.trigger.module_config` |
-| Module Linked | `editor.popup.trigger.module_linked` |
-| Tapping on "${module}" will now open this popup. | `editor.popup.trigger.module_linked_desc` |
-| Select a module in this card that will open the popup when tapped. The selected module will have its tap action overridden to open this popup instead. | `editor.popup.trigger.module_trigger_desc` |
-| Module Trigger | `editor.popup.trigger.module_trigger_title` |
-| -- Select a Module -- | `editor.popup.trigger.no_module` |
-| No Modules Available | `editor.popup.trigger.no_modules_available` |
-| Add other modules to this card first, then you can select one to trigger this popup. | `editor.popup.trigger.no_modules_available_desc` |
-| Select Module | `editor.popup.trigger.select_module` |
-| Choose which module should trigger this popup when clicked. | `editor.popup.trigger.select_module_desc` |
-| Layout | `editor.popup.layout.type` |
-| Animation | `editor.popup.animation.type` |
-| Animation Speed | `editor.popup.animation.duration` |
-| How long the open animation runs, in milliseconds. | `editor.popup.animation.duration_desc` |
-| Animation Easing | `editor.popup.animation.easing` |
-| How the motion accelerates. Spring adds a little overshoot. | `editor.popup.animation.easing_desc` |
-| Ease | `editor.popup.animation.easing_ease` |
-| Ease In Out | `editor.popup.animation.easing_ease_in_out` |
-| Ease Out | `editor.popup.animation.easing_ease_out` |
-| Linear | `editor.popup.animation.easing_linear` |
-| Spring | `editor.popup.animation.easing_spring` |
-| Slide From Screen Edge | `editor.popup.animation.from_edge` |
-| Start the slide off-screen so the popup glides in like a panel instead of nudging into place. | `editor.popup.animation.from_edge_desc` |
-| Close | `editor.popup.close_button.label` |
-| Operator | `editor.popup.trigger_logic.operator` |
-| Background Overlay | `editor.popup.overlay.section_title` |
-| Show Background Overlay | `editor.popup.overlay.show` |
-| Display a dimmed overlay behind the popup when open. | `editor.popup.overlay.show_desc` |
-
-</details>
-
-<details>
 <summary><strong>Alarm panel (editor)</strong> — 39 left</summary>
 
 | English text | Key |
@@ -1087,53 +828,6 @@ Biggest sections first. Click a section to open it.
 | Display the alarm state badge | `editor.alarm_panel.show_state_desc` |
 | Show title | `editor.alarm_panel.show_title` |
 | Display the alarm name | `editor.alarm_panel.show_title_desc` |
-
-</details>
-
-<details>
-<summary><strong>Dropdown (editor)</strong> — 39 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Option {number} | `editor.dropdown.option_number` |
-| Available Options | `editor.dropdown.available_options` |
-| Custom Text Configuration | `editor.dropdown.closed_title_custom_config` |
-| Custom text to display when dropdown is closed. | `editor.dropdown.closed_title_custom.desc` |
-| Custom Text | `editor.dropdown.closed_title_custom.title` |
-| Entity State Configuration | `editor.dropdown.closed_title_entity_config` |
-| Entity | `editor.dropdown.closed_title_entity.title` |
-| Custom | `editor.dropdown.closed_title_mode.custom` |
-| Choose what the dropdown displays when closed. | `editor.dropdown.closed_title_mode.desc` |
-| Entity State | `editor.dropdown.closed_title_mode.entity_state` |
-| First Option | `editor.dropdown.closed_title_mode.first_option` |
-| Last Chosen | `editor.dropdown.closed_title_mode.last_chosen` |
-| Closed Dropdown Title | `editor.dropdown.closed_title_mode.title` |
-| Icon Side | `editor.dropdown.control_alignment.icon_side` |
-| Alignment Mode | `editor.dropdown.control_alignment.mode` |
-| Control Icon | `editor.dropdown.control_icon.label` |
-| Select the icon that indicates the dropdown toggle state. | `editor.dropdown.control_icon.label_desc` |
-| Customize the dropdown chevron icon and how it aligns with the selected value. | `editor.dropdown.control_icon.section_desc` |
-| Dropdown Control Icon | `editor.dropdown.control_icon.section_title` |
-| Entity Source Mode Active | `editor.dropdown.entity_mode_active` |
-| Options are automatically managed by the selected entity. The dropdown will display the current state and update the entity when an option is selected. | `editor.dropdown.entity_mode_desc` |
-| Entity Source Configuration | `editor.dropdown.entity_source_config` |
-| Options will be automatically populated from the entity. The dropdown will display the current state and update the entity when an option is selected. | `editor.dropdown.entity_source_info` |
-| Auto | `editor.dropdown.menu_direction.auto` |
-| Choose how the dropdown opens: auto picks best fit, or force up/down. | `editor.dropdown.menu_direction.desc` |
-| Down | `editor.dropdown.menu_direction.down` |
-| Menu Direction | `editor.dropdown.menu_direction.title` |
-| Up | `editor.dropdown.menu_direction.up` |
-| No options found for this entity | `editor.dropdown.no_options_found` |
-| Select or Input Select entity to use as the source for dropdown options. | `editor.dropdown.source_entity.desc` |
-| Source Entity | `editor.dropdown.source_entity.title` |
-| Manual: Define custom options with actions. Entity: Use options from a Select or Input Select entity. | `editor.dropdown.source_mode.desc` |
-| Entity Source | `editor.dropdown.source_mode.entity` |
-| Manual Options | `editor.dropdown.source_mode.manual` |
-| Source Mode | `editor.dropdown.source_mode.title` |
-| Choose whether to manually define options or use a Select or Input Select entity. | `editor.dropdown.source.desc` |
-| Dropdown Source | `editor.dropdown.source.title` |
-| Number of items visible in the dropdown before scrolling (1-20). | `editor.dropdown.visible_items.desc` |
-| Visible Items | `editor.dropdown.visible_items.title` |
 
 </details>
 
@@ -1388,45 +1082,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Info (editor)</strong> — 31 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Show Entity Picture | `editor.info.icon_section.show_entity_picture` |
-| When enabled, entity_picture replaces the configured icon when available. | `editor.info.icon_section.show_entity_picture_desc` |
-| These controls affect the selected entity only. | `editor.info.size_section.desc` |
-| Allow Wrapping | `editor.info.allow_wrap` |
-| Allow grid items to wrap to new rows when they exceed the container width | `editor.info.allow_wrap_desc` |
-| Content Distribution | `editor.info.content_distribution` |
-| Control how icon and content are distributed along the main axis | `editor.info.content_distribution_desc` |
-| Display Attribute | `editor.info.display_attribute` |
-| Show an entity attribute instead of the main state | `editor.info.display_attribute_desc` |
-| Align the icon along the cross axis | `editor.info.icon_alignment_desc` |
-| Position the icon relative to the content (left, top, right, or bottom) | `editor.info.icon_position_desc` |
-| Name Alignment | `editor.info.name_alignment` |
-| Align the name text within its container | `editor.info.name_alignment_desc` |
-| Name First | `editor.info.name_first` |
-| Name & Value Gap | `editor.info.name_value_gap` |
-| Space between the name and value in pixels | `editor.info.name_value_gap_desc` |
-| Layout Direction | `editor.info.name_value_layout.orientation` |
-| Choose how to display the name and value | `editor.info.name_value_layout.orientation_desc` |
-| Arrange name and value (horizontal places them on one line) | `editor.info.name_value_layout.orientation_desc_vertical_icon` |
-| Choose how to arrange the name and value beside the icon | `editor.info.name_value_layout.orientation_desc_with_icon` |
-| Name & Value Layout | `editor.info.name_value_layout.title` |
-| Name & Value Order | `editor.info.name_value_order` |
-| Which one comes first on the line | `editor.info.name_value_order_desc_horizontal` |
-| Which one sits on top of the other | `editor.info.name_value_order_desc_vertical` |
-| Align the entire info item within its container | `editor.info.overall_alignment_desc` |
-| State Alignment | `editor.info.state_alignment` |
-| Align the state/value text within its container | `editor.info.state_alignment_desc` |
-| Template Cheatsheet | `editor.info.template_cheatsheet` |
-| Use Jinja2 templates to control icon and color dynamically. Uses entity context variables for seamless entity remapping. | `editor.info.unified_template_section.desc` |
-| Template Mode | `editor.info.unified_template_section.title` |
-| Value First | `editor.info.value_first` |
-
-</details>
-
-<details>
 <summary><strong>Humidifier (editor)</strong> — 30 left</summary>
 
 | English text | Key |
@@ -1642,39 +1297,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Tabs module (editor)</strong> — 25 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Horizontal | `editor.tabs_module.orientation.horizontal` |
-| Minimal | `editor.tabs_module.style.minimal` |
-| Position | `editor.tabs_module.alignment.position` |
-| Alignment | `editor.tabs_module.alignment.alignment` |
-| Animation | `editor.tabs_module.design.animation_title` |
-| Active Tab | `editor.tabs_module.colors.active` |
-| Background | `editor.tabs_module.colors.background` |
-| Customize the colors for your tabs. | `editor.tabs_module.colors.desc` |
-| Icon | `editor.tabs_module.colors.icon` |
-| Inactive Tab | `editor.tabs_module.colors.inactive` |
-| Track & Icons | `editor.tabs_module.colors.other` |
-| Text | `editor.tabs_module.colors.text` |
-| Colors | `editor.tabs_module.colors.title` |
-| Track | `editor.tabs_module.colors.track` |
-| Choose where the tabs appear relative to the content. | `editor.tabs_module.position.desc` |
-| Position | `editor.tabs_module.position.position` |
-| Tab Position | `editor.tabs_module.position.title` |
-| Control how tabs behave on smaller screens or when space is limited. | `editor.tabs_module.responsive.desc` |
-| Mobile Breakpoint | `editor.tabs_module.responsive.mobile_breakpoint` |
-| Screen width in pixels below which tabs collapse to icons only. | `editor.tabs_module.responsive.mobile_breakpoint_desc` |
-| Icons Only on Mobile | `editor.tabs_module.responsive.mobile_icons_only` |
-| Only show icons (hide text) on screens narrower than the breakpoint. Requires icons on tabs. | `editor.tabs_module.responsive.mobile_icons_only_desc` |
-| Responsive | `editor.tabs_module.responsive.title` |
-| Wrap Tabs | `editor.tabs_module.responsive.wrap_tabs` |
-| Allow tabs to wrap to multiple lines instead of overflowing. | `editor.tabs_module.responsive.wrap_tabs_desc` |
-
-</details>
-
-<details>
 <summary><strong>Animated clock (editor)</strong> — 22 left</summary>
 
 | English text | Key |
@@ -1846,32 +1468,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Modules (editor)</strong> — 18 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Text | `editor.modules.text` |
-| Info | `editor.modules.info` |
-| Spinbox | `editor.modules.spinbox` |
-| Dropdown | `editor.modules.dropdown` |
-| Person | `editor.modules.people.person` |
-| Sensor | `editor.modules.people.data_item.sensor` |
-| Banner Border Radius | `editor.modules.people.banner_border_radius` |
-| Border Radius | `editor.modules.people.border_radius` |
-| Leave empty to use friendly name | `editor.modules.people.custom_name_desc` |
-| Data Area Height | `editor.modules.people.data_area_height` |
-| Data Items Gap | `editor.modules.people.data_items_gap` |
-| Display Options | `editor.modules.people.music_display` |
-| Music Settings | `editor.modules.people.music_settings` |
-| Configure music/media display options | `editor.modules.people.music_settings_desc` |
-| Show Avatar | `editor.modules.people.show_avatar` |
-| Show Battery Badge | `editor.modules.people.show_battery_badge` |
-| Show Location Badge | `editor.modules.people.show_location_badge` |
-| Visibility | `editor.modules.people.visibility` |
-
-</details>
-
-<details>
 <summary><strong>Scroll row (editor)</strong> — 17 left</summary>
 
 | English text | Key |
@@ -1893,54 +1489,6 @@ Biggest sections first. Click a section to open it.
 | Items | `editor.scroll_row.items.title` |
 | Item Width | `editor.scroll_row.items.width` |
 | Percentage of the row (e.g. 42%) or a fixed width (e.g. 140px). | `editor.scroll_row.items.width_desc` |
-
-</details>
-
-<details>
-<summary><strong>Sports (editor)</strong> — 17 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Home Assistant Sensor | `editor.sports.ha_sensor_config` |
-| Team | `editor.sports.team` |
-| Detail Font Size | `editor.sports.detail_font_size` |
-| Size of detail text (records, venue, etc.) in pixels | `editor.sports.detail_font_size_desc` |
-| Background Logo Opacity | `editor.sports.logo_background_opacity` |
-| Transparency of the watermark logos (1-20%) | `editor.sports.logo_background_opacity_desc` |
-| Background Logo Size | `editor.sports.logo_background_size` |
-| Size of the watermark logos in the background | `editor.sports.logo_background_size_desc` |
-| BACKGROUND LOGO OPTIONS | `editor.sports.logo_bg_options` |
-| Size of team logos in pixels | `editor.sports.logo_size_desc` |
-| Size of score text in pixels | `editor.sports.score_font_size_desc` |
-| Show Background Logos | `editor.sports.show_logo_background` |
-| Display subtle watermark logos in the background | `editor.sports.show_logo_background_desc` |
-| SIZE CONTROLS | `editor.sports.size_controls` |
-| Size of team name text in pixels | `editor.sports.team_name_font_size_desc` |
-| Text Color | `editor.sports.text_color` |
-| Override the default text color for better readability | `editor.sports.text_color_desc` |
-
-</details>
-
-<details>
-<summary><strong>Image (editor)</strong> — 15 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Horizontal (px) | `editor.image.hover.translate_x` |
-| Aspect Ratio | `editor.image.aspect_ratio` |
-| Set the aspect ratio of the image container. | `editor.image.aspect_ratio_desc` |
-| Auto (use height setting) | `editor.image.aspect.auto` |
-| Mobile (9:16) | `editor.image.aspect.mobile` |
-| Photo (3:2) | `editor.image.aspect.photo` |
-| Portrait (2:3) | `editor.image.aspect.portrait` |
-| Square (1:1) | `editor.image.aspect.square` |
-| Standard (4:3) | `editor.image.aspect.standard` |
-| Ultrawide (21:9) | `editor.image.aspect.ultrawide` |
-| Widescreen (16:9) | `editor.image.aspect.widescreen` |
-| Image failed to load | `editor.image.load_error` |
-| Rotation (°) | `editor.image.rotation` |
-| Rotate the image clockwise (0-360 degrees). | `editor.image.rotation_desc` |
-| Size & Display | `editor.image.size_title` |
 
 </details>
 
@@ -2028,48 +1576,6 @@ Biggest sections first. Click a section to open it.
 | Customize colors, fonts, and spacing for the calendar display. | `editor.calendar.styling_desc` |
 | View Configuration | `editor.calendar.view_config` |
 | Configure the calendar view layout and date range. | `editor.calendar.view_config_desc` |
-
-</details>
-
-<details>
-<summary><strong>Camera (editor)</strong> — 13 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Bottom Middle | `editor.camera.name_position.options.bottom_middle` |
-| Top Middle | `editor.camera.name_position.options.top_middle` |
-| Stream Mode | `editor.camera.view_mode.title` |
-| Live | `editor.camera.mode_badge.live` |
-| Snapshot | `editor.camera.mode_badge.snapshot` |
-| Cover | `editor.camera.image_fit.options.cover` |
-| Contain | `editor.camera.image_fit.options.contain` |
-| Fill | `editor.camera.image_fit.options.fill` |
-| Camera now uses responsive sizing by default (100% width). Use the Design tab for full control over dimensions, or adjust these fallback pixel dimensions for specific use cases. | `editor.camera.dimensions.responsive_note` |
-| Rotation | `editor.camera.rotation` |
-| Rotate the camera image clockwise (0–360 degrees). | `editor.camera.rotation_desc` |
-| Tap Camera Opens Fullscreen | `editor.camera.tap_opens_fullscreen` |
-| When enabled, tapping anywhere on the camera will open it in fullscreen mode. | `editor.camera.tap_opens_fullscreen_desc` |
-
-</details>
-
-<details>
-<summary><strong>Graphs (editor)</strong> — 13 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Chance of Rain | `editor.graphs.forecast.precip_probability` |
-| UV Index | `editor.graphs.forecast.uv_index` |
-| Use Fixed Y-Axis Scale | `editor.graphs.display.use_fixed_y_axis` |
-| Set fixed min/max values instead of auto-scaling. Useful for consistent scales across multiple graphs or time periods. | `editor.graphs.display.use_fixed_y_axis_desc` |
-| Maximum Value | `editor.graphs.display.y_axis_max` |
-| Minimum Value | `editor.graphs.display.y_axis_min` |
-| Minimum | `editor.graphs.agg.min` |
-| Maximum | `editor.graphs.agg.max` |
-| Median | `editor.graphs.agg.median` |
-| Limit Days | `editor.graphs.forecast_limit.days` |
-| Days override hours | `editor.graphs.forecast_limit.days_desc` |
-| Limit Hours | `editor.graphs.forecast_limit.hours` |
-| 0 = show all | `editor.graphs.forecast_limit.hours_desc` |
 
 </details>
 
@@ -2193,6 +1699,41 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Navigation (editor)</strong> — 10 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Begin collapsed when no saved preference exists. | `editor.navigation.start_collapsed_desc` |
+| Desktop | `editor.navigation.visibility.desktop` |
+| Start | `editor.navigation.align_start` |
+| Desktop Offset | `editor.navigation.desktop_offset` |
+| URL Navigation | `editor.navigation.haptics_url` |
+| Media Player | `editor.navigation.media_player` |
+| Mobile Offset | `editor.navigation.mobile_offset` |
+| Docked | `editor.navigation.mode_docked` |
+| Position | `editor.navigation.position` |
+| NAVBAR STYLE | `editor.navigation.section_style` |
+
+</details>
+
+<details>
+<summary><strong>Bar (editor)</strong> — 9 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Current Attribute (Optional) | `editor.bar.range_config.current_attribute` |
+| If the value is in an attribute, enter the attribute name here. | `editor.bar.range_config.current_attribute_desc` |
+| Optionally show a marker indicating the current/average value within the range. | `editor.bar.range_config.current_marker_desc` |
+| Current Value Marker (Optional) | `editor.bar.range_config.current_marker_title` |
+| Minimum | `editor.bar.range.min` |
+| Maximum | `editor.bar.range.max` |
+| Glass Blur | `editor.bar.appearance.glass_blur` |
+| Minimal | `editor.bar.appearance.style_minimal` |
+| Normal | `editor.bar.animation.direction_modes.normal` |
+
+</details>
+
+<details>
 <summary><strong>Battery monitor (editor)</strong> — 9 left</summary>
 
 | English text | Key |
@@ -2227,36 +1768,19 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Cover (editor)</strong> — 9 left</summary>
+<summary><strong>Tabs module (editor)</strong> — 9 left</summary>
 
 | English text | Key |
 | --- | --- |
-| Layout | `editor.cover.layout_section` |
-| Standard | `editor.cover.layout_standard` |
-| Position | `editor.cover.position` |
-| Icon | `editor.cover.icon` |
-| Leave empty to use the entity icon | `editor.cover.icon_desc` |
-| Name | `editor.cover.name` |
-| Leave empty to use the entity name | `editor.cover.name_desc` |
-| Optional overrides for the entity name and icon. | `editor.cover.overrides_desc` |
-| Name & Icon | `editor.cover.overrides_section` |
-
-</details>
-
-<details>
-<summary><strong>Map (editor)</strong> — 9 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Hybrid | `editor.map.type.hybrid` |
-| Standard | `editor.map.type.osm_standard` |
-| Transport | `editor.map.type.osm_transport` |
-| Manually set the map center coordinates. Leave empty to use first marker or auto-zoom. | `editor.map.center.desc` |
-| Center Latitude | `editor.map.center.latitude` |
-| Latitude coordinate for map center (-90 to 90) | `editor.map.center.latitude_desc` |
-| Center Longitude | `editor.map.center.longitude` |
-| Longitude coordinate for map center (-180 to 180) | `editor.map.center.longitude_desc` |
-| Map Center | `editor.map.center.title` |
+| Horizontal | `editor.tabs_module.orientation.horizontal` |
+| Minimal | `editor.tabs_module.style.minimal` |
+| Position | `editor.tabs_module.alignment.position` |
+| Animation | `editor.tabs_module.design.animation_title` |
+| Text | `editor.tabs_module.colors.text` |
+| Track | `editor.tabs_module.colors.track` |
+| Position | `editor.tabs_module.position.position` |
+| Tab Position | `editor.tabs_module.position.title` |
+| Responsive | `editor.tabs_module.responsive.title` |
 
 </details>
 
@@ -2324,21 +1848,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Spinbox (editor)</strong> — 7 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Layout | `editor.spinbox.layout_title` |
-| Horizontal | `editor.spinbox.layout_options.horizontal` |
-| Neumorphic | `editor.spinbox.styles.neumorphic` |
-| Decrease | `editor.spinbox.decrease` |
-| Increase | `editor.spinbox.increase` |
-| Configure the numeric range, step size, and default value. | `editor.spinbox.value_section.desc` |
-| Value Configuration | `editor.spinbox.value_section.title` |
-
-</details>
-
-<details>
 <summary><strong>Timer (editor)</strong> — 7 left</summary>
 
 | English text | Key |
@@ -2368,34 +1877,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Button (editor)</strong> — 6 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Neumorphic | `editor.button.styles.neumorphic` |
-| Configure what happens when users tap, hold, or double-tap this button. | `editor.button.actions.desc` |
-| Set up button actions | `editor.button.actions.setup` |
-| Button Actions | `editor.button.actions.title` |
-| Icon Size | `editor.button.icon_size` |
-| Size of the icon in pixels | `editor.button.icon_size_desc` |
-
-</details>
-
-<details>
-<summary><strong>Custom variables (editor)</strong> — 6 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Global | `editor.custom_variables.global` |
-| Add card variable | `editor.custom_variables.add_card_variable` |
-| Variables that apply only to this card. Use them in templates with {{ $variable_name }}. | `editor.custom_variables.card_only_description` |
-| Variables that apply only to this card. For shared variables used across cards, use the Ultra Card Hub → Variables tab in the sidebar. | `editor.custom_variables.card_section_description` |
-| Add a variable that applies only to this card, or use the Ultra Card Hub for shared variables. | `editor.custom_variables.empty_card_description` |
-| No Card Variables | `editor.custom_variables.empty_card_title` |
-
-</details>
-
-<details>
 <summary><strong>Lunar phase (editor)</strong> — 6 left</summary>
 
 | English text | Key |
@@ -2406,6 +1887,34 @@ Biggest sections first. Click a section to open it.
 | Theme | `editor.lunar_phase.bg_theme` |
 | Auto | `editor.lunar_phase.font_auto` |
 | Position | `editor.lunar_phase.items.position` |
+
+</details>
+
+<details>
+<summary><strong>Modules (editor)</strong> — 6 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Text | `editor.modules.text` |
+| Info | `editor.modules.info` |
+| Spinbox | `editor.modules.spinbox` |
+| Dropdown | `editor.modules.dropdown` |
+| Person | `editor.modules.people.person` |
+| Sensor | `editor.modules.people.data_item.sensor` |
+
+</details>
+
+<details>
+<summary><strong>Popup (editor)</strong> — 6 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Module | `editor.popup.trigger.module` |
+| Layout | `editor.popup.layout.type` |
+| Animation | `editor.popup.animation.type` |
+| Animation Speed | `editor.popup.animation.duration` |
+| Linear | `editor.popup.animation.easing_linear` |
+| Operator | `editor.popup.trigger_logic.operator` |
 
 </details>
 
@@ -2452,47 +1961,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Text (editor)</strong> — 6 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Icon Size | `editor.text.icon_size` |
-| Template Cheatsheet | `editor.text.template_cheatsheet` |
-| Text Size | `editor.text.text_size` |
-| Rich text is hidden while Unified Template Mode is on. Turn it off to edit static content, or use the unified template JSON for dynamic text. | `editor.text.unified_replaces_content` |
-| Return JSON with content, color, and optional container_background_color. Plain Jinja strings are treated as dynamic text. HTML tags in the output are shown as text, so style it with color rather than markup. | `editor.text.unified_template_section.desc` |
-| Template Mode | `editor.text.unified_template_section.toggle` |
-
-</details>
-
-<details>
-<summary><strong>Toggle (editor)</strong> — 6 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Create Toggle Points | `editor.toggle.create_toggle_points` |
-| QUICK SETUP | `editor.toggle.quick_setup` |
-| Automatically create toggle points based on an entity type (replaces existing points) | `editor.toggle.quick_setup_desc` |
-| Select Entity | `editor.toggle.quick_setup_entity` |
-| Choose an entity, then click "Create Toggle Points" below to auto-generate points based on the entity type | `editor.toggle.quick_setup_entity_desc` |
-| This will replace all existing toggle points with auto-generated ones based on the entity type. | `editor.toggle.quick_setup_warning` |
-
-</details>
-
-<details>
-<summary><strong>Boolean input (editor)</strong> — 5 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Styling | `editor.boolean_input.styling.title` |
-| Alignment | `editor.boolean_input.content_alignment` |
-| Align the control row inside the module | `editor.boolean_input.content_alignment_desc` |
-| Show Entity Name | `editor.boolean_input.show_entity_name` |
-| Display the entity name beside the control (switch/checkbox) | `editor.boolean_input.show_entity_name_desc` |
-
-</details>
-
-<details>
 <summary><strong>Energy price (editor)</strong> — 5 left</summary>
 
 | English text | Key |
@@ -2502,19 +1970,6 @@ Biggest sections first. Click a section to open it.
 | h | `editor.energy_price.unit_h` |
 | min | `editor.energy_price.unit_min` |
 | {label}: start {time} | `editor.energy_price.window_labeled` |
-
-</details>
-
-<details>
-<summary><strong>Fan (editor)</strong> — 5 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Layout | `editor.fan.layout_section` |
-| Layout | `editor.fan.layout` |
-| Standard | `editor.fan.layout_standard` |
-| Decrease speed | `editor.fan.decrease_speed` |
-| Increase speed | `editor.fan.increase_speed` |
 
 </details>
 
@@ -2532,28 +1987,15 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Gauge (editor)</strong> — 5 left</summary>
+<summary><strong>Graphs (editor)</strong> — 5 left</summary>
 
 | English text | Key |
 | --- | --- |
-| ANIMATION | `editor.gauge.section_animation` |
-| Select a sensor or input number entity whose value will be displayed on the gauge. | `editor.gauge.entity_desc` |
-| Template cheatsheet | `editor.gauge.unified_template.cheatsheet` |
-| Use Jinja2 templates to dynamically set gauge value and gauge_color. | `editor.gauge.unified_template.desc` |
-| Template Mode | `editor.gauge.unified_template.toggle` |
-
-</details>
-
-<details>
-<summary><strong>Markdown (editor)</strong> — 5 left</summary>
-
-| English text | Key |
-| --- | --- |
-| HTML Support | `editor.markdown.html.title` |
-| Template Cheatsheet | `editor.markdown.template_cheatsheet` |
-| Static markdown editor is hidden while Unified Template Mode is on. Turn it off to edit markdown here, or supply markdown in the unified template `content` field. | `editor.markdown.unified_replaces_editor` |
-| Return JSON with a `content` string (markdown). Optional `color` and `container_background_color`. | `editor.markdown.unified_template_section.desc` |
-| Template Mode | `editor.markdown.unified_template_section.toggle` |
+| Chance of Rain | `editor.graphs.forecast.precip_probability` |
+| UV Index | `editor.graphs.forecast.uv_index` |
+| Minimum | `editor.graphs.agg.min` |
+| Maximum | `editor.graphs.agg.max` |
+| Median | `editor.graphs.agg.median` |
 
 </details>
 
@@ -2584,6 +2026,30 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Camera (editor)</strong> — 4 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Stream Mode | `editor.camera.view_mode.title` |
+| Live | `editor.camera.mode_badge.live` |
+| Snapshot | `editor.camera.mode_badge.snapshot` |
+| Rotation | `editor.camera.rotation` |
+
+</details>
+
+<details>
+<summary><strong>Cover (editor)</strong> — 4 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Layout | `editor.cover.layout_section` |
+| Standard | `editor.cover.layout_standard` |
+| Position | `editor.cover.position` |
+| Name | `editor.cover.name` |
+
+</details>
+
+<details>
 <summary><strong>Dynamic list (editor)</strong> — 4 left</summary>
 
 | English text | Key |
@@ -2592,6 +2058,18 @@ Biggest sections first. Click a section to open it.
 | Gap (px) | `editor.dynamic_list.gap` |
 | Space between generated modules in pixels | `editor.dynamic_list.gap_desc` |
 | Template | `editor.dynamic_list.template_label` |
+
+</details>
+
+<details>
+<summary><strong>Energy display (editor)</strong> — 4 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Label | `editor.energy_display.node_label` |
+| Normal | `editor.energy_display.speed_normal` |
+| Layout Style | `editor.energy_display.style` |
+| Sankey | `editor.energy_display.style_sankey` |
 
 </details>
 
@@ -2631,6 +2109,28 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Fan (editor)</strong> — 3 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Layout | `editor.fan.layout_section` |
+| Layout | `editor.fan.layout` |
+| Standard | `editor.fan.layout_standard` |
+
+</details>
+
+<details>
+<summary><strong>Image (editor)</strong> — 3 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Horizontal (px) | `editor.image.hover.translate_x` |
+| Mobile (9:16) | `editor.image.aspect.mobile` |
+| Standard (4:3) | `editor.image.aspect.standard` |
+
+</details>
+
+<details>
 <summary><strong>Living canvas (editor)</strong> — 3 left</summary>
 
 | English text | Key |
@@ -2642,6 +2142,17 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Map (editor)</strong> — 3 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Hybrid | `editor.map.type.hybrid` |
+| Standard | `editor.map.type.osm_standard` |
+| Transport | `editor.map.type.osm_transport` |
+
+</details>
+
+<details>
 <summary><strong>Pagebreak (editor)</strong> — 3 left</summary>
 
 | English text | Key |
@@ -2649,6 +2160,17 @@ Biggest sections first. Click a section to open it.
 | Page breaks appear as a slim divider in the editor and are invisible on the dashboard. When used inside a Slider Layout, they separate content into different slides. All modules before a page break belong to one page,… | `editor.pagebreak.info_text` |
 | How Page Breaks Work: | `editor.pagebreak.info_title` |
 | Page Break | `editor.pagebreak.preview_label` |
+
+</details>
+
+<details>
+<summary><strong>Spinbox (editor)</strong> — 3 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Layout | `editor.spinbox.layout_title` |
+| Horizontal | `editor.spinbox.layout_options.horizontal` |
+| Neumorphic | `editor.spinbox.styles.neumorphic` |
 
 </details>
 
@@ -2669,6 +2191,16 @@ Biggest sections first. Click a section to open it.
 | --- | --- |
 | Hex (input_text) | `editor.color_input.mode_options.hex` |
 | Styling | `editor.color_input.styling.title` |
+
+</details>
+
+<details>
+<summary><strong>Dropdown (editor)</strong> — 2 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Option {number} | `editor.dropdown.option_number` |
+| Auto | `editor.dropdown.menu_direction.auto` |
 
 </details>
 
@@ -2713,6 +2245,16 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Sports (editor)</strong> — 2 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Home Assistant Sensor | `editor.sports.ha_sensor_config` |
+| Team | `editor.sports.team` |
+
+</details>
+
+<details>
 <summary><strong>Status summary (editor)</strong> — 2 left</summary>
 
 | English text | Key |
@@ -2752,6 +2294,24 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Boolean input (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Styling | `editor.boolean_input.styling.title` |
+
+</details>
+
+<details>
+<summary><strong>Button (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Neumorphic | `editor.button.styles.neumorphic` |
+
+</details>
+
+<details>
 <summary><strong>Button input (editor)</strong> — 1 left</summary>
 
 | English text | Key |
@@ -2766,6 +2326,15 @@ Biggest sections first. Click a section to open it.
 | English text | Key |
 | --- | --- |
 | Styling | `editor.counter_input.styling.title` |
+
+</details>
+
+<details>
+<summary><strong>Custom variables (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Global | `editor.custom_variables.global` |
 
 </details>
 
@@ -2788,11 +2357,29 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Layout extra (editor)</strong> — 1 left</summary>
+<summary><strong>Gauge (editor)</strong> — 1 left</summary>
 
 | English text | Key |
 | --- | --- |
-| Open module documentation in Hub | `editor.layout_extra.module_docs` |
+| ANIMATION | `editor.gauge.section_animation` |
+
+</details>
+
+<details>
+<summary><strong>Info (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| These controls affect the selected entity only. | `editor.info.size_section.desc` |
+
+</details>
+
+<details>
+<summary><strong>Markdown (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| HTML Support | `editor.markdown.html.title` |
 
 </details>
 
@@ -2865,6 +2452,15 @@ Biggest sections first. Click a section to open it.
 | English text | Key |
 | --- | --- |
 | Themes | `hub.tabs.themes` |
+
+</details>
+
+<details>
+<summary><strong>Text (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Icon Size | `editor.text.icon_size` |
 
 </details>
 
