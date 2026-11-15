@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4-beta15
+
+The fifteenth 3.14.4 beta makes the module documentation "?" button actually open the docs, restarts live camera streams that freeze on an old picture, and brings another German update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+🏆 **Honorable mentions: larrysansan and Steve Markus.** larrysansan kept pressing the little "?" next to Module Name and nothing happened, the help button that needed help 📖. Steve's driveway camera on his Chromebook was still showing a sunny afternoon long after dark, a camera stuck in the past like a holiday photo on the fridge 📸🌙. Thanks to both of you, the docs open and the cameras keep up with the present.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you.
+
+### 🔧 Improvements
+
+- **German translation update** - German is now about 80% translated. Thanks to larrysansan for another German update
+
+### 🐛 Bug Fixes
+
+- **Module documentation button did nothing** - The "?" next to Module Name and the Documentation button on the About tab now open the module's page in Ultra Card Hub (in a new browser tab, or the same tab in the Companion app). Modules without a page of their own open the Modules overview, and without Ultra Card Connect installed the public wiki opens instead. Thanks to larrysansan for reporting
+- **Live camera stuck on an old picture** - A camera shown as a live stream (for example when Go Live When stays on) could freeze on one frame without an error, which happened on Chromebooks. The card now notices when a visible live stream stops moving for 30 seconds and restarts it, backing off if the restart doesn't help. Thanks to Steve Markus for reporting
+
 ## Version 3.14.4-beta14
 
 The fourteenth 3.14.4 beta lets cameras fill a Horizontal layout instead of stopping at 500px each, keeps the Full Width label in row settings on one line, and brings another German update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
