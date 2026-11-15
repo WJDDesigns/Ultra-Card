@@ -52,6 +52,14 @@ type CameraFitMode = 'cover' | 'contain' | 'fill';
 const DEFAULT_ASPECT_RATIO = 16 / 9;
 /** How long the app must have been in the background before a live stream is rebuilt on return. */
 const STREAM_RESUME_REBUILD_MS = 30_000;
+/** How often a live stream is checked for a frozen picture. */
+const STREAM_STALL_CHECK_MS = 10_000;
+/**
+ * A live stream whose video has not moved for this long, on a visible page, is rebuilt. Some
+ * browsers (Chromebooks especially) leave HLS/WebRTC playback frozen on the last frame without
+ * firing an error, so the tile kept showing a picture from hours earlier.
+ */
+const STREAM_STALL_REBUILD_MS = 30_000;
 
 /**
  * Runtime state for a single camera instance.
@@ -76,6 +84,13 @@ interface CameraRuntimeState {
   snapshotInFlight?: boolean | undefined;
   /** Bumped when the app returns from a long sleep, so a stalled live stream is rebuilt. */
   streamEpoch?: number | undefined;
+  /** Watchdog that rebuilds a live stream whose picture stopped moving. */
+  stallTimer?: ReturnType<typeof setInterval> | undefined;
+  stallVideo?: HTMLVideoElement | undefined;
+  stallLastTime?: number | undefined;
+  stallSince?: number | undefined;
+  /** Rebuilds in a row that never got the picture moving; spaces further rebuilds out. */
+  stallRebuilds?: number | undefined;
   audioOverride?: boolean | undefined;
   clickTimeout?: any;
   holdTimeout?: any;
@@ -273,115 +288,117 @@ export class UltraCameraModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }
           )}
-          ${cameraModule.show_name !== false
-            ? html`
-                <div class="field-group" style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.camera.name', lang, 'Camera Name'),
-                    localize(
-                      'editor.camera.name_desc',
+          ${
+            cameraModule.show_name !== false
+              ? html`
+                  <div class="field-group" style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.camera.name', lang, 'Camera Name'),
+                      localize(
+                        'editor.camera.name_desc',
+                        lang,
+                        'Custom name for the camera. Leave empty to use entity name.'
+                      ),
+                      hass,
+                      { camera_name: cameraModule.camera_name || '' },
+                      [this.textField('camera_name')],
+                      (e: CustomEvent) => updateModule(e.detail.value)
+                    )}
+                  </div>
+
+                  <div class="field-group" style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.camera.name_position.title', lang, 'Name Position'),
+                      localize(
+                        'editor.camera.name_position.desc',
+                        lang,
+                        'Choose where the camera name appears as an overlay on the camera image.'
+                      ),
+                      hass,
+                      { name_position: cameraModule.name_position || 'top-left' },
+                      [
+                        this.selectField('name_position', [
+                          {
+                            value: 'top-left',
+                            label: localize(
+                              'editor.camera.name_position.options.top_left',
+                              lang,
+                              'Top Left'
+                            ),
+                          },
+                          {
+                            value: 'top-right',
+                            label: localize(
+                              'editor.camera.name_position.options.top_right',
+                              lang,
+                              'Top Right'
+                            ),
+                          },
+                          {
+                            value: 'center',
+                            label: localize(
+                              'editor.camera.name_position.options.center',
+                              lang,
+                              'Center'
+                            ),
+                          },
+                          {
+                            value: 'bottom-left',
+                            label: localize(
+                              'editor.camera.name_position.options.bottom_left',
+                              lang,
+                              'Bottom Left'
+                            ),
+                          },
+                          {
+                            value: 'bottom-right',
+                            label: localize(
+                              'editor.camera.name_position.options.bottom_right',
+                              lang,
+                              'Bottom Right'
+                            ),
+                          },
+                          {
+                            value: 'top-middle',
+                            label: localize(
+                              'editor.camera.name_position.options.top_middle',
+                              lang,
+                              'Top Middle'
+                            ),
+                          },
+                          {
+                            value: 'bottom-middle',
+                            label: localize(
+                              'editor.camera.name_position.options.bottom_middle',
+                              lang,
+                              'Bottom Middle'
+                            ),
+                          },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.name_position;
+                        const prev = cameraModule.name_position || 'top-left';
+
+                        if (next === prev) return;
+
+                        updateModule(e.detail.value);
+                      }
+                    )}
+                  </div>
+                `
+              : html`
+                  <div
+                    style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
+                  >
+                    ${localize(
+                      'editor.camera.show_name_toggle.enable_toggle_desc',
                       lang,
-                      'Custom name for the camera. Leave empty to use entity name.'
-                    ),
-                    hass,
-                    { camera_name: cameraModule.camera_name || '' },
-                    [this.textField('camera_name')],
-                    (e: CustomEvent) => updateModule(e.detail.value)
-                  )}
-                </div>
-
-                <div class="field-group" style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.camera.name_position.title', lang, 'Name Position'),
-                    localize(
-                      'editor.camera.name_position.desc',
-                      lang,
-                      'Choose where the camera name appears as an overlay on the camera image.'
-                    ),
-                    hass,
-                    { name_position: cameraModule.name_position || 'top-left' },
-                    [
-                      this.selectField('name_position', [
-                        {
-                          value: 'top-left',
-                          label: localize(
-                            'editor.camera.name_position.options.top_left',
-                            lang,
-                            'Top Left'
-                          ),
-                        },
-                        {
-                          value: 'top-right',
-                          label: localize(
-                            'editor.camera.name_position.options.top_right',
-                            lang,
-                            'Top Right'
-                          ),
-                        },
-                        {
-                          value: 'center',
-                          label: localize(
-                            'editor.camera.name_position.options.center',
-                            lang,
-                            'Center'
-                          ),
-                        },
-                        {
-                          value: 'bottom-left',
-                          label: localize(
-                            'editor.camera.name_position.options.bottom_left',
-                            lang,
-                            'Bottom Left'
-                          ),
-                        },
-                        {
-                          value: 'bottom-right',
-                          label: localize(
-                            'editor.camera.name_position.options.bottom_right',
-                            lang,
-                            'Bottom Right'
-                          ),
-                        },
-                        {
-                          value: 'top-middle',
-                          label: localize(
-                            'editor.camera.name_position.options.top_middle',
-                            lang,
-                            'Top Middle'
-                          ),
-                        },
-                        {
-                          value: 'bottom-middle',
-                          label: localize(
-                            'editor.camera.name_position.options.bottom_middle',
-                            lang,
-                            'Bottom Middle'
-                          ),
-                        },
-                      ]),
-                    ],
-                    (e: CustomEvent) => {
-                      const next = e.detail.value.name_position;
-                      const prev = cameraModule.name_position || 'top-left';
-
-                      if (next === prev) return;
-
-                      updateModule(e.detail.value);
-                    }
-                  )}
-                </div>
-              `
-            : html`
-                <div
-                  style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
-                >
-                  ${localize(
-                    'editor.camera.show_name_toggle.enable_toggle_desc',
-                    lang,
-                    'Enable the toggle above to configure camera name display'
-                  )}
-                </div>
-              `}
+                      'Enable the toggle above to configure camera name display'
+                    )}
+                  </div>
+                `
+          }
         </div>
 
         <!-- Tap to Open Fullscreen Settings -->
@@ -437,87 +454,89 @@ export class UltraCameraModule extends BaseUltraModule {
               });
             }
           )}
-          ${cameraModule.fullscreen_trigger_entity
-            ? html`
-                <div style="margin: 16px 0;">
-                  ${this.renderFieldSection(
-                    localize(
-                      'editor.camera.fullscreen_trigger_close.title',
-                      lang,
-                      'Close After (seconds)'
-                    ),
-                    localize(
-                      'editor.camera.fullscreen_trigger_close.desc',
-                      lang,
-                      'Close the fullscreen view by itself after this many seconds. Set 0 to keep it open until closed.'
-                    ),
+          ${
+            cameraModule.fullscreen_trigger_entity
+              ? html`
+                  <div style="margin: 16px 0;">
+                    ${this.renderFieldSection(
+                      localize(
+                        'editor.camera.fullscreen_trigger_close.title',
+                        lang,
+                        'Close After (seconds)'
+                      ),
+                      localize(
+                        'editor.camera.fullscreen_trigger_close.desc',
+                        lang,
+                        'Close the fullscreen view by itself after this many seconds. Set 0 to keep it open until closed.'
+                      ),
+                      hass,
+                      {
+                        fullscreen_trigger_close:
+                          cameraModule.fullscreen_trigger_close ?? DEFAULT_FULLSCREEN_TRIGGER_CLOSE,
+                      },
+                      [
+                        FormUtils.createSchemaItem('fullscreen_trigger_close', {
+                          number: { min: 0, max: 3600, mode: 'box' },
+                        }),
+                      ],
+                      (e: CustomEvent) =>
+                        updateModule({
+                          fullscreen_trigger_close: e.detail.value.fullscreen_trigger_close,
+                        })
+                    )}
+                  </div>
+                  ${renderUserVisibilitySection(
+                    cameraModule.fullscreen_trigger_users,
                     hass,
+                    next => updateModule({ fullscreen_trigger_users: next }),
                     {
-                      fullscreen_trigger_close:
-                        cameraModule.fullscreen_trigger_close ?? DEFAULT_FULLSCREEN_TRIGGER_CLOSE,
-                    },
-                    [
-                      FormUtils.createSchemaItem('fullscreen_trigger_close', {
-                        number: { min: 0, max: 3600, mode: 'box' },
-                      }),
-                    ],
-                    (e: CustomEvent) =>
-                      updateModule({
-                        fullscreen_trigger_close: e.detail.value.fullscreen_trigger_close,
-                      })
+                      title: localize(
+                        'editor.camera.fullscreen_trigger_users.title',
+                        lang,
+                        'Open Fullscreen For'
+                      ),
+                      desc: localize(
+                        'editor.camera.fullscreen_trigger_users.desc',
+                        lang,
+                        'Choose which Home Assistant users get the fullscreen view. Everyone else still sees the camera as normal.'
+                      ),
+                      mode: localize(
+                        'editor.camera.fullscreen_trigger_users.mode',
+                        lang,
+                        'Who gets fullscreen'
+                      ),
+                      selfWarning: localize(
+                        'editor.camera.fullscreen_trigger_users.self_warning',
+                        lang,
+                        'It will not open fullscreen for you while signed in as this user.'
+                      ),
+                    }
                   )}
-                </div>
-                ${renderUserVisibilitySection(
-                  cameraModule.fullscreen_trigger_users,
-                  hass,
-                  next => updateModule({ fullscreen_trigger_users: next }),
-                  {
-                    title: localize(
-                      'editor.camera.fullscreen_trigger_users.title',
-                      lang,
-                      'Open Fullscreen For'
-                    ),
-                    desc: localize(
-                      'editor.camera.fullscreen_trigger_users.desc',
-                      lang,
-                      'Choose which Home Assistant users get the fullscreen view. Everyone else still sees the camera as normal.'
-                    ),
-                    mode: localize(
-                      'editor.camera.fullscreen_trigger_users.mode',
-                      lang,
-                      'Who gets fullscreen'
-                    ),
-                    selfWarning: localize(
-                      'editor.camera.fullscreen_trigger_users.self_warning',
-                      lang,
-                      'It will not open fullscreen for you while signed in as this user.'
-                    ),
-                  }
-                )}
-                ${renderHideOnDevicesSection(
-                  cameraModule.fullscreen_trigger_skip_devices || [],
-                  next => updateModule({ fullscreen_trigger_skip_devices: next }),
-                  lang,
-                  {
-                    title: localize(
-                      'editor.camera.fullscreen_trigger_devices.title',
-                      lang,
-                      "Don't Open Fullscreen On"
-                    ),
-                    desc: localize(
-                      'editor.camera.fullscreen_trigger_devices.desc',
-                      lang,
-                      'Skip the fullscreen view on these screen sizes, for example to open it on a wall tablet but not on phones.'
-                    ),
-                    summary: localize(
-                      'editor.camera.fullscreen_trigger_devices.summary',
-                      lang,
-                      'Fullscreen will not open on:'
-                    ),
-                  }
-                )}
-              `
-            : ''}
+                  ${renderHideOnDevicesSection(
+                    cameraModule.fullscreen_trigger_skip_devices || [],
+                    next => updateModule({ fullscreen_trigger_skip_devices: next }),
+                    lang,
+                    {
+                      title: localize(
+                        'editor.camera.fullscreen_trigger_devices.title',
+                        lang,
+                        "Don't Open Fullscreen On"
+                      ),
+                      desc: localize(
+                        'editor.camera.fullscreen_trigger_devices.desc',
+                        lang,
+                        'Skip the fullscreen view on these screen sizes, for example to open it on a wall tablet but not on phones.'
+                      ),
+                      summary: localize(
+                        'editor.camera.fullscreen_trigger_devices.summary',
+                        lang,
+                        'Fullscreen will not open on:'
+                      ),
+                    }
+                  )}
+                `
+              : ''
+          }
         </div>
 
         <!-- Action Buttons -->
@@ -648,81 +667,87 @@ export class UltraCameraModule extends BaseUltraModule {
           }
 
           <!-- Live stream options -->
-          ${(cameraModule.view_mode || 'auto') === 'live'
-            ? html`
-                <div style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.camera.audio_enabled.title', lang, 'Enable Audio'),
-                    localize(
-                      'editor.camera.audio_enabled.desc',
-                      lang,
-                      'Start the stream unmuted where the browser allows it. Browsers block unmuted autoplay until you interact with the page, so the stream may start muted until you use the sound button.'
-                    ),
-                    hass,
-                    { audio_enabled: cameraModule.audio_enabled === true },
-                    [this.booleanField('audio_enabled')],
-                    (e: CustomEvent) => {
-                      updateModule(e.detail.value);
-                      this.triggerPreviewUpdate();
-                    }
-                  )}
-                </div>
+          ${
+            (cameraModule.view_mode || 'auto') === 'live'
+              ? html`
+                  <div style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.camera.audio_enabled.title', lang, 'Enable Audio'),
+                      localize(
+                        'editor.camera.audio_enabled.desc',
+                        lang,
+                        'Start the stream unmuted where the browser allows it. Browsers block unmuted autoplay until you interact with the page, so the stream may start muted until you use the sound button.'
+                      ),
+                      hass,
+                      { audio_enabled: cameraModule.audio_enabled === true },
+                      [this.booleanField('audio_enabled')],
+                      (e: CustomEvent) => {
+                        updateModule(e.detail.value);
+                        this.triggerPreviewUpdate();
+                      }
+                    )}
+                  </div>
 
-                <div style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.camera.show_audio_button.title', lang, 'Sound Button'),
-                    localize(
-                      'editor.camera.show_audio_button.desc',
-                      lang,
-                      'Show a mute/unmute button over the stream.'
-                    ),
-                    hass,
-                    { show_audio_button: cameraModule.show_audio_button !== false },
-                    [this.booleanField('show_audio_button')],
-                    (e: CustomEvent) => {
-                      updateModule(e.detail.value);
-                      this.triggerPreviewUpdate();
-                    }
-                  )}
-                </div>
+                  <div style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.camera.show_audio_button.title', lang, 'Sound Button'),
+                      localize(
+                        'editor.camera.show_audio_button.desc',
+                        lang,
+                        'Show a mute/unmute button over the stream.'
+                      ),
+                      hass,
+                      { show_audio_button: cameraModule.show_audio_button !== false },
+                      [this.booleanField('show_audio_button')],
+                      (e: CustomEvent) => {
+                        updateModule(e.detail.value);
+                        this.triggerPreviewUpdate();
+                      }
+                    )}
+                  </div>
 
-                <div style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.camera.show_mode_badge.title', lang, 'Live / Snapshot Badge'),
-                    localize(
-                      'editor.camera.show_mode_badge.desc',
-                      lang,
-                      'Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots.'
-                    ),
-                    hass,
-                    { show_mode_badge: cameraModule.show_mode_badge === true },
-                    [this.booleanField('show_mode_badge')],
-                    (e: CustomEvent) => {
-                      updateModule(e.detail.value);
-                      this.triggerPreviewUpdate();
-                    }
-                  )}
-                </div>
+                  <div style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize(
+                        'editor.camera.show_mode_badge.title',
+                        lang,
+                        'Live / Snapshot Badge'
+                      ),
+                      localize(
+                        'editor.camera.show_mode_badge.desc',
+                        lang,
+                        'Show a small badge in the top corner saying whether the camera is streaming live or showing still snapshots.'
+                      ),
+                      hass,
+                      { show_mode_badge: cameraModule.show_mode_badge === true },
+                      [this.booleanField('show_mode_badge')],
+                      (e: CustomEvent) => {
+                        updateModule(e.detail.value);
+                        this.triggerPreviewUpdate();
+                      }
+                    )}
+                  </div>
 
-                <div style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.camera.show_controls.title', lang, 'Player Controls'),
-                    localize(
-                      'editor.camera.show_controls.desc',
-                      lang,
-                      "Show the browser's native video controls on the stream."
-                    ),
-                    hass,
-                    { show_controls: cameraModule.show_controls === true },
-                    [this.booleanField('show_controls')],
-                    (e: CustomEvent) => {
-                      updateModule(e.detail.value);
-                      this.triggerPreviewUpdate();
-                    }
-                  )}
-                </div>
-              `
-            : ''}
+                  <div style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.camera.show_controls.title', lang, 'Player Controls'),
+                      localize(
+                        'editor.camera.show_controls.desc',
+                        lang,
+                        "Show the browser's native video controls on the stream."
+                      ),
+                      hass,
+                      { show_controls: cameraModule.show_controls === true },
+                      [this.booleanField('show_controls')],
+                      (e: CustomEvent) => {
+                        updateModule(e.detail.value);
+                        this.triggerPreviewUpdate();
+                      }
+                    )}
+                  </div>
+                `
+              : ''
+          }
 
           <!-- Image Fit -->
           <div style="margin-bottom: 16px;">
@@ -761,44 +786,46 @@ export class UltraCameraModule extends BaseUltraModule {
           </div>
 
           <!-- Refresh Interval (only for Snapshot mode) -->
-          ${(cameraModule.view_mode || 'auto') === 'snapshot'
-            ? html`
-                <div style="margin-top: 24px;">
-                  ${this.renderConditionalFieldsGroup(
-                    localize(
-                      'editor.camera.snapshot_refresh.section_title',
-                      lang,
-                      'Snapshot Refresh Settings'
-                    ),
-                    html`
-                      ${FormUtils.renderField(
-                        localize(
-                          'editor.camera.refresh_interval.title',
-                          lang,
-                          'Refresh Interval (seconds)'
-                        ),
-                        localize(
-                          'editor.camera.refresh_interval.desc',
-                          lang,
-                          'How often to refresh the camera snapshot automatically. Range: 1-300 seconds.'
-                        ),
-                        hass,
-                        { refresh_interval: cameraModule.refresh_interval || 10 },
-                        [
-                          FormUtils.createSchemaItem('refresh_interval', {
-                            number: { min: 1, max: 300, mode: 'box' },
-                          }),
-                        ],
-                        (e: CustomEvent) =>
-                          updateModule({
-                            refresh_interval: e.detail.value.refresh_interval,
-                          })
-                      )}
-                    `
-                  )}
-                </div>
-              `
-            : ''}
+          ${
+            (cameraModule.view_mode || 'auto') === 'snapshot'
+              ? html`
+                  <div style="margin-top: 24px;">
+                    ${this.renderConditionalFieldsGroup(
+                      localize(
+                        'editor.camera.snapshot_refresh.section_title',
+                        lang,
+                        'Snapshot Refresh Settings'
+                      ),
+                      html`
+                        ${FormUtils.renderField(
+                          localize(
+                            'editor.camera.refresh_interval.title',
+                            lang,
+                            'Refresh Interval (seconds)'
+                          ),
+                          localize(
+                            'editor.camera.refresh_interval.desc',
+                            lang,
+                            'How often to refresh the camera snapshot automatically. Range: 1-300 seconds.'
+                          ),
+                          hass,
+                          { refresh_interval: cameraModule.refresh_interval || 10 },
+                          [
+                            FormUtils.createSchemaItem('refresh_interval', {
+                              number: { min: 1, max: 300, mode: 'box' },
+                            }),
+                          ],
+                          (e: CustomEvent) =>
+                            updateModule({
+                              refresh_interval: e.detail.value.refresh_interval,
+                            })
+                        )}
+                      `
+                    )}
+                  </div>
+                `
+              : ''
+          }
 
           <!-- Dimensions Section -->
           <div style="margin-bottom: 32px;">
@@ -897,9 +924,9 @@ export class UltraCameraModule extends BaseUltraModule {
               <!-- Link/Unlink Button -->
               <div style="display: flex; justify-content: center; margin: 8px 0;">
                 <button
-                  class="aspect-ratio-link-btn ${cameraModule.aspect_ratio_linked !== false
-                    ? 'linked'
-                    : ''}"
+                  class="aspect-ratio-link-btn ${
+                    cameraModule.aspect_ratio_linked !== false ? 'linked' : ''
+                  }"
                   @click=${() => {
                     const newLinked = !cameraModule.aspect_ratio_linked;
                     const updates: any = { aspect_ratio_linked: newLinked };
@@ -913,14 +940,18 @@ export class UltraCameraModule extends BaseUltraModule {
 
                     updateModule(updates);
                   }}
-                  title="${cameraModule.aspect_ratio_linked !== false
-                    ? localize('editor.camera.unlink_aspect', lang, 'Unlink aspect ratio')
-                    : localize('editor.camera.link_aspect', lang, 'Link aspect ratio')}"
+                  title="${
+                    cameraModule.aspect_ratio_linked !== false
+                      ? localize('editor.camera.unlink_aspect', lang, 'Unlink aspect ratio')
+                      : localize('editor.camera.link_aspect', lang, 'Link aspect ratio')
+                  }"
                 >
                   <ha-icon
-                    icon="${cameraModule.aspect_ratio_linked !== false
-                      ? 'mdi:link-variant'
-                      : 'mdi:link-variant-off'}"
+                    icon="${
+                      cameraModule.aspect_ratio_linked !== false
+                        ? 'mdi:link-variant'
+                        : 'mdi:link-variant-off'
+                    }"
                   ></ha-icon>
                 </button>
               </div>
@@ -945,62 +976,64 @@ export class UltraCameraModule extends BaseUltraModule {
               </div>
             </div>
 
-            ${cameraModule.aspect_ratio_linked !== false
-              ? html`
-                  <div
-                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); border-left: 4px solid var(--primary-color);"
-                  >
+            ${
+              cameraModule.aspect_ratio_linked !== false
+                ? html`
                     <div
-                      style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
+                      style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); border-left: 4px solid var(--primary-color);"
                     >
-                      <ha-icon
-                        icon="mdi:link-variant"
-                        style="font-size: 14px; margin-right: 6px;"
-                      ></ha-icon>
-                      ${localize('editor.camera.aspect_linked.title', lang, 'Aspect Ratio Linked')}
+                      <div
+                        style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
+                      >
+                        <ha-icon
+                          icon="mdi:link-variant"
+                          style="font-size: 14px; margin-right: 6px;"
+                        ></ha-icon>
+                        ${localize('editor.camera.aspect_linked.title', lang, 'Aspect Ratio Linked')}
+                      </div>
+                      <div
+                        style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
+                      >
+                        ${localize(
+                          'editor.camera.aspect_linked.desc',
+                          lang,
+                          'Dimensions maintain {ratio}:1 ratio. Adjusting one dimension automatically updates the other to maintain proportions.'
+                        ).replace(
+                          '{ratio}',
+                          `${((cameraModule.aspect_ratio_value || 1.778) * 1).toFixed(2)}`
+                        )}
+                      </div>
                     </div>
+                  `
+                : html`
                     <div
-                      style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
+                      style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-secondary-text-color), 0.1); border-radius: var(--uc-r-8, 8px); border-left: 4px solid var(--secondary-text-color);"
                     >
-                      ${localize(
-                        'editor.camera.aspect_linked.desc',
-                        lang,
-                        'Dimensions maintain {ratio}:1 ratio. Adjusting one dimension automatically updates the other to maintain proportions.'
-                      ).replace(
-                        '{ratio}',
-                        `${((cameraModule.aspect_ratio_value || 1.778) * 1).toFixed(2)}`
-                      )}
+                      <div
+                        style="font-size: 13px; color: var(--secondary-text-color); font-weight: 500; margin-bottom: 4px;"
+                      >
+                        <ha-icon
+                          icon="mdi:link-variant-off"
+                          style="font-size: 14px; margin-right: 6px;"
+                        ></ha-icon>
+                        ${localize(
+                          'editor.camera.aspect_independent.title',
+                          lang,
+                          'Independent Dimensions'
+                        )}
+                      </div>
+                      <div
+                        style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
+                      >
+                        ${localize(
+                          'editor.camera.aspect_independent.desc',
+                          lang,
+                          'Width and height can be adjusted independently. Click the link button above to maintain aspect ratio.'
+                        )}
+                      </div>
                     </div>
-                  </div>
-                `
-              : html`
-                  <div
-                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-secondary-text-color), 0.1); border-radius: var(--uc-r-8, 8px); border-left: 4px solid var(--secondary-text-color);"
-                  >
-                    <div
-                      style="font-size: 13px; color: var(--secondary-text-color); font-weight: 500; margin-bottom: 4px;"
-                    >
-                      <ha-icon
-                        icon="mdi:link-variant-off"
-                        style="font-size: 14px; margin-right: 6px;"
-                      ></ha-icon>
-                      ${localize(
-                        'editor.camera.aspect_independent.title',
-                        lang,
-                        'Independent Dimensions'
-                      )}
-                    </div>
-                    <div
-                      style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
-                    >
-                      ${localize(
-                        'editor.camera.aspect_independent.desc',
-                        lang,
-                        'Width and height can be adjusted independently. Click the link button above to maintain aspect ratio.'
-                      )}
-                    </div>
-                  </div>
-                `}
+                  `
+            }
           </div>
 
           <!-- Rotation Field -->
@@ -1126,30 +1159,35 @@ export class UltraCameraModule extends BaseUltraModule {
           </div>
 
           <!-- Crop Status -->
-          ${(cameraModule.crop_left || 0) +
-            (cameraModule.crop_top || 0) +
-            (cameraModule.crop_right || 0) +
-            (cameraModule.crop_bottom || 0) >
-          0
-            ? html`
-                <div
-                  style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); border-left: 4px solid var(--primary-color);"
-                >
+          ${
+            (cameraModule.crop_left || 0) +
+              (cameraModule.crop_top || 0) +
+              (cameraModule.crop_right || 0) +
+              (cameraModule.crop_bottom || 0) >
+            0
+              ? html`
                   <div
-                    style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
+                    style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: var(--uc-r-8, 8px); border-left: 4px solid var(--primary-color);"
                   >
-                    <ha-icon icon="mdi:crop" style="font-size: 14px; margin-right: 6px;"></ha-icon>
-                    ${localize('editor.camera.crop.active_applied', lang, 'Active Crops Applied')}
+                    <div
+                      style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
+                    >
+                      <ha-icon
+                        icon="mdi:crop"
+                        style="font-size: 14px; margin-right: 6px;"
+                      ></ha-icon>
+                      ${localize('editor.camera.crop.active_applied', lang, 'Active Crops Applied')}
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
+                    >
+                      L: ${cameraModule.crop_left || 0}% | T: ${cameraModule.crop_top || 0}% | R:
+                      ${cameraModule.crop_right || 0}% | B: ${cameraModule.crop_bottom || 0}%
+                    </div>
                   </div>
-                  <div
-                    style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
-                  >
-                    L: ${cameraModule.crop_left || 0}% | T: ${cameraModule.crop_top || 0}% | R:
-                    ${cameraModule.crop_right || 0}% | B: ${cameraModule.crop_bottom || 0}%
-                  </div>
-                </div>
-              `
-            : ''}
+                `
+              : ''
+          }
 
           <!-- Reset All Crops Button -->
           <div style="margin-top: 20px; text-align: center;">
@@ -1244,42 +1282,47 @@ export class UltraCameraModule extends BaseUltraModule {
             </div>
           </div>
 
-          ${cameraModule.unified_template_mode
-            ? html`
-                <div
-                  class="template-content"
-                  @mousedown=${(e: Event) => {
-                    const target = e.target as HTMLElement;
-                    if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                      e.stopPropagation();
-                    }
-                  }}
-                  @dragstart=${(e: Event) => e.stopPropagation()}
-                  @insert-snippet=${(e: CustomEvent) => {
-                    const editor = (e.currentTarget as HTMLElement).querySelector(
-                      'ultra-template-editor'
-                    );
-                    (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
-                  }}
-                >
-                  <ultra-template-editor
-                    .hass=${hass}
-                    .value=${cameraModule.unified_template || ''}
-                    .placeholder=${"{\n  \"entity\": \"{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}\"\n}"}
-                    .minHeight=${100}
-                    .maxHeight=${300}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ unified_template: e.detail.value });
+          ${
+            cameraModule.unified_template_mode
+              ? html`
+                  <div
+                    class="template-content"
+                    @mousedown=${(e: Event) => {
+                      const target = e.target as HTMLElement;
+                      if (
+                        !target.closest('ultra-template-editor') &&
+                        !target.closest('.cm-editor')
+                      ) {
+                        e.stopPropagation();
+                      }
                     }}
-                  ></ultra-template-editor>
-                  ${this.renderTemplateKeyWarning(
-                    cameraModule.unified_template,
-                    CAMERA_TEMPLATE_KEYS,
-                    lang
-                  )}
-                </div>
-              `
-            : ''}
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                    @insert-snippet=${(e: CustomEvent) => {
+                      const editor = (e.currentTarget as HTMLElement).querySelector(
+                        'ultra-template-editor'
+                      );
+                      (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                    }}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${cameraModule.unified_template || ''}
+                      .placeholder=${"{\n  \"entity\": \"{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}\"\n}"}
+                      .minHeight=${100}
+                      .maxHeight=${300}
+                      @value-changed=${(e: CustomEvent) => {
+                        updateModule({ unified_template: e.detail.value });
+                      }}
+                    ></ultra-template-editor>
+                    ${this.renderTemplateKeyWarning(
+                      cameraModule.unified_template,
+                      CAMERA_TEMPLATE_KEYS,
+                      lang
+                    )}
+                  </div>
+                `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -1582,9 +1625,11 @@ export class UltraCameraModule extends BaseUltraModule {
       cameraModule.show_mode_badge === true
         ? html`<div class="camera-mode-badge ${isLiveMode ? 'live' : 'snapshot'}">
             <span class="camera-mode-badge-dot"></span>
-            ${isLiveMode
-              ? localize('editor.camera.mode_badge.live', lang, 'Live')
-              : localize('editor.camera.mode_badge.snapshot', lang, 'Snapshot')}
+            ${
+              isLiveMode
+                ? localize('editor.camera.mode_badge.live', lang, 'Live')
+                : localize('editor.camera.mode_badge.snapshot', lang, 'Snapshot')
+            }
           </div>`
         : '';
 
@@ -1630,102 +1675,111 @@ export class UltraCameraModule extends BaseUltraModule {
         style="${this.buildStyleString(containerStyles)}"
       >
         <div class="camera-image-container" style="${this.buildStyleString(containerImageStyles)}">
-          ${!cameraEntity
-            ? html`
-                <div
-                  class="camera-unavailable"
-                  style="${placeholderStyle('var(--warning-color, #ff9800)')}"
-                >
-                  <ha-icon
-                    icon="mdi:camera-plus"
-                    style="font-size: 48px; margin-bottom: 8px;"
-                  ></ha-icon>
-                  <span style="${primaryTextStyle}"
-                    >${localize(
-                      'editor.camera.error_no_entity',
-                      lang,
-                      'Select Camera Entity'
-                    )}</span
-                  >
-                  <span style="${secondaryTextStyle}"
-                    >${localize(
-                      'editor.camera.error_no_entity_desc',
-                      lang,
-                      'Choose a camera entity in the General tab'
-                    )}</span
-                  >
-                </div>
-                ${nameOverlay}
-              `
-            : isUnavailable
+          ${
+            !cameraEntity
               ? html`
                   <div
                     class="camera-unavailable"
-                    style="${placeholderStyle('var(--error-color, #f44336)')}"
+                    style="${placeholderStyle('var(--warning-color, #ff9800)')}"
                   >
-                    ${cameraModule.fallback_image
-                      ? html`
-                          <img
-                            src=${cameraModule.fallback_image}
-                            alt="Fallback"
-                            style="width: 100%; height: 100%; object-fit: ${fitMode};"
-                          />
-                        `
-                      : html`
-                          <ha-icon
-                            icon="mdi:camera-off"
-                            style="font-size: 48px; margin-bottom: 8px;"
-                          ></ha-icon>
-                          <span style="${primaryTextStyle}"
-                            >${localize(
-                              'editor.camera.unavailable',
-                              lang,
-                              'Camera Unavailable'
-                            )}</span
-                          >
-                          <span style="${secondaryTextStyle}">${cameraEntity}</span>
-                        `}
+                    <ha-icon
+                      icon="mdi:camera-plus"
+                      style="font-size: 48px; margin-bottom: 8px;"
+                    ></ha-icon>
+                    <span style="${primaryTextStyle}"
+                      >${localize(
+                        'editor.camera.error_no_entity',
+                        lang,
+                        'Select Camera Entity'
+                      )}</span
+                    >
+                    <span style="${secondaryTextStyle}"
+                      >${localize(
+                        'editor.camera.error_no_entity_desc',
+                        lang,
+                        'Choose a camera entity in the General tab'
+                      )}</span
+                    >
                   </div>
                   ${nameOverlay}
                 `
-              : html`
-                  ${keyed(
-                    playerKey,
-                    this._renderPlayer(cameraModule, hass, {
-                      cameraEntity: cameraEntity as string,
-                      stateObj: entity,
-                      viewMode,
-                      mediaStyles,
-                      fitMode,
-                      sourceRatio,
-                      audioActive,
-                      state,
-                    })
-                  )}
-                  ${nameOverlay}
-                  ${modeBadge}
-                  ${showAudioToggle
-                    ? html`
-                        <button
-                          type="button"
-                          class="camera-audio-toggle ${audioActive ? 'active' : 'muted'}"
-                          title="${audioActive
-                            ? localize('editor.camera.audio.mute', lang, 'Mute')
-                            : localize('editor.camera.audio.unmute', lang, 'Unmute')}"
-                          aria-label="${audioActive
-                            ? localize('editor.camera.audio.mute', lang, 'Mute')
-                            : localize('editor.camera.audio.unmute', lang, 'Unmute')}"
-                          @mousedown=${(e: Event) => e.stopPropagation()}
-                          @touchstart=${(e: Event) => e.stopPropagation()}
-                          @click=${(e: Event) => this._toggleAudio(e, cameraModule)}
-                        >
-                          <ha-icon
-                            icon="${audioActive ? 'mdi:volume-high' : 'mdi:volume-off'}"
-                          ></ha-icon>
-                        </button>
-                      `
-                    : ''}
-                `}
+              : isUnavailable
+                ? html`
+                    <div
+                      class="camera-unavailable"
+                      style="${placeholderStyle('var(--error-color, #f44336)')}"
+                    >
+                      ${
+                        cameraModule.fallback_image
+                          ? html`
+                              <img
+                                src=${cameraModule.fallback_image}
+                                alt="Fallback"
+                                style="width: 100%; height: 100%; object-fit: ${fitMode};"
+                              />
+                            `
+                          : html`
+                              <ha-icon
+                                icon="mdi:camera-off"
+                                style="font-size: 48px; margin-bottom: 8px;"
+                              ></ha-icon>
+                              <span style="${primaryTextStyle}"
+                                >${localize(
+                                  'editor.camera.unavailable',
+                                  lang,
+                                  'Camera Unavailable'
+                                )}</span
+                              >
+                              <span style="${secondaryTextStyle}">${cameraEntity}</span>
+                            `
+                      }
+                    </div>
+                    ${nameOverlay}
+                  `
+                : html`
+                    ${keyed(
+                      playerKey,
+                      this._renderPlayer(cameraModule, hass, {
+                        cameraEntity: cameraEntity as string,
+                        stateObj: entity,
+                        viewMode,
+                        mediaStyles,
+                        fitMode,
+                        sourceRatio,
+                        audioActive,
+                        state,
+                      })
+                    )}
+                    ${nameOverlay} ${modeBadge}
+                    ${
+                      showAudioToggle
+                        ? html`
+                            <button
+                              type="button"
+                              class="camera-audio-toggle ${audioActive ? 'active' : 'muted'}"
+                              title="${
+                                audioActive
+                                  ? localize('editor.camera.audio.mute', lang, 'Mute')
+                                  : localize('editor.camera.audio.unmute', lang, 'Unmute')
+                              }"
+                              aria-label="${
+                                audioActive
+                                  ? localize('editor.camera.audio.mute', lang, 'Mute')
+                                  : localize('editor.camera.audio.unmute', lang, 'Unmute')
+                              }"
+                              @mousedown=${(e: Event) => e.stopPropagation()}
+                              @touchstart=${(e: Event) => e.stopPropagation()}
+                              @click=${(e: Event) => this._toggleAudio(e, cameraModule)}
+                            >
+                              <ha-icon
+                                icon="${audioActive ? 'mdi:volume-high' : 'mdi:volume-off'}"
+                              ></ha-icon>
+                            </button>
+                          `
+                        : ''
+                    }
+                  `
+          }
           ${this._renderActionBar(cameraModule, hass, showAudioToggle)}
         </div>
       </div>
@@ -1801,7 +1855,11 @@ export class UltraCameraModule extends BaseUltraModule {
                   type="button"
                   class="uc-cam-ed-icon-btn"
                   title=${localize('editor.camera.action_buttons.remove', lang, 'Remove button')}
-                  aria-label=${localize('editor.camera.action_buttons.remove', lang, 'Remove button')}
+                  aria-label=${localize(
+                    'editor.camera.action_buttons.remove',
+                    lang,
+                    'Remove button'
+                  )}
                   @click=${() => remove(index)}
                 >
                   <ha-icon icon="mdi:delete-outline"></ha-icon>
@@ -1941,10 +1999,7 @@ export class UltraCameraModule extends BaseUltraModule {
    * "Open Fullscreen When": opens the fullscreen view once per firing of the trigger entity, for
    * the chosen users and screen sizes. Never fires while the card editor is open.
    */
-  private _checkFullscreenTrigger(
-    module: CameraModule,
-    hass: HomeAssistant
-  ): void {
+  private _checkFullscreenTrigger(module: CameraModule, hass: HomeAssistant): void {
     const entityId = module.fullscreen_trigger_entity;
     if (!entityId) return;
     const seen = this._observeTrigger(`fullscreen:${module.id}`, hass, entityId);
@@ -2037,7 +2092,11 @@ export class UltraCameraModule extends BaseUltraModule {
               ${
                 confirming
                   ? html`<span class="camera-action-confirm"
-                      >${localize('editor.camera.action_buttons.tap_again', lang, 'Tap again to confirm')}</span
+                      >${localize(
+                        'editor.camera.action_buttons.tap_again',
+                        lang,
+                        'Tap again to confirm'
+                      )}</span
                     >`
                   : ''
               }
@@ -2223,6 +2282,7 @@ export class UltraCameraModule extends BaseUltraModule {
     const playerRef = this._playerRef(cameraModule.id);
 
     if (viewMode === 'live') {
+      this._ensureStallWatch(cameraModule.id);
       return html`
         <ha-camera-stream
           ${ref(playerRef)}
@@ -2237,6 +2297,8 @@ export class UltraCameraModule extends BaseUltraModule {
         ></ha-camera-stream>
       `;
     }
+
+    this._stopStallWatch(options.state);
 
     if (viewMode === 'snapshot') {
       this._ensureSnapshot(cameraModule, cameraEntity);
@@ -2264,6 +2326,52 @@ export class UltraCameraModule extends BaseUltraModule {
         .aspectRatio=${`${sourceRatio.toFixed(4)}:1`}
       ></hui-image>
     `;
+  }
+
+  /**
+   * Watches a live stream for a picture that stopped moving and rebuilds the player when it does.
+   * Only the visibility listener used to restart streams, so a dashboard left open on screen (a
+   * Chromebook, a wall tablet) could sit on a frozen frame indefinitely.
+   */
+  private _ensureStallWatch(moduleId: string): void {
+    const state = this._runtimeFor(moduleId);
+    if (state.stallTimer || this._isEditorOpen()) return;
+    state.stallTimer = setInterval(() => this._checkStreamStall(moduleId), STREAM_STALL_CHECK_MS);
+  }
+
+  private _stopStallWatch(state: CameraRuntimeState): void {
+    if (state.stallTimer) clearInterval(state.stallTimer);
+    state.stallTimer = undefined;
+    state.stallVideo = undefined;
+    state.stallLastTime = undefined;
+    state.stallSince = undefined;
+  }
+
+  private _checkStreamStall(moduleId: string): void {
+    const state = this._runtime.get(moduleId);
+    if (!state?.renderedLive) return;
+    const video = findStreamVideo(state.player);
+    const now = Date.now();
+    const verdict = streamStallVerdict(
+      {
+        video: state.stallVideo,
+        lastTime: state.stallLastTime,
+        since: state.stallSince,
+      },
+      video,
+      now,
+      typeof document !== 'undefined' && document.hidden,
+      STREAM_STALL_REBUILD_MS * 2 ** Math.min(state.stallRebuilds || 0, 4)
+    );
+    if (verdict.progressed) state.stallRebuilds = 0;
+    state.stallVideo = verdict.video;
+    state.stallLastTime = verdict.lastTime;
+    state.stallSince = verdict.since;
+    if (!verdict.rebuild) return;
+    this._stopStallWatch(state);
+    state.stallRebuilds = (state.stallRebuilds || 0) + 1;
+    state.streamEpoch = (state.streamEpoch || 0) + 1;
+    this.triggerPreviewUpdate(true, true);
   }
 
   private _runtimeFor(moduleId: string): CameraRuntimeState {
@@ -2307,6 +2415,7 @@ export class UltraCameraModule extends BaseUltraModule {
       clearInterval(state.snapshotTimer);
       state.snapshotTimer = undefined;
     }
+    this._stopStallWatch(state);
     if (state.updateTimer) {
       clearTimeout(state.updateTimer);
       state.updateTimer = undefined;
@@ -3883,4 +3992,73 @@ export class UltraCameraModule extends BaseUltraModule {
       ${BaseUltraModule.getSliderStyles()}
     `;
   }
+}
+
+/**
+ * Finds the `<video>` that Home Assistant's camera stream renders, through the nested shadow roots
+ * of `ha-camera-stream` and its HLS/WebRTC player. Returns undefined for MJPEG streams.
+ */
+export function findStreamVideo(
+  root: Element | undefined,
+  depth = 0
+): HTMLVideoElement | undefined {
+  if (!root || depth > 4) return undefined;
+  if (typeof HTMLVideoElement !== 'undefined' && root instanceof HTMLVideoElement) return root;
+  const scopes: Array<Element | ShadowRoot> = [];
+  if (root.shadowRoot) scopes.push(root.shadowRoot);
+  scopes.push(root);
+  for (const scope of scopes) {
+    const direct = scope.querySelector?.('video') as HTMLVideoElement | null;
+    if (direct) return direct;
+    const players = scope.querySelectorAll?.('ha-hls-player, ha-web-rtc-player, ha-camera-stream');
+    for (const player of Array.from(players || [])) {
+      if (player === root) continue;
+      const found = findStreamVideo(player, depth + 1);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+export interface StreamStallTrack {
+  video?: HTMLVideoElement | undefined;
+  lastTime?: number | undefined;
+  since?: number | undefined;
+}
+
+/**
+ * Decides whether a live stream has frozen. The clock only runs while the page is visible and the
+ * video is meant to be playing; a video paused through its own controls is left alone.
+ */
+export function streamStallVerdict(
+  prev: StreamStallTrack,
+  video: Pick<HTMLVideoElement, 'currentTime' | 'paused' | 'controls'> | undefined,
+  now: number,
+  hidden: boolean,
+  limitMs: number = STREAM_STALL_REBUILD_MS
+): StreamStallTrack & { rebuild: boolean; progressed: boolean } {
+  // Background pages, videos paused through their own controls, and players with no video (still
+  // negotiating, or MJPEG) are not measured; the clock restarts when measuring resumes.
+  if (hidden || !video || (video.paused && video.controls)) {
+    return { rebuild: false, progressed: false };
+  }
+  const time = video.currentTime;
+  const sameVideo = prev.video === (video as HTMLVideoElement);
+  if (!sameVideo || prev.lastTime === undefined || time !== prev.lastTime) {
+    return {
+      video: video as HTMLVideoElement,
+      lastTime: time,
+      since: now,
+      rebuild: false,
+      progressed: sameVideo && prev.lastTime !== undefined,
+    };
+  }
+  const since = prev.since ?? now;
+  return {
+    video: prev.video,
+    lastTime: time,
+    since,
+    rebuild: now - since >= limitMs,
+    progressed: false,
+  };
 }
