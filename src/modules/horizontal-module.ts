@@ -413,15 +413,15 @@ export class UltraHorizontalModule extends BaseUltraModule {
         </style>
         <div
           class="horizontal-module-preview"
-          style="${designStyles}; ${
-            containerStyles.width ? `width: ${containerStyles.width};` : ''
-          }"
+          style="${designStyles}; ${containerStyles.width
+            ? `width: ${containerStyles.width};`
+            : ''}"
         >
           <div
             class="horizontal-preview-content ${hoverEffectClass}"
-            style="${this.styleObjectToCss(containerStyles)}; cursor: ${
-              hasActions ? 'pointer' : 'default'
-            }; ${hasActions ? 'pointer-events: auto;' : ''}"
+            style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
+              ? 'pointer'
+              : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
             data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
             @pointerdown=${hasActions ? handlers.onPointerDown : null}
             @pointermove=${hasActions ? handlers.onPointerMove : null}
@@ -429,119 +429,115 @@ export class UltraHorizontalModule extends BaseUltraModule {
             @pointercancel=${hasActions ? handlers.onPointerCancel : null}
             @pointerleave=${hasActions ? handlers.onPointerLeave : null}
           >
-            ${
-              visibleChildren.length > 0
-                ? (() => {
-                    return repeat(
-                      visibleChildren,
-                      cm => cm.id || cm.type,
-                      (rawChildModule, index) => {
-                        const childModule = this.releaseStockCameraMaxWidth(rawChildModule);
-                        const childMargin =
-                          layoutGap < 0 && index > 0 ? `0 0 0 ${layoutGap}${gapUnit}` : '0';
-                        const isNegativeGap = layoutGap < 0;
+            ${visibleChildren.length > 0
+              ? (() => {
+                  return repeat(
+                    visibleChildren,
+                    cm => cm.id || cm.type,
+                    (rawChildModule, index) => {
+                      const childModule = this.releaseStockCameraMaxWidth(rawChildModule);
+                      const childMargin =
+                        layoutGap < 0 && index > 0 ? `0 0 0 ${layoutGap}${gapUnit}` : '0';
+                      const isNegativeGap = layoutGap < 0;
 
-                        const layoutShouldGrow =
-                          !clusterOverlappingChildren && horizontalModule.alignment === 'justify';
-                        const childShouldGrow =
-                          !clusterOverlappingChildren &&
-                          this.childShouldFillAvailableSpace(childModule);
+                      const layoutShouldGrow =
+                        !clusterOverlappingChildren && horizontalModule.alignment === 'justify';
+                      const childShouldGrow =
+                        !clusterOverlappingChildren &&
+                        this.childShouldFillAvailableSpace(childModule);
 
-                        const childPreferredWidth =
-                          !layoutShouldGrow && !childShouldGrow && !clusterOverlappingChildren
-                            ? this.getChildPreferredWidth(childModule)
-                            : null;
+                      const childPreferredWidth =
+                        !layoutShouldGrow && !childShouldGrow && !clusterOverlappingChildren
+                          ? this.getChildPreferredWidth(childModule)
+                          : null;
 
-                        const fluidMediaFlex =
-                          !layoutShouldGrow &&
-                          !childShouldGrow &&
-                          !clusterOverlappingChildren &&
-                          !childPreferredWidth
-                            ? this.getFluidMediaFlex(childModule)
-                            : null;
+                      const fluidMediaFlex =
+                        !layoutShouldGrow &&
+                        !childShouldGrow &&
+                        !clusterOverlappingChildren &&
+                        !childPreferredWidth
+                          ? this.getFluidMediaFlex(childModule)
+                          : null;
 
-                        const flexSegments = [
-                          layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
-                          childShouldGrow
-                            ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
-                            : '',
-                          clusterOverlappingChildren
-                            ? 'flex: 0 0 auto; width: max-content; max-width: 100%;'
-                            : '',
-                          !layoutShouldGrow && !childShouldGrow && childPreferredWidth
-                            ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
-                            : '',
-                          fluidMediaFlex || '',
-                        ].filter(Boolean);
+                      const flexSegments = [
+                        layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
+                        childShouldGrow
+                          ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                          : '',
+                        clusterOverlappingChildren
+                          ? 'flex: 0 0 auto; width: max-content; max-width: 100%;'
+                          : '',
+                        !layoutShouldGrow && !childShouldGrow && childPreferredWidth
+                          ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
+                          : '',
+                        fluidMediaFlex || '',
+                      ].filter(Boolean);
 
-                        const baseStyles = `
+                      const baseStyles = `
                       overflow: visible;
                       ${flexSegments.join(' ')}
                       box-sizing: border-box;
                       margin: ${childMargin};
                     `;
-                        const negativeGapStyles = isNegativeGap
-                          ? 'padding: 0; border: none; background: transparent;'
-                          : '';
+                      const negativeGapStyles = isNegativeGap
+                        ? 'padding: 0; border: none; background: transparent;'
+                        : '';
 
-                        return html`
-                          <div
-                            class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''} ${clusterOverlappingChildren ? 'uc-overlap-child' : ''}"
-                            data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
-                            style="${baseStyles} ${negativeGapStyles}"
+                      return html`
+                        <div
+                          class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''} ${clusterOverlappingChildren ? 'uc-overlap-child' : ''}"
+                          data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
+                          style="${baseStyles} ${negativeGapStyles}"
+                        >
+                          ${this._renderChildModulePreview(
+                            childModule,
+                            hass,
+                            moduleWithDesign,
+                            (this as any)._currentConfig,
+                            (this as any)._currentPreviewContext
+                          )}
+                        </div>
+                      `;
+                    }
+                  );
+                })()
+              : html`
+                  <div class="empty-layout-message">
+                    ${allChildrenHiddenByLogic
+                      ? html`
+                          <span
+                            >${localize(
+                              'editor.horizontal.empty.all_hidden',
+                              lang,
+                              'All modules hidden by logic'
+                            )}</span
                           >
-                            ${this._renderChildModulePreview(
-                              childModule,
-                              hass,
-                              moduleWithDesign,
-                              (this as any)._currentConfig,
-                              (this as any)._currentPreviewContext
-                            )}
-                          </div>
-                        `;
-                      }
-                    );
-                  })()
-                : html`
-                    <div class="empty-layout-message">
-                      ${
-                        allChildrenHiddenByLogic
-                          ? html`
-                              <span
-                                >${localize(
-                                  'editor.horizontal.empty.all_hidden',
-                                  lang,
-                                  'All modules hidden by logic'
-                                )}</span
-                              >
-                              <small
-                                >${localize(
-                                  'editor.horizontal.empty.all_hidden_desc',
-                                  lang,
-                                  'Every module in this layout is hidden by its display conditions'
-                                )}</small
-                              >
-                            `
-                          : html`
-                              <span
-                                >${localize(
-                                  'editor.horizontal.empty.no_modules',
-                                  lang,
-                                  'No modules added yet'
-                                )}</span
-                              >
-                              <small
-                                >${localize(
-                                  'editor.horizontal.empty.add_modules',
-                                  lang,
-                                  'Add modules in the layout builder to see them here'
-                                )}</small
-                              >
-                            `
-                      }
-                    </div>
-                  `
-            }
+                          <small
+                            >${localize(
+                              'editor.horizontal.empty.all_hidden_desc',
+                              lang,
+                              'Every module in this layout is hidden by its display conditions'
+                            )}</small
+                          >
+                        `
+                      : html`
+                          <span
+                            >${localize(
+                              'editor.horizontal.empty.no_modules',
+                              lang,
+                              'No modules added yet'
+                            )}</span
+                          >
+                          <small
+                            >${localize(
+                              'editor.horizontal.empty.add_modules',
+                              lang,
+                              'Add modules in the layout builder to see them here'
+                            )}</small
+                          >
+                        `}
+                  </div>
+                `}
           </div>
         </div>
       `,
