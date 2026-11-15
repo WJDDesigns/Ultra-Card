@@ -9,7 +9,7 @@ There are **8,138** pieces of text to translate.
 
 | Language | Progress | Translated | Still in English | To-do list |
 | --- | --- | ---: | ---: | --- |
-| 🇩🇪 German (`de`) | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 73.6% | 5,993 | 2,145 | [de.md](docs/translations/de.md) |
+| 🇩🇪 German (`de`) | 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜ 75.5% | 6,145 | 1,993 | [de.md](docs/translations/de.md) |
 | 🇨🇳 Chinese (Simplified) (`zh`) | 🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜ 70.6% | 5,750 | 2,388 | [zh.md](docs/translations/zh.md) |
 | 🇪🇸 Spanish (`es`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.8% | 3,566 | 4,572 | [es.md](docs/translations/es.md) |
 | 🇵🇱 Polish (`pl`) | 🟩🟩🟩🟩⬜⬜⬜⬜⬜⬜ 43.6% | 3,551 | 4,587 | [pl.md](docs/translations/pl.md) |
