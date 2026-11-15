@@ -3,9 +3,9 @@
 > This page is generated automatically from the translation files. Don't edit it by hand;
 > it refreshes itself after every change to the `main` branch.
 
-**73.6% translated** — 5,993 of 8,138 entries. **2,145 still in English.**
+**75.5% translated** — 6,145 of 8,138 entries. **1,993 still in English.**
 
-🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜
+🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜
 
 ## How to translate these
 
@@ -19,7 +19,7 @@ More help: [translation guide](../../CONTRIBUTING_TRANSLATIONS.md) · [all langu
 
 If the English word really is right in your language (a brand name, or a word you also use), just leave it. It will stay on this list, and that's fine.
 
-## Still in English (2,145)
+## Still in English (1,993)
 
 Biggest sections first. Click a section to open it.
 
@@ -299,103 +299,6 @@ Biggest sections first. Click a section to open it.
 | Add cameras and extra tiles, then drag to rearrange the grid. | `editor.camera_grid.tiles.desc` |
 | Tiles | `editor.camera_grid.tiles.title` |
 | Camera | `editor.camera_grid.tiles.type_camera` |
-
-</details>
-
-<details>
-<summary><strong>Icon (editor)</strong> — 89 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Show Entity Picture | `editor.icon.icon_section.show_entity_picture` |
-| When enabled, entity_picture replaces the configured icon when available. | `editor.icon.icon_section.show_entity_picture_desc` |
-| Tada | `editor.icon.animation_tada` |
-| Active Attribute | `editor.icon.active_attribute` |
-| Entity attribute to check for active state (e.g., "condition" for weather) | `editor.icon.active_attribute_desc` |
-| Active Background Padding | `editor.icon.active_icon_background_padding` |
-| Active Icon Size | `editor.icon.active_icon_size` |
-| Active Name Size | `editor.icon.active_name_size` |
-| Active State Size | `editor.icon.active_state_size` |
-| Add Icon | `editor.icon.add_icon` |
-| Animation | `editor.icon.animation` |
-| Continuous animation for the icon | `editor.icon.animation_desc` |
-| Select entity attributes to use instead of the main entity state for determining active/inactive conditions | `editor.icon.attributes_section.desc` |
-| ATTRIBUTES | `editor.icon.attributes_section.title` |
-| Background Color | `editor.icon.background_color` |
-| Color of the background shape | `editor.icon.background_color_desc` |
-| Background Padding | `editor.icon.background_padding` |
-| Padding between icon and background when active | `editor.icon.background_padding_active` |
-| Distance from the icon to the background edge | `editor.icon.background_padding_desc` |
-| Padding between icon and background when inactive | `editor.icon.background_padding_inactive` |
-| Background Shape | `editor.icon.background_shape` |
-| Shape behind the icon | `editor.icon.background_shape_desc` |
-| Display Attribute | `editor.icon.display_attribute` |
-| Select an attribute to display instead of the entity state. For separate active/inactive attributes, use the options below. | `editor.icon.display_attribute_desc` |
-| Icon | `editor.icon.icon` |
-| Icon Color | `editor.icon.icon_color` |
-| Color of the icon | `editor.icon.icon_color_desc` |
-| Select an MDI icon | `editor.icon.icon_desc` |
-| Choose between an entity-connected icon or a static standalone icon | `editor.icon.icon_mode.desc` |
-| Entity-Based | `editor.icon.icon_mode.entity` |
-| Static | `editor.icon.icon_mode.static` |
-| ICON MODE | `editor.icon.icon_mode.title` |
-| Icon {number} | `editor.icon.icon_row_title` |
-| Icon Size | `editor.icon.icon_size` |
-| Size of the icon in pixels | `editor.icon.icon_size_desc` |
-| Inactive Attribute | `editor.icon.inactive_attribute` |
-| Entity attribute to check for inactive state (e.g., "condition" for weather) | `editor.icon.inactive_attribute_desc` |
-| Inactive Background Padding | `editor.icon.inactive_icon_background_padding` |
-| Inactive Icon Size | `editor.icon.inactive_icon_size` |
-| Inactive Name Size | `editor.icon.inactive_name_size` |
-| Inactive State Size | `editor.icon.inactive_state_size` |
-| Name | `editor.icon.internal_name` |
-| Editor-only label to keep icons organized. Never shown on the card. | `editor.icon.internal_name_desc` |
-| Center | `editor.icon.layout.align_center` |
-| Left | `editor.icon.layout.align_left` |
-| Right | `editor.icon.layout.align_right` |
-| Space Around | `editor.icon.layout.align_space_around` |
-| Space Between | `editor.icon.layout.align_space_between` |
-| Alignment | `editor.icon.layout.alignment` |
-| Horizontal alignment of the icon grid | `editor.icon.layout.alignment_desc` |
-| Allow Wrapping | `editor.icon.layout.allow_wrap` |
-| Allow icons to wrap onto new rows when they exceed the column count | `editor.icon.layout.allow_wrap_desc` |
-| Columns | `editor.icon.layout.columns` |
-| Number of icons per row | `editor.icon.layout.columns_desc` |
-| Content Distribution | `editor.icon.layout.content_distribution` |
-| Control how the icon and text are distributed inside each item | `editor.icon.layout.content_distribution_desc` |
-| Control how icons are arranged in the grid. | `editor.icon.layout.desc` |
-| Normal | `editor.icon.layout.dist_normal` |
-| Space Around | `editor.icon.layout.dist_space_around` |
-| Space Between | `editor.icon.layout.dist_space_between` |
-| Space Evenly | `editor.icon.layout.dist_space_evenly` |
-| Gap | `editor.icon.layout.gap` |
-| Spacing between icons | `editor.icon.layout.gap_desc` |
-| Icon Position | `editor.icon.layout.icon_position` |
-| Position the icon relative to the name and state (left, top, right, or bottom) | `editor.icon.layout.icon_position_desc` |
-| Text Alignment | `editor.icon.layout.name_alignment` |
-| Align the name and state text within the item | `editor.icon.layout.name_alignment_desc` |
-| Overall Alignment | `editor.icon.layout.overall_alignment` |
-| Align each item within its grid cell | `editor.icon.layout.overall_alignment_desc` |
-| Bottom | `editor.icon.layout.pos_bottom` |
-| Left | `editor.icon.layout.pos_left` |
-| Right | `editor.icon.layout.pos_right` |
-| Top | `editor.icon.layout.pos_top` |
-| Center | `editor.icon.layout.text_center` |
-| End | `editor.icon.layout.text_end` |
-| Start | `editor.icon.layout.text_start` |
-| LAYOUT | `editor.icon.layout.title` |
-| Remove Icon | `editor.icon.remove_icon` |
-| Circle | `editor.icon.shape_circle` |
-| None | `editor.icon.shape_none` |
-| Rounded Square | `editor.icon.shape_rounded` |
-| Square | `editor.icon.shape_square` |
-| Configure the appearance of this static icon | `editor.icon.static_icon_settings.desc` |
-| ICON SETTINGS | `editor.icon.static_icon_settings.title` |
-| Template Cheatsheet | `editor.icon.template_cheatsheet` |
-| Use Jinja2 templates to control icon and color dynamically. Return simple string for icon-only, or JSON object for multiple properties. Uses entity context variables (entity, state, name, attributes) for seamless enti… | `editor.icon.unified_template_section.desc` |
-| Template Mode | `editor.icon.unified_template_section.title` |
-| Use State Color | `editor.icon.use_state_color_active` |
-| Use the entity state color (RGB attributes) for active icon color | `editor.icon.use_state_color_active_desc` |
 
 </details>
 
@@ -1041,55 +944,6 @@ Biggest sections first. Click a section to open it.
 | Place Time Machine directly in a card column (not nested inside a layout module) to enable card-wide rewind. | `editor.time_machine.top_level_hint` |
 | Tracking {count} entities | `editor.time_machine.tracking` |
 | Yesterday | `editor.time_machine.yesterday` |
-
-</details>
-
-<details>
-<summary><strong>Layout (editor)</strong> — 41 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Popup | `editor.layout.popup_module` |
-| Design | `editor.layout.design_tab` |
-| Accordion | `editor.layout.accordion_layout` |
-| Add Column | `editor.layout.add_column` |
-| Add Module to Section | `editor.layout.add_module_to_section` |
-| Back to builder | `editor.layout.back_to_builder` |
-| Column | `editor.layout.column` |
-| Set the spacing between columns in pixels. | `editor.layout.column_gap_desc` |
-| Column Layout | `editor.layout.column_layout` |
-| Column Vertical Alignment | `editor.layout.column_vertical_alignment` |
-| Set the vertical alignment for all columns in this row. This controls how content is aligned vertically within each column. | `editor.layout.column_vertical_alignment_desc` |
-| Details | `editor.layout.config_validation_details` |
-| Some changes could not be applied because the card configuration is invalid. | `editor.layout.config_validation_failed` |
-| Copy | `editor.layout.copy` |
-| Delete | `editor.layout.delete` |
-| Drag to move | `editor.layout.drag_to_move` |
-| Duplicate | `editor.layout.duplicate` |
-| Edit | `editor.layout.edit` |
-| Edit Section | `editor.layout.edit_section` |
-| Export | `editor.layout.export` |
-| Full Width | `editor.layout.full_width` |
-| When enabled, the row spans the full width of the card. When disabled, you can set a custom width percentage. | `editor.layout.full_width_desc` |
-| Module Preview | `editor.layout.module_preview` |
-| No modules | `editor.layout.no_modules` |
-| Paste | `editor.layout.paste` |
-| Paste from Clipboard | `editor.layout.paste_clipboard` |
-| Popup | `editor.layout.popup_layout` |
-| Remap all entities in this card | `editor.layout.remap_entities_tooltip` |
-| Row Name | `editor.layout.row_name` |
-| Give this row a custom name to make it easier to identify in the editor. | `editor.layout.row_name_desc` |
-| Row Width | `editor.layout.row_width` |
-| Save as Favorite | `editor.layout.save_favorite` |
-| Please select a column first by clicking "Add Module" on the column where you want to add this card. | `editor.layout.select_column_first` |
-| Settings | `editor.layout.settings` |
-| Slider Layout | `editor.layout.slider_layout` |
-| Slider Module | `editor.layout.slider_module` |
-| Tabs Layout | `editor.layout.tabs_layout` |
-| No sections. Open settings to add sections. | `editor.layout.tabs_no_sections` |
-| Open settings to manage tabs sections | `editor.layout.tabs_open_settings` |
-| Width Percentage | `editor.layout.width_percent` |
-| Set the row width as a percentage of the card width (0-100%). | `editor.layout.width_percent_desc` |
 
 </details>
 
@@ -2091,28 +1945,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Actions (editor)</strong> — 14 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Close Popup After Action | `editor.actions.close_popup_after_action` |
-| When this module is inside a Popup, running its action (tap, hold, or double tap) also closes that popup. Has no effect outside a popup. | `editor.actions.close_popup_after_action_desc` |
-| Confirm Action | `editor.actions.confirm_action` |
-| Cancel Button Text | `editor.actions.confirm_action_cancel_text` |
-| Text shown on the opt-out button. | `editor.actions.confirm_action_cancel_text_desc` |
-| Confirm Button Text | `editor.actions.confirm_action_confirm_text` |
-| Text shown on the opt-in button. | `editor.actions.confirm_action_confirm_text_desc` |
-| When enabled, a confirmation dialog will appear before executing any action (tap, hold, or double tap). | `editor.actions.confirm_action_desc` |
-| Show Cancel (opt-out) Button | `editor.actions.confirm_action_show_cancel_button` |
-| Show or hide the button users use to back out of the action. | `editor.actions.confirm_action_show_cancel_button_desc` |
-| Show Confirm (opt-in) Button | `editor.actions.confirm_action_show_confirm_button` |
-| Show or hide the button users use to continue with the action. | `editor.actions.confirm_action_show_confirm_button_desc` |
-| Open In Same Tab | `editor.actions.url_same_tab` |
-| Replace the current page instead of opening a new browser tab. | `editor.actions.url_same_tab_desc` |
-
-</details>
-
-<details>
 <summary><strong>Dog duty (editor)</strong> — 14 left</summary>
 
 | English text | Key |
@@ -2446,32 +2278,33 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Appearance (editor)</strong> — 7 left</summary>
+<summary><strong>Icon (editor)</strong> — 8 left</summary>
 
 | English text | Key |
 | --- | --- |
-| Transparent Card | `editor.appearance.transparent_card` |
-| Home Assistant Theme | `editor.appearance.ha_theme` |
-| Ultra Card Theme | `editor.appearance.uc_theme` |
-| Template Cheatsheet | `editor.appearance.template_cheatsheet` |
-| Enable template mode | `editor.appearance.template_mode_enable` |
-| Use Jinja2 templates to control card background, border, shadow, and padding dynamically. Return a simple color string for background-only, or a JSON object for multiple card appearance properties. | `editor.appearance.unified_template_section.desc` |
-| Appearance Template Mode | `editor.appearance.unified_template_section.title` |
+| Show Entity Picture | `editor.icon.icon_section.show_entity_picture` |
+| When enabled, entity_picture replaces the configured icon when available. | `editor.icon.icon_section.show_entity_picture_desc` |
+| Tada | `editor.icon.animation_tada` |
+| Animation | `editor.icon.animation` |
+| Name | `editor.icon.internal_name` |
+| Normal | `editor.icon.layout.dist_normal` |
+| Start | `editor.icon.layout.text_start` |
+| LAYOUT | `editor.icon.layout.title` |
 
 </details>
 
 <details>
-<summary><strong>Fields (editor)</strong> — 7 left</summary>
+<summary><strong>Layout (editor)</strong> — 7 left</summary>
 
 | English text | Key |
 | --- | --- |
-| Background Image Type | `editor.fields.card_background_image_type` |
-| Content Overflow | `editor.fields.card_overflow` |
-| How to handle content that extends beyond the card boundaries | `editor.fields.card_overflow_desc` |
-| Auto | `editor.fields.overflow_auto` |
-| Hidden (clip content) | `editor.fields.overflow_hidden` |
-| Scroll | `editor.fields.overflow_scroll` |
-| Visible (default) | `editor.fields.overflow_visible` |
+| Popup | `editor.layout.popup_module` |
+| Design | `editor.layout.design_tab` |
+| Details | `editor.layout.config_validation_details` |
+| Duplicate | `editor.layout.duplicate` |
+| Export | `editor.layout.export` |
+| Popup | `editor.layout.popup_layout` |
+| Slider Layout | `editor.layout.slider_layout` |
 
 </details>
 
@@ -2502,21 +2335,6 @@ Biggest sections first. Click a section to open it.
 | Increase | `editor.spinbox.increase` |
 | Configure the numeric range, step size, and default value. | `editor.spinbox.value_section.desc` |
 | Value Configuration | `editor.spinbox.value_section.title` |
-
-</details>
-
-<details>
-<summary><strong>Tabs (editor)</strong> — 7 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Switch tabs when hovering over them instead of clicking. | `editor.tabs.behavior.switch_on_hover_desc` |
-| Customize the appearance of the currently selected tab. | `editor.tabs.design.active_desc` |
-| Customize the appearance of the content area below/beside the tabs. | `editor.tabs.design.content_desc` |
-| Customize the appearance when hovering over inactive tabs. | `editor.tabs.design.hover_desc` |
-| Customize the appearance of tabs that are not selected. | `editor.tabs.design.inactive_desc` |
-| No modules added. Add modules to this section in the Layout tab. | `editor.tabs.preview.no_modules` |
-| Manage your tab sections. Drag to reorder, click to edit titles. | `editor.tabs.sections.desc` |
 
 </details>
 
@@ -2802,14 +2620,13 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Vertical (editor)</strong> — 4 left</summary>
+<summary><strong>Appearance (editor)</strong> — 3 left</summary>
 
 | English text | Key |
 | --- | --- |
-| Horizontal Alignment | `editor.vertical.alignment.horizontal` |
-| Choose how items are aligned horizontally within the column. | `editor.vertical.alignment.horizontal_desc` |
-| All modules hidden by logic | `editor.vertical.empty.all_hidden` |
-| Every module in this layout is hidden by its display conditions | `editor.vertical.empty.all_hidden_desc` |
+| Transparent Card | `editor.appearance.transparent_card` |
+| Home Assistant Theme | `editor.appearance.ha_theme` |
+| Ultra Card Theme | `editor.appearance.uc_theme` |
 
 </details>
 
@@ -2836,16 +2653,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>About (editor)</strong> — 2 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Version | `editor.about.version` |
-| Documentation in Ultra Card Hub | `editor.about.hub_docs` |
-
-</details>
-
-<details>
 <summary><strong>Climate (editor)</strong> — 2 left</summary>
 
 | English text | Key |
@@ -2866,12 +2673,12 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Horizontal (editor)</strong> — 2 left</summary>
+<summary><strong>Fields (editor)</strong> — 2 left</summary>
 
 | English text | Key |
 | --- | --- |
-| All modules hidden by logic | `editor.horizontal.empty.all_hidden` |
-| Every module in this layout is hidden by its display conditions | `editor.horizontal.empty.all_hidden_desc` |
+| Background Image Type | `editor.fields.card_background_image_type` |
+| Auto | `editor.fields.overflow_auto` |
 
 </details>
 
@@ -2936,20 +2743,20 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>About (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Version | `editor.about.version` |
+
+</details>
+
+<details>
 <summary><strong>Button input (editor)</strong> — 1 left</summary>
 
 | English text | Key |
 | --- | --- |
 | Styling | `editor.button_input.styling.title` |
-
-</details>
-
-<details>
-<summary><strong>Common (editor)</strong> — 1 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Default | `editor.common.default` |
 
 </details>
 
@@ -3085,5 +2892,14 @@ Biggest sections first. Click a section to open it.
 | English text | Key |
 | --- | --- |
 | Hub | `hub.subtitle` |
+
+</details>
+
+<details>
+<summary><strong>Vertical (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Horizontal Alignment | `editor.vertical.alignment.horizontal` |
 
 </details>
