@@ -90,7 +90,7 @@ export class AboutTab extends LitElement {
             ${localize('editor.about.github_repo', lang, 'Check Out Our Github')}
           </a>
 
-          <button type="button" class="about-button docs" @click=${() => openHubDocs('home')}>
+          <button type="button" class="about-button docs" @click=${() => void openHubDocs('home', this.hass)}>
             <ha-icon icon="mdi:book-open-variant"></ha-icon>
             ${localize('editor.about.hub_docs', lang, 'Documentation in Ultra Card Hub')}
           </button>

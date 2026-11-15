@@ -433,6 +433,14 @@ export class HubDocsTab extends LitElement {
       return;
     }
     const page = this._pageBySlug(slug);
+    if (!page && this._index) {
+      // Module without its own wiki page: show the modules overview instead of a blank page.
+      const fallback = slug.startsWith('module-') ? 'modules-overview' : 'home';
+      if (fallback !== slug && this._pageBySlug(fallback)) {
+        await this._loadPage(fallback);
+        return;
+      }
+    }
     if (!page) {
       this._pageHtml = '';
       this._pageToc = [];
