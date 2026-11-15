@@ -1010,21 +1010,22 @@ export class UltraHorizontalModule extends BaseUltraModule {
     if (childModule.type !== 'camera') {
       return childModule;
     }
-    const child = childModule as any;
+    type Capped = CardModule & { max_width?: unknown; design?: Record<string, unknown> };
+    const child = childModule as Capped;
     const isStock = (v: unknown) => typeof v === 'string' && v.trim().toLowerCase() === '500px';
-    const designCap = isStock(child?.design?.max_width);
-    const rootCap = isStock(child?.max_width);
+    const designCap = isStock(child.design?.max_width);
+    const rootCap = isStock(child.max_width);
     if (!designCap && !rootCap) {
       return childModule;
     }
-    const released: any = { ...child };
+    const released: Capped = { ...child };
     if (designCap) {
       released.design = { ...child.design, max_width: '' };
     }
     if (rootCap) {
       released.max_width = '';
     }
-    return released as CardModule;
+    return released;
   }
 
   private getChildPreferredWidth(childModule: CardModule): string | null {
