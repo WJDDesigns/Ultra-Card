@@ -69,6 +69,7 @@ const NATIVELY_INTERACTIVE = new Set([
   'ha-switch',
   'ha-slider',
   'ha-textfield',
+  'uc-textfield',
   'ha-select',
   'ha-control-switch',
   'ha-control-slider',

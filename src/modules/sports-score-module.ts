@@ -16,6 +16,7 @@ import { sportsDataService, LEAGUE_NAMES, SportsDataService } from '../services/
 import { localize } from '../localize/localize';
 import { getImageUrl } from '../utils/image-upload';
 import '../components/ultra-color-picker';
+import '../components/uc-spinner';
 
 /**
  * Sports Score Module - Pro Feature
@@ -1934,7 +1935,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const textColor = module.text_color || 'var(--secondary-text-color)';
 
     if (this._currentLoading) {
-      return html`<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;"><ha-circular-progress indeterminate size="small"></ha-circular-progress></div>`;
+      return html`<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;"><uc-spinner size="small"></uc-spinner></div>`;
     }
 
     if (this._currentError || !data) {
@@ -2014,7 +2015,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const logoBgOpacity = (module.logo_background_opacity || 8) / 100;
 
     if (this._currentLoading) {
-      return html`<div style="height: 80px; display: flex; align-items: center; justify-content: center;"><ha-circular-progress indeterminate size="small"></ha-circular-progress></div>`;
+      return html`<div style="height: 80px; display: flex; align-items: center; justify-content: center;"><uc-spinner size="small"></uc-spinner></div>`;
     }
 
     if (this._currentError || !data) {
@@ -2210,7 +2211,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         padding: 32px;
         gap: 12px;
       ">
-        <ha-circular-progress indeterminate></ha-circular-progress>
+        <uc-spinner></uc-spinner>
         <div style="font-size: 12px; color: var(--secondary-text-color);">Loading sports data...</div>
       </div>
     `;

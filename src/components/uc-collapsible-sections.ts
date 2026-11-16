@@ -32,7 +32,7 @@ const SUMMARY_PART_MAX = 24;
 
 /** Elements whose clicks must not toggle the section they sit in. */
 const INTERACTIVE =
-  'button, a, input, select, textarea, label, ha-switch, ha-checkbox, ha-icon-button, ha-button, mwc-button, ha-select, ha-textfield, ha-form, ha-selector, ultra-color-picker, [contenteditable], [data-uc-no-toggle]';
+  'button, a, input, select, textarea, label, ha-switch, ha-checkbox, ha-icon-button, ha-button, mwc-button, ha-select, ha-textfield, uc-textfield, ha-form, ha-selector, ultra-color-picker, [contenteditable], [data-uc-no-toggle]';
 
 /** Ancestors that already collapse their own content; sections inside them stay as they are. */
 const OWN_COLLAPSE = '.settings-section, ha-expansion-panel, [data-uc-no-collapse]';

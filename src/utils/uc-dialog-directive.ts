@@ -3,7 +3,7 @@ import { AsyncDirective } from 'lit/async-directive.js';
 import { directive, PartType, type ElementPart, type PartInfo } from 'lit/directive.js';
 
 const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), ha-textfield, ha-select, ha-switch, ha-icon-button';
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), ha-textfield, uc-textfield, ha-select, ha-switch, ha-icon-button';
 
 /** The focused element, looking through open shadow roots. */
 function deepActiveElement(): HTMLElement | null {

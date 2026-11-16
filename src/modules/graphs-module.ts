@@ -25,6 +25,8 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { escapeHtml } from '../utils/html-sanitizer';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 import { UC_DEBUG } from '../utils/uc-debug';
+import '../components/uc-textfield';
+import '../components/uc-spinner';
 
 /** Unified-template output keys the graphs module reads. */
 const GRAPHS_TEMPLATE_KEYS = ['colors', 'global_color', 'fill_area', 'pie_fill'] as const;
@@ -1301,7 +1303,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                       >
                         ${localize('editor.graphs.forecast_limit.hours', lang, 'Limit Hours')}
                       </label>
-                      <ha-textfield
+                      <uc-textfield
                         type="number"
                         min="0"
                         max="168"
@@ -1335,7 +1337,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                           lang,
                           '0 = show all'
                         )}"
-                      ></ha-textfield>
+                      ></uc-textfield>
                     </div>
                     <div>
                       <label
@@ -1343,7 +1345,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                       >
                         ${localize('editor.graphs.forecast_limit.days', lang, 'Limit Days')}
                       </label>
-                      <ha-textfield
+                      <uc-textfield
                         type="number"
                         min="0"
                         max="14"
@@ -1377,7 +1379,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                           lang,
                           'Days override hours'
                         )}"
-                      ></ha-textfield>
+                      ></uc-textfield>
                     </div>
                   </div>`
               : ''}
@@ -2639,7 +2641,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
                 "
               >
-                <ha-circular-progress active size="small"></ha-circular-progress>
+                <uc-spinner size="small"></uc-spinner>
                 <span style="font-size: 13px;">Loading history…</span>
               </div>
             </div>`

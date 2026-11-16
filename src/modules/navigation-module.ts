@@ -24,6 +24,7 @@ import '../entity-picker';
 import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
 import { renderHideOnDevicesSection } from '../tabs/uc-hide-on-devices-section';
+import '../components/uc-textfield';
 
 // Navbar style presets (matching UC visual design)
 export type NavbarStylePreset =
@@ -3490,13 +3491,13 @@ export class UltraNavigationModule extends BaseUltraModule {
             </div>
             <div class="field-container">
               <div class="field-title">Count / Text</div>
-              <ha-textfield
+              <uc-textfield
                 style="width: 100%;"
                 .value=${badge.count || ''}
                 placeholder="5"
                 @input=${(e: Event) => updateBadge({ count: (e.target as HTMLInputElement).value })}
                 @click=${(e: Event) => e.stopPropagation()}
-              ></ha-textfield>
+              ></uc-textfield>
             </div>
           `
         : ''}
@@ -3523,14 +3524,14 @@ export class UltraNavigationModule extends BaseUltraModule {
               <div class="field-description">
                 Use a specific attribute instead of the entity state.
               </div>
-              <ha-textfield
+              <uc-textfield
                 style="width: 100%;"
                 .value=${badge.entity_attribute || ''}
                 placeholder="e.g., unread_count"
                 @input=${(e: Event) =>
                   updateBadge({ entity_attribute: (e.target as HTMLInputElement).value })}
                 @click=${(e: Event) => e.stopPropagation()}
-              ></ha-textfield>
+              ></uc-textfield>
             </div>
           `
         : ''}
@@ -3548,7 +3549,7 @@ export class UltraNavigationModule extends BaseUltraModule {
               <div class="field-description">
                 Example: return states['sensor.notifications'].state;
               </div>
-              <ha-textfield
+              <uc-textfield
                 style="width: 100%;"
                 multiline
                 rows="3"
@@ -3557,7 +3558,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                 @input=${(e: Event) =>
                   updateBadge({ count_template: (e.target as HTMLInputElement).value })}
                 @click=${(e: Event) => e.stopPropagation()}
-              ></ha-textfield>
+              ></uc-textfield>
             </div>
           `
         : ''}
