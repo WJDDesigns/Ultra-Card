@@ -489,6 +489,10 @@ export class UltraHumidifierModule extends BaseUltraModule {
         outline: none;
         cursor: pointer;
       }
+      .uc-hum-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
       .uc-hum-slider::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;

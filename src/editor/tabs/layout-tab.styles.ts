@@ -4864,6 +4864,10 @@ export const layoutTabStyles = css`
         outline: none;
         border-color: var(--primary-color);
       }
+      .font-dropdown:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
 
       .font-dropdown optgroup {
         font-weight: 600;
@@ -4969,6 +4973,10 @@ export const layoutTabStyles = css`
         outline: none;
         opacity: 0.7;
         transition: opacity 0.2s;
+      }
+      .gap-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .gap-slider:hover {
@@ -5220,6 +5228,10 @@ export const layoutTabStyles = css`
         background: var(--divider-color);
         outline: none;
         -webkit-appearance: none;
+      }
+      .module-tab-content input[type='range']:focus-visible, .settings-tab-content input[type='range']:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .module-tab-content input[type='range']::-webkit-slider-thumb,
@@ -8118,6 +8130,10 @@ export const layoutTabStyles = css`
         font-size: 14px;
         font-family: inherit;
         color: var(--primary-text-color);
+      }
+      .search-bar input:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .search-bar input::placeholder {

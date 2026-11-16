@@ -409,6 +409,7 @@ export function renderGlobalLogicTab<M extends GlobalLogicItem>(
                           ></ha-icon>
                         </button>
                         <button
+                          aria-label="Remove Condition"
                           @click=${remove}
                           style="background:none; border:none; padding:4px; cursor:pointer; color: var(--error-color);"
                           title="Remove Condition"
@@ -419,6 +420,7 @@ export function renderGlobalLogicTab<M extends GlobalLogicItem>(
                           ></ha-icon>
                         </button>
                         <button
+                          aria-label="Drag to reorder"
                           class="condition-drag-handle"
                           title="Drag to reorder"
                           style="background:none; border:none; padding:4px; cursor:grab; display:inline-flex; align-items:center; justify-content:center; color: var(--secondary-text-color);"

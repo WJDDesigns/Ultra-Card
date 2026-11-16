@@ -243,7 +243,11 @@ export class UcManualBackupDialog extends LitElement {
               <ha-icon icon="mdi:bookmark-plus"></ha-icon>
               ${localize('editor.ultra_card_pro.manual_backup_title', lang, 'Name Your Backup')}
             </h3>
-            <button class="close-btn" @click="${this._handleClose}">
+            <button
+              class="close-btn"
+              aria-label=${localize('editor.ui.module_selector_shell.close', lang, 'Close')}
+              @click="${this._handleClose}"
+            >
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
           </div>

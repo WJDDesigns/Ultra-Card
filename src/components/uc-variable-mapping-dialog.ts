@@ -147,7 +147,11 @@ export class UcVariableMappingDialog extends LitElement {
         <div class="dialog" ${ucDialog(() => this._handleCancel())} @click=${(e: Event) => e.stopPropagation()}>
           <div class="dialog-header">
             <h2>${localize('editor.variable_mapping.title', lang, 'Map Missing Variables')}</h2>
-            <button class="close-btn" @click=${this._handleCancel}>
+            <button
+              class="close-btn"
+              aria-label=${localize('editor.ui.module_selector_shell.close', lang, 'Close')}
+              @click=${this._handleCancel}
+            >
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
           </div>

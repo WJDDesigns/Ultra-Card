@@ -206,6 +206,10 @@ export class HubVariablesTab extends LitElement {
         outline: none;
         box-sizing: border-box;
       }
+      .form-select:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
 
       .form-hint {
         font-size: 11px;
@@ -583,6 +587,10 @@ export class HubVariablesTab extends LitElement {
         color: var(--primary-text-color);
         font-size: 13px;
         outline: none;
+      }
+      .edit-select:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .edit-label {
@@ -1097,10 +1105,10 @@ export class HubVariablesTab extends LitElement {
                     `
                   : nothing}
                 <div class="edit-row" style="justify-content: flex-end; gap: 6px; margin-top: 4px;">
-                  <button class="action-btn" title="Save" @click=${this._saveEdit}>
+                  <button aria-label="Save" class="action-btn" title="Save" @click=${this._saveEdit}>
                     <ha-icon icon="mdi:check"></ha-icon>
                   </button>
-                  <button class="action-btn" title="Cancel" @click=${this._cancelEdit}>
+                  <button aria-label="Cancel" class="action-btn" title="Cancel" @click=${this._cancelEdit}>
                     <ha-icon icon="mdi:close"></ha-icon>
                   </button>
                 </div>

@@ -698,7 +698,10 @@ export class HubColorsTab extends LitElement {
 
     return html`
       <div class="color-card ${isEditing ? 'editing' : ''}">
-        <div role="button" tabindex="0" data-uc-activate
+        <div
+          role="button"
+          tabindex="0"
+          data-uc-activate
           class="color-swatch-area"
           style="background: ${isEditing ? this._editColor : fav.color}"
           @click=${() => this._copyColor(fav.color)}
@@ -737,10 +740,10 @@ export class HubColorsTab extends LitElement {
                     @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this._saveEdit()}
                   />
                   <div class="edit-actions">
-                    <button class="action-btn" title="Save" @click=${this._saveEdit}>
+                    <button aria-label="Save" class="action-btn" title="Save" @click=${this._saveEdit}>
                       <ha-icon icon="mdi:check"></ha-icon>
                     </button>
-                    <button class="action-btn" title="Cancel" @click=${this._cancelEdit}>
+                    <button aria-label="Cancel" class="action-btn" title="Cancel" @click=${this._cancelEdit}>
                       <ha-icon icon="mdi:close"></ha-icon>
                     </button>
                   </div>

@@ -252,7 +252,12 @@ export class UcHubRateDialog extends LitElement {
 
           <div class="dialog-header">
             <h2 class="dialog-title">${this.heading || 'Rate this preset'}</h2>
-            <button class="dialog-close" @click=${this._close} ?disabled=${this._submitting}>
+            <button
+              class="dialog-close"
+              aria-label="Close"
+              @click=${this._close}
+              ?disabled=${this._submitting}
+            >
               <ha-icon icon="mdi:close" style="--mdc-icon-size:20px;"></ha-icon>
             </button>
           </div>
@@ -263,7 +268,10 @@ export class UcHubRateDialog extends LitElement {
 
           <div class="rate-stars-row" @mouseleave=${() => (this._hoveredRating = 0)}>
             ${[1, 2, 3, 4, 5].map(star => html`
-              <ha-icon role="button" tabindex="0" data-uc-activate
+              <ha-icon
+                role="button"
+                tabindex="0"
+                data-uc-activate
                 icon=${star <= displayRating ? 'mdi:star' : 'mdi:star-outline'}
                 class=${star <= displayRating ? '' : 'empty'}
                 @mouseenter=${() => (this._hoveredRating = star)}

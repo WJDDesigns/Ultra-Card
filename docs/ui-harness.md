@@ -42,6 +42,7 @@ module, filter to problems), `results.json`, and `shots/`.
 | `low-contrast` | warn | Text contrast under 3:1 (2.2:1 for large text) |
 | `clipped-text` | warn | Text cut off with no ellipsis |
 | `text-overlap` | warn | Two labels drawn over each other |
+| `icon-button-without-name` | warn | An icon-only button has no `aria-label` (`title` alone does not count) |
 | `small-target` | warn on phone | Control smaller than 24×24px (20px on desktop, info only) |
 | `dead-click` | warn | Looks clickable, but clicking did nothing |
 | `template-leak` | warn | Jinja/JS template source visible on a card |

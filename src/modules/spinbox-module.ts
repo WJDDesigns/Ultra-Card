@@ -1182,6 +1182,10 @@ export class UltraSpinboxModule extends BaseUltraModule {
             opacity: 1 !important;
             transform: scale(1) !important;
           }
+        .spinbox-button:not(:disabled):focus-visible {
+          outline: 2px solid var(--primary-color);
+          outline-offset: 2px;
+        }
           .spinbox-button:not(:disabled):focus:active {
             opacity: 0.8;
             transform: scale(1.05);
