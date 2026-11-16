@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.5
+
+Stable 3.14.5 is a quick follow-up to 3.14.4. Home Assistant recently removed two building blocks from its frontend, the text field and the loading spinner, and every editor field that used them simply disappeared on current Home Assistant. This release swaps them for Ultra Card's own versions so those fields are back, and brings the latest German translation update.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **German translation** - German is now about 83% translated. Thanks to larrysansan
+
+### 🐛 Bug Fixes
+
+- **Missing editor fields on current Home Assistant** - Text fields that had vanished from the editor are back, including the Light Control preset name, Map settings, the Navigation badge, Slider width, Graphs forecast limits, the manual user ID in Visible to Users and the backup name. Loading spinners show again too. Thanks to domodial for reporting it (#247)
+
 ## Version 3.14.4
 
 Stable 3.14.4 brings everything from the fifteen 3.14.4 betas into one release. Any colour can now follow the state of your entities, long module settings fold into sections, and the Calendar grew into a full calendar: page through months, add, edit and delete events, weather on days and a popup for each day. Cameras can jump to fullscreen when the doorbell rings, the Accordion opens sideways, Bosch, Siemens and Neff appliances are recognised through Home Connect, and the 3rd Party Card can run tap actions. It also closes four security holes, replaces the browser's plain confirm boxes with proper dialogs, makes almost all of the editor translatable, and fixes a long list of Discord reports. Thanks to everyone who tested the betas, and especially to larrysansan and Steve Markus for most of the ideas and bug reports in this release.
