@@ -1043,6 +1043,7 @@ export class UltraColorPicker extends LitElement {
           </div>
           <div class="reset-button-wrapper">
             <ha-icon-button
+              .label=${localize('editor.state_color.use_single', lang, 'Use a single color')}
               class="reset-button"
               .disabled=${this.disabled}
               @click=${this._switchToSingle}
@@ -1111,6 +1112,7 @@ export class UltraColorPicker extends LitElement {
           <!-- Reset button -->
           <div class="reset-button-wrapper">
             <ha-icon-button
+              .label=${'Reset to default'}
               class="reset-button ${this._isDefaultValue() ? 'disabled' : ''}"
               .disabled=${this._isDefaultValue()}
               @click=${this._resetToDefault}
@@ -1143,6 +1145,7 @@ export class UltraColorPicker extends LitElement {
                     <label class="input-label">Type color value:</label>
                     <div class="native-picker-wrapper">
                       <button
+                        aria-label="Open native color picker"
                         class="native-picker-btn"
                         type="button"
                         title="Open native color picker"
@@ -1240,7 +1243,10 @@ export class UltraColorPicker extends LitElement {
                 <div class="palette-grid">
                   ${COLOR_PALETTE.map(
                     color => html`
-                      <div role="button" tabindex="0" data-uc-activate
+                      <div
+                        role="button"
+                        tabindex="0"
+                        data-uc-activate
                         class="color-swatch ${this._currentValue === color ? 'selected' : ''}"
                         style="background-color: ${color}"
                         @click=${(e: Event) => this._selectColor(color, e)}
@@ -1262,7 +1268,10 @@ export class UltraColorPicker extends LitElement {
                   <div class="gradient-presets-grid">
                     ${GRADIENT_PRESETS.map(
                       gradient => html`
-                        <div role="button" tabindex="0" data-uc-activate
+                        <div
+                          role="button"
+                          tabindex="0"
+                          data-uc-activate
                           class="gradient-preset-swatch ${this._currentValue === gradient.value
                             ? 'selected'
                             : ''}"
@@ -1285,6 +1294,7 @@ export class UltraColorPicker extends LitElement {
                     !ucFavoriteColorsService.hasColor(this._currentValue)
                       ? html`
                           <button
+                            aria-label="Add current color to favorites"
                             class="add-favorite-btn"
                             @click=${this._addToFavorites}
                             title="Add current color to favorites"
@@ -1301,7 +1311,10 @@ export class UltraColorPicker extends LitElement {
                         <div class="favorites-grid">
                           ${this._favoriteColors.map(
                             favorite => html`
-                              <div role="button" tabindex="0" data-uc-activate
+                              <div
+                                role="button"
+                                tabindex="0"
+                                data-uc-activate
                                 class="favorite-swatch ${this._currentValue === favorite.color
                                   ? 'selected'
                                   : ''}"
@@ -1752,6 +1765,10 @@ export class UltraColorPicker extends LitElement {
         z-index: ${Z_INDEX.MODULE_CONTENT};
         margin: 0;
         padding: 12px 0;
+      }
+      .transparency-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       /* Webkit/Chrome slider thumb */

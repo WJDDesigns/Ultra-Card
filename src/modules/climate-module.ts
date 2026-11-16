@@ -1705,16 +1705,11 @@ export class UltraClimateModule extends BaseUltraModule {
        }
 
        /* Center button groups based on count */
-       .climate-bottom-controls-1 {
-         width: 50px;
-       }
-
-       .climate-bottom-controls-2 {
-         width: 100px;
-       }
-
+       /* Sized by their buttons (32px each + gap); fixed widths squeezed them. */
+       .climate-bottom-controls-1,
+       .climate-bottom-controls-2,
        .climate-bottom-controls-3 {
-         width: 150px;
+         width: auto;
        }
  
        .climate-preset-display {
@@ -1747,9 +1742,11 @@ export class UltraClimateModule extends BaseUltraModule {
         font-weight: 700;
       }
 
+      /* 32px so the mode / fan / power controls read next to the large
+         temperature and make a comfortable tap target (issue #286). */
       .climate-bottom-icon {
-        width: 24px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         border: 2px solid var(--divider-color);
         background: rgba(var(--rgb-card-background-color, 255, 255, 255), 0.05);
@@ -1774,7 +1771,7 @@ export class UltraClimateModule extends BaseUltraModule {
       }
 
       .climate-bottom-icon ha-icon {
-        --mdc-icon-size: 14px;
+        --mdc-icon-size: 18px;
         transform: translateY(-1px);
         display: block;
       }

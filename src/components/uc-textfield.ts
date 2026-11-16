@@ -86,6 +86,10 @@ export class UcTextfield extends LitElement {
       padding: 12px 0;
       box-sizing: border-box;
     }
+    .uc-tf-input:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
     textarea.uc-tf-input {
       padding: 0;
       resize: vertical;

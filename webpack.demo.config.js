@@ -30,6 +30,12 @@ module.exports = {
         use: { loader: 'ts-loader', options: { transpileOnly: true } },
         exclude: /node_modules/,
       },
+      {
+        test: /[\\/]translations[\\/][^\\/]+\.json$/,
+        resourceQuery: /part=/,
+        type: 'javascript/auto',
+        use: path.resolve(__dirname, 'scripts/webpack/locale-part-loader.js'),
+      },
       { test: /\.css$/, resourceQuery: /raw/, type: 'asset/source' },
       { test: /\.css$/, resourceQuery: { not: [/raw/] }, use: ['style-loader', 'css-loader'] },
     ],

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+  enableEditorLocales,
   localize,
   ensureLocaleLoaded,
   isLocaleLoaded,
@@ -11,7 +12,10 @@ import {
   __setLocaleLoaderForTests,
 } from './localize';
 
-const KEY = 'editor.tabs.settings'; // en: "Settings", de: "Einstellungen"
+// A key dashboards draw: it ships in the runtime chunk.
+const KEY = 'editor.theme.none'; // en: "None", de: "Keine"
+// An editor-only key: it ships in the editor chunk (issue #281).
+const EDITOR_KEY = 'editor.tabs.settings'; // en: "Settings", de: "Einstellungen"
 
 describe('localize lazy locales', () => {
   beforeEach(() => {
@@ -22,18 +26,18 @@ describe('localize lazy locales', () => {
     // English is a chunk like every other locale; a call site's fallback is what
     // renders in the meantime, and the raw key only when there is no fallback.
     const before = localize(KEY, 'en', 'Fallback');
-    expect(['Fallback', 'Settings']).toContain(before);
+    expect(['Fallback', 'None']).toContain(before);
     await preloadDefaultLocale();
     expect(isLocaleLoaded('en')).toBe(true);
-    expect(localize(KEY, 'en')).toBe('Settings');
-    expect(localize(KEY, 'en', 'Fallback')).toBe('Settings');
+    expect(localize(KEY, 'en')).toBe('None');
+    expect(localize(KEY, 'en', 'Fallback')).toBe('None');
   });
 
   it('falls back to English until the locale chunk arrives, then translates', async () => {
     await preloadDefaultLocale();
     expect(isLocaleLoaded('de')).toBe(false);
     const english = localize(KEY, 'en');
-    expect(english).toBe('Settings');
+    expect(english).toBe('None');
     // First call kicks off the fetch and returns the English string.
     expect(localize(KEY, 'de')).toBe(english);
 
@@ -41,7 +45,29 @@ describe('localize lazy locales', () => {
     expect(isLocaleLoaded('de')).toBe(true);
     const german = localize(KEY, 'de');
     expect(german).not.toBe(english);
-    expect(german).toBe('Einstellungen');
+    expect(german).toBe('Keine');
+  });
+
+  it('keeps editor strings out of the runtime chunk until the editor asks for them', async () => {
+    await preloadDefaultLocale();
+    await ensureLocaleLoaded('de');
+    // Dashboards: the editor key is not in the runtime chunk, so the call
+    // site's fallback (or the key) is used.
+    expect(localize(EDITOR_KEY, 'de', 'Fallback')).toBe('Fallback');
+
+    await enableEditorLocales('de');
+    expect(localize(EDITOR_KEY, 'en')).toBe('Settings');
+    expect(localize(EDITOR_KEY, 'de')).toBe('Einstellungen');
+    // Runtime strings still resolve after the merge.
+    expect(localize(KEY, 'de')).toBe('Keine');
+  });
+
+  it('loads editor strings for languages requested after the editor opened', async () => {
+    await enableEditorLocales();
+    await ensureLocaleLoaded('fr');
+    // ensureLocaleLoaded starts the editor part too; wait for it.
+    await enableEditorLocales('fr');
+    expect(localize(EDITOR_KEY, 'fr')).not.toBe('Settings');
   });
 
   it('resolves regional codes to the shipped base locale', async () => {
@@ -91,7 +117,7 @@ describe('localize lazy locales', () => {
         async () => {
           calls++;
           if (calls === 1) throw chunkError();
-          return { default: { editor: { tabs: { settings: 'Ustawienia' } } } };
+          return { default: { editor: { theme: { none: 'Brak' } } } };
         },
         { retryDelaysMs: [1, 1] }
       );
@@ -99,7 +125,7 @@ describe('localize lazy locales', () => {
         await ensureLocaleLoaded('pl');
         expect(calls).toBe(2);
         expect(isLocaleLoaded('pl')).toBe(true);
-        expect(localize(KEY, 'pl')).toBe('Ustawienia');
+        expect(localize(KEY, 'pl')).toBe('Brak');
       } finally {
         restore();
       }

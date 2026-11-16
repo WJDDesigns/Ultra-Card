@@ -580,6 +580,10 @@ export class UltraFreeSpaceViewImpl extends LitElement {
       font-variant-numeric: tabular-nums;
       -moz-appearance: textfield;
     }
+    .tb-field input:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
     .tb-field input::-webkit-outer-spin-button,
     .tb-field input::-webkit-inner-spin-button {
       -webkit-appearance: none;

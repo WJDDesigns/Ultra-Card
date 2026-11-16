@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
   OPEN_METEO_LAYER_URL,
+  OPEN_METEO_LAYER_VERSION,
   autoWeatherModel,
   loadOpenMeteoAdapter,
   resetOpenMeteoAdapter,
@@ -13,6 +16,15 @@ import {
 
 describe('Open-Meteo weather layer', () => {
   beforeEach(() => resetOpenMeteoAdapter());
+
+  it('has the pinned version vendored for GitHub Pages, with checksums', () => {
+    const dir = resolve(__dirname, '../../vendor/open-meteo/weather-map-layer', OPEN_METEO_LAYER_VERSION);
+    const sums = readFileSync(resolve(dir, 'SHA256SUMS'), 'utf8');
+    for (const f of ['index.mjs', 'worker.js', 'om_file_format.web.mjs', 'om_file_format.web.wasm']) {
+      expect(existsSync(resolve(dir, f))).toBe(true);
+      expect(sums).toContain(`  ${f}`);
+    }
+  });
 
   it('treats a missing or unknown layer as none', () => {
     expect(weatherLayerOf({})).toBe('none');
@@ -71,7 +83,11 @@ describe('Open-Meteo weather layer', () => {
     expect(a).toBe(b);
     expect(importer).toHaveBeenCalledTimes(1);
     expect(importer).toHaveBeenCalledWith(OPEN_METEO_LAYER_URL);
-    expect(OPEN_METEO_LAYER_URL).toMatch(/weather-map-layer@\d+\.\d+\.\d+\//);
+    // Served from this project's own origin, at a versioned path (issue #280).
+    const url = new URL(OPEN_METEO_LAYER_URL);
+    expect(url.origin).toBe('https://wjddesigns.github.io');
+    expect(url.pathname).toMatch(/^\/Ultra-Card\/open-meteo\/weather-map-layer\/\d+\.\d+\.\d+\/index\.mjs$/);
+    expect(OPEN_METEO_LAYER_URL).not.toContain('jsdelivr');
     expect(lib.addLeafletProtocolSupport).toHaveBeenCalledWith(L);
     expect(addProtocol).toHaveBeenCalledWith(
       'om',

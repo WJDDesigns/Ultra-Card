@@ -3126,6 +3126,10 @@ export class UltraLightModule extends BaseUltraModule {
         appearance: none;
         cursor: pointer;
       }
+      .brightness-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
 
       .brightness-slider::-webkit-slider-thumb {
         -webkit-appearance: none;
@@ -3257,6 +3261,10 @@ export class UltraLightModule extends BaseUltraModule {
         -webkit-appearance: none;
         cursor: pointer;
         transition: all 0.2s ease;
+      }
+      .gap-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .gap-slider::-webkit-slider-thumb {

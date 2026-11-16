@@ -977,6 +977,10 @@ export class UltraVerticalModule extends BaseUltraModule {
         opacity: 0.7;
         transition: opacity 0.2s;
       }
+      input[type="range"]:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
 
       input[type="range"]:hover {
         opacity: 1;

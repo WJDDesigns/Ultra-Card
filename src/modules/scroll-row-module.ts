@@ -328,6 +328,11 @@ export class UltraScrollRowModule extends BaseUltraModule {
       .scroll-row-scroller.fade-edges {
         mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
         -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+        /* Room as wide as the fade at both ends, so the first and last items can
+           scroll fully clear of it instead of staying half faded (issue #286). */
+        padding-inline: 24px;
+        scroll-padding-inline: 24px;
+        box-sizing: border-box;
       }
 
       .scroll-row-item {

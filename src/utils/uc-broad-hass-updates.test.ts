@@ -19,8 +19,8 @@ describe('moduleRequiresBroadHassUpdates', () => {
     }
   });
 
-  it('flags embedded third-party cards, which decide relevance themselves', () => {
-    expect(moduleRequiresBroadHassUpdates({ id: 'm', type: 'external_card' } as never)).toBe(true);
+  it('does not flag embedded third-party cards; they get hass pushed directly', () => {
+    expect(moduleRequiresBroadHassUpdates({ id: 'm', type: 'external_card' } as never)).toBe(false);
   });
 
   it('flags auto-filtering modules only when auto-filter is enabled', () => {

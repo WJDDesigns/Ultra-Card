@@ -13,15 +13,22 @@
  *
  * The package ships a 2 MB WebAssembly decoder and a render worker next to
  * its module file, which a HACS install can't carry (HACS only ships the
- * uc-*.js chunks). So it is loaded on demand from jsDelivr, pinned to an
- * exact version, the first time a card turns a weather layer on. Nobody who
- * leaves the layer off downloads anything.
+ * uc-*.js chunks). So it is loaded on demand, pinned to an exact version, the
+ * first time a card turns a weather layer on. Nobody who leaves the layer off
+ * downloads anything.
+ *
+ * The files are served from this project's own GitHub Pages site, not a
+ * public CDN (issue #280): `vendor/` in the repo, deployed by
+ * .github/workflows/vendor-pages.yml only after every file matches its
+ * SHA256SUMS and the published npm package. Paths are versioned and never
+ * change once published.
  */
 
 import type { RainRadarModule, RainRadarWeatherLayer } from '../types';
 
 export const OPEN_METEO_LAYER_VERSION = '0.3.0';
-export const OPEN_METEO_LAYER_URL = `https://cdn.jsdelivr.net/npm/@openmeteo/weather-map-layer@${OPEN_METEO_LAYER_VERSION}/dist/index.mjs`;
+export const OPEN_METEO_LAYER_ORIGIN = 'https://wjddesigns.github.io';
+export const OPEN_METEO_LAYER_URL = `${OPEN_METEO_LAYER_ORIGIN}/Ultra-Card/open-meteo/weather-map-layer/${OPEN_METEO_LAYER_VERSION}/index.mjs`;
 export const OPEN_METEO_DATA_URL = 'https://openmeteo.s3.amazonaws.com/data_spatial';
 export const OPEN_METEO_ATTRIBUTION =
   'Weather &copy; <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>';

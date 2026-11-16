@@ -224,10 +224,18 @@ export class UltraWysiwygEditor extends LitElement {
         color: var(--primary-text-color);
         border-radius: 0 0 8px 8px;
       }
+      .editor-content:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
 
       .editor-content .ProseMirror {
         outline: none;
         min-height: 60px;
+      }
+      .editor-content .ProseMirror:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .editor-content .ProseMirror p {
@@ -493,14 +501,20 @@ export class UltraWysiwygEditor extends LitElement {
   ): TemplateResult {
     return html`
       <div class="color-picker-popup" @mousedown=${(e: Event) => e.preventDefault()}>
-        <div role="button" tabindex="0" data-uc-activate
+        <div
+          role="button"
+          tabindex="0"
+          data-uc-activate
           class="color-swatch clear-color ${!currentColor ? 'active' : ''}"
           @click=${() => onSelect('')}
           title="Remove color"
         ></div>
         ${colors.map(
           (c) => html`
-            <div role="button" tabindex="0" data-uc-activate
+            <div
+              role="button"
+              tabindex="0"
+              data-uc-activate
               class="color-swatch ${currentColor === c ? 'active' : ''}"
               style="background: ${c}"
               @click=${() => onSelect(c)}
@@ -542,6 +556,7 @@ export class UltraWysiwygEditor extends LitElement {
           <!-- Text formatting -->
           <div class="toolbar-group">
             <button
+              aria-label="Bold"
               class="toolbar-btn ${this._isBold ? 'active' : ''}"
               @click=${this._toggleBold}
               title="Bold"
@@ -550,6 +565,7 @@ export class UltraWysiwygEditor extends LitElement {
               <ha-icon icon="mdi:format-bold"></ha-icon>
             </button>
             <button
+              aria-label="Italic"
               class="toolbar-btn ${this._isItalic ? 'active' : ''}"
               @click=${this._toggleItalic}
               title="Italic"
@@ -558,6 +574,7 @@ export class UltraWysiwygEditor extends LitElement {
               <ha-icon icon="mdi:format-italic"></ha-icon>
             </button>
             <button
+              aria-label="Underline"
               class="toolbar-btn ${this._isUnderline ? 'active' : ''}"
               @click=${this._toggleUnderline}
               title="Underline"
@@ -566,6 +583,7 @@ export class UltraWysiwygEditor extends LitElement {
               <ha-icon icon="mdi:format-underline"></ha-icon>
             </button>
             <button
+              aria-label="Strikethrough"
               class="toolbar-btn ${this._isStrike ? 'active' : ''}"
               @click=${this._toggleStrike}
               title="Strikethrough"
@@ -638,6 +656,7 @@ export class UltraWysiwygEditor extends LitElement {
           <!-- Link -->
           <div class="toolbar-group">
             <button
+              aria-label="Link"
               class="toolbar-btn ${this._isLink || this._showLinkInput ? 'active' : ''}"
               @click=${this._toggleLinkInput}
               title="Link"
@@ -650,6 +669,7 @@ export class UltraWysiwygEditor extends LitElement {
           <!-- Clear formatting -->
           <div class="toolbar-group">
             <button
+              aria-label="Clear formatting"
               class="toolbar-btn"
               @click=${this._clearFormatting}
               title="Clear formatting"

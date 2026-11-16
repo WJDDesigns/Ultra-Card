@@ -430,6 +430,28 @@
       }
     }
 
+    // Icon-only buttons need an accessible name (issue #285). `title` is not
+    // enough: it never shows on touch screens and screen readers treat it as a
+    // last resort.
+    let unnamed = 0;
+    for (const el of walk(root)) {
+      if (unnamed >= 4) break;
+      const isButton =
+        el.tagName === 'BUTTON' ||
+        el.tagName === 'HA-ICON-BUTTON' ||
+        el.getAttribute('role') === 'button';
+      if (!isButton || !isVisible(el)) continue;
+      if ((el.textContent || '').trim()) continue;
+      const named =
+        (el.getAttribute('aria-label') || '').trim() ||
+        el.getAttribute('aria-labelledby') ||
+        (typeof el.label === 'string' && el.label.trim()) ||
+        (el.getAttribute('label') || '').trim();
+      if (named) continue;
+      unnamed++;
+      add('icon-button-without-name', 'warn', 'Icon-only button has no aria-label', el);
+    }
+
     // Broken images.
     for (const el of walk(root)) {
       if (el.tagName === 'IMG' && el.complete && el.naturalWidth === 0 && el.getAttribute('src')) {

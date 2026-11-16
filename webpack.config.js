@@ -86,6 +86,14 @@ module.exports = (env, argv) => {
           exclude: /node_modules/,
         },
         {
+          // Locale files are split into a runtime part (every dashboard) and an
+          // editor part (editor and Hub only). See scripts/lib/locale-split.js.
+          test: /[\\/]translations[\\/][^\\/]+\.json$/,
+          resourceQuery: /part=/,
+          type: 'javascript/auto',
+          use: path.resolve(__dirname, 'scripts/webpack/locale-part-loader.js'),
+        },
+        {
           // Raw CSS imports (e.g. `import css from 'leaflet/dist/leaflet.css?raw'`)
           // are inlined as a string so they can be injected into a shadow root.
           test: /\.css$/,

@@ -1658,6 +1658,9 @@ export class HubPresetsTab extends LitElement {
               ${meta.downloads ?? (preset as any).downloads ?? 0}
             </span>
             <div
+              role="button"
+              tabindex="0"
+              data-uc-activate
               class="preset-rating-interactive"
               @click=${(ev: Event) => this._handleStarClick(preset, ev)}
               title=${this._cloudUser ? 'Rate this preset' : 'Sign in to rate'}

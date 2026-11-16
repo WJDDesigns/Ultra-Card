@@ -6,13 +6,16 @@ import { forEachLayoutModule } from './uc-layout-module-types';
  *
  * The card normally filters hass updates down to the entities its config
  * mentions. That filter is only valid when every source of change is
- * discoverable from the config. Two things break that assumption:
+ * discoverable from the config. Modules that build their content by scanning
+ * the whole state machine break that assumption: an entity they care about may
+ * appear or change without ever being named in the config.
  *
- *  1. Modules that build their content by scanning the whole state machine —
- *     an entity they care about may appear or change without ever being named
- *     in the config.
- *  2. Third-party cards embedded via `external_card`, which receive `hass` and
- *     decide for themselves what matters.
+ * Third-party cards embedded via `external_card` are deliberately NOT broad.
+ * The card's `hass` setter hands every new hass object straight to each
+ * embedded card through `externalCardContainerService.setHass()`, whether or
+ * not the Ultra Card itself re-renders, so the embedded card decides for itself
+ * what matters. Flagging them re-rendered the whole layout on every state
+ * change in the house (issue #282).
  *
  * Time-based display conditions change with the clock, not with hass, so they
  * are re-evaluated by a minute-aligned timer on the card instead
@@ -58,7 +61,6 @@ export function moduleRequiresBroadHassUpdates(module: CardModule | null | undef
   const mod = module as unknown as Record<string, unknown>;
   const type = typeof mod.type === 'string' ? mod.type : '';
 
-  if (type === 'external_card') return true;
   if (ALWAYS_SCANS_ALL_STATES.has(type)) return true;
   return scansAllStatesWhenConfigured(mod);
 }

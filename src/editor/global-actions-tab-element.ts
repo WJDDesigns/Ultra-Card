@@ -1223,6 +1223,10 @@ export class UltraGlobalActionsTab extends LitElement {
         cursor: pointer;
         transition: all 0.2s ease;
       }
+      .gap-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
 
       .gap-slider::-webkit-slider-thumb {
         appearance: none;

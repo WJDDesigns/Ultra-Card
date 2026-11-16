@@ -1432,6 +1432,10 @@ export class HubThemesTab extends LitElement {
         color: var(--primary-text-color);
         padding: 10px 0;
       }
+      .search-box input:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
       .search-box:focus-within {
         border-color: var(--primary-color);
       }
@@ -1445,6 +1449,10 @@ export class HubThemesTab extends LitElement {
         padding: 10px 10px;
         outline: none;
         flex: none;
+      }
+      .catalog-sort:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
       .catalog-sort:focus {
         border-color: var(--primary-color);

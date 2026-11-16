@@ -287,7 +287,7 @@ export class UcModulesSelectorTab extends LitElement {
     const bodyId = `uc-module-category-${id}`;
     return html`
       <div class="module-category ${extraClass} ${collapsed ? 'collapsed' : ''}">
-        <div class="category-header" @click=${() => this._toggleCategory(id)}>
+        <div role="button" tabindex="0" data-uc-activate class="category-header" @click=${() => this._toggleCategory(id)}>
           <div class="category-heading">
             <h4 class="category-title">${title}</h4>
             <p class="category-description">${description}</p>
@@ -565,7 +565,10 @@ export class UcModulesSelectorTab extends LitElement {
             const hasAccess = !isProModule || this.isPro;
             const tierLabel = isProModule ? 'PRO' : 'Standard';
             return html`
-              <div role="button" tabindex="0" data-uc-activate
+              <div
+                role="button"
+                tabindex="0"
+                data-uc-activate
                 class="search-result-item ${!hasAccess ? 'locked' : ''}"
                 @click=${() => {
                   if (hasAccess) this._emitModuleSelected(meta.type);
@@ -1143,6 +1146,10 @@ export class UcModulesSelectorTab extends LitElement {
       font-size: 14px;
       font-family: inherit;
       color: var(--primary-text-color);
+    }
+    .search-bar input:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
     }
     .search-bar input::placeholder {
       color: var(--secondary-text-color);

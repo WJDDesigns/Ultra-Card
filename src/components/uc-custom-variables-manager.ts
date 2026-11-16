@@ -599,6 +599,7 @@ export class UcCustomVariablesManager extends LitElement {
                     <span class="variable-count">(${this._globalVariables.length})</span>
                   </div>
                   <button
+                    aria-label="${localize('editor.custom_variables.clear_global', lang, 'Clear global variables')}"
                     class="clear-section-btn"
                     @click=${this._clearAllVariables}
                     title="${localize('editor.custom_variables.clear_global', lang, 'Clear global variables')}"
@@ -626,6 +627,7 @@ export class UcCustomVariablesManager extends LitElement {
                     <span class="variable-count">(${this._cardVariables.length})</span>
                   </div>
                   <button
+                    aria-label="${localize('editor.custom_variables.clear_card', lang, 'Clear card variables')}"
                     class="clear-section-btn"
                     @click=${this._clearCardVariables}
                     title="${localize('editor.custom_variables.clear_card', lang, 'Clear card variables')}"
@@ -859,6 +861,7 @@ export class UcCustomVariablesManager extends LitElement {
           <h4>${localize('editor.custom_variables.edit_variable', lang, 'Edit Variable')}</h4>
           <div class="edit-form-actions">
             <button
+              aria-label="Save"
               class="save-btn"
               @click=${this._saveEdit}
               ?disabled=${!this._editingName.trim() || !this._editingEntity || !!this._nameError}
@@ -866,7 +869,7 @@ export class UcCustomVariablesManager extends LitElement {
             >
               <ha-icon icon="mdi:check"></ha-icon>
             </button>
-            <button class="cancel-btn" @click=${this._cancelEdit} title="Cancel">
+            <button aria-label="Cancel" class="cancel-btn" @click=${this._cancelEdit} title="Cancel">
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
           </div>

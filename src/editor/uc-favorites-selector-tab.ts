@@ -56,6 +56,10 @@ export class UcFavoritesSelectorTab extends LitElement {
       font-size: 14px;
       outline: none;
     }
+    .search-bar input:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
     .clear-search-btn {
       display: flex;
       align-items: center;

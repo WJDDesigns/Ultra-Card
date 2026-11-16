@@ -540,11 +540,11 @@ export function createDemoStates(): Record<string, any> {
     }),
     'camera.outdoor': st('camera.outdoor', 'streaming', {
       friendly_name: 'Outdoor Camera',
-      entity_picture: '/api/camera_proxy/camera.outdoor',
+      entity_picture: 'https://picsum.photos/seed/ucoutdoorcam/640/360',
     }),
     'camera.indoor': st('camera.indoor', 'streaming', {
       friendly_name: 'Indoor Camera',
-      entity_picture: '/api/camera_proxy/camera.indoor',
+      entity_picture: 'https://picsum.photos/seed/ucindoorcam/640/360',
     }),
     'input_boolean.show_section': st('input_boolean.show_section', 'on', {
       friendly_name: 'Show Section',
@@ -749,7 +749,212 @@ export function createDemoStates(): Record<string, any> {
       title: 'Zigbee2MQTT',
       supported_features: 21,
     }),
+
+    ...buildGalleryDemoStates(),
   };
+}
+
+/** Hourly price curve ($/kWh) shaped like a real day-ahead market: cheap
+ *  overnight, a morning bump, a solar dip at midday and an evening peak. */
+const PRICE_TODAY = [
+  0.11, 0.1, 0.09, 0.09, 0.1, 0.12, 0.17, 0.24, 0.27, 0.22, 0.17, 0.14,
+  0.12, 0.11, 0.13, 0.16, 0.22, 0.31, 0.36, 0.33, 0.26, 0.19, 0.15, 0.12,
+];
+const PRICE_TOMORROW = [
+  0.12, 0.11, 0.1, 0.1, 0.1, 0.13, 0.18, 0.23, 0.25, 0.2, 0.15, 0.12,
+  0.1, 0.09, 0.11, 0.15, 0.21, 0.29, 0.34, 0.32, 0.25, 0.18, 0.14, 0.12,
+];
+
+/**
+ * Entities behind the gallery demos of the energy price, irrigation, sports
+ * score and 3D printer modules. Shapes follow the integrations each module
+ * parses (Nord Pool style price arrays, Team Tracker attributes, ...).
+ */
+function buildGalleryDemoStates(): Record<string, ReturnType<typeof st>> {
+  const minutesFromNow = (m: number) => new Date(Date.now() + m * 60000).toISOString();
+  const hour = new Date().getHours();
+  return {
+    // ---- energy price (Nord Pool attribute format: today / tomorrow arrays) ----
+    'sensor.electricity_price': st('sensor.electricity_price', String(PRICE_TODAY[hour]), {
+      friendly_name: 'Electricity Price',
+      unit_of_measurement: '$/kWh',
+      icon: 'mdi:cash',
+      today: PRICE_TODAY,
+      tomorrow: PRICE_TOMORROW,
+      tomorrow_valid: true,
+    }),
+
+    // ---- irrigation ----
+    'switch.irrigation_front_lawn': st('switch.irrigation_front_lawn', 'on', {
+      friendly_name: 'Front Lawn',
+      icon: 'mdi:sprinkler-variant',
+      end_time: minutesFromNow(18),
+    }),
+    'switch.irrigation_back_lawn': st('switch.irrigation_back_lawn', 'off', {
+      friendly_name: 'Back Lawn',
+      icon: 'mdi:sprinkler-variant',
+    }),
+    'valve.irrigation_vegetable_beds': st('valve.irrigation_vegetable_beds', 'closed', {
+      friendly_name: 'Vegetable Beds',
+      icon: 'mdi:watering-can',
+      supported_features: 3,
+    }),
+    'sensor.front_lawn_moisture': st('sensor.front_lawn_moisture', '24', {
+      friendly_name: 'Front Lawn Moisture',
+      unit_of_measurement: '%',
+      device_class: 'moisture',
+    }),
+    'sensor.back_lawn_moisture': st('sensor.back_lawn_moisture', '41', {
+      friendly_name: 'Back Lawn Moisture',
+      unit_of_measurement: '%',
+      device_class: 'moisture',
+    }),
+    'sensor.vegetable_beds_moisture': st('sensor.vegetable_beds_moisture', '58', {
+      friendly_name: 'Vegetable Beds Moisture',
+      unit_of_measurement: '%',
+      device_class: 'moisture',
+    }),
+    'sensor.irrigation_next_run': st('sensor.irrigation_next_run', minutesFromNow(14 * 60), {
+      friendly_name: 'Next Irrigation Run',
+      device_class: 'timestamp',
+    }),
+    'sensor.irrigation_flow_rate': st('sensor.irrigation_flow_rate', '3.2', {
+      friendly_name: 'Irrigation Flow',
+      unit_of_measurement: 'gal/min',
+    }),
+
+    // ---- sports score (Team Tracker sensor format) ----
+    'sensor.team_tracker_celtics': st('sensor.team_tracker_celtics', 'IN', {
+      friendly_name: 'Celtics',
+      league: 'NBA',
+      event_id: 'demo_game',
+      team_homeaway: 'home',
+      team_id: '2',
+      team_abbr: 'BOS',
+      team_name: 'Celtics',
+      team_logo: 'https://a.espncdn.com/i/teamlogos/nba/500/bos.png',
+      team_score: '87',
+      team_record: '41-14',
+      team_colors: ['#008348', '#ffffff'],
+      opponent_id: '18',
+      opponent_abbr: 'NY',
+      opponent_name: 'Knicks',
+      opponent_logo: 'https://a.espncdn.com/i/teamlogos/nba/500/ny.png',
+      opponent_score: '81',
+      opponent_record: '36-19',
+      opponent_colors: ['#1d428a', '#f58426'],
+      quarter: '3rd Qtr',
+      clock: '4:12',
+      venue: 'TD Garden',
+      tv_network: 'ESPN',
+      date: minutesFromNow(-95),
+    }),
+
+    // ---- 3D printer (generic / OctoPrint-style entities for the manual source) ----
+    'sensor.workshop_printer_status': st('sensor.workshop_printer_status', 'printing', {
+      friendly_name: 'Workshop Printer Status',
+    }),
+    'sensor.workshop_printer_progress': st('sensor.workshop_printer_progress', '63', {
+      friendly_name: 'Workshop Printer Progress',
+      unit_of_measurement: '%',
+    }),
+    'sensor.workshop_printer_nozzle_temperature': st('sensor.workshop_printer_nozzle_temperature', '214.6', {
+      friendly_name: 'Nozzle Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+    }),
+    'sensor.workshop_printer_nozzle_target': st('sensor.workshop_printer_nozzle_target', '215', {
+      friendly_name: 'Nozzle Target',
+      unit_of_measurement: '°C',
+    }),
+    'sensor.workshop_printer_bed_temperature': st('sensor.workshop_printer_bed_temperature', '59.8', {
+      friendly_name: 'Bed Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+    }),
+    'sensor.workshop_printer_bed_target': st('sensor.workshop_printer_bed_target', '60', {
+      friendly_name: 'Bed Target',
+      unit_of_measurement: '°C',
+    }),
+    'sensor.workshop_printer_chamber_temperature': st('sensor.workshop_printer_chamber_temperature', '37.2', {
+      friendly_name: 'Chamber Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+    }),
+    'sensor.workshop_printer_time_remaining': st('sensor.workshop_printer_time_remaining', '47', {
+      friendly_name: 'Time Remaining',
+      unit_of_measurement: 'min',
+    }),
+    'sensor.workshop_printer_end_time': st('sensor.workshop_printer_end_time', minutesFromNow(47), {
+      friendly_name: 'Estimated Finish',
+      device_class: 'timestamp',
+    }),
+    'sensor.workshop_printer_current_layer': st('sensor.workshop_printer_current_layer', '182', {
+      friendly_name: 'Current Layer',
+    }),
+    'sensor.workshop_printer_total_layers': st('sensor.workshop_printer_total_layers', '290', {
+      friendly_name: 'Total Layers',
+    }),
+    'sensor.workshop_printer_file': st('sensor.workshop_printer_file', 'phone_stand_v3.gcode', {
+      friendly_name: 'Current File',
+    }),
+    'fan.workshop_printer_part_fan': st('fan.workshop_printer_part_fan', 'on', {
+      friendly_name: 'Part Cooling Fan',
+      percentage: 80,
+    }),
+    'fan.workshop_printer_exhaust_fan': st('fan.workshop_printer_exhaust_fan', 'on', {
+      friendly_name: 'Exhaust Fan',
+      percentage: 40,
+    }),
+    'light.workshop_printer_light': st('light.workshop_printer_light', 'on', {
+      friendly_name: 'Printer Light',
+      supported_color_modes: ['onoff'],
+    }),
+    'button.workshop_printer_pause': st('button.workshop_printer_pause', 'unknown', {
+      friendly_name: 'Pause Print',
+    }),
+    'button.workshop_printer_resume': st('button.workshop_printer_resume', 'unknown', {
+      friendly_name: 'Resume Print',
+    }),
+    'button.workshop_printer_stop': st('button.workshop_printer_stop', 'unknown', {
+      friendly_name: 'Stop Print',
+    }),
+  };
+}
+
+/** Sample RSS document the demo serves through the Ultra Card Connect feed
+ *  endpoint, so the RSS Feed module renders real items with no network. */
+export const DEMO_FEED_URL = 'https://ultracard.io/demo/smart-home-news.xml';
+function demoFeedXml(): string {
+  const ago = (min: number) => new Date(Date.now() - min * 60000).toUTCString();
+  const items = [
+    ['Matter 1.4 brings energy management to more devices', 'New device types for heat pumps, solar inverters and home batteries arrive with the latest spec.', 25, 'ucnews1'],
+    ['Five automations that pay for themselves this winter', 'Smart thermostats, setback schedules and window sensors that pause the heating when a window is open.', 140, 'ucnews2'],
+    ['Thread border routers explained', 'Why your mesh network gets stronger with every mains-powered device you add.', 360, 'ucnews3'],
+    ['Local voice control gets faster', 'On-device wake words and intent matching now answer in under half a second.', 720, 'ucnews4'],
+    ['Designing a wall tablet dashboard', 'Big tap targets, glanceable status and a screensaver that shows the weather.', 1500, 'ucnews5'],
+  ];
+  const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+<title>Smart Home Weekly</title>
+<link>https://ultracard.io/</link>
+<description>Demo feed</description>
+${items
+  .map(
+    ([title, desc, min, seed]) => `<item>
+<title>${esc(String(title))}</title>
+<link>https://ultracard.io/demo/news/${seed}</link>
+<guid>${seed}</guid>
+<description>${esc(String(desc))}</description>
+<pubDate>${ago(Number(min))}</pubDate>
+<media:thumbnail url="https://picsum.photos/seed/${seed}/320/200.jpg"/>
+</item>`
+  )
+  .join('\n')}
+</channel>
+</rss>`;
 }
 
 /* --------------------------------------------------------------------------
@@ -1506,6 +1711,48 @@ export function buildBambuDemoNetwork(): UnifiDemoRegistry {
   return { states, entities, devices };
 }
 
+const OPPOSITE_STATE: Record<string, string> = {
+  on: 'off',
+  off: 'on',
+  locked: 'unlocked',
+  unlocked: 'locked',
+  open: 'closed',
+  closed: 'open',
+  home: 'not_home',
+  not_home: 'home',
+};
+
+/**
+ * 24 h of history for a two-state entity (WS compressed format), alternating
+ * at a handful of seeded times and ending in the current state. Returns null
+ * for entities that are not two-state, which keep the numeric wave.
+ */
+interface HistoryRow {
+  s: string;
+  a: Record<string, unknown>;
+  lu: number;
+}
+
+function toggleHistory(
+  entityId: string,
+  cur: { state: string; attributes?: Record<string, unknown> },
+  nowS: number
+): HistoryRow[] | null {
+  const other = OPPOSITE_STATE[String(cur.state)];
+  if (!other) return null;
+  let seed = 0;
+  for (let i = 0; i < entityId.length; i++) seed = (seed * 31 + entityId.charCodeAt(i)) >>> 0;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const count = 4 + Math.floor(rand() * 4) * 2; // even, so the series ends on the current state
+  const times = Array.from({ length: count }, () => nowS - (0.3 + rand() * 23.5) * 3600).sort((a, b) => a - b);
+  const rows: HistoryRow[] = [{ s: cur.state, a: cur.attributes || {}, lu: nowS - 24 * 3600 }];
+  times.forEach((t, i) => rows.push({ s: i % 2 ? cur.state : other, a: cur.attributes || {}, lu: t }));
+  return rows;
+}
+
 /** Build the fake hass object. Mutating services trigger listener callbacks. */
 export function createDemoHass() {
   const listeners = new Set<Listener>();
@@ -1761,6 +2008,13 @@ export function createDemoHass() {
     },
 
     async callApi(method: string, path: string, body?: any) {
+      // RSS Feed fetches through Ultra Card Connect's feed proxy; answer it
+      // with a local sample feed so the demo needs no network.
+      if (path.startsWith('ultra_card_pro_cloud/feed?')) {
+        const url = new URLSearchParams(path.split('?')[1]).get('url');
+        if (url === DEMO_FEED_URL) return { ok: true, status: 200, body: demoFeedXml() };
+        return { ok: false, status: 404, body: '' };
+      }
       // Template Mode fires a one-shot render for its first paint (dropdown
       // options, action fields) before the websocket subscription takes over.
       if (path === 'template' && body?.template) {
@@ -1813,6 +2067,13 @@ export function createDemoHass() {
         const nowS = Date.now() / 1000;
         for (const eid of ids) {
           const cur = states[eid];
+          // Two-state entities (lights, locks, doors) get a day of realistic
+          // toggles instead of a numeric wave.
+          const toggles = cur ? toggleHistory(eid, cur, nowS) : null;
+          if (toggles) {
+            out[eid] = toggles;
+            continue;
+          }
           const base = cur ? parseFloat(cur.state) || 70 : 70;
           const rows: any[] = [];
           for (let i = 48; i >= 0; i--) {

@@ -205,7 +205,8 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       // Chart options
       show_legend: true,
-      legend_position: 'bottom_left',
+      // Opposite corner from the info block, so the legend never covers the value (issue #286).
+      legend_position: 'bottom_right',
       show_grid: true,
       show_time_intervals: false,
       smooth_curves: true,
@@ -5573,6 +5574,10 @@ export class UltraGraphsModule extends BaseUltraModule {
         cursor: pointer;
         transition: all 0.2s ease;
         min-width: 0;
+      }
+      .range-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .range-slider::-webkit-slider-thumb {

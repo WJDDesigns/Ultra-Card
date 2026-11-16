@@ -16,25 +16,50 @@ import { loadWithCacheBust } from '../utils/uc-chunk-retry';
 type Dict = Record<string, unknown>;
 type LocaleModule = Dict & { default?: Dict };
 
+/**
+ * Each language ships as two chunks (issue #281). The runtime part holds the
+ * strings dashboards draw; the editor part (about 85% of the file) is fetched
+ * only once the visual editor or the Hub panel calls `enableEditorLocales()`.
+ * scripts/lib/locale-split.js decides which key goes where.
+ */
 const localeLoaders: Record<string, () => Promise<LocaleModule>> = {
-  en: () => import(/* webpackChunkName: "locale-en" */ '../translations/en.json'),
-  ca: () => import(/* webpackChunkName: "locale-ca" */ '../translations/ca.json'),
-  cs: () => import(/* webpackChunkName: "locale-cs" */ '../translations/cs.json'),
-  da: () => import(/* webpackChunkName: "locale-da" */ '../translations/da.json'),
-  de: () => import(/* webpackChunkName: "locale-de" */ '../translations/de.json'),
-  'en-GB': () => import(/* webpackChunkName: "locale-en-GB" */ '../translations/en-GB.json'),
-  es: () => import(/* webpackChunkName: "locale-es" */ '../translations/es.json'),
-  fr: () => import(/* webpackChunkName: "locale-fr" */ '../translations/fr.json'),
-  it: () => import(/* webpackChunkName: "locale-it" */ '../translations/it.json'),
-  nb: () => import(/* webpackChunkName: "locale-nb" */ '../translations/nb.json'),
-  nl: () => import(/* webpackChunkName: "locale-nl" */ '../translations/nl.json'),
-  nn: () => import(/* webpackChunkName: "locale-nn" */ '../translations/nn.json'),
-  no: () => import(/* webpackChunkName: "locale-no" */ '../translations/no.json'),
-  pl: () => import(/* webpackChunkName: "locale-pl" */ '../translations/pl.json'),
-  sv: () => import(/* webpackChunkName: "locale-sv" */ '../translations/sv.json'),
+  en: () => import(/* webpackChunkName: "locale-en" */ '../translations/en.json?part=runtime'),
+  ca: () => import(/* webpackChunkName: "locale-ca" */ '../translations/ca.json?part=runtime'),
+  cs: () => import(/* webpackChunkName: "locale-cs" */ '../translations/cs.json?part=runtime'),
+  da: () => import(/* webpackChunkName: "locale-da" */ '../translations/da.json?part=runtime'),
+  de: () => import(/* webpackChunkName: "locale-de" */ '../translations/de.json?part=runtime'),
+  'en-GB': () => import(/* webpackChunkName: "locale-en-GB" */ '../translations/en-GB.json?part=runtime'),
+  es: () => import(/* webpackChunkName: "locale-es" */ '../translations/es.json?part=runtime'),
+  fr: () => import(/* webpackChunkName: "locale-fr" */ '../translations/fr.json?part=runtime'),
+  it: () => import(/* webpackChunkName: "locale-it" */ '../translations/it.json?part=runtime'),
+  nb: () => import(/* webpackChunkName: "locale-nb" */ '../translations/nb.json?part=runtime'),
+  nl: () => import(/* webpackChunkName: "locale-nl" */ '../translations/nl.json?part=runtime'),
+  nn: () => import(/* webpackChunkName: "locale-nn" */ '../translations/nn.json?part=runtime'),
+  no: () => import(/* webpackChunkName: "locale-no" */ '../translations/no.json?part=runtime'),
+  pl: () => import(/* webpackChunkName: "locale-pl" */ '../translations/pl.json?part=runtime'),
+  sv: () => import(/* webpackChunkName: "locale-sv" */ '../translations/sv.json?part=runtime'),
   // Home Assistant reports Simplified Chinese as `zh-Hans`; the resolver strips
   // the region so both `zh` and `zh-Hans` land here.
-  zh: () => import(/* webpackChunkName: "locale-zh" */ '../translations/zh.json'),
+  zh: () => import(/* webpackChunkName: "locale-zh" */ '../translations/zh.json?part=runtime'),
+};
+
+const editorLocaleLoaders: Record<string, () => Promise<LocaleModule>> = {
+  en: () => import(/* webpackChunkName: "locale-en-editor" */ '../translations/en.json?part=editor'),
+  ca: () => import(/* webpackChunkName: "locale-ca-editor" */ '../translations/ca.json?part=editor'),
+  cs: () => import(/* webpackChunkName: "locale-cs-editor" */ '../translations/cs.json?part=editor'),
+  da: () => import(/* webpackChunkName: "locale-da-editor" */ '../translations/da.json?part=editor'),
+  de: () => import(/* webpackChunkName: "locale-de-editor" */ '../translations/de.json?part=editor'),
+  'en-GB': () => import(/* webpackChunkName: "locale-en-GB-editor" */ '../translations/en-GB.json?part=editor'),
+  es: () => import(/* webpackChunkName: "locale-es-editor" */ '../translations/es.json?part=editor'),
+  fr: () => import(/* webpackChunkName: "locale-fr-editor" */ '../translations/fr.json?part=editor'),
+  it: () => import(/* webpackChunkName: "locale-it-editor" */ '../translations/it.json?part=editor'),
+  nb: () => import(/* webpackChunkName: "locale-nb-editor" */ '../translations/nb.json?part=editor'),
+  nl: () => import(/* webpackChunkName: "locale-nl-editor" */ '../translations/nl.json?part=editor'),
+  nn: () => import(/* webpackChunkName: "locale-nn-editor" */ '../translations/nn.json?part=editor'),
+  no: () => import(/* webpackChunkName: "locale-no-editor" */ '../translations/no.json?part=editor'),
+  pl: () => import(/* webpackChunkName: "locale-pl-editor" */ '../translations/pl.json?part=editor'),
+  sv: () => import(/* webpackChunkName: "locale-sv-editor" */ '../translations/sv.json?part=editor'),
+  zh: () => import(/* webpackChunkName: "locale-zh-editor" */ '../translations/zh.json?part=editor'),
 };
 
 const DEFAULT_LANG = 'en';
@@ -62,15 +87,16 @@ function isCoolingDown(key: string): boolean {
   return at !== undefined && Date.now() - at < failureCooldownMs;
 }
 
-async function loadWithRetry(key: string): Promise<LocaleModule> {
+async function loadWithRetry(
+  key: string,
+  loaders: Record<string, () => Promise<LocaleModule>> = localeLoaders
+): Promise<LocaleModule> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
     if (attempt > 0) await sleep(retryDelaysMs[attempt - 1]);
     try {
       // A retry must use a new URL: the browser remembers the failed one.
-      return await (attempt === 0
-        ? localeLoaders[key]()
-        : loadWithCacheBust(attempt, localeLoaders[key]));
+      return await (attempt === 0 ? loaders[key]() : loadWithCacheBust(attempt, loaders[key]));
     } catch (err) {
       lastError = err;
     }
@@ -106,6 +132,7 @@ function unwrap(mod: LocaleModule): Dict {
  */
 export function ensureLocaleLoaded(lang: string): Promise<void> {
   const key = resolveLoaderKey(lang);
+  if (key && editorWanted) void ensureEditorPartLoaded(key);
   if (!key || languages[key] || isCoolingDown(key)) return Promise.resolve();
 
   const inflight = pending.get(key);
@@ -136,6 +163,50 @@ export function ensureLocaleLoaded(lang: string): Promise<void> {
   return p;
 }
 
+/** Editor dictionaries, kept apart so the runtime ones stay small and testable. */
+const editorLanguages: Record<string, Dict> = {};
+const editorPending = new Map<string, Promise<void>>();
+let editorWanted = false;
+
+function ensureEditorPartLoaded(key: string): Promise<void> {
+  const cooldownKey = `${key}:editor`;
+  if (editorLanguages[key] || !editorLocaleLoaders[key] || isCoolingDown(cooldownKey)) {
+    return Promise.resolve();
+  }
+  const inflight = editorPending.get(key);
+  if (inflight) return inflight;
+  const p = loadWithRetry(key, editorLocaleLoaders)
+    .then(mod => {
+      editorLanguages[key] = unwrap(mod);
+      editorPending.delete(key);
+      failedAt.delete(cooldownKey);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(UC_LOCALE_LOADED_EVENT, { detail: { lang: key } }));
+      }
+    })
+    .catch(err => {
+      editorPending.delete(key);
+      failedAt.set(cooldownKey, Date.now());
+      reportChunkLoadFailure(err, `locale ${key} (editor)`, { notify: false });
+    });
+  editorPending.set(key, p);
+  return p;
+}
+
+/**
+ * Call when the visual editor or the Hub panel opens. From then on every
+ * language that gets loaded also fetches its editor strings, starting with
+ * English and any language already in use. Resolves when those have landed
+ * (never rejects; failures fall back to the inline English text).
+ */
+export function enableEditorLocales(lang?: string): Promise<void> {
+  editorWanted = true;
+  const keys = new Set<string>([DEFAULT_LANG, ...Object.keys(languages), ...pending.keys()]);
+  const extra = lang ? resolveLoaderKey(lang) : undefined;
+  if (extra) keys.add(extra);
+  return Promise.all([...keys].map(k => ensureEditorPartLoaded(k))).then(() => undefined);
+}
+
 /** True once the dictionary for `lang` (or its base language) is in memory. */
 export function isLocaleLoaded(lang: string): boolean {
   const key = resolveLoaderKey(lang);
@@ -153,15 +224,18 @@ export function onLocaleLoaded(callback: (lang: string) => void): () => void {
   return () => window.removeEventListener(UC_LOCALE_LOADED_EVENT, handler);
 }
 
+function lookup(dict: Dict | undefined, key: string): string | undefined {
+  if (!dict) return undefined;
+  const value = key.split('.').reduce<unknown>((obj, part) => {
+    if (obj === null || typeof obj !== 'object') return undefined;
+    return (obj as Dict)[part];
+  }, dict);
+  return typeof value === 'string' ? value : undefined;
+}
+
 function getTranslatedString(key: string, lang: string): string | undefined {
   try {
-    const dict = languages[lang];
-    if (!dict) return undefined;
-    const value = key.split('.').reduce<unknown>((obj, part) => {
-      if (obj === null || typeof obj !== 'object') return undefined;
-      return (obj as Dict)[part];
-    }, dict);
-    return typeof value === 'string' ? value : undefined;
+    return lookup(languages[lang], key) ?? lookup(editorLanguages[lang], key);
   } catch {
     return undefined;
   }
@@ -225,6 +299,9 @@ export function __resetLocalesForTests(): void {
   for (const k of [...pending.keys()]) {
     if (k !== DEFAULT_LANG) pending.delete(k);
   }
+  for (const k of Object.keys(editorLanguages)) delete editorLanguages[k];
+  editorPending.clear();
+  editorWanted = false;
   failedAt.clear();
   retryDelaysMs = [1500, 5000];
   failureCooldownMs = 60_000;

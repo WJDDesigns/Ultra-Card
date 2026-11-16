@@ -1881,6 +1881,9 @@ export class UcLightColorPicker extends LitElement {
                     <div class="custom-select-container">
                       <!-- Selected Effect Display -->
                       <div
+                        role="button"
+                        tabindex="0"
+                        data-uc-activate
                         class="custom-select-trigger ${this._effectDropdownOpen ? 'open' : ''}"
                         @click=${(e: Event) => {
                           e.stopPropagation();
@@ -1915,6 +1918,9 @@ export class UcLightColorPicker extends LitElement {
                               <!-- Effect Options -->
                               <div class="effect-options">
                                 <div
+                                  role="button"
+                                  tabindex="0"
+                                  data-uc-activate
                                   class="effect-option ${!this.effect ? 'selected' : ''}"
                                   @click=${() => this.handleEffectSelectionSimple('')}
                                 >
@@ -1926,6 +1932,9 @@ export class UcLightColorPicker extends LitElement {
                                 ).map(
                                   effectName => html`
                                     <div
+                                      role="button"
+                                      tabindex="0"
+                                      data-uc-activate
                                       class="effect-option ${this.effect === effectName
                                         ? 'selected'
                                         : ''}"
@@ -1939,6 +1948,9 @@ export class UcLightColorPicker extends LitElement {
                                 this._effectSearchTerm === ''
                                   ? html`
                                       <div
+                                        role="button"
+                                        tabindex="0"
+                                        data-uc-activate
                                         class="effect-option"
                                         @click=${() =>
                                           this.handleEffectSelectionSimple('colorloop')}
@@ -1946,6 +1958,9 @@ export class UcLightColorPicker extends LitElement {
                                         <span>Color Loop (Common)</span>
                                       </div>
                                       <div
+                                        role="button"
+                                        tabindex="0"
+                                        data-uc-activate
                                         class="effect-option"
                                         @click=${() => this.handleEffectSelectionSimple('random')}
                                       >
@@ -2274,6 +2289,10 @@ export class UcLightColorPicker extends LitElement {
         background: linear-gradient(to right, #ffb366, #fff2e6, #cce6ff);
         cursor: pointer;
         margin-bottom: 8px;
+      }
+      .color-temp-slider:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .color-temp-slider::-webkit-slider-thumb {

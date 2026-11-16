@@ -223,6 +223,9 @@ export class UltraFilePicker extends LitElement {
               <div class="uc-fp-chip" title=${this.value}>
                 <span class="uc-fp-chip-label">${this._shortPath(this.value)}</span>
                 <ha-icon
+                  role="button"
+                  tabindex="0"
+                  data-uc-activate
                   class="uc-fp-chip-remove"
                   icon="mdi:close"
                   @click=${() => this._onClear()}

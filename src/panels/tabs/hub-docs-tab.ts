@@ -620,6 +620,9 @@ export class HubDocsTab extends LitElement {
                 ${searchHits.map(
                   hit => html`
                     <div
+                      role="button"
+                      tabindex="0"
+                      data-uc-activate
                       class="search-hit"
                       @click=${() => {
                         this._search = '';

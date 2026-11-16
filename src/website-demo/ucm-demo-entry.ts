@@ -11,7 +11,8 @@
 import { render, html, TemplateResult } from 'lit';
 import { getMdiSheet } from './ha-shims';
 import { getModuleRegistry, MODULE_CATEGORIES, isProModule } from '../modules';
-import { createDemoHass, trainTime } from './demo-hass';
+import { createDemoHass, trainTime, DEMO_FEED_URL } from './demo-hass';
+import { ucTimeMachineService } from '../services/uc-time-machine-service';
 import { renderTemplate as renderDemoTemplate } from './demo-jinja';
 import { buildEntityContext } from '../utils/template-context';
 import {
@@ -62,6 +63,57 @@ function mkIcon(entity: string, on: string, off: string, name: string): any {
   base.icons = [{ ...proto, id: 'demo_i_' + entity.replace(/\W/g, '_'), icon_mode: 'entity', entity, name, icon_active: on, icon_inactive: off }];
   return base;
 }
+
+/** A simple two-bedroom floor plan, inline so the Floorplan demo never waits
+ *  on (or fails at) an image request. */
+const FLOORPLAN_SVG =
+  'data:image/svg+xml,' +
+  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#161b24"/>
+  <g fill="none" stroke="#8fa3bf" stroke-width="8" stroke-linecap="square">
+    <rect x="32" y="32" width="736" height="386"/>
+    <path d="M464 32V190M464 250V418M464 220H560M620 220H768M350 418H450"/>
+  </g>
+  <path d="M350 418H450" stroke="#161b24" stroke-width="10"/>
+  <g fill="#202838">
+    <rect x="80" y="250" width="170" height="70" rx="12"/>
+    <rect x="120" y="120" width="110" height="60" rx="8"/>
+    <rect x="520" y="60" width="200" height="34" rx="6"/>
+    <rect x="560" y="120" width="120" height="60" rx="8"/>
+    <rect x="560" y="300" width="150" height="70" rx="8"/>
+  </g>
+  <g fill="#5d6b80" font-family="Helvetica,Arial,sans-serif" font-size="20" letter-spacing="2">
+    <text x="250" y="80">LIVING ROOM</text>
+    <text x="490" y="72">KITCHEN</text>
+    <text x="490" y="256">OFFICE</text>
+  </g>
+</svg>`);
+
+/** Entities the Time Machine demo rewinds — what ultra-card.ts would pass as
+ *  the card's relevant entity ids for a dashboard-mode Time Machine. */
+const TIME_MACHINE_ENTITIES = [
+  'light.living_room',
+  'light.kitchen',
+  'light.porch',
+  'lock.front_door',
+  'binary_sensor.front_door',
+  'binary_sensor.garage_motion',
+  'cover.garage_door',
+  'switch.guest_mode',
+];
+
+/**
+ * Host-card wiring some modules expect from ultra-card.ts. A dashboard-mode
+ * Time Machine relies on the card registering it with the time machine service
+ * on every render; without it the module shows a "place me in a card column" hint.
+ */
+const DEMO_HOST_SYNC: Record<string, (mod: { id: string } & Record<string, unknown>) => void> = {
+  time_machine: mod =>
+    ucTimeMachineService.syncCardContext(mod.id, demoHass, TIME_MACHINE_ENTITIES, {
+      ...mod,
+      scope: 'view',
+    }),
+};
 
 const CAR_IMG = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=640&q=80';
 const EARTH_GIF = 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif';
@@ -198,7 +250,7 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
       mkIcon('switch.guest_mode', 'mdi:account-check', 'mdi:account-off', 'Guest'),
       mkIcon('cover.living_room_blinds', 'mdi:blinds-open', 'mdi:blinds', 'Blinds'),
     ];
-    c.item_width = '34%';
+    c.item_width = '30%';
     c.fade_edges = true;
     c.show_arrows = true;
   },
@@ -495,9 +547,120 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.show_weather = true;
   },
   sports_score: c => {
+    // The ESPN path needs the network; a Team Tracker style sensor renders the
+    // same scorecard offline.
+    c.data_source = 'ha_sensor';
+    c.sensor_entity = 'sensor.team_tracker_celtics';
     c.league = 'nba';
     c.team_id = 'bos';
     c.team_name = 'Celtics';
+  },
+  native_card: c => {
+    c.card_type = 'hui-entities-card';
+    c.card_config = {
+      type: 'entities',
+      title: 'Living Room',
+      entities: [
+        'light.living_room',
+        'sensor.living_room_temperature',
+        'sensor.living_room_humidity',
+        'lock.front_door',
+      ],
+    };
+  },
+  external_card: c => {
+    c.card_type = 'custom:uc-demo-third-party-card';
+    c.name = 'Sparkline card';
+    c.card_config = {
+      type: 'custom:uc-demo-third-party-card',
+      entity: 'sensor.solar_power',
+      name: 'Solar production',
+      hours_to_show: 24,
+    };
+  },
+  time_machine: c => {
+    c.default_span_hours = 24;
+  },
+  energy_price: c => {
+    c.price_entity = 'sensor.electricity_price';
+    c.title = 'Electricity price';
+  },
+  irrigation: c => {
+    c.title = 'Garden irrigation';
+    c.zones = [
+      {
+        id: 'demo_irr1',
+        entity: 'switch.irrigation_front_lawn',
+        name: 'Front Lawn',
+        duration_minutes: 20,
+        moisture_entity: 'sensor.front_lawn_moisture',
+      },
+      {
+        id: 'demo_irr2',
+        entity: 'switch.irrigation_back_lawn',
+        name: 'Back Lawn',
+        duration_minutes: 15,
+        moisture_entity: 'sensor.back_lawn_moisture',
+      },
+      {
+        id: 'demo_irr3',
+        entity: 'valve.irrigation_vegetable_beds',
+        name: 'Vegetable Beds',
+        icon: 'mdi:watering-can',
+        duration_minutes: 10,
+        moisture_entity: 'sensor.vegetable_beds_moisture',
+      },
+    ];
+    c.next_run_entity = 'sensor.irrigation_next_run';
+    c.flow_entity = 'sensor.irrigation_flow_rate';
+  },
+  rss_feed: c => {
+    c.feeds = [DEMO_FEED_URL];
+    c.max_items = 4;
+  },
+  floorplan: c => {
+    c.image = FLOORPLAN_SVG;
+    c.aspect_ratio = '16:9';
+    c.image_fit = 'contain';
+    c.show_names = true;
+    c.markers = [
+      { id: 'demo_fp1', entity: 'light.living_room', x: 30, y: 62, name: 'Living' },
+      { id: 'demo_fp2', entity: 'light.kitchen', x: 76, y: 30, name: 'Kitchen' },
+      { id: 'demo_fp3', entity: 'light.desk_lamp', x: 76, y: 74, name: 'Office' },
+      { id: 'demo_fp4', entity: 'lock.front_door', x: 50, y: 82, name: 'Door' },
+      { id: 'demo_fp5', entity: 'sensor.living_room_temperature', x: 14, y: 30, name: 'Temp' },
+    ];
+    c.zones = [
+      { id: 'demo_fz1', entity: 'light.living_room', name: 'Living Room', shape: 'rect', x: 4, y: 7, width: 54, height: 86, opacity: 22 },
+      { id: 'demo_fz2', entity: 'light.kitchen', name: 'Kitchen', shape: 'rect', x: 58, y: 7, width: 38, height: 45, opacity: 22 },
+    ];
+  },
+  printer_3d: c => {
+    c.title = 'Workshop Printer';
+    // The printer header already shows the name, and a stock photo would stand
+    // in poorly for a print-bed camera.
+    c.show_title = false;
+    c.show_camera = false;
+    c.status_entity = 'sensor.workshop_printer_status';
+    c.progress_entity = 'sensor.workshop_printer_progress';
+    c.nozzle_temp_entity = 'sensor.workshop_printer_nozzle_temperature';
+    c.nozzle_target_entity = 'sensor.workshop_printer_nozzle_target';
+    c.bed_temp_entity = 'sensor.workshop_printer_bed_temperature';
+    c.bed_target_entity = 'sensor.workshop_printer_bed_target';
+    c.chamber_temp_entity = 'sensor.workshop_printer_chamber_temperature';
+    c.remaining_time_entity = 'sensor.workshop_printer_time_remaining';
+    c.end_time_entity = 'sensor.workshop_printer_end_time';
+    c.current_layer_entity = 'sensor.workshop_printer_current_layer';
+    c.total_layers_entity = 'sensor.workshop_printer_total_layers';
+    c.file_name_entity = 'sensor.workshop_printer_file';
+    c.pause_entity = 'button.workshop_printer_pause';
+    c.resume_entity = 'button.workshop_printer_resume';
+    c.stop_entity = 'button.workshop_printer_stop';
+    c.light_entity = 'light.workshop_printer_light';
+    c.fans = [
+      { entity: 'fan.workshop_printer_part_fan', label: 'Part' },
+      { entity: 'fan.workshop_printer_exhaust_fan', label: 'Exhaust' },
+    ];
   },
   calendar: c => {
     if (Array.isArray(c.calendars) && c.calendars.length) {
@@ -975,8 +1138,8 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 @keyframes ucdScrub{0%{left:0}92%,100%{left:calc(100% - 12px)}}
 @keyframes ucdSpotIn{0%,8%{opacity:0;transform:scale(.5)}14%,92%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}
 @keyframes ucdZoneAge{0%,6%{background:rgba(74,222,128,.20)}40%{background:rgba(255,171,64,.20)}75%,100%{background:rgba(255,82,82,.22)}}
-@keyframes ucdLabelFresh{0%,10%{opacity:1}22%,100%{opacity:0}}
-@keyframes ucdLabelStale{0%,20%{opacity:0}34%,100%{opacity:1}}
+@keyframes ucdLabelFresh{0%,15.9%{opacity:1}16%,100%{opacity:0}}
+@keyframes ucdLabelStale{0%,15.9%{opacity:0}16%,100%{opacity:1}}
 @keyframes ucdPopup{0%,8%{opacity:0;transform:translate(-50%,-38%) scale(.92)}18%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}86%,100%{opacity:0;transform:translate(-50%,-38%) scale(.92)}}
 `;
 
@@ -1174,7 +1337,14 @@ class UcModuleDemo extends HTMLElement {
       this._styleEl.textContent = styles;
 
       this._unsub?.();
-      this._unsub = demoHass.__subscribe(() => this._scheduleRender());
+      const unsubHass = demoHass.__subscribe(() => this._scheduleRender());
+      // Time Machine history loads asynchronously; repaint when it lands.
+      const unsubTm =
+        type === 'time_machine' ? ucTimeMachineService.subscribe(() => this._scheduleRender()) : null;
+      this._unsub = () => {
+        unsubHass();
+        unsubTm?.();
+      };
       this._renderNow();
 
       // The Template Mode playground opts out: staging and the config animators
@@ -1426,13 +1596,17 @@ class UcModuleDemo extends HTMLElement {
         <div style="position:absolute;left:${l};top:${t2};width:${w};height:${h};
           border:1px solid rgba(255,255,255,.14);display:flex;align-items:flex-end;padding:4px;
           animation:ucdZoneAge 8.4s ease-in-out ${delay} infinite">
-          <span style="position:relative;font-size:9px;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:99px;color:#dfe5ee">
+          <span style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-size:9px;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:99px;color:#dfe5ee">
             ${name} ·
-            <span style="animation:ucdLabelFresh 8.4s ease-in-out ${delay} infinite">today</span><span
-              style="position:absolute;right:6px;animation:ucdLabelStale 8.4s ease-in-out ${delay} infinite">6d</span>
+            <span style="display:inline-grid;justify-items:start">
+              <span style="grid-area:1/1;animation:ucdLabelFresh 8.4s ease-in-out ${delay} infinite">today</span>
+              <span style="grid-area:1/1;animation:ucdLabelStale 8.4s ease-in-out ${delay} infinite">6d</span>
+            </span>
           </span></div>`).join('');
       this._holder.innerHTML = `
-        <div style="position:relative;height:180px;border-radius:10px;overflow:hidden;background:#0e1626">
+        <div style="position:relative;height:198px;border-radius:10px;overflow:hidden;background:#0e1626">
+          <div style="position:absolute;top:4px;right:8px;font-size:9px;color:#ffcf86;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:99px">heatmap: days since cleaned</div>
+          <div style="position:absolute;left:0;right:0;top:18px;bottom:0">
           <div style="position:absolute;inset:0;background:
             linear-gradient(rgba(90,130,190,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(90,130,190,.10) 1px,transparent 1px);background-size:18px 18px"></div>
           <div style="position:absolute;left:5%;top:8%;right:5%;bottom:8%;border:2px solid rgba(140,180,235,.5)"></div>
@@ -1440,7 +1614,7 @@ class UcModuleDemo extends HTMLElement {
           <div style="position:absolute;left:49%;top:8%;width:23%;height:46%;border-right:2px solid rgba(140,180,235,.5)"></div>
           <div style="position:absolute;left:5%;bottom:8%;width:60%;height:38%;border-right:2px solid rgba(140,180,235,.5)"></div>
           ${zones}
-          <div style="position:absolute;top:6px;right:8px;font-size:9px;color:#ffcf86;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:99px">heatmap: days since cleaned</div>
+          </div>
         </div>`;
       return;
     }
@@ -1470,6 +1644,7 @@ class UcModuleDemo extends HTMLElement {
         // path keeps it in place, which is what the staging above dresses up.
         dropdown: 'live',
       };
+      DEMO_HOST_SYNC[type]?.(this._module);
       const tpl: TemplateResult = this._handler.renderPreview(
         this._module,
         demoHass,
