@@ -1,0 +1,73 @@
+name: Vendor files (GitHub Pages)
+
+# Publishes vendor/ to https://wjddesigns.github.io/Ultra-Card/ so runtime
+# files the card loads on demand (the Open-Meteo weather layer) come from an
+# origin this project controls rather than a public CDN (issue #280).
+# Nothing is deployed unless every file matches its SHA256SUMS and the copy in
+# the published npm package.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'vendor/**'
+      - '.github/workflows/vendor-pages.yml'
+  pull_request:
+    paths:
+      - 'vendor/**'
+      - '.github/workflows/vendor-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vendor-pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check checksums
+        run: |
+          for dir in vendor/*/*/*/; do
+            echo "Checking $dir"
+            (cd "$dir" && sha256sum -c SHA256SUMS)
+          done
+
+      - name: Check Open-Meteo files match the npm package
+        run: |
+          set -euo pipefail
+          for version in 0.3.0; do
+            tmp="$(mktemp -d)"
+            (cd "$tmp" && npm pack "@openmeteo/weather-map-layer@$version" --silent >/dev/null && tar xzf ./*.tgz)
+            for f in index.mjs worker.js om_file_format.web.mjs om_file_format.web.wasm leaflet-pbf-worker.mjs; do
+              cmp "$tmp/package/dist/$f" "vendor/open-meteo/weather-map-layer/$version/$f"
+            done
+            echo "weather-map-layer $version matches npm"
+          done
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: vendor
+
+  deploy:
+    needs: verify
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
