@@ -1,5 +1,71 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.4
+
+Stable 3.14.4 brings everything from the fifteen 3.14.4 betas into one release. Any colour can now follow the state of your entities, long module settings fold into sections, and the Calendar grew into a full calendar: page through months, add, edit and delete events, weather on days and a popup for each day. Cameras can jump to fullscreen when the doorbell rings, the Accordion opens sideways, Bosch, Siemens and Neff appliances are recognised through Home Connect, and the 3rd Party Card can run tap actions. It also closes four security holes, replaces the browser's plain confirm boxes with proper dialogs, makes almost all of the editor translatable, and fixes a long list of Discord reports. Thanks to everyone who tested the betas, and especially to larrysansan and Steve Markus for most of the ideas and bug reports in this release.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.5 too.** It brings the Hub up to this version, so the module "?" docs button lands on the right page and the Hub uses the new confirmation dialogs.
+
+### 🚀 New Features
+
+- **Colour by entity state** - Every colour field can now change with your entities. Open a colour's dropdown and pick "Color by entity state", then add rules such as "turn yellow when a light is on" or "turn red while the radiator is heating", plus a colour to use otherwise, or the entity's own colour (a light follows the bulb's actual RGB colour). A rule can check a state, an attribute or a template, across one or several entities, and the editor marks the rule that's active right now. Works for module colours, Design tab colours, rows, columns and the card background. The old "Use Entity Color" switch on the Popup trigger and Button module is folded into this, and existing cards are converted automatically. Thanks to the community member who suggested it
+- **Collapsible settings sections** - Long module settings are split into sections you can fold away, each drawn as one box with a coloured edge and a round arrow button. The first section starts open, each module remembers what you left open, and a collapsed section shows a short summary and a dot when something differs from the default. Expand all and Collapse all sit at the top. Thanks to larrysansan for the feedback
+- **Add Module: collapsible categories** - Every category in the Add Module picker can be folded, showing how many modules it holds. Works in Gallery and List view, and your choice is remembered
+- **Calendar: a full calendar** - Month, Week and Day views get previous / next arrows and a Today button, optional view switcher buttons, calendar filter chips (per calendar or grouped by person), weather on upcoming days, and the time and weather in the header. Month view can show event names with their start time inside each day, and a day's events can open under the month or in a popup. Thanks to larrysansan for most of these ideas
+- **Calendar: add, edit and delete events** - An optional + button creates an event on any calendar that accepts new ones. Turn on Edit events and tap an event to change its title, date, time, location and description, or delete it; for repeating events you choose just that one or that one and all following. Thanks to larrysansan for the request
+- **Calendar: settings per view and event rules** - Each view has its own settings section, and per-view Event Display gives each view its own time, location and description choices. Event rules match events by name and rename them, add an icon or give them a colour. Also new: Show Calendar Name, and Cut off / Wrap for long event names in month days
+- **Camera: open fullscreen when something happens** - New Open Fullscreen When setting. Pick an event, binary sensor, input boolean or switch (a doorbell ring, for example) and the camera opens fullscreen each time it fires, then closes after Close After seconds. Choose which users it opens for and which devices it skips. Every new ring goes live and opens fullscreen, whatever the device clock says. Thanks to larrysansan for the idea
+- **Accordion opens left or right** - Expand Direction now has Left and Right, with In Place or Overlay. Choose a Vertical Tab header (a slim strip with the title running sideways) or a normal Bar, set the Panel Width, and pick which way a sideways title reads (Auto, Reads Up or Reads Down). Thanks to Steve Markus and larrysansan for the ideas
+- **Bosch, Siemens and Neff appliances** - The Washer, Dryer and Dishwasher modules recognise Home Connect and Home Connect Alt appliances. Pick any entity of the appliance and the card finds operating state, finish time, door, power, child lock, remote control, the running program and the Pause / Resume / Stop buttons, with German names and states. Program and setting dropdowns show Home Assistant's translated names and labels drop the brand prefix. Thanks to larrysansan for the idea and for testing with a real dryer
+- **3rd Party Card: Tap, Hold and Double-tap actions** - A new Actions tab lets the card run actions, and a popup set to Trigger via Module now opens from cards like WebRTC cameras that swallow taps. Leave the actions on Nothing to keep the embedded card's own controls. Thanks to Steve Markus for the request
+- **Activity Feed: 24h time** - New Time Format setting (Auto, 24h or 12h). Auto follows your Home Assistant profile. Thanks to larrysansan for the idea
+- **Translation status page** - [TRANSLATIONS.md](https://github.com/WJDDesigns/Ultra-Card/blob/main/TRANSLATIONS.md) shows a percentage for every language and a to-do list of the text still in English, grouped by module, with instructions for editing on GitHub
+
+### 🔧 Improvements
+
+- **Proper confirmation dialogs** - Deleting a favorite, replacing a card or layout on import, deleting or clearing custom variables, withdrawing or deleting a preset in the Hub, and stopping a 3D print now use Ultra Card's own dialog instead of the browser's. Buttons say what they do, destructive ones are highlighted, and Cancel has focus first. The Confirm Action dialog is translated too
+- **Much more of the editor can be translated** - About 1,800 pieces of editor text that only lived in the code are now in every language file, along with the Column Sizing heading and the "this module does not have ... settings" messages
+- **German translation** - German is now about 80% translated, including the full Laundry Tracker. Thanks to larrysansan for update after update
+- **Laundry Tracker and Washer / Dryer: Home Connect door sensors** - The door picker accepts Home Connect door sensors (only "open" counts as open, so a door locked during a wash counts as shut) and now shows for washers and dryers too. Picking any entity of a Home Connect machine fills in its door sensor. Thanks to larrysansan for reporting
+- **Appliance: Graphic size everywhere** - Compact gets its own Graphic size slider (24–120px) and Hero graphics can shrink down to 64px, for every appliance type. Thanks to larrysansan for reporting
+- **Module documentation button** - The "?" next to Module Name and the Documentation button on the About tab open the module's page in Ultra Card Hub, or the public wiki without Connect. Thanks to larrysansan for reporting it did nothing
+- **Module settings: cleaner layout** - Toggles sit on the same row as their title with the description underneath, sections that only held a description were folded into their neighbours, and the Full Width label in row settings stays on one line
+- **"HACS" hints now say "Marketplace"** - Home Assistant 2026.11 has HACS built in as Marketplace
+
+### 🔒 Security
+
+- **Preset catalog only talks to ultracard.io** - The fallbacks through public proxy services and a script tag are gone. When the site can't be reached the catalog uses its saved copy
+- **Preset names and descriptions are read as plain text** - Embedded markup in catalog text can no longer run
+- **Confirm Action dialog shows values as text** - A crafted URL, path, entity or service can no longer run script in the dialog
+- **URL actions refuse script links** - URL actions and Text links no longer open `javascript:`, `data:`, `vbscript:`, `blob:` or `file:` addresses. Web links, dashboard paths, `tel:`, `mailto:` and app links work as before
+- **Image module error state** - Size and margin values are no longer written into the failed-image placeholder as markup
+
+### 🐛 Bug Fixes
+
+- **Navigation bar hidden under the phone's buttons** - With the Android Companion app drawing to the bottom of the screen, the bar now leaves room for the phone's system bars, notches and status bars, the same way Home Assistant's own footer does. Thanks to larrysansan for the report
+- **Navigation: last card hidden behind the bottom bar** - The dashboard gets extra room at the bottom equal to the bar's height, so every card can scroll clear of it
+- **Navigation icon colours stopped updating** - Icons coloured by entity state, badges and item visibility froze when the card holding the bar was off screen (seen on Android). Thanks to larrysansan for reporting
+- **Live camera stuck on an old picture** - A visible live stream that stops moving for 30 seconds is now restarted, which was happening on Chromebooks. Thanks to Steve Markus for reporting
+- **Cameras not filling a Horizontal layout** - Cameras side by side now share the full width of the row instead of stopping at 500px each. A max width you set yourself is still respected. Thanks to Steve Markus for reporting
+- **Camera: fullscreen left listeners behind** - Each fullscreen view left two listeners holding on to the closed video, which added up on wall tablets
+- **Accordion: open panel see-through in Overlay mode** - The panel now floats above the cards below it with a solid background
+- **"Chunk load failure" on the en locale** - If the language file failed to load once, the card now retries quietly and keeps working in English meanwhile
+- **Calendar fixes** - Events later in the month (such as a birthdays calendar) now load, all-day events no longer show a day early in time zones ahead of UTC, multi-day events stop on the right day, and Week and Day views show each event once. Show Location, Show Event Time and the shared Event Display toggles are honoured everywhere, the Add event dropdown is readable in dark themes, the editor preview follows a changed calendar, and Show Event Count works with event names. Thanks to larrysansan for the reports
+- **Graphs: Fill Area wouldn't turn off** - It now updates straight away, and entity options no longer scroll sideways in a narrow editor
+- **Pro: Start with Empty Card ignored** - New cards now start empty when this is on in the Hub. Thanks to larrysansan for reporting
+- **Date & Time input: date cut off** - Date and time wrap onto separate lines when they don't fit side by side
+- **Animated Weather and Forecast icons** - The windy-and-cloudy condition shows the wind icon instead of a broken image, and icons load from a fixed, permanent address
+- **Lunar Phase: background timer** - The refresh now stops when no Lunar Phase module is on screen
+- **Editor spacing** - Section descriptions no longer touch the first field in Drawer, Grid, Scroll Row and Flip Card settings, and the People COMPACT badge no longer covers the arrow
+
+### 🧰 Under the Hood
+
+- Release and CI workflows pin every GitHub Action to an exact commit, and Dependabot keeps those pins current
+- Added a SECURITY.md with how to report a vulnerability privately
+- Updated webpack, tiptap, js-yaml and other build libraries
+
 ## Version 3.14.4-beta15
 
 The fifteenth 3.14.4 beta makes the module documentation "?" button actually open the docs, restarts live camera streams that freeze on an old picture, and brings another German update. This is a pre-release for testing — please report anything odd on GitHub or Discord.
