@@ -118,6 +118,23 @@ if (!singleFile) {
   if (!chunks.some(c => c.startsWith('uc-locale-de.'))) {
     errors.push('locales are not emitted as chunks (uc-locale-de.<hash>.js missing).');
   }
+  // Issue #281: each language is a small runtime chunk every dashboard loads
+  // plus an editor chunk only the editor and Hub load.
+  if (!chunks.some(c => c.startsWith('uc-locale-en-editor.'))) {
+    errors.push('editor strings are not split out (uc-locale-en-editor.<hash>.js missing).');
+  }
+  const RUNTIME_LOCALE_BUDGET = 120 * 1024;
+  const runtimeLocale = chunks.find(c => /^uc-locale-en\.[0-9a-f]{8}\.js$/.test(c));
+  if (runtimeLocale) {
+    const bytes = fs.statSync(path.join(DIST, runtimeLocale)).size;
+    notes.push(`runtime English strings (${runtimeLocale}): ${bytes} bytes`);
+    if (bytes > RUNTIME_LOCALE_BUDGET) {
+      errors.push(
+        `${runtimeLocale} is ${bytes} bytes, over the ${RUNTIME_LOCALE_BUDGET}-byte runtime locale budget ` +
+          '(editor strings folded back into the dashboard chunk? see scripts/lib/locale-split.js).'
+      );
+    }
+  }
   // Phase 2 shape: non-essential modules, heavy vendors and heavy services are chunks.
   // Phase 3 shape: the core modules' settings UI and the English dictionary too.
   for (const prefix of [

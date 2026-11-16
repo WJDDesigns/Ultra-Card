@@ -7,7 +7,7 @@ import { property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from '../ha/types';
 import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
-import { localize, onLocaleLoaded, preloadDefaultLocale } from '../localize/localize';
+import { enableEditorLocales, localize, onLocaleLoaded } from '../localize/localize';
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
 import type { HubProTab } from './tabs/hub-pro-tab';
 import type { HubTab, HubTabDef } from './ultra-card-dashboard-types';
@@ -21,7 +21,8 @@ import { installKeyboardActivation } from '../utils/uc-keyboard-activation';
 installKeyboardActivation();
 
 // English is a chunk; the panel re-renders via onLocaleLoaded when it lands.
-void preloadDefaultLocale();
+// The Hub is an editing surface, so it wants the editor strings too.
+void enableEditorLocales();
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
 const STORAGE_TAB_KEY = 'ultra_card_hub_tab';
