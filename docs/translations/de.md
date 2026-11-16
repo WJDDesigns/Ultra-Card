@@ -3,7 +3,7 @@
 > This page is generated automatically from the translation files. Don't edit it by hand;
 > it refreshes itself after every change to the `main` branch.
 
-**80.2% translated** — 6,533 of 8,138 entries. **1,605 still in English.**
+**83.5% translated** — 6,797 of 8,138 entries. **1,341 still in English.**
 
 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜
 
@@ -19,7 +19,7 @@ More help: [translation guide](../../CONTRIBUTING_TRANSLATIONS.md) · [all langu
 
 If the English word really is right in your language (a brand name, or a word you also use), just leave it. It will stay on this list, and that's fine.
 
-## Still in English (1,605)
+## Still in English (1,341)
 
 Biggest sections first. Click a section to open it.
 
@@ -400,98 +400,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Accordion (editor)</strong> — 84 left</summary>
-
-| English text | Key |
-| --- | --- |
-| No modules added. Add modules to this accordion in the Layout tab. | `editor.accordion.preview.no_modules` |
-| Icon Side | `editor.accordion.alignment.icon_side` |
-| Alignment Mode | `editor.accordion.alignment.mode` |
-| Choose how the title and icon are positioned in the header. | `editor.accordion.alignment.section_desc` |
-| Header Alignment | `editor.accordion.alignment.section_title` |
-| Background Color | `editor.accordion.design.container_bg_color` |
-| Border Color | `editor.accordion.design.container_border_color` |
-| Border Radius | `editor.accordion.design.container_border_radius` |
-| Border Width | `editor.accordion.design.container_border_width` |
-| Customize the outer wrapper styling of the accordion. | `editor.accordion.design.container_desc` |
-| Box Shadow | `editor.accordion.design.container_shadow` |
-| CSS box-shadow value (e.g., 0 2px 8px rgba(0,0,0,0.1)) | `editor.accordion.design.container_shadow_desc` |
-| Container Customization | `editor.accordion.design.container_title` |
-| Background Color | `editor.accordion.design.content_bg_color` |
-| Border Color | `editor.accordion.design.content_border_color` |
-| Border Width | `editor.accordion.design.content_border_width` |
-| Customize the expanded content area appearance. | `editor.accordion.design.content_desc` |
-| Content Padding | `editor.accordion.design.content_padding` |
-| Padding around the content area (in pixels). | `editor.accordion.design.content_padding_desc` |
-| Content Customization | `editor.accordion.design.content_title` |
-| General Module Design | `editor.accordion.design.general_title` |
-| Background Color | `editor.accordion.design.header_bg_color` |
-| Border Bottom Color | `editor.accordion.design.header_border_color` |
-| Border Width | `editor.accordion.design.header_border_width` |
-| Customize the clickable header bar appearance. | `editor.accordion.design.header_desc` |
-| Font Size | `editor.accordion.design.header_font_size` |
-| Font Weight | `editor.accordion.design.header_font_weight` |
-| Hover Background Color | `editor.accordion.design.header_hover_color` |
-| Header Padding | `editor.accordion.design.header_padding` |
-| Padding inside the header (in pixels). | `editor.accordion.design.header_padding_desc` |
-| Text Color | `editor.accordion.design.header_text_color` |
-| Header Customization | `editor.accordion.design.header_title` |
-| Icon Color | `editor.accordion.design.icon_color` |
-| Icon Size | `editor.accordion.design.icon_size` |
-| Icon | `editor.accordion.icon.custom` |
-| Select the icon to display as the control indicator. | `editor.accordion.icon.custom_desc` |
-| Configure the control icon displayed in the accordion header (defaults to chevron-down). | `editor.accordion.icon.section_desc` |
-| Control Icon | `editor.accordion.icon.section_title` |
-| Add Condition | `editor.accordion.open_logic.add_condition` |
-| Accordion will always remain open. Users can still manually close it, but it will reopen automatically. | `editor.accordion.open_logic.always_note` |
-| Attribute | `editor.accordion.open_logic.attribute` |
-| Condition Type | `editor.accordion.open_logic.condition_type` |
-| Conditions | `editor.accordion.open_logic.conditions` |
-| Custom Name | `editor.accordion.open_logic.custom_name` |
-| Optional: Give this condition a custom name | `editor.accordion.open_logic.custom_name_desc` |
-| Entity | `editor.accordion.open_logic.entity` |
-| Accordion state is controlled manually by user clicks. Set Default State above to choose initial state. | `editor.accordion.open_logic.manual_note` |
-| Always Open | `editor.accordion.open_logic.mode_always` |
-| Open if ANY condition is met | `editor.accordion.open_logic.mode_any` |
-| Choose how the accordion state is controlled. | `editor.accordion.open_logic.mode_desc` |
-| Open if EVERY condition is met | `editor.accordion.open_logic.mode_every` |
-| Manual | `editor.accordion.open_logic.mode_manual` |
-| Accordion State Control | `editor.accordion.open_logic.mode_title` |
-| No conditions added yet. Click "Add Condition" to get started. | `editor.accordion.open_logic.no_conditions` |
-| Operator | `editor.accordion.open_logic.operator` |
-| Control when this accordion automatically opens or closes based on conditions. | `editor.accordion.open_logic.section_desc` |
-| Open/Close Logic | `editor.accordion.open_logic.section_title` |
-| Template | `editor.accordion.open_logic.template` |
-| Jinja2 template that should evaluate to true/false to open the accordion. | `editor.accordion.open_logic.template_desc` |
-| From | `editor.accordion.open_logic.time_from` |
-| To | `editor.accordion.open_logic.time_to` |
-| Entity Attribute | `editor.accordion.open_logic.type_entity_attribute` |
-| Entity State | `editor.accordion.open_logic.type_entity_state` |
-| Template | `editor.accordion.open_logic.type_template` |
-| Time Range | `editor.accordion.open_logic.type_time` |
-| Value | `editor.accordion.open_logic.value` |
-| Open by Default | `editor.accordion.state.default_open` |
-| When enabled, the accordion will be expanded when the card initially loads. | `editor.accordion.state.default_open_desc` |
-| Configure whether this accordion starts open or closed when the card loads. | `editor.accordion.state.section_desc` |
-| Default State | `editor.accordion.state.section_title` |
-| Custom Title Configuration | `editor.accordion.title.custom_config` |
-| Title Text | `editor.accordion.title.custom_text` |
-| Enter the custom text to display in the accordion header. | `editor.accordion.title.custom_text_desc` |
-| Title Entity | `editor.accordion.title.entity` |
-| Entity Title Configuration | `editor.accordion.title.entity_config` |
-| Select an entity whose state will be used as the accordion header title. | `editor.accordion.title.entity_desc` |
-| Title Mode | `editor.accordion.title.mode` |
-| Choose whether to use custom text or entity state as title. | `editor.accordion.title.mode_desc` |
-| Configure the accordion header title source and content. | `editor.accordion.title.section_desc` |
-| Title Configuration | `editor.accordion.title.section_title` |
-| Show Entity Name | `editor.accordion.title.show_entity_name` |
-| Display the entity friendly name before the state value. | `editor.accordion.title.show_entity_name_desc` |
-| Display Options | `editor.accordion.title.show_name` |
-| Choose whether to show the entity name along with the state. | `editor.accordion.title.show_name_desc` |
-
-</details>
-
-<details>
 <summary><strong>Boiler (editor)</strong> — 79 left</summary>
 
 | English text | Key |
@@ -737,101 +645,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Animated forecast (editor)</strong> — 40 left</summary>
-
-| English text | Key |
-| --- | --- |
-| No hourly forecast for this day | `editor.animated_forecast.preview.no_hourly` |
-| Back | `editor.animated_forecast.back` |
-| 🎨 Background | `editor.animated_forecast.background.title` |
-| Chart Color | `editor.animated_forecast.chart_color` |
-| Row Height | `editor.animated_forecast.chart_height` |
-| Values | `editor.animated_forecast.chart_metrics` |
-| Bars | `editor.animated_forecast.chart_style_bar` |
-| Line | `editor.animated_forecast.chart_style_line` |
-| 📊 Chart | `editor.animated_forecast.chart.title` |
-| 🎨 Colors | `editor.animated_forecast.colors.title` |
-| ⚙️ Forecast Configuration | `editor.animated_forecast.config.title` |
-| Daily | `editor.animated_forecast.daily` |
-| Tap a Day to See Its Hours | `editor.animated_forecast.day_tap_hourly` |
-| Tapping a day switches to that day's hourly forecast. Tap Back to return. Day taps no longer run the module tap action. | `editor.animated_forecast.day_tap_hourly_desc` |
-| ⚙️ Forecast Entities | `editor.animated_forecast.entities.title` |
-| Forecast Background | `editor.animated_forecast.forecast_background` |
-| Background for the forecast section (theme-aware by default) | `editor.animated_forecast.forecast_background_desc` |
-| Forecast Day Names | `editor.animated_forecast.forecast_day_color` |
-| Forecast Day Name Size | `editor.animated_forecast.forecast_day_size` |
-| Forecast Days | `editor.animated_forecast.forecast_days` |
-| Number of forecast days (3-7) | `editor.animated_forecast.forecast_days_desc` |
-| Forecast Entity (Optional) | `editor.animated_forecast.forecast_entity` |
-| Separate forecast entity if available | `editor.animated_forecast.forecast_entity_desc` |
-| Forecast Hours | `editor.animated_forecast.forecast_hours` |
-| Hours shown in the hourly view (3-12) | `editor.animated_forecast.forecast_hours_desc` |
-| Forecast Icon Size | `editor.animated_forecast.forecast_icon_size` |
-| Size of forecast weather icons (32-80px) | `editor.animated_forecast.forecast_icon_size_desc` |
-| Forecast Temps | `editor.animated_forecast.forecast_temp_color` |
-| Forecast Temp Size | `editor.animated_forecast.forecast_temp_size` |
-| Show First | `editor.animated_forecast.forecast_type` |
-| Hourly needs a weather integration that provides an hourly forecast. | `editor.animated_forecast.forecast_type_desc` |
-| Hourly | `editor.animated_forecast.hourly` |
-| 🎨 Icon Settings | `editor.animated_forecast.icon_settings.title` |
-| Icon Style | `editor.animated_forecast.icon_style` |
-| Choose between filled or outlined animated icons | `editor.animated_forecast.icon_style_desc` |
-| Show Chart Under Forecast | `editor.animated_forecast.show_chart` |
-| Adds a small bar or line row per value, lined up with each day or hour. | `editor.animated_forecast.show_chart_desc` |
-| 📏 Text Sizes | `editor.animated_forecast.text_sizes.title` |
-| Weather Entity | `editor.animated_forecast.weather_entity` |
-| Primary weather.* entity with forecast data | `editor.animated_forecast.weather_entity_desc` |
-
-</details>
-
-<details>
-<summary><strong>Alarm panel (editor)</strong> — 39 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Arm | `editor.alarm_panel.action_arm` |
-| Disarm | `editor.alarm_panel.action_disarm` |
-| Choose which arm mode buttons to show. Leave unset to auto-detect from the entity. | `editor.alarm_panel.arm_modes_desc` |
-| Arm modes | `editor.alarm_panel.arm_modes_label` |
-| Arm Modes | `editor.alarm_panel.arm_modes_section` |
-| Cancel | `editor.alarm_panel.cancel` |
-| Clear | `editor.alarm_panel.clear` |
-| Code for | `editor.alarm_panel.code_for` |
-| Enter code | `editor.alarm_panel.code_placeholder` |
-| Select an alarm panel | `editor.alarm_panel.config_needed` |
-| Choose an alarm_control_panel entity in the General tab | `editor.alarm_panel.config_needed_desc` |
-| Confirm | `editor.alarm_panel.confirm` |
-| Choose what to show. | `editor.alarm_panel.display_desc` |
-| Display | `editor.alarm_panel.display_section` |
-| Alarm entity | `editor.alarm_panel.entity` |
-| Alarm Entity | `editor.alarm_panel.entity_section` |
-| Select the alarm_control_panel entity to control. | `editor.alarm_panel.entity_section_desc` |
-| Select an alarm_control_panel entity | `editor.alarm_panel.error_entity` |
-| PIN keypad | `editor.alarm_panel.keypad_label` |
-| Layout | `editor.alarm_panel.layout` |
-| Compact | `editor.alarm_panel.layout_compact` |
-| Visual style of the alarm panel. | `editor.alarm_panel.layout_desc` |
-| Hero | `editor.alarm_panel.layout_hero` |
-| Layout | `editor.alarm_panel.layout_section` |
-| Standard | `editor.alarm_panel.layout_standard` |
-| Hero shows full PIN pad, standard is a single row, compact is a chip | `editor.alarm_panel.layout_style_desc` |
-| Show Arm Away | `editor.alarm_panel.show_arm_away` |
-| Show Arm Custom Bypass | `editor.alarm_panel.show_arm_custom` |
-| Show Arm Home | `editor.alarm_panel.show_arm_home` |
-| Show Arm Night | `editor.alarm_panel.show_arm_night` |
-| Show Arm Vacation | `editor.alarm_panel.show_arm_vacation` |
-| Show icon | `editor.alarm_panel.show_icon` |
-| Show shield icon in the status ring | `editor.alarm_panel.show_icon_desc` |
-| Show keypad | `editor.alarm_panel.show_keypad` |
-| Always show the PIN keypad | `editor.alarm_panel.show_keypad_desc` |
-| Show state text | `editor.alarm_panel.show_state` |
-| Display the alarm state badge | `editor.alarm_panel.show_state_desc` |
-| Show title | `editor.alarm_panel.show_title` |
-| Display the alarm name | `editor.alarm_panel.show_title_desc` |
-
-</details>
-
-<details>
 <summary><strong>Update monitor (editor)</strong> — 38 left</summary>
 
 | English text | Key |
@@ -874,48 +687,6 @@ Biggest sections first. Click a section to open it.
 | Updates first | `editor.update_monitor.sort_updates` |
 | Title | `editor.update_monitor.title` |
 | Header above the list. | `editor.update_monitor.title_desc` |
-
-</details>
-
-<details>
-<summary><strong>Stack (editor)</strong> — 34 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Anchor point | `editor.stack.layer.anchor` |
-| Remove layer | `editor.stack.layer.delete` |
-| Move down | `editor.stack.layer.down` |
-| Drag to move this layer | `editor.stack.layer.drag_hint` |
-| Height | `editor.stack.layer.height` |
-| Offset from anchor | `editor.stack.layer.offset` |
-| Offset X | `editor.stack.layer.offset_x` |
-| Offset Y | `editor.stack.layer.offset_y` |
-| Opacity | `editor.stack.layer.opacity` |
-| Editing layer | `editor.stack.layer.position.desc` |
-| Layer position | `editor.stack.layer.position.title` |
-| Click to select this layer | `editor.stack.layer.select_hint` |
-| Size | `editor.stack.layer.size` |
-| Move up | `editor.stack.layer.up` |
-| Toggle visibility | `editor.stack.layer.visibility` |
-| Width | `editor.stack.layer.width` |
-| Leave empty to use layer list order (bottom to top). | `editor.stack.layer.z_desc` |
-| Z-index override | `editor.stack.layer.z_index` |
-| Aspect ratio | `editor.stack.aspect_ratio` |
-| Clip overflow | `editor.stack.clip` |
-| Hide content outside rounded bounds. | `editor.stack.clip_desc` |
-| Aspect ratio or fixed height defines the overlay area. | `editor.stack.container.desc` |
-| Container | `editor.stack.container.title` |
-| No layers yet | `editor.stack.empty` |
-| Drag modules into this stack from the layout tree, or pick a Quick start preset | `editor.stack.empty_hint` |
-| Height (optional) | `editor.stack.height` |
-| When set (e.g. 280px, 40vh), overrides aspect ratio height. | `editor.stack.height_desc` |
-| layer | `editor.stack.layer_z` |
-| Layers are stacked bottom (first) to top (last). Click a row to edit its position. | `editor.stack.layers.desc` |
-| Drag modules into this stack from the layout tree, or pick a Quick start preset above. New layers default to the center of the card so you can offset them in any direction. | `editor.stack.layers.empty_desc` |
-| No layers yet | `editor.stack.layers.empty_title` |
-| Layers | `editor.stack.layers.title` |
-| Pick a starting point — you can edit, reorder, and remove layers afterwards. | `editor.stack.presets.desc` |
-| Quick start | `editor.stack.presets.title` |
 
 </details>
 
@@ -1194,41 +965,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Template (editor)</strong> — 27 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Select an entity | `editor.template.config_needed` |
-| Choose an entity in the General tab | `editor.template.config_needed_desc` |
-| Display | `editor.template.display_section` |
-| Choose what to show. | `editor.template.display_section_desc` |
-| Entity | `editor.template.entity` |
-| The entity to display. | `editor.template.entity_desc` |
-| Entity | `editor.template.entity_section` |
-| Choose the entity this module displays. | `editor.template.entity_section_desc` |
-| Extra option | `editor.template.extra_option` |
-| An extra option that only appears when enabled. | `editor.template.extra_option_desc` |
-| Extra options | `editor.template.extra_section` |
-| Icon override | `editor.template.icon` |
-| Leave blank to use the entity icon. | `editor.template.icon_desc` |
-| Layout | `editor.template.layout` |
-| Compact | `editor.template.layout_compact` |
-| Choose a layout style. | `editor.template.layout_desc` |
-| Layout | `editor.template.layout_section` |
-| How the module is arranged. | `editor.template.layout_section_desc` |
-| Standard | `editor.template.layout_standard` |
-| Name override | `editor.template.name` |
-| Leave blank to use the entity friendly name. | `editor.template.name_desc` |
-| Show name | `editor.template.show_name` |
-| Display the entity name. | `editor.template.show_name_desc` |
-| Show state | `editor.template.show_state` |
-| Display the entity state. | `editor.template.show_state_desc` |
-| Size | `editor.template.size` |
-| Set the display size. | `editor.template.size_desc` |
-
-</details>
-
-<details>
 <summary><strong>State switcher (editor)</strong> — 26 left</summary>
 
 | English text | Key |
@@ -1297,36 +1033,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Animated clock (editor)</strong> — 22 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Center Dot | `editor.animated_clock.analog_show_center_dot` |
-| Hour Hand | `editor.animated_clock.analog_show_hour_hand` |
-| Minute Hand | `editor.animated_clock.analog_show_minute_hand` |
-| Second Hand | `editor.animated_clock.analog_show_seconds` |
-| Smooth Sweeping Motion | `editor.animated_clock.analog_smooth_seconds` |
-| Clock Size | `editor.animated_clock.clock_size` |
-| Scale factor for clock size (0–200) | `editor.animated_clock.clock_size_desc` |
-| Clock Style | `editor.animated_clock.clock_style` |
-| Choose from 10 different clock display styles | `editor.animated_clock.clock_style_desc` |
-| Clock Configuration | `editor.animated_clock.config.title` |
-| Clock Customization | `editor.animated_clock.customization.title` |
-| Tile Background Color | `editor.animated_clock.flip_tile_color` |
-| AM/PM | `editor.animated_clock.show_ampm` |
-| Terminal Command | `editor.animated_clock.show_command` |
-| Blinking Cursor | `editor.animated_clock.show_cursor` |
-| Hours | `editor.animated_clock.show_hours` |
-| Minutes | `editor.animated_clock.show_minutes` |
-| Terminal Prompt | `editor.animated_clock.show_prompt` |
-| Seconds | `editor.animated_clock.show_seconds` |
-| Separators (:) | `editor.animated_clock.show_separators` |
-| Time Format | `editor.animated_clock.time_format` |
-| 12-hour or 24-hour time display | `editor.animated_clock.time_format_desc` |
-
-</details>
-
-<details>
 <summary><strong>Design (editor)</strong> — 21 left</summary>
 
 | English text | Key |
@@ -1385,7 +1091,7 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Unifi (editor)</strong> — 21 left</summary>
+<summary><strong>Unifi (editor)</strong> — 20 left</summary>
 
 | English text | Key |
 | --- | --- |
@@ -1399,7 +1105,6 @@ Biggest sections first. Click a section to open it.
 | PDUs ({n}) | `editor.unifi.kind_pdu` |
 | Switches ({n}) | `editor.unifi.kind_switch` |
 | Radial | `editor.unifi.layout_radial` |
-| Ports device | `editor.unifi.ports_device` |
 | Rack style | `editor.unifi.rack_style` |
 | Pick how this card visualizes your UniFi network. | `editor.unifi.section_view_desc` |
 | Show | `editor.unifi.show` |
@@ -1559,27 +1264,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Calendar (editor)</strong> — 13 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Person | `editor.calendar.calendar_person` |
-| Person | `editor.calendar.filter_by_person` |
-| Popup | `editor.calendar.month_day_details_popup` |
-| Add Calendar | `editor.calendar.add_calendar` |
-| Advanced Options | `editor.calendar.advanced` |
-| Configure refresh interval and event filtering. | `editor.calendar.advanced_desc` |
-| Add calendar entities to display. Each calendar can have a custom color. | `editor.calendar.calendars_desc` |
-| Calendar Entities | `editor.calendar.calendars_section` |
-| Configure what information is shown for each event. | `editor.calendar.event_display_desc` |
-| Styling | `editor.calendar.styling` |
-| Customize colors, fonts, and spacing for the calendar display. | `editor.calendar.styling_desc` |
-| View Configuration | `editor.calendar.view_config` |
-| Configure the calendar view layout and date range. | `editor.calendar.view_config_desc` |
-
-</details>
-
-<details>
 <summary><strong>Slider (editor)</strong> — 13 left</summary>
 
 | English text | Key |
@@ -1618,46 +1302,6 @@ Biggest sections first. Click a section to open it.
 | Mountain Time (MT) | `editor.ui.snapshot_settings_dialog.mountain_time_mt` |
 | Central Time (CT) | `editor.ui.snapshot_settings_dialog.central_time_ct` |
 | Eastern Time (ET) | `editor.ui.snapshot_settings_dialog.eastern_time_et` |
-
-</details>
-
-<details>
-<summary><strong>Auto entity list (editor)</strong> — 12 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Name A–Z | `editor.auto_entity_list.sort_name` |
-| Domain | `editor.auto_entity_list.sort_domain` |
-| Domains | `editor.auto_entity_list.include_domains` |
-| Text | `editor.auto_entity_list.color_text` |
-| Empty list link (optional) | `editor.auto_entity_list.empty_state_link` |
-| Tapping the empty-list message navigates to this dashboard view or URL. | `editor.auto_entity_list.empty_state_link_desc` |
-| Empty list text | `editor.auto_entity_list.empty_state_text` |
-| Custom message shown when no entities match the filters. Leave blank for the default hint. | `editor.auto_entity_list.empty_state_text_desc` |
-| Areas | `editor.auto_entity_list.include_areas` |
-| Only entities assigned to these areas (directly or via their device). Empty = all areas. | `editor.auto_entity_list.include_areas_desc` |
-| Labels | `editor.auto_entity_list.include_labels` |
-| Only entities carrying these Home Assistant labels (on the entity, its device, or its area). Empty = all labels. | `editor.auto_entity_list.include_labels_desc` |
-
-</details>
-
-<details>
-<summary><strong>Bambu (editor)</strong> — 12 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Bambu Lab | `editor.bambu.title_default` |
-| Farm | `editor.bambu.view_farm` |
-| Style | `editor.bambu.style` |
-| Theme | `editor.bambu.style_theme` |
-| Dark | `editor.bambu.style_dark` |
-| Light | `editor.bambu.style_light` |
-| Glass | `editor.bambu.style_glass` |
-| Carbon | `editor.bambu.style_carbon` |
-| Animation | `editor.bambu.animation` |
-| Off | `editor.bambu.anim_off` |
-| AMS layout | `editor.bambu.ams_layout` |
-| Live | `editor.bambu.camera_mode_live` |
 
 </details>
 
@@ -1717,6 +1361,23 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Bambu (editor)</strong> — 9 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Bambu Lab | `editor.bambu.title_default` |
+| Farm | `editor.bambu.view_farm` |
+| Style | `editor.bambu.style` |
+| Theme | `editor.bambu.style_theme` |
+| Carbon | `editor.bambu.style_carbon` |
+| Animation | `editor.bambu.animation` |
+| Off | `editor.bambu.anim_off` |
+| AMS layout | `editor.bambu.ams_layout` |
+| Live | `editor.bambu.camera_mode_live` |
+
+</details>
+
+<details>
 <summary><strong>Bar (editor)</strong> — 9 left</summary>
 
 | English text | Key |
@@ -1730,40 +1391,6 @@ Biggest sections first. Click a section to open it.
 | Glass Blur | `editor.bar.appearance.glass_blur` |
 | Minimal | `editor.bar.appearance.style_minimal` |
 | Normal | `editor.bar.animation.direction_modes.normal` |
-
-</details>
-
-<details>
-<summary><strong>Battery monitor (editor)</strong> — 9 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Style | `editor.battery_monitor.section_style` |
-| List | `editor.battery_monitor.style_list` |
-| Bars | `editor.battery_monitor.style_bars` |
-| Rings | `editor.battery_monitor.style_rings` |
-| Display | `editor.battery_monitor.section_display` |
-| Name A–Z | `editor.battery_monitor.sort_name` |
-| Auto | `editor.battery_monitor.mode_auto` |
-| Manual | `editor.battery_monitor.mode_manual` |
-| Text | `editor.battery_monitor.color_text` |
-
-</details>
-
-<details>
-<summary><strong>Cleaning zones (editor)</strong> — 9 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Person | `editor.cleaning_zones.person_entity` |
-| Interval | `editor.cleaning_zones.sort_interval` |
-| Name | `editor.cleaning_zones.sort_name` |
-| Badge | `editor.cleaning_zones.style_badge` |
-| Heat | `editor.cleaning_zones.style_heat` |
-| Outline | `editor.cleaning_zones.style_outline` |
-| Text | `editor.cleaning_zones.text_color` |
-| Icon | `editor.cleaning_zones.zone_icon` |
-| Name | `editor.cleaning_zones.zone_name` |
 
 </details>
 
@@ -1798,6 +1425,38 @@ Biggest sections first. Click a section to open it.
 | Text | `hub.themes.editor_palette_text` |
 | Name | `hub.themes.sort_title` |
 | Update | `hub.themes.update` |
+
+</details>
+
+<details>
+<summary><strong>Battery monitor (editor)</strong> — 8 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Style | `editor.battery_monitor.section_style` |
+| List | `editor.battery_monitor.style_list` |
+| Bars | `editor.battery_monitor.style_bars` |
+| Rings | `editor.battery_monitor.style_rings` |
+| Display | `editor.battery_monitor.section_display` |
+| Name A–Z | `editor.battery_monitor.sort_name` |
+| Auto | `editor.battery_monitor.mode_auto` |
+| Text | `editor.battery_monitor.color_text` |
+
+</details>
+
+<details>
+<summary><strong>Cleaning zones (editor)</strong> — 8 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Person | `editor.cleaning_zones.person_entity` |
+| Interval | `editor.cleaning_zones.sort_interval` |
+| Name | `editor.cleaning_zones.sort_name` |
+| Badge | `editor.cleaning_zones.style_badge` |
+| Heat | `editor.cleaning_zones.style_heat` |
+| Outline | `editor.cleaning_zones.style_outline` |
+| Text | `editor.cleaning_zones.text_color` |
+| Name | `editor.cleaning_zones.zone_name` |
 
 </details>
 
@@ -1859,20 +1518,6 @@ Biggest sections first. Click a section to open it.
 | Preset durations (minutes) | `editor.timer.preset_durations` |
 | Quick-start buttons shown when the timer is idle. | `editor.timer.preset_durations_desc` |
 | Minutes (e.g. 10) | `editor.timer.preset_placeholder` |
-
-</details>
-
-<details>
-<summary><strong>Animated weather (editor)</strong> — 6 left</summary>
-
-| English text | Key |
-| --- | --- |
-| 0–32px | `editor.animated_weather.left_column_gap_desc` |
-| 0–32px | `editor.animated_weather.right_column_gap_desc` |
-| 0–300px | `editor.animated_weather.icon_size_desc` |
-| Select a weather entity to drive the animated background and forecast display. | `editor.animated_weather.entity_desc` |
-| Weather Station Sensors | `editor.animated_weather.station_section` |
-| Optional. Use your own weather station for the current values. The animated icon and high/low still come from the weather entity. New items like Feels Like and UV Index appear in the Left Column once their sensor is set. | `editor.animated_weather.station_section_desc` |
 
 </details>
 
@@ -1961,6 +1606,32 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Alarm panel (editor)</strong> — 5 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Layout | `editor.alarm_panel.layout` |
+| Hero | `editor.alarm_panel.layout_hero` |
+| Layout | `editor.alarm_panel.layout_section` |
+| Standard | `editor.alarm_panel.layout_standard` |
+| Hero shows full PIN pad, standard is a single row, compact is a chip | `editor.alarm_panel.layout_style_desc` |
+
+</details>
+
+<details>
+<summary><strong>Auto entity list (editor)</strong> — 5 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Name A–Z | `editor.auto_entity_list.sort_name` |
+| Domain | `editor.auto_entity_list.sort_domain` |
+| Domains | `editor.auto_entity_list.include_domains` |
+| Text | `editor.auto_entity_list.color_text` |
+| Labels | `editor.auto_entity_list.include_labels` |
+
+</details>
+
+<details>
 <summary><strong>Energy price (editor)</strong> — 5 left</summary>
 
 | English text | Key |
@@ -2026,6 +1697,18 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Calendar (editor)</strong> — 4 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Person | `editor.calendar.calendar_person` |
+| Person | `editor.calendar.filter_by_person` |
+| Popup | `editor.calendar.month_day_details_popup` |
+| Styling | `editor.calendar.styling` |
+
+</details>
+
+<details>
 <summary><strong>Camera (editor)</strong> — 4 left</summary>
 
 | English text | Key |
@@ -2046,18 +1729,6 @@ Biggest sections first. Click a section to open it.
 | Standard | `editor.cover.layout_standard` |
 | Position | `editor.cover.position` |
 | Name | `editor.cover.name` |
-
-</details>
-
-<details>
-<summary><strong>Dynamic list (editor)</strong> — 4 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Direction | `editor.dynamic_list.direction` |
-| Gap (px) | `editor.dynamic_list.gap` |
-| Space between generated modules in pixels | `editor.dynamic_list.gap_desc` |
-| Template | `editor.dynamic_list.template_label` |
 
 </details>
 
@@ -2094,6 +1765,29 @@ Biggest sections first. Click a section to open it.
 | Theme JSON | `hub.submit_theme.field_json` |
 | (optional) | `hub.submit_theme.optional` |
 | Theme updated | `hub.submit_theme.success_edit_title` |
+
+</details>
+
+<details>
+<summary><strong>Template (editor)</strong> — 4 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Extra option | `editor.template.extra_option` |
+| Layout | `editor.template.layout` |
+| Layout | `editor.template.layout_section` |
+| Standard | `editor.template.layout_standard` |
+
+</details>
+
+<details>
+<summary><strong>Animated weather (editor)</strong> — 3 left</summary>
+
+| English text | Key |
+| --- | --- |
+| 0–32px | `editor.animated_weather.left_column_gap_desc` |
+| 0–32px | `editor.animated_weather.right_column_gap_desc` |
+| 0–300px | `editor.animated_weather.icon_size_desc` |
 
 </details>
 
@@ -2175,12 +1869,22 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Climate (editor)</strong> — 2 left</summary>
+<summary><strong>Animated clock (editor)</strong> — 2 left</summary>
 
 | English text | Key |
 | --- | --- |
-| Decrease target temperature | `editor.climate.decrease_temp` |
-| Increase target temperature | `editor.climate.increase_temp` |
+| Tile Background Color | `editor.animated_clock.flip_tile_color` |
+| AM/PM | `editor.animated_clock.show_ampm` |
+
+</details>
+
+<details>
+<summary><strong>Animated forecast (editor)</strong> — 2 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Bars | `editor.animated_forecast.chart_style_bar` |
+| Daily | `editor.animated_forecast.daily` |
 
 </details>
 
@@ -2221,16 +1925,6 @@ Biggest sections first. Click a section to open it.
 | --- | --- |
 | Operator | `editor.layout_logic.condition_fields.operator` |
 | Variable | `editor.layout_logic.condition_fields.variable` |
-
-</details>
-
-<details>
-<summary><strong>Linked row (editor)</strong> — 2 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Load the newer copy | `editor.linked_row.load_newer` |
-| Revision {revision} | `editor.linked_row.revision` |
 
 </details>
 
@@ -2375,6 +2069,15 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
+<summary><strong>Linked row (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Revision {revision} | `editor.linked_row.revision` |
+
+</details>
+
+<details>
 <summary><strong>Markdown (editor)</strong> — 1 left</summary>
 
 | English text | Key |
@@ -2434,6 +2137,15 @@ Biggest sections first. Click a section to open it.
 | English text | Key |
 | --- | --- |
 | Styling | `editor.slider_input.styling.title` |
+
+</details>
+
+<details>
+<summary><strong>Stack (editor)</strong> — 1 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Container | `editor.stack.container.title` |
 
 </details>
 
