@@ -193,6 +193,28 @@ picks a theme, a module can pin a recipe. If a user wants one bar to look
 different, they pick `glossy` on that bar. Recommended answer: keep themes
 card-scoped, recipes module-scoped.
 
+### 2.8 Action buttons inside modules: one recipe, three variants
+
+The November 2026 gallery review (issue #286) found every module drawing its
+own action buttons: `cover`, `timer` and `spinbox` use square filled blue
+buttons, `lock`, `humidifier` and `boiler` use outlined pills, and `light`
+has a filled style of its own. Fold them into the `control` role as one shared
+action-button recipe with three variants, so a theme restyles all of them at
+once:
+
+| Variant | Use for | Look |
+| --- | --- | --- |
+| `filled` | the primary action of a module (Open, Start, Unlock) | primary background, on-primary text |
+| `tonal` | secondary actions next to a primary one (Stop, Pause, presets) | primary at ~15% over the surface, primary text |
+| `outline` | low-emphasis or toggling choices (modes, Lock/Unlock pairs) | transparent, 1px divider border, text colour |
+
+All three share one geometry: 36px min height (44px hit area on touch), fully rounded
+(999px) corners, 0 14px padding, 14px/600 label, 18px icon, and a
+2px `:focus-visible` ring in the primary colour. Modules pick a variant per
+button; they no longer set colours, radius or padding themselves. This lands
+with Phase D (each module a small PR with a golden) and needs no config
+migration, since none of these buttons expose their style in YAML today.
+
 ## 3. Phases
 
 Each phase ships on its own and leaves every dashboard rendering the same.
