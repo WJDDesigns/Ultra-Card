@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-11-16T19:14:30.070Z",
+  "locales": {
+    "ca": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3534,
+      "realPct": 43.3,
+      "sameAsEn": 4634,
+      "extraKeys": 34
+    },
+    "cs": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3549,
+      "realPct": 43.5,
+      "sameAsEn": 4619,
+      "extraKeys": 34
+    },
+    "da": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3450,
+      "realPct": 42.2,
+      "sameAsEn": 4718,
+      "extraKeys": 34
+    },
+    "de": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 6798,
+      "realPct": 83.2,
+      "sameAsEn": 1370,
+      "extraKeys": 34
+    },
+    "en-GB": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 202,
+      "realPct": 2.5,
+      "sameAsEn": 7966,
+      "extraKeys": 34
+    },
+    "es": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3568,
+      "realPct": 43.7,
+      "sameAsEn": 4600,
+      "extraKeys": 34
+    },
+    "fr": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3495,
+      "realPct": 42.8,
+      "sameAsEn": 4673,
+      "extraKeys": 34
+    },
+    "it": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3545,
+      "realPct": 43.4,
+      "sameAsEn": 4623,
+      "extraKeys": 34
+    },
+    "nb": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3508,
+      "realPct": 42.9,
+      "sameAsEn": 4660,
+      "extraKeys": 34
+    },
+    "nl": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3508,
+      "realPct": 42.9,
+      "sameAsEn": 4660,
+      "extraKeys": 34
+    },
+    "nn": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3521,
+      "realPct": 43.1,
+      "sameAsEn": 4647,
+      "extraKeys": 34
+    },
+    "no": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3510,
+      "realPct": 43,
+      "sameAsEn": 4658,
+      "extraKeys": 34
+    },
+    "pl": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3552,
+      "realPct": 43.5,
+      "sameAsEn": 4616,
+      "extraKeys": 34
+    },
+    "sv": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 3497,
+      "realPct": 42.8,
+      "sameAsEn": 4671,
+      "extraKeys": 34
+    },
+    "zh": {
+      "structuralPresent": 8168,
+      "structuralPct": 100,
+      "translated": 5757,
+      "realPct": 70.5,
+      "sameAsEn": 2411,
+      "extraKeys": 0
+    }
+  }
+}
