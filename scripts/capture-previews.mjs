@@ -44,6 +44,12 @@ const ANIM_QUALITY = 50;
  * looked frozen). This stretches the loop to roughly three seconds. */
 const ANIM_INTERVAL_MS = 70;
 
+/* Tall modules (activity feed, printer farms, rack views ...) shrink to an
+ * unreadable strip when the whole card is scaled into a gallery tile. Anything
+ * taller than this is captured from the top and faded out at the bottom
+ * instead, so the tile shows real, readable content (issue #286). */
+const MAX_TILE_HEIGHT = 520;
+
 /**
  * The MDI webfont must be linked here, at document level. The ha-icon shim
  * adopts the same stylesheet into its shadow root, but @font-face rules are
@@ -160,6 +166,20 @@ async function run(browser) {
         sample: text.slice(0, 80),
       };
     }, type);
+
+    // Crop tall modules to their top section (see MAX_TILE_HEIGHT).
+    await page.evaluate(max => {
+      const stage = document.getElementById('stage');
+      stage.style.maxHeight = '';
+      stage.style.overflow = '';
+      stage.style.webkitMaskImage = stage.style.maskImage = '';
+      if (stage.getBoundingClientRect().height > max) {
+        stage.style.maxHeight = `${max}px`;
+        stage.style.overflow = 'hidden';
+        stage.style.webkitMaskImage = stage.style.maskImage =
+          'linear-gradient(to bottom, #000 calc(100% - 64px), transparent)';
+      }
+    }, MAX_TILE_HEIGHT);
 
     const target = page.locator('#stage');
     await target.screenshot({ path: outFile });

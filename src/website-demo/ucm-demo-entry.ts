@@ -198,7 +198,7 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
       mkIcon('switch.guest_mode', 'mdi:account-check', 'mdi:account-off', 'Guest'),
       mkIcon('cover.living_room_blinds', 'mdi:blinds-open', 'mdi:blinds', 'Blinds'),
     ];
-    c.item_width = '34%';
+    c.item_width = '30%';
     c.fade_edges = true;
     c.show_arrows = true;
   },
@@ -975,8 +975,8 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 @keyframes ucdScrub{0%{left:0}92%,100%{left:calc(100% - 12px)}}
 @keyframes ucdSpotIn{0%,8%{opacity:0;transform:scale(.5)}14%,92%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}
 @keyframes ucdZoneAge{0%,6%{background:rgba(74,222,128,.20)}40%{background:rgba(255,171,64,.20)}75%,100%{background:rgba(255,82,82,.22)}}
-@keyframes ucdLabelFresh{0%,10%{opacity:1}22%,100%{opacity:0}}
-@keyframes ucdLabelStale{0%,20%{opacity:0}34%,100%{opacity:1}}
+@keyframes ucdLabelFresh{0%,15.9%{opacity:1}16%,100%{opacity:0}}
+@keyframes ucdLabelStale{0%,15.9%{opacity:0}16%,100%{opacity:1}}
 @keyframes ucdPopup{0%,8%{opacity:0;transform:translate(-50%,-38%) scale(.92)}18%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}86%,100%{opacity:0;transform:translate(-50%,-38%) scale(.92)}}
 `;
 
@@ -1426,13 +1426,17 @@ class UcModuleDemo extends HTMLElement {
         <div style="position:absolute;left:${l};top:${t2};width:${w};height:${h};
           border:1px solid rgba(255,255,255,.14);display:flex;align-items:flex-end;padding:4px;
           animation:ucdZoneAge 8.4s ease-in-out ${delay} infinite">
-          <span style="position:relative;font-size:9px;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:99px;color:#dfe5ee">
+          <span style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-size:9px;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:99px;color:#dfe5ee">
             ${name} ·
-            <span style="animation:ucdLabelFresh 8.4s ease-in-out ${delay} infinite">today</span><span
-              style="position:absolute;right:6px;animation:ucdLabelStale 8.4s ease-in-out ${delay} infinite">6d</span>
+            <span style="display:inline-grid;justify-items:start">
+              <span style="grid-area:1/1;animation:ucdLabelFresh 8.4s ease-in-out ${delay} infinite">today</span>
+              <span style="grid-area:1/1;animation:ucdLabelStale 8.4s ease-in-out ${delay} infinite">6d</span>
+            </span>
           </span></div>`).join('');
       this._holder.innerHTML = `
-        <div style="position:relative;height:180px;border-radius:10px;overflow:hidden;background:#0e1626">
+        <div style="position:relative;height:198px;border-radius:10px;overflow:hidden;background:#0e1626">
+          <div style="position:absolute;top:4px;right:8px;font-size:9px;color:#ffcf86;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:99px">heatmap: days since cleaned</div>
+          <div style="position:absolute;left:0;right:0;top:18px;bottom:0">
           <div style="position:absolute;inset:0;background:
             linear-gradient(rgba(90,130,190,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(90,130,190,.10) 1px,transparent 1px);background-size:18px 18px"></div>
           <div style="position:absolute;left:5%;top:8%;right:5%;bottom:8%;border:2px solid rgba(140,180,235,.5)"></div>
@@ -1440,7 +1444,7 @@ class UcModuleDemo extends HTMLElement {
           <div style="position:absolute;left:49%;top:8%;width:23%;height:46%;border-right:2px solid rgba(140,180,235,.5)"></div>
           <div style="position:absolute;left:5%;bottom:8%;width:60%;height:38%;border-right:2px solid rgba(140,180,235,.5)"></div>
           ${zones}
-          <div style="position:absolute;top:6px;right:8px;font-size:9px;color:#ffcf86;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:99px">heatmap: days since cleaned</div>
+          </div>
         </div>`;
       return;
     }

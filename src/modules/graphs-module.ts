@@ -205,7 +205,8 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       // Chart options
       show_legend: true,
-      legend_position: 'bottom_left',
+      // Opposite corner from the info block, so the legend never covers the value (issue #286).
+      legend_position: 'bottom_right',
       show_grid: true,
       show_time_intervals: false,
       smooth_curves: true,
