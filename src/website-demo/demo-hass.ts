@@ -770,7 +770,7 @@ const PRICE_TOMORROW = [
  * score and 3D printer modules. Shapes follow the integrations each module
  * parses (Nord Pool style price arrays, Team Tracker attributes, ...).
  */
-function buildGalleryDemoStates(): Record<string, any> {
+function buildGalleryDemoStates(): Record<string, ReturnType<typeof st>> {
   const minutesFromNow = (m: number) => new Date(Date.now() + m * 60000).toISOString();
   const hour = new Date().getHours();
   return {
@@ -1727,7 +1727,17 @@ const OPPOSITE_STATE: Record<string, string> = {
  * at a handful of seeded times and ending in the current state. Returns null
  * for entities that are not two-state, which keep the numeric wave.
  */
-function toggleHistory(entityId: string, cur: any, nowS: number): any[] | null {
+interface HistoryRow {
+  s: string;
+  a: Record<string, unknown>;
+  lu: number;
+}
+
+function toggleHistory(
+  entityId: string,
+  cur: { state: string; attributes?: Record<string, unknown> },
+  nowS: number
+): HistoryRow[] | null {
   const other = OPPOSITE_STATE[String(cur.state)];
   if (!other) return null;
   let seed = 0;
@@ -1738,7 +1748,7 @@ function toggleHistory(entityId: string, cur: any, nowS: number): any[] | null {
   };
   const count = 4 + Math.floor(rand() * 4) * 2; // even, so the series ends on the current state
   const times = Array.from({ length: count }, () => nowS - (0.3 + rand() * 23.5) * 3600).sort((a, b) => a - b);
-  const rows: any[] = [{ s: cur.state, a: cur.attributes || {}, lu: nowS - 24 * 3600 }];
+  const rows: HistoryRow[] = [{ s: cur.state, a: cur.attributes || {}, lu: nowS - 24 * 3600 }];
   times.forEach((t, i) => rows.push({ s: i % 2 ? cur.state : other, a: cur.attributes || {}, lu: t }));
   return rows;
 }

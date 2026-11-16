@@ -107,7 +107,7 @@ const TIME_MACHINE_ENTITIES = [
  * Time Machine relies on the card registering it with the time machine service
  * on every render; without it the module shows a "place me in a card column" hint.
  */
-const DEMO_HOST_SYNC: Record<string, (mod: any) => void> = {
+const DEMO_HOST_SYNC: Record<string, (mod: { id: string } & Record<string, unknown>) => void> = {
   time_machine: mod =>
     ucTimeMachineService.syncCardContext(mod.id, demoHass, TIME_MACHINE_ENTITIES, {
       ...mod,

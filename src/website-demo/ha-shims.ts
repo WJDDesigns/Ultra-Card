@@ -235,7 +235,29 @@ const DOMAIN_ICONS: Record<string, string> = {
   climate: 'mdi:thermostat',
 };
 
-function formatStateText(stateObj: any): string {
+/** Just the parts of hass / card config the demo card shims read. */
+interface ShimState {
+  state: string;
+  attributes?: { friendly_name?: string; icon?: string; unit_of_measurement?: string };
+}
+interface ShimHass {
+  states?: Record<string, ShimState | undefined>;
+}
+interface ShimRow {
+  entity: string;
+  name?: string;
+  icon?: string;
+}
+interface ShimConfig {
+  title?: string;
+  name?: string;
+  entity?: string;
+  entities?: Array<string | ShimRow>;
+  color?: string;
+  hours_to_show?: number;
+}
+
+function formatStateText(stateObj: ShimState | undefined): string {
   if (!stateObj) return 'Unavailable';
   const unit = stateObj.attributes?.unit_of_measurement;
   const raw = String(stateObj.state);
@@ -244,15 +266,15 @@ function formatStateText(stateObj: any): string {
 }
 
 class HuiEntitiesCardShim extends HTMLElement {
-  private _config: any = { entities: [] };
-  private _hass: any;
+  private _config: ShimConfig = { entities: [] };
+  private _hass: ShimHass | undefined;
   private _sr = this.attachShadow({ mode: 'open' });
 
-  setConfig(config: any) {
+  setConfig(config: ShimConfig) {
     this._config = config || { entities: [] };
     this._render();
   }
-  set hass(h: any) {
+  set hass(h: ShimHass | undefined) {
     this._hass = h;
     this._render();
   }
@@ -264,15 +286,15 @@ class HuiEntitiesCardShim extends HTMLElement {
   }
 
   private _render() {
-    const rows = (this._config.entities || []).map((e: any) => (typeof e === 'string' ? { entity: e } : e));
+    const rows = (this._config.entities || []).map((e): ShimRow => (typeof e === 'string' ? { entity: e } : e));
     const states = this._hass?.states || {};
     const rowHtml = rows
-      .map((r: any) => {
+      .map(r => {
         const so = states[r.entity];
         const domain = String(r.entity || '').split('.')[0];
         const name = r.name || so?.attributes?.friendly_name || r.entity;
         const icon = r.icon || so?.attributes?.icon || DOMAIN_ICONS[domain] || 'mdi:bookmark';
-        const on = ['on', 'unlocked', 'open'].includes(so?.state);
+        const on = ['on', 'unlocked', 'open'].includes(so?.state ?? '');
         const toggle = domain === 'light' || domain === 'switch' || domain === 'fan';
         const value = toggle
           ? `<span class="tg ${on ? 'on' : ''}"><span></span></span>`
@@ -306,16 +328,16 @@ define('hui-entities-card', HuiEntitiesCardShim);
 /* ---- uc-demo-third-party-card: a neutral stand-in for a community card, so
  * the External Card module shows a mounted card. Plots a sensor's 24 h trend. */
 class UcDemoThirdPartyCard extends HTMLElement {
-  private _config: any = {};
-  private _hass: any;
+  private _config: ShimConfig = {};
+  private _hass: ShimHass | undefined;
   private _sr = this.attachShadow({ mode: 'open' });
 
-  setConfig(config: any) {
+  setConfig(config: ShimConfig) {
     if (!config?.entity) throw new Error('entity is required');
     this._config = config;
     this._render();
   }
-  set hass(h: any) {
+  set hass(h: ShimHass | undefined) {
     this._hass = h;
     this._render();
   }
@@ -324,7 +346,7 @@ class UcDemoThirdPartyCard extends HTMLElement {
   }
 
   private _render() {
-    const so = this._hass?.states?.[this._config.entity];
+    const so = this._config.entity ? this._hass?.states?.[this._config.entity] : undefined;
     if (!so) return;
     const cur = parseFloat(so.state) || 0;
     // A stable, plausible day curve ending at the current value.
