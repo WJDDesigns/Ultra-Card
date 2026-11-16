@@ -218,6 +218,157 @@ class HaCameraStreamShim extends HTMLElement {
 }
 define('ha-camera-stream', HaCameraStreamShim);
 
+/* ---- hui-entities-card: the demo has no HA core cards, so the Native Card
+ * module gets a small stand-in that renders like HA's Entities card. ---- */
+function escapeHtml(v: unknown): string {
+  return String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+}
+
+const DOMAIN_ICONS: Record<string, string> = {
+  light: 'mdi:lightbulb',
+  switch: 'mdi:toggle-switch',
+  lock: 'mdi:lock',
+  sensor: 'mdi:eye',
+  binary_sensor: 'mdi:radiobox-blank',
+  cover: 'mdi:window-shutter',
+  fan: 'mdi:fan',
+  climate: 'mdi:thermostat',
+};
+
+function formatStateText(stateObj: any): string {
+  if (!stateObj) return 'Unavailable';
+  const unit = stateObj.attributes?.unit_of_measurement;
+  const raw = String(stateObj.state);
+  if (unit) return `${raw} ${unit}`;
+  return raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, ' ');
+}
+
+class HuiEntitiesCardShim extends HTMLElement {
+  private _config: any = { entities: [] };
+  private _hass: any;
+  private _sr = this.attachShadow({ mode: 'open' });
+
+  setConfig(config: any) {
+    this._config = config || { entities: [] };
+    this._render();
+  }
+  set hass(h: any) {
+    this._hass = h;
+    this._render();
+  }
+  get hass() {
+    return this._hass;
+  }
+  getCardSize() {
+    return 1 + (this._config.entities?.length || 0);
+  }
+
+  private _render() {
+    const rows = (this._config.entities || []).map((e: any) => (typeof e === 'string' ? { entity: e } : e));
+    const states = this._hass?.states || {};
+    const rowHtml = rows
+      .map((r: any) => {
+        const so = states[r.entity];
+        const domain = String(r.entity || '').split('.')[0];
+        const name = r.name || so?.attributes?.friendly_name || r.entity;
+        const icon = r.icon || so?.attributes?.icon || DOMAIN_ICONS[domain] || 'mdi:bookmark';
+        const on = ['on', 'unlocked', 'open'].includes(so?.state);
+        const toggle = domain === 'light' || domain === 'switch' || domain === 'fan';
+        const value = toggle
+          ? `<span class="tg ${on ? 'on' : ''}"><span></span></span>`
+          : `<span class="val">${escapeHtml(formatStateText(so))}</span>`;
+        return `<div class="row"><ha-icon class="${on ? 'active' : ''}" icon="${escapeHtml(icon)}"></ha-icon>
+          <span class="name">${escapeHtml(name)}</span>${value}</div>`;
+      })
+      .join('');
+    const title = this._config.title
+      ? `<div class="hd">${escapeHtml(this._config.title)}</div>`
+      : '';
+    this._sr.innerHTML = `<style>
+      :host{display:block}
+      .card{background:var(--ha-card-background,var(--card-background-color,#1c1c1c));border-radius:var(--ha-card-border-radius,12px);
+        border:1px solid var(--divider-color,rgba(255,255,255,.12));color:var(--primary-text-color,#e1e1e1);padding:4px 0 8px}
+      .hd{font-size:22px;line-height:28px;padding:16px 16px 4px;letter-spacing:-.01em}
+      .row{display:flex;align-items:center;gap:16px;padding:0 16px;height:40px}
+      ha-icon{color:var(--state-icon-color,#44739e);width:40px;--mdc-icon-size:24px}
+      ha-icon.active{color:var(--state-icon-active-color,#fdd835)}
+      .name{flex:1;font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+      .val{font-size:14px;color:var(--primary-text-color,#e1e1e1)}
+      .tg{width:34px;height:14px;border-radius:7px;background:rgba(255,255,255,.3);position:relative}
+      .tg span{position:absolute;top:-3px;left:-2px;width:20px;height:20px;border-radius:50%;background:#bdbdbd;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+      .tg.on{background:color-mix(in srgb,var(--primary-color,#03a9f4) 50%,transparent)}
+      .tg.on span{left:16px;background:var(--primary-color,#03a9f4)}
+    </style><div class="card">${title}${rowHtml}</div>`;
+  }
+}
+define('hui-entities-card', HuiEntitiesCardShim);
+
+/* ---- uc-demo-third-party-card: a neutral stand-in for a community card, so
+ * the External Card module shows a mounted card. Plots a sensor's 24 h trend. */
+class UcDemoThirdPartyCard extends HTMLElement {
+  private _config: any = {};
+  private _hass: any;
+  private _sr = this.attachShadow({ mode: 'open' });
+
+  setConfig(config: any) {
+    if (!config?.entity) throw new Error('entity is required');
+    this._config = config;
+    this._render();
+  }
+  set hass(h: any) {
+    this._hass = h;
+    this._render();
+  }
+  getCardSize() {
+    return 3;
+  }
+
+  private _render() {
+    const so = this._hass?.states?.[this._config.entity];
+    if (!so) return;
+    const cur = parseFloat(so.state) || 0;
+    // A stable, plausible day curve ending at the current value.
+    const pts = Array.from({ length: 25 }, (_, i) => {
+      const t = i / 24;
+      return cur * (0.55 + 0.35 * Math.sin(t * Math.PI * 2.2 - 1.3) + 0.12 * Math.sin(t * 19)) ;
+    });
+    pts[24] = cur;
+    const min = Math.min(...pts);
+    const max = Math.max(...pts);
+    const span = max - min || 1;
+    const W = 300;
+    const H = 70;
+    const xy = pts.map((v, i) => [(i / 24) * W, H - 4 - ((v - min) / span) * (H - 10)]);
+    const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const color = this._config.color || 'var(--accent-color,#ff9800)';
+    const unit = so.attributes?.unit_of_measurement || '';
+    const name = this._config.name || so.attributes?.friendly_name || this._config.entity;
+    this._sr.innerHTML = `<style>
+      :host{display:block}
+      .card{background:var(--ha-card-background,var(--card-background-color,#1c1c1c));border-radius:var(--ha-card-border-radius,12px);
+        border:1px solid var(--divider-color,rgba(255,255,255,.12));color:var(--primary-text-color,#e1e1e1);padding:14px 16px 10px;overflow:hidden}
+      .top{display:flex;justify-content:space-between;align-items:baseline}
+      .name{font-size:13px;color:var(--secondary-text-color,#9b9b9b)}
+      .val{font-size:28px;font-weight:600}
+      .val small{font-size:14px;font-weight:400;color:var(--secondary-text-color,#9b9b9b);margin-left:3px}
+      .rng{display:flex;justify-content:space-between;font-size:11px;color:var(--secondary-text-color,#9b9b9b)}
+      svg{display:block;width:100%;height:70px;margin:6px 0 2px}
+    </style>
+    <div class="card">
+      <div class="top"><span class="name">${escapeHtml(name)}</span><span class="name">${escapeHtml(this._config.hours_to_show || 24)} h</span></div>
+      <div class="val">${escapeHtml(Math.round(cur).toLocaleString('en-US'))}<small>${escapeHtml(unit)}</small></div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="${color}" stop-opacity=".35"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+        <path d="${line} L${W},${H} L0,${H} Z" fill="url(#g)"/>
+        <path d="${line}" fill="none" stroke="${color}" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      </svg>
+      <div class="rng"><span>min ${escapeHtml(Math.round(min))}</span><span>max ${escapeHtml(Math.round(max))}</span></div>
+    </div>`;
+  }
+}
+define('uc-demo-third-party-card', UcDemoThirdPartyCard);
+
 /* ---- shared keyframes (document level) ---- */
 if (!document.getElementById('ucd-shim-css')) {
   const s = document.createElement('style');
