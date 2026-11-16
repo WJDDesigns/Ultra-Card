@@ -58,6 +58,7 @@ import '../components/ultra-link-editor';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { VERSION } from '../version';
 import { staleBuildVersion } from '../utils/uc-update-check';
+import '../components/uc-spinner';
 
 installKeyboardActivation();
 
@@ -1254,7 +1255,7 @@ export class UltraCardEditor extends LitElement {
     if (!this.hass || !this.config) {
       return html`
         <div class="editor-loading">
-          <ha-circular-progress indeterminate></ha-circular-progress>
+          <uc-spinner></uc-spinner>
           <span>Loading editor...</span>
         </div>
       `;

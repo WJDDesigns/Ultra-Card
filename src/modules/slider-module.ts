@@ -39,6 +39,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import 'swiper/css/scrollbar';
+import '../components/uc-textfield';
 
 class SwiperInstanceManager {
   private static instances = new Map<string, Swiper>();
@@ -340,7 +341,7 @@ export class UltraSliderModule extends BaseUltraModule {
             >
               Width of the slider container (e.g., 100%, 400px)
             </div>
-            <ha-textfield
+            <uc-textfield
               .value=${sliderModule.slider_width || '100%'}
               placeholder="100%"
               @input=${(e: Event) => {
@@ -375,7 +376,7 @@ export class UltraSliderModule extends BaseUltraModule {
                 }, 10);
               }}
               style="width: 100%; --mdc-theme-primary: var(--primary-color);"
-            ></ha-textfield>
+            ></uc-textfield>
           </div>
 
           ${sliderModule.slider_direction !== 'vertical'

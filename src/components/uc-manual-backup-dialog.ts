@@ -6,6 +6,8 @@ import { localize } from '../localize/localize';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { UltraCardConfig } from '../types';
 import { ucDialog } from '../utils/uc-dialog-directive';
+import './uc-textfield';
+import './uc-spinner';
 
 @customElement('uc-manual-backup-dialog')
 export class UcManualBackupDialog extends LitElement {
@@ -286,13 +288,13 @@ export class UcManualBackupDialog extends LitElement {
                   'Create a manual backup that will be stored alongside backups from all your other Ultra Cards (max 30 total)'
                 )}
               </div>
-              <ha-textfield
+              <uc-textfield
                 id="backup-name"
                 .value="${this._backupName || defaultBackupName}"
                 @input="${this._handleNameInput}"
                 placeholder="${defaultBackupName}"
                 maxlength="100"
-              ></ha-textfield>
+              ></uc-textfield>
             </div>
           </div>
 
@@ -312,7 +314,7 @@ export class UcManualBackupDialog extends LitElement {
               ${this._isCreating
                 ? html`
                     <span class="creating">
-                      <ha-circular-progress active size="small"></ha-circular-progress>
+                      <uc-spinner size="small"></uc-spinner>
                       Creating...
                     </span>
                   `

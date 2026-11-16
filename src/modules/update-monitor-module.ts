@@ -7,6 +7,7 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
+import '../components/uc-spinner';
 
 const SUPPORTS_INSTALL = 1; // UpdateEntityFeature.INSTALL
 
@@ -451,7 +452,7 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
             : nothing}
         </div>
         ${r.inProgress
-          ? html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`
+          ? html`<uc-spinner size="small"></uc-spinner>`
           : r.hasUpdate && m.show_install_button !== false && r.canInstall
             ? html`
                 <button

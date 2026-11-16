@@ -154,11 +154,10 @@ const FORBIDDEN: { name: string; re: RegExp }[] = [
   { name: '<ha-switch', re: /<ha-switch\b/i },
   { name: '<ha-icon-picker', re: /<ha-icon-picker\b/i },
   /**
-   * NOTE: `<ha-textfield>` is intentionally NOT in this forbidden list. It has
-   * legitimate special uses (password type, leadingIcon / suffix slots, number
-   * type with min/max/step) that can't be reproduced through `textField`. Prefer
-   * `this.renderFieldSection(...) + this.textField('name')` for plain text inputs
-   * — but bare `<ha-textfield>` is allowed when special HA features are needed.
+   * NOTE: Home Assistant removed `ha-textfield` in its 2026 frontend, so it renders
+   * nothing on current HA. Prefer `this.renderFieldSection(...) + this.textField('name')`
+   * for plain text inputs; use `<uc-textfield>` (src/components/uc-textfield.ts) when
+   * you need password type, leadingIcon / suffix slots, or number min/max/step.
    */
   {
     name: 'nested injectUcFormStyles in <style>',

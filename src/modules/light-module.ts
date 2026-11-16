@@ -19,6 +19,7 @@ import {
 } from '../utils/uc-control-style-resolve';
 
 import { UC_DEBUG } from '../utils/uc-debug';
+import '../components/uc-textfield';
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
   | 'onoff'
@@ -1080,7 +1081,7 @@ export class UltraLightModule extends BaseUltraModule {
         <div class="field-description" style="margin-bottom: 12px;">
           Display name for this preset
         </div>
-        <ha-textfield
+        <uc-textfield
           .value=${preset.name || ''}
           placeholder="Enter preset name"
           @input=${(e: Event) => {
@@ -1117,7 +1118,7 @@ export class UltraLightModule extends BaseUltraModule {
             }, 10);
           }}
           style="width: 100%; --mdc-theme-primary: var(--primary-color);"
-        ></ha-textfield>
+        ></uc-textfield>
       </div>
 
       <!-- Preset Icon -->

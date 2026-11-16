@@ -5,6 +5,7 @@ import { localize } from '../localize/localize';
 import { ucHaUsersService } from '../services/uc-ha-users-service';
 import { logicService } from '../services/logic-service';
 import '../components/ultra-segmented';
+import '../components/uc-textfield';
 
 export type UserVisibilityModeChoice = 'everyone' | 'show' | 'hide';
 
@@ -195,7 +196,7 @@ export function renderUserVisibilitySection(
                         )}
                       </div>
                       <div style="display: flex; gap: 8px;">
-                        <ha-textfield
+                        <uc-textfield
                           class="uc-user-vis-manual-input"
                           style="flex: 1;"
                           .label=${localize(
@@ -211,7 +212,7 @@ export function renderUserVisibilitySection(
                               input.value = '';
                             }
                           }}
-                        ></ha-textfield>
+                        ></uc-textfield>
                         <button
                           type="button"
                           style="padding: 0 14px; border: 1px solid var(--primary-color); background: none; color: var(--primary-color); border-radius: 6px; cursor: pointer;"

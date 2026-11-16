@@ -17,6 +17,7 @@ import {
   UcTimeMachineLane,
   UcTimeMachineSeries,
 } from '../services/uc-time-machine-service';
+import '../components/uc-spinner';
 
 const MS_PER_HOUR = 3_600_000;
 const MS_PER_MINUTE = 60_000;
@@ -471,7 +472,7 @@ export class UltraTimeMachineModule extends BaseUltraModule {
               </span>
             </div>
             ${snap.loading
-              ? html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`
+              ? html`<uc-spinner size="small"></uc-spinner>`
               : ''}
           </div>
           ${active

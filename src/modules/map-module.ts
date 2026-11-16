@@ -13,6 +13,7 @@ import * as L from 'leaflet';
 // shadow root). The card uses divIcon/HTML markers, so the CSS's url() image
 // references (layers control, default markers) are not needed.
 import leafletCss from 'leaflet/dist/leaflet.css?raw';
+import '../components/uc-textfield';
 
 export class UltraMapModule extends BaseUltraModule {
   private mapInstances: Map<string, L.Map> = new Map();
@@ -184,7 +185,7 @@ export class UltraMapModule extends BaseUltraModule {
                     'Enter your Google Maps API key for full JavaScript API features. Without a key, basic tile layers are used (limited features).'
                   )}
                 </div>
-                <ha-textfield
+                <uc-textfield
                   .value=${mapModule.google_api_key || ''}
                   placeholder="AIzaSy..."
                   type="password"
@@ -195,7 +196,7 @@ export class UltraMapModule extends BaseUltraModule {
                   style="width: 100%;"
                 >
                   <ha-icon icon="mdi:key" slot="leadingIcon"></ha-icon>
-                </ha-textfield>
+                </uc-textfield>
                 <div
                   style="font-size: 12px; margin-top: 8px; color: var(--secondary-text-color); opacity: 0.7;"
                 >
@@ -803,7 +804,7 @@ export class UltraMapModule extends BaseUltraModule {
         >
           ${localize('editor.map.marker.name_desc', lang, 'Display name for this marker')}
         </div>
-        <ha-textfield
+        <uc-textfield
           .value=${marker.name || ''}
           placeholder=${localize('editor.map.marker.name_placeholder', lang, 'Enter marker name')}
           @input=${(e: Event) => {
@@ -824,7 +825,7 @@ export class UltraMapModule extends BaseUltraModule {
             });
           }}
           style="width: 100%;"
-        ></ha-textfield>
+        ></uc-textfield>
       </div>
 
       <!-- Marker Type -->
@@ -873,7 +874,7 @@ export class UltraMapModule extends BaseUltraModule {
                 >
                   ${localize('editor.map.marker.latitude', lang, 'Latitude')}
                 </div>
-                <ha-textfield
+                <uc-textfield
                   .value=${marker.latitude?.toString() || ''}
                   type="number"
                   inputmode="decimal"
@@ -890,7 +891,7 @@ export class UltraMapModule extends BaseUltraModule {
                   style="width: 100%;"
                 >
                   <span slot="suffix">°</span>
-                </ha-textfield>
+                </uc-textfield>
                 <div
                   style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; opacity: 0.7;"
                 >
@@ -906,7 +907,7 @@ export class UltraMapModule extends BaseUltraModule {
                 >
                   ${localize('editor.map.marker.longitude', lang, 'Longitude')}
                 </div>
-                <ha-textfield
+                <uc-textfield
                   .value=${marker.longitude?.toString() || ''}
                   type="number"
                   inputmode="decimal"
@@ -923,7 +924,7 @@ export class UltraMapModule extends BaseUltraModule {
                   style="width: 100%;"
                 >
                   <span slot="suffix">°</span>
-                </ha-textfield>
+                </uc-textfield>
                 <div
                   style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; opacity: 0.7;"
                 >
@@ -1073,7 +1074,7 @@ export class UltraMapModule extends BaseUltraModule {
                     'Upload an image or enter an image URL'
                   )}
                 </div>
-                <ha-textfield
+                <uc-textfield
                   .value=${marker.marker_image || ''}
                   placeholder="https://example.com/marker.png"
                   @input=${(e: Event) => {
@@ -1083,7 +1084,7 @@ export class UltraMapModule extends BaseUltraModule {
                   style="width: 100%; margin-bottom: 12px;"
                 >
                   <ha-icon icon="mdi:image" slot="leadingIcon"></ha-icon>
-                </ha-textfield>
+                </uc-textfield>
 
                 <div>
                   ${this.renderSliderField(

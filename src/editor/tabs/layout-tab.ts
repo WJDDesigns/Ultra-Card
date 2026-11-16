@@ -132,6 +132,7 @@ import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
 import type { SubmitPresetDialogPayload } from '../../panels/components/uc-hub-submit-preset-dialog';
 import { UcFormUtils } from '../../utils/uc-form-utils';
+import '../../components/uc-spinner';
 
 /** Node kinds the tree-view drag and drop can target (mirrors `data-drop-type`). */
 type TreeDropType = 'row' | 'column' | 'module' | 'layout' | 'nested-layout' | 'layout-child';
@@ -7418,7 +7419,7 @@ export class LayoutTab extends LitElement {
     const targetEl = this._composeEventTargetToElement(e);
     if (
       targetEl?.closest(
-        'button, a, input, textarea, select, option, label, ha-icon-button, mwc-button, ha-switch, ha-select, ha-textfield, .header-actions'
+        'button, a, input, textarea, select, option, label, ha-icon-button, mwc-button, ha-switch, ha-select, ha-textfield, uc-textfield, .header-actions'
       )
     ) {
       return;
@@ -18794,7 +18795,7 @@ export class LayoutTab extends LitElement {
       });
       return html`
         <div class="settings-section uc-module-settings-loading">
-          <ha-circular-progress indeterminate size="small"></ha-circular-progress>
+          <uc-spinner size="small"></uc-spinner>
           <span>${localize('hub.loading', lang, 'Loading…')}</span>
         </div>
       `;
