@@ -512,14 +512,11 @@ export class UltraMapModule extends BaseUltraModule {
                   )}
                 </div>
               </div>
-              <mwc-button
-                raised
-                @click=${addMarker}
-                style="--mdc-theme-primary: var(--primary-color);"
-              >
+              <ha-button raised @click=${addMarker}>
+                <ha-icon icon="mdi:plus" slot="start"></ha-icon>
                 <ha-icon icon="mdi:plus" slot="icon"></ha-icon>
                 ${localize('editor.map.markers.add', lang, 'Add Marker')}
-              </mwc-button>
+              </ha-button>
             </div>
           </div>
 

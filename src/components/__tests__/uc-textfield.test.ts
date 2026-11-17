@@ -87,4 +87,12 @@ describe('no removed Home Assistant elements', () => {
     );
     expect(offenders.map(f => path.relative(SRC, f))).toEqual([]);
   });
+
+  // HA dropped every Material (mwc-*/md-*) element when it moved to Web Awesome.
+  it('does not render Material <mwc-*> or <md-*> elements', () => {
+    const offenders = walk(SRC).filter(f =>
+      /<(mwc|md)-[a-z]/.test(fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''))
+    );
+    expect(offenders.map(f => path.relative(SRC, f))).toEqual([]);
+  });
 });

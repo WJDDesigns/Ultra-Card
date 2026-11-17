@@ -2329,19 +2329,20 @@ export class UltraNavigationModule extends BaseUltraModule {
                   `;
                 }
                 return html`
-                  <ha-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${mediaPlayer.inactive_tap_action?.popup_id || ''}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
-                      updateInactiveTapAction({ action: 'open-popup', popup_id: e.target.value });
+                      updateInactiveTapAction({ action: 'open-popup', popup_id: e.detail.value });
                     }}
                     @closed=${(e: Event) => e.stopPropagation()}
-                  >
-                    ${popups.map(
-                      p => html`<mwc-list-item value="${p.value}">${p.label}</mwc-list-item>`
-                    )}
-                  </ha-select>
+                    .selector=${{
+                      select: { mode: 'dropdown', options: popups },
+                    }}
+                  ></ha-selector>
                 `;
               })()}
             </div>
@@ -2928,18 +2929,23 @@ export class UltraNavigationModule extends BaseUltraModule {
                   <div class="field-description">
                     Choose how the stack opens to show child items.
                   </div>
-                  <ha-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${stack.open_mode || 'click'}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
-                      updateStack({ open_mode: e.target.value });
+                      updateStack({ open_mode: e.detail.value });
                     }}
                     @closed=${(e: Event) => e.stopPropagation()}
-                  >
-                    <mwc-list-item value="click">Click to open</mwc-list-item>
-                    <mwc-list-item value="hover">Hover to open</mwc-list-item>
-                  </ha-select>
+                    .selector=${{
+                      select: { mode: 'dropdown', options: [
+                        { value: 'click', label: 'Click to open' },
+                        { value: 'hover', label: 'Hover to open' },
+                      ] },
+                    }}
+                  ></ha-selector>
                 </div>
 
                 <div class="field-container">
@@ -2948,19 +2954,24 @@ export class UltraNavigationModule extends BaseUltraModule {
                     Direction child items are displayed. Auto will show vertically for horizontal
                     navbars and horizontally for vertical navbars.
                   </div>
-                  <ha-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${stack.orientation || 'auto'}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
-                      updateStack({ orientation: e.target.value });
+                      updateStack({ orientation: e.detail.value });
                     }}
                     @closed=${(e: Event) => e.stopPropagation()}
-                  >
-                    <mwc-list-item value="auto">Auto (opposite of navbar)</mwc-list-item>
-                    <mwc-list-item value="vertical">Vertical</mwc-list-item>
-                    <mwc-list-item value="horizontal">Horizontal</mwc-list-item>
-                  </ha-select>
+                    .selector=${{
+                      select: { mode: 'dropdown', options: [
+                        { value: 'auto', label: 'Auto (opposite of navbar)' },
+                        { value: 'vertical', label: 'Vertical' },
+                        { value: 'horizontal', label: 'Horizontal' },
+                      ] },
+                    }}
+                  ></ha-selector>
                 </div>
 
                 ${this.renderItemVisibilityEditor(stack, hass, updateStack)}
@@ -3229,29 +3240,30 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     return html`
       <!-- Action Type -->
-      <!-- Raw ha-select (same pattern as every other dropdown in this module):
-           the ha-form select wrapper let the internal menu's "closed" event
-           bubble into the surrounding editor, which made the dropdown appear
-           stuck on its current value (issue #92). -->
+      <!-- HA's own select selector (Web Awesome dropdown on current HA, Material
+           on older HA). @closed is stopped on every dropdown here because older
+           HA's menu "closed" event bubbled into the editor and made the dropdown
+           look stuck (issue #92). -->
       <div class="field-container">
         <div class="field-title">${sectionTitle}</div>
         <div class="field-description">${sectionDescription}</div>
-        <ha-select
+        <ha-selector
           style="width: 100%;"
+          .hass=${hass}
+          .required=${true}
           .value=${category}
-          @selected=${(e: any) => {
+          @value-changed=${(e: CustomEvent) => {
             e.stopPropagation();
-            const nextValue = e.target?.value;
+            const nextValue = e.detail?.value;
             if (nextValue && nextValue !== category) {
               setCategory(nextValue);
             }
           }}
           @closed=${(e: Event) => e.stopPropagation()}
-        >
-          ${categoryOptions.map(
-            o => html`<mwc-list-item value="${o.value}">${o.label}</mwc-list-item>`
-          )}
-        </ha-select>
+          .selector=${{
+            select: { mode: 'dropdown', options: categoryOptions },
+          }}
+        ></ha-selector>
       </div>
 
       <!-- Navigate: Path picker -->
@@ -3330,23 +3342,24 @@ export class UltraNavigationModule extends BaseUltraModule {
                   `;
                 }
                 return html`
-                  <ha-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${currentAction?.popup_id || ''}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
                       setAction({
                         ...currentAction,
                         action: 'open-popup',
-                        popup_id: e.target.value,
+                        popup_id: e.detail.value,
                       });
                     }}
                     @closed=${(e: Event) => e.stopPropagation()}
-                  >
-                    ${popups.map(
-                      p => html`<mwc-list-item value="${p.value}">${p.label}</mwc-list-item>`
-                    )}
-                  </ha-select>
+                    .selector=${{
+                      select: { mode: 'dropdown', options: popups },
+                    }}
+                  ></ha-selector>
                 `;
               })()}
             </div>
@@ -3468,19 +3481,24 @@ export class UltraNavigationModule extends BaseUltraModule {
       <div class="field-container">
         <div class="field-title">Notification Source</div>
         <div class="field-description">Choose how to determine the notification count.</div>
-        <ha-select
+        <ha-selector
           style="width: 100%;"
+          .hass=${hass}
+          .required=${true}
           .value=${mode}
-          @selected=${(e: any) => {
+          @value-changed=${(e: CustomEvent) => {
             e.stopPropagation();
-            updateBadge({ mode: e.target.value });
+            updateBadge({ mode: e.detail.value });
           }}
           @closed=${(e: Event) => e.stopPropagation()}
-        >
-          <mwc-list-item value="static">Static value</mwc-list-item>
-          <mwc-list-item value="entity">Entity state</mwc-list-item>
-          <mwc-list-item value="template">Template</mwc-list-item>
-        </ha-select>
+          .selector=${{
+            select: { mode: 'dropdown', options: [
+              { value: 'static', label: 'Static value' },
+              { value: 'entity', label: 'Entity state' },
+              { value: 'template', label: 'Template' },
+            ] },
+          }}
+        ></ha-selector>
       </div>
 
       ${mode === 'static'
@@ -3592,29 +3610,6 @@ export class UltraNavigationModule extends BaseUltraModule {
     `;
   }
 
-  private renderBooleanModeSelect(
-    mode: 'auto' | 'true' | 'false' | 'template',
-    update: (value: boolean | string | undefined) => void
-  ) {
-    return html`
-      <ha-select
-        style="width: 100%;"
-        .value=${mode}
-        @selected=${(e: any) => {
-          const nextMode = e.target.value;
-          if (nextMode === 'auto') update(undefined);
-          if (nextMode === 'true') update(true);
-          if (nextMode === 'false') update(false);
-          if (nextMode === 'template') update('[[[ return true; ]]]');
-        }}
-      >
-        <mwc-list-item value="auto">Auto</mwc-list-item>
-        <mwc-list-item value="true">Always True</mwc-list-item>
-        <mwc-list-item value="false">Always False</mwc-list-item>
-        <mwc-list-item value="template">JS Template</mwc-list-item>
-      </ha-select>
-    `;
-  }
 
   private getBooleanMode(
     value: boolean | string | undefined
