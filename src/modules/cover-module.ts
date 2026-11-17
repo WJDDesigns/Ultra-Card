@@ -426,11 +426,11 @@ export class UltraCoverModule extends BaseUltraModule {
                 : ''}
             </div>
             <div style="display: flex; gap: 6px;">
-              <ha-button dense @click=${openCover} ?disabled=${stateStr === 'open' || isMoving}>
+              <ha-button dense size="s" @click=${openCover} ?disabled=${stateStr === 'open' || isMoving}>
                 ${localize('editor.cover.open', lang, 'Open')}
               </ha-button>
-              ${showStop ? html`<ha-button dense outlined @click=${stopCover} ?disabled=${!isMoving}>${localize('editor.cover.stop', lang, 'Stop')}</ha-button>` : ''}
-              <ha-button dense @click=${closeCover} ?disabled=${stateStr === 'closed' || isMoving}>
+              ${showStop ? html`<ha-button dense outlined size="s" appearance="outlined" @click=${stopCover} ?disabled=${!isMoving}>${localize('editor.cover.stop', lang, 'Stop')}</ha-button>` : ''}
+              <ha-button dense size="s" @click=${closeCover} ?disabled=${stateStr === 'closed' || isMoving}>
                 ${localize('editor.cover.close', lang, 'Close')}
               </ha-button>
             </div>
@@ -453,7 +453,7 @@ export class UltraCoverModule extends BaseUltraModule {
               <ha-button @click=${openCover} ?disabled=${stateStr === 'open' || isMoving}>
                 ${localize('editor.cover.open', lang, 'Open')}
               </ha-button>
-              ${showStop ? html`<ha-button outlined @click=${stopCover} ?disabled=${!isMoving}>${localize('editor.cover.stop', lang, 'Stop')}</ha-button>` : ''}
+              ${showStop ? html`<ha-button outlined appearance="outlined" @click=${stopCover} ?disabled=${!isMoving}>${localize('editor.cover.stop', lang, 'Stop')}</ha-button>` : ''}
               <ha-button @click=${closeCover} ?disabled=${stateStr === 'closed' || isMoving}>
                 ${localize('editor.cover.close', lang, 'Close')}
               </ha-button>
@@ -526,7 +526,7 @@ export class UltraCoverModule extends BaseUltraModule {
             <ha-button @click=${openCover} ?disabled=${stateStr === 'open' || isMoving}>
               ${localize('editor.cover.open', lang, 'Open')}
             </ha-button>
-            ${showStop ? html`<ha-button outlined @click=${stopCover} ?disabled=${!isMoving}>${localize('editor.cover.stop', lang, 'Stop')}</ha-button>` : ''}
+            ${showStop ? html`<ha-button outlined appearance="outlined" @click=${stopCover} ?disabled=${!isMoving}>${localize('editor.cover.stop', lang, 'Stop')}</ha-button>` : ''}
             <ha-button @click=${closeCover} ?disabled=${stateStr === 'closed' || isMoving}>
               ${localize('editor.cover.close', lang, 'Close')}
             </ha-button>
@@ -571,8 +571,8 @@ export class UltraCoverModule extends BaseUltraModule {
                       `
                     : html`
                         <div style="display: flex; gap: 8px;">
-                          <ha-button dense outlined @click=${openTilt}>${localize('editor.cover.open', lang, 'Open')}</ha-button>
-                          <ha-button dense outlined @click=${closeTilt}>${localize('editor.cover.close', lang, 'Close')}</ha-button>
+                          <ha-button dense outlined size="s" appearance="outlined" @click=${openTilt}>${localize('editor.cover.open', lang, 'Open')}</ha-button>
+                          <ha-button dense outlined size="s" appearance="outlined" @click=${closeTilt}>${localize('editor.cover.close', lang, 'Close')}</ha-button>
                         </div>
                       `}
                 </div>

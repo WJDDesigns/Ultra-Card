@@ -7,7 +7,6 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import '../../services/uc-cloud-auth-service';
 
 export class UcHubLoginDialog extends LitElement {
-
   static override styles = css`
     .login-dialog-content {
       padding: 8px 0;
@@ -98,7 +97,12 @@ export class UcHubLoginDialog extends LitElement {
 
   protected override render(): TemplateResult {
     return html`
-      <ha-dialog open @closed=${this._close} .heading=${'Sign in to Ultra Card'}>
+      <ha-dialog
+        open
+        @closed=${this._close}
+        header-title="Sign in to Ultra Card"
+        .heading=${'Sign in to Ultra Card'}
+      >
         <div class="login-dialog-content">
           <div class="login-section">
             <p class="login-section-title">Connect with Ultra Card Connect</p>
@@ -118,7 +122,8 @@ export class UcHubLoginDialog extends LitElement {
           <div class="login-divider"></div>
 
           <p class="login-note">
-            Already have the integration? Open the <strong>Account</strong> tab in the Ultra Card hub to sign in or create an account.
+            Already have the integration? Open the <strong>Account</strong> tab in the Ultra Card
+            hub to sign in or create an account.
           </p>
         </div>
       </ha-dialog>

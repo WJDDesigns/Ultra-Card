@@ -512,14 +512,11 @@ export class UltraMapModule extends BaseUltraModule {
                   )}
                 </div>
               </div>
-              <mwc-button
-                raised
-                @click=${addMarker}
-                style="--mdc-theme-primary: var(--primary-color);"
-              >
+              <ha-button raised @click=${addMarker}>
+                <ha-icon icon="mdi:plus" slot="start"></ha-icon>
                 <ha-icon icon="mdi:plus" slot="icon"></ha-icon>
                 ${localize('editor.map.markers.add', lang, 'Add Marker')}
-              </mwc-button>
+              </ha-button>
             </div>
           </div>
 
@@ -1045,8 +1042,13 @@ export class UltraMapModule extends BaseUltraModule {
                     localize('editor.map.marker.icon_size', lang, 'Icon Size'),
                     localize('editor.map.marker.icon_size_range', lang, 'Range: 8 to 64 pixels'),
                     marker.icon_size || 20,
-                    20, 8, 64, 1,
-                    (v: number) => { updateMarker({ icon_size: v }); },
+                    20,
+                    8,
+                    64,
+                    1,
+                    (v: number) => {
+                      updateMarker({ icon_size: v });
+                    },
                     'px'
                   )}
                 </div>
@@ -1091,8 +1093,13 @@ export class UltraMapModule extends BaseUltraModule {
                     localize('editor.map.marker.image_size', lang, 'Image Size'),
                     localize('editor.map.marker.image_size_range', lang, 'Range: 8 to 128 pixels'),
                     marker.icon_size || 32,
-                    32, 8, 128, 1,
-                    (v: number) => { updateMarker({ icon_size: v }); },
+                    32,
+                    8,
+                    128,
+                    1,
+                    (v: number) => {
+                      updateMarker({ icon_size: v });
+                    },
                     'px'
                   )}
                 </div>
@@ -1134,8 +1141,13 @@ export class UltraMapModule extends BaseUltraModule {
                     localize('editor.map.marker.image_size', lang, 'Image Size'),
                     localize('editor.map.marker.image_size_range', lang, 'Range: 8 to 128 pixels'),
                     marker.icon_size || 32,
-                    32, 8, 128, 1,
-                    (v: number) => { updateMarker({ icon_size: v }); },
+                    32,
+                    8,
+                    128,
+                    1,
+                    (v: number) => {
+                      updateMarker({ icon_size: v });
+                    },
                     'px'
                   )}
                 </div>
@@ -1243,9 +1255,10 @@ export class UltraMapModule extends BaseUltraModule {
    * If config requests Google but there is no valid API key (missing, empty, or redacted
    * from export), falls back to OpenStreetMap so the map still works for presets/shared configs.
    */
-  private getEffectiveMapProvider(
-    mapModule: MapModule
-  ): { provider: 'openstreetmap' | 'google'; mapType: string } {
+  private getEffectiveMapProvider(mapModule: MapModule): {
+    provider: 'openstreetmap' | 'google';
+    mapType: string;
+  } {
     const provider = mapModule.map_provider || 'openstreetmap';
     const mapType = mapModule.map_type || 'roadmap';
     if (provider !== 'google') {
@@ -1254,9 +1267,7 @@ export class UltraMapModule extends BaseUltraModule {
     const key = (mapModule.google_api_key || '').trim();
     // Only fall back to OSM when the key is a known redacted placeholder (shared/exported presets).
     // Google's raster tile endpoint works without a key, so an empty key is valid — matching pre-3.0 behaviour.
-    const isRedacted =
-      key === SENSITIVE_PLACEHOLDER ||
-      key.toLowerCase().startsWith('***');
+    const isRedacted = key === SENSITIVE_PLACEHOLDER || key.toLowerCase().startsWith('***');
     if (!isRedacted) {
       return { provider: 'google', mapType };
     }
@@ -1491,153 +1502,161 @@ export class UltraMapModule extends BaseUltraModule {
       });
     };
 
-    return this.wrapWithAnimation(html`
-      <style>
-        ${leafletCss}
-      </style>
-      <style>
-        .leaflet-container {
-          font-family: var(--primary-font-family, inherit);
-        }
-        .leaflet-popup-content-wrapper {
-          background: var(--uc-pane-bg, var(--card-background-color));
-          border: var(--uc-pane-border, none);
-          box-shadow: var(--uc-pane-shadow, none);
-          color: var(--primary-text-color);
-        }
-        .leaflet-popup-tip {
-          background: var(--uc-pane-bg, var(--card-background-color));
-        }
-        .custom-marker-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          height: 100%;
-        }
-        .custom-marker-icon ha-icon {
-          --mdi-icon-size: 24px;
-        }
+    return this.wrapWithAnimation(
+      html`
+        <style>
+          ${leafletCss}
+        </style>
+        <style>
+          .leaflet-container {
+            font-family: var(--primary-font-family, inherit);
+          }
+          .leaflet-popup-content-wrapper {
+            background: var(--uc-pane-bg, var(--card-background-color));
+            border: var(--uc-pane-border, none);
+            box-shadow: var(--uc-pane-shadow, none);
+            color: var(--primary-text-color);
+          }
+          .leaflet-popup-tip {
+            background: var(--uc-pane-bg, var(--card-background-color));
+          }
+          .custom-marker-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+          }
+          .custom-marker-icon ha-icon {
+            --mdi-icon-size: 24px;
+          }
 
-        /* Ensure map panes don't overlay HA UI elements */
-        .leaflet-pane {
-          z-index: 1 !important;
-        }
-        .leaflet-map-pane {
-          z-index: 1 !important;
-        }
-        .leaflet-tile-pane {
-          z-index: 1 !important;
-        }
-        .leaflet-overlay-pane {
-          z-index: 1 !important;
-        }
-        .leaflet-shadow-pane {
-          z-index: 1 !important;
-        }
-        .leaflet-marker-pane {
-          z-index: 1 !important;
-        }
-        .leaflet-tooltip-pane {
-          z-index: 1 !important;
-        }
-        .leaflet-popup-pane {
-          z-index: 1 !important;
-        }
+          /* Ensure map panes don't overlay HA UI elements */
+          .leaflet-pane {
+            z-index: 1 !important;
+          }
+          .leaflet-map-pane {
+            z-index: 1 !important;
+          }
+          .leaflet-tile-pane {
+            z-index: 1 !important;
+          }
+          .leaflet-overlay-pane {
+            z-index: 1 !important;
+          }
+          .leaflet-shadow-pane {
+            z-index: 1 !important;
+          }
+          .leaflet-marker-pane {
+            z-index: 1 !important;
+          }
+          .leaflet-tooltip-pane {
+            z-index: 1 !important;
+          }
+          .leaflet-popup-pane {
+            z-index: 1 !important;
+          }
 
-        /* Ensure map controls don't overlay HA UI elements (sidebar, menus, etc.) */
-        .leaflet-control-container {
-          z-index: 1 !important;
-        }
-        .leaflet-top,
-        .leaflet-bottom,
-        .leaflet-left,
-        .leaflet-right {
-          z-index: 1 !important;
-        }
-        .leaflet-control-zoom {
-          z-index: 1 !important;
-        }
-        .leaflet-control-attribution {
-          z-index: 1 !important;
-        }
-        .leaflet-control {
-          z-index: 1 !important;
-        }
+          /* Ensure map controls don't overlay HA UI elements (sidebar, menus, etc.) */
+          .leaflet-control-container {
+            z-index: 1 !important;
+          }
+          .leaflet-top,
+          .leaflet-bottom,
+          .leaflet-left,
+          .leaflet-right {
+            z-index: 1 !important;
+          }
+          .leaflet-control-zoom {
+            z-index: 1 !important;
+          }
+          .leaflet-control-attribution {
+            z-index: 1 !important;
+          }
+          .leaflet-control {
+            z-index: 1 !important;
+          }
 
-      /* Slider styles */
-        /* (loaded via getStyles()) */
-        .custom-marker-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          border-radius: 50%;
-        }
+          /* Slider styles */
+          /* (loaded via getStyles()) */
+          .custom-marker-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+          }
 
-        .map-container[uc-map-fs] {
-          height: 100% !important;
-          padding-bottom: 0 !important;
-          border-radius: 0 !important;
-        }
-        .map-container[uc-map-pseudo-fs] {
-          position: fixed !important;
-          inset: 0 !important;
-          z-index: 9999 !important;
-          width: 100vw !important;
-          height: 100vh !important;
-          height: 100dvh !important;
-        }
-        .uc-map-fs-btn {
-          position: absolute;
-          z-index: 2;
-          top: 10px;
-          right: 10px;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          border: none;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--primary-text-color);
-          background: color-mix(in srgb, var(--uc-pane-bg, var(--card-background-color, #fff)) 88%, transparent);
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-        }
-        .uc-map-fs-btn:focus-visible {
-          outline: 2px solid var(--primary-text-color);
-          outline-offset: 2px;
-        }
-      </style>
-      <div
-        class="map-container ${hoverClass}"
-        data-uc-role="pane"
-        style="${containerStyle} ${designStyles} box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: box-shadow 0.2s ease;"
-        @mouseenter=${(e: Event) => {
-          const target = e.currentTarget as HTMLElement;
-          target.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
-        }}
-        @mouseleave=${(e: Event) => {
-          const target = e.currentTarget as HTMLElement;
-          target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-        }}
-      >
-        <div ${ref(mapContainerRef)} id="${mapId}" style="${mapStyle}"></div>
-        ${mapModule.show_fullscreen === true
-          ? html`<button
-              type="button"
-              class="uc-map-fs-btn"
-              aria-label=${localize('editor.map.fullscreen', lang, 'Full screen')}
-              title=${localize('editor.map.fullscreen', lang, 'Full screen')}
-              @mousedown=${(e: Event) => e.stopPropagation()}
-              @touchstart=${(e: Event) => e.stopPropagation()}
-              @click=${(e: Event) => this._toggleMapFullscreen(e, mapId, mapModule)}
-            >
-              <ha-icon icon="mdi:fullscreen"></ha-icon>
-            </button>`
-          : ''}
-      </div>
-    `, module, hass);
+          .map-container[uc-map-fs] {
+            height: 100% !important;
+            padding-bottom: 0 !important;
+            border-radius: 0 !important;
+          }
+          .map-container[uc-map-pseudo-fs] {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 9999 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+          }
+          .uc-map-fs-btn {
+            position: absolute;
+            z-index: 2;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-text-color);
+            background: color-mix(
+              in srgb,
+              var(--uc-pane-bg, var(--card-background-color, #fff)) 88%,
+              transparent
+            );
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+          }
+          .uc-map-fs-btn:focus-visible {
+            outline: 2px solid var(--primary-text-color);
+            outline-offset: 2px;
+          }
+        </style>
+        <div
+          class="map-container ${hoverClass}"
+          data-uc-role="pane"
+          style="${containerStyle} ${designStyles} box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: box-shadow 0.2s ease;"
+          @mouseenter=${(e: Event) => {
+            const target = e.currentTarget as HTMLElement;
+            target.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+          }}
+          @mouseleave=${(e: Event) => {
+            const target = e.currentTarget as HTMLElement;
+            target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+          }}
+        >
+          <div ${ref(mapContainerRef)} id="${mapId}" style="${mapStyle}"></div>
+          ${mapModule.show_fullscreen === true
+            ? html`<button
+                type="button"
+                class="uc-map-fs-btn"
+                aria-label=${localize('editor.map.fullscreen', lang, 'Full screen')}
+                title=${localize('editor.map.fullscreen', lang, 'Full screen')}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                @touchstart=${(e: Event) => e.stopPropagation()}
+                @click=${(e: Event) => this._toggleMapFullscreen(e, mapId, mapModule)}
+              >
+                <ha-icon icon="mdi:fullscreen"></ha-icon>
+              </button>`
+            : ''}
+        </div>
+      `,
+      module,
+      hass
+    );
   }
 
   /**
@@ -1650,7 +1669,8 @@ export class UltraMapModule extends BaseUltraModule {
     e.preventDefault();
     const button = e.currentTarget as HTMLElement | null;
     const frame = button?.closest('.map-container') as
-      (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | null;
+      | (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void })
+      | null;
     if (!button || !frame) return;
     const frameAny = frame as HTMLElement & { _ucExitFullscreen?: () => void };
     if (frame.hasAttribute('uc-map-fs')) {

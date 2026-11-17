@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import '../uc-textfield';
 import '../uc-spinner';
+import '../uc-select';
+import type { UcSelect } from '../uc-select';
 import type { UcTextfield } from '../uc-textfield';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -86,5 +88,61 @@ describe('no removed Home Assistant elements', () => {
       )
     );
     expect(offenders.map(f => path.relative(SRC, f))).toEqual([]);
+  });
+
+  // HA dropped every Material (mwc-*/md-*) element when it moved to Web Awesome.
+  it('does not render Material <mwc-*> or <md-*> elements', () => {
+    const offenders = walk(SRC).filter(f =>
+      /<(mwc|md)-[a-z]/.test(fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''))
+    );
+    expect(offenders.map(f => path.relative(SRC, f))).toEqual([]);
+  });
+});
+
+describe('uc-select', () => {
+  async function mountSelect(props: Partial<UcSelect>): Promise<UcSelect> {
+    const el = document.createElement('uc-select') as UcSelect;
+    Object.assign(el, props);
+    document.body.appendChild(el);
+    await el.updateComplete;
+    return el;
+  }
+  const options = [
+    { value: 'click', label: 'Click to open' },
+    { value: 'hover', label: 'Hover to open' },
+  ];
+
+  it('renders the options with the current value selected', async () => {
+    const el = await mountSelect({ options, value: 'hover' });
+    const select = el.shadowRoot!.querySelector('select')!;
+    const labels = [...select.querySelectorAll('option')].map(o => o.textContent!.trim());
+    expect(labels).toEqual(['Click to open', 'Hover to open']);
+    expect(select.value).toBe('hover');
+  });
+
+  it('fires selected with detail.value and updates e.target.value', async () => {
+    const el = await mountSelect({ options, value: 'click' });
+    let detail = '';
+    let target = '';
+    el.addEventListener('selected', e => {
+      detail = (e as CustomEvent).detail.value;
+      target = (e.target as UcSelect).value;
+    });
+    const select = el.shadowRoot!.querySelector('select')!;
+    select.value = 'hover';
+    select.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+    expect(detail).toBe('hover');
+    expect(target).toBe('hover');
+  });
+
+  it('does not let the change bubble into the editor', async () => {
+    const el = await mountSelect({ options, value: 'click' });
+    let leaked = 0;
+    document.body.addEventListener('selected', () => leaked++);
+    document.body.addEventListener('change', () => leaked++);
+    const select = el.shadowRoot!.querySelector('select')!;
+    select.value = 'hover';
+    select.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+    expect(leaked).toBe(0);
   });
 });

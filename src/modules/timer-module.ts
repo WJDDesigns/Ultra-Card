@@ -324,7 +324,7 @@ export class UltraTimerModule extends BaseUltraModule {
                   </div>
                 `
               : html`
-                  <ha-button outlined @click=${() => timerStateService.dismiss(timerModule.id)}>
+                  <ha-button outlined appearance="outlined" @click=${() => timerStateService.dismiss(timerModule.id)}>
                     ${localize('editor.timer.dismiss', hass?.locale?.language || 'en', 'Dismiss')}
                   </ha-button>
                 `}
@@ -453,7 +453,7 @@ export class UltraTimerModule extends BaseUltraModule {
           <div style="display: flex; gap: 8px; justify-content: center;">
             ${status === 'running'
               ? html`
-                  <ha-button outlined @click=${() => timerStateService.pause(timerModule.id)}>
+                  <ha-button outlined appearance="outlined" @click=${() => timerStateService.pause(timerModule.id)}>
                     ${localize('editor.timer.pause', hass?.locale?.language || 'en', 'Pause')}
                   </ha-button>
                 `
@@ -462,7 +462,7 @@ export class UltraTimerModule extends BaseUltraModule {
                     ${localize('editor.timer.resume', hass?.locale?.language || 'en', 'Resume')}
                   </ha-button>
                 `}
-            <ha-button outlined @click=${() => timerStateService.reset(timerModule.id)}>
+            <ha-button outlined appearance="outlined" @click=${() => timerStateService.reset(timerModule.id)}>
               ${localize('editor.timer.cancel', hass?.locale?.language || 'en', 'Cancel')}
             </ha-button>
           </div>
