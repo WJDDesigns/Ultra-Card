@@ -25,7 +25,6 @@ import { resolveThemedModuleStyle } from '../services/uc-theme-service';
 import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
 import { renderHideOnDevicesSection } from '../tabs/uc-hide-on-devices-section';
 import '../components/uc-textfield';
-import '../components/uc-select';
 
 // Navbar style presets (matching UC visual design)
 export type NavbarStylePreset =
@@ -413,23 +412,22 @@ export class UltraNavigationModule extends BaseUltraModule {
           </div>
 
           ${this.renderFieldSection(
-            localize('editor.navigation.media_player_icon', lang, 'Media Player Icon'),
-            localize(
-              'editor.navigation.media_player_icon_desc',
-              lang,
-              'Show a media player icon in the navbar'
-            ),
-            hass,
-            { nav_media_player_enabled: navModule.nav_media_player?.enabled === true },
-            [this.booleanField('nav_media_player_enabled')],
-            (e: CustomEvent) =>
-              updateModule({
+              localize('editor.navigation.media_player_icon', lang, 'Media Player Icon'),
+              localize(
+                'editor.navigation.media_player_icon_desc',
+                lang,
+                'Show a media player icon in the navbar'
+              ),
+              hass,
+              { nav_media_player_enabled: navModule.nav_media_player?.enabled === true },
+              [this.booleanField('nav_media_player_enabled')],
+              (e: CustomEvent) => updateModule({
                 nav_media_player: {
                   ...navModule.nav_media_player,
                   enabled: e.detail.value.nav_media_player_enabled,
                 },
               })
-          )}
+            )}
         </div>
 
         <!-- Style Section -->
@@ -498,11 +496,7 @@ export class UltraNavigationModule extends BaseUltraModule {
 
           ${UcFormUtils.renderFieldSection(
             localize('editor.navigation.nav_scope', lang, 'Show Navigation On'),
-            localize(
-              'editor.navigation.nav_scope_desc',
-              lang,
-              'Control where this navbar appears.'
-            ),
+            localize('editor.navigation.nav_scope_desc', lang, 'Control where this navbar appears.'),
             hass,
             { nav_scope: navModule.nav_scope || 'all_views' },
             [
@@ -544,11 +538,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                 'Navbar appears on every view in your dashboard.'
               )}<br />
               <strong
-                >${localize(
-                  'editor.navigation.scope_dashboard_label',
-                  lang,
-                  'Current dashboard:'
-                )}</strong
+                >${localize('editor.navigation.scope_dashboard_label', lang, 'Current dashboard:')}</strong
               >
               ${localize(
                 'editor.navigation.scope_dashboard_info',
@@ -585,11 +575,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         <!-- Desktop Configuration Section -->
         ${this.renderSettingsSection(
           localize('editor.navigation.section_desktop', lang, 'DESKTOP MODE'),
-          localize(
-            'editor.navigation.section_desktop_desc',
-            lang,
-            'Configure navbar appearance and behavior on desktop devices.'
-          ),
+          localize('editor.navigation.section_desktop_desc', lang, 'Configure navbar appearance and behavior on desktop devices.'),
           [
             {
               title: localize('editor.navigation.mode', lang, 'Mode'),
@@ -737,61 +723,57 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
           ],
-          html` ${this.renderSliderField(
-              localize('editor.navigation.min_width', lang, 'Min Width'),
-              localize(
-                'editor.navigation.min_width_desc',
-                lang,
-                'Viewport width (px) that switches to desktop mode.'
-              ),
-              navModule.nav_desktop?.min_width ?? 768,
-              768,
-              320,
-              2560,
-              1,
-              (value: number) =>
-                updateModule({
-                  nav_desktop: {
-                    ...navModule.nav_desktop,
-                    min_width: value,
-                  },
-                }),
-              'px'
-            )}
+          html`
 
-            <!-- Desktop Offset Slider -->
-            ${this.renderSliderField(
-              localize('editor.navigation.desktop_offset', lang, 'Desktop Offset'),
-              localize(
-                'editor.navigation.offset_desc',
-                lang,
-                'Distance from screen edge (px). Pushes the dock away from the edge.'
-              ),
-              navModule.nav_desktop?.offset ??
-                (navModule.nav_desktop?.mode === 'floating' ? 16 : 0),
-              navModule.nav_desktop?.mode === 'floating' ? 16 : 0,
-              0,
-              100,
-              1,
-              (value: number) =>
-                updateModule({
-                  nav_desktop: {
-                    ...navModule.nav_desktop,
-                    offset: value,
-                  },
-                }),
-              'px'
-            )}`
+        ${this.renderSliderField(
+          localize('editor.navigation.min_width', lang, 'Min Width'),
+          localize(
+            'editor.navigation.min_width_desc',
+            lang,
+            'Viewport width (px) that switches to desktop mode.'
+          ),
+          navModule.nav_desktop?.min_width ?? 768,
+          768,
+          320,
+          2560,
+          1,
+          (value: number) => updateModule({
+            nav_desktop: {
+              ...navModule.nav_desktop,
+              min_width: value,
+            },
+          }),
+          'px'
+        )}
+
+        <!-- Desktop Offset Slider -->
+        ${this.renderSliderField(
+          localize('editor.navigation.desktop_offset', lang, 'Desktop Offset'),
+          localize(
+            'editor.navigation.offset_desc',
+            lang,
+            'Distance from screen edge (px). Pushes the dock away from the edge.'
+          ),
+          navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0),
+          navModule.nav_desktop?.mode === 'floating' ? 16 : 0,
+          0,
+          100,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_desktop: {
+                ...navModule.nav_desktop,
+                offset: value,
+              },
+            }),
+          'px'
+        )}`
         )}
 
         <!-- Mobile Configuration Section -->
         ${this.renderSettingsSection(
           localize('editor.navigation.section_mobile', lang, 'MOBILE MODE'),
-          localize(
-            'editor.navigation.section_mobile_desc',
-            lang,
-            'Configure navbar appearance and behavior on mobile devices.'
-          ),
+          localize('editor.navigation.section_mobile_desc', lang, 'Configure navbar appearance and behavior on mobile devices.'),
           [
             {
               title: localize('editor.navigation.mode', lang, 'Mode'),
@@ -938,51 +920,49 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
           ],
-          html` <!-- Mobile Offset Slider -->
-            ${this.renderSliderField(
-              localize('editor.navigation.mobile_offset', lang, 'Mobile Offset'),
-              localize(
-                'editor.navigation.offset_desc',
-                lang,
-                'Distance from screen edge (px). Pushes the dock away from the edge.'
-              ),
-              navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0),
-              navModule.nav_mobile?.mode === 'floating' ? 16 : 0,
-              0,
-              100,
-              1,
-              (value: number) =>
-                updateModule({
-                  nav_mobile: {
-                    ...navModule.nav_mobile,
-                    offset: value,
-                  },
-                }),
-              'px'
-            )}
+          html`
 
-            <!-- Icon Spacing Section -->
-            ${this.renderSliderField(
-              localize('editor.navigation.icon_spacing', lang, 'Icon Spacing'),
-              localize(
-                'editor.navigation.icon_spacing_desc',
-                lang,
-                'Gap between icons in the dock (px).'
-              ),
-              navModule.nav_layout?.icon_gap ?? 8,
-              8,
-              0,
-              32,
-              1,
-              (value: number) =>
-                updateModule({
-                  nav_layout: {
-                    ...navModule.nav_layout,
-                    icon_gap: value,
-                  },
-                }),
-              'px'
-            )}`
+        <!-- Mobile Offset Slider -->
+        ${this.renderSliderField(
+          localize('editor.navigation.mobile_offset', lang, 'Mobile Offset'),
+          localize(
+            'editor.navigation.offset_desc',
+            lang,
+            'Distance from screen edge (px). Pushes the dock away from the edge.'
+          ),
+          navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0),
+          navModule.nav_mobile?.mode === 'floating' ? 16 : 0,
+          0,
+          100,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_mobile: {
+                ...navModule.nav_mobile,
+                offset: value,
+              },
+            }),
+          'px'
+        )}
+
+        <!-- Icon Spacing Section -->
+        ${this.renderSliderField(
+          localize('editor.navigation.icon_spacing', lang, 'Icon Spacing'),
+          localize('editor.navigation.icon_spacing_desc', lang, 'Gap between icons in the dock (px).'),
+          navModule.nav_layout?.icon_gap ?? 8,
+          8,
+          0,
+          32,
+          1,
+          (value: number) =>
+            updateModule({
+              nav_layout: {
+                ...navModule.nav_layout,
+                icon_gap: value,
+              },
+            }),
+          'px'
+        )}`
         )}
 
         <!-- Collapse & Auto-Hide Section -->
@@ -1037,6 +1017,7 @@ export class UltraNavigationModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }
           )}
+
           ${navModule.nav_collapse?.enabled
             ? html`
                 ${this.renderSegmentedField(
@@ -1059,7 +1040,11 @@ export class UltraNavigationModule extends BaseUltraModule {
                     },
                     {
                       value: 'rail',
-                      label: localize('editor.navigation.collapse_mode_rail', lang, 'Icon Rail'),
+                      label: localize(
+                        'editor.navigation.collapse_mode_rail',
+                        lang,
+                        'Icon Rail'
+                      ),
                       icon: 'mdi:view-column-outline',
                     },
                     {
@@ -1082,8 +1067,13 @@ export class UltraNavigationModule extends BaseUltraModule {
                     this.triggerPreviewUpdate();
                   }
                 )}
+
                 ${UcFormUtils.renderFieldSection(
-                  localize('editor.navigation.start_collapsed', lang, 'Start Collapsed'),
+                  localize(
+                    'editor.navigation.start_collapsed',
+                    lang,
+                    'Start Collapsed'
+                  ),
                   localize(
                     'editor.navigation.start_collapsed_desc',
                     lang,
@@ -1102,9 +1092,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                     this.triggerPreviewUpdate();
                   }
                 )}
+
                 ${(navModule.nav_collapse?.mode || 'handle') !== 'scroll'
                   ? UcFormUtils.renderFieldSection(
-                      localize('editor.navigation.remember_state', lang, 'Remember State'),
+                      localize(
+                        'editor.navigation.remember_state',
+                        lang,
+                        'Remember State'
+                      ),
                       localize(
                         'editor.navigation.remember_state_desc',
                         lang,
@@ -1124,11 +1119,16 @@ export class UltraNavigationModule extends BaseUltraModule {
                       }
                     )
                   : ''}
+
                 ${(navModule.nav_collapse?.mode || 'handle') === 'handle' ||
                 (navModule.nav_collapse?.mode || 'handle') === 'rail'
                   ? html`
                       ${this.renderIconField(
-                        localize('editor.navigation.handle_icon', lang, 'Handle Icon'),
+                        localize(
+                          'editor.navigation.handle_icon',
+                          lang,
+                          'Handle Icon'
+                        ),
                         localize(
                           'editor.navigation.handle_icon_desc',
                           lang,
@@ -1147,7 +1147,11 @@ export class UltraNavigationModule extends BaseUltraModule {
                         }
                       )}
                       ${this.renderSliderField(
-                        localize('editor.navigation.handle_size', lang, 'Handle Size'),
+                        localize(
+                          'editor.navigation.handle_size',
+                          lang,
+                          'Handle Size'
+                        ),
                         localize(
                           'editor.navigation.handle_size_desc',
                           lang,
@@ -1170,7 +1174,11 @@ export class UltraNavigationModule extends BaseUltraModule {
                         'px'
                       )}
                       ${this.renderSliderField(
-                        localize('editor.navigation.handle_position', lang, 'Handle Position'),
+                        localize(
+                          'editor.navigation.handle_position',
+                          lang,
+                          'Handle Position'
+                        ),
                         localize(
                           'editor.navigation.handle_position_desc',
                           lang,
@@ -1218,7 +1226,11 @@ export class UltraNavigationModule extends BaseUltraModule {
                         }
                       )}
                       ${UcFormUtils.renderFieldSection(
-                        localize('editor.navigation.close_on_navigate', lang, 'Close on Navigate'),
+                        localize(
+                          'editor.navigation.close_on_navigate',
+                          lang,
+                          'Close on Navigate'
+                        ),
                         localize(
                           'editor.navigation.close_on_navigate_desc',
                           lang,
@@ -1226,7 +1238,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                         ),
                         hass,
                         {
-                          close_on_navigate: navModule.nav_collapse?.close_on_navigate !== false,
+                          close_on_navigate:
+                            navModule.nav_collapse?.close_on_navigate !== false,
                         },
                         [UcFormUtils.boolean('close_on_navigate')],
                         (e: CustomEvent) => {
@@ -1241,6 +1254,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                       )}
                     `
                   : ''}
+
                 ${(navModule.nav_collapse?.mode || 'handle') === 'rail'
                   ? this.renderSliderField(
                       localize('editor.navigation.rail_size', lang, 'Rail Size'),
@@ -1266,9 +1280,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                       'px'
                     )
                   : ''}
+
                 ${(navModule.nav_collapse?.mode || 'handle') === 'scroll'
                   ? this.renderSliderField(
-                      localize('editor.navigation.scroll_threshold', lang, 'Scroll Threshold'),
+                      localize(
+                        'editor.navigation.scroll_threshold',
+                        lang,
+                        'Scroll Threshold'
+                      ),
                       localize(
                         'editor.navigation.scroll_threshold_desc',
                         lang,
@@ -1293,6 +1312,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                   : ''}
               `
             : ''}
+
           ${!navModule.nav_collapse?.enabled
             ? html`
                 ${UcFormUtils.renderFieldSection(
@@ -1342,7 +1362,9 @@ export class UltraNavigationModule extends BaseUltraModule {
                   : ''}
               `
             : html`
-                <div style="font-size: 13px; color: var(--secondary-text-color); padding: 8px 0 0;">
+                <div
+                  style="font-size: 13px; color: var(--secondary-text-color); padding: 8px 0 0;"
+                >
                   ${localize(
                     'editor.navigation.autohide_disabled_by_collapse',
                     lang,
@@ -1355,11 +1377,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         <!-- Haptics Section -->
         ${this.renderSettingsSection(
           localize('editor.navigation.section_haptics', lang, 'HAPTIC FEEDBACK'),
-          localize(
-            'editor.navigation.section_haptics_desc',
-            lang,
-            'Configure haptic feedback for interactions.'
-          ),
+          localize('editor.navigation.section_haptics_desc', lang, 'Configure haptic feedback for interactions.'),
           [
             {
               title: localize('editor.navigation.haptics_enable', lang, 'Enable Haptics'),
@@ -1383,82 +1401,82 @@ export class UltraNavigationModule extends BaseUltraModule {
             ...(navModule.nav_haptic === false
               ? []
               : [
-                  {
-                    title: localize('editor.navigation.haptics_url', lang, 'URL Navigation'),
-                    description: localize(
-                      'editor.navigation.haptics_url_desc',
-                      lang,
-                      'Trigger haptic when navigating to a URL.'
-                    ),
-                    hass,
-                    data: { url: this.getHapticConfig(navModule).url ?? false },
-                    schema: [UcFormUtils.boolean('url')],
-                    onChange: (e: CustomEvent) => {
-                      updateModule({
-                        nav_haptic: { ...this.getHapticConfig(navModule), url: e.detail.value.url },
-                      });
-                    },
+            {
+              title: localize('editor.navigation.haptics_url', lang, 'URL Navigation'),
+              description: localize(
+                'editor.navigation.haptics_url_desc',
+                lang,
+                'Trigger haptic when navigating to a URL.'
+              ),
+              hass,
+              data: { url: this.getHapticConfig(navModule).url ?? false },
+              schema: [UcFormUtils.boolean('url')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: { ...this.getHapticConfig(navModule), url: e.detail.value.url },
+                });
+              },
+            },
+            {
+              title: localize('editor.navigation.haptics_tap', lang, 'Tap Action'),
+              description: localize(
+                'editor.navigation.haptics_tap_desc',
+                lang,
+                'Trigger haptic on tap.'
+              ),
+              hass,
+              data: { tap_action: this.getHapticConfig(navModule).tap_action ?? true },
+              schema: [UcFormUtils.boolean('tap_action')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: {
+                    ...this.getHapticConfig(navModule),
+                    tap_action: e.detail.value.tap_action,
                   },
-                  {
-                    title: localize('editor.navigation.haptics_tap', lang, 'Tap Action'),
-                    description: localize(
-                      'editor.navigation.haptics_tap_desc',
-                      lang,
-                      'Trigger haptic on tap.'
-                    ),
-                    hass,
-                    data: { tap_action: this.getHapticConfig(navModule).tap_action ?? true },
-                    schema: [UcFormUtils.boolean('tap_action')],
-                    onChange: (e: CustomEvent) => {
-                      updateModule({
-                        nav_haptic: {
-                          ...this.getHapticConfig(navModule),
-                          tap_action: e.detail.value.tap_action,
-                        },
-                      });
-                    },
+                });
+              },
+            },
+            {
+              title: localize('editor.navigation.haptics_hold', lang, 'Hold Action'),
+              description: localize(
+                'editor.navigation.haptics_hold_desc',
+                lang,
+                'Trigger haptic on hold.'
+              ),
+              hass,
+              data: { hold_action: this.getHapticConfig(navModule).hold_action ?? true },
+              schema: [UcFormUtils.boolean('hold_action')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: {
+                    ...this.getHapticConfig(navModule),
+                    hold_action: e.detail.value.hold_action,
                   },
-                  {
-                    title: localize('editor.navigation.haptics_hold', lang, 'Hold Action'),
-                    description: localize(
-                      'editor.navigation.haptics_hold_desc',
-                      lang,
-                      'Trigger haptic on hold.'
-                    ),
-                    hass,
-                    data: { hold_action: this.getHapticConfig(navModule).hold_action ?? true },
-                    schema: [UcFormUtils.boolean('hold_action')],
-                    onChange: (e: CustomEvent) => {
-                      updateModule({
-                        nav_haptic: {
-                          ...this.getHapticConfig(navModule),
-                          hold_action: e.detail.value.hold_action,
-                        },
-                      });
-                    },
+                });
+              },
+            },
+            {
+              title: localize('editor.navigation.haptics_double_tap', lang, 'Double Tap'),
+              description: localize(
+                'editor.navigation.haptics_double_tap_desc',
+                lang,
+                'Trigger haptic on double tap.'
+              ),
+              hass,
+              data: {
+                double_tap_action: this.getHapticConfig(navModule).double_tap_action ?? true,
+              },
+              schema: [UcFormUtils.boolean('double_tap_action')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: {
+                    ...this.getHapticConfig(navModule),
+                    double_tap_action: e.detail.value.double_tap_action,
                   },
-                  {
-                    title: localize('editor.navigation.haptics_double_tap', lang, 'Double Tap'),
-                    description: localize(
-                      'editor.navigation.haptics_double_tap_desc',
-                      lang,
-                      'Trigger haptic on double tap.'
-                    ),
-                    hass,
-                    data: {
-                      double_tap_action: this.getHapticConfig(navModule).double_tap_action ?? true,
-                    },
-                    schema: [UcFormUtils.boolean('double_tap_action')],
-                    onChange: (e: CustomEvent) => {
-                      updateModule({
-                        nav_haptic: {
-                          ...this.getHapticConfig(navModule),
-                          double_tap_action: e.detail.value.double_tap_action,
-                        },
-                      });
-                    },
-                  },
-                ]),
+                });
+              },
+            },
+              ])
           ]
         )}
       </div>
@@ -1511,67 +1529,60 @@ export class UltraNavigationModule extends BaseUltraModule {
       const showDockToggle = isInEditModeDashboard && previewContext === 'live';
       const isPreviewExpanded = showDockToggle && ucNavigationService.isEditModePreviewExpanded();
 
-      return this.wrapWithAnimation(
-        html`
-          <div
-            style="
+      return this.wrapWithAnimation(html`
+        <div
+          style="
             padding: 24px;
             text-align: center;
             background: rgba(var(--rgb-primary-color), 0.1);
             border: 2px dashed var(--primary-color);
             border-radius: var(--uc-r-8, 8px);
           "
+        >
+          <ha-icon
+            icon="mdi:compass-outline"
+            style="color: var(--primary-color); --mdc-icon-size: 48px; margin-bottom: 8px; display: block;"
+          ></ha-icon>
+          <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 4px;">
+            Navigation Module
+          </div>
+          <div style="font-size: 12px; color: var(--secondary-text-color); opacity: 0.8;">
+            ${routeCount} path${routeCount !== 1 ? 's' : ''}
+            ${hasMediaPlayer ? ' • Media Player' : ''} ${hasSettings ? ' • Settings' : ''}
+          </div>
+          <div
+            style="font-size: 11px; color: var(--secondary-text-color); margin-top: 8px; opacity: 0.7;"
           >
-            <ha-icon
-              icon="mdi:compass-outline"
-              style="color: var(--primary-color); --mdc-icon-size: 48px; margin-bottom: 8px; display: block;"
-            ></ha-icon>
-            <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 4px;">
-              Navigation Module
-            </div>
-            <div style="font-size: 12px; color: var(--secondary-text-color); opacity: 0.8;">
-              ${routeCount} path${routeCount !== 1 ? 's' : ''}
-              ${hasMediaPlayer ? ' • Media Player' : ''} ${hasSettings ? ' • Settings' : ''}
-            </div>
-            <div
-              style="font-size: 11px; color: var(--secondary-text-color); margin-top: 8px; opacity: 0.7;"
-            >
-              ${(navModule.nav_scope || 'all_views') === 'all_views'
-                ? 'Global (all views)'
-                : navModule.nav_scope === 'current_dashboard'
-                  ? 'Current dashboard only'
-                  : 'Current view only'}
-            </div>
-            <div
-              style="font-size: 10px; color: var(--secondary-text-color); margin-top: 12px; opacity: 0.6; font-style: italic;"
-            >
-              ${showDockToggle
-                ? isPreviewExpanded
-                  ? 'Dock preview is visible on the dashboard behind this editor.'
-                  : 'The dock is hidden in edit mode so the Save button stays accessible.'
-                : 'The navbar overlays the dashboard. Exit edit mode to see it in place.'}
-            </div>
+            ${(navModule.nav_scope || 'all_views') === 'all_views'
+              ? 'Global (all views)'
+              : navModule.nav_scope === 'current_dashboard'
+                ? 'Current dashboard only'
+                : 'Current view only'}
+          </div>
+          <div
+            style="font-size: 10px; color: var(--secondary-text-color); margin-top: 12px; opacity: 0.6; font-style: italic;"
+          >
             ${showDockToggle
-              ? html`
-                  <style>
-                    @keyframes uc-dock-btn-pulse {
-                      0% {
-                        box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color), 0.5);
-                      }
-                      70% {
-                        box-shadow: 0 0 0 8px rgba(var(--rgb-primary-color), 0);
-                      }
-                      100% {
-                        box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color), 0);
-                      }
-                    }
-                  </style>
-                  <button
-                    type="button"
-                    @click=${() => {
-                      ucNavigationService.toggleEditModePreview(!isPreviewExpanded);
-                    }}
-                    style="
+              ? isPreviewExpanded
+                ? 'Dock preview is visible on the dashboard behind this editor.'
+                : 'The dock is hidden in edit mode so the Save button stays accessible.'
+              : 'The navbar overlays the dashboard. Exit edit mode to see it in place.'}
+          </div>
+          ${showDockToggle
+            ? html`
+                <style>
+                  @keyframes uc-dock-btn-pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color), 0.5); }
+                    70% { box-shadow: 0 0 0 8px rgba(var(--rgb-primary-color), 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color), 0); }
+                  }
+                </style>
+                <button
+                  type="button"
+                  @click=${() => {
+                    ucNavigationService.toggleEditModePreview(!isPreviewExpanded);
+                  }}
+                  style="
                     margin-top: 14px;
                     padding: 6px 16px;
                     font-size: 12px;
@@ -1587,20 +1598,17 @@ export class UltraNavigationModule extends BaseUltraModule {
                     transition: background 0.2s ease;
                     animation: uc-dock-btn-pulse 2s ease-in-out 3;
                   "
-                  >
-                    <ha-icon
-                      icon="${isPreviewExpanded ? 'mdi:eye-off' : 'mdi:eye'}"
-                      style="--mdc-icon-size: 16px;"
-                    ></ha-icon>
-                    ${isPreviewExpanded ? 'Hide dock preview' : 'Preview dock'}
-                  </button>
-                `
-              : ''}
-          </div>
-        `,
-        module,
-        hass
-      );
+                >
+                  <ha-icon
+                    icon="${isPreviewExpanded ? 'mdi:eye-off' : 'mdi:eye'}"
+                    style="--mdc-icon-size: 16px;"
+                  ></ha-icon>
+                  ${isPreviewExpanded ? 'Hide dock preview' : 'Preview dock'}
+                </button>
+              `
+            : ''}
+        </div>
+      `, module, hass);
     }
 
     // For all other contexts (including actual dashboard viewing), return empty
@@ -1976,8 +1984,7 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     return html`
       <div
-        class="entity-row special-item ${isExpanded ? 'expanded' : ''}"
-        data-uc-role="pane"
+        class="entity-row special-item ${isExpanded ? 'expanded' : ''}" data-uc-role="pane"
         draggable="true"
         @dragstart=${onDragStart}
         @dragend=${onDragEnd}
@@ -2033,8 +2040,7 @@ export class UltraNavigationModule extends BaseUltraModule {
     if (action.action === 'toggle') return 'toggle';
     if (action.action === 'more-info') return 'more-info';
     if (action.action === 'assist') return 'assist';
-    if (action.action === 'perform-action' || (action.action as string) === 'call-service')
-      return 'perform-action';
+    if (action.action === 'perform-action' || (action.action as string) === 'call-service') return 'perform-action';
     return 'perform-action';
   }
 
@@ -2145,10 +2151,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       updateModule({
         nav_media_player: {
           ...mediaPlayer,
-          inactive_tap_action: {
-            ...(mediaPlayer.inactive_tap_action || {}),
-            ...updates,
-          } as NavActionConfig,
+          inactive_tap_action: { ...(mediaPlayer.inactive_tap_action || {}), ...updates } as NavActionConfig,
         },
       });
     };
@@ -2259,9 +2262,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       )}
 
       <!-- Inactive Tap Action (idle/off/unavailable only) -->
-      <div class="field-group-title" style="margin-top: 16px; margin-bottom: 8px;">
-        Inactive Tap Action
-      </div>
+      <div class="field-group-title" style="margin-top: 16px; margin-bottom: 8px;">Inactive Tap Action</div>
       ${UcFormUtils.renderFieldSection(
         '',
         'When the media player is idle, off, or unavailable, tapping the icon can do something other than start playback.',
@@ -2328,15 +2329,20 @@ export class UltraNavigationModule extends BaseUltraModule {
                   `;
                 }
                 return html`
-                  <uc-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${mediaPlayer.inactive_tap_action?.popup_id || ''}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
-                      updateInactiveTapAction({ action: 'open-popup', popup_id: e.target.value });
+                      updateInactiveTapAction({ action: 'open-popup', popup_id: e.detail.value });
                     }}
-                    .options=${popups}
-                  ></uc-select>
+                    @closed=${(e: Event) => e.stopPropagation()}
+                    .selector=${{
+                      select: { mode: 'dropdown', options: popups },
+                    }}
+                  ></ha-selector>
                 `;
               })()}
             </div>
@@ -2347,10 +2353,7 @@ export class UltraNavigationModule extends BaseUltraModule {
             <div class="field-container" style="margin-top: 8px;">
               <div class="field-title">Entity</div>
               ${this.renderEntityPickerWithVariables(
-                hass,
-                config,
-                'entity',
-                mediaPlayer.inactive_tap_action?.entity || mediaPlayer.entity || '',
+                hass, config, 'entity', mediaPlayer.inactive_tap_action?.entity || mediaPlayer.entity || '',
                 (value: string) => updateInactiveTapAction({ entity: value }),
                 undefined,
                 'Entity'
@@ -2617,26 +2620,11 @@ export class UltraNavigationModule extends BaseUltraModule {
                   [UcFormUtils.text('label')],
                   (e: CustomEvent) => updateRoute({ label: e.detail.value.label })
                 )}
-                ${this.renderActionEditor(
-                  route,
-                  hass,
-                  config || ({} as UltraCardConfig),
-                  updateRoute
-                )}
-                ${this.renderActionEditor(
-                  route,
-                  hass,
-                  config || ({} as UltraCardConfig),
-                  updateRoute,
-                  'hold_action'
-                )}
-                ${this.renderActionEditor(
-                  route,
-                  hass,
-                  config || ({} as UltraCardConfig),
-                  updateRoute,
-                  'double_tap_action'
-                )}
+
+                ${this.renderActionEditor(route, hass, config || ({} as UltraCardConfig), updateRoute)}
+                ${this.renderActionEditor(route, hass, config || ({} as UltraCardConfig), updateRoute, 'hold_action')}
+                ${this.renderActionEditor(route, hass, config || ({} as UltraCardConfig), updateRoute, 'double_tap_action')}
+
                 ${UcFormUtils.renderFieldSection(
                   'Icon',
                   'Material Design icon for this path.',
@@ -2941,18 +2929,23 @@ export class UltraNavigationModule extends BaseUltraModule {
                   <div class="field-description">
                     Choose how the stack opens to show child items.
                   </div>
-                  <uc-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${stack.open_mode || 'click'}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
-                      updateStack({ open_mode: e.target.value });
+                      updateStack({ open_mode: e.detail.value });
                     }}
-                    .options=${[
-                      { value: 'click', label: 'Click to open' },
-                      { value: 'hover', label: 'Hover to open' },
-                    ]}
-                  ></uc-select>
+                    @closed=${(e: Event) => e.stopPropagation()}
+                    .selector=${{
+                      select: { mode: 'dropdown', options: [
+                        { value: 'click', label: 'Click to open' },
+                        { value: 'hover', label: 'Hover to open' },
+                      ] },
+                    }}
+                  ></ha-selector>
                 </div>
 
                 <div class="field-container">
@@ -2961,19 +2954,24 @@ export class UltraNavigationModule extends BaseUltraModule {
                     Direction child items are displayed. Auto will show vertically for horizontal
                     navbars and horizontally for vertical navbars.
                   </div>
-                  <uc-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${stack.orientation || 'auto'}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
-                      updateStack({ orientation: e.target.value });
+                      updateStack({ orientation: e.detail.value });
                     }}
-                    .options=${[
-                      { value: 'auto', label: 'Auto (opposite of navbar)' },
-                      { value: 'vertical', label: 'Vertical' },
-                      { value: 'horizontal', label: 'Horizontal' },
-                    ]}
-                  ></uc-select>
+                    @closed=${(e: Event) => e.stopPropagation()}
+                    .selector=${{
+                      select: { mode: 'dropdown', options: [
+                        { value: 'auto', label: 'Auto (opposite of navbar)' },
+                        { value: 'vertical', label: 'Vertical' },
+                        { value: 'horizontal', label: 'Horizontal' },
+                      ] },
+                    }}
+                  ></ha-selector>
                 </div>
 
                 ${this.renderItemVisibilityEditor(stack, hass, updateStack)}
@@ -3025,9 +3023,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       onChange: (e: CustomEvent) => void
     ) => html`
       <div class="field-section" style="margin-bottom: 16px;">
-        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          ${title}
-        </div>
+        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">${title}</div>
         <div
           class="field-description"
           style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
@@ -3047,11 +3043,13 @@ export class UltraNavigationModule extends BaseUltraModule {
         ${renderUserVisibilitySection(item.user_visibility, hass, next =>
           update({ user_visibility: next })
         )}
+
         ${renderHideOnDevicesSection(
           hiddenOnDevices,
           next => update({ hidden_on_devices: next, hide_on: undefined }),
           lang
         )}
+
         ${section(
           localize('editor.navigation.visibility.show_when', lang, 'Show only when'),
           localize(
@@ -3061,35 +3059,22 @@ export class UltraNavigationModule extends BaseUltraModule {
           ),
           { entity: cond?.entity || '', operator: cond?.operator || '=', state: cond?.state || '' },
           [
-            {
-              ...UcFormUtils.entity('entity'),
-              label: localize('editor.navigation.visibility.entity', lang, 'Entity'),
-            },
+            { ...UcFormUtils.entity('entity'), label: localize('editor.navigation.visibility.entity', lang, 'Entity') },
             {
               ...UcFormUtils.select('operator', [
                 { value: '=', label: localize('editor.navigation.visibility.is', lang, 'is') },
-                {
-                  value: '!=',
-                  label: localize('editor.navigation.visibility.is_not', lang, 'is not'),
-                },
+                { value: '!=', label: localize('editor.navigation.visibility.is_not', lang, 'is not') },
               ]),
               label: localize('editor.navigation.visibility.condition', lang, 'Condition'),
             },
             {
-              ...UcFormUtils.conditionValue('state', hass, {
-                entity: cond?.entity || '',
-                operator: cond?.operator || '=',
-              }),
+              ...UcFormUtils.conditionValue('state', hass, { entity: cond?.entity || '', operator: cond?.operator || '=' }),
               label: localize('editor.navigation.visibility.state', lang, 'State'),
             },
           ],
           (e: CustomEvent) => {
             const v = e.detail.value || {};
-            setCond({
-              entity: v.entity || '',
-              operator: v.operator === '!=' ? '!=' : '=',
-              state: v.state ?? '',
-            });
+            setCond({ entity: v.entity || '', operator: v.operator === '!=' ? '!=' : '=', state: v.state ?? '' });
           }
         )}
       </div>
@@ -3114,7 +3099,10 @@ export class UltraNavigationModule extends BaseUltraModule {
         }
         if (item.type === 'popup') {
           const pm = item as PopupModule;
-          const name = pm.title_text?.trim() || pm.name?.trim() || `Popup (${pm.id.slice(-6)})`;
+          const name =
+            pm.title_text?.trim() ||
+            pm.name?.trim() ||
+            `Popup (${pm.id.slice(-6)})`;
           popups.push({ value: pm.id, label: name });
         }
         // Recurse into layout containers that can hold modules
@@ -3252,25 +3240,30 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     return html`
       <!-- Action Type -->
-      <!-- uc-select (same as every other dropdown in this module): the ha-form
-           select wrapper let the internal menu's "closed" event bubble into the
-           surrounding editor (issue #92), and HA's Web Awesome ha-select ignores
-           slotted mwc-list-item options. uc-select works on every HA version. -->
+      <!-- HA's own select selector (Web Awesome dropdown on current HA, Material
+           on older HA). @closed is stopped on every dropdown here because older
+           HA's menu "closed" event bubbled into the editor and made the dropdown
+           look stuck (issue #92). -->
       <div class="field-container">
         <div class="field-title">${sectionTitle}</div>
         <div class="field-description">${sectionDescription}</div>
-        <uc-select
+        <ha-selector
           style="width: 100%;"
+          .hass=${hass}
+          .required=${true}
           .value=${category}
-          @selected=${(e: any) => {
+          @value-changed=${(e: CustomEvent) => {
             e.stopPropagation();
-            const nextValue = e.target?.value;
+            const nextValue = e.detail?.value;
             if (nextValue && nextValue !== category) {
               setCategory(nextValue);
             }
           }}
-          .options=${categoryOptions}
-        ></uc-select>
+          @closed=${(e: Event) => e.stopPropagation()}
+          .selector=${{
+            select: { mode: 'dropdown', options: categoryOptions },
+          }}
+        ></ha-selector>
       </div>
 
       <!-- Navigate: Path picker -->
@@ -3349,19 +3342,24 @@ export class UltraNavigationModule extends BaseUltraModule {
                   `;
                 }
                 return html`
-                  <uc-select
+                  <ha-selector
                     style="width: 100%;"
+                    .hass=${hass}
+                    .required=${true}
                     .value=${currentAction?.popup_id || ''}
-                    @selected=${(e: any) => {
+                    @value-changed=${(e: CustomEvent) => {
                       e.stopPropagation();
                       setAction({
                         ...currentAction,
                         action: 'open-popup',
-                        popup_id: e.target.value,
+                        popup_id: e.detail.value,
                       });
                     }}
-                    .options=${popups}
-                  ></uc-select>
+                    @closed=${(e: Event) => e.stopPropagation()}
+                    .selector=${{
+                      select: { mode: 'dropdown', options: popups },
+                    }}
+                  ></ha-selector>
                 `;
               })()}
             </div>
@@ -3379,16 +3377,10 @@ export class UltraNavigationModule extends BaseUltraModule {
                   : 'Select the entity to show more info for.'}
               </div>
               ${this.renderEntityPickerWithVariables(
-                hass,
-                config,
-                'entity',
-                currentAction?.entity || '',
-                (value: string) =>
-                  setAction({
-                    ...(currentAction || {}),
-                    action: category as 'toggle' | 'more-info',
-                    entity: value,
-                  }),
+                hass, config, 'entity', currentAction?.entity || '',
+                (value: string) => setAction({
+                  ...(currentAction || {}), action: category as 'toggle' | 'more-info', entity: value,
+                }),
                 undefined,
                 'Entity'
               )}
@@ -3489,19 +3481,24 @@ export class UltraNavigationModule extends BaseUltraModule {
       <div class="field-container">
         <div class="field-title">Notification Source</div>
         <div class="field-description">Choose how to determine the notification count.</div>
-        <uc-select
+        <ha-selector
           style="width: 100%;"
+          .hass=${hass}
+          .required=${true}
           .value=${mode}
-          @selected=${(e: any) => {
+          @value-changed=${(e: CustomEvent) => {
             e.stopPropagation();
-            updateBadge({ mode: e.target.value });
+            updateBadge({ mode: e.detail.value });
           }}
-          .options=${[
-            { value: 'static', label: 'Static value' },
-            { value: 'entity', label: 'Entity state' },
-            { value: 'template', label: 'Template' },
-          ]}
-        ></uc-select>
+          @closed=${(e: Event) => e.stopPropagation()}
+          .selector=${{
+            select: { mode: 'dropdown', options: [
+              { value: 'static', label: 'Static value' },
+              { value: 'entity', label: 'Entity state' },
+              { value: 'template', label: 'Template' },
+            ] },
+          }}
+        ></ha-selector>
       </div>
 
       ${mode === 'static'
@@ -3534,10 +3531,7 @@ export class UltraNavigationModule extends BaseUltraModule {
             <div class="field-container">
               <div class="field-title">Entity</div>
               ${this.renderEntityPickerWithVariables(
-                hass,
-                config as UltraCardConfig,
-                'entity',
-                badge.entity || '',
+                hass, config as UltraCardConfig, 'entity', badge.entity || '',
                 (value: string) => updateBadge({ entity: value }),
                 undefined,
                 'Entity'
@@ -3586,6 +3580,7 @@ export class UltraNavigationModule extends BaseUltraModule {
             </div>
           `
         : ''}
+
       ${this.renderFieldSection(
         'Hide When Zero',
         'Hide the badge when the count is 0 or empty.',
@@ -3615,30 +3610,6 @@ export class UltraNavigationModule extends BaseUltraModule {
     `;
   }
 
-  private renderBooleanModeSelect(
-    mode: 'auto' | 'true' | 'false' | 'template',
-    update: (value: boolean | string | undefined) => void
-  ) {
-    return html`
-      <uc-select
-        style="width: 100%;"
-        .value=${mode}
-        @selected=${(e: any) => {
-          const nextMode = e.target.value;
-          if (nextMode === 'auto') update(undefined);
-          if (nextMode === 'true') update(true);
-          if (nextMode === 'false') update(false);
-          if (nextMode === 'template') update('[[[ return true; ]]]');
-        }}
-        .options=${[
-          { value: 'auto', label: 'Auto' },
-          { value: 'true', label: 'Always True' },
-          { value: 'false', label: 'Always False' },
-          { value: 'template', label: 'JS Template' },
-        ]}
-      ></uc-select>
-    `;
-  }
 
   private getBooleanMode(
     value: boolean | string | undefined
