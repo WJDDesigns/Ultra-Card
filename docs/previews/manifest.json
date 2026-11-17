@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T19:05:31.987Z",
+  "generatedAt": "2026-11-17T18:55:21.285Z",
   "ultraCardVersion": "3.14.5",
   "counts": {
     "total": 105,
@@ -40,7 +40,7 @@
         "3rd-party"
       ],
       "preview": "previews/external_card.png",
-      "status": "needs-config"
+      "status": "ok"
     },
     {
       "type": "accordion",
@@ -751,7 +751,7 @@
         "tariff"
       ],
       "preview": "previews/energy_price.png",
-      "status": "needs-config"
+      "status": "ok"
     },
     {
       "type": "fan",
@@ -808,7 +808,7 @@
         "interactive"
       ],
       "preview": "previews/floorplan.png",
-      "status": "needs-config"
+      "status": "ok"
     },
     {
       "type": "gauge",
