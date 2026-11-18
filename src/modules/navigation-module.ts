@@ -2011,8 +2011,21 @@ export class UltraNavigationModule extends BaseUltraModule {
           <div class="entity-actions" @click=${(e: Event) => e.stopPropagation()}>
             <span class="special-badge">Media</span>
             <ha-icon
-              icon="${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"
+              icon="mdi:chevron-down"
               class="expand-icon"
+              role="button"
+              tabindex="0"
+              aria-expanded=${isExpanded ? 'true' : 'false'}
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                toggleExpand();
+              }}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                e.stopPropagation();
+                toggleExpand();
+              }}
             ></ha-icon>
           </div>
         </div>
@@ -2603,8 +2616,21 @@ export class UltraNavigationModule extends BaseUltraModule {
               <ha-icon icon="mdi:delete"></ha-icon>
             </button>
             <ha-icon
-              icon="${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"
+              icon="mdi:chevron-down"
               class="expand-icon"
+              role="button"
+              tabindex="0"
+              aria-expanded=${isExpanded ? 'true' : 'false'}
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                toggleExpand();
+              }}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                e.stopPropagation();
+                toggleExpand();
+              }}
             ></ha-icon>
           </div>
         </div>
@@ -2876,8 +2902,21 @@ export class UltraNavigationModule extends BaseUltraModule {
               <ha-icon icon="mdi:delete"></ha-icon>
             </button>
             <ha-icon
-              icon="${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"
+              icon="mdi:chevron-down"
               class="expand-icon"
+              role="button"
+              tabindex="0"
+              aria-expanded=${isExpanded ? 'true' : 'false'}
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                toggleExpand();
+              }}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                e.stopPropagation();
+                toggleExpand();
+              }}
             ></ha-icon>
           </div>
         </div>
@@ -3837,6 +3876,12 @@ export class UltraNavigationModule extends BaseUltraModule {
         --mdc-icon-size: 20px;
         color: var(--secondary-text-color);
         transition: transform 0.2s;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+      }
+      .expand-icon:hover {
+        color: var(--primary-color);
       }
       .entity-row.expanded .expand-icon {
         transform: rotate(180deg);
