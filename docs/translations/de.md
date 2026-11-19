@@ -3,7 +3,7 @@
 > This page is generated automatically from the translation files. Don't edit it by hand;
 > it refreshes itself after every change to the `main` branch.
 
-**83.5% translated** — 6,797 of 8,138 entries. **1,341 still in English.**
+**84.6% translated** — 6,887 of 8,138 entries. **1,251 still in English.**
 
 🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜
 
@@ -19,149 +19,9 @@ More help: [translation guide](../../CONTRIBUTING_TRANSLATIONS.md) · [all langu
 
 If the English word really is right in your language (a brand name, or a word you also use), just leave it. It will stay on this list, and that's fine.
 
-## Still in English (1,341)
+## Still in English (1,251)
 
 Biggest sections first. Click a section to open it.
-
-<details>
-<summary><strong>Appliance (editor)</strong> — 132 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Running color | `editor.appliance.active_color` |
-| Accent while a cycle is running | `editor.appliance.active_color_desc` |
-| Card background | `editor.appliance.card_bg` |
-| Second oven mode | `editor.appliance.cavity_mode` |
-| Second oven set point | `editor.appliance.cavity_setpoint` |
-| Second oven state | `editor.appliance.cavity_state` |
-| Second oven temperature | `editor.appliance.cavity_temp` |
-| Child lock | `editor.appliance.child_lock` |
-| 1 burner on | `editor.appliance.chip_burner_on` |
-| burners on | `editor.appliance.chip_burners_on` |
-| Child lock | `editor.appliance.chip_child_lock` |
-| Door open | `editor.appliance.chip_door_open` |
-| Replace filter | `editor.appliance.chip_filter` |
-| Remote off | `editor.appliance.chip_remote_off` |
-| Wrinkle prevent | `editor.appliance.chip_wrinkle` |
-| Completion time sensor | `editor.appliance.completion_time` |
-| Select an appliance | `editor.appliance.config_needed` |
-| Choose the main entity in the General tab | `editor.appliance.config_needed_desc` |
-| Cooktop burners | `editor.appliance.cooktop` |
-| Entities that report each burner’s state (on/off, heating, or a power number). They light the burners on the graphic and show a “burners on” chip. Auto-detected entities appear below. | `editor.appliance.cooktop_desc` |
-| Cooktop on | `editor.appliance.cooktop_on` |
-| Add a burner entity… | `editor.appliance.cooktop_placeholder` |
-| Cooling | `editor.appliance.cooling` |
-| Decrease | `editor.appliance.decrease` |
-| Display | `editor.appliance.display_section` |
-| Choose what to show on the card. | `editor.appliance.display_section_desc` |
-| Done color | `editor.appliance.done_color` |
-| Door sensor | `editor.appliance.door` |
-| Doors open | `editor.appliance.doors_open` |
-| Enable animations | `editor.appliance.enable_animations` |
-| Drum spin, bubbles, steam, and glow effects while running | `editor.appliance.enable_animations_desc` |
-| Ends | `editor.appliance.ends_at` |
-| Energy (kWh) | `editor.appliance.energy_sensor` |
-| Main entity | `editor.appliance.entity` |
-| Main entity | `editor.appliance.entity_section` |
-| Pick the machine-state select or sensor (e.g. select.washer or a run-state sensor). Related sensors and switches are found automatically — works with SmartThings, LG ThinQ, Home Connect (Bosch, Siemens, Neff), and sim… | `editor.appliance.entity_section_desc` |
-| Pick any entity of the refrigerator device (e.g. a temperature or door sensor). Related sensors and switches are found automatically — works with SmartThings, LG ThinQ, and similar integrations. | `editor.appliance.entity_section_desc_fridge` |
-| Pick the oven machine-state sensor (e.g. sensor.range_oven_machine_state) or any entity of the range. Oven temperature, modes, burners, and the light are found automatically. | `editor.appliance.entity_section_desc_range` |
-| Feature switches | `editor.appliance.features` |
-| Toggle chips shown on the card (sanitize, storm wash, power cool, ice maker, wrinkle prevent…). Auto-detected switches appear below — remove any you don’t want, or add your own. | `editor.appliance.features_desc` |
-| Add a switch… | `editor.appliance.features_placeholder` |
-| Replace water filter | `editor.appliance.filter_alert` |
-| Water filter status | `editor.appliance.filter_status` |
-| Freezer | `editor.appliance.freezer` |
-| Freezer door | `editor.appliance.freezer_door` |
-| Freezer door open | `editor.appliance.freezer_door_open` |
-| Freezer setpoint | `editor.appliance.freezer_setpoint` |
-| Freezer temperature | `editor.appliance.freezer_temp` |
-| Fridge | `editor.appliance.fridge` |
-| Fridge door | `editor.appliance.fridge_door` |
-| Fridge door open | `editor.appliance.fridge_door_open` |
-| Fridge setpoint | `editor.appliance.fridge_setpoint` |
-| Fridge temperature | `editor.appliance.fridge_temp` |
-| Increase | `editor.appliance.increase` |
-| Job state sensor | `editor.appliance.job_state` |
-| Layout | `editor.appliance.layout` |
-| Compact | `editor.appliance.layout_compact` |
-| Hero, standard, or compact | `editor.appliance.layout_desc` |
-| Hero | `editor.appliance.layout_hero` |
-| Layout | `editor.appliance.layout_section` |
-| How the card is arranged. | `editor.appliance.layout_section_desc` |
-| Standard | `editor.appliance.layout_standard` |
-| Optional overrides | `editor.appliance.links_group` |
-| Linked entities | `editor.appliance.links_section` |
-| Everything below is auto-detected from the main entity. Only set a field when detection picks the wrong entity. | `editor.appliance.links_section_desc` |
-| Lower oven | `editor.appliance.lower_oven` |
-| Machine state sensor | `editor.appliance.machine_state` |
-| Energy | `editor.appliance.metric_energy` |
-| Power | `editor.appliance.metric_power` |
-| Name | `editor.appliance.name` |
-| Leave empty to use the entity name | `editor.appliance.name_desc` |
-| Open | `editor.appliance.open` |
-| Oven | `editor.appliance.oven` |
-| Oven job state | `editor.appliance.oven_job` |
-| Light | `editor.appliance.oven_light` |
-| Oven light | `editor.appliance.oven_light_entity` |
-| Oven mode (bake, roast…) | `editor.appliance.oven_mode` |
-| Oven set point | `editor.appliance.oven_setpoint` |
-| Oven machine state | `editor.appliance.oven_state` |
-| Oven temperature | `editor.appliance.oven_temp` |
-| Pause | `editor.appliance.pause` |
-| Power | `editor.appliance.power` |
-| Power (W) | `editor.appliance.power_sensor` |
-| Power switch | `editor.appliance.power_switch` |
-| Program | `editor.appliance.program` |
-| Remote control | `editor.appliance.remote_control` |
-| Enable remote control on the appliance to allow remote start | `editor.appliance.remote_disabled` |
-| Reset filter | `editor.appliance.reset_filter` |
-| Resume | `editor.appliance.resume` |
-| Set | `editor.appliance.set_to` |
-| Cycle setting dropdowns | `editor.appliance.settings` |
-| Select entities shown as dropdowns (water temperature, spin level, soil level, wash zone…). Auto-detected selects appear below — remove any you don’t want, or add your own. | `editor.appliance.settings_desc` |
-| Add a select… | `editor.appliance.settings_placeholder` |
-| Show status chips | `editor.appliance.show_chips` |
-| Child lock, remote control, door open, filter alerts | `editor.appliance.show_chips_desc` |
-| Show time remaining | `editor.appliance.show_completion` |
-| Countdown and finish time while a cycle runs | `editor.appliance.show_completion_desc` |
-| Countdown and finish time while the oven runs | `editor.appliance.show_completion_desc_range` |
-| Show controls | `editor.appliance.show_controls` |
-| Start / Pause / Stop buttons | `editor.appliance.show_controls_desc` |
-| Oven light and Stop buttons | `editor.appliance.show_controls_desc_range` |
-| Show cooktop burners | `editor.appliance.show_cooktop` |
-| Burner indicators on the graphic and a “burners on” chip | `editor.appliance.show_cooktop_desc` |
-| Show feature switches | `editor.appliance.show_features` |
-| Show appliance graphic | `editor.appliance.show_graphic` |
-| Show power & energy | `editor.appliance.show_metrics` |
-| Live wattage and energy usage tiles | `editor.appliance.show_metrics_desc` |
-| Show power button | `editor.appliance.show_power_button` |
-| Show setpoint controls | `editor.appliance.show_setpoints` |
-| − / + buttons to adjust target temperatures | `editor.appliance.show_setpoints_desc` |
-| Show cycle settings | `editor.appliance.show_settings` |
-| Dropdowns for water temperature, spin level, and similar options | `editor.appliance.show_settings_desc` |
-| Show status | `editor.appliance.show_status` |
-| Cycle phase and job state | `editor.appliance.show_status_desc` |
-| Show temperatures | `editor.appliance.show_temps` |
-| Fridge and freezer temperature tiles | `editor.appliance.show_temps_desc` |
-| Show oven temperature | `editor.appliance.show_temps_range` |
-| Current temperature and set point tiles | `editor.appliance.show_temps_range_desc` |
-| Show title | `editor.appliance.show_title` |
-| Graphic size | `editor.appliance.size` |
-| Size of the appliance illustration | `editor.appliance.size_desc` |
-| Start | `editor.appliance.start` |
-| Done | `editor.appliance.state_done` |
-| Error | `editor.appliance.state_error` |
-| Idle | `editor.appliance.state_idle` |
-| Off | `editor.appliance.state_off` |
-| Paused | `editor.appliance.state_paused` |
-| Running | `editor.appliance.state_running` |
-| Unavailable | `editor.appliance.state_unavailable` |
-| Stop | `editor.appliance.stop` |
-| Stop button | `editor.appliance.stop_button` |
-| Text color | `editor.appliance.text_color` |
-
-</details>
 
 <details>
 <summary><strong>Camera grid (editor)</strong> — 131 left</summary>
@@ -590,6 +450,58 @@ Biggest sections first. Click a section to open it.
 | Icon | `editor.badge.type_icon` |
 | Image | `editor.badge.type_image` |
 | Text | `editor.badge.type_text` |
+
+</details>
+
+<details>
+<summary><strong>Appliance (editor)</strong> — 44 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Display | `editor.appliance.display_section` |
+| Layout | `editor.appliance.layout` |
+| Hero | `editor.appliance.layout_hero` |
+| Layout | `editor.appliance.layout_section` |
+| Standard | `editor.appliance.layout_standard` |
+| Name | `editor.appliance.name` |
+| Pause | `editor.appliance.pause` |
+| Program | `editor.appliance.program` |
+| Countdown and finish time while a cycle runs | `editor.appliance.show_completion_desc` |
+| Countdown and finish time while the oven runs | `editor.appliance.show_completion_desc_range` |
+| Show controls | `editor.appliance.show_controls` |
+| Start / Pause / Stop buttons | `editor.appliance.show_controls_desc` |
+| Oven light and Stop buttons | `editor.appliance.show_controls_desc_range` |
+| Show cooktop burners | `editor.appliance.show_cooktop` |
+| Burner indicators on the graphic and a “burners on” chip | `editor.appliance.show_cooktop_desc` |
+| Show feature switches | `editor.appliance.show_features` |
+| Show appliance graphic | `editor.appliance.show_graphic` |
+| Show power & energy | `editor.appliance.show_metrics` |
+| Live wattage and energy usage tiles | `editor.appliance.show_metrics_desc` |
+| Show power button | `editor.appliance.show_power_button` |
+| Show setpoint controls | `editor.appliance.show_setpoints` |
+| − / + buttons to adjust target temperatures | `editor.appliance.show_setpoints_desc` |
+| Show cycle settings | `editor.appliance.show_settings` |
+| Dropdowns for water temperature, spin level, and similar options | `editor.appliance.show_settings_desc` |
+| Show status | `editor.appliance.show_status` |
+| Cycle phase and job state | `editor.appliance.show_status_desc` |
+| Show temperatures | `editor.appliance.show_temps` |
+| Fridge and freezer temperature tiles | `editor.appliance.show_temps_desc` |
+| Show oven temperature | `editor.appliance.show_temps_range` |
+| Current temperature and set point tiles | `editor.appliance.show_temps_range_desc` |
+| Show title | `editor.appliance.show_title` |
+| Graphic size | `editor.appliance.size` |
+| Size of the appliance illustration | `editor.appliance.size_desc` |
+| Start | `editor.appliance.start` |
+| Done | `editor.appliance.state_done` |
+| Error | `editor.appliance.state_error` |
+| Idle | `editor.appliance.state_idle` |
+| Off | `editor.appliance.state_off` |
+| Paused | `editor.appliance.state_paused` |
+| Running | `editor.appliance.state_running` |
+| Unavailable | `editor.appliance.state_unavailable` |
+| Stop | `editor.appliance.stop` |
+| Stop button | `editor.appliance.stop_button` |
+| Text color | `editor.appliance.text_color` |
 
 </details>
 
@@ -1091,34 +1003,6 @@ Biggest sections first. Click a section to open it.
 </details>
 
 <details>
-<summary><strong>Unifi (editor)</strong> — 20 left</summary>
-
-| English text | Key |
-| --- | --- |
-| Off | `editor.unifi.anim_off` |
-| Animation | `editor.unifi.animation` |
-| Clients | `editor.unifi.client_list` |
-| Include clients | `editor.unifi.include_clients` |
-| APs ({n}) | `editor.unifi.kind_ap` |
-| Gateways ({n}) | `editor.unifi.kind_gateway` |
-| NVRs ({n}) | `editor.unifi.kind_nvr` |
-| PDUs ({n}) | `editor.unifi.kind_pdu` |
-| Switches ({n}) | `editor.unifi.kind_switch` |
-| Radial | `editor.unifi.layout_radial` |
-| Rack style | `editor.unifi.rack_style` |
-| Pick how this card visualizes your UniFi network. | `editor.unifi.section_view_desc` |
-| Show | `editor.unifi.show` |
-| Auto ({name}) | `editor.unifi.uplink_auto` |
-| Show rack gear only | `editor.unifi.show_rack_gear` |
-| UniFi Network | `editor.unifi.title_default` |
-| Clients | `editor.unifi.view_clients` |
-| Ports | `editor.unifi.view_ports` |
-| Rack | `editor.unifi.view_rack` |
-| UniFi setup | `editor.unifi.wizard_title` |
-
-</details>
-
-<details>
 <summary><strong>Irrigation (editor)</strong> — 19 left</summary>
 
 | English text | Key |
@@ -1169,6 +1053,32 @@ Biggest sections first. Click a section to open it.
 | Cover thumbnail | `editor.printer_3d.show_thumbnail` |
 | Snapshots | `editor.printer_3d.camera_mode_snapshot` |
 | Live | `editor.printer_3d.camera_mode_live` |
+
+</details>
+
+<details>
+<summary><strong>Unifi (editor)</strong> — 18 left</summary>
+
+| English text | Key |
+| --- | --- |
+| Off | `editor.unifi.anim_off` |
+| Animation | `editor.unifi.animation` |
+| Clients | `editor.unifi.client_list` |
+| Include clients | `editor.unifi.include_clients` |
+| APs ({n}) | `editor.unifi.kind_ap` |
+| Gateways ({n}) | `editor.unifi.kind_gateway` |
+| NVRs ({n}) | `editor.unifi.kind_nvr` |
+| PDUs ({n}) | `editor.unifi.kind_pdu` |
+| Switches ({n}) | `editor.unifi.kind_switch` |
+| Radial | `editor.unifi.layout_radial` |
+| Rack style | `editor.unifi.rack_style` |
+| Auto ({name}) | `editor.unifi.uplink_auto` |
+| Show rack gear only | `editor.unifi.show_rack_gear` |
+| UniFi Network | `editor.unifi.title_default` |
+| Clients | `editor.unifi.view_clients` |
+| Ports | `editor.unifi.view_ports` |
+| Rack | `editor.unifi.view_rack` |
+| UniFi setup | `editor.unifi.wizard_title` |
 
 </details>
 
