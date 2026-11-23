@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.14.6
+
+Stable 3.14.6 is a security fix first. Barkley, the security scanner for the Home Assistant Marketplace, flagged two places where Ultra Card added your Home Assistant login to a web request: loading a QR Code logo and uploading an image in the editor. The upload only ever went to your own Home Assistant, but the QR Code logo check could be fooled by a logo address written as `//other-site/logo.png`, which would have sent the login along with it. Ultra Card no longer reads your login at all. Both requests now go through Home Assistant's own sign-in, which only talks to your Home Assistant. This release also brings the editor fixes for Home Assistant's new Web Awesome look, the Navigation editor caret, the audit fixes and the latest German update. Thanks to Schneebly for raising the Barkley report.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 150 files in that folder after updating is normal.
+
+**Update Ultra Card Connect to 1.12.6 too.** It brings the Hub up to this version, with the same login fix, the Web Awesome sign-in dialog and the accessibility fixes.
+
+### 🔒 Security
+
+- **Your Home Assistant login stays on Home Assistant** - The QR Code logo and image upload no longer read your login. They use Home Assistant's own authenticated requests, only for addresses on your Home Assistant, and logos from other sites load with no credentials. A logo address like `//other-site/logo.png` could previously carry the login to that site
+
+### 🔧 Improvements
+
+- **Faster dashboards** - Translations are split into a small part for dashboards and a larger part only the editor loads, so English dashboards load about 300 KB less, and 3rd Party Cards no longer redraw the whole card on every state change
+- **Editor accessibility** - Icon buttons have names, clickable areas work from the keyboard and show a focus ring
+- **Weather layer** - The Open-Meteo weather map layer now loads from Ultra Card's own GitHub Pages instead of a public CDN
+- **German translation** - German is now about 85% translated, including the Appliance and UniFi editors. Thanks to larrysansan
+
+### 🐛 Bug Fixes
+
+- **Editor dropdowns on current Home Assistant** - Home Assistant replaced its old Material components with Web Awesome, so six Navigation dropdowns showed no choices and Map's Add Marker showed as plain text. They now use Home Assistant's own fields, and the Hub sign-in dialog, Cover and Timer buttons follow the new look
+- **Navigation editor caret** - The arrow on each path, stack and media player row now opens and closes the item, with the mouse or the keyboard
+
 ## Version 3.14.5
 
 Stable 3.14.5 is a quick follow-up to 3.14.4. Home Assistant recently removed two building blocks from its frontend, the text field and the loading spinner, and every editor field that used them simply disappeared on current Home Assistant. This release swaps them for Ultra Card's own versions so those fields are back, and brings the latest German translation update.
