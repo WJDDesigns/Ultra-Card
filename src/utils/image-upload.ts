@@ -1,6 +1,7 @@
 import type { HomeAssistant } from '../ha/types';
 import { getResolvedMediaUrlSync, isMediaSourceUri } from './media-resolver';
 import { UC_DEBUG } from './uc-debug';
+import { fetchFromHomeAssistant } from './ha-fetch';
 
 export interface ImageUploadResponse {
   path: string;
@@ -80,23 +81,22 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<stri
     console.error('[UPLOAD] Missing file.');
     throw new Error('No file provided for upload.');
   }
-  if (!hass || !hass.auth || !hass.auth.data || !hass.auth.data.access_token) {
-    console.error('[UPLOAD] Missing Home Assistant authentication details.');
+  if (!hass || typeof hass.fetchWithAuth !== 'function') {
+    console.error('[UPLOAD] Home Assistant connection is not available.');
     throw new Error('Authentication details are missing.');
   }
 
-  const formData = new FormData();
-  formData.append('file', file);
+  // Uploads always go to this Home Assistant through hass.fetchWithAuth, which
+  // adds the login itself. The card never reads or forwards the token.
 
   // Try local media source first (preferred method)
   try {
     UC_DEBUG && console.log('[UPLOAD] Attempting upload to local media source...');
-    const response = await fetch('/api/media_source/local/upload', {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetchFromHomeAssistant(hass, '/api/media_source/local/upload', {
       method: 'POST',
       body: formData,
-      headers: {
-        Authorization: `Bearer ${hass.auth.data.access_token}`,
-      },
     });
 
     if (response.ok) {
@@ -116,25 +116,10 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<stri
   // Fallback to image API
   try {
     UC_DEBUG && console.log('[UPLOAD] Attempting upload to image API...');
-
-    let baseUrl = '';
-    if (hass.connection && typeof (hass.connection as any).options?.url === 'string') {
-      const wsUrl = (hass.connection as any).options.url;
-      baseUrl = wsUrl.replace(/^ws/, 'http');
-    } else if (typeof (hass as any).hassUrl === 'function') {
-      baseUrl = (hass as any).hassUrl();
-    } else {
-      baseUrl = `${window.location.protocol}//${window.location.host}`;
-    }
-
-    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-    const uploadUrl = `${cleanBaseUrl}/api/image/upload`;
-
-    const response = await fetch(uploadUrl, {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetchFromHomeAssistant(hass, '/api/image/upload', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${hass.auth.data.access_token}`,
-      },
       body: formData,
     });
 

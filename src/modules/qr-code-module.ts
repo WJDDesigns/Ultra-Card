@@ -15,6 +15,7 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { getImageUrl } from '../utils/image-upload';
+import { fetchFromHomeAssistant, toHomeAssistantPath } from '../utils/ha-fetch';
 import {
   buildQrContent,
   type QrContentData,
@@ -46,8 +47,10 @@ const logoFetchingSet = new Set<string>();
  * qr-code-styling can embed it in a canvas without CORS/auth issues.
  *
  * Strategy:
- *  - HA-internal paths (relative, /local/, /api/, or same-origin absolute): fetch with Bearer token.
- *  - External http(s) URLs pointing to a different host: plain CORS fetch (no token).
+ *  - URLs on this Home Assistant: fetched through hass.fetchWithAuth with a
+ *    relative path, so the login is added by Home Assistant itself and can only
+ *    go to Home Assistant.
+ *  - Any other URL: plain CORS fetch, never with the login.
  *
  * Dispatches UC_QR_DATA_READY_EVENT when done (success or failure).
  */
@@ -55,18 +58,13 @@ function fetchLogoAsDataUrl(logoUrl: string, hass?: HomeAssistant): void {
   if (logoFetchingSet.has(logoUrl)) return;
   logoFetchingSet.add(logoUrl);
 
-  // A URL is "external" only when it is an absolute http(s) URL pointing to a
-  // different host than the current page (i.e. not our HA instance).
-  const isExternalAbsolute =
-    (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) &&
-    !logoUrl.startsWith(`${window.location.protocol}//${window.location.host}`);
+  const haPath = toHomeAssistantPath(logoUrl, hass);
+  const request: Promise<Response> =
+    haPath && hass
+      ? fetchFromHomeAssistant(hass, haPath)
+      : fetch(logoUrl, { mode: 'cors', credentials: 'omit' });
 
-  const headers: Record<string, string> = {};
-  if (!isExternalAbsolute && hass?.auth?.data?.access_token) {
-    headers['Authorization'] = `Bearer ${hass.auth.data.access_token}`;
-  }
-
-  fetch(logoUrl, { mode: 'cors', headers })
+  request
     .then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.blob();
